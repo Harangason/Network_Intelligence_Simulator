@@ -1,0 +1,117 @@
+{
+  "schema": "can-simulator.mbse-simulation-request.v1",
+  "simulation_mode": "restbus",
+  "bus_type": "mixed",
+  "channels": 4,
+  "duration_s": 30.0,
+  "messages": 80,
+  "nominal_bitrate": 500000,
+  "data_bitrate": 2000000,
+  "seed": 42,
+  "participants": [
+    {
+      "name": "PLC_MAIN",
+      "role": "plc_controller",
+      "channel": 0,
+      "cycle_ms": 20,
+      "provided_services": [
+        "MACHINE_STATE"
+      ],
+      "consumed_services": [
+        "TEMPERATURE",
+        "PRESSURE"
+      ],
+      "health": "nominal"
+    },
+    {
+      "name": "TEMP_SENSOR_A",
+      "role": "temperature_sensor",
+      "channel": 1,
+      "cycle_ms": 100,
+      "provided_services": [
+        "TEMPERATURE"
+      ],
+      "consumed_services": [
+        "SYNC_TIME"
+      ],
+      "health": "nominal"
+    },
+    {
+      "name": "PRESSURE_SENSOR_A",
+      "role": "pressure_sensor",
+      "channel": 2,
+      "cycle_ms": 50,
+      "provided_services": [
+        "PRESSURE"
+      ],
+      "consumed_services": [
+        "SYNC_TIME"
+      ],
+      "health": "nominal"
+    },
+    {
+      "name": "INTEGRATION_GATEWAY",
+      "role": "gateway",
+      "channel": 0,
+      "cycle_ms": 50,
+      "provided_services": [
+        "ROUTING_STATUS",
+        "SYNC_TIME"
+      ],
+      "consumed_services": [
+        "ROUTING_STATUS"
+      ],
+      "gateway_to_channel": 1,
+      "health": "nominal"
+    }
+  ],
+  "output_dir": "traces\\Automotive\\2026_06_20_12_39_press_line",
+  "scenario": {
+    "package_mode": "mixed",
+    "signal_value_strategy": "calculated",
+    "channels": 4,
+    "eth_messages": 4,
+    "domain": "industrial",
+    "project_profile": "press_line",
+    "maneuver_profile": "imported",
+    "description": "Press line controller with field sensors"
+  },
+  "generation_source": {
+    "type": "profile_import",
+    "schema": "can-simulator.profile-import.v1",
+    "path": "tmp_industrial_import.json",
+    "industry": "industrial"
+  },
+  "package_mode": "mixed",
+  "signal_value_strategy": "calculated",
+  "message_value_policy": {
+    "counter": "alive counters are calculated per frame and cycle",
+    "crc": "CRC is calculated after payload packing",
+    "time": "signal values are functions of timestamp, frame id, cycle and signal index",
+    "faults": "configured fault injection may alter CRC, counter, DLC and timing",
+    "filtering": "optional domain-aware Kalman smoothing is applied to physical-looking time-series signals"
+  },
+  "filter_system": {
+    "enabled": true,
+    "algorithm": "kalman",
+    "domain": "industrial",
+    "profile": "press_line"
+  },
+  "formats": "can-all,pcap,pcapng",
+  "eth_bitrate": 1000000000,
+  "eth_bitrates": "1000000000",
+  "eth_messages": 4,
+  "consistency": {
+    "status": "ok",
+    "package_mode": "mixed",
+    "formats": [
+      "can-all",
+      "pcap",
+      "pcapng"
+    ],
+    "can_enabled": true,
+    "ethernet_enabled": true,
+    "errors": [],
+    "warnings": []
+  }
+}

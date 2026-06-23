@@ -1,0 +1,122 @@
+{
+  "schema": "can-simulator.mbse-simulation-request.v1",
+  "simulation_mode": "restbus",
+  "bus_type": "fd",
+  "channels": 5,
+  "duration_s": 20.0,
+  "messages": 120,
+  "nominal_bitrate": 500000,
+  "data_bitrate": 2000000,
+  "seed": 42,
+  "participants": [
+    {
+      "name": "LIDAR_FRONT",
+      "role": "lidar_sensor",
+      "channel": 1,
+      "cycle_ms": 20,
+      "provided_services": [
+        "OBJECT_LIST",
+        "LIDAR_HEALTH"
+      ],
+      "consumed_services": [
+        "SYNC_TIME"
+      ],
+      "health": "nominal"
+    },
+    {
+      "name": "CENTRAL_GATEWAY",
+      "role": "gateway",
+      "channel": 0,
+      "cycle_ms": 50,
+      "provided_services": [
+        "ROUTING_STATUS",
+        "SYNC_TIME"
+      ],
+      "consumed_services": [
+        "OBJECT_LIST",
+        "DIAGNOSTIC_REQUEST"
+      ],
+      "health": "nominal",
+      "gateway_to_channel": 2
+    },
+    {
+      "name": "ADAS_CONTROLLER",
+      "role": "domain_controller",
+      "channel": 2,
+      "cycle_ms": 10,
+      "provided_services": [
+        "TRAJECTORY_PLAN"
+      ],
+      "consumed_services": [
+        "OBJECT_LIST",
+        "ROUTING_STATUS"
+      ],
+      "health": "nominal"
+    },
+    {
+      "name": "PLC_CONTROLLER",
+      "role": "industrial_controller",
+      "channel": 3,
+      "cycle_ms": 20,
+      "provided_services": [
+        "MACHINE_STATE"
+      ],
+      "consumed_services": [
+        "TEMPERATURE",
+        "PRESSURE"
+      ],
+      "health": "nominal"
+    }
+  ],
+  "output_dir": "traces\\Automotive\\2026_06_20_12_20_external_vehicle_platform",
+  "scenario": {
+    "package_mode": "mixed",
+    "signal_value_strategy": "calculated",
+    "channels": 5,
+    "eth_messages": 4,
+    "domain": "automotive",
+    "project_profile": "external_vehicle_platform",
+    "maneuver_profile": "imported",
+    "description": "Imported topology from another project. Replace nodes with your real components."
+  },
+  "generation_source": {
+    "type": "profile_import",
+    "schema": "can-simulator.profile-import.v1",
+    "path": "tmp_import_profile.json",
+    "industry": "automotive"
+  },
+  "package_mode": "mixed",
+  "signal_value_strategy": "calculated",
+  "message_value_policy": {
+    "counter": "alive counters are calculated per frame and cycle",
+    "crc": "CRC is calculated after payload packing",
+    "time": "signal values are functions of timestamp, frame id, cycle and signal index",
+    "faults": "configured fault injection may alter CRC, counter, DLC and timing",
+    "filtering": "optional domain-aware Kalman smoothing is applied to physical-looking time-series signals"
+  },
+  "filter_system": {
+    "enabled": true,
+    "algorithm": "kalman",
+    "domain": "automotive",
+    "profile": "external_vehicle_platform"
+  },
+  "formats": "can-all,pcap,pcapng",
+  "eth_bitrate": 1000000000,
+  "eth_bitrates": "1000000000",
+  "eth_messages": 4,
+  "consistency": {
+    "status": "ok",
+    "package_mode": "mixed",
+    "formats": [
+      "can-all",
+      "pcap",
+      "pcapng"
+    ],
+    "can_enabled": true,
+    "ethernet_enabled": true,
+    "errors": [],
+    "warnings": [
+      "consumed services without provider: DIAGNOSTIC_REQUEST, PRESSURE, TEMPERATURE"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "can-simulator.physical-ai-workflow-request.v1",
+  "domain": "physical_ai",
+  "router_skill": "physical-ai-neural-reconstruction",
+  "router_skill_path": "C:\\Users\\marti\\.agents\\skills\\physical-ai-neural-reconstruction\\SKILL.md",
+  "upstream_skills_root": "C:\\Users\\marti\\.physical-ai-skill-hub\\upstreams\\nurec-skills",
+  "missing_skill_bodies": [],
+  "workflow": "simulator_grpc",
+  "description": "Connect a NuRec USDZ scene to CARLA, Isaac Sim, AlpaSim, or a custom simulator over gRPC.",
+  "prompt": "NuRec serve-grpc CARLA render-grpc",
+  "steps": [
+    {
+      "order": 1,
+      "skill": "physical-ai-datasets",
+      "skill_path": "C:\\Users\\marti\\.physical-ai-skill-hub\\upstreams\\nurec-skills\\skills\\physical-ai-datasets\\SKILL.md",
+      "summary": "Pick or download a USDZ scene if none is available."
+    },
+    {
+      "order": 2,
+      "skill": "nre",
+      "skill_path": "C:\\Users\\marti\\.physical-ai-skill-hub\\upstreams\\nurec-skills\\skills\\nre\\SKILL.md",
+      "summary": "Start a warm serve-grpc server and render frames or LiDAR sweeps from simulator poses."
+    }
+  ],
+  "required_environment": {
+    "NGC_API_KEY": "set",
+    "HF_TOKEN": "set"
+  },
+  "notes": [
+    "This is a router workflow only; do not invent or execute NuRec/NRE/NCore commands from this file.",
+    "Read the listed upstream skill body before running mutating conversion, training, rendering, or download commands.",
+    "Hugging Face gated PhysicalAI licenses must be accepted before dataset downloads."
+  ]
+}
