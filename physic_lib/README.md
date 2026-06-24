@@ -26,3 +26,17 @@ Generated files should not be left in the repository root. `nemotron.py` writes 
 Runtime configuration dictionaries and lists are loaded from SQLite databases in this library. The code keeps built-in defaults only as seed/fallback data so the tool can bootstrap a fresh workspace.
 
 Emulated trace output is stored outside this library under `traces/Automotive/<timestamp>_<scenario>/`. That folder contains the generated `traces/`, `datenbasen/`, `generation_manifest.json`, and `simulation_interface.json` artifacts.
+
+## Git Hygiene
+
+Generated trace packages are runtime output, not source. They live under
+`traces/` and are ignored by Git, with only `traces/README.md` kept as a
+placeholder. If a generated trace was already tracked in an older commit, it
+must be removed from the Git index once; `.gitignore` cannot untrack existing
+files by itself.
+
+Physical-AI/NuRec files in this project are integration handoff artifacts:
+workflow requests, readiness checks, and routing metadata for external
+toolchains. They are intentionally separate from the CAN/restbus generator.
+Generated NuRec check/workflow JSON files are ignored so local readiness runs
+do not pollute commits.

@@ -1,19 +1,19 @@
 # traces
 
-Emulated communication traces are written here.
+This directory is reserved for generated simulator output.
 
-## Structure
+Trace packages can become large quickly, especially BLF, PCAP, PCAPNG, MDF,
+MF4, CSV, and mixed JSON exports. Generated scenario folders under this
+directory are intentionally ignored by Git. Keep reusable configuration,
+profiles, and documentation in `physic_lib/` instead.
 
-- `Automotive/<YYYY_MM_DD_HH_MM>_<scenario>/`
-  One generated trace package per simulation run.
+Typical generated packages use this shape:
 
-Each package can contain:
-
-- `traces/`
-  BLF, ASC, TRC, CSV, JSON, LOG, TXT, XML, YAML, PCAP, PCAPNG and mixed trace files.
-- `datenbasen/`
-  DBC, ARXML, FIBEX and related network database files.
-- `generation_manifest.json`
+- `Automotive/<timestamp>_<scenario>/traces/`
+  BLF, ASC, TRC, CSV, JSON, LOG, TXT, XML, YAML, PCAP, PCAPNG, and mixed trace files.
+- `Automotive/<timestamp>_<scenario>/datenbasen/`
+  DBC, ARXML, FIBEX, and related network database files.
+- `Automotive/<timestamp>_<scenario>/generation_manifest.json`
   Metadata for the generated package.
-- `simulation_interface.json`
-  Restbus participants, routing and simulation summary.
+- `Automotive/<timestamp>_<scenario>/simulation_interface.json`
+  Restbus participants, routing, warnings, artifact paths, and simulation summary.
