@@ -44,14 +44,16 @@ function numberValue(value: unknown, fallback: number) {
 
 export function createLocalSimulation(rawPayload: Record<string, unknown>, validateOnly: boolean): SimulationJob {
   const config = (rawPayload.config && typeof rawPayload.config === "object" ? rawPayload.config : rawPayload) as Record<string, unknown>;
+  const topology = config.topology && typeof config.topology === "object" ? config.topology as { nodes?: unknown[]; edges?: Array<{ bus?: string }> } : null;
   const duration = numberValue(config.duration_s, 1);
   const cycle = numberValue(config.cycle_ms, 100);
-  const nodes = numberValue(config.node_count, 2);
+  const nodes = topology?.nodes?.length ?? numberValue(config.node_count, 2);
   const maxEvents = numberValue(config.max_events, 100000);
   const dropout = numberValue(config.dropout_probability, 0);
   const corruption = numberValue(config.corruption_probability, 0);
   const payloadBytes = numberValue(config.payload_bytes, 8);
-  const technologyId = String(config.technology ?? "custom");
+  const topologyTechnologies = Array.from(new Set(topology?.edges?.map((edge) => String(edge.bus ?? "custom")) ?? []));
+  const technologyId = String(config.technology ?? topologyTechnologies[0] ?? "custom");
   const seed = numberValue(config.seed, 42);
   const formats = Array.isArray(config.formats) ? config.formats.map(String) : ["universal-jsonl"];
 
@@ -75,7 +77,7 @@ export function createLocalSimulation(rawPayload: Record<string, unknown>, valid
 
   const job: SimulationJob = {
     id, status: "completed", validate_only: validateOnly, created_at: createdAt, updated_at: createdAt, error: null,
-    result: { status: "completed", output_dir: "browser://local-simulator", warnings, hardware_validation: { valid: true, findings: [] }, trace: { events, routes: nodes * (nodes - 1), technologies: [technologyId], duration_s: duration } },
+    result: { status: "completed", output_dir: "browser://local-simulator", warnings, hardware_validation: { valid: true, findings: [] }, trace: { events, routes: topology?.edges?.length ?? nodes * (nodes - 1), technologies: topologyTechnologies.length ? topologyTechnologies : [technologyId], duration_s: duration } },
     artifact_downloads: artifacts,
   };
   saveJob(job);
