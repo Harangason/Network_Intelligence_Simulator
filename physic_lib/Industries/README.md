@@ -52,3 +52,34 @@ Jede Domäne besitzt den gleichen Einstieg:
 Projektspezifische oder proprietäre Busse müssen nicht in den Quellcode
 aufgenommen werden. Sie können weiterhin über `technology_profiles` in der
 Standalone-Konfiguration registriert werden.
+
+## Industriespezifisches Lernen
+
+Jeder Simulationslauf wird genau einer Branche zugeordnet. `IndustryContext`
+normalisiert Namen und Aliase, beispielsweise `industrial` zu
+`IndustrialAutomation` und `ros2` zu `RoboticsROS`.
+
+Die Speicher werden bei Bedarf automatisch angelegt:
+
+```text
+<Domain>/
+├─ Learning/
+│  └─ simulation_memory.db
+└─ Knowledge/
+   └─ knowledge_graph.db
+```
+
+`simulation_memory.db` enthält Laufparameter, Kennzahlen, Befunde und
+Verweise auf Trace-Artefakte. `knowledge_graph.db` enthält keine vollständigen
+Trace-Events, sondern fachliche Knoten und Kanten wie:
+
+- `Industry HAS_RUN SimulationRun`
+- `SimulationRun INVOLVES Hardware`
+- `Hardware HAS_PORT Port`
+- `Port EXPOSES_INTERFACE NetworkInterface`
+- `NetworkInterface CONNECTED_TO Network`
+- `Network USES_TECHNOLOGY Technology`
+- `SimulationRun PRODUCED_FINDING Finding`
+
+Alte Datenbanken unter einem kleingeschriebenen `learning/` werden beim ersten
+Zugriff sicher übernommen; die Quelldatei bleibt dabei erhalten.

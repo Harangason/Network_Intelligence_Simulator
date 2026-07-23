@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Union, Dict, List
 from openai import OpenAI
 from hardware_profile import normalize_hardware_config
+from industry_knowledge import IndustryContext, IndustryKnowledgeService
 from trace_realism import contains_external_signal_records, external_signal_records
 
 SCHEMA = "communication-simulator.simulation-config.v1"
@@ -23,10 +24,9 @@ LIB_ROOT = Path("physic_lib")
 TRACE_ROOT = Path("traces")
 CONFIG_DB_PATH = LIB_ROOT / "Config" / "simulation_config.db"
 INDUSTRY_PROFILE_ROOT = LIB_ROOT / "Industries"
-DEFAULT_PROJECT_INDUSTRY = "Generic"
+DEFAULT_PROJECT_INDUSTRY = "Automotive"
 PROJECT_PROFILE_DB_NAME = "project_profiles.db"
 MANEUVER_DB_PATH = INDUSTRY_PROFILE_ROOT / DEFAULT_PROJECT_INDUSTRY / "maneuver_profiles.db"
-SIMULATION_MEMORY_DB_PATH = INDUSTRY_PROFILE_ROOT / DEFAULT_PROJECT_INDUSTRY / "learning" / "simulation_memory.db"
 PACKAGE_MODES = {
     "can": {
         "description": "CAN/CAN-FD/CAN-XL trace package",
@@ -1728,40 +1728,29 @@ def print_router_decision(decision, reason, source=None, score=None):
     if source is not None:
         print(f"  Quelle: {source}")
 
-def ensure_simulation_memory_database():
-    SIMULATION_MEMORY_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(SIMULATION_MEMORY_DB_PATH) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS simulation_runs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_utc TEXT NOT NULL,
-                prompt TEXT NOT NULL,
-                project_profile TEXT NOT NULL,
-                maneuver_profile TEXT NOT NULL,
-                package_mode TEXT NOT NULL,
-                signal_value_strategy TEXT NOT NULL,
-                generation_source_type TEXT,
-                request_path TEXT,
-                trace_dir TEXT,
-                formats TEXT,
-                duration_s REAL,
-                can_frames INTEGER,
-                ethernet_frames INTEGER,
-                warnings_count INTEGER,
-                plausibility_score INTEGER,
-                manifest_json TEXT,
-                interface_json TEXT
-            )
-            """
+def project_profile_industry(project_key, profile=None):
+    selected = profile if isinstance(profile, dict) else PROJECT_PROFILES.get(project_key, {})
+    if project_key in DEFAULT_PROJECT_PROFILES:
+        return "Automotive"
+    return selected.get("industry") or DEFAULT_PROJECT_INDUSTRY
+
+
+def industry_context(industry=None, request_data=None, project_key=None):
+    fallback = project_profile_industry(project_key) if project_key else DEFAULT_PROJECT_INDUSTRY
+    if request_data is not None:
+        return IndustryContext.from_request(
+            request_data,
+            fallback=industry or fallback,
+            root=INDUSTRY_PROFILE_ROOT,
         )
-        conn.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_simulation_runs_lookup
-            ON simulation_runs(project_profile, maneuver_profile, package_mode, signal_value_strategy)
-            """
-        )
-    return SIMULATION_MEMORY_DB_PATH
+    return IndustryContext.resolve(industry or fallback, root=INDUSTRY_PROFILE_ROOT)
+
+
+def ensure_simulation_memory_database(industry=DEFAULT_PROJECT_INDUSTRY):
+    context = industry_context(industry)
+    service = IndustryKnowledgeService(context)
+    service.ensure()
+    return service.memory.path
 
 def utc_now_text():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -1790,21 +1779,17 @@ def memory_candidate_score(row, prompt, project_key, maneuver_key, setup):
     score += min(10, len(prompt_tokens(prompt) & prompt_tokens(row["prompt"])) * 2)
     return min(100, score)
 
-def find_simulation_memory(prompt, project_key, maneuver_key, setup, limit=3, min_score=55):
-    ensure_simulation_memory_database()
-    with sqlite3.connect(SIMULATION_MEMORY_DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT id, created_utc, prompt, project_profile, maneuver_profile, package_mode,
-                   signal_value_strategy, generation_source_type, request_path, trace_dir,
-                   formats, duration_s, can_frames, ethernet_frames, warnings_count,
-                   plausibility_score
-            FROM simulation_runs
-            ORDER BY id DESC
-            LIMIT 200
-            """
-        ).fetchall()
+def find_simulation_memory(
+    prompt,
+    project_key,
+    maneuver_key,
+    setup,
+    limit=3,
+    min_score=55,
+    industry=None,
+):
+    context = industry_context(industry, project_key=project_key)
+    rows = IndustryKnowledgeService(context).memory.recent(limit=200)
     scored = []
     for row in rows:
         item = dict(row)
@@ -1866,50 +1851,52 @@ def estimate_plausibility_score(manifest, interface):
     score -= min(30, len(warnings) * 5)
     return max(0, min(100, score))
 
-def record_simulation_learning(request_path, request_data):
-    ensure_simulation_memory_database()
+def record_simulation_learning(request_path, request_data, industry=None):
+    scenario = request_data.get("scenario") if isinstance(request_data.get("scenario"), dict) else {}
+    context = industry_context(
+        industry,
+        request_data=request_data,
+        project_key=scenario.get("project_profile"),
+    )
+    service = IndustryKnowledgeService(context)
+    service.ensure()
     trace_dir = Path(str(request_data.get("output_dir") or "")).resolve()
     manifest = read_json_if_exists(trace_dir / "generation_manifest.json")
     interface = read_json_if_exists(trace_dir / "simulation_interface.json")
-    scenario = request_data.get("scenario") if isinstance(request_data.get("scenario"), dict) else {}
     generation_source = request_data.get("generation_source") if isinstance(request_data.get("generation_source"), dict) else {}
     manifest_dict = manifest if isinstance(manifest, dict) else {}
     interface_dict = interface if isinstance(interface, dict) else {}
     warnings = (manifest_dict.get("warnings") or []) + (interface_dict.get("warnings") or [])
     restbus = interface_dict.get("restbus") if isinstance(interface_dict.get("restbus"), dict) else {}
-    with sqlite3.connect(SIMULATION_MEMORY_DB_PATH) as conn:
-        cursor = conn.execute(
-            """
-            INSERT INTO simulation_runs (
-                created_utc, prompt, project_profile, maneuver_profile, package_mode,
-                signal_value_strategy, generation_source_type, request_path, trace_dir,
-                formats, duration_s, can_frames, ethernet_frames, warnings_count,
-                plausibility_score, manifest_json, interface_json
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                utc_now_text(),
-                scenario.get("description") or "",
-                scenario.get("project_profile") or "generic_project",
-                scenario.get("maneuver_profile") or "generic",
-                request_data.get("package_mode") or "legacy",
-                request_data.get("signal_value_strategy") or "calculated",
-                generation_source.get("type"),
-                str(Path(request_path).resolve()),
-                str(trace_dir),
-                ",".join(manifest_dict.get("formats") or []),
-                manifest_dict.get("duration_s") or interface_dict.get("duration_s"),
-                manifest_dict.get("can_frames") or restbus.get("can_frames"),
-                manifest_dict.get("ethernet_frames"),
-                len(warnings),
-                estimate_plausibility_score(manifest, interface),
-                json.dumps(manifest, indent=2, default=str) if manifest is not None else None,
-                json.dumps(interface, indent=2, default=str) if interface is not None else None,
-            ),
-        )
-        memory_id = cursor.lastrowid
-    print(f"Learning-Memory: Simulation #{memory_id} gespeichert in {SIMULATION_MEMORY_DB_PATH}")
+    memory_id = service.memory.insert(
+        {
+            "created_utc": utc_now_text(),
+            "prompt": scenario.get("description") or "",
+            "project_profile": scenario.get("project_profile") or "generic_project",
+            "maneuver_profile": scenario.get("maneuver_profile") or "generic",
+            "package_mode": request_data.get("package_mode") or "legacy",
+            "signal_value_strategy": request_data.get("signal_value_strategy") or "calculated",
+            "generation_source_type": generation_source.get("type"),
+            "request_path": str(Path(request_path).resolve()),
+            "trace_dir": str(trace_dir),
+            "formats": ",".join(manifest_dict.get("formats") or []),
+            "duration_s": manifest_dict.get("duration_s") or interface_dict.get("duration_s"),
+            "can_frames": manifest_dict.get("can_frames") or restbus.get("can_frames"),
+            "ethernet_frames": manifest_dict.get("ethernet_frames"),
+            "warnings_count": len(warnings),
+            "plausibility_score": estimate_plausibility_score(manifest, interface),
+            "manifest_json": json.dumps(manifest, indent=2, default=str) if manifest is not None else None,
+            "interface_json": json.dumps(interface, indent=2, default=str) if interface is not None else None,
+        }
+    )
+    service.graph.record_simulation(
+        memory_id,
+        request_data,
+        manifest=manifest_dict,
+        interface=interface_dict,
+    )
+    print(f"Learning-Memory: Simulation #{memory_id} gespeichert in {service.memory.path}")
+    print(f"Knowledge-Graph: aktualisiert in {service.graph.path}")
     print(f"Learning-Memory: Trace {trace_dir}")
     return memory_id
 
@@ -2494,6 +2481,7 @@ def apply_fault_hints(request_data, prompt):
 
 def normalize_request(request_data, prompt, project_key, maneuver_key, setup):
     profile = PROJECT_PROFILES[project_key]
+    selected_industry = project_profile_industry(project_key, profile)
     request_data.setdefault("schema", SCHEMA)
     request_data["simulation_mode"] = "restbus"
     request_data.setdefault("bus_type", profile["bus_type"])
@@ -2523,12 +2511,14 @@ def normalize_request(request_data, prompt, project_key, maneuver_key, setup):
         "signal_value_strategy": setup["signal_value_strategy"],
         "channels": request_data.get("channels"),
         "eth_messages": request_data.get("eth_messages"),
-        "domain": DEFAULT_PROJECT_INDUSTRY.lower(),
+        "industry": selected_industry,
+        "domain": IndustryContext.resolve(selected_industry).key,
         "project_profile": project_key,
         "maneuver_profile": maneuver_key or "generic",
         "description": prompt,
     }
-    request_data["filter_system"]["domain"] = DEFAULT_PROJECT_INDUSTRY.lower()
+    request_data["filter_system"]["industry"] = selected_industry
+    request_data["filter_system"]["domain"] = IndustryContext.resolve(selected_industry).key
     request_data["filter_system"]["profile"] = maneuver_key or project_key or "generic"
     return validate_request_consistency(request_data)
 
@@ -2592,7 +2582,6 @@ def main():
     MANEUVER_PROFILES = load_maneuver_profiles()
     PHYSICAL_AI_WORKFLOWS = load_physical_ai_workflows()
     status.update(12, f"Lade {len(MANEUVER_PROFILES)} Manoever, {len(PHYSICAL_AI_WORKFLOWS)} Physical-AI-Workflows")
-    ensure_simulation_memory_database()
 
     parser = argparse.ArgumentParser(description="Nemotron-powered CAN Simulation Assistant")
     parser.add_argument("prompt", nargs="*", help="Natural language description of the simulation scenario")

@@ -38,6 +38,20 @@ CommunicationSimulator
    └─ CsvTraceWriter
 ```
 
+Der optionale KI-Assistent verwendet zusätzlich eine industriespezifische
+Speicherschicht:
+
+```text
+IndustryContext
+└─ IndustryKnowledgeService
+   ├─ IndustryMemoryStore → Industries/<Domain>/Learning/simulation_memory.db
+   └─ KnowledgeGraphStore → Industries/<Domain>/Knowledge/knowledge_graph.db
+```
+
+Der Knowledge Graph speichert Topologie-, Profil-, Technologie- und
+Fehlerbeziehungen. Vollständige Trace-Events verbleiben ausschließlich unter
+`traces/`.
+
 Die Technologieprofile liegen nicht im Simulationsskript, sondern in
 `physic_lib/Industries/<Branche>/generators/technology_generator.py`.
 `bus_technologies.py`, `hardware_profile.py` und `universal_trace.py` behalten
