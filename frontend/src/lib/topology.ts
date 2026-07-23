@@ -1,5 +1,13 @@
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
 export type BusType = "can_fd" | "lin" | "automotive_ethernet" | "flexray";
+export type PortSide = "left" | "right";
+
+export type TopologyPort = {
+  id: string;
+  name: string;
+  bus: BusType;
+  side: PortSide;
+};
 
 export type TopologyNode = {
   id: string;
@@ -7,12 +15,15 @@ export type TopologyNode = {
   kind: NodeKind;
   x: number;
   y: number;
+  ports: TopologyPort[];
 };
 
 export type TopologyEdge = {
   id: string;
   source: string;
+  sourcePort: string;
   target: string;
+  targetPort: string;
   bus: BusType;
 };
 
@@ -28,19 +39,21 @@ export const busProfiles: Record<BusType, { label: string; bitrate: number; cycl
   flexray: { label: "FlexRay", bitrate: 10_000_000, cycleMs: 5, payload: 254, color: "#ef7d79" },
 };
 
+const port = (id: string, bus: BusType, side: PortSide): TopologyPort => ({ id, name: busProfiles[bus].label, bus, side });
+
 export const initialTopology: NetworkTopology = {
   nodes: [
-    { id: "ecu-central", name: "Central ECU", kind: "gateway", x: 370, y: 205 },
-    { id: "ecu-powertrain", name: "Powertrain", kind: "ecu", x: 80, y: 70 },
-    { id: "ecu-brake", name: "Brake ECU", kind: "ecu", x: 80, y: 340 },
-    { id: "ecu-display", name: "Display", kind: "actuator", x: 680, y: 70 },
-    { id: "ecu-radar", name: "Radar", kind: "sensor", x: 680, y: 340 },
+    { id: "ecu-central", name: "Central ECU", kind: "gateway", x: 370, y: 205, ports: [port("central-can-a", "can_fd", "left"), port("central-can-b", "can_fd", "left"), port("central-eth-a", "automotive_ethernet", "right"), port("central-eth-b", "automotive_ethernet", "right")] },
+    { id: "ecu-powertrain", name: "Powertrain", kind: "ecu", x: 80, y: 70, ports: [port("powertrain-can", "can_fd", "right")] },
+    { id: "ecu-brake", name: "Brake ECU", kind: "ecu", x: 80, y: 340, ports: [port("brake-can", "can_fd", "right")] },
+    { id: "ecu-display", name: "Display", kind: "actuator", x: 680, y: 70, ports: [port("display-eth", "automotive_ethernet", "left")] },
+    { id: "ecu-radar", name: "Radar", kind: "sensor", x: 680, y: 340, ports: [port("radar-eth", "automotive_ethernet", "left")] },
   ],
   edges: [
-    { id: "edge-powertrain", source: "ecu-powertrain", target: "ecu-central", bus: "can_fd" },
-    { id: "edge-brake", source: "ecu-brake", target: "ecu-central", bus: "can_fd" },
-    { id: "edge-display", source: "ecu-central", target: "ecu-display", bus: "automotive_ethernet" },
-    { id: "edge-radar", source: "ecu-central", target: "ecu-radar", bus: "automotive_ethernet" },
+    { id: "edge-powertrain", source: "ecu-powertrain", sourcePort: "powertrain-can", target: "ecu-central", targetPort: "central-can-a", bus: "can_fd" },
+    { id: "edge-brake", source: "ecu-brake", sourcePort: "brake-can", target: "ecu-central", targetPort: "central-can-b", bus: "can_fd" },
+    { id: "edge-display", source: "ecu-central", sourcePort: "central-eth-a", target: "ecu-display", targetPort: "display-eth", bus: "automotive_ethernet" },
+    { id: "edge-radar", source: "ecu-central", sourcePort: "central-eth-b", target: "ecu-radar", targetPort: "radar-eth", bus: "automotive_ethernet" },
   ],
 };
 
@@ -62,26 +75,26 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
   }));
 
   const hardware = {
-    devices: topology.nodes.map((node) => {
-      const connected = topology.edges.filter((edge) => edge.source === node.id || edge.target === node.id);
-      return {
-        id: node.id,
-        name: node.name,
-        type: node.kind,
-        interfaces: connected.map((edge, index) => ({
-          id: `${node.id}-if-${index + 1}`,
-          network_id: `network-${edge.bus}`,
-          technology: edge.bus,
-          port: index + 1,
-        })),
-      };
-    }),
+    devices: topology.nodes.map((node) => ({
+      id: node.id,
+      name: node.name,
+      type: node.kind,
+      interfaces: node.ports.map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        network_id: `network-${item.bus}`,
+        technology: item.bus,
+        port: index + 1,
+      })),
+    })),
   };
 
   const communications = topology.edges.map((edge, index) => ({
     id: `route-${index + 1}-${slug(edge.source)}-${slug(edge.target)}`,
     source: edge.source,
+    source_interface: edge.sourcePort,
     target: edge.target,
+    target_interface: edge.targetPort,
     network_id: `network-${edge.bus}`,
     technology: edge.bus,
     cycle_ms: busProfiles[edge.bus].cycleMs,
