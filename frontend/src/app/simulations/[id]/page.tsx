@@ -10,7 +10,7 @@ export default async function SimulationPage({
   return (
     <main className="shell detail-shell">
       <header className="topbar">
-        <Link className="back-link" href="/">
+        <Link className="back-link" href="/studio">
           ← Neue Simulation
         </Link>
         <span className="mono muted">{id}</span>

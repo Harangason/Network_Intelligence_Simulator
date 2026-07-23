@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SimulationWizard } from "@/components/simulation-wizard";
+import { RuntimeStatus } from "@/components/runtime-status";
 
 export default function StudioPage() {
   return (
@@ -14,10 +15,7 @@ export default function StudioPage() {
             <span>Network trace studio</span>
           </div>
         </Link>
-        <div className="system-state">
-          <span className="state-dot" />
-          Local workspace
-        </div>
+        <RuntimeStatus />
       </header>
 
       <section className="hero">

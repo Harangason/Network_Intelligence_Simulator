@@ -1,35 +1,49 @@
 import type { Catalog, SimulationJob } from "./types";
+import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local-simulator";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
+    headers: { "Content-Type": "application/json", ...init?.headers },
     cache: "no-store",
+    signal: AbortSignal.timeout(2500),
   });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error ?? `API-Fehler ${response.status}`);
-  }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
   return payload as T;
 }
 
-export function getCatalog(): Promise<Catalog> {
-  return apiRequest<Catalog>("/api/technologies");
+function announceMode(mode: "backend" | "browser") {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("simulator-mode", { detail: mode }));
 }
 
-export function createSimulation(
-  payload: Record<string, unknown>,
-  validateOnly: boolean,
-): Promise<SimulationJob> {
-  return apiRequest<SimulationJob>(
-    validateOnly ? "/api/simulations/validate" : "/api/simulations",
-    { method: "POST", body: JSON.stringify(payload) },
-  );
+export async function getCatalog(): Promise<Catalog> {
+  try {
+    const catalog = await apiRequest<Catalog>("/api/technologies");
+    announceMode("backend");
+    return catalog;
+  } catch {
+    announceMode("browser");
+    return localCatalog;
+  }
 }
 
-export function getSimulation(id: string): Promise<SimulationJob> {
+export async function createSimulation(payload: Record<string, unknown>, validateOnly: boolean): Promise<SimulationJob> {
+  try {
+    const job = await apiRequest<SimulationJob>(validateOnly ? "/api/simulations/validate" : "/api/simulations", { method: "POST", body: JSON.stringify(payload) });
+    announceMode("backend");
+    return job;
+  } catch (error) {
+    if (error instanceof SyntaxError) throw error;
+    announceMode("browser");
+    return createLocalSimulation(payload, validateOnly);
+  }
+}
+
+export async function getSimulation(id: string): Promise<SimulationJob> {
+  if (id.startsWith("local-")) {
+    announceMode("browser");
+    return getLocalSimulation(id);
+  }
   return apiRequest<SimulationJob>(`/api/simulations/${id}`);
 }

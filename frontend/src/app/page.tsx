@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrow, LogoMark, MarketingFooter, MarketingNav } from "@/components/marketing-shell";
 
 const features = [
   {
@@ -24,20 +25,7 @@ const features = [
 export default function Home() {
   return (
     <main className="landing">
-      <nav className="landing-nav" aria-label="Hauptnavigation">
-        <Link className="landing-logo" href="/" aria-label="Communication Simulator Startseite">
-          <LogoMark />
-          <span>communication<br />simulator</span>
-        </Link>
-        <div className="nav-links">
-          <a href="#platform">Platform</a>
-          <a href="#workflow">Workflow</a>
-          <a href="#about">About</a>
-        </div>
-        <Link className="nav-cta" href="/studio">
-          Open studio <Arrow />
-        </Link>
-      </nav>
+      <MarketingNav />
 
       <section className="landing-hero" aria-labelledby="hero-title">
         <div className="hero-noise" aria-hidden="true" />
@@ -57,7 +45,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <Link className="primary-link" href="/studio">Start simulating <Arrow /></Link>
-            <a className="text-link" href="#platform">Explore the platform <Arrow /></a>
+            <Link className="text-link" href="/platform">Explore the platform <Arrow /></Link>
           </div>
         </div>
         <div className="hero-coordinates" aria-hidden="true">
@@ -127,22 +115,9 @@ export default function Home() {
         <Link className="primary-link dark" href="/studio">Launch simulator <Arrow /></Link>
       </section>
 
-      <footer className="landing-footer">
-        <Link className="landing-logo footer-logo" href="/"><LogoMark /><span>communication<br />simulator</span></Link>
-        <p>Simulation infrastructure for connected systems.</p>
-        <div><a href="#platform">Platform</a><a href="#workflow">Workflow</a><Link href="/studio">Studio</Link></div>
-        <span>© 2026 CS LAB</span>
-      </footer>
+      <MarketingFooter />
     </main>
   );
-}
-
-function LogoMark() {
-  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 9h10v4H7v6h6v4H3V9Zm16 0h10v4h-6v6h6v4H19V9Z" fill="currentColor" /></svg>;
-}
-
-function Arrow() {
-  return <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 function FeatureVisual({ type }: { type: string }) {
