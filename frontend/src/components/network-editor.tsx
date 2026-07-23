@@ -15,8 +15,7 @@ import {
 const NODE_WIDTH = 168;
 const NODE_MIN_HEIGHT = 84;
 const PORT_OFFSET = 12;
-const PORT_GAP = 26;
-const PORT_TOP = 44;
+const PORT_SAFE_INSET = 18;
 
 const kindLabels: Record<NodeKind, string> = {
   ecu: "ECU",
@@ -29,28 +28,29 @@ const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
 
 type DragState =
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
+  | { mode: "port-intent"; nodeId: string; portId: string; bus: BusType; side: PortSide; startX: number; startY: number }
+  | { mode: "move-port"; nodeId: string; portId: string }
   | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number };
 
-type MenuState = { nodeId: string; x: number; y: number };
+type MenuState = { nodeId: string; x: number; y: number; side: PortSide; offset: number };
 
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
 function nodeHeight(node: TopologyNode) {
-  const perSide = Math.max(
-    node.ports.filter((p) => p.side === "left").length,
-    node.ports.filter((p) => p.side === "right").length,
-    1,
-  );
-  return Math.max(NODE_MIN_HEIGHT, PORT_TOP + perSide * PORT_GAP);
+  return Math.max(NODE_MIN_HEIGHT, 70 + Math.ceil(node.ports.length / 2) * 12);
+}
+
+function portTop(node: TopologyNode, port: TopologyPort) {
+  const height = nodeHeight(node);
+  return PORT_SAFE_INSET + Math.max(0, Math.min(1, port.offset ?? 0.5)) * (height - PORT_SAFE_INSET * 2);
 }
 
 function portPosition(node: TopologyNode, port: TopologyPort) {
-  const sidePorts = node.ports.filter((p) => p.side === port.side);
-  const index = sidePorts.findIndex((p) => p.id === port.id);
-  const x = port.side === "left" ? node.x : node.x + NODE_WIDTH;
-  const y = node.y + PORT_TOP + index * PORT_GAP;
-  return { x, y };
+  return {
+    x: port.side === "left" ? node.x : node.x + NODE_WIDTH,
+    y: node.y + portTop(node, port),
+  };
 }
 
 function edgePath(from: { x: number; y: number }, to: { x: number; y: number }) {
@@ -96,6 +96,30 @@ export function NetworkEditor({
             node.id === activeDrag.nodeId
               ? { ...node, x: Math.max(0, point.x - activeDrag.offsetX), y: Math.max(0, point.y - activeDrag.offsetY) }
               : node,
+          ),
+        });
+      } else if (activeDrag.mode === "port-intent") {
+        const dx = point.x - activeDrag.startX;
+        const dy = point.y - activeDrag.startY;
+        if (Math.hypot(dx, dy) < 5) return;
+        const outward = activeDrag.side === "left" ? dx < 0 : dx > 0;
+        setDrag(
+          outward && Math.abs(dx) > Math.abs(dy)
+            ? { mode: "wire", nodeId: activeDrag.nodeId, portId: activeDrag.portId, bus: activeDrag.bus, x: point.x, y: point.y }
+            : { mode: "move-port", nodeId: activeDrag.nodeId, portId: activeDrag.portId },
+        );
+      } else if (activeDrag.mode === "move-port") {
+        const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
+        if (!node) return;
+        const height = nodeHeight(node);
+        const side: PortSide = point.x < node.x + NODE_WIDTH / 2 ? "left" : "right";
+        const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
+        onChange({
+          ...topology,
+          nodes: topology.nodes.map((item) =>
+            item.id === node.id
+              ? { ...item, ports: item.ports.map((port) => port.id === activeDrag.portId ? { ...port, side, offset } : port) }
+              : item,
           ),
         });
       } else {
@@ -168,16 +192,20 @@ export function NetworkEditor({
   }
 
   function addPort(nodeId: string, bus: BusType) {
+    const position = menu;
     onChange({
       ...topology,
       nodes: topology.nodes.map((node) => {
         if (node.id !== nodeId) return node;
-        const rightCount = node.ports.filter((p) => p.side === "right").length;
-        const leftCount = node.ports.filter((p) => p.side === "left").length;
-        const side: PortSide = rightCount <= leftCount ? "right" : "left";
         return {
           ...node,
-          ports: [...node.ports, { id: nextId("port"), name: busProfiles[bus].label, bus, side }],
+          ports: [...node.ports, {
+            id: nextId("port"),
+            name: busProfiles[bus].label,
+            bus,
+            side: position?.side ?? "right",
+            offset: position?.offset ?? 0.5,
+          }],
         };
       }),
     });
@@ -299,7 +327,10 @@ export function NetworkEditor({
                 setSelectedNode(node.id);
                 setSelectedEdge(null);
                 const point = pointFromEvent(event);
-                setMenu({ nodeId: node.id, x: point.x, y: point.y });
+                const height = nodeHeight(node);
+                const side: PortSide = point.x < node.x + NODE_WIDTH / 2 ? "left" : "right";
+                const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
+                setMenu({ nodeId: node.id, x: point.x, y: point.y, side, offset });
               }}
               onDoubleClick={() => renameNode(node.id)}
               onPointerDown={(event) => {
@@ -317,14 +348,12 @@ export function NetworkEditor({
               <strong className="net-node-name">{node.name}</strong>
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
               {node.ports.map((port) => {
-                const sidePorts = node.ports.filter((p) => p.side === port.side);
-                const index = sidePorts.findIndex((p) => p.id === port.id);
                 const compatible =
                   drag?.mode === "wire" && drag.bus === port.bus && drag.nodeId !== node.id && !portIsConnected(port.id);
                 return (
                   <button
                     aria-label={`${port.name}-Port ${port.side === "left" ? "links" : "rechts"}`}
-                    className={`net-port ${port.side} ${compatible ? "compatible" : ""} ${portIsConnected(port.id) ? "linked" : ""}`}
+                    className={`net-port ${port.side} ${compatible ? "compatible" : ""} ${portIsConnected(port.id) ? "linked" : ""} ${drag?.mode === "move-port" && drag.portId === port.id ? "dragging" : ""}`}
                     data-node-id={node.id}
                     data-port-bus={port.bus}
                     data-port-id={port.id}
@@ -339,14 +368,22 @@ export function NetworkEditor({
                       event.stopPropagation();
                       setMenu(null);
                       const point = pointFromEvent(event);
-                      setDrag({ mode: "wire", nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y });
+                      setDrag({
+                        mode: "port-intent",
+                        nodeId: node.id,
+                        portId: port.id,
+                        bus: port.bus,
+                        side: port.side,
+                        startX: point.x,
+                        startY: point.y,
+                      });
                     }}
                     style={{
                       [port.side === "left" ? "left" : "right"]: -PORT_OFFSET,
-                      top: PORT_TOP + index * PORT_GAP,
+                      top: portTop(node, port),
                       ["--bus" as string]: busProfiles[port.bus].color,
                     }}
-                    title={`${port.name} · Rechtsklick zum Entfernen`}
+                    title={`${port.name} · entlang der Karte ziehen zum Verschieben · nach außen ziehen zum Verbinden · Rechtsklick zum Entfernen`}
                     type="button"
                   />
                 );
@@ -385,7 +422,7 @@ export function NetworkEditor({
       </div>
 
       <p className="net-hint">
-        Karte ziehen zum Verschieben · Doppelklick zum Umbenennen · <strong>Rechtsklick auf einen Block</strong> öffnet das Menü zum Anlegen eines Ports mit Bustyp · von einem Port zu einem gleichfarbigen Port eines anderen Blocks ziehen, um zu verdrahten · Rechtsklick auf einen Port entfernt ihn.
+        Karte ziehen zum Verschieben · Doppelklick zum Umbenennen · <strong>Port entlang der Blockkante ziehen</strong> zum Versetzen oder über die Mitte auf die andere Seite ziehen · Port nach außen zu einem gleichfarbigen Port ziehen zum Verdrahten · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Rechtsklick auf einen Port entfernt ihn.
       </p>
     </div>
   );

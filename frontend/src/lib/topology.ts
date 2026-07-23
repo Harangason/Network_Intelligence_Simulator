@@ -7,6 +7,7 @@ export type TopologyPort = {
   name: string;
   bus: BusType;
   side: PortSide;
+  offset: number;
 };
 
 export type TopologyNode = {
@@ -39,11 +40,17 @@ export const busProfiles: Record<BusType, { label: string; bitrate: number; cycl
   flexray: { label: "FlexRay", bitrate: 10_000_000, cycleMs: 5, payload: 254, color: "#ef7d79" },
 };
 
-const port = (id: string, bus: BusType, side: PortSide): TopologyPort => ({ id, name: busProfiles[bus].label, bus, side });
+const port = (id: string, bus: BusType, side: PortSide, offset = 0.5): TopologyPort => ({
+  id,
+  name: busProfiles[bus].label,
+  bus,
+  side,
+  offset,
+});
 
 export const initialTopology: NetworkTopology = {
   nodes: [
-    { id: "ecu-central", name: "Central ECU", kind: "gateway", x: 370, y: 205, ports: [port("central-can-a", "can_fd", "left"), port("central-can-b", "can_fd", "left"), port("central-eth-a", "automotive_ethernet", "right"), port("central-eth-b", "automotive_ethernet", "right")] },
+    { id: "ecu-central", name: "Central ECU", kind: "gateway", x: 370, y: 205, ports: [port("central-can-a", "can_fd", "left", 0.3), port("central-can-b", "can_fd", "left", 0.7), port("central-eth-a", "automotive_ethernet", "right", 0.3), port("central-eth-b", "automotive_ethernet", "right", 0.7)] },
     { id: "ecu-powertrain", name: "Powertrain", kind: "ecu", x: 80, y: 70, ports: [port("powertrain-can", "can_fd", "right")] },
     { id: "ecu-brake", name: "Brake ECU", kind: "ecu", x: 80, y: 340, ports: [port("brake-can", "can_fd", "right")] },
     { id: "ecu-display", name: "Display", kind: "actuator", x: 680, y: 70, ports: [port("display-eth", "automotive_ethernet", "left")] },
