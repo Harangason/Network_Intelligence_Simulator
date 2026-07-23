@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createSimulation, getCatalog } from "@/lib/api";
 import type { Catalog, SimulationJob, Technology } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
+import { NetworkTopologyEditor } from "./network-topology-editor";
 
 const universalFormats = ["universal-jsonl", "universal-csv"];
 
@@ -15,12 +16,18 @@ export function SimulationWizard() {
   const [technologyId, setTechnologyId] = useState("can_fd");
   const [formats, setFormats] = useState<string[]>(universalFormats);
   const [advanced, setAdvanced] = useState(false);
+  const [topologyMode, setTopologyMode] = useState(true);
+  const [topologyConfig, setTopologyConfig] = useState<Record<string, unknown> | null>(null);
   const [advancedConfig, setAdvancedConfig] = useState(
     '{\n  "name": "custom_simulation",\n  "duration_s": 1,\n  "formats": ["universal-jsonl"]\n}',
   );
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  const acceptTopologyConfig = useCallback((config: Record<string, unknown>) => {
+    setTopologyConfig(config);
+  }, []);
 
   useEffect(() => {
     getCatalog()
@@ -79,7 +86,9 @@ export function SimulationWizard() {
     try {
       const form = new FormData(formElement);
       let payload: Record<string, unknown>;
-      if (advanced) {
+      if (topologyMode && topologyConfig) {
+        payload = { config: topologyConfig };
+      } else if (advanced) {
         payload = { config: JSON.parse(advancedConfig) };
       } else {
         payload = {
@@ -145,7 +154,14 @@ export function SimulationWizard() {
           </label>
         </div>
 
-        {advanced ? (
+        <div className="editor-switch" role="group" aria-label="Konfigurationsmodus">
+          <button className={`editor-tab ${topologyMode ? "active" : ""}`} onClick={() => setTopologyMode(true)} type="button">Netzwerkplan</button>
+          <button className={`editor-tab ${!topologyMode ? "active" : ""}`} onClick={() => setTopologyMode(false)} type="button">Einfacher Lauf</button>
+        </div>
+
+        {topologyMode ? (
+          <NetworkTopologyEditor onConfigChange={acceptTopologyConfig} />
+        ) : advanced ? (
           <div className="field full-width">
             <label htmlFor="advanced_config">Vollständige Konfiguration</label>
             <textarea
