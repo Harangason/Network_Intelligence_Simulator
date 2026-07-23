@@ -44,7 +44,7 @@ def _interface_index(profile: dict[str, Any]) -> tuple[dict[str, dict[str, Any]]
     return by_id, by_network
 
 
-def build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[str, Any]]:
+def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[str, Any]]:
     by_id, by_network = _interface_index(profile)
     network_by_id = {
         str(network.get("id")): network
@@ -108,7 +108,7 @@ def build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[s
     return routes
 
 
-def generate_universal_events(
+def _generate_universal_events(
     config: dict[str, Any],
     profile: dict[str, Any],
     *,
@@ -119,7 +119,7 @@ def generate_universal_events(
     max_events = max(1, int(config.get("max_events") or 100_000))
     trace_start = float(start_utc if start_utc is not None else datetime.now(timezone.utc).timestamp())
     registry = technology_registry(profile.get("technology_profiles"))
-    routes = build_routes(config, profile)
+    routes = _build_routes(config, profile)
     events: list[dict[str, Any]] = []
     rng = random.Random(seed)
 
@@ -190,7 +190,7 @@ def generate_universal_events(
     return routes, events
 
 
-def write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
+def _write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for event in events:
@@ -198,7 +198,7 @@ def write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
     return path
 
 
-def write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
+def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     columns = [
         "timestamp_utc", "timestamp_unix", "time_s", "sequence", "route_id", "route_name",
@@ -221,7 +221,7 @@ def write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
     return path
 
 
-def trace_summary(routes: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, Any]:
+def _trace_summary(routes: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, Any]:
     technologies = sorted({str(event["technology"]) for event in events})
     networks = sorted({str(event["network"]) for event in events})
     return {
@@ -231,3 +231,71 @@ def trace_summary(routes: list[dict[str, Any]], events: list[dict[str, Any]]) ->
         "networks": networks,
         "universal_trace": True,
     }
+
+
+class UniversalTraceGenerator:
+    """Generate technology-neutral routes and communication events."""
+
+    def build_routes(self, config: dict[str, Any], profile: dict[str, Any]) -> list[dict[str, Any]]:
+        return _build_routes(config, profile)
+
+    def generate(
+        self,
+        config: dict[str, Any],
+        profile: dict[str, Any],
+        *,
+        start_utc: float | None = None,
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        return _generate_universal_events(config, profile, start_utc=start_utc)
+
+
+class JsonLinesTraceWriter:
+    """Write neutral events as JSON Lines."""
+
+    def write(self, path: Path, events: list[dict[str, Any]]) -> Path:
+        return _write_jsonl(path, events)
+
+
+class CsvTraceWriter:
+    """Write neutral events as CSV."""
+
+    def write(self, path: Path, events: list[dict[str, Any]]) -> Path:
+        return _write_csv(path, events)
+
+
+class TraceSummaryBuilder:
+    """Create compact metadata for a generated trace."""
+
+    def build(self, routes: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, Any]:
+        return _trace_summary(routes, events)
+
+
+DEFAULT_TRACE_GENERATOR = UniversalTraceGenerator()
+DEFAULT_JSONL_WRITER = JsonLinesTraceWriter()
+DEFAULT_CSV_WRITER = CsvTraceWriter()
+DEFAULT_TRACE_SUMMARY_BUILDER = TraceSummaryBuilder()
+
+
+def build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[str, Any]]:
+    return DEFAULT_TRACE_GENERATOR.build_routes(config, profile)
+
+
+def generate_universal_events(
+    config: dict[str, Any],
+    profile: dict[str, Any],
+    *,
+    start_utc: float | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    return DEFAULT_TRACE_GENERATOR.generate(config, profile, start_utc=start_utc)
+
+
+def write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
+    return DEFAULT_JSONL_WRITER.write(path, events)
+
+
+def write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
+    return DEFAULT_CSV_WRITER.write(path, events)
+
+
+def trace_summary(routes: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, Any]:
+    return DEFAULT_TRACE_SUMMARY_BUILDER.build(routes, events)

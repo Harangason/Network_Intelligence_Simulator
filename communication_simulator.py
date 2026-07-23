@@ -142,7 +142,7 @@ def _all_interfaces(profile: dict[str, Any]):
                 yield node, port, interface
 
 
-def write_config_template(path: Path) -> Path:
+def _write_config_template(path: Path) -> Path:
     template = {
         "schema": CONFIG_SCHEMA,
         "name": "standalone_multi_bus_demo",
@@ -210,7 +210,7 @@ def write_config_template(path: Path) -> Path:
     return path
 
 
-def run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
+def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise TypeError("Simulation configuration must be a JSON object.")
     profile = normalize_hardware_config(config)
@@ -280,11 +280,42 @@ def run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> di
     return result
 
 
-def load_config(path: Path) -> dict[str, Any]:
+def _load_config(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(payload, dict):
         raise ValueError(f"Configuration must contain a JSON object: {path}")
     return payload
+
+
+class CommunicationSimulator:
+    """Standalone orchestration API for validation and trace generation."""
+
+    def run(self, config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
+        return _run_simulation(config, validate_only=validate_only)
+
+    def load_config(self, path: Path) -> dict[str, Any]:
+        return _load_config(path)
+
+    def write_config_template(self, path: Path) -> Path:
+        return _write_config_template(path)
+
+    def technology_catalog(self) -> dict[str, Any]:
+        return catalog_summary()
+
+
+DEFAULT_SIMULATOR = CommunicationSimulator()
+
+
+def write_config_template(path: Path) -> Path:
+    return DEFAULT_SIMULATOR.write_config_template(path)
+
+
+def run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
+    return DEFAULT_SIMULATOR.run(config, validate_only=validate_only)
+
+
+def load_config(path: Path) -> dict[str, Any]:
+    return DEFAULT_SIMULATOR.load_config(path)
 
 
 def main() -> None:

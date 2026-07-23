@@ -1,58 +1,54 @@
-# Industries
+# Branchenspezifische Generatoren
 
-Industry-specific project profiles live here.
+Der Simulationskern bleibt technologie- und branchenneutral. Dieser Ordner
+enthält ausschließlich fachlich gruppierte Technologieprofile. Hardware,
+Ports, Netzwerk-Schnittstellen, Netzwerke, Routen und Trace-Events verwenden
+in allen Branchen dasselbe Standalone-Kernmodell.
 
-## Core Rule
+## Klassenmodell
 
-The simulator is industry neutral. Automotive is only a test and reference
-profile for the function, not the architectural center of the project.
+`generator_base.py` definiert:
 
-New domains must map their own concepts into the simulator's neutral model:
+- `TechnologyProfile`: unveränderliches, serialisierbares Datenmodell
+- `BaseTechnologyGenerator`: abstrakte Basis jeder Fachdomäne
 
-- `participant`
-- `node`
-- `service`
-- `signal`
-- `hardware`
-- `bus`
-- `port`
-- `route`
-- `channel`
-- `interface`
+`registry.py` definiert `TechnologyRegistry`. Die Registry instanziiert alle
+Fachgeneratoren, erkennt doppelte Technologie-IDs und kombiniert eingebaute
+mit benutzerdefinierten Profilen.
 
-If a project from another discipline cannot be represented cleanly through the
-existing paths, add a dedicated domain path instead of forcing it into
-Automotive terminology.
+Jede Domäne besitzt den gleichen Einstieg:
 
-## Automotive
+```text
+<Domain>/
+├─ __init__.py
+└─ generators/
+   ├─ __init__.py
+   └─ technology_generator.py
+```
 
-`Automotive/project_profiles.db` contains the restbus project profiles used by `nemotron.py`, for example:
+## Domänen und Zuständigkeiten
 
-- `adas`
-- `powertrain`
-- `body`
+| Domäne | Generator-Klasse | Technologien |
+|---|---|---|
+| Automotive | `AutomotiveTechnologyGenerator` | CAN, CAN FD/XL, LIN, FlexRay, MOST, Automotive Ethernet, CANopen, J1939, SOME/IP, DoIP |
+| IndustrialAutomation | `IndustrialTechnologyGenerator` | PROFIBUS, PROFINET, EtherCAT, EtherNet/IP, Modbus, DeviceNet, Sercos, IO-Link, OPC UA |
+| EmbeddedSystems | `EmbeddedTechnologyGenerator` | I²C, SPI, UART, RS-232/422/485, 1-Wire, USB, PCIe |
+| Aerospace | `AerospaceTechnologyGenerator` | ARINC 429/664/825, MIL-STD-1553, SpaceWire |
+| Rail | `RailTechnologyGenerator` | MVB, WTB, ETB, TRDP |
+| Marine | `MarineTechnologyGenerator` | NMEA 0183/2000, IEC 61162 |
+| BuildingAutomation | `BuildingTechnologyGenerator` | KNX, BACnet MS/TP und BACnet/IP |
+| Energy | `EnergyTechnologyGenerator` | IEC 61850, DNP3 |
+| RoboticsROS | `RoboticsTechnologyGenerator` | DDS/RTPS, ROS 2 |
+| Generic | `GenericNetworkTechnologyGenerator` | Ethernet, IPv4/IPv6, UDP, TCP |
 
-The database is created and seeded automatically from the built-in fallback profiles on first start. After that, `nemotron.py` loads project profiles from this library before building CLI choices or generating requests.
+## Neue Technologie ergänzen
 
-`Automotive/maneuver_profiles.db` contains typical maneuvers and Physical-AI workflow routing metadata that used to be represented by large in-code lists.
+1. Technologie im fachlich passenden `technology_generator.py` ergänzen.
+2. Bei einer neuen Branche von `BaseTechnologyGenerator` erben.
+3. Die neue Generator-Klasse in `TechnologyRegistry.DEFAULT_GENERATORS`
+   registrieren.
+4. Registry- und Simulationstests ausführen.
 
-## Future Industries
-
-Additional domains can follow the same pattern:
-
-- `Generic/`
-- `Aerospace/project_profiles.db`
-- `RoboticsROS/project_profiles.db`
-- `Rail/project_profiles.db`
-- `Manufacturing/project_profiles.db`
-- `IndustrialAutomation/project_profiles.db`
-
-The expected table is `project_profiles` with topology metadata and `participants_json`.
-
-## Current Domain Skeletons
-
-- `Generic/`
-- `Automotive/`
-- `RoboticsROS/`
-- `Aerospace/`
-- `IndustrialAutomation/`
+Projektspezifische oder proprietäre Busse müssen nicht in den Quellcode
+aufgenommen werden. Sie können weiterhin über `technology_profiles` in der
+Standalone-Konfiguration registriert werden.

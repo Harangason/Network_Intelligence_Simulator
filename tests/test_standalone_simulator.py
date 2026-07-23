@@ -6,12 +6,47 @@ import unittest
 from pathlib import Path
 
 from bus_technologies import BUILTIN_TECHNOLOGIES, catalog_summary, resolve_technology, technology_registry
-from communication_simulator import CONFIG_SCHEMA, run_simulation
-from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
-from universal_trace import generate_universal_events
+from communication_simulator import CONFIG_SCHEMA, CommunicationSimulator, run_simulation
+from hardware_profile import (
+    HardwareProfileService,
+    hardware_profile_summary,
+    normalize_hardware_config,
+    validate_hardware_profile,
+)
+from physic_lib.Industries.generator_base import BaseTechnologyGenerator
+from physic_lib.Industries.registry import TechnologyRegistry
+from universal_trace import UniversalTraceGenerator, generate_universal_events
 
 
 class TechnologyRegistryTests(unittest.TestCase):
+    def test_industry_generators_are_structured_and_complete(self) -> None:
+        registry = TechnologyRegistry()
+        generated_ids = {
+            technology_id
+            for generator in registry.generators
+            for technology_id in generator.generate()
+        }
+
+        self.assertEqual(len(registry.generators), 10)
+        self.assertTrue(all(isinstance(generator, BaseTechnologyGenerator) for generator in registry.generators))
+        self.assertEqual(generated_ids, set(BUILTIN_TECHNOLOGIES))
+        self.assertEqual(len(generated_ids), 54)
+        self.assertEqual(
+            {item["domain"] for item in registry.summary()["generators"]},
+            {
+                "automotive",
+                "industrial_automation",
+                "embedded_systems",
+                "aerospace",
+                "rail",
+                "marine",
+                "building_automation",
+                "energy",
+                "robotics_ros",
+                "generic_networking",
+            },
+        )
+
     def test_builtin_catalog_covers_major_bus_families(self) -> None:
         summary = catalog_summary()
 
@@ -54,6 +89,12 @@ class TechnologyRegistryTests(unittest.TestCase):
 
 
 class HardwareProfileTests(unittest.TestCase):
+    def test_class_api_matches_compatibility_facade(self) -> None:
+        source = {"networks": [{"id": "bus", "technology": "can"}]}
+        service = HardwareProfileService()
+
+        self.assertEqual(service.normalize(source), normalize_hardware_config(source))
+
     def test_hardware_port_interface_network_chain_is_preserved(self) -> None:
         source = {
             "networks": [{"id": "plant_bus", "technology": "profinet"}],
@@ -147,6 +188,10 @@ class HardwareProfileTests(unittest.TestCase):
 
 
 class UniversalSimulationTests(unittest.TestCase):
+    def test_class_based_simulator_and_trace_generator_are_available(self) -> None:
+        self.assertIsInstance(CommunicationSimulator(), CommunicationSimulator)
+        self.assertIsInstance(UniversalTraceGenerator(), UniversalTraceGenerator)
+
     def test_every_builtin_technology_can_generate_neutral_events(self) -> None:
         networks = []
         node_a_ports = []

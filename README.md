@@ -24,6 +24,41 @@ Beispiel: Eine ECU kann zwei CAN-FD-Ports, einen LIN-Port und einen
 Ethernet-Port besitzen. Auf dem Ethernet-Port können mehrere logische
 Schnittstellen mit eigenen VLANs, IP-Adressen und Protokollen liegen.
 
+Die Implementierung ist ebenfalls geschichtet:
+
+```text
+CommunicationSimulator
+├─ HardwareProfileService
+│  ├─ HardwareProfileNormalizer
+│  └─ HardwareProfileValidator
+├─ TechnologyRegistry
+│  └─ branchenspezifische BaseTechnologyGenerator-Klassen
+└─ UniversalTraceGenerator
+   ├─ JsonLinesTraceWriter
+   └─ CsvTraceWriter
+```
+
+Die Technologieprofile liegen nicht im Simulationsskript, sondern in
+`physic_lib/Industries/<Branche>/generators/technology_generator.py`.
+`bus_technologies.py`, `hardware_profile.py` und `universal_trace.py` behalten
+ihre bisherigen Funktions-APIs als schlanke Kompatibilitätsfassaden.
+
+Aktuelle Generatorbereiche:
+
+- `Automotive`
+- `IndustrialAutomation`
+- `EmbeddedSystems`
+- `Aerospace`
+- `Rail`
+- `Marine`
+- `BuildingAutomation`
+- `Energy`
+- `RoboticsROS`
+- `Generic`
+
+Ein neuer Fachgenerator erbt von `BaseTechnologyGenerator`, implementiert
+`generate()` und wird in `TechnologyRegistry.DEFAULT_GENERATORS` registriert.
+
 ## Unterstützte Technologien
 
 Die eingebaute Registry enthält mehr als 50 Bus- und Protokollprofile:
@@ -224,9 +259,10 @@ Profil werden Payload-Grenzen und Technologiemetadaten berücksichtigt.
 ## Python-API
 
 ```python
-from communication_simulator import run_simulation
+from communication_simulator import CommunicationSimulator
 
-result = run_simulation(
+simulator = CommunicationSimulator()
+result = simulator.run(
     {
         "schema": "communication-simulator.simulation-config.v1",
         "output_dir": "api_demo",
@@ -256,6 +292,8 @@ result = run_simulation(
 print(result["status"])
 print(result["artifacts"])
 ```
+
+Die bisherige Funktion `run_simulation(config)` bleibt weiterhin verfügbar.
 
 ## Ausgabe
 

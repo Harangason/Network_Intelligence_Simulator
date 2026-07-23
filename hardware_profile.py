@@ -31,7 +31,7 @@ def _first_list(*values: Any) -> list[dict[str, Any]]:
     return []
 
 
-def normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
+def _normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
     """Normalize external hardware without mutating the source configuration."""
 
     raw = deepcopy(config or {})
@@ -136,7 +136,7 @@ def normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def contains_hardware_records(config: dict[str, Any] | None) -> bool:
-    profile = normalize_hardware_config(config)
+    profile = DEFAULT_HARDWARE_PROFILE_SERVICE.normalize(config)
     return bool(profile["hardware"] or profile["networks"])
 
 
@@ -147,7 +147,7 @@ def iter_network_interfaces(profile: dict[str, Any]):
                 yield node, port, interface
 
 
-def hardware_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
+def _hardware_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
     interfaces = list(iter_network_interfaces(profile))
     technologies = {
         normalize_technology_id(network.get("technology"))
@@ -170,7 +170,7 @@ def hardware_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_hardware_profile(profile: dict[str, Any]) -> dict[str, Any]:
+def _validate_hardware_profile(profile: dict[str, Any]) -> dict[str, Any]:
     registry = technology_registry(profile.get("technology_profiles"))
     findings: list[dict[str, Any]] = []
     network_by_id: dict[str, dict[str, Any]] = {}
@@ -323,3 +323,57 @@ def validate_hardware_profile(profile: dict[str, Any]) -> dict[str, Any]:
         "severity_counts": severity_counts,
         "findings": findings,
     }
+
+
+class HardwareProfileNormalizer:
+    """Normalize external ECU/device, port and interface definitions."""
+
+    def normalize(self, config: dict[str, Any] | None) -> dict[str, Any]:
+        return _normalize_hardware_config(config)
+
+
+class HardwareProfileValidator:
+    """Validate normalized hardware topology and technology capabilities."""
+
+    def validate(self, profile: dict[str, Any]) -> dict[str, Any]:
+        return _validate_hardware_profile(profile)
+
+
+class HardwareProfileService:
+    """Object-oriented facade for hardware profile operations."""
+
+    def __init__(
+        self,
+        normalizer: HardwareProfileNormalizer | None = None,
+        validator: HardwareProfileValidator | None = None,
+    ) -> None:
+        self.normalizer = normalizer or HardwareProfileNormalizer()
+        self.validator = validator or HardwareProfileValidator()
+
+    def normalize(self, config: dict[str, Any] | None) -> dict[str, Any]:
+        return self.normalizer.normalize(config)
+
+    def validate(self, profile: dict[str, Any]) -> dict[str, Any]:
+        return self.validator.validate(profile)
+
+    def summary(self, profile: dict[str, Any]) -> dict[str, Any]:
+        return _hardware_profile_summary(profile)
+
+    @staticmethod
+    def interfaces(profile: dict[str, Any]):
+        return iter_network_interfaces(profile)
+
+
+DEFAULT_HARDWARE_PROFILE_SERVICE = HardwareProfileService()
+
+
+def normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
+    return DEFAULT_HARDWARE_PROFILE_SERVICE.normalize(config)
+
+
+def hardware_profile_summary(profile: dict[str, Any]) -> dict[str, Any]:
+    return DEFAULT_HARDWARE_PROFILE_SERVICE.summary(profile)
+
+
+def validate_hardware_profile(profile: dict[str, Any]) -> dict[str, Any]:
+    return DEFAULT_HARDWARE_PROFILE_SERVICE.validate(profile)
