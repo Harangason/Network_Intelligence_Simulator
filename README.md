@@ -9,6 +9,43 @@ Der universelle Simulationskern unterstützt jede integrierte oder
 benutzerdefinierte Bus-Technologie. Für CAN und Ethernet stehen zusätzlich
 native Writer zur Verfügung.
 
+## Weboberfläche
+
+Das Projekt enthält eine lokale Flask-API und eine Next.js-Oberfläche. Die
+Flask-Schicht verwendet die vorhandene Python-API direkt; es werden keine
+CLI-Kommandos aus HTTP-Anfragen zusammengesetzt.
+
+Erstinstallation:
+
+```powershell
+uv sync --project backend
+Set-Location frontend
+npm install
+Set-Location ..
+```
+
+Anschließend startet ein gemeinsamer Launcher Backend und Frontend:
+
+```powershell
+uv run --project backend python generate_realistic_communication_tool.py web
+```
+
+- Oberfläche: `http://127.0.0.1:3001`
+- Flask-API: `http://127.0.0.1:5050/api`
+
+Nur das Backend starten:
+
+```powershell
+uv run --project backend python generate_realistic_communication_tool.py backend
+```
+
+Die bisherige CLI bleibt kompatibel. Der optionale Unterbefehl `cli` kann zur
+eindeutigen Abgrenzung verwendet werden:
+
+```powershell
+uv run --project backend python generate_realistic_communication_tool.py cli --list-technologies
+```
+
 ## Architektur
 
 Das Kernmodell trennt vier Ebenen:
@@ -50,10 +87,10 @@ IndustryContext
 
 Der Knowledge Graph speichert Topologie-, Profil-, Technologie- und
 Fehlerbeziehungen. Vollständige Trace-Events verbleiben ausschließlich unter
-`traces/`.
+`backend/runtime/traces/`.
 
 Die Technologieprofile liegen nicht im Simulationsskript, sondern in
-`physic_lib/Industries/<Branche>/generators/technology_generator.py`.
+`backend/simulator/physic_lib/Industries/<Branche>/generators/technology_generator.py`.
 `bus_technologies.py`, `hardware_profile.py` und `universal_trace.py` behalten
 ihre bisherigen Funktions-APIs als schlanke Kompatibilitätsfassaden.
 
@@ -113,7 +150,7 @@ Voraussetzungen:
 - `uv` empfohlen
 
 ```powershell
-uv sync
+uv sync --project backend
 ```
 
 Alternativ:
@@ -197,31 +234,32 @@ python generate_realistic_communication_tool.py `
 Konfigurationsvorlage erstellen:
 
 ```powershell
-uv run python communication_simulator.py `
+uv run --project backend python backend/simulator/communication_simulator.py `
   --write-config-template simulation_config.json
 ```
 
 Simulation starten:
 
 ```powershell
-uv run python communication_simulator.py --config simulation_config.json
+uv run --project backend python backend/simulator/communication_simulator.py --config simulation_config.json
 ```
 
 Technologiekatalog anzeigen:
 
 ```powershell
-uv run python communication_simulator.py --list-technologies
+uv run --project backend python backend/simulator/communication_simulator.py --list-technologies
 ```
 
 Nur Topologie und Hardware validieren:
 
 ```powershell
-uv run python communication_simulator.py `
+uv run --project backend python backend/simulator/communication_simulator.py `
   --config simulation_config.json `
   --validate-only
 ```
 
-Relative Ausgabeordner werden unter `traces/` abgelegt. Absolute Zielpfade
+Relative CLI-Ausgabeordner werden unter `traces/` abgelegt. Web-Läufe werden
+isoliert unter `backend/runtime/traces/` gespeichert. Absolute Zielpfade
 werden respektiert.
 
 ## Standalone-Konfiguration
@@ -414,38 +452,39 @@ Die Validierung verändert importierte Definitionen nicht. Sie meldet:
 Writer erhalten. Sein öffentlicher Konfigurationseinstieg ist neutral:
 
 ```powershell
-uv run python generate_realistic_communication_tool.py `
+uv run --project backend python generate_realistic_communication_tool.py `
   --write-config-template native_config.json
 
-uv run python generate_realistic_communication_tool.py `
+uv run --project backend python generate_realistic_communication_tool.py `
   --config native_config.json
 ```
 
-Für neue Projekte ist `communication_simulator.py` der primäre Einstieg.
+Für Python-Integrationen ist `backend/simulator/communication_simulator.py`
+der primäre Einstieg.
 
 ## Projektstruktur
 
 ```text
-communication_simulator.py                 Standalone-CLI und Python-API
-bus_technologies.py                        offene Technologie-Registry
-hardware_profile.py                        Hardware-/Port-/Netzwerkmodell
-universal_trace.py                         neutraler Event- und Trace-Kern
-generate_realistic_communication_tool.py   native CAN-/Ethernet-Writer
-format_generators/                         formatspezifische Writer
-trace_realism.py                           synthetische Signalmodelle
-signal_suggestions.py                      Signalvalidierung
-nemotron.py                                optionaler Szenarioassistent
-tests/                                     Standalone-Regressionstests
-traces/                                    ausschließlich Laufzeitausgaben
+generate_realistic_communication_tool.py   gemeinsamer CLI-/Web-Launcher
+backend/
+  app/                                     Flask-API und Hintergrundjobs
+  simulator/                               Simulationskern und native Writer
+  tests/                                   Backend-Regressionstests
+  runtime/traces/                          isolierte Web-Laufzeitausgaben
+  docs/                                    technische Projektdokumentation
+frontend/
+  src/app/                                 Next.js App Router
+  src/components/                          Assistent und Ergebnisanzeige
+  src/lib/                                 API-Client und TypeScript-Typen
 ```
 
 Weiterführend:
 
-- [Standalone-Schnittstelle](SIMULATION_INTERFACE.md)
-- [Hardware- und Netzwerkmodell](HARDWARE_INTERFACE_ROADMAP.md)
-- [Industrieneutrale Architektur](INDUSTRY_NEUTRAL_SIMULATOR.md)
-- [Format-Writer](format_generators/README.md)
-- [Aktueller Stand](CURRENT_STATUS.md)
+- [Standalone-Schnittstelle](backend/docs/SIMULATION_INTERFACE.md)
+- [Hardware- und Netzwerkmodell](backend/docs/HARDWARE_INTERFACE_ROADMAP.md)
+- [Industrieneutrale Architektur](backend/docs/INDUSTRY_NEUTRAL_SIMULATOR.md)
+- [Format-Writer](backend/simulator/format_generators/README.md)
+- [Aktueller Stand](backend/docs/CURRENT_STATUS.md)
 
 ## Grenzen
 
