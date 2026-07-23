@@ -22,6 +22,9 @@ Installation:
     py -m pip install python-can
 
 Beispiel:
+    py generate_realistic_communication_tool.py --list-technologies
+    py generate_realistic_communication_tool.py --technology arinc429 --duration 5 --nodes 3
+    py generate_realistic_communication_tool.py --technology modbus_tcp --cycle-ms 20 --payload-bytes 64
     py generate_realistic_communication_tool.py --duration 60 --out realistic_can_trace.blf
     py generate_realistic_communication_tool.py --formats all --out-dir generated_trace_package
     py generate_realistic_communication_tool.py --simulation-mode restbus --formats blf,dbc,json --out-dir generated_restbus
@@ -50,9 +53,11 @@ from typing import Any, Dict, Iterable, List, Tuple
 
 import can
 
+from bus_technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from filter_system import create_filter_bank, profile_from_request, summarize_filter_banks
 from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
 from signal_suggestions import suggest_signal_gaps
+from standalone_cli import InteractiveStandaloneCli, StandaloneCliRunner, options_from_namespace
 from trace_realism import (
     contains_external_signal_records,
     external_signal_records,
@@ -2080,14 +2085,16 @@ def generate_format_package(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Realistischer CAN/CAN-FD/CAN-XL/Ethernet Trace Generator")
+    parser = argparse.ArgumentParser(
+        description="Technologieoffener Communication Simulator mit optionalen nativen CAN/Ethernet-Writern"
+    )
     parser.add_argument("--out", default="realistic_can_trace.blf", help="Ausgabe-BLF")
     parser.add_argument("--dbc", default="realistic_can_network.dbc", help="Ausgabe-DBC")
     parser.add_argument("--out-dir", default=None, help="Zielordner für Multi-Format-Ausgabe")
     parser.add_argument(
         "--formats",
         default="blf,dbc",
-        help="Kommagetrennt: blf,dbc,asc,trc,csv,json,log,txt,xml,yaml,yml,arxml,fibex,pcap,pcapng,mdf,mf4,can-all,eth-all,all",
+        help="Kommagetrennt: universal-jsonl,universal-csv sowie native Formate wie blf,dbc,pcapng",
     )
     parser.add_argument("--duration", type=float, default=60.0, help="Trace-Laufzeit in Sekunden")
     parser.add_argument("--messages", type=int, default=None, help="Anzahl Datenbotschaften; ohne Wert nimmt --routing-table die CSV-Zeilenzahl")
@@ -2152,11 +2159,133 @@ def main() -> None:
         default=None,
         help="Anzahl Ethernet-Kommunikationsströme; ohne Wert wird --messages verwendet",
     )
+    parser.add_argument(
+        "--technology",
+        choices=sorted(DEFAULT_TECHNOLOGY_REGISTRY.builtin),
+        default=None,
+        help="Bus- oder Protokolltechnologie für die universelle Standalone-Simulation",
+    )
+    parser.add_argument(
+        "--list-technologies",
+        action="store_true",
+        help="Zeigt alle registrierten Technologien nach Branche gruppiert an",
+    )
+    parser.add_argument("--industry", default=None, help="Optionale Branchenzuordnung")
+    parser.add_argument(
+        "--bitrate",
+        type=int,
+        default=None,
+        help="Technologie-Bitrate in bit/s; Standardwert kommt aus der Registry",
+    )
+    parser.add_argument("--nodes", type=int, default=2, help="Anzahl Hardware-Knoten, mindestens 2")
+    parser.add_argument(
+        "--cycle-ms",
+        type=float,
+        default=100.0,
+        help="Kommunikationszyklus der universellen Route in Millisekunden",
+    )
+    parser.add_argument(
+        "--payload-bytes",
+        type=int,
+        default=None,
+        help="Payload-Größe; wird gegen die Technologiegrenze geprüft",
+    )
+    parser.add_argument("--max-events", type=int, default=None, help="Maximale Anzahl neutraler Trace-Events")
+    parser.add_argument(
+        "--dropout-probability",
+        type=float,
+        default=0.0,
+        help="Dropout-Wahrscheinlichkeit von 0.0 bis 1.0",
+    )
+    parser.add_argument(
+        "--corruption-probability",
+        type=float,
+        default=0.0,
+        help="Korruptionswahrscheinlichkeit von 0.0 bis 1.0",
+    )
+    parser.add_argument("--network-id", default=None, help="Optionale ID des simulierten Netzwerks")
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Validiert Hardware und Topologie ohne Trace-Erzeugung",
+    )
+    parser.add_argument(
+        "--native-cli",
+        action="store_true",
+        help="Erzwingt den bisherigen nativen CAN/Ethernet-CLI-Pfad",
+    )
     args = parser.parse_args()
 
+    if args.list_technologies:
+        print(f"Registrierte Technologien: {len(DEFAULT_TECHNOLOGY_REGISTRY.builtin)}")
+        for generator in DEFAULT_TECHNOLOGY_REGISTRY.generators:
+            print(f"\n{generator.domain}:")
+            for technology_id, profile in generator.generate().items():
+                bitrate = profile.default_bitrate
+                bitrate_label = f", {format_bitrate(bitrate)}" if bitrate else ""
+                print(f"- {technology_id} ({profile.kind}{bitrate_label})")
+        return
+
     if args.write_config_template is not None:
-        write_simulation_config_template(args.write_config_template)
+        from communication_simulator import write_config_template
+
+        write_config_template(args.write_config_template)
         print(f"Konfigurationsvorlage geschrieben: {args.write_config_template.resolve()}")
+        return
+
+    interactive_native = False
+    if len(sys.argv) == 1:
+        cli_mode = choose_mode(
+            "Simulationsart:",
+            {
+                "1": "Technologieoffene Standalone-Simulation (alle registrierten Technologien)",
+                "2": "Native CAN/CAN-FD/CAN-XL/Ethernet-Dateiformate",
+            },
+            default_value="1",
+        )
+        if cli_mode == "1":
+            options = InteractiveStandaloneCli().collect()
+            runner = StandaloneCliRunner()
+            result = runner.run(options)
+            runner.print_result(result)
+            return
+        interactive_native = True
+
+    if args.technology is not None and not args.native_cli:
+        if not 2 <= args.nodes <= 100:
+            parser.error("--nodes muss zwischen 2 und 100 liegen")
+        if args.duration <= 0:
+            parser.error("--duration muss größer als 0 sein")
+        if args.cycle_ms <= 0:
+            parser.error("--cycle-ms muss größer als 0 sein")
+        if args.bitrate is not None and args.bitrate < 1:
+            parser.error("--bitrate muss mindestens 1 bit/s sein")
+        if args.max_events is not None and args.max_events < 1:
+            parser.error("--max-events muss mindestens 1 sein")
+        if args.max_events is None and args.messages is not None and args.messages < 1:
+            parser.error("--messages muss mindestens 1 sein")
+        for name in ("dropout_probability", "corruption_probability"):
+            if not 0.0 <= float(getattr(args, name)) <= 1.0:
+                parser.error(f"--{name.replace('_', '-')} muss zwischen 0.0 und 1.0 liegen")
+        try:
+            options = options_from_namespace(args)
+            runner = StandaloneCliRunner()
+            result = runner.run(options, validate_only=args.validate_only)
+        except (OSError, TypeError, ValueError) as exc:
+            parser.error(str(exc))
+        runner.print_result(result)
+        return
+
+    if args.config is not None and not args.native_cli:
+        runner = StandaloneCliRunner()
+        try:
+            result = runner.simulator.run(
+                runner.simulator.load_config(args.config),
+                validate_only=args.validate_only,
+            )
+        except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            parser.error(f"Simulationskonfiguration konnte nicht verarbeitet werden: {exc}")
+        runner.print_result(result)
         return
 
     simulation_config: Dict[str, Any] | None = None
@@ -2179,7 +2308,7 @@ def main() -> None:
     if not 1 <= int(args.channels) <= 16:
         parser.error("--channels muss zwischen 1 und 16 liegen")
 
-    if len(sys.argv) == 1:
+    if interactive_native:
         selected_profile = choice()
         bus_type = str(selected_profile["bus_type"])
         nominal_bitrate = int(selected_profile["nominal_bitrate"])

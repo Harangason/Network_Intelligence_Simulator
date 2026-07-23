@@ -132,6 +132,68 @@ python -m pip install asammdf
 
 ## Schnellstart
 
+Der umfassendste Einstieg ist die technologieoffene CLI:
+
+```powershell
+python generate_realistic_communication_tool.py
+```
+
+Ohne Parameter führt sie interaktiv durch:
+
+1. technologieoffene Standalone-Simulation oder native CAN/Ethernet-Ausgabe
+2. Branche und eine der 54 registrierten Technologien
+3. Bitrate und Anzahl der Hardware-Knoten
+4. Dauer, Zyklus und Payload-Größe
+5. Seed und maximales Eventlimit
+6. Dropout- und Korruptionswahrscheinlichkeit
+7. Ausgabeformate und Zielordner
+
+Alle Technologien anzeigen:
+
+```powershell
+python generate_realistic_communication_tool.py --list-technologies
+```
+
+Nicht-interaktives Aerospace-Beispiel:
+
+```powershell
+python generate_realistic_communication_tool.py `
+  --technology arinc429 `
+  --industry Aerospace `
+  --bitrate 100000 `
+  --nodes 3 `
+  --duration 5 `
+  --cycle-ms 20 `
+  --payload-bytes 4 `
+  --max-events 10000 `
+  --dropout-probability 0.01 `
+  --corruption-probability 0.001 `
+  --formats universal-jsonl,universal-csv `
+  --out-dir aerospace_demo
+```
+
+Industrial-Automation-Beispiel:
+
+```powershell
+python generate_realistic_communication_tool.py `
+  --technology modbus_tcp `
+  --nodes 4 `
+  --cycle-ms 50 `
+  --payload-bytes 64 `
+  --duration 10 `
+  --out-dir modbus_demo
+```
+
+Der bisherige native CAN/Ethernet-Pfad bleibt erreichbar:
+
+```powershell
+python generate_realistic_communication_tool.py `
+  --native-cli `
+  --bus fd `
+  --formats blf,dbc,asc `
+  --out-dir native_can_demo
+```
+
 Konfigurationsvorlage erstellen:
 
 ```powershell
