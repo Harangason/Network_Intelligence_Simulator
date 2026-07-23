@@ -16,7 +16,7 @@ Erzeugt:
 - Gateway-Weiterleitung auf zweiten Kanal
 - Fehler-/Störszenarien: Dropouts, Jitter, Timeout-Lücken, Bus-Off-Pause,
   DLC-Fehler, Counter-Fehler, CRC-Fehler, Timing-Violations
-- Restbussimulation aus MBSE-tauglicher JSON-Schnittstelle
+- Restbussimulation aus einer neutralen Standalone-JSON-Konfiguration
 
 Installation:
     py -m pip install python-can
@@ -25,8 +25,8 @@ Beispiel:
     py generate_realistic_communication_tool.py --duration 60 --out realistic_can_trace.blf
     py generate_realistic_communication_tool.py --formats all --out-dir generated_trace_package
     py generate_realistic_communication_tool.py --simulation-mode restbus --formats blf,dbc,json --out-dir generated_restbus
-    py generate_realistic_communication_tool.py --write-mbse-template mbse_simulation_request.json
-    py generate_realistic_communication_tool.py --mbse-request mbse_simulation_request.json
+    py generate_realistic_communication_tool.py --write-config-template simulation_config.json
+    py generate_realistic_communication_tool.py --config simulation_config.json
 
 Hinweis:
 - BLF ist ein Vector-nahes Binärformat. python-can kann BLF schreiben/lesen.
@@ -42,7 +42,6 @@ import json
 import math
 import random
 import re
-import shutil
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -52,9 +51,18 @@ from typing import Any, Dict, Iterable, List, Tuple
 import can
 
 from filter_system import create_filter_bank, profile_from_request, summarize_filter_banks
+from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
+from signal_suggestions import suggest_signal_gaps
+from trace_realism import (
+    contains_external_signal_records,
+    external_signal_records,
+    physical_raw_value,
+    signal_specs_for_message,
+    trace_quality_summary,
+)
 
 LIB_ROOT = Path("physic_lib")
-TRACE_ROOT = Path("traces") / "Automotive"
+TRACE_ROOT = Path("traces")
 
 try:
     CanMessage = can.Message
@@ -136,6 +144,7 @@ class RestbusParticipant:
     gateway_to_channel: int | None = None
     wakeup_time_s: float = 0.0
     health: str = "nominal"
+    signals: List[Dict[str, Any]] = field(default_factory=list)
 
 
 ROUTE_INFO_START_BYTE = 20
@@ -391,7 +400,7 @@ def normalized_routing_row(row: Dict[str, object], index: int, channel_count: in
         gateway_to_channel = max(0, min(channel_count - 1, gateway_to_channel))
     frame_id = parse_optional_int(row.get("frame_id") or row.get("id") or row.get("can_id"), 0x100 + index)
     name_raw = row.get("name") or row.get("message") or row.get("message_name") or f"{sender}_TO_{receiver}"
-    return {
+    normalized = {
         "sender": sender,
         "receiver": receiver,
         "cycle_ms": cycle_ms if cycle_ms and cycle_ms > 0 else 20,
@@ -400,6 +409,11 @@ def normalized_routing_row(row: Dict[str, object], index: int, channel_count: in
         "frame_id": frame_id if frame_id is not None else 0x100 + index,
         "name": safe_identifier(str(name_raw), "MSG"),
     }
+    route_signals = external_signal_records(row.get("signals") or row.get("signal_definitions") or row.get("message_signals"))
+    if route_signals:
+        normalized["signals"] = route_signals
+        normalized["signal_source"] = str(row.get("signal_source") or "external")
+    return normalized
 
 
 def load_routing_table(path: Path, channel_count: int) -> List[Dict[str, object]]:
@@ -454,16 +468,19 @@ def normalize_restbus_participant(row: Dict[str, object], index: int, channel_co
     gateway_to_channel = parse_optional_int(row.get("gateway_to_channel") or row.get("gateway") or row.get("gw_channel"), None)
     if gateway_to_channel is not None:
         gateway_to_channel = clamp_channel(gateway_to_channel, channel_count)
+    raw_signals = row.get("signals")
+    provided_alias = None if contains_external_signal_records(raw_signals) else raw_signals
     return RestbusParticipant(
         name=safe_identifier(str(row.get("name") or row.get("id") or f"ECU_{index:02d}"), "ECU"),
         role=role,
         channel=clamp_channel(row.get("channel"), channel_count, index % max(1, channel_count)),
         cycle_ms=cycle_ms if cycle_ms and cycle_ms > 0 else cycle_default,
-        provided_services=normalize_service_names(row.get("provided_services") or row.get("provides")),
+        provided_services=normalize_service_names(row.get("provided_services") or row.get("provides") or provided_alias),
         consumed_services=normalize_service_names(row.get("consumed_services") or row.get("consumes")),
         gateway_to_channel=gateway_to_channel,
         wakeup_time_s=float(row.get("wakeup_time_s") or row.get("wakeup_s") or 0.0),
         health=str(row.get("health") or "nominal").strip().lower(),
+        signals=external_signal_records(raw_signals or row.get("signal_definitions") or row.get("message_signals")),
     )
 
 
@@ -479,21 +496,21 @@ def restbus_participants_from_request(request: Dict[str, Any], channel_count: in
     if raw_participants is None:
         return default_restbus_participants(channel_count)
     if not isinstance(raw_participants, list):
-        raise ValueError("MBSE request field 'participants' must be a list.")
+        raise ValueError("Configuration field 'participants' must be a list.")
     participants = [
         normalize_restbus_participant(dict(row), index, channel_count)
         for index, row in enumerate(raw_participants)
     ]
     if not participants:
-        raise ValueError("MBSE request must contain at least one participant.")
+        raise ValueError("Restbus configuration must contain at least one participant.")
     return participants
 
 
-def load_mbse_request(path: Path) -> Dict[str, Any]:
+def load_simulation_config(path: Path) -> Dict[str, Any]:
     path = resolve_library_request_path(path)
     request = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(request, dict):
-        raise ValueError(f"MBSE request must be a JSON object: {path}")
+        raise ValueError(f"Simulation configuration must be a JSON object: {path}")
     return request
 
 
@@ -516,10 +533,10 @@ def resolve_library_request_path(path: Path) -> Path:
     return path
 
 
-def write_mbse_request_template(path: Path) -> None:
+def write_simulation_config_template(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     request = {
-        "schema": "can-simulator.mbse-simulation-request.v1",
+        "schema": "communication-simulator.simulation-config.v1",
         "simulation_mode": "restbus",
         "output_dir": "generated_restbus_simulation",
         "formats": "blf,dbc,json,csv",
@@ -611,6 +628,8 @@ def build_restbus_routing_rows(
                     "channel": sender.channel,
                     "gateway_to_channel": gateway_to_channel,
                     "frame_id": base_frame_id + index,
+                    "signals": sender.signals,
+                    "signal_source": "external" if sender.signals else "generated",
                 },
                 index,
                 channel_count,
@@ -635,6 +654,7 @@ def restbus_interface_summary(participants: List[RestbusParticipant], routing_ro
                 "gateway_to_channel": participant.gateway_to_channel,
                 "wakeup_time_s": participant.wakeup_time_s,
                 "health": participant.health,
+                "signals": participant.signals,
             }
             for participant in participants
         ],
@@ -647,13 +667,15 @@ def restbus_interface_summary(participants: List[RestbusParticipant], routing_ro
                 "channel": row["channel"],
                 "gateway_to_channel": row["gateway_to_channel"],
                 "frame_id": f"0x{int(row['frame_id']):X}",
+                "signal_source": row.get("signal_source"),
+                "signals": row.get("signals"),
             }
             for row in routing_rows
         ],
     }
 
 
-def apply_mbse_request_to_args(args: argparse.Namespace, request: Dict[str, Any]) -> None:
+def apply_simulation_config_to_args(args: argparse.Namespace, request: Dict[str, Any]) -> None:
     mapping = {
         "output_dir": "out_dir",
         "out_dir": "out_dir",
@@ -681,6 +703,9 @@ def apply_mbse_request_to_args(args: argparse.Namespace, request: Dict[str, Any]
     if isinstance(request.get("scenario"), dict):
         args.scenario = request["scenario"]
     args.filter_system = profile_from_request(request)
+    args.hardware = normalize_hardware_config(request)
+    args.hardware_summary = hardware_profile_summary(args.hardware)
+    args.hardware_validation = validate_hardware_profile(args.hardware)
     for attr in ["messages", "seed", "channels", "nominal_bitrate", "fd_bitrate", "xl_data_bitrate", "eth_bitrate", "eth_messages"]:
         value = getattr(args, attr, None)
         if value is not None:
@@ -705,10 +730,13 @@ def write_simulation_interface(
     routing_rows: List[Dict[str, object]] | None,
     restbus_summary: Dict[str, object] | None,
     filter_summary: Dict[str, object] | None = None,
+    signal_suggestions: Dict[str, object] | None = None,
+    hardware_summary: Dict[str, object] | None = None,
+    hardware_validation: Dict[str, object] | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
-        "schema": "can-simulator.mbse-simulation-result.v1",
+        "schema": "communication-simulator.native-result.v1",
         "simulation_mode": simulation_mode,
         "created_utc": format_utc_timestamp(datetime.now(timezone.utc).timestamp()),
         "duration_s": duration_s,
@@ -721,16 +749,24 @@ def write_simulation_interface(
         "routing_rows": routing_rows,
         "restbus": restbus_summary,
         "filter_system": filter_summary or {"enabled": False},
+        "trace_quality": trace_quality_summary(),
+        "signal_suggestions": signal_suggestions or suggest_signal_gaps(routing_rows, bus_type),
+        "hardware_profile": hardware_summary or {"enabled": False},
+        "hardware_validation": hardware_validation or {
+            "valid": True,
+            "mode": "non_invasive_validation",
+            "findings": [],
+        },
     }
     path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
 
-def run_mbse_simulation_request(request: Dict[str, Any]) -> Dict[str, Any]:
-    """Programmatic interface for MBSE tools: request dict in, result dict out."""
+def run_simulation(request: Dict[str, Any]) -> Dict[str, Any]:
+    """Run the native CAN/Ethernet generator from a standalone configuration."""
     args = argparse.Namespace(
         out="realistic_can_trace.blf",
         dbc="realistic_can_network.dbc",
-        out_dir="generated_mbse_simulation",
+        out_dir="generated_native_simulation",
         formats="blf,dbc,json,csv",
         duration=10.0,
         messages=None,
@@ -747,12 +783,15 @@ def run_mbse_simulation_request(request: Dict[str, Any]) -> Dict[str, Any]:
         eth_messages=None,
         simulation_mode="restbus",
         interface_out=None,
-        mbse_request=None,
+        config=None,
         scenario={},
         filter_system=None,
         filter_summary=None,
+        hardware=None,
+        hardware_summary=None,
+        hardware_validation=None,
     )
-    apply_mbse_request_to_args(args, request)
+    apply_simulation_config_to_args(args, request)
 
     bus_type = "classic" if args.classic_can else args.bus
     if bus_type == "classic":
@@ -799,6 +838,9 @@ def run_mbse_simulation_request(request: Dict[str, Any]) -> Dict[str, Any]:
         routing_rows=routing_rows,
         restbus_summary=restbus_summary,
         filter_summary=getattr(args, "filter_summary", None),
+        signal_suggestions=getattr(args, "signal_suggestions", None),
+        hardware_summary=getattr(args, "hardware_summary", None),
+        hardware_validation=getattr(args, "hardware_validation", None),
     )
     return json.loads(Path(interface_path).read_text(encoding="utf-8"))
 
@@ -807,7 +849,25 @@ def run_mbse_simulation_request(request: Dict[str, Any]) -> Dict[str, Any]:
 # Netzwerkdefinition
 # -----------------------------
 
-def add_data_signals(msg: MessageDef, can_fd: bool) -> None:
+def add_data_signals(msg: MessageDef, can_fd: bool, external_signals: List[Dict[str, Any]] | None = None) -> None:
+    external_records = external_signal_records(external_signals)
+    if external_records:
+        for record in external_records:
+            msg.signals.append(
+                SignalDef(
+                    name=record["name"],
+                    start_bit=record["start_bit"],
+                    length=record["length"],
+                    factor=record["factor"],
+                    offset=record["offset"],
+                    minimum=record["minimum"],
+                    maximum=record["maximum"],
+                    unit=record["unit"],
+                    kind=record["kind"],
+                )
+            )
+        return
+
     # Layout: Byte 0 CRC, Byte 1 Counter/Mux/Status, ab Byte 2 Nutzsignale.
     msg.signals.append(SignalDef("CRC8", 0, 8, 1, 0, 0, 255, "", "crc"))
     msg.signals.append(SignalDef("AliveCounter", 8, 4, 1, 0, 0, 15, "", "counter"))
@@ -815,22 +875,24 @@ def add_data_signals(msg: MessageDef, can_fd: bool) -> None:
 
     bit = 16
     signal_count = 12 if can_fd else 6
-    for s in range(signal_count):
+    length = 12 if can_fd else 8
+    receiver = msg.receivers[0] if msg.receivers else ""
+    signal_specs = signal_specs_for_message(msg.sender, receiver, msg.name, signal_count, length)
+    for spec in signal_specs:
         # 12-bit Signale sind typisch kompakt und erlauben viele Signale in CAN-FD.
-        length = 12 if can_fd else 8
         if bit + length > msg.dlc * 8:
             break
         msg.signals.append(
             SignalDef(
-                name=f"SIG_{msg.frame_id:03X}_{s:02d}",
+                name=spec.name,
                 start_bit=bit,
                 length=length,
-                factor=0.1,
-                offset=0.0,
-                minimum=0,
-                maximum=(1 << length) - 1,
-                unit=random.choice(["km/h", "rpm", "deg", "Nm", "V", "A", "%", "C", "m", "obj"]),
-                kind="normal",
+                factor=spec.factor,
+                offset=spec.offset,
+                minimum=spec.minimum,
+                maximum=spec.maximum,
+                unit=spec.unit,
+                kind=spec.kind,
             )
         )
         bit += length
@@ -927,7 +989,7 @@ def build_messages(
             gateway_to_channel=int(gateway_to_channel) if gateway_to_channel is not None else None,
             kind="data",
         )
-        add_data_signals(msg, can_fd_storage)
+        add_data_signals(msg, can_fd_storage, external_signals=route.get("signals"))
         messages.append(msg)
 
         response_dlc = 16 if can_fd_storage else 8
@@ -977,6 +1039,7 @@ def encode_message_payload(
     counter_value = (alive_counter + (3 if inject_counter_error else 0)) & 0xF
     mux_value = int((timestamp_s * 10) % 16) & 0xF
 
+    physical_index = 0
     for sig in msg.signals:
         if sig.start_bit + sig.length > payload_len * 8:
             continue
@@ -986,17 +1049,19 @@ def encode_message_payload(
             value = counter_value
         elif sig.kind == "mux":
             value = mux_value
+        elif sig.kind == "route_info":
+            continue
         else:
-            # Deterministisch, aber lebendig: Dreieck + leichte Störung.
-            sig_index = int(sig.name.split("_")[-1]) if sig.name.split("_")[-1].isdigit() else 0
-            base = triangle_wave(
-                timestamp_s + sig_index * 0.07,
-                period_s=1.0 + (sig_index % 9) * 0.4,
+            value = physical_raw_value(
+                signal_name=sig.name,
+                factor=sig.factor,
+                offset=sig.offset,
                 minimum=sig.minimum,
                 maximum=sig.maximum,
+                timestamp_s=timestamp_s,
+                frame_id=msg.frame_id,
+                signal_index=physical_index,
             )
-            noise = random.randint(-3, 3)
-            value = max(sig.minimum, min(sig.maximum, base + noise))
             if filter_bank is not None:
                 value = filter_bank.filter_value(
                     signal_name=sig.name,
@@ -1008,19 +1073,23 @@ def encode_message_payload(
                     minimum=sig.minimum,
                     maximum=sig.maximum,
                 )
+            physical_index += 1
         set_unsigned_le(payload, sig.start_bit, sig.length, value)
 
-    if msg.is_fd and msg.receivers:
+    has_route_info = any(sig.kind == "route_info" for sig in msg.signals)
+    if has_route_info and msg.is_fd and msg.receivers:
         route_bytes = route_label(msg.sender, msg.receivers[0]).encode("ascii", errors="replace")
         route_field = route_bytes[:ROUTE_INFO_LENGTH].ljust(ROUTE_INFO_LENGTH, b"\x00")
         start = ROUTE_INFO_START_BYTE
         end = min(start + ROUTE_INFO_LENGTH, len(payload))
         payload[start:end] = route_field[: end - start]
 
-    crc_value = crc8_autosar(bytes(payload[1:]))
-    if inject_crc_error:
-        crc_value ^= 0x55
-    set_unsigned_le(payload, 0, 8, crc_value)
+    has_payload_crc = any(sig.kind == "crc" or sig.name.lower() in {"crc", "crc8", "checksum"} for sig in msg.signals)
+    if has_payload_crc:
+        crc_value = crc8_autosar(bytes(payload[1:]))
+        if inject_crc_error:
+            crc_value ^= 0x55
+        set_unsigned_le(payload, 0, 8, crc_value)
     return bytes(payload)
 
 
@@ -1037,13 +1106,15 @@ def encode_response_payload(
         for idx in range(response_msg.dlc)
     )
 
+    has_request_crc = any(sig.kind == "crc" or sig.name.lower() in {"crc", "crc8", "checksum"} for sig in request_msg.signals)
+    has_request_counter = any("counter" in sig.kind.lower() or "counter" in sig.name.lower() for sig in request_msg.signals)
     received_crc = request_payload[0] if request_payload else 0
     calculated_crc = crc8_autosar(request_payload[1:]) if len(request_payload) >= 2 else 0
-    checksum_ok = int(received_crc == calculated_crc and len(request_payload) >= 2)
+    checksum_ok = int((not has_request_crc) or (received_crc == calculated_crc and len(request_payload) >= 2))
     dlc_ok = int(len(request_payload) == request_msg.dlc)
     received_counter = get_unsigned_le(request_payload, 8, 4) if len(request_payload) > 1 else 0
     expected_counter = response_counter & 0xF
-    counter_ok = int(received_counter == expected_counter)
+    counter_ok = int((not has_request_counter) or received_counter == expected_counter)
 
     error_code = 0
     if not checksum_ok:
@@ -1243,7 +1314,7 @@ def generate_blf(
         # mit neuer ID und realistischem Gateway-Delay.
         if msg.gateway_to_channel is not None:
             gw_data = bytearray(data)
-            if len(gw_data) > 1:
+            if any(sig.kind == "route_info" for sig in msg.signals) and len(gw_data) > 1:
                 gw_data[1] ^= 0x80  # Gateway-Statusbit simuliert
             gw_msg = CanMessage(
                 timestamp=absolute_timestamp_s + random.uniform(0.001, 0.004),
@@ -1319,11 +1390,16 @@ def write_dbc(
             relation = f' ResponseFor=0x{msg.response_for:X}; ACK/NACK with CRC, DLC and counter check;'
         else:
             route = route_label(msg.sender, msg.receivers[0]) if msg.receivers else msg.sender
-            if msg.is_fd:
+            if any(sig.kind == "route_info" for sig in msg.signals):
                 relation = (
                     f' Data request; receiver answers with response frame; '
                     f"PayloadRouteInfo='{route}' in bytes {ROUTE_INFO_START_BYTE}-"
                     f'{ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH - 1};'
+                )
+            elif msg.is_fd:
+                relation = (
+                    f' Data request; receiver answers with response frame; '
+                    f"ExternalSignalLayout=preserved; PayloadRouteInfo not injected;"
                 )
             else:
                 relation = (
@@ -1654,43 +1730,16 @@ def write_manifest(path: Path, metadata: Dict[str, object]) -> None:
 
 
 def archive_trace_package_to_library(out_dir: Path, package_type: str) -> Path | None:
+    """Return the generated package path without creating runtime copies."""
     source = Path(out_dir).resolve()
     if not source.exists() or not source.is_dir():
         return None
-    trace_root = TRACE_ROOT.resolve()
-    try:
-        source.relative_to(trace_root)
-        return source
-    except ValueError:
-        pass
-    library_root = LIB_ROOT.resolve()
-    try:
-        source.relative_to(library_root)
-        return source
-    except ValueError:
-        pass
-    package_slug = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(package_type or "unknown").strip()).strip("._") or "unknown"
-    destination = library_root / "Automotiv" / "TracePackages" / package_slug / source.name
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, destination, dirs_exist_ok=True)
-    return destination
+    return source
 
 
 def archive_generated_files_to_library(paths: Iterable[Path], category: str) -> Path | None:
-    selected = [Path(path).resolve() for path in paths if Path(path).name.startswith("generated_") and Path(path).exists()]
-    if not selected:
-        return None
-    library_root = LIB_ROOT.resolve()
-    destination = library_root / "Automotiv" / "TracePackages" / category / "LegacyFiles"
-    destination.mkdir(parents=True, exist_ok=True)
-    for source in selected:
-        try:
-            source.relative_to(library_root)
-            continue
-        except ValueError:
-            pass
-        shutil.copy2(source, destination / source.name)
-    return destination
+    """Runtime artifacts are never copied into the source/profile library."""
+    return None
 
 
 def package_type_from_formats(formats: List[str]) -> str:
@@ -1985,6 +2034,8 @@ def generate_format_package(
     ethernet_frame_count = len(eth_frames) if eth_frames is not None else None
     filter_summary = summarize_filter_banks(filter_banks, getattr(args, "filter_system", None), scenario)
     args.filter_summary = filter_summary
+    signal_suggestions = suggest_signal_gaps(routing_rows, bus_type)
+    args.signal_suggestions = signal_suggestions
     write_manifest(
         out_dir / "generation_manifest.json",
         {
@@ -2014,6 +2065,14 @@ def generate_format_package(
             "ethernet_bitrates": eth_bitrates if eth_formats else None,
             "routing_table": str(args.routing_table.resolve()) if args.routing_table else None,
             "filter_system": filter_summary,
+            "trace_quality": trace_quality_summary(),
+            "signal_suggestions": signal_suggestions,
+            "hardware_profile": getattr(args, "hardware_summary", None) or {"enabled": False},
+            "hardware_validation": getattr(args, "hardware_validation", None) or {
+                "valid": True,
+                "mode": "non_invasive_validation",
+                "findings": [],
+            },
         },
     )
     written.append(out_dir / "generation_manifest.json")
@@ -2035,9 +2094,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42, help="Zufalls-Seed")
     parser.add_argument("--routing-table", type=Path, default=None, help="CSV-Routingtabelle mit sender,receiver,cycle_ms,channel,gateway_to_channel,frame_id,name")
     parser.add_argument("--write-routing-template", type=Path, default=None, help="Schreibt eine Beispiel-Routing-CSV und beendet das Programm")
-    parser.add_argument("--mbse-request", type=Path, default=None, help="JSON-Simulationsauftrag aus einem MBSE-Tool")
-    parser.add_argument("--write-mbse-template", type=Path, default=None, help="Schreibt ein MBSE-Simulationsauftrag-Template und beendet das Programm")
-    parser.add_argument("--interface-out", type=Path, default=None, help="Schreibt eine JSON-Ergebnis-Schnittstelle für das MBSE-Tool")
+    parser.add_argument("--config", type=Path, default=None, help="Standalone JSON-Simulationskonfiguration")
+    parser.add_argument("--write-config-template", type=Path, default=None, help="Schreibt eine Standalone-Konfigurationsvorlage und beendet das Programm")
+    parser.add_argument("--interface-out", type=Path, default=None, help="Schreibt eine JSON-Ergebnisdatei")
     parser.add_argument(
         "--simulation-mode",
         choices=["existing", "restbus"],
@@ -2095,18 +2154,18 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.write_mbse_template is not None:
-        write_mbse_request_template(args.write_mbse_template)
-        print(f"MBSE-Template geschrieben: {args.write_mbse_template.resolve()}")
+    if args.write_config_template is not None:
+        write_simulation_config_template(args.write_config_template)
+        print(f"Konfigurationsvorlage geschrieben: {args.write_config_template.resolve()}")
         return
 
-    mbse_request: Dict[str, Any] | None = None
-    if args.mbse_request is not None:
+    simulation_config: Dict[str, Any] | None = None
+    if args.config is not None:
         try:
-            mbse_request = load_mbse_request(args.mbse_request)
-            apply_mbse_request_to_args(args, mbse_request)
+            simulation_config = load_simulation_config(args.config)
+            apply_simulation_config_to_args(args, simulation_config)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
-            parser.error(f"MBSE request konnte nicht gelesen werden: {exc}")
+            parser.error(f"Simulationskonfiguration konnte nicht gelesen werden: {exc}")
 
     if args.write_routing_template is not None:
         write_routing_template(args.write_routing_template)
@@ -2156,7 +2215,7 @@ def main() -> None:
         routing_rows = load_routing_table(args.routing_table, channel_count)
     elif args.simulation_mode == "restbus":
         try:
-            restbus_participants = restbus_participants_from_request(mbse_request or {}, channel_count)
+            restbus_participants = restbus_participants_from_request(simulation_config or {}, channel_count)
             requested_routes = int(args.messages) if args.messages is not None else None
             routing_rows = build_restbus_routing_rows(restbus_participants, channel_count, max_routes=requested_routes)
             restbus_summary = restbus_interface_summary(restbus_participants, routing_rows)
@@ -2197,7 +2256,7 @@ def main() -> None:
             progress=progress,
         )
         interface_path = args.interface_out
-        if interface_path is None and (args.simulation_mode == "restbus" or args.mbse_request is not None):
+        if interface_path is None and (args.simulation_mode == "restbus" or args.config is not None):
             interface_path = Path(args.out_dir or "generated_trace_package").resolve() / "simulation_interface.json"
         if interface_path is not None:
             progress.update(97, "Schreibe Simulations-Interface")
@@ -2214,6 +2273,9 @@ def main() -> None:
                 routing_rows=routing_rows,
                 restbus_summary=restbus_summary,
                 filter_summary=getattr(args, "filter_summary", None),
+                signal_suggestions=getattr(args, "signal_suggestions", None),
+                hardware_summary=getattr(args, "hardware_summary", None),
+                hardware_validation=getattr(args, "hardware_validation", None),
             )
             written.append(interface_path.resolve())
         progress.update(99, "Finalisiere Trace-Ordner")
@@ -2265,7 +2327,7 @@ def main() -> None:
     count, first, last = validate_blf(out_blf)
     written = [out_blf, out_dbc]
     interface_path = args.interface_out
-    if interface_path is None and (args.simulation_mode == "restbus" or args.mbse_request is not None):
+    if interface_path is None and (args.simulation_mode == "restbus" or args.config is not None):
         interface_path = out_blf.parent / "simulation_interface.json"
     if interface_path is not None:
         progress.update(95, "Schreibe Simulations-Interface")
@@ -2282,6 +2344,9 @@ def main() -> None:
             routing_rows=routing_rows,
             restbus_summary=restbus_summary,
             filter_summary=getattr(args, "filter_summary", None),
+            signal_suggestions=getattr(args, "signal_suggestions", None),
+            hardware_summary=getattr(args, "hardware_summary", None),
+            hardware_validation=getattr(args, "hardware_validation", None),
         )
         written.append(interface_path.resolve())
 
@@ -2292,7 +2357,7 @@ def main() -> None:
     print(f"BLF: {out_blf}")
     print(f"DBC: {out_dbc}")
     if interface_path is not None:
-        print(f"MBSE-Interface: {interface_path.resolve()}")
+        print(f"Simulationsergebnis: {interface_path.resolve()}")
     if library_path is not None:
         print(f"Library: {library_path}")
     print(f"Frames: {count}")

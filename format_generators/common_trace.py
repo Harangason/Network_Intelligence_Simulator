@@ -13,11 +13,18 @@ import random
 import csv
 import re
 import struct
+import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from trace_realism import external_signal_records, physical_raw_value, signal_specs_for_message
 
 
 ROUTE_INFO_START_BYTE = 20
@@ -172,7 +179,7 @@ def normalize_routing_row(row: dict[str, object], index: int, channels: int) -> 
         gateway_to_channel = max(0, min(channels - 1, gateway_to_channel))
     frame_id = parse_optional_int(row.get("frame_id") or row.get("id") or row.get("can_id"), 0x100 + index)
     name = safe_identifier(str(row.get("name") or row.get("message") or row.get("message_name") or f"{sender}_TO_{receiver}"), "MSG")
-    return {
+    normalized = {
         "name": name,
         "sender": sender,
         "receiver": receiver,
@@ -181,6 +188,11 @@ def normalize_routing_row(row: dict[str, object], index: int, channels: int) -> 
         "gateway_to_channel": gateway_to_channel,
         "frame_id": frame_id if frame_id is not None else 0x100 + index,
     }
+    route_signals = external_signal_records(row.get("signals") or row.get("signal_definitions") or row.get("message_signals"))
+    if route_signals:
+        normalized["signals"] = route_signals
+        normalized["signal_source"] = str(row.get("signal_source") or "external")
+    return normalized
 
 
 def load_routing_table(path: Path, channels: int) -> list[dict[str, object]]:
@@ -250,7 +262,31 @@ def triangle_wave(t_s: float, period_s: float, minimum: int, maximum: int) -> in
     return int(minimum + y * (maximum - minimum))
 
 
-def data_signals(dlc: int, is_fd: bool) -> tuple[SignalDef, ...]:
+def data_signals(
+    dlc: int,
+    is_fd: bool,
+    sender: str = "",
+    receiver: str = "",
+    message_name: str = "",
+    external_signals: list[dict[str, object]] | None = None,
+) -> tuple[SignalDef, ...]:
+    external_records = external_signal_records(external_signals)
+    if external_records:
+        return tuple(
+            SignalDef(
+                record["name"],
+                record["start_bit"],
+                record["length"],
+                record["factor"],
+                record["offset"],
+                record["minimum"],
+                record["maximum"],
+                record["unit"],
+                record["kind"],
+            )
+            for record in external_records
+        )
+
     signals: list[SignalDef] = [
         SignalDef("CRC8", 0, 8, 1, 0, 0, 255, "", "crc"),
         SignalDef("AliveCounter", 8, 4, 1, 0, 0, 15, "", "counter"),
@@ -258,19 +294,22 @@ def data_signals(dlc: int, is_fd: bool) -> tuple[SignalDef, ...]:
     ]
     bit = 16
     signal_count = 12 if is_fd else 6
-    units = ["km/h", "rpm", "deg", "Nm", "V", "A", "%", "C", "m", "obj"]
-    for index in range(signal_count):
-        length = 12 if is_fd else 8
+    length = 12 if is_fd else 8
+    signal_specs = signal_specs_for_message(sender, receiver, message_name, signal_count, length)
+    for spec in signal_specs:
         if bit + length > dlc * 8:
             break
         signals.append(
             SignalDef(
-                name=f"SIG_{index:02d}",
+                name=spec.name,
                 start_bit=bit,
                 length=length,
-                factor=0.1,
-                maximum=(1 << length) - 1,
-                unit=units[index % len(units)],
+                factor=spec.factor,
+                offset=spec.offset,
+                minimum=spec.minimum,
+                maximum=spec.maximum,
+                unit=spec.unit,
+                kind=spec.kind,
             )
         )
         bit += length
@@ -341,7 +380,7 @@ def build_messages(num_messages: int, bus_type: str, channels: int, routing_rows
                 bus_type=bus_type,
                 kind="data",
                 gateway_to_channel=int(gateway_to_channel) if gateway_to_channel is not None else None,
-                signals=data_signals(data_dlc, is_fd_storage),
+                signals=data_signals(data_dlc, is_fd_storage, sender, receiver, base_name, route.get("signals")),
             )
         )
         messages.append(
@@ -366,11 +405,20 @@ def encode_data_payload(msg: MessageDef, rel_time: float, counter: int, filter_b
     payload = bytearray(((msg.frame_id + int(rel_time * 1000.0) + counter * 31 + idx * 17) & 0xFF) for idx in range(msg.dlc))
     set_unsigned_le(payload, 8, 4, counter & 0xF)
     set_unsigned_le(payload, 12, 4, int((rel_time * 10) % 16) & 0xF)
+    physical_index = 0
     for sig in msg.signals:
         if sig.kind in {"crc", "counter", "mux", "route_info"}:
             continue
-        sig_index = int(sig.name.rsplit("_", 1)[-1]) if sig.name.rsplit("_", 1)[-1].isdigit() else 0
-        value = triangle_wave(rel_time + sig_index * 0.07, 1.0 + (sig_index % 9) * 0.4, sig.minimum, sig.maximum)
+        value = physical_raw_value(
+            signal_name=sig.name,
+            factor=sig.factor,
+            offset=sig.offset,
+            minimum=sig.minimum,
+            maximum=sig.maximum,
+            timestamp_s=rel_time,
+            frame_id=msg.frame_id,
+            signal_index=physical_index,
+        )
         if filter_bank is not None:
             value = filter_bank.filter_value(
                 signal_name=sig.name,
@@ -382,13 +430,16 @@ def encode_data_payload(msg: MessageDef, rel_time: float, counter: int, filter_b
                 minimum=sig.minimum,
                 maximum=sig.maximum,
             )
+        physical_index += 1
         set_unsigned_le(payload, sig.start_bit, sig.length, value)
 
-    if msg.dlc >= ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH:
+    if any(sig.kind == "route_info" for sig in msg.signals) and msg.dlc >= ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH:
         route = route_label(msg.sender, msg.receiver).encode("ascii", errors="replace")
         payload[ROUTE_INFO_START_BYTE : ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH] = route[:ROUTE_INFO_LENGTH].ljust(ROUTE_INFO_LENGTH, b"\x00")
 
-    set_unsigned_le(payload, 0, 8, crc8_autosar(bytes(payload[1:])))
+    has_payload_crc = any(sig.kind == "crc" or sig.name.lower() in {"crc", "crc8", "checksum"} for sig in msg.signals)
+    if has_payload_crc:
+        set_unsigned_le(payload, 0, 8, crc8_autosar(bytes(payload[1:])))
     return bytes(payload)
 
 
@@ -396,10 +447,12 @@ def encode_response_payload(response: MessageDef, request: MessageDef, request_p
     payload = bytearray(((response.frame_id + counter * 19 + idx * 23) & 0xFF) for idx in range(response.dlc))
     received_crc = request_payload[0] if request_payload else 0
     calculated_crc = crc8_autosar(request_payload[1:]) if len(request_payload) >= 2 else 0
-    checksum_ok = int(received_crc == calculated_crc and len(request_payload) >= 2)
+    has_request_crc = any(sig.kind == "crc" or sig.name.lower() in {"crc", "crc8", "checksum"} for sig in request.signals)
+    has_request_counter = any("counter" in sig.kind.lower() or "counter" in sig.name.lower() for sig in request.signals)
+    checksum_ok = int((not has_request_crc) or (received_crc == calculated_crc and len(request_payload) >= 2))
     dlc_ok = int(len(request_payload) == request.dlc)
     received_counter = get_unsigned_le(request_payload, 8, 4) if len(request_payload) > 1 else 0
-    counter_ok = int(received_counter == (counter & 0xF))
+    counter_ok = int((not has_request_counter) or received_counter == (counter & 0xF))
     error_code = (0 if checksum_ok else 0x01) | (0 if dlc_ok else 0x02) | (0 if counter_ok else 0x04)
     ack_state = 1 if error_code == 0 else (2 if error_code & 0x01 else 3 if error_code & 0x02 else 4)
 
@@ -513,7 +566,7 @@ def build_can_trace(
 
         if msg.gateway_to_channel is not None:
             gateway_payload = bytearray(payload)
-            if len(gateway_payload) > 1:
+            if any(sig.kind == "route_info" for sig in msg.signals) and len(gateway_payload) > 1:
                 gateway_payload[1] ^= 0x80
             gateway_rel_time = rel_time + rng.uniform(0.001, 0.004)
             frames.append(

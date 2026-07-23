@@ -1,19 +1,23 @@
 # traces
 
-This directory is reserved for generated simulator output.
+Dieses Verzeichnis ist ausschließlich für lokale Laufzeitausgaben vorgesehen.
+Generierte Unterordner und Trace-Dateien werden von Git ignoriert.
 
-Trace packages can become large quickly, especially BLF, PCAP, PCAPNG, MDF,
-MF4, CSV, and mixed JSON exports. Generated scenario folders under this
-directory are intentionally ignored by Git. Keep reusable configuration,
-profiles, and documentation in `physic_lib/` instead.
+Ein typischer Lauf enthält:
 
-Typical generated packages use this shape:
+```text
+traces/<lauf>/
+  traces/
+    universal_trace.jsonl
+    universal_trace.csv
+  native/
+    traces/
+    datenbasen/
+    generation_manifest.json
+    simulation_interface.json
+  generation_manifest.json
+  simulation_result.json
+```
 
-- `Automotive/<timestamp>_<scenario>/traces/`
-  BLF, ASC, TRC, CSV, JSON, LOG, TXT, XML, YAML, PCAP, PCAPNG, and mixed trace files.
-- `Automotive/<timestamp>_<scenario>/datenbasen/`
-  DBC, ARXML, FIBEX, and related network database files.
-- `Automotive/<timestamp>_<scenario>/generation_manifest.json`
-  Metadata for the generated package.
-- `Automotive/<timestamp>_<scenario>/simulation_interface.json`
-  Restbus participants, routing, warnings, artifact paths, and simulation summary.
+Wiederverwendbare Hardware-, Netzwerk- und Technologieprofile gehören nicht in
+diesen Ordner.

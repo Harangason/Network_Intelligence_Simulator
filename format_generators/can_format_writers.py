@@ -53,11 +53,13 @@ def write_dbc(path: Path, messages: list[MessageDef], nominal_bitrate: int = 500
         gateway = f"; Gateway to CAN{msg.gateway_to_channel}" if msg.gateway_to_channel is not None else ""
         if msg.kind == "response":
             relation = f"ResponseFor=0x{msg.response_for:X}; ACK/NACK with CRC, DLC and counter check"
-        elif msg.dlc >= ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH:
+        elif any(sig.kind == "route_info" for sig in msg.signals):
             relation = (
                 f"PayloadRouteInfo='{route_label(msg.sender, msg.receiver)}' "
                 f"in bytes {ROUTE_INFO_START_BYTE}-{ROUTE_INFO_START_BYTE + ROUTE_INFO_LENGTH - 1}"
             )
+        elif msg.bus_type in {"fd", "xl"}:
+            relation = "ExternalSignalLayout=preserved; PayloadRouteInfo not injected"
         else:
             relation = f"PayloadRouteInfo='{route_label(msg.sender, msg.receiver)}' only in DBC comment"
         lines.append(

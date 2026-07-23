@@ -14,15 +14,16 @@ import time
 from pathlib import Path
 from typing import Union, Dict, List
 from openai import OpenAI
+from hardware_profile import normalize_hardware_config
+from trace_realism import contains_external_signal_records, external_signal_records
 
-SCHEMA = "can-simulator.mbse-simulation-request.v1"
-PROFILE_IMPORT_SCHEMA = "can-simulator.profile-import.v1"
-HANDOFF_SCHEMA = "can-simulator.integration-handoff.v1"
+SCHEMA = "communication-simulator.simulation-config.v1"
+PROFILE_IMPORT_SCHEMA = "communication-simulator.profile-import.v1"
 LIB_ROOT = Path("physic_lib")
-TRACE_ROOT = Path("traces") / "Automotive"
+TRACE_ROOT = Path("traces")
 CONFIG_DB_PATH = LIB_ROOT / "Config" / "simulation_config.db"
 INDUSTRY_PROFILE_ROOT = LIB_ROOT / "Industries"
-DEFAULT_PROJECT_INDUSTRY = "Automotive"
+DEFAULT_PROJECT_INDUSTRY = "Generic"
 PROJECT_PROFILE_DB_NAME = "project_profiles.db"
 MANEUVER_DB_PATH = INDUSTRY_PROFILE_ROOT / DEFAULT_PROJECT_INDUSTRY / "maneuver_profiles.db"
 SIMULATION_MEMORY_DB_PATH = INDUSTRY_PROFILE_ROOT / DEFAULT_PROJECT_INDUSTRY / "learning" / "simulation_memory.db"
@@ -558,14 +559,14 @@ DEFAULT_PHYSICAL_AI_WORKFLOWS = [
     },
 ]
 
-SYSTEM_PROMPT = """You are an expert in Controller Area Network (CAN) simulation and MBSE (Model-Based Systems Engineering).
-Your task is to generate a JSON simulation request for the `can-simulator` tool.
+SYSTEM_PROMPT = """You are an expert in standalone communication and bus simulation.
+Your task is to generate a JSON simulation configuration for the `communication-simulator` tool.
 
-The request must follow this schema: `can-simulator.mbse-simulation-request.v1`.
+The configuration must follow this schema: `communication-simulator.simulation-config.v1`.
 
 ### JSON Structure:
 {
-  "schema": "can-simulator.mbse-simulation-request.v1",
+  "schema": "communication-simulator.simulation-config.v1",
   "simulation_mode": "restbus",
   "output_dir": "string (name of the scenario)",
   "formats": "blf,dbc,json,csv",
@@ -1601,8 +1602,6 @@ def request_library_destination(request_data, source_path):
         maneuver = sanitize_folder_name(scenario.get("maneuver_profile") or "generic")
         mode = sanitize_folder_name(request_data.get("package_mode") or "legacy")
         domain = sanitize_folder_name(scenario.get("domain") or DEFAULT_PROJECT_INDUSTRY)
-        if domain.lower() in {"automotive", "automotiv"}:
-            return LIB_ROOT / "Automotiv" / "Requests" / project / maneuver / mode / source_path.name
         return LIB_ROOT / "Industries" / domain / "Requests" / project / maneuver / mode / source_path.name
     return LIB_ROOT / "Samples" / "JsonUnknown" / source_path.name
 
@@ -1675,18 +1674,19 @@ def library_candidate_score(request_data, prompt, project_key, maneuver_key, set
     return min(100, score)
 
 def find_library_request(prompt, project_key, maneuver_key, setup, min_score=70):
-    request_root = LIB_ROOT / "Automotiv" / "Requests"
-    if not request_root.exists():
-        return None
+    request_roots = [LIB_ROOT / "Industries", LIB_ROOT / "Automotiv" / "Requests"]
     best = None
-    for path in request_root.rglob("*.json"):
-        try:
-            request_data = json.loads(path.read_text(encoding="utf-8-sig"))
-        except (OSError, json.JSONDecodeError):
+    for request_root in request_roots:
+        if not request_root.exists():
             continue
-        score = library_candidate_score(request_data, prompt, project_key, maneuver_key, setup)
-        if score >= min_score and (best is None or score > best["score"]):
-            best = {"path": path, "request": request_data, "score": score}
+        for path in request_root.rglob("*.json"):
+            try:
+                request_data = json.loads(path.read_text(encoding="utf-8-sig"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            score = library_candidate_score(request_data, prompt, project_key, maneuver_key, setup)
+            if score >= min_score and (best is None or score > best["score"]):
+                best = {"path": path, "request": request_data, "score": score}
     return best
 
 def request_from_library_match(match, prompt, project_key, maneuver_key, setup):
@@ -2004,6 +2004,8 @@ def normalize_import_participant(raw_participant, index, channel_count):
     name = raw_participant.get("name") or raw_participant.get("id") or raw_participant.get("ecu")
     if not name:
         name = f"NODE_{index + 1}"
+    raw_signals = raw_participant.get("signals")
+    provided_signal_alias = None if contains_external_signal_records(raw_signals) else raw_signals
     participant = {
         "name": sanitize_folder_name(name).upper(),
         "role": str(raw_participant.get("role") or raw_participant.get("type") or "ecu").strip().lower(),
@@ -2012,7 +2014,7 @@ def normalize_import_participant(raw_participant, index, channel_count):
         "provided_services": service_list(
             raw_participant.get("provided_services")
             or raw_participant.get("publishes")
-            or raw_participant.get("signals")
+            or provided_signal_alias
             or raw_participant.get("outputs")
         ),
         "consumed_services": service_list(
@@ -2023,6 +2025,10 @@ def normalize_import_participant(raw_participant, index, channel_count):
         ),
         "health": str(raw_participant.get("health") or "nominal").strip().lower(),
     }
+    external_signals = external_signal_records(raw_signals or raw_participant.get("signal_definitions") or raw_participant.get("message_signals"))
+    if external_signals:
+        participant["signals"] = external_signals
+        participant["signal_source"] = str(raw_participant.get("signal_source") or "external")
     if participant["channel"] < 0:
         participant["channel"] = 0
     participant["channel"] = participant["channel"] % max(1, channel_count)
@@ -2056,10 +2062,10 @@ def normalize_imported_profile(import_data, import_path=None, industry_override=
         raise ValueError("Import file must contain a JSON object")
     if import_data.get("schema") == SCHEMA:
         request_data = copy.deepcopy(import_data)
-        request_data.setdefault("generation_source", {"type": "imported_mbse_request", "path": str(import_path or "")})
+        request_data.setdefault("generation_source", {"type": "imported_simulation_config", "path": str(import_path or "")})
         return request_data, None
 
-    industry = industry_override or import_data.get("industry") or import_data.get("domain") or "Automotive"
+    industry = industry_override or import_data.get("industry") or import_data.get("domain") or "Generic"
     project_key = project_key_override or import_data.get("project_key") or import_data.get("key") or import_data.get("name")
     if not project_key:
         project_key = Path(import_path).stem if import_path else "imported_project"
@@ -2119,6 +2125,12 @@ def normalize_imported_profile(import_data, import_path=None, industry_override=
             "industry": str(industry).lower(),
         },
     }
+    normalized_hardware = normalize_hardware_config(import_data)
+    if normalized_hardware["hardware"] or normalized_hardware["networks"]:
+        request_data["hardware"] = normalized_hardware["hardware"]
+        request_data["networks"] = normalized_hardware["networks"]
+        if normalized_hardware["technology_profiles"]:
+            request_data["technology_profiles"] = normalized_hardware["technology_profiles"]
     apply_simulation_setup(request_data, setup)
     request_data["filter_system"]["domain"] = str(industry).lower()
     request_data["filter_system"]["profile"] = project_key
@@ -2175,29 +2187,10 @@ def install_imported_profile(project_key, profile):
         )
     return db_path
 
-def integration_handoff(request_path, request_data, profile_info=None):
-    return {
-        "schema": HANDOFF_SCHEMA,
-        "request_schema": SCHEMA,
-        "request_path": str(Path(request_path).resolve()),
-        "run_command": [sys.executable, "generate_realistic_communication_tool.py", "--mbse-request", str(Path(request_path).resolve())],
-        "python_api": {
-            "module": "generate_realistic_communication_tool",
-            "function": "run_mbse_simulation_request",
-            "argument": "request dict or JSON loaded from request_path",
-        },
-        "expected_result": "simulation_interface.json",
-        "project_profile": profile_info[0] if profile_info else request_data.get("scenario", {}).get("project_profile"),
-        "industry": request_data.get("scenario", {}).get("domain"),
-        "participants": len(request_data.get("participants") or []),
-        "package_mode": request_data.get("package_mode"),
-        "formats": request_data.get("formats"),
-    }
-
 def write_import_template(path):
     template = {
         "schema": PROFILE_IMPORT_SCHEMA,
-        "industry": "Automotive",
+        "industry": "Generic",
         "project_key": "external_vehicle_platform",
         "description": "Imported topology from another project. Replace nodes with your real components.",
         "package_mode": "mixed",
@@ -2213,6 +2206,28 @@ def write_import_template(path):
                 "cycle_ms": 20,
                 "provided_services": ["OBJECT_LIST", "LIDAR_HEALTH"],
                 "consumed_services": ["SYNC_TIME"],
+                "signals": [
+                    {
+                        "name": "OEM_ObjectDistance",
+                        "start_bit": 16,
+                        "length": 16,
+                        "factor": 0.01,
+                        "offset": 0,
+                        "minimum": 0,
+                        "maximum": 65535,
+                        "unit": "m",
+                    },
+                    {
+                        "name": "OEM_ObjectRelSpeed",
+                        "start_bit": 32,
+                        "length": 16,
+                        "factor": 0.01,
+                        "offset": -327.68,
+                        "minimum": 0,
+                        "maximum": 65535,
+                        "unit": "m/s",
+                    },
+                ],
             },
             {
                 "name": "CENTRAL_GATEWAY",
@@ -2250,14 +2265,19 @@ def write_import_template(path):
         ],
         "field_aliases": {
             "participants": "also accepts nodes/devices",
-            "provided_services": "also accepts publishes/signals/outputs",
+            "provided_services": "also accepts publishes/string-list signals/outputs",
             "consumed_services": "also accepts subscribes/inputs/commands",
             "cycle_ms": "also accepts period_ms/cycle",
         },
+        "external_signal_policy": {
+            "signals_as_objects": "preserved as external signal definitions",
+            "preserved_fields": ["name", "start_bit", "length", "factor", "offset", "minimum", "maximum", "unit", "kind"],
+            "fallback": "built-in physical signal catalog is used only when no external signal definitions are provided",
+        },
         "integration_contract": {
-            "import_cli": "py nemotron.py --import-profile imported_profile.json --out generated_request.json --emit-handoff handoff.json",
-            "run_cli": "py generate_realistic_communication_tool.py --mbse-request generated_request.json",
-            "python_api": "from generate_realistic_communication_tool import run_mbse_simulation_request",
+            "import_cli": "py nemotron.py --import-profile imported_profile.json --out generated_config.json",
+            "run_cli": "py communication_simulator.py --config generated_config.json",
+            "python_api": "from communication_simulator import run_simulation",
         },
         "domain_hints": {
             "automotive": ["CAN-FD", "Ethernet", "SOME/IP", "service_discovery", "gateway", "diagnostics"],
@@ -2549,7 +2569,7 @@ def local_request_from_profiles(prompt, project_key, maneuver_key, setup):
 
 def run_trace_generator(request_path):
     subprocess.run(
-        [sys.executable, "generate_realistic_communication_tool.py", "--mbse-request", str(request_path)],
+        [sys.executable, "communication_simulator.py", "--config", str(request_path)],
         check=True,
     )
 
@@ -2597,11 +2617,10 @@ def main():
     parser.add_argument("--check-physical-ai", action="store_true", help="Check Physical AI/NuRec skills, tokens, Docker, Hugging Face access, and optional NGC login")
     parser.add_argument("--login-ngc", action="store_true", help="With --check-physical-ai, run docker login nvcr.io using NGC_API_KEY without printing the token")
     parser.add_argument("--write-import-template", default=None, help="Write a JSON template for importing an external hardware/topology profile")
-    parser.add_argument("--import-profile", default=None, help="Import an external profile/request JSON and convert it to an MBSE simulation request")
+    parser.add_argument("--import-profile", default=None, help="Import an external hardware/topology profile into a standalone simulation configuration")
     parser.add_argument("--install-imported-profile", action="store_true", help="Store --import-profile as a reusable project profile in physic_lib/Industries/<industry>")
     parser.add_argument("--import-industry", default=None, help="Override imported industry/domain, e.g. Automotive, Industrial, Robotics")
     parser.add_argument("--import-project-key", default=None, help="Override imported project profile key")
-    parser.add_argument("--emit-handoff", default=None, help="Write a small integration handoff JSON for embedding this simulator in another project")
     args = parser.parse_args()
     if args.eth_messages is not None and args.eth_messages < 1:
         parser.error("--eth-messages must be at least 1")
@@ -2645,30 +2664,22 @@ def main():
             industry_override=args.import_industry,
             project_key_override=args.import_project_key,
         )
-        status.update(72, "Schreibe MBSE-Request")
+        status.update(72, "Schreibe Simulationskonfiguration")
         library_path = write_request_json(args.out, request_data)
         installed_db = None
         if args.install_imported_profile:
             if not profile_info:
-                print("Info: imported file is already an MBSE request; no project profile installed.")
+                print("Info: imported file is already a simulation configuration; no project profile installed.")
             else:
                 installed_db = install_imported_profile(*profile_info)
-        if args.emit_handoff:
-            handoff = integration_handoff(library_path, request_data, profile_info)
-            handoff_path = Path(args.emit_handoff)
-            handoff_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(handoff_path, "w", encoding="utf-8") as f:
-                json.dump(handoff, f, indent=2)
         if args.run:
             status.update(88, "Starte Simulation aus Import")
             status.line()
             run_trace_generator_and_learn(library_path, request_data)
         status.update(100, "Import fertig")
-        print(f"Success: Imported profile saved as MBSE request: {library_path}")
+        print(f"Success: Imported profile saved as simulation configuration: {library_path}")
         if installed_db:
             print(f"Installed profile DB: {installed_db}")
-        if args.emit_handoff:
-            print(f"Handoff: {args.emit_handoff}")
         return
 
     if isinstance(args.prompt, list):
@@ -2918,7 +2929,7 @@ def main():
                 print(f"Success: Generated fallback request saved to {args.out}")
                 print(f"Library: {library_path}")
                 if args.run:
-                    print(f"Running simulation: {sys.executable} generate_realistic_communication_tool.py --mbse-request {library_path}")
+                    print(f"Running simulation: {sys.executable} communication_simulator.py --config {library_path}")
                     run_trace_generator_and_learn(library_path, request_data)
                 return
             except Exception as fallback_error:
