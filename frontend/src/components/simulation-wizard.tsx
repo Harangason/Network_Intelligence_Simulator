@@ -29,7 +29,8 @@ export function SimulationWizard() {
     setTopologyConfig(config);
   }, []);
 
-  useEffect(() => {
+  const loadCatalog = useCallback(() => {
+    setCatalogError("");
     getCatalog()
       .then(setCatalog)
       .catch((error) =>
@@ -40,6 +41,10 @@ export function SimulationWizard() {
         ),
       );
   }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const domain = useMemo(
     () => catalog?.domains.find((item) => item.id === domainId),
@@ -121,8 +126,11 @@ export function SimulationWizard() {
         <p className="eyebrow">Backend nicht erreichbar</p>
         <h2>{catalogError}</h2>
         <p className="muted">
-          Starte die Anwendung mit dem gemeinsamen Web-Launcher.
+          Prüfe, ob der gemeinsame Launcher noch läuft, und versuche es dann erneut.
         </p>
+        <button className="button secondary" onClick={loadCatalog} type="button">
+          Erneut versuchen
+        </button>
       </div>
     );
   }
