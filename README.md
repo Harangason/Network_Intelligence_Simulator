@@ -24,10 +24,11 @@ npm install
 Set-Location ..
 ```
 
-Anschließend startet ein gemeinsamer Launcher Backend und Frontend:
+Anschließend startet der gemeinsame Launcher Backend, Frontend und die
+Weboberfläche im Browser:
 
 ```powershell
-uv run --project backend python generate_realistic_communication_tool.py web
+uv run --project backend python generate_realistic_communication_tool.py
 ```
 
 - Oberfläche: `http://127.0.0.1:3001`
@@ -39,8 +40,8 @@ Nur das Backend starten:
 uv run --project backend python generate_realistic_communication_tool.py backend
 ```
 
-Die bisherige CLI bleibt kompatibel. Der optionale Unterbefehl `cli` kann zur
-eindeutigen Abgrenzung verwendet werden:
+Die bisherige CLI bleibt als Fallback kompatibel. Verwende den Unterbefehl
+`cli`, wenn eine Konsolen-Simulation statt der Oberfläche gewünscht ist:
 
 ```powershell
 uv run --project backend python generate_realistic_communication_tool.py cli --list-technologies
@@ -169,10 +170,17 @@ python -m pip install asammdf
 
 ## Schnellstart
 
-Der umfassendste Einstieg ist die technologieoffene CLI:
+Für die grafische Konfiguration ist die Weboberfläche der Standard-Einstieg:
 
 ```powershell
 python generate_realistic_communication_tool.py
+```
+
+Die technologieoffene CLI bleibt für automatisierte oder terminalbasierte
+Läufe verfügbar:
+
+```powershell
+python generate_realistic_communication_tool.py cli
 ```
 
 Ohne Parameter führt sie interaktiv durch:
@@ -188,13 +196,13 @@ Ohne Parameter führt sie interaktiv durch:
 Alle Technologien anzeigen:
 
 ```powershell
-python generate_realistic_communication_tool.py --list-technologies
+python generate_realistic_communication_tool.py cli --list-technologies
 ```
 
 Nicht-interaktives Aerospace-Beispiel:
 
 ```powershell
-python generate_realistic_communication_tool.py `
+python generate_realistic_communication_tool.py cli `
   --technology arinc429 `
   --industry Aerospace `
   --bitrate 100000 `
@@ -212,7 +220,7 @@ python generate_realistic_communication_tool.py `
 Industrial-Automation-Beispiel:
 
 ```powershell
-python generate_realistic_communication_tool.py `
+python generate_realistic_communication_tool.py cli `
   --technology modbus_tcp `
   --nodes 4 `
   --cycle-ms 50 `
@@ -224,7 +232,7 @@ python generate_realistic_communication_tool.py `
 Der bisherige native CAN/Ethernet-Pfad bleibt erreichbar:
 
 ```powershell
-python generate_realistic_communication_tool.py `
+python generate_realistic_communication_tool.py cli `
   --native-cli `
   --bus fd `
   --formats blf,dbc,asc `

@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,15 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Communication Simulator — Build signals. Understand systems.",
-  description:
-    "Offene Simulationsumgebung für moderne Kommunikationssysteme, Netzwerk-Traces und Hardwarevalidierung.",
-};
-
-export const viewport: Viewport = {
-  themeColor: "#0b0d0b",
-  width: "device-width",
-  initialScale: 1,
+  title: "Communication Simulator",
+  description: "Technologieoffene Kommunikationssimulation",
 };
 
 export default function RootLayout({
@@ -30,7 +23,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} bg-background`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body>{children}</body>
     </html>

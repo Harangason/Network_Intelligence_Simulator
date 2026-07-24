@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createSimulation, getCatalog } from "@/lib/api";
 import type { Catalog, SimulationJob, Technology } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
-import { NetworkEditor } from "./network-editor";
-import { initialTopology, topologyToConfig, type NetworkTopology } from "@/lib/topology";
+import { NetworkTopologyEditor } from "./network-topology-editor";
 
 const universalFormats = ["universal-jsonl", "universal-csv"];
 
@@ -17,16 +16,21 @@ export function SimulationWizard() {
   const [technologyId, setTechnologyId] = useState("can_fd");
   const [formats, setFormats] = useState<string[]>(universalFormats);
   const [advanced, setAdvanced] = useState(false);
+  const [topologyMode, setTopologyMode] = useState(true);
+  const [topologyConfig, setTopologyConfig] = useState<Record<string, unknown> | null>(null);
   const [advancedConfig, setAdvancedConfig] = useState(
     '{\n  "name": "custom_simulation",\n  "duration_s": 1,\n  "formats": ["universal-jsonl"]\n}',
   );
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [mode, setMode] = useState<"parameters" | "network">("parameters");
-  const [topology, setTopology] = useState<NetworkTopology>(initialTopology);
 
-  useEffect(() => {
+  const acceptTopologyConfig = useCallback((config: Record<string, unknown>) => {
+    setTopologyConfig(config);
+  }, []);
+
+  const loadCatalog = useCallback(() => {
+    setCatalogError("");
     getCatalog()
       .then(setCatalog)
       .catch((error) =>
@@ -37,6 +41,10 @@ export function SimulationWizard() {
         ),
       );
   }, []);
+
+  useEffect(() => {
+    loadCatalog();
+  }, [loadCatalog]);
 
   const domain = useMemo(
     () => catalog?.domains.find((item) => item.id === domainId),
@@ -77,18 +85,17 @@ export function SimulationWizard() {
     );
   }
 
-  async function submit(formElement: HTMLFormElement | null, validateOnly: boolean) {
+  async function submit(formElement: HTMLFormElement, validateOnly: boolean) {
     setSubmitting(true);
     setFormError("");
     try {
+      const form = new FormData(formElement);
       let payload: Record<string, unknown>;
-      if (mode === "network") {
-        payload = topologyToConfig(topology, formats);
+      if (topologyMode && topologyConfig) {
+        payload = { config: topologyConfig };
       } else if (advanced) {
         payload = { config: JSON.parse(advancedConfig) };
       } else {
-        if (!formElement) throw new Error("Konfigurationsformular nicht gefunden.");
-        const form = new FormData(formElement);
         payload = {
           industry: domainId,
           technology: technologyId,
@@ -119,8 +126,11 @@ export function SimulationWizard() {
         <p className="eyebrow">Backend nicht erreichbar</p>
         <h2>{catalogError}</h2>
         <p className="muted">
-          Starte die Anwendung mit dem gemeinsamen Web-Launcher.
+          Prüfe, ob der gemeinsame Launcher noch läuft, und versuche es dann erneut.
         </p>
+        <button className="button secondary" onClick={loadCatalog} type="button">
+          Erneut versuchen
+        </button>
       </div>
     );
   }
@@ -129,29 +139,7 @@ export function SimulationWizard() {
   }
 
   return (
-    <>
-      <div className="studio-mode-tabs" role="tablist" aria-label="Konfigurationsmodus">
-        <button
-          aria-selected={mode === "parameters"}
-          className={mode === "parameters" ? "active" : ""}
-          onClick={() => setMode("parameters")}
-          role="tab"
-          type="button"
-        >
-          Parameter
-        </button>
-        <button
-          aria-selected={mode === "network"}
-          className={mode === "network" ? "active" : ""}
-          onClick={() => setMode("network")}
-          role="tab"
-          type="button"
-        >
-          Netzwerk-Editor
-          <span>{topology.nodes.length} Geräte</span>
-        </button>
-      </div>
-      <div className={`workspace-grid ${mode === "network" ? "network-mode" : ""}`}>
+    <div className="workspace-grid">
       <form
         className="panel config-panel"
         onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -162,38 +150,25 @@ export function SimulationWizard() {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Neue Simulation</p>
-            <h2>{mode === "network" ? "ECU-Netzwerk" : "Konfiguration"}</h2>
+            <h2>Konfiguration</h2>
           </div>
-          {mode === "parameters" && (
-            <label className="mode-switch">
-              <input
-                checked={advanced}
-                onChange={(event) => setAdvanced(event.target.checked)}
-                type="checkbox"
-              />
-              <span>JSON-Modus</span>
-            </label>
-          )}
+          <label className="mode-switch">
+            <input
+              checked={advanced}
+              onChange={(event) => setAdvanced(event.target.checked)}
+              type="checkbox"
+            />
+            <span>JSON-Modus</span>
+          </label>
         </div>
 
-        {mode === "network" ? (
-          <>
-            <NetworkEditor onChange={setTopology} topology={topology} />
-            <div className="network-output-row">
-              <div>
-                <span>Topologie</span>
-                <strong>{topology.nodes.length} Geräte · {topology.edges.length} Verbindungen</strong>
-              </div>
-              <div className="format-inline">
-                {universalFormats.map((format) => (
-                  <label key={format}>
-                    <input checked={formats.includes(format)} onChange={() => toggleFormat(format)} type="checkbox" />
-                    {format.replace("universal-", "").toUpperCase()}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </>
+        <div className="editor-switch" role="group" aria-label="Konfigurationsmodus">
+          <button className={`editor-tab ${topologyMode ? "active" : ""}`} onClick={() => setTopologyMode(true)} type="button">Netzwerkplan</button>
+          <button className={`editor-tab ${!topologyMode ? "active" : ""}`} onClick={() => setTopologyMode(false)} type="button">Einfacher Lauf</button>
+        </div>
+
+        {topologyMode ? (
+          <NetworkTopologyEditor onConfigChange={acceptTopologyConfig} />
         ) : advanced ? (
           <div className="field full-width">
             <label htmlFor="advanced_config">Vollständige Konfiguration</label>
@@ -342,23 +317,24 @@ export function SimulationWizard() {
       <aside className="side-column">
         <div className="panel overview-panel">
           <p className="eyebrow">Run overview</p>
-          <h2>{mode === "network" ? "ECU TOPOLOGY" : technology.id.replaceAll("_", " ").toUpperCase()}</h2>
+          <h2>{technology.id.replaceAll("_", " ").toUpperCase()}</h2>
           <dl className="overview-list">
-            {mode === "network" ? (
-              <>
-                <div><dt>Geräte</dt><dd>{topology.nodes.length}</dd></div>
-                <div><dt>Verbindungen</dt><dd>{topology.edges.length}</dd></div>
-                <div><dt>Busse</dt><dd>{new Set(topology.edges.map((edge) => edge.bus)).size}</dd></div>
-                <div><dt>Formate</dt><dd>{formats.length}</dd></div>
-              </>
-            ) : (
-              <>
-                <div><dt>Bereich</dt><dd>{domain.label}</dd></div>
-                <div><dt>Medium</dt><dd>{technology.medium}</dd></div>
-                <div><dt>Topologie</dt><dd>{technology.topology}</dd></div>
-                <div><dt>Formate</dt><dd>{formats.length}</dd></div>
-              </>
-            )}
+            <div>
+              <dt>Bereich</dt>
+              <dd>{domain.label}</dd>
+            </div>
+            <div>
+              <dt>Medium</dt>
+              <dd>{technology.medium}</dd>
+            </div>
+            <div>
+              <dt>Topologie</dt>
+              <dd>{technology.topology}</dd>
+            </div>
+            <div>
+              <dt>Formate</dt>
+              <dd>{formats.length}</dd>
+            </div>
           </dl>
         </div>
 
@@ -377,8 +353,7 @@ export function SimulationWizard() {
           </div>
         )}
       </aside>
-      </div>
-    </>
+    </div>
   );
 }
 
