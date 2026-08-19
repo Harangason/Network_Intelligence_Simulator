@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_file
@@ -14,7 +15,11 @@ api = Blueprint("api", __name__)
 
 @api.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "service": "communication-simulator"})
+    response = {"status": "ok", "service": "communication-simulator"}
+    instance_id = os.environ.get("SIMULATOR_INSTANCE_ID")
+    if instance_id:
+        response["instance_id"] = instance_id
+    return jsonify(response)
 
 
 @api.route("/technologies", methods=["GET"])

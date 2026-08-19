@@ -34,6 +34,12 @@ uv run --project backend python generate_realistic_communication_tool.py
 - Oberfläche: `http://127.0.0.1:3001`
 - Flask-API: `http://127.0.0.1:5050/api`
 
+Beide Ports werden exklusiv verwendet. Ist `3001` oder `5050` bereits durch
+ein anderes Werkzeug belegt, bricht der Launcher mit einer eindeutigen Meldung
+ab, statt unbemerkt einen fremden Dienst zu verwenden oder auf einen anderen
+Port auszuweichen. Beim Beenden räumt er den vollständigen Backend- und
+Frontend-Prozessbaum auf.
+
 Nur das Backend starten:
 
 ```powershell
