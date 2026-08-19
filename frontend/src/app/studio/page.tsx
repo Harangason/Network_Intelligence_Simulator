@@ -2,7 +2,14 @@ import Link from "next/link";
 import { SimulationWizard } from "@/components/simulation-wizard";
 import { RuntimeStatus } from "@/components/runtime-status";
 
-export default function StudioPage() {
+export default async function StudioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string }>;
+}) {
+  const { mode } = await searchParams;
+  const initialMode = mode === "network" ? "network" : "parameters";
+
   return (
     <main className="shell">
       <header className="topbar">
@@ -34,7 +41,7 @@ export default function StudioPage() {
         </div>
       </section>
 
-      <SimulationWizard />
+      <SimulationWizard initialMode={initialMode} />
     </main>
   );
 }

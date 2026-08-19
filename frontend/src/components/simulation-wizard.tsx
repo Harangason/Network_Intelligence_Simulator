@@ -11,7 +11,11 @@ import { initialTopology, topologyToConfig, type NetworkTopology } from "@/lib/t
 
 const universalFormats = ["universal-jsonl", "universal-csv"];
 
-export function SimulationWizard() {
+export function SimulationWizard({
+  initialMode = "parameters",
+}: {
+  initialMode?: "parameters" | "network";
+}) {
   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
   const [catalogError, setCatalogError] = useState("");
   const [domainId, setDomainId] = useState("automotive");
@@ -24,7 +28,7 @@ export function SimulationWizard() {
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [mode, setMode] = useState<"parameters" | "network">("parameters");
+  const [mode, setMode] = useState<"parameters" | "network">(initialMode);
   const [topology, setTopology] = useState<NetworkTopology>(initialTopology);
 
   useEffect(() => {
@@ -132,25 +136,25 @@ export function SimulationWizard() {
   return (
     <>
       <div className="studio-mode-tabs" role="tablist" aria-label="Konfigurationsmodus">
-        <button
+        <Link
           aria-selected={mode === "parameters"}
           className={mode === "parameters" ? "active" : ""}
+          href="/studio?mode=parameters"
           onClick={() => setMode("parameters")}
           role="tab"
-          type="button"
         >
           Parameter
-        </button>
-        <button
+        </Link>
+        <Link
           aria-selected={mode === "network"}
           className={mode === "network" ? "active" : ""}
+          href="/studio?mode=network"
           onClick={() => setMode("network")}
           role="tab"
-          type="button"
         >
           Netzwerk-Editor
           <span>{topology.nodes.length} Geräte</span>
-        </button>
+        </Link>
       </div>
       <div className={`workspace-grid ${mode === "network" ? "network-mode" : ""}`}>
       <form
