@@ -2,4 +2,4 @@
 
 from app import create_app
 
-app = create_app(api_prefix="")
+app = create_app()
