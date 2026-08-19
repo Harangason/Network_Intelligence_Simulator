@@ -107,7 +107,7 @@ export function SimulationResult({
               <h3>Erzeugte Artefakte</h3>
               <div className="artifact-list">
                 {job.artifact_downloads.map((artifact) => (
-                  <a className="artifact" href={artifact.url} key={artifact.index}>
+                  <a className="artifact" download={artifact.name} href={artifact.url} key={artifact.index}>
                     <span className="file-icon">↓</span>
                     <span>
                       <strong>{artifact.name}</strong>

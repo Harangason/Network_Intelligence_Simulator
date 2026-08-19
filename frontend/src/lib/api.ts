@@ -1,91 +1,49 @@
 import type { Catalog, SimulationJob } from "./types";
-
-function getApiBaseUrl(): string {
-  const configuredBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
-  if (configuredBaseUrl) {
-    return configuredBaseUrl.replace(/\/+$/, "");
-  }
-
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  const { hostname, port, protocol } = window.location;
-  const isLocalFrontend =
-    (hostname === "127.0.0.1" || hostname === "localhost") && port === "3001";
-  if (isLocalFrontend) {
-    return "http://127.0.0.1:5050";
-  }
-
-  return `${protocol}//${window.location.host}`;
-}
-
-function toApiUrl(path: string): string {
-  const baseUrl = getApiBaseUrl();
-  return baseUrl ? `${baseUrl}${path}` : path;
-}
-
-function normalizeSimulationJob(job: SimulationJob): SimulationJob {
-  if (!job.artifact_downloads?.length) {
-    return job;
-  }
-
-  return {
-    ...job,
-    artifact_downloads: job.artifact_downloads.map((artifact) => ({
-      ...artifact,
-      url: toApiUrl(artifact.url),
-    })),
-  };
-}
+import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local-simulator";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 10_000);
+  const response = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+    cache: "no-store",
+    signal: AbortSignal.timeout(2500),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
+  return payload as T;
+}
+
+function announceMode(mode: "backend" | "browser") {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("simulator-mode", { detail: mode }));
+}
+
+export async function getCatalog(): Promise<Catalog> {
   try {
-    const response = await fetch(toApiUrl(path), {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...init?.headers,
-      },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    const payload: unknown = await response.json();
-    if (!response.ok) {
-      const message = typeof payload === "object" && payload !== null && "error" in payload
-        ? String(payload.error)
-        : `API-Fehler ${response.status}`;
-      throw new Error(message);
-    }
-    return payload as T;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Der Server antwortet nicht. Bitte erneut versuchen.");
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timeout);
+    const catalog = await apiRequest<Catalog>("/api/technologies");
+    announceMode("backend");
+    return catalog;
+  } catch {
+    announceMode("browser");
+    return localCatalog;
   }
 }
 
-export function getCatalog(): Promise<Catalog> {
-  return apiRequest<Catalog>("/api/technologies");
+export async function createSimulation(payload: Record<string, unknown>, validateOnly: boolean): Promise<SimulationJob> {
+  try {
+    const job = await apiRequest<SimulationJob>(validateOnly ? "/api/simulations/validate" : "/api/simulations", { method: "POST", body: JSON.stringify(payload) });
+    announceMode("backend");
+    return job;
+  } catch (error) {
+    if (error instanceof SyntaxError) throw error;
+    announceMode("browser");
+    return createLocalSimulation(payload, validateOnly);
+  }
 }
 
-export function createSimulation(
-  payload: Record<string, unknown>,
-  validateOnly: boolean,
-): Promise<SimulationJob> {
-  return apiRequest<SimulationJob>(
-    validateOnly ? "/api/simulations/validate" : "/api/simulations",
-    { method: "POST", body: JSON.stringify(payload) },
-  ).then(normalizeSimulationJob);
-}
-
-export function getSimulation(id: string): Promise<SimulationJob> {
-  return apiRequest<SimulationJob>(`/api/simulations/${id}`).then(
-    normalizeSimulationJob,
-  );
+export async function getSimulation(id: string): Promise<SimulationJob> {
+  if (id.startsWith("local-")) {
+    announceMode("browser");
+    return getLocalSimulation(id);
+  }
+  return apiRequest<SimulationJob>(`/api/simulations/${id}`);
 }
