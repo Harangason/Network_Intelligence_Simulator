@@ -9,14 +9,14 @@ from flask import Flask, jsonify
 from .api import api
 
 
-def create_app(testing: bool = False) -> Flask:
+def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
     app = Flask(__name__)
     app.config.update(
         TESTING=testing,
         JSON_SORT_KEYS=False,
         MAX_CONTENT_LENGTH=2 * 1024 * 1024,
     )
-    app.register_blueprint(api, url_prefix="/api")
+    app.register_blueprint(api, url_prefix=api_prefix)
 
     @app.after_request
     def add_cors_headers(response):
