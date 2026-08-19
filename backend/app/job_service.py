@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -19,9 +20,18 @@ def _now() -> str:
 
 
 class JobService:
-    def __init__(self, simulation_service: SimulationService | None = None) -> None:
+    def __init__(
+        self,
+        simulation_service: SimulationService | None = None,
+        *,
+        synchronous: bool | None = None,
+    ) -> None:
         self.simulations = simulation_service or SimulationService()
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="simulation")
+        # Serverless runtimes may freeze background threads as soon as the HTTP
+        # response is returned. Finish the small local simulation before
+        # responding there; desktop Flask keeps the asynchronous behavior.
+        self.synchronous = bool(os.environ.get("VERCEL")) if synchronous is None else synchronous
         self._jobs: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
@@ -38,6 +48,9 @@ class JobService:
         }
         with self._lock:
             self._jobs[job_id] = job
+        if self.synchronous:
+            self._execute(job_id, copy.deepcopy(payload), validate_only)
+            return self.get(job_id) or copy.deepcopy(job)
         self.executor.submit(self._execute, job_id, copy.deepcopy(payload), validate_only)
         return copy.deepcopy(job)
 
