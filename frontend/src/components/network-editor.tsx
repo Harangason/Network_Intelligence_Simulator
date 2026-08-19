@@ -28,7 +28,6 @@ const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
 
 type DragState =
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
-  | { mode: "port-intent"; nodeId: string; portId: string; bus: BusType; side: PortSide; startX: number; startY: number }
   | { mode: "move-port"; nodeId: string; portId: string }
   | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number };
 
@@ -98,16 +97,6 @@ export function NetworkEditor({
               : node,
           ),
         });
-      } else if (activeDrag.mode === "port-intent") {
-        const dx = point.x - activeDrag.startX;
-        const dy = point.y - activeDrag.startY;
-        if (Math.hypot(dx, dy) < 5) return;
-        const outward = activeDrag.side === "left" ? dx < 0 : dx > 0;
-        setDrag(
-          outward && Math.abs(dx) > Math.abs(dy)
-            ? { mode: "wire", nodeId: activeDrag.nodeId, portId: activeDrag.portId, bus: activeDrag.bus, x: point.x, y: point.y }
-            : { mode: "move-port", nodeId: activeDrag.nodeId, portId: activeDrag.portId },
-        );
       } else if (activeDrag.mode === "move-port") {
         const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
@@ -128,7 +117,9 @@ export function NetworkEditor({
     }
     function up(event: PointerEvent) {
       if (activeDrag.mode === "wire") {
-        const target = (event.target as HTMLElement).closest("[data-port-id]");
+        const target = document
+          .elementFromPoint(event.clientX, event.clientY)
+          ?.closest<HTMLElement>("[data-port-id]");
         const targetNodeId = target?.getAttribute("data-node-id");
         const targetPortId = target?.getAttribute("data-port-id");
         const targetBus = target?.getAttribute("data-port-bus") as BusType | null;
@@ -368,22 +359,18 @@ export function NetworkEditor({
                       event.stopPropagation();
                       setMenu(null);
                       const point = pointFromEvent(event);
-                      setDrag({
-                        mode: "port-intent",
-                        nodeId: node.id,
-                        portId: port.id,
-                        bus: port.bus,
-                        side: port.side,
-                        startX: point.x,
-                        startY: point.y,
-                      });
+                      setDrag(
+                        event.shiftKey
+                          ? { mode: "move-port", nodeId: node.id, portId: port.id }
+                          : { mode: "wire", nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y },
+                      );
                     }}
                     style={{
                       [port.side === "left" ? "left" : "right"]: -PORT_OFFSET,
                       top: portTop(node, port),
                       ["--bus" as string]: busProfiles[port.bus].color,
                     }}
-                    title={`${port.name} · entlang der Karte ziehen zum Verschieben · nach außen ziehen zum Verbinden · Rechtsklick zum Entfernen`}
+                    title={`${port.name} · zu einem gleichfarbigen Port ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`}
                     type="button"
                   />
                 );
@@ -422,7 +409,7 @@ export function NetworkEditor({
       </div>
 
       <p className="net-hint">
-        Karte ziehen zum Verschieben · Doppelklick zum Umbenennen · <strong>Port entlang der Blockkante ziehen</strong> zum Versetzen oder über die Mitte auf die andere Seite ziehen · Port nach außen zu einem gleichfarbigen Port ziehen zum Verdrahten · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Rechtsklick auf einen Port entfernt ihn.
+        Karte ziehen zum Verschieben · Doppelklick zum Umbenennen · <strong>Port zu einem gleichfarbigen Port ziehen</strong> zum Verdrahten · Shift + Port ziehen zum Versetzen · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Rechtsklick auf einen Port entfernt ihn.
       </p>
     </div>
   );
