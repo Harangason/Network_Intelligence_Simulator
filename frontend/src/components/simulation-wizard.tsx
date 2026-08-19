@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createSimulation, getCatalog } from "@/lib/api";
+import { localCatalog } from "@/lib/local-simulator";
 import type { Catalog, SimulationJob, Technology } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { NetworkEditor } from "./network-editor";
@@ -11,7 +12,7 @@ import { initialTopology, topologyToConfig, type NetworkTopology } from "@/lib/t
 const universalFormats = ["universal-jsonl", "universal-csv"];
 
 export function SimulationWizard() {
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [catalog, setCatalog] = useState<Catalog>(localCatalog);
   const [catalogError, setCatalogError] = useState("");
   const [domainId, setDomainId] = useState("automotive");
   const [technologyId, setTechnologyId] = useState("can_fd");
@@ -124,7 +125,7 @@ export function SimulationWizard() {
       </div>
     );
   }
-  if (!catalog || !domain || !technology) {
+  if (!domain || !technology) {
     return <div className="panel loading-panel">Technologiekatalog wird geladen …</div>;
   }
 
