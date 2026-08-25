@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { GlobalAgentWidget } from "@/components/global-agent-widget";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,7 +33,10 @@ export default function RootLayout({
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <GlobalAgentWidget />
+      </body>
     </html>
   );
 }

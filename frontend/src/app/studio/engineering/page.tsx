@@ -2,14 +2,7 @@ import Link from "next/link";
 import { StudioTabs } from "@/components/studio-tabs";
 import { RuntimeStatus } from "@/components/runtime-status";
 
-export default async function StudioPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ mode?: string }>;
-}) {
-  const { mode } = await searchParams;
-  const initialMode = mode === "network" ? "network" : "parameters";
-
+export default function EngineeringPage() {
   return (
     <main className="shell">
       <header className="topbar">
@@ -27,21 +20,21 @@ export default async function StudioPage({
 
       <section className="hero">
         <div>
-          <p className="eyebrow">Simulation workspace</p>
-          <h1>Kommunikation modellieren. Trace-Pakete erzeugen.</h1>
+          <p className="eyebrow">Engineering-Modell</p>
+          <h1>Hardware, Interfaces und Signale verwalten.</h1>
           <p className="hero-copy">
-            Konfiguriere technologieoffene Netzwerke, validiere Hardware und
-            exportiere universelle oder native Kommunikationsformate.
+            Kanonische Objekte mit Governance-Feldern (Lifecycle, Review,
+            Approval) sowie Relations für den Knowledge Graph.
           </p>
         </div>
         <div className="hero-stat">
-          <span>Technologien</span>
-          <strong>54</strong>
-          <small>10 Anwendungsbereiche</small>
+          <span>Objekttypen</span>
+          <strong>5</strong>
+          <small>+ Relations</small>
         </div>
       </section>
 
-      <StudioTabs activeTab="simulation" initialMode={initialMode} />
+      <StudioTabs activeTab="engineering" initialMode="parameters" />
     </main>
   );
 }
