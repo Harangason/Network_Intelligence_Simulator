@@ -83,6 +83,7 @@ export function SimulationWizard({
   }
 
   async function submit(formElement: HTMLFormElement | null, validateOnly: boolean) {
+    console.log("[v0] submit() called", { validateOnly, mode, advanced, formElement });
     setSubmitting(true);
     setFormError("");
     try {
@@ -109,9 +110,12 @@ export function SimulationWizard({
           formats,
         };
       }
+      console.log("[v0] submit() payload", payload);
       const nextJob = await createSimulation(payload, validateOnly);
+      console.log("[v0] submit() got job", nextJob);
       setJob(nextJob);
     } catch (error) {
+      console.log("[v0] submit() error", error);
       setFormError(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
     } finally {
       setSubmitting(false);
