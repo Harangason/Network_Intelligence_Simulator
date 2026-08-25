@@ -21,7 +21,7 @@ SIMULATOR_ROOT = ROOT / "backend" / "simulator"
 BACKEND_HOST = "127.0.0.1"
 BACKEND_PORT = 5050
 FRONTEND_HOST = "127.0.0.1"
-FRONTEND_PORT = 3001
+FRONTEND_PORT = 3500
 
 
 def _wait_for_url(
