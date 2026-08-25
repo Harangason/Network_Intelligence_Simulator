@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     if (process.env.NODE_ENV === "production") return [];
     return [
       {
-        source: "/api/:path*",
+        source: "/api/:path((?!agent).*)",
         destination: "http://127.0.0.1:5050/api/:path*",
       },
     ];
