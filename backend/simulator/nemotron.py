@@ -88,10 +88,24 @@ def load_env_file(path=".env"):
 load_env_file()
 
 # NVIDIA Nemotron-3 Configuration
-client = OpenAI(
-  base_url = "https://integrate.api.nvidia.com/v1",
-  api_key = os.getenv("NVIDIA_API_KEY")
-)
+_nemotron_client = None
+
+def _get_nemotron_client():
+    """Lazily construct the Nemotron OpenAI-compatible client.
+
+    Constructing this eagerly at import time would raise ``OpenAIError``
+    whenever ``NVIDIA_API_KEY``/``OPENAI_API_KEY`` is unset, breaking every
+    caller that merely imports this module (e.g. for local knowledge/memory
+    recording) but never actually queries the AI.
+    """
+    global _nemotron_client
+    if _nemotron_client is None:
+        _nemotron_client = OpenAI(
+            base_url="https://integrate.api.nvidia.com/v1",
+            api_key=os.getenv("NVIDIA_API_KEY"),
+        )
+    return _nemotron_client
+
 LOCAL_AI_BASE_URL = os.getenv("LOCAL_AI_BASE_URL", "http://localhost:11434/v1")
 LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.1:8b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "local")
@@ -709,7 +723,7 @@ def query_openai_compatible(
 
 def query_nemotron(prompt, profile_context, max_retries=2, timeout_s=60):
     return query_openai_compatible(
-        client,
+        _get_nemotron_client(),
         "nvidia/nemotron-3-ultra-550b-a55b",
         prompt,
         profile_context,

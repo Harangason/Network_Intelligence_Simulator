@@ -2,14 +2,7 @@ import Link from "next/link";
 import { StudioTabs } from "@/components/studio-tabs";
 import { RuntimeStatus } from "@/components/runtime-status";
 
-export default async function StudioPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ mode?: string }>;
-}) {
-  const { mode } = await searchParams;
-  const initialMode = mode === "network" ? "network" : "parameters";
-
+export default function AgentPage() {
   return (
     <main className="shell">
       <header className="topbar">
@@ -27,21 +20,21 @@ export default async function StudioPage({
 
       <section className="hero">
         <div>
-          <p className="eyebrow">Simulation workspace</p>
-          <h1>Kommunikation modellieren. Trace-Pakete erzeugen.</h1>
+          <p className="eyebrow">Engineering-Agent</p>
+          <h1>Mit dem Netzwerkmodell im Dialog arbeiten.</h1>
           <p className="hero-copy">
-            Konfiguriere technologieoffene Netzwerke, validiere Hardware und
-            exportiere universelle oder native Kommunikationsformate.
+            Frage nach Hardware-Knoten, Interfaces oder Signalen und lass den
+            Agenten Vorschläge für neue Engineering-Objekte erarbeiten.
           </p>
         </div>
         <div className="hero-stat">
-          <span>Technologien</span>
-          <strong>54</strong>
-          <small>10 Anwendungsbereiche</small>
+          <span>Modell</span>
+          <strong>KI</strong>
+          <small>Vercel AI Gateway</small>
         </div>
       </section>
 
-      <StudioTabs activeTab="simulation" initialMode={initialMode} />
+      <StudioTabs activeTab="agent" initialMode="parameters" />
     </main>
   );
 }
