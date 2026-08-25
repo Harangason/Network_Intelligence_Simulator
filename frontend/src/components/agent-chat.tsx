@@ -21,8 +21,9 @@ export function AgentChat() {
           <p className="eyebrow">Hinweis</p>
           <h2 style={{ fontSize: 16 }}>Vorschläge statt Auto-Änderungen</h2>
           <p className="muted" style={{ marginTop: 12, fontSize: 12, lineHeight: 1.6 }}>
-            Der Agent kann Objekte nur als Entwurf (draft, unreviewed) anlegen.
-            Freigabe und Review erfolgen im Tab &quot;Engineering-Modell&quot;.
+            Der Agent speichert Ergebnisse getrennt als AIProposal. Das
+            Engineering-Modell bleibt unverändert, bis ein Mensch den Vorschlag
+            geprüft und ausdrücklich freigegeben hat.
           </p>
         </div>
       </aside>

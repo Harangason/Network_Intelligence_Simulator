@@ -4,14 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import type { SimulationJob } from "@/lib/types";
 import { getSimulation } from "@/lib/api";
 
-const terminalStates = new Set(["completed", "failed"]);
+const terminalStates = new Set(["completed", "failed", "canceled"]);
 
 export function SimulationResult({
   jobId,
   standalone = false,
+  onJobChange,
 }: {
   jobId: string;
   standalone?: boolean;
+  onJobChange?: (job: SimulationJob) => void;
 }) {
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [error, setError] = useState("");
@@ -20,6 +22,7 @@ export function SimulationResult({
     try {
       const nextJob = await getSimulation(jobId);
       setJob(nextJob);
+      onJobChange?.(nextJob);
       setError("");
       return nextJob;
     } catch (requestError) {
@@ -28,7 +31,7 @@ export function SimulationResult({
       );
       return null;
     }
-  }, [jobId]);
+  }, [jobId, onJobChange]);
 
   useEffect(() => {
     let active = true;
@@ -68,6 +71,8 @@ export function SimulationResult({
                 : "Trace wird erzeugt"
               : job.status === "failed"
                 ? "Simulation fehlgeschlagen"
+                : job.status === "canceled"
+                  ? "Simulation gestoppt"
                 : job.validate_only
                   ? "Konfiguration validiert"
                   : "Simulation abgeschlossen"}

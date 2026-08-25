@@ -1,22 +1,12 @@
-import Link from "next/link";
 import { StudioTabs } from "@/components/studio-tabs";
-import { RuntimeStatus } from "@/components/runtime-status";
+import { StudioTopbar } from "@/components/studio-topbar";
+import { WorkflowHeader } from "@/components/workflow-header";
 
 export default function EngineeringPage() {
   return (
     <main className="shell">
-      <header className="topbar">
-        <Link className="brand" href="/">
-          <span className="brand-mark" aria-hidden="true">
-            CS
-          </span>
-          <div>
-            <strong>Communication Simulator</strong>
-            <span>Network trace studio</span>
-          </div>
-        </Link>
-        <RuntimeStatus />
-      </header>
+      <StudioTopbar />
+      <WorkflowHeader />
 
       <section className="hero">
         <div>

@@ -23,6 +23,8 @@ from standalone_cli import (  # noqa: E402
     domain_for_technology,
 )
 
+from .runtime_analysis import analyze_runtime_trace
+
 
 class SimulationService:
     def __init__(self) -> None:
@@ -33,7 +35,9 @@ class SimulationService:
         for generator in DEFAULT_TECHNOLOGY_REGISTRY.generators:
             technologies = []
             for technology_id, profile in generator.generate().items():
-                technologies.append({"id": technology_id, **profile.to_dict()})
+                technology = {"id": technology_id, **profile.to_dict()}
+                technology["parameter_schema"] = self._parameter_schema(technology_id, technology)
+                technologies.append(technology)
             domains.append(
                 {
                     "id": generator.domain,
@@ -46,6 +50,137 @@ class SimulationService:
             "domains": domains,
             "formats": sorted(SUPPORTED_STANDALONE_FORMATS),
         }
+
+    @staticmethod
+    def _parameter_schema(technology_id: str, technology: dict[str, Any]) -> list[dict[str, Any]]:
+        """Describe editable parameters so the UI does not hard-code technology forms."""
+        maximum_payload = int(technology.get("max_payload_bytes") or 65_535)
+
+        def field(
+            key: str,
+            label: str,
+            category: str,
+            scope: str,
+            *,
+            field_type: str = "number",
+            unit: str | None = None,
+            default: Any = 0,
+            minimum: float | None = None,
+            maximum: float | None = None,
+            options: list[str] | None = None,
+            description: str = "",
+            simulation_relevant: bool = True,
+            validation_relevant: bool = True,
+        ) -> dict[str, Any]:
+            item: dict[str, Any] = {
+                "key": key,
+                "label": label,
+                "category": category,
+                "scope": scope,
+                "type": field_type,
+                "default": default,
+                "description": description,
+                "required": True,
+                "editable": True,
+                "simulation_relevant": simulation_relevant,
+                "validation_relevant": validation_relevant,
+            }
+            if unit:
+                item["unit"] = unit
+            if minimum is not None:
+                item["min"] = minimum
+            if maximum is not None:
+                item["max"] = maximum
+            if options:
+                item["options"] = options
+            return item
+
+        fields: list[dict[str, Any]] = [
+            field("bitrate", "Bitrate", "physical", "network", unit="bit/s", minimum=1, default=technology.get("default_bitrate") or 1_000_000, description="Nominale Leitungskapazitaet des Netzes."),
+            field("payload_bytes", "Payload", "physical", "message", unit="Byte", minimum=0, maximum=maximum_payload, default=min(8, maximum_payload), description="Nutzdaten pro Nachricht."),
+            field("cycle_ms", "Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=100, description="Standardperiode fuer zyklische Nachrichten."),
+            field("minimum_cycle_time_ms", "Minimum Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=1),
+            field("deadline_ms", "Deadline", "timing", "message", unit="ms", minimum=0.001, default=100),
+            field("timeout_ms", "Timeout", "timing", "route", unit="ms", minimum=0.001, default=500),
+            field("maximum_latency_ms", "Maximum Latency", "timing", "route", unit="ms", minimum=0, default=100),
+            field("jitter_ms", "Jitter Budget", "timing", "route", unit="ms", minimum=0, default=1),
+            field("freshness_ms", "Data Freshness", "timing", "signal", unit="ms", minimum=0, default=500),
+            field("source_processing_delay_ms", "Source Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
+            field("target_processing_delay_ms", "Target Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
+            field("propagation_delay_ms", "Propagation", "timing", "network", unit="ms", minimum=0, default=0.01),
+            field("peak_factor", "Peak Factor", "capacity", "analysis", minimum=1, default=1.15, simulation_relevant=False),
+            field("burst_factor", "Burst Factor", "capacity", "analysis", minimum=1, default=1.5, simulation_relevant=False),
+            field("burst_window_ms", "Burst Window", "capacity", "analysis", unit="ms", minimum=0.1, default=100, simulation_relevant=False),
+            field("warning_threshold", "Load Warning", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=60, simulation_relevant=False),
+            field("critical_threshold", "Load Critical", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=75, simulation_relevant=False),
+            field("overload_threshold", "Load Overload", "capacity", "analysis", unit="%", minimum=1, maximum=100, default=90, simulation_relevant=False),
+            field("queue_size", "Queue Size", "qos", "network", unit="Frames", minimum=1, default=256),
+            field("queue_policy", "Queue Policy", "qos", "network", field_type="select", default="FIFO", options=["FIFO", "PRIORITY", "STRICT_PRIORITY", "WEIGHTED_PRIORITY", "WRR", "ROUND_ROBIN", "TIME_TRIGGERED", "TAS", "CBS", "CUSTOM"]),
+            field("qos_priority", "Default Priority", "qos", "route", minimum=0, maximum=7, default=3),
+            field("traffic_class", "Traffic Class", "qos", "route", field_type="select", default="BEST_EFFORT", options=["BEST_EFFORT", "CONTROL", "REALTIME", "SAFETY_CRITICAL"]),
+            field("reserved_bandwidth_percent", "Reserved Bandwidth", "qos", "network", unit="%", minimum=0, maximum=100, default=0),
+            field("packet_loss_probability", "Packet Loss", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("frame_loss_probability", "Frame Loss", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("bit_error_rate", "Bit Error Rate", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("corruption_probability", "Corruption", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("duplicate_probability", "Duplication", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("reordering_probability", "Reordering", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("retransmission_enabled", "Retransmission", "reliability", "reliability", field_type="boolean", default=False),
+            field("retransmission_rate", "Retransmission Rate", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("retry_limit", "Retry Limit", "reliability", "reliability", minimum=0, default=0),
+            field("retransmission_delay_ms", "Retry Delay", "reliability", "reliability", unit="ms", minimum=0, default=0),
+            field("required_reliability", "Required Reliability", "reliability", "reliability", minimum=0, maximum=1, default=0.999),
+            field("clock_offset_ms", "Clock Offset", "synchronization", "network", unit="ms", default=0),
+            field("clock_drift_ppm", "Clock Drift", "synchronization", "network", unit="ppm", minimum=0, default=20),
+            field("sync_precision_ms", "Sync Precision", "synchronization", "network", unit="ms", minimum=0, default=0.1),
+            field("sync_interval_ms", "Sync Interval", "synchronization", "network", unit="ms", minimum=0.001, default=1000),
+            field("sync_method", "Sync Method", "synchronization", "network", field_type="select", default="NONE", options=["NONE", "NTP", "PTP", "GPTP", "BUS_NATIVE"]),
+            field("maximum_sync_error_ms", "Maximum Sync Error", "synchronization", "network", unit="ms", minimum=0, default=1),
+            field("gateway_delay_ms", "Gateway Processing", "gateway", "gateway", unit="ms", minimum=0, default=0.2),
+            field("gateway_queue_delay_ms", "Gateway Queueing", "gateway", "gateway", unit="ms", minimum=0, default=0),
+            field("protocol_conversion_delay_ms", "Protocol Conversion", "gateway", "gateway", unit="ms", minimum=0, default=0),
+            field("gateway_maximum_throughput", "Gateway Throughput", "gateway", "gateway", unit="bit/s", minimum=1, default=100_000_000),
+            field("gateway_input_buffer", "Gateway Input Buffer", "gateway", "gateway", unit="Frames", minimum=1, default=256),
+            field("gateway_output_buffer", "Gateway Output Buffer", "gateway", "gateway", unit="Frames", minimum=1, default=256),
+            field("gateway_maximum_routes", "Gateway Maximum Routes", "gateway", "gateway", minimum=1, default=10_000),
+            field("gateway_maximum_messages_s", "Gateway Messages per Second", "gateway", "gateway", unit="msg/s", minimum=1, default=100_000),
+            field("duration_s", "Simulation Duration", "simulation", "simulation", unit="s", minimum=0.001, default=1, validation_relevant=False),
+            field("seed", "Random Seed", "simulation", "simulation", minimum=0, default=42, validation_relevant=False),
+            field("max_events", "Maximum Events", "simulation", "simulation", minimum=1, default=100_000, validation_relevant=False),
+            field("dropout_probability", "Failure Injection Dropout", "simulation", "simulation", minimum=0, maximum=1, default=0, validation_relevant=False),
+        ]
+        normalized = technology_id.lower()
+        if normalized in {"can_fd", "can_xl"}:
+            fields.extend(
+                [
+                    field("arbitration_bitrate", "Arbitration Bitrate", "physical", "network", unit="bit/s", minimum=1, default=500_000),
+                    field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, default=technology.get("default_bitrate") or 2_000_000),
+                    field("sample_point_percent", "Sample Point", "physical", "network", unit="%", minimum=50, maximum=99.9, default=80),
+                ]
+            )
+        if "ethernet" in normalized or normalized in {"someip", "udp", "tcp", "dds_rtps"}:
+            fields.extend(
+                [
+                    field("mtu_bytes", "MTU", "physical", "network", unit="Byte", minimum=64, maximum=65_535, default=1500),
+                    field("duplex", "Duplex", "physical", "network", field_type="select", default="FULL", options=["FULL", "HALF"]),
+                    field("vlan_id", "VLAN ID", "qos", "network", minimum=0, maximum=4094, default=0),
+                    field("rate_limit_bit_s", "Rate Limit", "qos", "route", unit="bit/s", minimum=0, default=0),
+                ]
+            )
+        if normalized in {"dds", "dds_rtps", "ros2"}:
+            fields.extend(
+                [
+                    field("history_depth", "History Depth", "qos", "route", minimum=1, default=10),
+                    field("history_kind", "History", "qos", "route", field_type="select", default="KEEP_LAST", options=["KEEP_LAST", "KEEP_ALL"]),
+                    field("durability", "Durability", "qos", "route", field_type="select", default="VOLATILE", options=["VOLATILE", "TRANSIENT_LOCAL", "TRANSIENT", "PERSISTENT"]),
+                    field("lifespan_ms", "Lifespan", "timing", "message", unit="ms", minimum=0, default=0),
+                    field("liveliness", "Liveliness", "qos", "route", field_type="select", default="AUTOMATIC", options=["AUTOMATIC", "MANUAL_BY_PARTICIPANT", "MANUAL_BY_TOPIC"]),
+                    field("reliability_mode", "Reliability Mode", "reliability", "route", field_type="select", default="RELIABLE", options=["BEST_EFFORT", "RELIABLE"]),
+                ]
+            )
+        if "ethercat" in normalized:
+            fields.append(field("distributed_clock_cycle_ms", "Distributed Clock Cycle", "synchronization", "network", unit="ms", minimum=0.001, default=1))
+        return fields
 
     def prepare_config(self, payload: dict[str, Any], output_dir: Path) -> dict[str, Any]:
         if not isinstance(payload, dict):
@@ -121,4 +256,7 @@ class SimulationService:
         validate_only: bool = False,
     ) -> dict[str, Any]:
         config = self.prepare_config(payload, output_dir)
-        return self.simulator.run(config, validate_only=validate_only)
+        result = self.simulator.run(config, validate_only=validate_only)
+        if not validate_only:
+            result["runtime_metrics"] = analyze_runtime_trace(result, config)
+        return result

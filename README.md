@@ -15,6 +15,17 @@ Das Projekt enthält eine lokale Flask-API und eine Next.js-Oberfläche. Die
 Flask-Schicht verwendet die vorhandene Python-API direkt; es werden keine
 CLI-Kommandos aus HTTP-Anfragen zusammengesetzt.
 
+Der Studio-Workflow ist verbindlich aufgebaut:
+
+```text
+Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze
+```
+
+Änderungen an früheren Schritten markieren vorhandene abhängige Analysen und
+Läufe als `OUTDATED`, ohne sie zu löschen. Simulationen starten nur aus einem
+aktuellen Preflight und einem unveränderlichen SimulationSnapshot. Details
+stehen in `backend/docs/WORKFLOW_ARCHITECTURE.md`.
+
 Erstinstallation:
 
 ```powershell
@@ -34,11 +45,25 @@ uv run --project backend python generate_realistic_communication_tool.py
 - Oberfläche: `http://127.0.0.1:3500`
 - Flask-API: `http://127.0.0.1:5050/api`
 
+Das Engineering-Modell benötigt `DATABASE_URL` für PostgreSQL. Beim ersten
+Zugriff wird das versionierte Schema idempotent aufgebaut. Die Readiness ist
+unter `http://127.0.0.1:5050/api/engineering/health` sichtbar. KI-Vorschläge
+werden getrennt gespeichert und verändern das kanonische Modell nicht direkt.
+
+Der serverseitige KI-Agent verwendet standardmäßig
+`http://127.0.0.1:5050/api/engineering`. Für abweichende Deployments kann der
+vollständige Engineering-Pfad über `SIMULATOR_ENGINEERING_API_URL` gesetzt
+werden. Eine generische `ENGINEERING_API_URL` wird aus Kollisionsschutz nur
+übernommen, wenn sie bereits `/api/engineering` enthält.
+
 Beide Ports werden exklusiv verwendet. Ist `3500` oder `5050` bereits durch
 ein anderes Werkzeug belegt, bricht der Launcher mit einer eindeutigen Meldung
 ab, statt unbemerkt einen fremden Dienst zu verwenden oder auf einen anderen
 Port auszuweichen. Beim Beenden räumt er den vollständigen Backend- und
 Frontend-Prozessbaum auf.
+
+Backend- und Frontend-Ausgaben liegen pro Start unter
+`backend/runtime/service-logs/`, auch wenn der Launcher im Hintergrund läuft.
 
 Nur das Backend starten:
 
@@ -499,6 +524,7 @@ Weiterführend:
 - [Industrieneutrale Architektur](backend/docs/INDUSTRY_NEUTRAL_SIMULATOR.md)
 - [Format-Writer](backend/simulator/format_generators/README.md)
 - [Aktueller Stand](backend/docs/CURRENT_STATUS.md)
+- [AI-/RAG-Implementierungsstand](backend/docs/IMPLEMENTATION_STATUS.md)
 
 ## Grenzen
 

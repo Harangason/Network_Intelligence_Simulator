@@ -77,6 +77,7 @@ RELATABLE_OBJECT_TYPES = (
     "Interface",
     "Message",
     "Signal",
+    "RoutingEntry",
 )
 
 # Mindest-Vokabular für Kantentypen im Knowledge Graph (Abschnitt 7 der Spec).
@@ -91,6 +92,7 @@ RELATION_TYPES = (
     "CONSUMES",
     "SENDS",
     "RECEIVES",
+    "HAS_MESSAGE",
     "CONTAINS_SIGNAL",
     "RUNS_ON",
     "MAPPED_TO",
@@ -104,6 +106,21 @@ RELATION_TYPES = (
     "CONFLICTS_WITH",
     "DEPENDS_ON",
     "RELATED_TO",
+    "SIMULATED_IN",
+    "FAILED_IN",
+    "OBSERVED_IN",
+    "REPLACES",
+    "VERSION_OF",
+    "USES_NETWORK",
+    "PRODUCES",
+    "ROUTES_TO",
+    "ROUTES_VIA",
+    "HAS_GATEWAY",
+    "BRIDGES_NETWORK",
+    "TRANSLATES_PROTOCOL",
+    "CONTAINS_MESSAGE",
+    "HAS_ROUTE",
+    "USES_ROUTE",
 )
 
 

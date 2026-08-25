@@ -137,6 +137,10 @@ export function getDevJob(id: string): SimulationJob | undefined {
   return jobs.get(id);
 }
 
+export function listDevJobs(): SimulationJob[] {
+  return [...jobs.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
+}
+
 export function getDevArtifact(id: string, format: string): { body: string; type: string; name: string } | undefined {
   const job = jobs.get(id);
   if (!job || job.validate_only) return undefined;

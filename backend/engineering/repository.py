@@ -99,13 +99,14 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         object_type="Function",
         own_columns=("hardware_node_id",),
         json_columns=frozenset(),
+        required=("hardware_node_id",),
     ),
     "Interface": EntitySpec(
         table="engineering_interfaces",
         object_type="Interface",
-        own_columns=("hardware_node_id", "interface_type", "configuration"),
+        own_columns=("hardware_node_id", "function_id", "interface_type", "configuration"),
         json_columns=frozenset({"configuration"}),
-        required=("interface_type",),
+        required=("function_id", "interface_type"),
         enum_fields={"interface_type": INTERFACE_TYPES},
     ),
     "Message": EntitySpec(
@@ -120,6 +121,7 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
             "configuration",
         ),
         json_columns=frozenset({"configuration"}),
+        required=("interface_id",),
         enum_fields={"direction": MESSAGE_DIRECTIONS},
     ),
     "Signal": EntitySpec(
@@ -147,8 +149,16 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         json_columns=frozenset(
             {"configuration", "semantic", "data", "communication", "quality", "protocol_bindings"}
         ),
+        required=("message_id",),
         enum_fields={"byte_order": SIGNAL_BYTE_ORDERS},
     ),
+}
+
+PARENT_LINKS: dict[str, tuple[str, str, str]] = {
+    "Function": ("hardware_node_id", "HardwareNode", "HAS_FUNCTION"),
+    "Interface": ("function_id", "Function", "HAS_INTERFACE"),
+    "Message": ("interface_id", "Interface", "HAS_MESSAGE"),
+    "Signal": ("message_id", "Message", "CONTAINS_SIGNAL"),
 }
 
 
@@ -186,10 +196,13 @@ def _governance_defaults(data: dict[str, Any]) -> dict[str, Any]:
     validate_choice(review_state, REVIEW_STATES, "review_state")
     approval_state = data.get("approval_state", "pending")
     validate_choice(approval_state, APPROVAL_STATES, "approval_state")
+    confidence = data.get("confidence")
+    if confidence is not None and (not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1):
+        raise EngineeringValidationError("confidence muss zwischen 0 und 1 liegen.")
     return {
         "source": source,
         "provenance": data.get("provenance", {}),
-        "confidence": data.get("confidence"),
+        "confidence": confidence,
         "review_state": review_state,
         "approval_state": approval_state,
         "created_by": data.get("created_by") or data.get("actor"),
@@ -219,7 +232,29 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
 
     with get_connection() as conn:
         row = conn.execute(query, values).fetchone()
+        row = _decorate_row(spec, row)
         _write_version_snapshot(conn, spec, row, changed_by=payload.get("created_by"), summary="created")
+        parent_link = PARENT_LINKS.get(object_type)
+        if parent_link:
+            parent_field, parent_type, relation_type = parent_link
+            conn.execute(
+                "INSERT INTO engineering_relations "
+                "(relation_type, source_type, source_id, target_type, target_id, "
+                "source, provenance, review_state, approval_state, created_by) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    relation_type,
+                    parent_type,
+                    payload[parent_field],
+                    object_type,
+                    row["id"],
+                    payload["source"],
+                    Jsonb(payload["provenance"]),
+                    payload["review_state"],
+                    payload["approval_state"],
+                    payload.get("created_by"),
+                ),
+            )
         conn.commit()
     return row
 
@@ -232,7 +267,7 @@ def get_object(object_type: str, object_id: str) -> dict[str, Any]:
         row = conn.execute(query, (object_id,)).fetchone()
     if row is None:
         raise NotFoundError(f"{object_type} {object_id} nicht gefunden.")
-    return row
+    return _decorate_row(spec, row)
 
 
 def list_objects(
@@ -261,7 +296,7 @@ def list_objects(
 
     with get_connection() as conn:
         rows = conn.execute(query, values).fetchall()
-    return rows
+    return [_decorate_row(spec, row) for row in rows]
 
 
 def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dict[str, Any]:
@@ -290,6 +325,9 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     }.items():
         if field_name in updates and updates[field_name] is not None:
             validate_choice(updates[field_name], allowed, field_name)
+    confidence = updates.get("confidence")
+    if confidence is not None and (not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1):
+        raise EngineeringValidationError("confidence muss zwischen 0 und 1 liegen.")
 
     actor = data.get("modified_by") or data.get("actor")
     set_columns = list(updates.keys()) + ["version", "modified_by"]
@@ -307,6 +345,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
 
     with get_connection() as conn:
         row = conn.execute(query, [*values, object_id]).fetchone()
+        row = _decorate_row(spec, row)
         _write_version_snapshot(
             conn, spec, row, changed_by=actor, summary=data.get("change_summary", "updated")
         )
@@ -330,6 +369,12 @@ def delete_object(object_type: str, object_id: str) -> None:
         )
     query = sql.SQL("DELETE FROM {table} WHERE id = %s").format(table=sql.Identifier(spec.table))
     with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM engineering_relations "
+            "WHERE (source_type = %s AND source_id = %s) "
+            "OR (target_type = %s AND target_id = %s)",
+            (object_type, object_id, object_type, object_id),
+        )
         conn.execute(query, (object_id,))
         conn.execute(
             "DELETE FROM engineering_object_versions WHERE object_type = %s AND object_id = %s",
@@ -376,3 +421,7 @@ def _json_safe(row: dict[str, Any]) -> dict[str, Any]:
         else:
             safe[key] = value
     return safe
+
+
+def _decorate_row(spec: EntitySpec, row: dict[str, Any]) -> dict[str, Any]:
+    return {**row, "object_type": spec.object_type}

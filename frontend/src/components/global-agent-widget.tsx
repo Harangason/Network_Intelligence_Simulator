@@ -1,54 +1,42 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AgentChatCore } from "@/components/agent-chat-core";
+import { WorkflowStatusOverview } from "@/components/workflow-status-overview";
+import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 
 export function GlobalAgentWidget() {
-  const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [activeProject, setActiveProject] = useState("default");
 
-  // Die Studio-Seite "Agent" zeigt den Assistenten bereits als volle Ansicht.
-  // Dort blenden wir die schwebende Box aus, um Duplikate zu vermeiden.
-  if (pathname === "/studio/agent") return null;
+  useEffect(() => {
+    const initial = readUserSettings();
+    setActiveProject(initial.activeProject);
+    const update = (event: Event) => {
+      const next = (event as CustomEvent<UserSettings>).detail;
+      setActiveProject(next.activeProject);
+    };
+    window.addEventListener(SETTINGS_EVENT, update);
+    return () => window.removeEventListener(SETTINGS_EVENT, update);
+  }, []);
 
   return (
     <aside
       aria-label="Engineering-Assistent"
-      className={`agent-widget ${collapsed ? "collapsed" : ""}`}
+      className="agent-widget has-workflow-status"
     >
-      {collapsed ? (
-        <button
-          className="agent-widget-tab"
-          onClick={() => setCollapsed(false)}
-          type="button"
-          aria-label="Agent öffnen"
-        >
-          <span className="agent-widget-tab-dot" aria-hidden="true" />
-          Agent
-        </button>
-      ) : (
-        <div className="agent-widget-panel">
-          <div className="agent-widget-header">
-            <div>
-              <p className="agent-widget-eyebrow">Engineering-Assistent</p>
-              <strong>Agent</strong>
-            </div>
-            <button
-              className="agent-widget-collapse"
-              onClick={() => setCollapsed(true)}
-              type="button"
-              aria-label="Agent minimieren"
-            >
-              ›
-            </button>
-          </div>
-
-          <div className="agent-widget-body">
-            <AgentChatCore compact />
+      <WorkflowStatusOverview />
+      <div className="agent-widget-panel">
+        <div className="agent-widget-header">
+          <div>
+            <p className="agent-widget-eyebrow">Engineering-Assistent</p>
+            <strong>Agent</strong>
           </div>
         </div>
-      )}
+
+        <div className="agent-widget-body">
+          <AgentChatCore compact key={activeProject} />
+        </div>
+      </div>
     </aside>
   );
 }

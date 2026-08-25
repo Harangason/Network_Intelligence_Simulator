@@ -31,6 +31,7 @@ def _interface_index(profile: dict[str, Any]) -> tuple[dict[str, dict[str, Any]]
         record = {
             "hardware_id": node["id"],
             "hardware_name": node.get("name") or node["id"],
+            "hardware_type": str(node.get("type") or node.get("device_type") or "").lower(),
             "health": node.get("health") or "nominal",
             "port_id": port["id"],
             "interface_id": interface["id"],
@@ -57,17 +58,32 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
         for index, raw in enumerate(explicit):
             if not isinstance(raw, dict):
                 continue
-            sender_id = str(raw.get("sender_interface") or raw.get("sender") or "")
+            sender_id = str(raw.get("sender_interface") or raw.get("source_interface") or raw.get("sender") or "")
             sender = by_id.get(sender_id)
-            receiver_values = raw.get("receiver_interfaces") or raw.get("receivers") or raw.get("receiver") or []
+            receiver_values = (
+                raw.get("receiver_interfaces")
+                or raw.get("target_interfaces")
+                or raw.get("target_interface")
+                or raw.get("receivers")
+                or raw.get("receiver")
+                or []
+            )
             if isinstance(receiver_values, str):
                 receiver_values = [receiver_values]
             receivers = [by_id[item] for item in receiver_values if item in by_id]
             if sender is None:
                 continue
-            network_id = str(raw.get("network") or sender.get("network") or "")
+            network_id = str(raw.get("network") or raw.get("network_id") or sender.get("network") or "")
             if not receivers:
                 receivers = [item for item in by_network.get(network_id, []) if item["interface_id"] != sender_id]
+            gateway_ids = [str(item) for item in raw.get("gateways") or []]
+            if sender.get("hardware_type") == "gateway":
+                gateway_ids.append(str(sender["hardware_id"]))
+            gateway_ids.extend(
+                str(item["hardware_id"])
+                for item in receivers
+                if item.get("hardware_type") == "gateway"
+            )
             routes.append(
                 {
                     "id": str(raw.get("id") or raw.get("name") or f"communication_{index + 1}"),
@@ -79,11 +95,13 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
                     "cycle_ms": max(0.001, float(raw.get("cycle_ms") or raw.get("period_ms") or 100.0)),
                     "payload_bytes": max(0, int(raw.get("payload_bytes") or raw.get("length") or 8)),
                     "priority": raw.get("priority"),
+                    "gateways": sorted(set(gateway_ids)),
                     "network_metadata": network_by_id.get(network_id, {}),
-                    "metadata": {key: value for key, value in raw.items() if key not in {"sender_interface", "sender", "receiver_interfaces", "receivers", "receiver"}},
+                    "metadata": {key: value for key, value in raw.items() if key not in {"sender_interface", "source_interface", "sender", "receiver_interfaces", "target_interfaces", "target_interface", "receivers", "receiver"}},
                 }
             )
-        return routes
+        if routes:
+            return routes
 
     for network_id, interfaces in sorted(by_network.items()):
         if len(interfaces) < 2:
@@ -101,6 +119,11 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
                     "cycle_ms": 100.0,
                     "payload_bytes": 8,
                     "priority": None,
+                    "gateways": sorted({
+                        str(item["hardware_id"])
+                        for item in (sender, receiver)
+                        if item.get("hardware_type") == "gateway"
+                    }),
                     "network_metadata": network_by_id.get(network_id, {}),
                     "metadata": {"inferred": True},
                 }
@@ -122,6 +145,12 @@ def _generate_universal_events(
     routes = _build_routes(config, profile)
     events: list[dict[str, Any]] = []
     rng = random.Random(seed)
+    root_faults = {
+        "dropout_probability": config.get("dropout_probability"),
+        "corruption_probability": config.get("corruption_probability"),
+        "duplicate_probability": config.get("duplicate_probability"),
+        "reordering_probability": config.get("reordering_probability"),
+    }
 
     for route in routes:
         sender = route["sender"]
@@ -139,20 +168,46 @@ def _generate_universal_events(
         network_metadata = route.get("network_metadata") if isinstance(route.get("network_metadata"), dict) else {}
         network_faults = network_metadata.get("fault_model") if isinstance(network_metadata.get("fault_model"), dict) else {}
         route_faults = route["metadata"].get("fault_model") if isinstance(route["metadata"].get("fault_model"), dict) else {}
-        fault_model = {**network_faults, **route_faults}
+        fault_model = {**root_faults, **network_faults, **route_faults}
         dropout_probability = max(0.0, min(1.0, float(fault_model.get("dropout_probability") or 0.0)))
         corruption_probability = max(0.0, min(1.0, float(fault_model.get("corruption_probability") or fault_model.get("crc_error_probability") or 0.0)))
-        latency_s = float(route["metadata"].get("latency_us") or network_metadata.get("latency_us") or 0.0) / 1_000_000.0
+        duplicate_probability = max(0.0, min(1.0, float(fault_model.get("duplicate_probability") or 0.0)))
+        reordering_probability = max(0.0, min(1.0, float(fault_model.get("reordering_probability") or 0.0)))
+        retry_limit = max(0, int(config.get("retry_limit") or route["metadata"].get("retry_limit") or 0))
+        retransmission_enabled = bool(config.get("retransmission_enabled") or retry_limit > 0)
+        retry_delay_ms = max(0.0, float(config.get("retransmission_delay_ms") or 0.0))
+        gateways = route.get("gateways") or []
+        engineering_latency_ms = (
+            float(config.get("source_processing_delay_ms") or 0.0)
+            + float(config.get("target_processing_delay_ms") or 0.0)
+            + float(config.get("propagation_delay_ms") or 0.0)
+            + len(gateways) * float(config.get("gateway_delay_ms") or 0.0)
+            + len(gateways) * float(config.get("gateway_queue_delay_ms") or 0.0)
+            + len(gateways) * float(config.get("protocol_conversion_delay_ms") or 0.0)
+        )
+        latency_s = (
+            float(route["metadata"].get("latency_us") or network_metadata.get("latency_us") or 0.0)
+            / 1_000_000.0
+            + engineering_latency_ms / 1000.0
+        )
         sequence = 0
         relative_time = 0.0
         jitter_ratio = float(route["metadata"].get("jitter_ratio") or 0.01)
         while relative_time <= duration_s and len(events) < max_events:
             jitter = rng.uniform(-cycle_s * jitter_ratio, cycle_s * jitter_ratio) if sequence else 0.0
-            event_time = max(0.0, relative_time + jitter + latency_s)
+            reordered = rng.random() < reordering_probability
+            event_time = max(0.0, relative_time + jitter + latency_s + (cycle_s * 0.5 if reordered else 0.0))
             status = "transmitted"
+            retransmission_count = 0
             if rng.random() < dropout_probability:
                 status = "dropped"
-            elif rng.random() < corruption_probability:
+                if retransmission_enabled:
+                    for _ in range(retry_limit):
+                        retransmission_count += 1
+                        if rng.random() >= dropout_probability:
+                            status = "transmitted"
+                            break
+            if status != "dropped" and rng.random() < corruption_probability:
                 status = "corrupted"
             payload_hex = _payload(route["id"], sequence, payload_size)
             if status == "corrupted" and payload_hex:
@@ -161,6 +216,10 @@ def _generate_universal_events(
                 "timestamp_utc": _utc(trace_start + event_time),
                 "timestamp_unix": trace_start + event_time,
                 "time_s": event_time,
+                "scheduled_time_s": relative_time,
+                "configured_cycle_ms": cycle_s * 1000.0,
+                "configured_latency_ms": latency_s * 1000.0,
+                "injected_jitter_ms": jitter * 1000.0,
                 "sequence": sequence,
                 "route_id": route["id"],
                 "route_name": route["name"],
@@ -175,10 +234,21 @@ def _generate_universal_events(
                 "sender_interface": sender["interface_id"],
                 "receiver_hardware": [item["hardware_id"] for item in receivers],
                 "receiver_interfaces": [item["interface_id"] for item in receivers],
+                "gateway_ids": gateways,
                 "payload_bytes": payload_size,
                 "payload_hex": payload_hex,
                 "priority": route.get("priority"),
                 "status": status,
+                "retransmission_count": retransmission_count,
+                "duplicate_injected": rng.random() < duplicate_probability,
+                "reordered": reordered,
+                "retry_delay_ms": retransmission_count * retry_delay_ms,
+                "configured_bitrate": int(
+                    network_metadata.get("bitrate")
+                    or network_metadata.get("link_speed")
+                    or technology.get("default_bitrate")
+                    or 1_000_000
+                ),
             }
             events.append(event)
             sequence += 1
@@ -186,6 +256,50 @@ def _generate_universal_events(
         if len(events) >= max_events:
             break
 
+    events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
+    network_available_at: dict[str, float] = {}
+    for event in events:
+        requested_at = float(event["time_s"])
+        network_id = str(event["network"])
+        bitrate = max(1, int(event["configured_bitrate"]))
+        payload_bytes = int(event["payload_bytes"])
+        technology_id = str(event["technology"]).lower()
+        if "ethernet" in technology_id or technology_id in {"some_ip", "someip", "dds", "ros_2", "udp", "tcp"}:
+            wire_bits = max(84, payload_bytes + 74) * 8
+        elif technology_id in {"can_fd", "canfd", "can_xl"}:
+            wire_bits = int((payload_bytes * 8 + 83) * 1.15)
+        elif technology_id in {"can", "can_classic"}:
+            wire_bits = int((payload_bytes * 8 + 47) * 1.2)
+        else:
+            wire_bits = (payload_bytes + 24) * 8
+        transmission_s = wire_bits / bitrate * (1 + int(event.get("retransmission_count") or 0))
+        available_at = network_available_at.get(network_id, 0.0)
+        transmit_start = max(requested_at, available_at)
+        queue_delay_s = max(0.0, transmit_start - requested_at)
+        queue_depth = int(queue_delay_s / max(transmission_s, 0.000000001))
+        queue_size = max(1, int(config.get("queue_size") or 256))
+        queue_overflow = queue_depth > queue_size and event.get("status") != "dropped"
+        if queue_overflow:
+            event["status"] = "dropped"
+            event["drop_reason"] = "queue_overflow"
+            completion = requested_at
+        elif event.get("status") == "dropped":
+            completion = requested_at
+        else:
+            completion = transmit_start + transmission_s
+            network_available_at[network_id] = completion
+        event["queue_delay_ms"] = queue_delay_s * 1000.0
+        event["queue_depth_estimate"] = queue_depth
+        event["transmission_latency_ms"] = transmission_s * 1000.0
+        event["end_to_end_latency_ms"] = (
+            queue_delay_s * 1000.0
+            + transmission_s * 1000.0
+            + float(event["configured_latency_ms"])
+            + float(event.get("retry_delay_ms") or 0.0)
+        )
+        event["time_s"] = completion
+        event["timestamp_unix"] = trace_start + completion
+        event["timestamp_utc"] = _utc(trace_start + completion)
     events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
     return routes, events
 
@@ -201,11 +315,16 @@ def _write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
 def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     columns = [
-        "timestamp_utc", "timestamp_unix", "time_s", "sequence", "route_id", "route_name",
+        "timestamp_utc", "timestamp_unix", "time_s", "scheduled_time_s",
+        "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms",
+        "sequence", "route_id", "route_name",
         "technology", "technology_family", "access_model", "timing_model", "error_model",
         "network", "sender_hardware", "sender_port",
         "sender_interface", "receiver_hardware", "receiver_interfaces", "payload_bytes",
-        "payload_hex", "priority", "status",
+        "payload_hex", "priority", "status", "configured_bitrate", "queue_delay_ms",
+        "queue_depth_estimate", "transmission_latency_ms", "end_to_end_latency_ms",
+        "gateway_ids", "retransmission_count", "duplicate_injected", "reordered",
+        "retry_delay_ms", "drop_reason",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
@@ -216,6 +335,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
                     **event,
                     "receiver_hardware": ",".join(event["receiver_hardware"]),
                     "receiver_interfaces": ",".join(event["receiver_interfaces"]),
+                    "gateway_ids": ",".join(event.get("gateway_ids") or []),
                 }
             )
     return path

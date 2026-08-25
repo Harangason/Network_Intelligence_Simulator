@@ -1,3 +1,5 @@
+import type { HardwareNode } from "./types";
+
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
 export type BusType = "can_fd" | "lin" | "automotive_ethernet" | "flexray";
 export type PortSide = "left" | "right";
@@ -8,6 +10,7 @@ export type TopologyPort = {
   bus: BusType;
   side: PortSide;
   offset: number;
+  engineeringId?: string;
 };
 
 export type TopologyNode = {
@@ -16,7 +19,11 @@ export type TopologyNode = {
   kind: NodeKind;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
   ports: TopologyPort[];
+  engineeringId?: string;
+  engineeringFunctionId?: string;
 };
 
 export type TopologyEdge = {
@@ -26,12 +33,42 @@ export type TopologyEdge = {
   target: string;
   targetPort: string;
   bus: BusType;
+  engineeringRelationId?: string;
+  routingEntryId?: string;
+  origin?: "ROUTING_TABLE";
+};
+
+export type TopologySyncResult = {
+  topology_id: string;
+  nodes: Array<{
+    topology_node_id: string;
+    engineering_id: string;
+    function_id: string;
+    interfaces: Array<{ topology_port_id: string; engineering_id: string }>;
+  }>;
+  edges: Array<{ topology_edge_id: string; engineering_relation_id: string }>;
+  counts: {
+    hardware_nodes: number;
+    interfaces: number;
+    connections: number;
+  };
 };
 
 export type NetworkTopology = {
   nodes: TopologyNode[];
   edges: TopologyEdge[];
 };
+
+export function engineeringHardwareKind(
+  hardware: Pick<HardwareNode, "device_type" | "name">,
+): NodeKind {
+  if (hardware.device_type === "Gateway" || hardware.name.toLowerCase().includes("gateway")) {
+    return "gateway";
+  }
+  if (hardware.device_type === "SensorController") return "sensor";
+  if (hardware.device_type === "ActuatorController") return "actuator";
+  return "ecu";
+}
 
 export const busProfiles: Record<BusType, { label: string; bitrate: number; cycleMs: number; payload: number; color: string }> = {
   can_fd: { label: "CAN FD", bitrate: 2_000_000, cycleMs: 10, payload: 64, color: "#9fea4e" },
@@ -82,16 +119,20 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
   }));
 
   const hardware = {
-    devices: topology.nodes.map((node) => ({
+    nodes: topology.nodes.map((node) => ({
       id: node.id,
       name: node.name,
       type: node.kind,
-      interfaces: node.ports.map((item, index) => ({
+      ports: node.ports.map((item, index) => ({
         id: item.id,
         name: item.name,
-        network_id: `network-${item.bus}`,
-        technology: item.bus,
         port: index + 1,
+        interfaces: [{
+          id: `${item.id}-interface`,
+          name: item.name,
+          network_id: `network-${item.bus}`,
+          technology: item.bus,
+        }],
       })),
     })),
   };
@@ -99,10 +140,10 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
   const communications = topology.edges.map((edge, index) => ({
     id: `route-${index + 1}-${slug(edge.source)}-${slug(edge.target)}`,
     source: edge.source,
-    source_interface: edge.sourcePort,
+    sender_interface: `${edge.sourcePort}-interface`,
     target: edge.target,
-    target_interface: edge.targetPort,
-    network_id: `network-${edge.bus}`,
+    receiver_interfaces: [`${edge.targetPort}-interface`],
+    network: `network-${edge.bus}`,
     technology: edge.bus,
     cycle_ms: busProfiles[edge.bus].cycleMs,
     payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),

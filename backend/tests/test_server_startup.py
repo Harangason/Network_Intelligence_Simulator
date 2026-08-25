@@ -6,9 +6,13 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+import psycopg
 
 from backend.app import create_app
 from backend.app.__main__ import ExclusiveThreadedWSGIServer, _server_settings
+from backend.engineering import api as engineering_api
+from backend.engineering import db as engineering_db
+from backend.engineering import schema as engineering_schema
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -100,6 +104,98 @@ def test_backend_server_owns_its_port_exclusively() -> None:
     finally:
         competing_socket.close()
         server.server_close()
+
+
+def test_frontend_dev_command_uses_local_next_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    next_cli = tmp_path / "node_modules" / "next" / "dist" / "bin" / "next"
+    next_cli.parent.mkdir(parents=True)
+    next_cli.write_text("", encoding="utf-8")
+    monkeypatch.setattr(LAUNCHER.shutil, "which", lambda command: "node.exe")
+
+    command = LAUNCHER._frontend_dev_command(tmp_path)
+
+    assert command == [
+        "node.exe",
+        str(next_cli),
+        "dev",
+        "--turbopack",
+        "-p",
+        str(LAUNCHER.FRONTEND_PORT),
+    ]
+
+
+def test_engineering_database_url_accepts_sqlalchemy_psycopg_scheme(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://user:pass@localhost/db")
+
+    assert engineering_db._database_url() == "postgresql://user:pass@localhost/db"
+
+
+def test_engineering_database_timeout_rejects_invalid_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENGINEERING_DB_TIMEOUT", "0")
+
+    with pytest.raises(RuntimeError, match="größer als 0"):
+        engineering_db._timeout_seconds("ENGINEERING_DB_TIMEOUT", 2.0)
+
+
+def test_engineering_missing_tables_return_service_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_missing_table(*_args, **_kwargs):
+        raise psycopg.errors.UndefinedTable("missing engineering table")
+
+    monkeypatch.setattr(engineering_api, "list_objects", raise_missing_table)
+    client = create_app(testing=False).test_client()
+
+    response = client.get("/api/engineering/hardware-nodes")
+
+    assert response.status_code == 503
+    assert "Engineering-Datenbank" in response.get_json()["error"]
+
+
+def test_direct_ai_object_write_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        engineering_api,
+        "create_object",
+        lambda *_args, **_kwargs: pytest.fail("repository must not be called"),
+    )
+    response = create_app(testing=True).test_client().post(
+        "/api/engineering/hardware-nodes",
+        json={"name": "AI Node", "source": "ai_generated"},
+    )
+
+    assert response.status_code == 409
+    assert "AIProposal" in response.get_json()["error"]
+
+
+def test_direct_approval_write_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        engineering_api,
+        "update_object",
+        lambda *_args, **_kwargs: pytest.fail("repository must not be called"),
+    )
+    response = create_app(testing=True).test_client().patch(
+        "/api/engineering/hardware-nodes/00000000-0000-0000-0000-000000000000",
+        json={"approval_state": "approved"},
+    )
+
+    assert response.status_code == 409
+    assert "Approval-Service" in response.get_json()["error"]
+
+
+def test_schema_contains_phase_one_and_proposal_tables() -> None:
+    ddl = "\n".join(engineering_schema.MIGRATION_STATEMENTS)
+
+    assert "engineering_hardware_nodes" in ddl
+    assert "engineering_signals" in ddl
+    assert "engineering_relations" in ddl
+    assert "engineering_object_versions" in ddl
+    assert "engineering_ai_proposals" in ddl
 
 
 @pytest.mark.parametrize("value", ["0", "65536", "abc"])

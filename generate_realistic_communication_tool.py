@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import json
 import signal
+import shutil
 import socket
 import subprocess
 import sys
@@ -22,6 +23,7 @@ BACKEND_HOST = "127.0.0.1"
 BACKEND_PORT = 5050
 FRONTEND_HOST = "127.0.0.1"
 FRONTEND_PORT = 3500
+SERVICE_LOG_ROOT = ROOT / "backend" / "runtime" / "service-logs"
 
 
 def _wait_for_url(
@@ -111,13 +113,29 @@ def _run_backend() -> int:
     return main()
 
 
+def _frontend_dev_command(frontend: Path) -> list[str]:
+    """Start Next.js from local dependencies instead of relying on global npm."""
+    node = shutil.which("node")
+    if node is None:
+        raise SystemExit("Node.js wurde nicht gefunden. Bitte Node.js installieren und erneut starten.")
+
+    next_cli = frontend / "node_modules" / "next" / "dist" / "bin" / "next"
+    if not next_cli.is_file():
+        raise SystemExit(
+            "Next.js fehlt in frontend/node_modules. Bitte zuerst im Ordner frontend "
+            "`npm install` ausführen."
+        )
+
+    return [node, str(next_cli), "dev", "--turbopack", "-p", str(FRONTEND_PORT)]
+
+
 def _run_web() -> int:
-    npm = "npm.cmd" if os.name == "nt" else "npm"
     frontend = ROOT / "frontend"
     if not (frontend / "node_modules").is_dir():
         raise SystemExit(
             "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
         )
+    frontend_command = _frontend_dev_command(frontend)
 
     backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
     try:
@@ -131,10 +149,18 @@ def _run_web() -> int:
     backend_environment = os.environ.copy()
     backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
 
+    SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    backend_log_path = SERVICE_LOG_ROOT / "backend.log"
+    frontend_log_path = SERVICE_LOG_ROOT / "frontend.log"
+    backend_log = backend_log_path.open("w", encoding="utf-8", buffering=1)
+    frontend_log = frontend_log_path.open("w", encoding="utf-8", buffering=1)
+
     backend_process = subprocess.Popen(
         [sys.executable, "-m", "backend.app"],
         cwd=ROOT,
         env=backend_environment,
+        stdout=backend_log,
+        stderr=subprocess.STDOUT,
         **_popen_options(),
     )
     frontend_process: subprocess.Popen[object] | None = None
@@ -153,8 +179,10 @@ def _run_web() -> int:
             )
 
         frontend_process = subprocess.Popen(
-            [npm, "run", "dev"],
+            frontend_command,
             cwd=frontend,
+            stdout=frontend_log,
+            stderr=subprocess.STDOUT,
             **_popen_options(),
         )
         frontend_url = f"http://{FRONTEND_HOST}:{FRONTEND_PORT}"
@@ -167,6 +195,7 @@ def _run_web() -> int:
 
         print(f"Backend: {backend_url} (exklusiv)")
         print(f"Frontend: {frontend_url} (exklusiv)")
+        print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
         print("Beenden mit Strg+C")
         webbrowser.open(frontend_url, new=2)
         while backend_process.poll() is None and frontend_process.poll() is None:
@@ -188,6 +217,8 @@ def _run_web() -> int:
         if frontend_process is not None:
             _terminate_process_tree(frontend_process)
         _terminate_process_tree(backend_process)
+        backend_log.close()
+        frontend_log.close()
     if launcher_error:
         return 1
     return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0

@@ -40,6 +40,7 @@ def _normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
     nodes = _first_list(
         raw_hardware if isinstance(raw_hardware, list) else None,
         hardware_container.get("nodes"),
+        hardware_container.get("devices"),
         raw.get("nodes"),
         raw.get("devices"),
         raw.get("ecus"),
@@ -77,6 +78,16 @@ def _normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
         item.setdefault("type", item.get("hardware_type") or item.get("role") or "device")
         item.setdefault("health", "nominal")
         raw_ports = _first_list(item.get("ports"), item.get("connectors"))
+        if not raw_ports and isinstance(item.get("interfaces"), list):
+            raw_ports = [
+                {
+                    "id": f"{item['id']}_port_{index + 1}",
+                    "name": interface.get("name") or interface.get("id") or f"Port {index + 1}",
+                    "interfaces": [interface],
+                }
+                for index, interface in enumerate(item["interfaces"])
+                if isinstance(interface, dict)
+            ]
         normalized_ports: list[dict[str, Any]] = []
         for port_index, port in enumerate(raw_ports):
             normalized_port = deepcopy(port)

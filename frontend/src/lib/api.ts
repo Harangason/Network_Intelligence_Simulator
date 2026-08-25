@@ -34,10 +34,16 @@ export async function createSimulation(payload: Record<string, unknown>, validat
     announceMode("backend");
     return job;
   } catch (error) {
+    if (payload.workflow_managed) throw error;
     if (error instanceof SyntaxError) throw error;
     announceMode("browser");
     return createLocalSimulation(payload, validateOnly);
   }
+}
+
+export async function listSimulations(): Promise<SimulationJob[]> {
+  const response = await apiRequest<{ jobs: SimulationJob[] }>("/api/simulations");
+  return response.jobs;
 }
 
 export async function getSimulation(id: string): Promise<SimulationJob> {
@@ -46,4 +52,8 @@ export async function getSimulation(id: string): Promise<SimulationJob> {
     return getLocalSimulation(id);
   }
   return apiRequest<SimulationJob>(`/api/simulations/${id}`);
+}
+
+export async function cancelSimulation(id: string): Promise<SimulationJob> {
+  return apiRequest<SimulationJob>(`/api/simulations/${id}`, { method: "POST", body: "{}" });
 }

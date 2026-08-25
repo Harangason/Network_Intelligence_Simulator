@@ -7,6 +7,25 @@ export type Technology = {
   default_bitrate?: number | null;
   max_payload_bytes?: number | null;
   native_formats?: string[];
+  parameter_schema?: TechnologyParameterField[];
+};
+
+export type TechnologyParameterField = {
+  key: string;
+  label: string;
+  type: "number" | "select" | "boolean" | "text";
+  unit?: string;
+  min?: number;
+  max?: number;
+  default?: string | number | boolean;
+  options?: string[];
+  scope: "network" | "message" | "route" | "gateway" | "analysis" | "reliability" | "simulation";
+  category: "physical" | "timing" | "capacity" | "qos" | "reliability" | "synchronization" | "gateway" | "simulation";
+  description?: string;
+  required?: boolean;
+  editable?: boolean;
+  simulation_relevant?: boolean;
+  validation_relevant?: boolean;
 };
 
 export type TechnologyDomain = {
@@ -41,15 +60,99 @@ export type SimulationResultPayload = {
     technologies?: string[];
     duration_s?: number;
   };
+  runtime_metrics?: RuntimeMetrics;
+};
+
+export type RuntimeNetworkMetric = {
+  network_id: string;
+  technology: string;
+  event_count: number;
+  transmitted_count: number;
+  dropped_count: number;
+  corrupted_count: number;
+  average_load_percent: number;
+  peak_load_percent: number;
+  burst_load_percent: number;
+  average_queue_depth: number;
+  maximum_queue_depth: number;
+  average_queue_delay_ms: number;
+  maximum_queue_delay_ms: number;
+};
+
+export type RuntimeRouteMetric = {
+  route_id: string;
+  route_name: string;
+  network_id: string;
+  event_count: number;
+  drop_rate: number;
+  corruption_rate: number;
+  configured_cycle_ms: number;
+  actual_average_cycle_ms: number;
+  actual_min_cycle_ms: number;
+  actual_max_cycle_ms: number;
+  average_jitter_ms: number;
+  p95_jitter_ms: number;
+  p99_jitter_ms: number;
+  maximum_jitter_ms: number;
+  jitter_limit_ms?: number | null;
+  jitter_violations: number;
+  maximum_latency_limit_ms?: number | null;
+  latency_violations?: number;
+  freshness_limit_ms?: number | null;
+  freshness_violations?: number;
+  average_end_to_end_latency_ms: number;
+  maximum_end_to_end_latency_ms: number;
+  average_queue_delay_ms: number;
+  maximum_queue_delay_ms: number;
+  timeouts: number;
+  status: "PASS" | "FAIL";
+};
+
+export type RuntimeMetrics = {
+  available: boolean;
+  reason?: string;
+  calculation_model: string;
+  calculation_version?: string;
+  jitter_definition?: string;
+  peak_window_ms?: number;
+  burst_window_ms?: number;
+  summary?: {
+    event_count: number;
+    transmitted_events: number;
+    dropped_frames: number;
+    corrupted_frames: number;
+    timeouts: number;
+    jitter_violations: number;
+    latency_violations?: number;
+    freshness_violations?: number;
+    observed_duration_s: number;
+  };
+  networks?: RuntimeNetworkMetric[];
+  routes?: RuntimeRouteMetric[];
+  gateways?: Array<{
+    gateway_id: string;
+    event_count: number;
+    current_throughput_bps: number;
+    maximum_throughput_bps: number;
+    processing_load_percent: number;
+    average_queue_delay_ms: number;
+    processing_delay_ms: number;
+    protocol_conversion_delay_ms: number;
+  }>;
+  queues?: { average_depth: number; maximum_depth: number; queue_drops: number };
+  reliability?: { delivery_probability: number; packet_loss_rate: number; corruption_rate: number; retransmissions: number; duplicates?: number; reordered_events?: number };
+  synchronization?: { configured_clock_offset_ms?: number; clock_drift_ppm: number; sync_precision_ms: number; maximum_clock_offset_ms: number };
+  bottlenecks?: Array<{ type: string; object_id: string; value: number; unit: string }>;
 };
 
 export type SimulationJob = {
   id: string;
-  status: "queued" | "running" | "completed" | "failed";
+  status: "queued" | "running" | "completed" | "failed" | "canceled";
   validate_only: boolean;
   created_at: string;
   updated_at: string;
   error: string | null;
+  cancellation_requested?: boolean;
   result: SimulationResultPayload | null;
   artifact_downloads?: ArtifactDownload[];
 };
@@ -66,6 +169,25 @@ export type EngineeringResource =
   | "messages"
   | "signals";
 
+export interface EngineeringProposalValidation {
+  index: number;
+  object_type: string;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface EngineeringProposal {
+  proposal_id: string;
+  proposal_type: string;
+  prompt: string;
+  model: string | null;
+  confidence: number | null;
+  status: string;
+  evidence: Array<Record<string, unknown>>;
+  proposed_objects: Array<Record<string, unknown>>;
+  validation_results: EngineeringProposalValidation[];
+}
+
 export type EngineeringObjectType =
   | "HardwareNode"
   | "Function"
@@ -80,6 +202,7 @@ export type ApprovalState = "pending" | "approved" | "rejected";
 
 export type GovernanceFields = {
   id: string;
+  object_type: EngineeringObjectType;
   name: string;
   description: string | null;
   domain: string | null;
@@ -110,6 +233,7 @@ export type EngFunction = GovernanceFields & {
 
 export type EngInterface = GovernanceFields & {
   hardware_node_id: string | null;
+  function_id: string | null;
   interface_type: string;
   configuration: Record<string, unknown>;
 };
@@ -162,4 +286,136 @@ export type EngineeringRelation = {
   attributes: Record<string, unknown>;
   created_at: string;
   created_by: string | null;
+};
+
+export type EngineeringImportPlan = {
+  import_id: string;
+  file_name: string;
+  format: "dbc" | "csv" | "xlsx";
+  counts: {
+    hardware_nodes: number;
+    functions: number;
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  mapping: Record<string, string>;
+  warnings: string[];
+  hardware_nodes: Array<Record<string, unknown>>;
+  functions: Array<Record<string, unknown>>;
+  interfaces: Array<Record<string, unknown>>;
+  messages: Array<Record<string, unknown>>;
+  signals: Array<Record<string, unknown>>;
+};
+
+export type EngineeringImportResult = {
+  import_id: string;
+  created: number;
+  reused: number;
+  counts: Record<string, number>;
+};
+
+// ---------------------------------------------------------------------------
+// Routing Manager
+// ---------------------------------------------------------------------------
+
+export type RoutingEndpoint = {
+  node_id: string;
+  port_id?: string | null;
+  interface_id?: string | null;
+  network_id?: string | null;
+  protocol?: string | null;
+};
+
+export type RoutingValidationIssue = { code: string; message: string };
+
+export type RoutingValidation = {
+  valid: boolean;
+  errors: RoutingValidationIssue[];
+  warnings: RoutingValidationIssue[];
+  validation_timestamp: string;
+  metrics?: {
+    payload_bytes?: number;
+    estimated_latency_ms?: number;
+    route_load_percent?: number;
+    hop_count?: number;
+    gateway_count?: number;
+    physical_path_mapped?: boolean | null;
+  };
+  evidence?: Array<Record<string, unknown>>;
+  outdated_reason?: string;
+};
+
+export type RoutingEntry = {
+  id: string;
+  route_code: string;
+  revision: number;
+  supersedes_id?: string | null;
+  name: string;
+  description?: string | null;
+  source: RoutingEndpoint;
+  payload: {
+    interface_definition_id?: string | null;
+    message_id?: string | null;
+    signal_ids: string[];
+    topic?: string | null;
+    data_object?: string | null;
+  };
+  destinations: RoutingEndpoint[];
+  route: {
+    hops: Array<string | { node_id?: string; network_id?: string; name?: string }>;
+    gateways: Array<string | { node_id?: string; name?: string }>;
+    transformations: string[];
+    priority: "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
+  };
+  timing: {
+    cycle_time_ms?: number | null;
+    timeout_ms?: number | null;
+    max_latency_ms?: number | null;
+    jitter_limit_ms?: number | null;
+  };
+  routing_policy: {
+    routing_type: string;
+    redundancy: string;
+    fallback_route_id?: string | null;
+    conditions: Array<Record<string, unknown>>;
+  };
+  validation: Partial<RoutingValidation>;
+  status: string;
+  origin: string;
+  confidence?: number | null;
+  review_state: string;
+  approval_state: string;
+  source_id?: string | null;
+  source_version?: string | null;
+  created_at: string;
+  created_by?: string | null;
+  modified_at: string;
+  modified_by?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+};
+
+export type RoutingProposal = {
+  proposal_id: string;
+  prompt: string;
+  target_objects: unknown[];
+  generated_routes: RoutingEntry[];
+  retrieved_context: unknown[];
+  evidence: Array<Record<string, unknown>>;
+  confidence?: number | null;
+  validation_results: RoutingValidation[];
+  model?: string | null;
+  model_version?: string | null;
+  status: string;
+  created_at: string;
+};
+
+export type RoutingSchema = {
+  routing_types: string[];
+  protocols: string[];
+  priorities: string[];
+  redundancy_modes: string[];
+  permissions: string[];
+  agent_permissions: string[];
 };

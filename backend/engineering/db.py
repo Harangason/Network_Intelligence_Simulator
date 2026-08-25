@@ -9,6 +9,7 @@ und wäre mit dem bestehenden Server-Modell nicht sinnvoll kombinierbar.
 from __future__ import annotations
 
 import os
+import threading
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -16,7 +17,11 @@ from psycopg import Connection
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
+from .schema import ensure_schema
+
 _pool: ConnectionPool | None = None
+_pool_lock = threading.Lock()
+DEFAULT_CONNECT_TIMEOUT_SECONDS = 2.0
 
 
 def _database_url() -> str:
@@ -26,20 +31,46 @@ def _database_url() -> str:
             "DATABASE_URL ist nicht gesetzt. Das Engineering-Modul benötigt eine "
             "Neon-Postgres-Verbindung."
         )
-    return url
+    return url.replace("postgresql+psycopg://", "postgresql://", 1)
+
+
+def _timeout_seconds(name: str, default: float) -> float:
+    raw_value = os.environ.get(name)
+    if raw_value is None:
+        return default
+    try:
+        value = float(raw_value)
+    except ValueError as error:
+        raise RuntimeError(f"{name} muss eine Zahl sein.") from error
+    if value <= 0:
+        raise RuntimeError(f"{name} muss größer als 0 sein.")
+    return value
 
 
 def get_pool() -> ConnectionPool:
     """Gibt den lazily initialisierten, prozessweiten Connection-Pool zurück."""
     global _pool
-    if _pool is None:
-        _pool = ConnectionPool(
+    if _pool is not None:
+        return _pool
+    with _pool_lock:
+        if _pool is not None:
+            return _pool
+        timeout = _timeout_seconds("ENGINEERING_DB_TIMEOUT", DEFAULT_CONNECT_TIMEOUT_SECONDS)
+        candidate = ConnectionPool(
             conninfo=_database_url(),
             min_size=1,
             max_size=10,
-            kwargs={"autocommit": False, "row_factory": dict_row},
+            timeout=timeout,
+            kwargs={"autocommit": False, "connect_timeout": timeout, "row_factory": dict_row},
             open=True,
         )
+        try:
+            with candidate.connection() as connection:
+                ensure_schema(connection)
+        except Exception:
+            candidate.close()
+            raise
+        _pool = candidate
     return _pool
 
 

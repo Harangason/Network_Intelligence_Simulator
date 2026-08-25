@@ -8,6 +8,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 
 from .job_service import JOBS
+from ..engineering.workflow.service import WorkflowStatusService
 
 
 api = Blueprint("api", __name__)
@@ -37,6 +38,16 @@ def create_simulation():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    snapshot_id = payload.get("workflow_snapshot_id")
+    project_id = str(payload.get("project_id") or "default")
+    if payload.get("workflow_managed") and not snapshot_id:
+        return jsonify({"error": "Ein validierter SimulationSnapshot ist erforderlich."}), 409
+    if snapshot_id:
+        snapshot = WorkflowStatusService(project_id).get_simulation_snapshot(str(snapshot_id))
+        if snapshot is None:
+            return jsonify({"error": "SimulationSnapshot nicht gefunden."}), 404
+        if snapshot["is_outdated"] or snapshot["status"] != "READY":
+            return jsonify({"error": "Der SimulationSnapshot ist nicht mehr ausfuehrbar."}), 409
     job = JOBS.submit(payload)
     return jsonify(job), 202
 
@@ -65,6 +76,14 @@ def simulation(job_id: str):
             }
             for index, path in enumerate(artifacts)
         ]
+    return jsonify(job)
+
+
+@api.route("/simulations/<job_id>/cancel", methods=["POST"])
+def cancel_simulation(job_id: str):
+    job = JOBS.cancel(job_id)
+    if job is None:
+        return jsonify({"error": "Simulation nicht gefunden."}), 404
     return jsonify(job)
 
 

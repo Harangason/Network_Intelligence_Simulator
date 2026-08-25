@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   busProfiles,
+  engineeringHardwareKind,
   initialTopology,
   type BusType,
   type NetworkTopology,
@@ -11,11 +12,16 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
+import type { HardwareNode } from "@/lib/types";
+import { setWorkflowContext } from "@/lib/workflow-api";
 
-const NODE_WIDTH = 168;
+const NODE_DEFAULT_WIDTH = 168;
+const NODE_MIN_WIDTH = 140;
 const NODE_MIN_HEIGHT = 84;
 const PORT_OFFSET = 12;
 const PORT_SAFE_INSET = 18;
+const MENU_WIDTH = 210;
+const MENU_EDGE_GAP = 8;
 
 const kindLabels: Record<NodeKind, string> = {
   ecu: "ECU",
@@ -28,6 +34,7 @@ const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
 
 type DragState =
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
+  | { mode: "resize"; nodeId: string; startX: number; startY: number; startWidth: number; startHeight: number }
   | { mode: "move-port"; nodeId: string; portId: string }
   | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number };
 
@@ -36,8 +43,22 @@ type MenuState = { nodeId: string; x: number; y: number; side: PortSide; offset:
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
+function nodeWidth(node: TopologyNode) {
+  return Math.max(NODE_MIN_WIDTH, node.width ?? NODE_DEFAULT_WIDTH);
+}
+
+function nodeContentHeight(node: TopologyNode) {
+  const charactersPerLine = Math.max(10, Math.floor((nodeWidth(node) - 32) / 8));
+  const nameLines = Math.max(1, Math.ceil(node.name.length / charactersPerLine));
+  const contentHeight = node.ports.length === 0 ? 86 : 66;
+  return Math.max(
+    NODE_MIN_HEIGHT,
+    contentHeight + (nameLines - 1) * 18 + Math.ceil(node.ports.length / 2) * 12,
+  );
+}
+
 function nodeHeight(node: TopologyNode) {
-  return Math.max(NODE_MIN_HEIGHT, 70 + Math.ceil(node.ports.length / 2) * 12);
+  return Math.max(nodeContentHeight(node), node.height ?? NODE_MIN_HEIGHT);
 }
 
 function portTop(node: TopologyNode, port: TopologyPort) {
@@ -47,7 +68,7 @@ function portTop(node: TopologyNode, port: TopologyPort) {
 
 function portPosition(node: TopologyNode, port: TopologyPort) {
   return {
-    x: port.side === "left" ? node.x : node.x + NODE_WIDTH,
+    x: port.side === "left" ? node.x : node.x + nodeWidth(node),
     y: node.y + portTop(node, port),
   };
 }
@@ -59,16 +80,30 @@ function edgePath(from: { x: number; y: number }, to: { x: number; y: number }) 
 
 export function NetworkEditor({
   topology,
+  modelHardware,
   onChange,
+  onRelationshipsChange,
 }: {
   topology: NetworkTopology;
+  modelHardware: HardwareNode[];
   onChange: (next: NetworkTopology) => void;
+  onRelationshipsChange?: (next: NetworkTopology) => void;
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const [addMenu, setAddMenu] = useState<NodeKind | null>(null);
+
+  useEffect(() => {
+    const node = topology.nodes.find((item) => item.id === selectedNode);
+    const edge = topology.edges.find((item) => item.id === selectedEdge);
+    void setWorkflowContext({
+      selected_object: node ? { id: node.id, type: "NetworkNode", name: node.name } : null,
+      selected_network: edge?.bus ?? node?.ports[0]?.bus ?? null,
+    }).catch(() => undefined);
+  }, [selectedEdge, selectedNode, topology.edges, topology.nodes]);
 
   const pointFromEvent = useCallback((event: { clientX: number; clientY: number }) => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -81,6 +116,14 @@ export function NetworkEditor({
       return node?.ports.find((p) => p.id === portId);
     },
     [topology.nodes],
+  );
+
+  const commitRelationships = useCallback(
+    (next: NetworkTopology) => {
+      onChange(next);
+      onRelationshipsChange?.(next);
+    },
+    [onChange, onRelationshipsChange],
   );
 
   useEffect(() => {
@@ -97,11 +140,33 @@ export function NetworkEditor({
               : node,
           ),
         });
+      } else if (activeDrag.mode === "resize") {
+        const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
+        if (!node) return;
+        const maxWidth = Math.max(
+          NODE_MIN_WIDTH,
+          (surfaceRef.current?.clientWidth ?? 1200) - node.x - MENU_EDGE_GAP,
+        );
+        const width = Math.min(
+          maxWidth,
+          Math.max(NODE_MIN_WIDTH, activeDrag.startWidth + point.x - activeDrag.startX),
+        );
+        const minimumHeight = nodeContentHeight({ ...node, width, height: undefined });
+        const height = Math.max(
+          minimumHeight,
+          activeDrag.startHeight + point.y - activeDrag.startY,
+        );
+        onChange({
+          ...topology,
+          nodes: topology.nodes.map((item) =>
+            item.id === node.id ? { ...item, width, height } : item,
+          ),
+        });
       } else if (activeDrag.mode === "move-port") {
         const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
         const height = nodeHeight(node);
-        const side: PortSide = point.x < node.x + NODE_WIDTH / 2 ? "left" : "right";
+        const side: PortSide = point.x < node.x + nodeWidth(node) / 2 ? "left" : "right";
         const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
         onChange({
           ...topology,
@@ -133,7 +198,7 @@ export function NetworkEditor({
             (edge) => edge.sourcePort === targetPortId || edge.targetPort === targetPortId || edge.sourcePort === activeDrag.portId || edge.targetPort === activeDrag.portId,
           );
           if (!alreadyUsed) {
-            onChange({
+            commitRelationships({
               ...topology,
               edges: [
                 ...topology.edges,
@@ -158,28 +223,41 @@ export function NetworkEditor({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [drag, topology, onChange, pointFromEvent]);
+  }, [commitRelationships, drag, topology, onChange, pointFromEvent]);
 
   useEffect(() => {
-    if (!menu) return;
+    if (!menu && !addMenu) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenu(null);
+      if (event.key === "Escape") {
+        setMenu(null);
+        setAddMenu(null);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [menu]);
+  }, [addMenu, menu]);
 
-  function addNode(kind: NodeKind) {
+  function addNode(kind: NodeKind, hardware?: HardwareNode) {
+    const identityNodeId =
+      typeof hardware?.identity?.topology_node_id === "string"
+        ? hardware.identity.topology_node_id
+        : null;
+    const preferredId = identityNodeId ?? (hardware ? `engineering-${hardware.id}` : null);
+    const extraIndex = Math.max(0, topology.nodes.length - initialTopology.nodes.length);
     const node: TopologyNode = {
-      id: nextId(kind),
-      name: `${kindLabels[kind]} ${topology.nodes.filter((item) => item.kind === kind).length + 1}`,
+      id: preferredId && !topology.nodes.some((item) => item.id === preferredId)
+        ? preferredId
+        : nextId(kind),
+      name: hardware?.name ?? `${kindLabels[kind]} ${topology.nodes.filter((item) => item.kind === kind).length + 1}`,
       kind,
-      x: 60 + topology.nodes.length * 24,
-      y: 60 + topology.nodes.length * 18,
+      x: 60 + (extraIndex % 5) * 205,
+      y: 460 + Math.floor(extraIndex / 5) * 120,
       ports: [],
+      engineeringId: hardware?.id,
     };
     onChange({ ...topology, nodes: [...topology.nodes, node] });
     setSelectedNode(node.id);
+    setAddMenu(null);
   }
 
   function addPort(nodeId: string, bus: BusType) {
@@ -204,25 +282,29 @@ export function NetworkEditor({
   }
 
   function removePort(nodeId: string, portId: string) {
-    onChange({
+    const next = {
       nodes: topology.nodes.map((node) =>
         node.id === nodeId ? { ...node, ports: node.ports.filter((p) => p.id !== portId) } : node,
       ),
       edges: topology.edges.filter((edge) => edge.sourcePort !== portId && edge.targetPort !== portId),
-    });
+    };
+    if (next.edges.length !== topology.edges.length) commitRelationships(next);
+    else onChange(next);
   }
 
   function removeSelected() {
     if (selectedEdge) {
-      onChange({ ...topology, edges: topology.edges.filter((edge) => edge.id !== selectedEdge) });
+      commitRelationships({ ...topology, edges: topology.edges.filter((edge) => edge.id !== selectedEdge) });
       setSelectedEdge(null);
       return;
     }
     if (selectedNode) {
-      onChange({
+      const next = {
         nodes: topology.nodes.filter((node) => node.id !== selectedNode),
         edges: topology.edges.filter((edge) => edge.source !== selectedNode && edge.target !== selectedNode),
-      });
+      };
+      if (next.edges.length !== topology.edges.length) commitRelationships(next);
+      else onChange(next);
       setSelectedNode(null);
     }
   }
@@ -237,16 +319,55 @@ export function NetworkEditor({
 
   const portIsConnected = (portId: string) =>
     topology.edges.some((edge) => edge.sourcePort === portId || edge.targetPort === portId);
+  const surfaceHeight = Math.max(
+    480,
+    ...topology.nodes.map((node) => node.y + nodeHeight(node) + 60),
+  );
 
   return (
     <div className="net-editor">
       <div className="net-toolbar">
         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
-          {(Object.keys(kindLabels) as NodeKind[]).map((kind) => (
-            <button className="net-add" key={kind} onClick={() => addNode(kind)} type="button">
-              + {kindLabels[kind]}
-            </button>
-          ))}
+          {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
+            const available = modelHardware.filter(
+              (hardware) =>
+                engineeringHardwareKind(hardware) === kind &&
+                !topology.nodes.some((node) => node.engineeringId === hardware.id),
+            );
+            return (
+              <div className="net-add-control" key={kind}>
+                <button
+                  aria-expanded={addMenu === kind}
+                  aria-haspopup="menu"
+                  className={`net-add ${addMenu === kind ? "active" : ""}`}
+                  onClick={() => setAddMenu((current) => current === kind ? null : kind)}
+                  type="button"
+                >
+                  + {kindLabels[kind]}
+                </button>
+                {addMenu === kind && (
+                  <div className="net-add-menu" role="menu" aria-label={`${kindLabels[kind]} auswählen`}>
+                    <button onClick={() => addNode(kind)} role="menuitem" type="button">
+                      <strong>Neue {kindLabels[kind]}</strong>
+                      <span>Ohne Modellzuordnung</span>
+                    </button>
+                    {available.map((hardware) => (
+                      <button
+                        key={hardware.id}
+                        onClick={() => addNode(kind, hardware)}
+                        role="menuitem"
+                        type="button"
+                      >
+                        <strong>{hardware.name}</strong>
+                        <span>{hardware.device_type}</span>
+                      </button>
+                    ))}
+                    {available.length === 0 && <p>Keine weiteren Modellknoten</p>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         <button
           className="net-add danger"
@@ -265,8 +386,10 @@ export function NetworkEditor({
           setSelectedNode(null);
           setSelectedEdge(null);
           setMenu(null);
+          setAddMenu(null);
         }}
         ref={surfaceRef}
+        style={{ height: surfaceHeight }}
       >
         <svg aria-hidden="true" className="net-wires">
           {topology.edges.map((edge) => {
@@ -319,7 +442,7 @@ export function NetworkEditor({
                 setSelectedEdge(null);
                 const point = pointFromEvent(event);
                 const height = nodeHeight(node);
-                const side: PortSide = point.x < node.x + NODE_WIDTH / 2 ? "left" : "right";
+                const side: PortSide = point.x < node.x + nodeWidth(node) / 2 ? "left" : "right";
                 const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
                 setMenu({ nodeId: node.id, x: point.x, y: point.y, side, offset });
               }}
@@ -333,9 +456,16 @@ export function NetworkEditor({
                 const point = pointFromEvent(event);
                 setDrag({ mode: "move", nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y });
               }}
-              style={{ left: node.x, top: node.y, width: NODE_WIDTH, height }}
+              style={{ left: node.x, top: node.y, width: nodeWidth(node), height }}
             >
               <span className="net-node-kind">{kindLabels[node.kind]}</span>
+              {node.engineeringId && (
+                <span
+                  aria-label="Mit Engineering-Modell verknüpft"
+                  className="net-node-model-link"
+                  title="Mit Engineering-Modell verknüpft"
+                />
+              )}
               <strong className="net-node-name">{node.name}</strong>
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
               {node.ports.map((port) => {
@@ -360,7 +490,7 @@ export function NetworkEditor({
                       setMenu(null);
                       const point = pointFromEvent(event);
                       setDrag(
-                        event.shiftKey
+                        event.shiftKey || portIsConnected(port.id)
                           ? { mode: "move-port", nodeId: node.id, portId: port.id }
                           : { mode: "wire", nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y },
                       );
@@ -370,11 +500,38 @@ export function NetworkEditor({
                       top: portTop(node, port),
                       ["--bus" as string]: busProfiles[port.bus].color,
                     }}
-                    title={`${port.name} · zu einem gleichfarbigen Port ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`}
+                    title={
+                      portIsConnected(port.id)
+                        ? `${port.name} · Ziehen zum Verschieben · Rechtsklick zum Entfernen`
+                        : `${port.name} · zu einem gleichfarbigen Port ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`
+                    }
                     type="button"
                   />
                 );
               })}
+              <button
+                aria-label={`${node.name} Größe ändern`}
+                className="net-node-resize"
+                onPointerDown={(event) => {
+                  if (event.button !== 0) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const point = pointFromEvent(event);
+                  setSelectedNode(node.id);
+                  setSelectedEdge(null);
+                  setMenu(null);
+                  setDrag({
+                    mode: "resize",
+                    nodeId: node.id,
+                    startX: point.x,
+                    startY: point.y,
+                    startWidth: nodeWidth(node),
+                    startHeight: nodeHeight(node),
+                  });
+                }}
+                title="Boxgröße ändern"
+                type="button"
+              />
             </div>
           );
         })}
@@ -388,7 +545,18 @@ export function NetworkEditor({
                 className="net-menu"
                 onPointerDown={(event) => event.stopPropagation()}
                 role="menu"
-                style={{ left: Math.min(menu.x, 999), top: menu.y }}
+                style={{
+                  left: Math.max(
+                    MENU_EDGE_GAP,
+                    Math.min(
+                      menu.x,
+                      (surfaceRef.current?.clientWidth ?? MENU_WIDTH + MENU_EDGE_GAP * 2) - MENU_WIDTH - MENU_EDGE_GAP,
+                    ),
+                  ),
+                  ...(menu.y > surfaceHeight / 2
+                    ? { bottom: Math.max(MENU_EDGE_GAP, surfaceHeight - menu.y) }
+                    : { top: Math.max(MENU_EDGE_GAP, menu.y) }),
+                }}
               >
                 <p className="net-menu-title">Port anlegen an „{node.name}"</p>
                 {busOrder.map((bus) => (

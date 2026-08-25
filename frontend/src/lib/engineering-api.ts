@@ -1,18 +1,61 @@
 import type {
   EngineeringObject,
+  EngineeringProposal,
+  EngineeringImportPlan,
+  EngineeringImportResult,
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
 } from "./types";
+import type { NetworkTopology, TopologySyncResult } from "./topology";
+import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering";
 
+function importBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location.port === "3500") {
+    return "http://127.0.0.1:5050/api/engineering";
+  }
+  return BASE;
+}
+
+async function importRequest<T>(path: string, init: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${importBaseUrl()}${path}`, {
+      ...init,
+      headers: { "X-Project-ID": readActiveProjectId(), ...init.headers },
+      cache: "no-store",
+    });
+  } catch (error) {
+    throw new Error("Der Engineering-Importdienst ist nicht erreichbar.", { cause: error });
+  }
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((payload as { error?: string }).error ?? `Import-Fehler ${response.status}`);
+  }
+  return payload as T;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${BASE}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Project-ID": readActiveProjectId(),
+        ...init?.headers,
+      },
+      cache: "no-store",
+      signal: init && "signal" in init ? init.signal : AbortSignal.timeout(5000),
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new Error("Die Engineering-API antwortet nicht innerhalb von 5 Sekunden.");
+    }
+    throw new Error("Die Engineering-API ist nicht erreichbar.", { cause: error });
+  }
   if (response.status === 204) return undefined as T;
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -23,6 +66,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getEngineeringSchema(): Promise<EngineeringSchema> {
   return request<EngineeringSchema>("/schema");
+}
+
+export function syncEngineeringTopology(
+  topology: Pick<NetworkTopology, "nodes" | "edges">,
+): Promise<TopologySyncResult> {
+  return request<TopologySyncResult>("/topology/sync", {
+    method: "POST",
+    body: JSON.stringify({ topology_id: "studio-network", ...topology }),
+    signal: null,
+  });
+}
+
+export async function previewEngineeringImport(file: File): Promise<EngineeringImportPlan> {
+  const body = new FormData();
+  body.append("file", file);
+  return importRequest<EngineeringImportPlan>("/imports/preview", { method: "POST", body });
+}
+
+export function commitEngineeringImport(
+  plan: EngineeringImportPlan,
+): Promise<EngineeringImportResult> {
+  return importRequest<EngineeringImportResult>("/imports/commit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(plan),
+  });
 }
 
 export async function listEngineeringObjects(
@@ -38,6 +107,21 @@ export async function listEngineeringObjects(
     `/${resource}${query ? `?${query}` : ""}`,
   );
   return items;
+}
+
+export async function listAllEngineeringObjects(
+  resource: EngineeringResource,
+): Promise<EngineeringObject[]> {
+  const items: EngineeringObject[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await listEngineeringObjects(resource, {
+      limit: String(pageSize),
+      offset: String(offset),
+    });
+    items.push(...page);
+    if (page.length < pageSize) return items;
+  }
 }
 
 export function getEngineeringObject(
@@ -113,6 +197,49 @@ export function createEngineeringRelation(payload: {
 
 export function deleteEngineeringRelation(id: string): Promise<void> {
   return request<void>(`/relations/${id}`, { method: "DELETE" });
+}
+
+export async function listEngineeringProposals(): Promise<EngineeringProposal[]> {
+  const result = await request<{ items: EngineeringProposal[]; count: number }>("/proposals?limit=200");
+  return result.items;
+}
+
+export function updateEngineeringProposal(
+  id: string,
+  proposedObjects: Array<Record<string, unknown>>,
+): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/proposals/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ proposed_objects: proposedObjects, actor: "human-reviewer" }),
+  });
+}
+
+export function validateEngineeringProposal(id: string): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/proposals/${id}/validate`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "human-reviewer" }),
+  });
+}
+
+export function approveEngineeringProposal(id: string, indexes: number[]): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/proposals/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ indexes, actor: "human-reviewer" }),
+  });
+}
+
+export function approveAllValidEngineeringProposals(): Promise<{ items: EngineeringProposal[]; count: number }> {
+  return request<{ items: EngineeringProposal[]; count: number }>("/proposals/approve-all-valid", {
+    method: "POST",
+    body: JSON.stringify({ actor: "human-reviewer" }),
+  });
+}
+
+export function rejectEngineeringProposal(id: string): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/proposals/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "human-reviewer" }),
+  });
 }
 
 export const RESOURCE_LABELS: Record<EngineeringResource, string> = {
