@@ -119,7 +119,7 @@ const proposeEngineeringRelation = tool({
 });
 
 export const engineeringAgent = new ToolLoopAgent({
-  model: "anthropic/claude-sonnet-5",
+  model: "openai/gpt-4.1",
   instructions: `Du bist der Network-Engineering-Assistent des Communication Simulators.
 
 Du hilfst dabei, das kanonische Engineering-Modell zu verstehen und zu erweitern:
