@@ -65,7 +65,7 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
       <div className="eng-agent-thread" aria-live="polite" ref={threadRef}>
         {messages.length === 0 && (
           <div className="empty-result" style={{ minHeight: compact ? 90 : 140 }}>
-            <span className="empty-icon">⌁</span>
+            <span className="empty-icon">◇</span>
             <strong>Noch keine Nachricht</strong>
             <p>Frage nach Hardware, Interfaces, Signalen oder bitte um Vorschläge.</p>
           </div>

@@ -361,7 +361,7 @@ export function EngineeringWorkbench() {
           <div className="loading-panel">Lädt …</div>
         ) : items.length === 0 ? (
           <div className="empty-result">
-            <span className="empty-icon">⌁</span>
+            <span className="empty-icon">◇</span>
             <strong>Keine Objekte vorhanden</strong>
             <p>Lege das erste {RESOURCE_LABELS[resource]}-Objekt an.</p>
           </div>
