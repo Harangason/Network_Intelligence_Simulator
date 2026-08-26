@@ -40,6 +40,21 @@ PROJECT_TABLES = (
     "engineering_optimization_proposals",
 )
 
+WORKSPACE_RESET_TABLES = (
+    "engineering_routing_audit",
+    "engineering_routing_rules",
+    "engineering_routing_proposals",
+    "engineering_routing_entries",
+    "engineering_ai_proposals",
+    "engineering_object_versions",
+    "engineering_relations",
+    "engineering_signals",
+    "engineering_messages",
+    "engineering_interfaces",
+    "engineering_functions",
+    "engineering_hardware_nodes",
+)
+
 
 def normalize_project_id(value: Any) -> str:
     project_id = str(value or "").strip()
@@ -67,6 +82,23 @@ def _db_value(value: Any) -> Any:
 
 
 class ProjectBundleService:
+    def reset_workspace(self, project_id: str) -> dict[str, Any]:
+        target = normalize_project_id(project_id)
+        with get_connection() as connection:
+            with connection.transaction():
+                connection.execute(
+                    sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
+                        sql.SQL(", ").join(sql.Identifier(table) for table in WORKSPACE_RESET_TABLES)
+                    )
+                )
+                connection.execute("DELETE FROM engineering_workflow_projects WHERE project_id = %s", (target,))
+                self._refresh_sequences(connection)
+        return {
+            "project_id": target,
+            "cleared_tables": list(WORKSPACE_RESET_TABLES),
+            "workflow": WorkflowStatusService(target).get(),
+        }
+
     def export(self, project_id: str, *, target_project_id: str | None = None) -> dict[str, Any]:
         source_project_id = normalize_project_id(project_id)
         target = normalize_project_id(target_project_id) if target_project_id else source_project_id

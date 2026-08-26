@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { ProjectActions } from "./project-actions";
 
 const navigation = [
   { href: "/platform", label: "Platform" },
@@ -41,7 +42,10 @@ export function MarketingNav() {
           </Link>
         ))}
       </div>
-      <Link className="nav-cta" href="/studio">Open studio <Arrow /></Link>
+      <div className="landing-nav-actions">
+        <ProjectActions className="landing-project-actions" showMessage={false} />
+        <Link className="nav-cta" href="/studio">Open studio <Arrow /></Link>
+      </div>
     </nav>
   );
 }

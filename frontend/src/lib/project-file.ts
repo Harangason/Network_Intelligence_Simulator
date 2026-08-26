@@ -111,6 +111,11 @@ export async function saveProjectBundleToFile(
   return { fileName: anchor.download, persistent: false };
 }
 
+type ProjectOpenStatus = {
+  fileName?: string;
+  message: string;
+};
+
 async function inputFileFallback(): Promise<File> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
@@ -121,7 +126,14 @@ async function inputFileFallback(): Promise<File> {
   });
 }
 
-export async function openProjectBundleFromFile(): Promise<{ bundle: ProjectBundle; handle: ProjectFileHandle | null }> {
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export async function openProjectBundleFromFile(
+  onStatus?: (status: ProjectOpenStatus) => void,
+): Promise<{ bundle: ProjectBundle; fileName: string; handle: ProjectFileHandle | null }> {
   const browser = window as ProjectFileWindow;
   let handle: ProjectFileHandle | null = null;
   if (browser.showOpenFilePicker) {
@@ -132,10 +144,13 @@ export async function openProjectBundleFromFile(): Promise<{ bundle: ProjectBund
     }
   }
   const file = handle ? await handle.getFile() : await inputFileFallback();
-  const bundle = JSON.parse(await file.text()) as ProjectBundle;
+  onStatus?.({ fileName: file.name, message: `Lese ${file.name} (${formatFileSize(file.size)}) ...` });
+  const content = await file.text();
+  onStatus?.({ fileName: file.name, message: `Pruefe Projektdatei ${file.name} ...` });
+  const bundle = JSON.parse(content) as ProjectBundle;
   if (bundle.format !== "network-intelligence-project") {
     throw new Error("Die ausgewählte Datei ist kein Network-Intelligence-Projekt.");
   }
   if (handle) await storeHandle(bundle.project_id, handle);
-  return { bundle, handle };
+  return { bundle, fileName: file.name, handle };
 }

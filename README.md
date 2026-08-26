@@ -42,16 +42,16 @@ Weboberfläche im Browser:
 uv run --project backend python generate_realistic_communication_tool.py
 ```
 
-- Oberfläche: `http://127.0.0.1:3500`
-- Flask-API: `http://127.0.0.1:5050/api`
+- Oberfläche: `http://127.0.0.1:13500`
+- Flask-API: `http://127.0.0.1:15050/api`
 
 Das Engineering-Modell benötigt `DATABASE_URL` für PostgreSQL. Beim ersten
 Zugriff wird das versionierte Schema idempotent aufgebaut. Die Readiness ist
-unter `http://127.0.0.1:5050/api/engineering/health` sichtbar. KI-Vorschläge
+unter `http://127.0.0.1:15050/api/engineering/health` sichtbar. KI-Vorschläge
 werden getrennt gespeichert und verändern das kanonische Modell nicht direkt.
 
 Der serverseitige KI-Agent verwendet standardmäßig
-`http://127.0.0.1:5050/api/engineering`. Für abweichende Deployments kann der
+`http://127.0.0.1:15050/api/engineering`. Für abweichende Deployments kann der
 vollständige Engineering-Pfad über `SIMULATOR_ENGINEERING_API_URL` gesetzt
 werden. Eine generische `ENGINEERING_API_URL` wird aus Kollisionsschutz nur
 übernommen, wenn sie bereits `/api/engineering` enthält.
@@ -70,6 +70,27 @@ Nur das Backend starten:
 ```powershell
 uv run --project backend python generate_realistic_communication_tool.py backend
 ```
+
+## Docker-Start
+
+Die vollständige lokale Umgebung kann auch als Docker-Setup gestartet werden.
+Der App-Container heißt `NetworkIS`; die Engineering-Datenbank läuft als
+`NetworkIS-db` und verwendet dieselben lokalen Zugangsdaten wie `DATABASE_URL`.
+
+```powershell
+.\start-networkis.bat
+```
+
+Alternativ direkt mit Docker Compose:
+
+```powershell
+docker compose -f docker-compose.networkis.yml up -d --build
+```
+
+- Oberfläche: `http://127.0.0.1:13500`
+- Backend/API: `http://127.0.0.1:15050/api`
+- Logs: `docker logs -f NetworkIS`
+- Stoppen: `docker compose -f docker-compose.networkis.yml down`
 
 Die bisherige CLI bleibt als Fallback kompatibel. Verwende den Unterbefehl
 `cli`, wenn eine Konsolen-Simulation statt der Oberfläche gewünscht ist:

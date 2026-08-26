@@ -20,9 +20,9 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parent
 SIMULATOR_ROOT = ROOT / "backend" / "simulator"
 BACKEND_HOST = "127.0.0.1"
-BACKEND_PORT = 5050
+BACKEND_PORT = 15050
 FRONTEND_HOST = "127.0.0.1"
-FRONTEND_PORT = 3500
+FRONTEND_PORT = 13500
 SERVICE_LOG_ROOT = ROOT / "backend" / "runtime" / "service-logs"
 
 
@@ -69,6 +69,17 @@ def _ensure_port_available(host: str, port: int, service: str) -> None:
         probe.close()
 
 
+def _port_from_environment(name: str, default: int) -> int:
+    raw_port = os.environ.get(name, str(default)).strip()
+    try:
+        port = int(raw_port)
+    except ValueError as error:
+        raise SystemExit(f"{name} muss eine ganze Zahl sein.") from error
+    if not 1 <= port <= 65535:
+        raise SystemExit(f"{name} muss zwischen 1 und 65535 liegen.")
+    return port
+
+
 def _popen_options() -> dict[str, object]:
     if os.name == "nt":
         return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
@@ -113,7 +124,7 @@ def _run_backend() -> int:
     return main()
 
 
-def _frontend_dev_command(frontend: Path) -> list[str]:
+def _frontend_dev_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str]:
     """Start Next.js from local dependencies instead of relying on global npm."""
     node = shutil.which("node")
     if node is None:
@@ -126,7 +137,7 @@ def _frontend_dev_command(frontend: Path) -> list[str]:
             "`npm install` ausführen."
         )
 
-    return [node, str(next_cli), "dev", "--turbopack", "-p", str(FRONTEND_PORT)]
+    return [node, str(next_cli), "dev", "--webpack", "-p", str(port)]
 
 
 def _run_web() -> int:
@@ -135,15 +146,13 @@ def _run_web() -> int:
         raise SystemExit(
             "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
         )
-    frontend_command = _frontend_dev_command(frontend)
+    frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
+    frontend_command = _frontend_dev_command(frontend, frontend_port)
 
     backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
-    try:
-        backend_port = int(os.environ.get("FLASK_PORT", str(BACKEND_PORT)))
-    except ValueError as error:
-        raise SystemExit("FLASK_PORT muss eine ganze Zahl sein.") from error
+    backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
     _ensure_port_available(backend_host, backend_port, "Backend")
-    _ensure_port_available(FRONTEND_HOST, FRONTEND_PORT, "Frontend")
+    _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
 
     instance_id = uuid.uuid4().hex
     backend_environment = os.environ.copy()
@@ -185,7 +194,7 @@ def _run_web() -> int:
             stderr=subprocess.STDOUT,
             **_popen_options(),
         )
-        frontend_url = f"http://{FRONTEND_HOST}:{FRONTEND_PORT}"
+        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
         if not _wait_for_url(frontend_url, frontend_process):
             return_code = frontend_process.poll()
             raise RuntimeError(

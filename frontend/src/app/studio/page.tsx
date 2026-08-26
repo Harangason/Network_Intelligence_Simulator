@@ -1,6 +1,7 @@
 import { StudioTabs } from "@/components/studio-tabs";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";
+import { redirect } from "next/navigation";
 
 export default async function StudioPage({
   searchParams,
@@ -8,6 +9,9 @@ export default async function StudioPage({
   searchParams: Promise<{ mode?: string }>;
 }) {
   const { mode } = await searchParams;
+  if (!mode) {
+    redirect("/studio/engineering");
+  }
   const initialMode = mode === "network" ? "network" : "parameters";
 
   return (

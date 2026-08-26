@@ -26,7 +26,7 @@ class ExclusiveThreadedWSGIServer(ThreadedWSGIServer):
 
 def _server_settings() -> tuple[str, int, bool]:
     host = os.environ.get("FLASK_HOST", "127.0.0.1").strip() or "127.0.0.1"
-    raw_port = os.environ.get("FLASK_PORT", "5050").strip()
+    raw_port = os.environ.get("FLASK_PORT", "15050").strip()
     try:
         port = int(raw_port)
     except ValueError as error:

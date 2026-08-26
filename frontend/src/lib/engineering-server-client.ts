@@ -6,7 +6,7 @@ import "server-only";
 
 import { currentAgentProjectId } from "@/lib/agent/request-context";
 
-const DEFAULT_ENGINEERING_BASE = "http://127.0.0.1:5050/api/engineering";
+const DEFAULT_ENGINEERING_BASE = "http://127.0.0.1:15050/api/engineering";
 const configuredEngineeringBase =
   process.env.SIMULATOR_ENGINEERING_API_URL ?? process.env.ENGINEERING_API_URL;
 const ENGINEERING_BASE = configuredEngineeringBase?.includes("/api/engineering")
@@ -85,6 +85,38 @@ export function createProposal(payload: Record<string, unknown>) {
   });
 }
 
+export function listEngineeringProposals(params: Record<string, string | undefined> = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) query.set(key, value);
+  }
+  const suffix = query.toString();
+  return request<{ items: Record<string, unknown>[]; count: number }>(
+    `/proposals${suffix ? `?${suffix}` : ""}`,
+  );
+}
+
+export function validateEngineeringProposal(id: string, actor = "engineering-chat-agent") {
+  return request<Record<string, unknown>>(`/proposals/${id}/validate`, {
+    method: "POST",
+    body: JSON.stringify({ actor }),
+  });
+}
+
+export function approveEngineeringProposal(id: string, indexes?: number[], actor = "engineering-chat-agent") {
+  return request<Record<string, unknown>>(`/proposals/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ indexes, actor }),
+  });
+}
+
+export function approveAllValidEngineeringProposals(actor = "engineering-chat-agent") {
+  return request<{ items: Record<string, unknown>[]; count?: number }>("/proposals/approve-all-valid", {
+    method: "POST",
+    body: JSON.stringify({ actor }),
+  });
+}
+
 export function listRoutingEntries() {
   return request<{ items: Record<string, unknown>[]; count: number }>("/routing?limit=500");
 }
@@ -154,8 +186,29 @@ export function inspectCapacityAnalysis() {
   return request<Record<string, unknown>>("/capacity");
 }
 
+export function calculateCapacityAnalysis(overrides: Record<string, unknown> = {}) {
+  return request<Record<string, unknown>>("/capacity/calculate", {
+    method: "POST",
+    body: JSON.stringify({ overrides }),
+  });
+}
+
 export function inspectPreflightAnalysis() {
   return request<Record<string, unknown>>("/preflight");
+}
+
+export function runPreflightAnalysis() {
+  return request<Record<string, unknown>>("/preflight", {
+    method: "POST",
+    body: "{}",
+  });
+}
+
+export function createWorkflowSimulationSnapshot(configuration: Record<string, unknown> = {}) {
+  return request<Record<string, unknown>>("/workflow/simulation-snapshots", {
+    method: "POST",
+    body: JSON.stringify({ configuration }),
+  });
 }
 
 export function inspectIntelligenceAssessment() {

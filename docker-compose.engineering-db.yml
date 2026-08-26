@@ -1,0 +1,21 @@
+services:
+  engineering-db:
+    image: postgres:16-alpine
+    container_name: network-simulator-engineering-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eip_blocker
+      POSTGRES_USER: eip_user
+      POSTGRES_PASSWORD: localDockerOnly7a1c9e4f2b8d6a3c5e0f
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - engineering-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eip_user -d eip_blocker"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  engineering-db-data:

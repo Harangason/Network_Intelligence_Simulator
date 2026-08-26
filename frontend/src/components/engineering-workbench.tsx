@@ -195,6 +195,208 @@ const RELATION_TYPES = [
   "VERSION_OF",
 ];
 
+const OBJECT_TYPE_TO_RESOURCE: Record<string, EngineeringResource> = {
+  HardwareNode: "hardware-nodes",
+  Function: "functions",
+  Interface: "interfaces",
+  Message: "messages",
+  Signal: "signals",
+};
+
+const WIZARD_STEPS = ["Identität", "Zuordnung", "Details", "Prüfen"] as const;
+
+const REQUIRED_PROPOSAL_FIELDS: Record<string, string[]> = {
+  HardwareNode: ["name"],
+  Function: ["name", "hardware_node_id"],
+  Interface: ["name", "function_id", "interface_type"],
+  Message: ["name", "interface_id"],
+  Signal: ["name", "message_id"],
+  Relation: ["relation_type", "source_type", "source_id", "target_type", "target_id"],
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  name: "Name",
+  domain: "Domäne",
+  description: "Beschreibung",
+  device_type: "Gerätetyp",
+  hardware_node_id: "Hardware-Knoten",
+  function_id: "Funktion",
+  interface_id: "Interface",
+  message_id: "Message",
+  interface_type: "Interface-Typ",
+  message_id_hex: "Message-ID",
+  direction: "Richtung",
+  cycle_ms: "Zyklus",
+  dlc: "DLC",
+  display_name: "Anzeigename",
+  start_bit: "Start-Bit",
+  length_bits: "Länge",
+  byte_order: "Byte Order",
+  data_type: "Datentyp",
+  factor: "Faktor",
+  offset_value: "Offset",
+  unit: "Einheit",
+  min_value: "Min",
+  max_value: "Max",
+  relation_type: "Relation",
+  source_type: "Quelle-Typ",
+  source_id: "Quelle",
+  target_type: "Ziel-Typ",
+  target_id: "Ziel",
+};
+
+const SIGNAL_BYTE_ORDERS = ["little_endian", "big_endian"];
+
+function proposalObjectType(proposal: EngineeringProposal, item: Record<string, unknown>) {
+  const direct = String(item.object_type ?? "");
+  if (direct in OBJECT_TYPE_TO_RESOURCE || direct === "Relation") return direct;
+  const resource = String(item.resource ?? "");
+  if (resource in RESOURCE_TO_OBJECT_TYPE) return RESOURCE_TO_OBJECT_TYPE[resource as EngineeringResource];
+  const target = (proposal as EngineeringProposal & { target_object?: Record<string, unknown> }).target_object;
+  const targetResource = String(target?.resource ?? "");
+  if (targetResource in RESOURCE_TO_OBJECT_TYPE) return RESOURCE_TO_OBJECT_TYPE[targetResource as EngineeringResource];
+  if (proposal.proposal_type === "RELATION") return "Relation";
+  return proposal.proposal_type || "Object";
+}
+
+function fieldValue(value: unknown) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function optionalNumberValue(value: string) {
+  return value.trim() === "" ? null : Number(value);
+}
+
+function words(value: unknown) {
+  return fieldValue(value).toLowerCase().split(/[^a-z0-9]+/).filter((word) => word.length > 2);
+}
+
+function shortId(id: string) {
+  return id ? id.slice(0, 8) : "";
+}
+
+function objectById(references: Partial<Record<EngineeringResource, EngineeringObject[]>>, id: unknown) {
+  const stringId = fieldValue(id);
+  if (!stringId) return undefined;
+  return Object.values(references).flatMap((items) => items ?? []).find((item) => item.id === stringId);
+}
+
+function interfaceTechnology(item: EngineeringObject | undefined) {
+  if (!item || !("interface_type" in item)) return "";
+  const raw = String(item.configuration?.bus ?? item.interface_type ?? "").toLowerCase();
+  if (raw.includes("can_fd") || raw.includes("can fd")) return "CAN FD";
+  if (raw.includes("ethernet")) return "Ethernet";
+  if (raw.includes("lin")) return "LIN";
+  if (raw.includes("flexray")) return "FlexRay";
+  return String(item.interface_type ?? "");
+}
+
+function missingProposalFields(type: string, item: Record<string, unknown>) {
+  return (REQUIRED_PROPOSAL_FIELDS[type] ?? ["name"]).filter((field) => {
+    const value = item[field];
+    return value === null || value === undefined || String(value).trim() === "";
+  });
+}
+
+function optionLabel(item: EngineeringObject, references: Partial<Record<EngineeringResource, EngineeringObject[]>> = {}) {
+  const domain = item.domain ? ` · ${item.domain}` : "";
+  if ("interface_type" in item) {
+    const fn = objectById(references, item.function_id);
+    const hw = objectById(references, item.hardware_node_id);
+    return `${item.name} · ${item.interface_type}${fn ? ` · ${fn.name}` : ""}${hw ? ` · ${hw.name}` : ""} · ${shortId(item.id)}`;
+  }
+  if ("interface_id" in item) {
+    const iface = objectById(references, item.interface_id);
+    return `${item.name}${iface ? ` · ${iface.name}` : ""}${domain} · ${shortId(item.id)}`;
+  }
+  if ("message_id" in item) {
+    const message = objectById(references, item.message_id);
+    return `${item.display_name || item.name}${message ? ` · ${message.name}` : ""}${domain} · ${shortId(item.id)}`;
+  }
+  if ("hardware_node_id" in item) {
+    const hw = objectById(references, item.hardware_node_id);
+    return `${item.name}${hw ? ` · ${hw.name}` : ""}${domain} · ${shortId(item.id)}`;
+  }
+  return `${item.name}${domain} · ${shortId(item.id)}`;
+}
+
+function referenceDisplay(references: Partial<Record<EngineeringResource, EngineeringObject[]>>, field: string, value: unknown) {
+  const id = fieldValue(value);
+  if (!id) return "Noch nicht gesetzt";
+  const allReferences = Object.values(references).flatMap((items) => items ?? []);
+  const item = allReferences.find((candidate) => candidate.id === id);
+  return item ? optionLabel(item, references) : id;
+}
+
+type WizardSuggestion = {
+  id: string;
+  label: string;
+  confidence: number;
+  reason: string;
+};
+
+function proposalContextText(proposal: EngineeringProposal, draft: Record<string, unknown>) {
+  return [proposal.prompt, draft.name, draft.description, draft.domain].map(fieldValue).join(" ");
+}
+
+function scoreReferenceOption(
+  proposal: EngineeringProposal,
+  draft: Record<string, unknown>,
+  item: EngineeringObject,
+  references: Partial<Record<EngineeringResource, EngineeringObject[]>>,
+) {
+  const context = new Set(words(proposalContextText(proposal, draft)));
+  const candidateWords = [
+    ...words(item.name),
+    ...words(item.domain),
+    ...words("display_name" in item ? item.display_name : ""),
+    ...words("interface_type" in item ? item.interface_type : ""),
+  ];
+  let score = 34;
+  for (const word of candidateWords) {
+    if (context.has(word)) score += 16;
+  }
+  if (draft.domain && item.domain === draft.domain) score += 12;
+  if ("interface_id" in item) {
+    const iface = objectById(references, item.interface_id);
+    if (iface && "interface_type" in iface && fieldValue(iface.interface_type).toLowerCase().includes("can")) score += 6;
+  }
+  if ("interface_type" in item && fieldValue(item.interface_type).toLowerCase().includes("can")) score += 6;
+  return Math.max(12, Math.min(96, score));
+}
+
+function referenceSuggestions(
+  proposal: EngineeringProposal,
+  draft: Record<string, unknown>,
+  options: EngineeringObject[],
+  references: Partial<Record<EngineeringResource, EngineeringObject[]>>,
+) {
+  return options
+    .map((item) => ({
+      id: item.id,
+      label: optionLabel(item, references),
+      confidence: scoreReferenceOption(proposal, draft, item, references),
+      reason: "Namensnähe, Domäne und Bus-Kontext",
+    }))
+    .sort((left, right) => right.confidence - left.confidence)
+    .slice(0, 3);
+}
+
+function busDefaultsFor(technology: string, objectType: string) {
+  const tech = technology.toLowerCase();
+  if (objectType === "Message") {
+    if (tech.includes("ethernet")) return { direction: "tx", cycle_ms: 10, dlc: 64 };
+    if (tech.includes("lin")) return { direction: "tx", cycle_ms: 20, dlc: 8 };
+    if (tech.includes("flex")) return { direction: "tx", cycle_ms: 5, dlc: 32 };
+    return { direction: "tx", cycle_ms: 10, dlc: 64 };
+  }
+  if (objectType === "Signal") {
+    if (tech.includes("ethernet")) return { start_bit: 0, length_bits: 32, byte_order: "big_endian", data_type: "float", factor: 1, offset_value: 0 };
+    return { start_bit: 0, length_bits: 16, byte_order: "little_endian", data_type: "unsigned", factor: 1, offset_value: 0 };
+  }
+  return {};
+}
+
 export function EngineeringWorkbench() {
   const [resource, setResource] = useState<EngineeringResource>("hardware-nodes");
   const [schema, setSchema] = useState<EngineeringSchema | null>(null);
@@ -434,6 +636,7 @@ export function EngineeringWorkbench() {
 function ProposalReviewPanel() {
   const [proposals, setProposals] = useState<EngineeringProposal[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [wizard, setWizard] = useState<{ proposalId: string; index: number } | null>(null);
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -476,7 +679,21 @@ function ProposalReviewPanel() {
     setEditingId(null);
   }
 
+  async function saveWizard(proposal: EngineeringProposal, index: number, nextItem: Record<string, unknown>) {
+    const updated = proposal.proposed_objects.map((item, itemIndex) => (itemIndex === index ? nextItem : item));
+    await act(
+      `wizard:${proposal.proposal_id}:${index}`,
+      async () => {
+        await updateEngineeringProposal(proposal.proposal_id, updated);
+        await validateEngineeringProposal(proposal.proposal_id);
+      },
+      "Wizard gespeichert und Vorschlag neu validiert.",
+    );
+    setWizard(null);
+  }
+
   const open = proposals.filter((proposal) => !["APPROVED", "REJECTED", "SUPERSEDED"].includes(proposal.status));
+  const wizardProposal = wizard ? proposals.find((proposal) => proposal.proposal_id === wizard.proposalId) : undefined;
 
   return (
     <section className="panel eng-proposal-review">
@@ -484,7 +701,7 @@ function ProposalReviewPanel() {
         <div><p className="eyebrow">Human Review</p><h2>KI-Engineering-Vorschläge</h2></div>
         <div className="panel-heading-actions">
           <span className="status-badge">{open.length} offen</span>
-          <button className="button secondary" disabled={!open.length || Boolean(busy)} onClick={() => void act("approve-all", approveAllValidEngineeringProposals, "Alle validen Vorschlaege freigegeben.")} type="button">Approve All Valid</button>
+          <button className="button secondary tiny" disabled={!open.length || Boolean(busy)} onClick={() => void act("approve-all", approveAllValidEngineeringProposals, "Alle validen Vorschlaege freigegeben.")} type="button">Alle validen freigeben</button>
         </div>
       </div>
       {notice && <div className="notice">{notice}</div>}
@@ -516,7 +733,8 @@ function ProposalReviewPanel() {
                         )}
                         <div className="eng-proposal-object-actions">
                           {validation && <span className={`status-badge ${validation.valid ? "completed" : "outdated"}`}>{validation.valid ? "VALID" : "INVALID"}</span>}
-                          {item.canonical_id ? <span className="status-badge approved">Freigegeben</span> : <button disabled={!validation?.valid || Boolean(busy)} onClick={() => void act(`approve:${proposal.proposal_id}:${index}`, () => approveEngineeringProposal(proposal.proposal_id, [index]), "Objekt freigegeben und versioniert gespeichert.")} type="button">Freigeben</button>}
+                          <button className="button secondary tiny" disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => setWizard({ proposalId: proposal.proposal_id, index })} type="button">Wizard</button>
+                          {item.canonical_id ? <span className="status-badge approved">Freigegeben</span> : <button className="button primary tiny" disabled={!validation?.valid || Boolean(busy)} onClick={() => void act(`approve:${proposal.proposal_id}:${index}`, () => approveEngineeringProposal(proposal.proposal_id, [index]), "Objekt freigegeben und versioniert gespeichert.")} type="button">Freigeben</button>}
                         </div>
                         {validation?.errors.map((error) => <small className="routing-issue error" key={error}>{error}</small>)}
                       </div>
@@ -526,9 +744,9 @@ function ProposalReviewPanel() {
                 <footer>
                   <span>Evidence {proposal.evidence.length} · {proposal.model ?? "Modell nicht angegeben"}</span>
                   <div>
-                    {editing ? <><button onClick={() => setEditingId(null)} type="button">Abbrechen</button><button disabled={Boolean(busy)} type="submit">Speichern</button></> : <button disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => setEditingId(proposal.proposal_id)} type="button">Bearbeiten</button>}
-                    <button disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => void act(`validate:${proposal.proposal_id}`, () => validateEngineeringProposal(proposal.proposal_id), "Vorschlag validiert.")} type="button">Validieren</button>
-                    <button disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => void act(`reject:${proposal.proposal_id}`, () => rejectEngineeringProposal(proposal.proposal_id), "Vorschlag abgelehnt.")} type="button">Ablehnen</button>
+                    {editing ? <><button className="button secondary tiny" onClick={() => setEditingId(null)} type="button">Abbrechen</button><button className="button primary tiny" disabled={Boolean(busy)} type="submit">Speichern</button></> : <button className="button secondary tiny" disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => setEditingId(proposal.proposal_id)} type="button">Bearbeiten</button>}
+                    <button className="button secondary tiny" disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => void act(`validate:${proposal.proposal_id}`, () => validateEngineeringProposal(proposal.proposal_id), "Vorschlag validiert.")} type="button">Validieren</button>
+                    <button className="button danger tiny" disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => void act(`reject:${proposal.proposal_id}`, () => rejectEngineeringProposal(proposal.proposal_id), "Vorschlag abgelehnt.")} type="button">Ablehnen</button>
                   </div>
                 </footer>
               </form>
@@ -536,8 +754,479 @@ function ProposalReviewPanel() {
           })}
         </div>
       )}
+      {wizard && wizardProposal && (
+        <ProposalObjectWizard
+          busy={Boolean(busy)}
+          index={wizard.index}
+          onClose={() => setWizard(null)}
+          onSave={(nextItem) => void saveWizard(wizardProposal, wizard.index, nextItem)}
+          proposal={wizardProposal}
+        />
+      )}
     </section>
   );
+}
+
+function ProposalObjectWizard({
+  busy,
+  index,
+  onClose,
+  onSave,
+  proposal,
+}: {
+  busy: boolean;
+  index: number;
+  onClose: () => void;
+  onSave: (nextItem: Record<string, unknown>) => void;
+  proposal: EngineeringProposal;
+}) {
+  const initialItem = proposal.proposed_objects[index] ?? {};
+  const objectType = proposalObjectType(proposal, initialItem);
+  const validation = proposal.validation_results.find((candidate) => candidate.index === index);
+  const [step, setStep] = useState(0);
+  const [draft, setDraft] = useState<Record<string, unknown>>(initialItem);
+  const [schema, setSchema] = useState<EngineeringSchema | null>(null);
+  const [references, setReferences] = useState<Partial<Record<EngineeringResource, EngineeringObject[]>>>({});
+  const [loadError, setLoadError] = useState("");
+  const missing = missingProposalFields(objectType, draft);
+  const isLastStep = step === WIZARD_STEPS.length - 1;
+
+  useEffect(() => {
+    setDraft(initialItem);
+    setStep(0);
+  }, [initialItem, proposal.proposal_id, index]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadError("");
+    Promise.all([
+      getEngineeringSchema(),
+      listEngineeringObjects("hardware-nodes"),
+      listEngineeringObjects("functions"),
+      listEngineeringObjects("interfaces"),
+      listEngineeringObjects("messages"),
+      listEngineeringObjects("signals"),
+    ])
+      .then(([nextSchema, hardwareNodes, functions, interfaces, messages, signals]) => {
+        if (cancelled) return;
+        setSchema(nextSchema);
+        setReferences({ "hardware-nodes": hardwareNodes, functions, interfaces, messages, signals });
+        setDraft((current) => ({
+          ...current,
+          ...(objectType === "HardwareNode" && !current.device_type ? { device_type: nextSchema.device_types[0] ?? "ECU" } : {}),
+          ...(objectType === "Interface" && !current.interface_type ? { interface_type: nextSchema.interface_types[0] ?? "CAN" } : {}),
+        }));
+      })
+      .catch((error) => {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "Referenzen konnten nicht geladen werden.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function updateField(field: string, value: unknown) {
+    setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateFunction(value: string) {
+    const selectedFunction = references.functions?.find((item) => item.id === value);
+    setDraft((current) => ({
+      ...current,
+      function_id: value || null,
+      hardware_node_id: selectedFunction && "hardware_node_id" in selectedFunction ? selectedFunction.hardware_node_id : current.hardware_node_id ?? null,
+    }));
+  }
+
+  function fillDefaultsFrom(technology: string, type = objectType) {
+    const defaults = busDefaultsFor(technology, type);
+    setDraft((current) => {
+      const next = { ...current };
+      for (const [key, value] of Object.entries(defaults)) {
+        if (fieldValue(next[key]).trim() === "") next[key] = value;
+      }
+      return next;
+    });
+  }
+
+  function updateInterface(value: string) {
+    const selectedInterface = references.interfaces?.find((item) => item.id === value);
+    setDraft((current) => {
+      const next: Record<string, unknown> = { ...current, interface_id: value || null };
+      if (selectedInterface) {
+        for (const [key, defaultValue] of Object.entries(busDefaultsFor(interfaceTechnology(selectedInterface), "Message"))) {
+          if (fieldValue(next[key]).trim() === "") next[key] = defaultValue;
+        }
+      }
+      return next;
+    });
+  }
+
+  function updateMessage(value: string) {
+    const selectedMessage = references.messages?.find((item) => item.id === value);
+    const selectedInterface = selectedMessage && "interface_id" in selectedMessage ? objectById(references, selectedMessage.interface_id) : undefined;
+    setDraft((current) => {
+      const next: Record<string, unknown> = { ...current, message_id: value || null };
+      if (selectedInterface) {
+        for (const [key, defaultValue] of Object.entries(busDefaultsFor(interfaceTechnology(selectedInterface), "Signal"))) {
+          if (fieldValue(next[key]).trim() === "") next[key] = defaultValue;
+        }
+      }
+      return next;
+    });
+  }
+
+  function objectOptions(type: string) {
+    const resource = OBJECT_TYPE_TO_RESOURCE[type];
+    return resource ? references[resource] ?? [] : [];
+  }
+
+  function normalizedDraft() {
+    const next: Record<string, unknown> = { ...draft, object_type: objectType };
+    for (const field of ["cycle_ms", "dlc", "start_bit", "length_bits", "factor", "offset_value", "min_value", "max_value"]) {
+      if (field in next) next[field] = optionalNumberValue(fieldValue(next[field]));
+    }
+    for (const field of ["description", "domain", "hardware_node_id", "function_id", "interface_id", "message_id", "message_id_hex", "direction", "display_name", "byte_order", "data_type", "unit", "source_id", "target_id"]) {
+      if (field in next && fieldValue(next[field]).trim() === "") next[field] = null;
+    }
+    if (objectType === "HardwareNode" && !next.device_type) next.device_type = schema?.device_types[0] ?? "ECU";
+    if (objectType === "Interface" && !next.interface_type) next.interface_type = schema?.interface_types[0] ?? "CAN";
+    return next;
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    onSave(normalizedDraft());
+  }
+
+  return (
+    <div className="proposal-wizard-backdrop" role="presentation">
+      <form aria-modal="true" className="proposal-wizard" onSubmit={submit} role="dialog">
+        <header>
+          <div>
+            <p className="eyebrow">Proposal Wizard</p>
+            <h3>{String(draft.name ?? draft.relation_type ?? `Objekt ${index + 1}`)}</h3>
+            <span>{objectType} · {proposal.prompt}</span>
+          </div>
+          <button className="button secondary tiny" onClick={onClose} type="button">Abbrechen</button>
+        </header>
+
+        <div className="proposal-wizard-steps">
+          {WIZARD_STEPS.map((label, stepIndex) => (
+            <button
+              className={stepIndex === step ? "active" : ""}
+              key={label}
+              onClick={() => setStep(stepIndex)}
+              type="button"
+            >
+              <span>{String(stepIndex + 1).padStart(2, "0")}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {loadError && <div className="notice error">{loadError}</div>}
+
+        {step === 0 && (
+          <div className="proposal-wizard-grid">
+            {objectType !== "Relation" && (
+              <>
+                <WizardField label="Name" required value={fieldValue(draft.name)} onChange={(value) => updateField("name", value)} />
+                <WizardField label="Domäne" value={fieldValue(draft.domain)} onChange={(value) => updateField("domain", value)} placeholder="z. B. automotive" />
+                <label className="field full-width">
+                  <span>Beschreibung</span>
+                  <textarea onChange={(event) => updateField("description", event.target.value)} rows={3} value={fieldValue(draft.description)} />
+                </label>
+              </>
+            )}
+            {objectType === "Relation" && (
+              <>
+                <label className="field">
+                  <span>Relation</span>
+                  <select required onChange={(event) => updateField("relation_type", event.target.value)} value={fieldValue(draft.relation_type)}>
+                    <option value="">Auswählen</option>
+                    {RELATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Quelle-Typ</span>
+                  <select required onChange={(event) => updateField("source_type", event.target.value)} value={fieldValue(draft.source_type)}>
+                    <option value="">Auswählen</option>
+                    {Object.keys(OBJECT_TYPE_TO_RESOURCE).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Ziel-Typ</span>
+                  <select required onChange={(event) => updateField("target_type", event.target.value)} value={fieldValue(draft.target_type)}>
+                    <option value="">Auswählen</option>
+                    {Object.keys(OBJECT_TYPE_TO_RESOURCE).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+              </>
+            )}
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="proposal-wizard-grid">
+            {objectType === "HardwareNode" && (
+              <label className="field">
+                <span>Gerätetyp</span>
+                <select required onChange={(event) => updateField("device_type", event.target.value)} value={fieldValue(draft.device_type || schema?.device_types[0] || "ECU")}>
+                  {(schema?.device_types ?? ["ECU"]).map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </label>
+            )}
+            {objectType === "Function" && (
+              <ReferenceSelect label="Hardware-Knoten" options={references["hardware-nodes"] ?? []} proposal={proposal} references={references} required value={fieldValue(draft.hardware_node_id)} onChange={(value) => updateField("hardware_node_id", value || null)} draft={draft} />
+            )}
+            {objectType === "Interface" && (
+              <>
+                <ReferenceSelect label="Funktion" options={references.functions ?? []} proposal={proposal} references={references} required value={fieldValue(draft.function_id)} onChange={updateFunction} draft={draft} />
+                <label className="field">
+                  <span>Interface-Typ</span>
+                  <select required onChange={(event) => updateField("interface_type", event.target.value)} value={fieldValue(draft.interface_type || schema?.interface_types[0] || "CAN")}>
+                    {(schema?.interface_types ?? ["CAN"]).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+              </>
+            )}
+            {objectType === "Message" && (
+              <>
+                <ReferenceSelect label="Interface" options={references.interfaces ?? []} proposal={proposal} references={references} required value={fieldValue(draft.interface_id)} onChange={updateInterface} draft={draft} />
+                {draft.interface_id && <button className="button secondary" onClick={() => fillDefaultsFrom(interfaceTechnology(objectById(references, draft.interface_id)), "Message")} type="button">Leere Felder per Bus füllen</button>}
+              </>
+            )}
+            {objectType === "Signal" && (
+              <>
+                <ReferenceSelect label="Message" options={references.messages ?? []} proposal={proposal} references={references} required value={fieldValue(draft.message_id)} onChange={updateMessage} draft={draft} />
+                {draft.message_id && <button className="button secondary" onClick={() => {
+                  const message = objectById(references, draft.message_id);
+                  const iface = message && "interface_id" in message ? objectById(references, message.interface_id) : undefined;
+                  fillDefaultsFrom(interfaceTechnology(iface), "Signal");
+                }} type="button">Leere Felder per Bus füllen</button>}
+              </>
+            )}
+            {objectType === "Relation" && (
+              <>
+                <ReferenceSelect label="Quelle" options={objectOptions(fieldValue(draft.source_type))} proposal={proposal} references={references} required value={fieldValue(draft.source_id)} onChange={(value) => updateField("source_id", value || null)} draft={draft} />
+                <ReferenceSelect label="Ziel" options={objectOptions(fieldValue(draft.target_type))} proposal={proposal} references={references} required value={fieldValue(draft.target_id)} onChange={(value) => updateField("target_id", value || null)} draft={draft} />
+              </>
+            )}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="proposal-wizard-grid three">
+            {objectType === "Message" && (
+              <>
+                <WizardField label="Message-ID" value={fieldValue(draft.message_id_hex)} onChange={(value) => updateField("message_id_hex", value)} placeholder="0x1A0" />
+                <label className="field">
+                  <span>Richtung</span>
+                  <select onChange={(event) => updateField("direction", event.target.value || null)} value={fieldValue(draft.direction)}>
+                    <option value="">Offen</option>
+                    {(schema?.message_directions ?? ["tx", "rx", "bidirectional"]).map((dir) => <option key={dir} value={dir}>{dir}</option>)}
+                  </select>
+                </label>
+                <WizardField inputMode="decimal" label="Zyklus (ms)" type="number" value={fieldValue(draft.cycle_ms)} onChange={(value) => updateField("cycle_ms", value)} />
+                <WizardField inputMode="numeric" label="DLC" type="number" value={fieldValue(draft.dlc)} onChange={(value) => updateField("dlc", value)} />
+              </>
+            )}
+            {objectType === "Signal" && (
+              <>
+                <WizardField label="Anzeigename" value={fieldValue(draft.display_name)} onChange={(value) => updateField("display_name", value)} />
+                <WizardField inputMode="numeric" label="Start-Bit" type="number" value={fieldValue(draft.start_bit)} onChange={(value) => updateField("start_bit", value)} />
+                <WizardField inputMode="numeric" label="Länge (Bit)" type="number" value={fieldValue(draft.length_bits)} onChange={(value) => updateField("length_bits", value)} />
+                <label className="field">
+                  <span>Byte Order</span>
+                  <select onChange={(event) => updateField("byte_order", event.target.value || null)} value={fieldValue(draft.byte_order)}>
+                    <option value="">Offen</option>
+                    {SIGNAL_BYTE_ORDERS.map((order) => <option key={order} value={order}>{order}</option>)}
+                  </select>
+                </label>
+                <WizardField label="Datentyp" value={fieldValue(draft.data_type)} onChange={(value) => updateField("data_type", value)} placeholder="unsigned" />
+                <WizardField label="Einheit" value={fieldValue(draft.unit)} onChange={(value) => updateField("unit", value)} />
+                <WizardField inputMode="decimal" label="Faktor" type="number" value={fieldValue(draft.factor)} onChange={(value) => updateField("factor", value)} />
+                <WizardField inputMode="decimal" label="Offset" type="number" value={fieldValue(draft.offset_value)} onChange={(value) => updateField("offset_value", value)} />
+                <WizardField inputMode="decimal" label="Min" type="number" value={fieldValue(draft.min_value)} onChange={(value) => updateField("min_value", value)} />
+                <WizardField inputMode="decimal" label="Max" type="number" value={fieldValue(draft.max_value)} onChange={(value) => updateField("max_value", value)} />
+              </>
+            )}
+            {!["Message", "Signal"].includes(objectType) && (
+              <div className="proposal-wizard-help">
+                <strong>Keine weiteren Pflichtdetails</strong>
+                <span>Für diesen Objekttyp reichen Identität und Zuordnung aus, damit die Backend-Validierung entscheiden kann.</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="proposal-wizard-review">
+            <div className={missing.length ? "proposal-wizard-verdict invalid" : "proposal-wizard-verdict valid"}>
+              <strong>{missing.length ? "Noch nicht valide" : "Bereit zur Validierung"}</strong>
+              <span>{missing.length ? `${missing.length} Pflichtfeld(er) fehlen.` : "Alle bekannten Pflichtfelder sind gefüllt."}</span>
+            </div>
+            {missing.length > 0 && (
+              <div className="proposal-wizard-checks">
+                {missing.map((field) => <span key={field}>{FIELD_LABELS[field] ?? field}</span>)}
+              </div>
+            )}
+            {validation?.errors.length ? (
+              <div className="proposal-wizard-errors">
+                <strong>Aktuelle Backend-Findings</strong>
+                {validation.errors.map((error) => <small className="routing-issue error" key={error}>{error}</small>)}
+              </div>
+            ) : null}
+            <ProposalWizardSummary objectType={objectType} references={references} values={normalizedDraft()} />
+          </div>
+        )}
+
+        <footer>
+          <button className="button secondary" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))} type="button">Zurück</button>
+          {!isLastStep ? (
+            <button className="button primary" onClick={() => setStep((current) => Math.min(WIZARD_STEPS.length - 1, current + 1))} type="button">Weiter</button>
+          ) : (
+            <button className="button primary" disabled={busy || missing.length > 0} type="submit">{busy ? "Speichert ..." : "Speichern & validieren"}</button>
+          )}
+        </footer>
+      </form>
+    </div>
+  );
+}
+
+function ProposalWizardSummary({
+  objectType,
+  references,
+  values,
+}: {
+  objectType: string;
+  references: Partial<Record<EngineeringResource, EngineeringObject[]>>;
+  values: Record<string, unknown>;
+}) {
+  const identityFields = ["name", "domain", "description"].filter((field) => field in values);
+  const relationFields = objectType === "Relation"
+    ? ["relation_type", "source_type", "source_id", "target_type", "target_id"]
+    : [];
+  const assignmentFields = {
+    HardwareNode: ["device_type"],
+    Function: ["hardware_node_id"],
+    Interface: ["function_id", "hardware_node_id", "interface_type"],
+    Message: ["interface_id"],
+    Signal: ["message_id"],
+  }[objectType] ?? [];
+  const detailFields = {
+    Message: ["message_id_hex", "direction", "cycle_ms", "dlc"],
+    Signal: ["display_name", "start_bit", "length_bits", "byte_order", "data_type", "factor", "offset_value", "unit", "min_value", "max_value"],
+  }[objectType] ?? [];
+
+  const sections = [
+    { title: "Identität", fields: identityFields },
+    { title: objectType === "Relation" ? "Relation" : "Zuordnung", fields: relationFields.length ? relationFields : assignmentFields },
+    { title: "Technische Details", fields: detailFields },
+  ].filter((section) => section.fields.length > 0);
+
+  return (
+    <div className="proposal-wizard-summary">
+      {sections.map((section) => (
+        <section key={section.title}>
+          <h4>{section.title}</h4>
+          <dl>
+            {section.fields.map((field) => (
+              <Fragment key={field}>
+                <dt>{FIELD_LABELS[field] ?? field}</dt>
+                <dd>{field.endsWith("_id") ? referenceDisplay(references, field, values[field]) : fieldValue(values[field]) || "Nicht gesetzt"}</dd>
+              </Fragment>
+            ))}
+          </dl>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function WizardField({
+  inputMode,
+  label,
+  onChange,
+  placeholder,
+  required,
+  type = "text",
+  value,
+}: {
+  inputMode?: "decimal" | "numeric";
+  label: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  type?: string;
+  value: string;
+}) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input inputMode={inputMode} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} required={required} type={type} value={value} />
+    </label>
+  );
+}
+
+function ReferenceSelect({
+  draft,
+  label,
+  onChange,
+  options,
+  proposal,
+  references,
+  required,
+  value,
+}: {
+  draft: Record<string, unknown>;
+  label: string;
+  onChange: (value: string) => void;
+  options: EngineeringObject[];
+  proposal: EngineeringProposal;
+  references: Partial<Record<EngineeringResource, EngineeringObject[]>>;
+  required?: boolean;
+  value: string;
+}) {
+  const suggestions = referenceSuggestions(proposal, draft, options, references);
+  return (
+    <div className="proposal-reference-picker">
+      <label className="field">
+        <span>{label}</span>
+        <select disabled={options.length === 0} onChange={(event) => onChange(event.target.value)} required={required} value={value}>
+          <option value="">{options.length ? "Auswählen" : "Keine Referenz vorhanden"}</option>
+          {options.map((item) => <option key={item.id} value={item.id}>{optionLabel(item, references)}</option>)}
+        </select>
+      </label>
+      {options.length === 0 && (
+        <p className="proposal-reference-empty">
+          {referenceEmptyHint(label)}
+        </p>
+      )}
+      {suggestions.length > 0 && (
+        <div className="proposal-ai-suggestions">
+          <span>KI-Vorschläge</span>
+          {suggestions.map((suggestion) => (
+            <button className={suggestion.id === value ? "active" : ""} key={suggestion.id} onClick={() => onChange(suggestion.id)} type="button">
+              <strong>{suggestion.confidence}%</strong>
+              <span>{suggestion.label}</span>
+              <small>{suggestion.reason}</small>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function referenceEmptyHint(label: string) {
+  const subject = label.toLowerCase();
+  if (subject.includes("message")) return "Es gibt noch keine Messages im Modell. Lege zuerst eine Message auf einem Interface an.";
+  if (subject.includes("interface")) return "Es gibt noch keine Interfaces im Modell. Lege zuerst eine Function und ein Interface an.";
+  if (subject.includes("funktion")) return "Es gibt noch keine Functions im Modell. Lege zuerst eine Function auf einem Hardware-Knoten an.";
+  if (subject.includes("hardware")) return "Es gibt noch keine Hardware-Knoten im Modell. Lege zuerst Hardware an.";
+  return "Das benötigte Elternobjekt ist noch nicht im Modell angelegt.";
 }
 
 const IMPORT_COUNT_LABELS: Array<[keyof EngineeringImportPlan["counts"], string]> = [

@@ -22,16 +22,211 @@ import {
   validateRoutingTable,
   inspectWorkflowState,
   inspectCapacityAnalysis,
+  calculateCapacityAnalysis,
   inspectPreflightAnalysis,
+  runPreflightAnalysis,
+  createWorkflowSimulationSnapshot,
   calculateCapacityScenario,
   optimizeCapacityAnalysis,
   searchEngineeringKnowledge,
   inspectIntelligenceAssessment,
   createIntelligenceProposal,
+  approveAllValidEngineeringProposals,
+  approveEngineeringProposal,
+  listEngineeringProposals,
+  validateEngineeringProposal,
 } from "@/lib/engineering-server-client";
 
 const RESOURCE_ENUM = ["hardware-nodes", "functions", "interfaces", "messages", "signals"] as const;
 const OBJECT_TYPE_ENUM = ["HardwareNode", "Function", "Interface", "Message", "Signal"] as const;
+
+const WORKFLOW_MANIFEST = [
+  {
+    id: "engineering_model",
+    label: "Engineering-Modell",
+    goal: "Kanonische HardwareNodes, Functions, Interfaces, Messages, Signals und Relations aufbauen.",
+    creates: ["HardwareNode", "Function", "Interface", "Message", "Signal", "Relation"],
+    requires: [],
+    relationshipRules: [
+      "HardwareNode ist Elternobjekt fuer Functions und Interfaces.",
+      "Function gehoert zu genau einem HardwareNode.",
+      "Interface gehoert zu einem HardwareNode und optional zu einer Function.",
+      "Message gehoert zu einem Interface.",
+      "Signal gehoert zu einer Message.",
+      "Relations verbinden fachliche Graphkanten wie HAS_FUNCTION, HAS_INTERFACE, CONTAINS_SIGNAL und CONNECTED_TO.",
+    ],
+    tools: ["listEngineeringObjects", "proposeEngineeringObject", "listEngineeringRelations", "proposeEngineeringRelation", "inspectEngineeringProposals", "validateEngineeringProposal", "approveEngineeringProposal", "approveAllValidEngineeringProposals"],
+    doneWhen: "Alle fuer das Ziel benoetigten Objekte existieren im kanonischen Modell oder liegen valide am Review-Gate.",
+  },
+  {
+    id: "routing",
+    label: "Routing-Tabelle",
+    goal: "Kommunikationspfade von Producer zu Consumer mit Message, Signal, Interfaces, Protokoll und Gateway modellieren.",
+    creates: ["RoutingProposal", "RoutingEntry"],
+    requires: ["engineering_model"],
+    relationshipRules: [
+      "Routing nutzt HardwareNodes als Producer und Consumer.",
+      "Routing referenziert vorhandene Interfaces, Messages und Signals.",
+      "Gateways vermitteln zwischen Netzen oder Technologien.",
+      "Eine Route ist erst belastbar, wenn Pfad, Quelle, Ziel, Payload und Protokoll validiert sind.",
+    ],
+    tools: ["inspect_routing_table", "create_route_proposal", "inspect_routing_proposals", "validate_routing_table", "find_paths", "inspect_topology"],
+    doneWhen: "Routen sind erzeugt, validiert und fuer fehlende Freigaben klar am Review-Gate benannt.",
+  },
+  {
+    id: "network_editor",
+    label: "Netzwerk-Editor",
+    goal: "Physische Topologie aus Nodes, Ports, Interfaces, Gateways und Routingpfaden herstellen.",
+    creates: ["TopologyNode", "TopologyEdge", "CONNECTED_TO"],
+    requires: ["engineering_model", "routing"],
+    relationshipRules: [
+      "Topologie bildet die physische Sicht der Routingpfade ab.",
+      "Edges verbinden Ports oder HardwareNodes ohne Boxen zu kreuzen.",
+      "Sensoren stehen vor verarbeitenden ECUs, Gateways vermitteln, Aktoren/Consumer stehen nachgelagert.",
+    ],
+    tools: ["inspect_topology", "inspect_network", "find_paths", "validate_routing_table"],
+    doneWhen: "Routing und Netzwerk sind synchron und der Workflow meldet keine offene Topologie-Luecke.",
+  },
+  {
+    id: "parameters",
+    label: "Parameter",
+    goal: "Technologieabhaengige Timing-, Payload-, Bitrate-, Queueing- und Zuverlaessigkeitsparameter setzen.",
+    creates: ["WorkflowParameters"],
+    requires: ["engineering_model", "routing", "network_editor"],
+    relationshipRules: [
+      "Parameter haengen an Netzwerk- und Routentechnologien.",
+      "Leere Felder werden mit plausiblen technologieabhaengigen Defaults gefuellt, sofern der Nutzer nichts anderes vorgibt.",
+    ],
+    tools: ["inspect_protocol", "inspect_network", "inspect_workflow"],
+    doneWhen: "Parameter sind ausreichend fuer Capacity-Berechnung und Preflight.",
+  },
+  {
+    id: "capacity_timing",
+    label: "Capacity & Timing",
+    goal: "Persistente Last-, Reserve-, Latenz-, Queueing-, Gateway-, Jitter- und Synchronisationsanalyse berechnen.",
+    creates: ["CapacitySnapshot"],
+    requires: ["engineering_model", "routing", "network_editor", "parameters"],
+    relationshipRules: [
+      "Capacity basiert auf aktuellen Workflow-Versionen.",
+      "Szenarien sind nur Vergleich; fuer Workflow-Fortschritt muss persistent berechnet werden.",
+    ],
+    tools: ["calculate_capacity_timing", "inspect_capacity_timing", "identify_bottleneck"],
+    doneWhen: "Ein aktueller Capacity-&-Timing-Snapshot existiert.",
+  },
+  {
+    id: "validation",
+    label: "Validation / Preflight",
+    goal: "Technische Konsistenz vor der Simulation pruefen und blockierende Befunde sichtbar machen.",
+    creates: ["PreflightSnapshot"],
+    requires: ["engineering_model", "routing", "network_editor", "parameters", "capacity_timing"],
+    relationshipRules: [
+      "ERROR blockiert Simulation.",
+      "WARNING bleibt sichtbar, ist aber zulaessig, sofern keine blockierenden Fehler vorliegen.",
+    ],
+    tools: ["run_preflight", "inspect_preflight"],
+    doneWhen: "Preflight ist aktuell und ready_for_simulation ist true oder Befunde sind klar benannt.",
+  },
+  {
+    id: "simulation",
+    label: "Simulation",
+    goal: "Simulation aus aktuellem erfolgreichem Preflight und aktueller Capacity-Konfiguration anlegen.",
+    creates: ["SimulationSnapshot"],
+    requires: ["engineering_model", "routing", "network_editor", "parameters", "capacity_timing", "validation"],
+    relationshipRules: [
+      "Simulation darf nur nach aktuellem erfolgreichem Preflight gestartet werden.",
+      "Wenn Preflight blockiert, stoppt der Agent mit konkreten Reparaturschritten.",
+    ],
+    tools: ["create_simulation_snapshot", "inspect_workflow"],
+    doneWhen: "Ein SimulationSnapshot wurde erzeugt oder ein Preflight-Blocker verhindert den Start.",
+  },
+  {
+    id: "results_analysis",
+    label: "Results / Analysis",
+    goal: "Vorhandene Simulationsergebnisse und Workflow-Snapshots nachvollziehbar auswerten.",
+    creates: ["AnalysisSummary"],
+    requires: ["simulation"],
+    relationshipRules: [
+      "Results duerfen nur als aktuell gelten, wenn ihre Quellversionen zum aktuellen Workflow passen.",
+      "Fehlende oder veraltete Simulationen muessen klar als Blocker benannt werden.",
+    ],
+    tools: ["inspect_workflow", "inspect_capacity_timing", "inspect_preflight"],
+    doneWhen: "Aktuelle Simulationsergebnisse sind vorhanden oder der fehlende Simulationsstand ist klar benannt.",
+  },
+  {
+    id: "data_science_intelligence",
+    label: "Data Science & Intelligence",
+    goal: "Deterministische Systembewertung, Reifegrad, Issues, Anomalien und Empfehlungen erzeugen oder auswerten.",
+    creates: ["IntelligenceAssessment", "OptimizationProposal"],
+    requires: ["results_analysis"],
+    relationshipRules: [
+      "Intelligence bewertet den Gesamtzustand anhand von Workflow-, Graph-, RAG- und Analyse-Evidence.",
+      "Optimierungsvorschlaege bleiben getrennt und benoetigen Human Review.",
+    ],
+    tools: ["inspect_intelligence", "create_optimization_proposal", "inspect_workflow"],
+    doneWhen: "Eine aktuelle Bewertung liegt vor oder fehlende Voraussetzungen sind benannt.",
+  },
+] as const;
+
+const WORKFLOW_TARGET_ALIASES: Record<string, string> = {
+  modell: "engineering_model",
+  engineering: "engineering_model",
+  routing: "routing",
+  route: "routing",
+  netzwerk: "network_editor",
+  "netzwerk-editor": "network_editor",
+  parameter: "parameters",
+  capacity: "capacity_timing",
+  timing: "capacity_timing",
+  preflight: "validation",
+  validation: "validation",
+  validierung: "validation",
+  simulation: "simulation",
+  simulieren: "simulation",
+  analyse: "results_analysis",
+  results: "results_analysis",
+  ende: "data_science_intelligence",
+  endzustand: "data_science_intelligence",
+  komplett: "data_science_intelligence",
+  vollständig: "data_science_intelligence",
+  vollstaendig: "data_science_intelligence",
+  alles: "data_science_intelligence",
+  fertig: "data_science_intelligence",
+  intelligence: "data_science_intelligence",
+};
+
+const WORKFLOW_STEP_ORDER = [
+  "engineering_model",
+  "routing",
+  "network_editor",
+  "parameters",
+  "capacity_timing",
+  "validation",
+  "simulation",
+  "results_analysis",
+  "data_science_intelligence",
+];
+
+function workflowStepIdsUntil(targetId: string) {
+  const targetIndex = WORKFLOW_STEP_ORDER.indexOf(targetId);
+  return WORKFLOW_STEP_ORDER.slice(0, targetIndex >= 0 ? targetIndex + 1 : 1);
+}
+
+function concreteRequestText(request: string) {
+  const marker = "konkrete aufgabe des nutzers";
+  const normalized = request.toLowerCase();
+  const markerIndex = normalized.indexOf(marker);
+  if (markerIndex < 0) return normalized;
+  return normalized.slice(markerIndex);
+}
+
+function inferWorkflowTarget(request: string) {
+  const normalized = concreteRequestText(request);
+  const matches = Object.entries(WORKFLOW_TARGET_ALIASES)
+    .filter(([alias]) => normalized.includes(alias))
+    .map(([, stepId]) => stepId)
+    .sort((left, right) => WORKFLOW_STEP_ORDER.indexOf(right) - WORKFLOW_STEP_ORDER.indexOf(left));
+  return matches[0] ?? "engineering_model";
+}
 
 function usableApiKey(value: string | undefined): value is string {
   return Boolean(value && !/^(DEIN|YOUR|PLACEHOLDER|CHANGEME)/i.test(value.trim()));
@@ -52,6 +247,14 @@ export const engineeringAgentProvider = usableApiKey(openAIKey)
   : usableApiKey(nvidiaKey)
     ? "nvidia-nim"
     : "unconfigured";
+
+function auditAgent(message: string, details: Record<string, unknown> = {}) {
+  const suffix = Object.entries(details)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(" ");
+  console.info(`[NetworkIS Agent] ${message}${suffix ? ` ${suffix}` : ""}`);
+}
 
 const listEngineeringObjects = tool({
   description:
@@ -93,6 +296,7 @@ const proposeEngineeringObject = tool({
       .optional()
       .describe("Nur für 'interfaces', z. B. 'CAN', 'Ethernet', 'ModbusTCP'."),
     hardware_node_id: z.string().optional().describe("Für 'functions'/'interfaces': zugehöriger HardwareNode."),
+    function_id: z.string().optional().describe("Für 'interfaces': zugehörige Function."),
     interface_id: z.string().optional().describe("Für 'messages': zugehöriges Interface."),
     message_id: z.string().optional().describe("Für 'signals': zugehörige Message."),
     direction: z.enum(["rx", "tx", "bidirectional"]).optional().describe("Nur für 'messages'."),
@@ -112,6 +316,7 @@ const proposeEngineeringObject = tool({
     if (resource === "interfaces") {
       payload.interface_type = rest.interface_type ?? "Other";
       payload.hardware_node_id = rest.hardware_node_id ?? null;
+      payload.function_id = rest.function_id ?? null;
     }
     if (resource === "functions") payload.hardware_node_id = rest.hardware_node_id ?? null;
     if (resource === "messages") {
@@ -178,6 +383,43 @@ const proposeEngineeringRelation = tool({
     });
     return { created: false, proposal };
   },
+});
+
+const inspectEngineeringProposals = tool({
+  description:
+    "Liest Engineering-AIProposals fuer Hardware, Funktionen, Interfaces, Messages, Signals und Relations. " +
+    "Nutze dieses Tool nach einer Bestaetigung, um offene Vorschlaege vor der Freigabe zu finden.",
+  inputSchema: z.object({
+    status: z.enum(["AI_GENERATED", "DRAFT", "READY_FOR_REVIEW", "PARTIALLY_APPROVED", "APPROVED", "REJECTED", "SUPERSEDED"]).optional(),
+  }),
+  execute: async ({ status }) => listEngineeringProposals({ status }),
+});
+
+const validateEngineeringProposalTool = tool({
+  description:
+    "Validiert einen Engineering-AIProposal und markiert ihn als READY_FOR_REVIEW, wenn alle Eintraege valide sind. " +
+    "Es werden noch keine kanonischen Objekte angelegt.",
+  inputSchema: z.object({ proposal_id: z.string() }),
+  execute: async ({ proposal_id }) => validateEngineeringProposal(proposal_id),
+});
+
+const approveEngineeringProposalTool = tool({
+  description:
+    "Gibt einen validen Engineering-AIProposal nach ausdruecklicher Nutzerbestaetigung frei und legt die enthaltenen " +
+    "Objekte oder Relations im kanonischen Simulator-Modell an.",
+  inputSchema: z.object({
+    proposal_id: z.string(),
+    indexes: z.array(z.number().int().min(0)).optional(),
+  }),
+  execute: async ({ proposal_id, indexes }) => approveEngineeringProposal(proposal_id, indexes),
+});
+
+const approveAllValidEngineeringProposalsTool = tool({
+  description:
+    "Gibt nach ausdruecklicher Nutzerbestaetigung alle validen offenen Engineering-AIProposals frei. " +
+    "Dabei werden valide Eintraege als echte Simulator-Objekte angelegt; invalide Eintraege bleiben zur Bearbeitung offen.",
+  inputSchema: z.object({}),
+  execute: async () => approveAllValidEngineeringProposals(),
 });
 
 const inspectRoutingTable = tool({
@@ -322,6 +564,62 @@ const suggestDestination = tool({
     const nodes = await listObjects("hardware-nodes");
     return { items: nodes.items.filter((item) => item.id !== source_node_id) };
   },
+});
+
+const inspectWorkflowMap = tool({
+  description:
+    "Liefert die verbindliche Workflow-Landkarte inklusive Schrittzielen, Beziehungen, erlaubten Tools und Done-Kriterien. " +
+    "Nutze dieses Tool, bevor du Zielaufgaben wie 'arbeite bis zur Simulation' planst.",
+  inputSchema: z.object({}),
+  execute: async () => ({ steps: WORKFLOW_MANIFEST }),
+});
+
+const planWorkflowTarget = tool({
+  description:
+    "Uebersetzt eine Nutzer-Zielbeschreibung in den erforderlichen Workflowpfad. " +
+    "Beispiele: 'arbeite bis zur Simulation', 'bis Preflight', 'nur Engineering-Modell'.",
+  inputSchema: z.object({
+    request: z.string(),
+  }),
+  execute: async ({ request }) => {
+    const target_step = inferWorkflowTarget(request);
+    const required_steps = workflowStepIdsUntil(target_step);
+    return {
+      target_step,
+      required_steps,
+      steps: WORKFLOW_MANIFEST.filter((step) => required_steps.includes(step.id)),
+      autonomy: "continue_until_target",
+      review_policy:
+        "Bis zum genannten Ziel weiterarbeiten. Wenn Human Review noetig ist, alle Proposals vorbereiten, validieren und nach Allow uebernehmen; danach Workflow fortsetzen.",
+    };
+  },
+});
+
+const calculateCapacity = tool({
+  description:
+    "Fuehrt die persistente Capacity-&-Timing-Berechnung fuer den aktiven Workflow aus. " +
+    "Nutze dies fuer Workflow-Fortschritt, nicht analyze_capacity_scenario.",
+  inputSchema: z.object({
+    overrides: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async ({ overrides }) => calculateCapacityAnalysis(overrides ?? {}),
+});
+
+const runPreflight = tool({
+  description:
+    "Fuehrt den aktuellen Validation/Preflight-Schritt persistent aus und liefert ready_for_simulation, Fehler und Warnungen.",
+  inputSchema: z.object({}),
+  execute: async () => runPreflightAnalysis(),
+});
+
+const createSimulationSnapshot = tool({
+  description:
+    "Legt nach erfolgreichem aktuellem Preflight einen SimulationSnapshot an und setzt den Workflow auf Simulation. " +
+    "Stoppt mit einem Workflow-Konflikt, wenn Preflight fehlt oder veraltet ist.",
+  inputSchema: z.object({
+    configuration: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async ({ configuration }) => createWorkflowSimulationSnapshot(configuration ?? { mode: "agent-default", source: "engineering-chat-agent" }),
 });
 
 const inspectWorkflow = tool({
@@ -519,6 +817,45 @@ const proposeOptimization = tool({
 
 export const engineeringAgent = new ToolLoopAgent({
   model: engineeringModel,
+  onStart: (event) => {
+    auditAgent("model run started", {
+      callId: event.callId,
+      provider: event.provider,
+      model: event.modelId,
+      tools: Object.keys(event.tools ?? {}).length,
+    });
+  },
+  onStepStart: (event) => {
+    auditAgent("step started", {
+      callId: event.callId,
+      step: event.stepNumber + 1,
+      previousSteps: event.steps.length,
+    });
+  },
+  onToolExecutionStart: (event) => {
+    auditAgent("tool started", {
+      callId: event.callId,
+      tool: event.toolCall.toolName,
+      toolCallId: event.toolCall.toolCallId,
+    });
+  },
+  onToolExecutionEnd: (event) => {
+    auditAgent("tool finished", {
+      callId: event.callId,
+      tool: event.toolCall.toolName,
+      toolCallId: event.toolCall.toolCallId,
+      ms: event.toolExecutionMs,
+      result: event.toolOutput.type,
+    });
+  },
+  onEnd: (event) => {
+    auditAgent("model run completed", {
+      callId: event.callId,
+      finishReason: event.finishReason,
+      steps: event.steps.length,
+      toolCalls: event.toolCalls.length,
+    });
+  },
   instructions: `Du bist der Network-Engineering-Assistent des Communication Simulators.
 
 Du hilfst dabei, das kanonische Engineering-Modell zu verstehen und zu erweitern:
@@ -527,6 +864,10 @@ Gerät), Interface (Kommunikationsschnittstelle wie CAN, Ethernet), Message
 (Nachricht auf einem Interface) und Signal (Feld innerhalb einer Message).
 Relations verbinden diese Objekte zu einem Knowledge Graph (z. B.
 HAS_INTERFACE, CONTAINS_SIGNAL, COMMUNICATES_WITH).
+Die fachliche Anlage folgt der Elternkette:
+HardwareNode -> Function -> Interface -> Message -> Signal. Erzeuge keine
+untergeordneten Objekte ohne das benoetigte Elternobjekt oder einen passenden
+Elternvorschlag.
 
 Der Routing Manager beschreibt technologieunabhängig, welche Information von
 welchem Producer über welche Interfaces, Netzwerke und Gateways zu welchen
@@ -538,16 +879,61 @@ Engineering-Modell -> Routing-Tabelle -> Netzwerk-Editor -> Parameter ->
 Capacity & Timing -> Validation / Preflight -> Simulation -> Results / Analysis ->
 Data Science & Intelligence. Schritt 9 bewertet das Gesamtsystem deterministisch,
 verbindet Graph/RAG-Evidence und erzeugt ausschliesslich getrennte OptimizationProposals.
+Die detaillierte Workflow-Landkarte mit Relationships, Done-Kriterien und
+erlaubten Tools ist ueber inspect_workflow_map abrufbar. Bei Zielangaben wie
+"arbeite bis zur Simulation", "bis Preflight", "mach ein valides Beispiel" oder
+"bis Results" musst du zuerst inspect_workflow und plan_workflow_target nutzen.
 Lies bei kontextabhaengigen Fragen zuerst inspect_workflow. Beachte active_project,
 active_workflow_step, selected_object, selected_route, selected_network,
 selected_signal und selected_simulation. Veraltete Snapshots duerfen analysiert,
 aber nicht als aktuell oder simulationsbereit bezeichnet werden.
 
 Regeln:
+- Arbeite zielorientiert: Wenn der Nutzer einen Zielzustand nennt, fuehre alle
+  dafuer noetigen Tool-Schritte selbststaendig aus, bis dieser Zielzustand
+  erreicht ist, ein Tool-Fehler blockiert oder eine fachliche Entscheidung fehlt.
+- Wenn die Nachricht den Abschnitt "Konkrete Aufgabe des Nutzers, per Senden
+  bestaetigt" enthaelt, gilt der Start als bestaetigt. Frage dann nicht erneut
+  nach Kommandos, Ziel oder Startfreigabe, sondern nutze den Projektbrief als
+  Rahmen und die konkrete Aufgabe als auszufuehrenden Auftrag.
+- Fuer Zielzustand "Simulation" ist die Mindestfolge:
+  1) Engineering-Objekte und Relations vorbereiten oder bestaetigen,
+  2) Routingvorschlaege/Routen vorbereiten oder bestaetigen,
+  3) Topologie/Netzwerk-Synchronitaet pruefen,
+  4) Parameter pruefen,
+  5) calculate_capacity_timing persistent ausfuehren,
+  6) run_preflight ausfuehren,
+  7) nur bei ready_for_simulation create_simulation_snapshot ausfuehren.
+  Wenn Human Review blockiert, bleibst du nicht still stehen: validiere offene
+  Proposals, fordere einmal klar Allow an und setze nach Allow mit der Folge fort.
+- Beende deine Antwort nicht nach einem einzelnen Zwischenschritt, wenn klar ist,
+  dass noch Folgeobjekte, Validierung, Freigabe, Routing, Preflight oder
+  Nachpruefung zum genannten Ziel gehoeren.
+- Stelle Rueckfragen nur zu inhaltlichen Entscheidungen, die du aus Projektkontext
+  und plausiblen Defaults nicht ableiten kannst. Technische Zwischenschritte wie
+  Listen, Validieren, Default-Felder setzen, Proposal-Ketten aufbauen und Status
+  erneut pruefen fuehrst du selbst aus.
+- Buendle fachliche Rueckfragen als Entscheidungspaket, wenn mehrere Annahmen
+  fehlen. Nenne dabei klar Industrie, Netzwerktechnologien, Modellumfang und
+  plausible Defaults; der Client kann daraus eine Auswahlmaske mit Checkboxen
+  anzeigen. Formuliere diese Rueckfragen nicht als lange, verstreute Textliste.
+- Wenn eine Aufgabe wegen Human Review nicht vollstaendig bis ins kanonische
+  Modell geschrieben werden darf, erstelle trotzdem alle notwendigen Proposals
+  bis zum naechsten Review-Gate und benenne genau, was danach noch freigegeben
+  werden muss.
 - Nutze die Lese-Tools, um bestehende Objekte zu recherchieren, bevor du neue vorschlägst.
 - Wenn der Nutzer ein neues Objekt oder eine neue Relation möchte, nutze die
   "propose"-Tools. Sie speichern Ergebnisse IMMER getrennt als AIProposal.
   Das freigegebene Engineering-Modell wird dadurch nicht verändert.
+- Fuer ein neues Systemmodell erstelle zuerst HardwareNodes, dann Functions je
+  Hardware, dann Interfaces an Functions, danach Messages und erst danach
+  Signals. Messages duerfen nur auf Interfaces zeigen, Signals nur auf Messages.
+- Wenn der Nutzer danach ausdruecklich bestaetigt, z. B. mit "Allow",
+  "bestaetigt", "ja", "freigeben" oder "uebernehmen", validiere die offenen
+  Engineering-Proposals und nutze die approve-Tools. Nur dann werden valide
+  Vorschlaege als echte Simulator-Objekte oder Relations angelegt.
+- Nach einer Freigabe lies die betroffenen Engineering-Objekte erneut und
+  bestaetige knapp, welche Objekte im Simulator-Modell angekommen sind.
 - Verwende fuer Kennzahlen, Reifegrad, Anomalien und Korrelationen immer die
   deterministische Intelligence-Bewertung. Erfinde oder ueberschreibe keine Werte.
 - OptimizationProposals duerfen nie autonom angewendet oder freigegeben werden.
@@ -555,11 +941,20 @@ Regeln:
 - Antworte auf Deutsch, präzise und technisch korrekt.
 - Wenn Angaben fehlen (z. B. UUIDs für Relations), frage danach oder nutze die
   Such-Tools, um sie zu finden, statt sie zu erfinden.
-- Erkläre kurz, was du getan hast, nachdem ein Tool ausgeführt wurde.`,
+- Erkläre kurz, was du getan hast, nachdem ein Tool ausgeführt wurde.
+- Für Tests muss dein Vorgehen nachvollziehbar sein: nenne bei komplexeren
+  Aufgaben kurz Ziel, Arbeitsannahme und Ergebnisbewertung. Halte diese
+  Hinweise knapp und nutzerverständlich, nicht als JSON und nicht als
+  interne Gedankenkette.`,
   tools: {
     inspect_workflow: inspectWorkflow,
+    inspect_workflow_map: inspectWorkflowMap,
+    plan_workflow_target: planWorkflowTarget,
     inspect_capacity_timing: inspectCapacity,
+    calculate_capacity_timing: calculateCapacity,
     inspect_preflight: inspectPreflight,
+    run_preflight: runPreflight,
+    create_simulation_snapshot: createSimulationSnapshot,
     inspect_intelligence: inspectIntelligence,
     create_optimization_proposal: proposeOptimization,
     retrieve_engineering_knowledge: retrieveEngineeringKnowledge,
@@ -579,6 +974,10 @@ Regeln:
     proposeEngineeringObject,
     listEngineeringRelations: listEngineeringRelationsTool,
     proposeEngineeringRelation,
+    inspectEngineeringProposals,
+    validateEngineeringProposal: validateEngineeringProposalTool,
+    approveEngineeringProposal: approveEngineeringProposalTool,
+    approveAllValidEngineeringProposals: approveAllValidEngineeringProposalsTool,
     inspect_routing_table: inspectRoutingTable,
     inspect_route: inspectRoute,
     inspect_topology: inspectTopology,
@@ -615,7 +1014,7 @@ Regeln:
     suggest_protocol: inspectProtocol,
     suggest_alternative_route: findPaths,
   },
-  stopWhen: isStepCount(8),
+  stopWhen: isStepCount(30),
 });
 
 export type EngineeringAgentUIMessage = InferAgentUIMessage<typeof engineeringAgent>;

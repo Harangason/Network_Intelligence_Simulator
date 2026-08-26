@@ -3,6 +3,15 @@ import type { SimulationResultPayload } from "./types";
 import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering";
+const LOCAL_FRONTEND_PORT = "13500";
+const LOCAL_BACKEND_BASE = "http://127.0.0.1:15050/api/engineering";
+
+function workflowBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location.port === LOCAL_FRONTEND_PORT) {
+    return LOCAL_BACKEND_BASE;
+  }
+  return BASE;
+}
 
 export type WorkflowStepId =
   | "engineering_model"
@@ -55,6 +64,58 @@ export type WorkflowState = {
     skipped: Array<{ source_id: string; reason: string }>;
   };
 };
+
+const WORKFLOW_STEP_DEFINITIONS: Array<{ id: WorkflowStepId; label: string }> = [
+  { id: "engineering_model", label: "Engineering-Modell" },
+  { id: "routing", label: "Routing-Tabelle" },
+  { id: "network_editor", label: "Netzwerk-Editor" },
+  { id: "parameters", label: "Parameter" },
+  { id: "capacity_timing", label: "Capacity & Timing" },
+  { id: "validation", label: "Validation / Preflight" },
+  { id: "simulation", label: "Simulation" },
+  { id: "results_analysis", label: "Results / Analysis" },
+  { id: "data_science_intelligence", label: "Data Science & Intelligence" },
+];
+
+function defaultVersions(): Record<WorkflowStepId, number> {
+  return Object.fromEntries(WORKFLOW_STEP_DEFINITIONS.map((step) => [step.id, 0])) as Record<WorkflowStepId, number>;
+}
+
+function defaultStatuses(): Record<WorkflowStepId, WorkflowStatus> {
+  return Object.fromEntries(WORKFLOW_STEP_DEFINITIONS.map((step) => [step.id, "EMPTY"])) as Record<WorkflowStepId, WorkflowStatus>;
+}
+
+function normalizeWorkflowState(payload: WorkflowState): WorkflowState {
+  const versions = { ...defaultVersions(), ...(payload.versions ?? {}) };
+  const statuses = { ...defaultStatuses(), ...(payload.statuses ?? {}) };
+  const activeStep = payload.active_step ?? "engineering_model";
+  const steps = WORKFLOW_STEP_DEFINITIONS.map((definition, index) => {
+    const existing = payload.steps?.find((step) => step.id === definition.id);
+    return {
+      id: definition.id,
+      label: existing?.label ?? definition.label,
+      position: existing?.position ?? index + 1,
+      status: existing?.status ?? statuses[definition.id],
+      version: existing?.version ?? versions[definition.id],
+      reason: existing?.reason ?? (payload.stale_reasons ?? {})[definition.id] ?? null,
+    };
+  });
+
+  return {
+    ...payload,
+    project_id: payload.project_id ?? readActiveProjectId(),
+    active_step: activeStep,
+    versions,
+    statuses,
+    stale_reasons: payload.stale_reasons ?? {},
+    context: payload.context ?? {},
+    parameters: payload.parameters ?? {},
+    topology: payload.topology ?? {},
+    steps,
+    simulation_snapshots: payload.simulation_snapshots ?? [],
+    rule: payload.rule ?? "",
+  };
+}
 
 export type AnalysisFinding = {
   severity: "ERROR" | "WARNING" | "INFO";
@@ -234,7 +295,7 @@ export type SimulationSnapshot = {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${BASE}${path}`, {
+    response = await fetch(`${workflowBaseUrl()}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
@@ -254,22 +315,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export const getWorkflow = () => request<WorkflowState>("/workflow");
+export const getWorkflow = () => request<WorkflowState>("/workflow").then(normalizeWorkflowState);
 
 export const setWorkflowContext = (context: Record<string, unknown>) =>
-  request<WorkflowState>("/workflow/context", { method: "PATCH", body: JSON.stringify(context) });
+  request<WorkflowState>("/workflow/context", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState);
 
 export const saveWorkflowParameters = (parameters: Record<string, unknown>) =>
   request<WorkflowState>("/workflow/parameters", {
     method: "PATCH",
     body: JSON.stringify({ parameters }),
-  });
+  }).then(normalizeWorkflowState);
 
 export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "edges">) =>
   request<WorkflowState>("/workflow/topology", {
     method: "PUT",
     body: JSON.stringify({ topology }),
-  });
+  }).then(normalizeWorkflowState);
 
 export const calculateCapacity = (overrides?: Record<string, unknown>) =>
   request<{
@@ -428,7 +489,7 @@ export const reviewOptimizationProposal = (proposalId: string, status: Optimizat
   });
 
 export const intelligenceExportUrl = (format: "json" | "csv", section = "issues") =>
-  `${BASE}/intelligence/export?format=${format}&section=${encodeURIComponent(section)}&project_id=${encodeURIComponent(readActiveProjectId())}`;
+  `${workflowBaseUrl()}/intelligence/export?format=${format}&section=${encodeURIComponent(section)}&project_id=${encodeURIComponent(readActiveProjectId())}`;
 
 export type ProjectBundle = {
   format: "network-intelligence-project";
@@ -449,5 +510,11 @@ export const importProjectBundle = (bundle: ProjectBundle, targetProjectId?: str
   request<{ project_id: string; report: Record<string, unknown>; workflow: WorkflowState }>("/projects/import", {
     method: "POST",
     body: JSON.stringify({ bundle, target_project_id: targetProjectId }),
-    signal: AbortSignal.timeout(30000),
-  });
+    signal: AbortSignal.timeout(180000),
+  }).then((result) => ({ ...result, workflow: normalizeWorkflowState(result.workflow) }));
+
+export const resetProjectWorkspace = (projectId: string) =>
+  request<{ project_id: string; cleared_tables: string[]; workflow: WorkflowState }>("/projects/reset", {
+    method: "POST",
+    body: JSON.stringify({ project_id: projectId }),
+  }).then((result) => ({ ...result, workflow: normalizeWorkflowState(result.workflow) }));

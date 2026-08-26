@@ -510,6 +510,13 @@ def import_project_route():
     return jsonify(ProjectBundleService().import_bundle(bundle, target_project_id=payload.get("target_project_id")))
 
 
+@engineering_api.route("/projects/reset", methods=["POST"])
+def reset_project_route():
+    payload = _routing_payload()
+    project_id = payload.get("project_id") or payload.get("target_project_id") or _project_id()
+    return jsonify(ProjectBundleService().reset_workspace(project_id))
+
+
 def _capacity_result_section(section: str):
     snapshot = WorkflowStatusService(_project_id()).latest_analysis(
         "capacity_timing", include_outdated=True

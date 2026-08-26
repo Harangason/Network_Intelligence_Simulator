@@ -112,7 +112,51 @@ def _proposal_object_type(proposal: dict[str, Any], item: dict[str, Any]) -> str
     return str(value)
 
 
+def _canonical_id_from_proposal_reference(value: Any) -> str | None:
+    if not value:
+        return None
+    try:
+        validate_uuid(str(value))
+    except (EngineeringValidationError, ValueError):
+        return None
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT proposed_objects FROM engineering_ai_proposals WHERE proposal_id = %s",
+            (str(value),),
+        ).fetchone()
+    if row is None:
+        return None
+    for item in row.get("proposed_objects") or []:
+        if isinstance(item, dict) and item.get("canonical_id"):
+            return str(item["canonical_id"])
+    return None
+
+
+def _normalize_proposal_references(proposal: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    changed = False
+    proposed_objects: list[dict[str, Any]] = []
+    for raw_item in proposal.get("proposed_objects") or []:
+        item = dict(raw_item) if isinstance(raw_item, dict) else {}
+        try:
+            object_type = _proposal_object_type(proposal, item)
+        except EngineeringValidationError:
+            proposed_objects.append(item)
+            continue
+        reference_fields = ["source_id", "target_id"] if object_type == "Relation" else []
+        parent_link = PARENT_LINKS.get(object_type)
+        if parent_link:
+            reference_fields.append(parent_link[0])
+        for field in reference_fields:
+            resolved = _canonical_id_from_proposal_reference(item.get(field))
+            if resolved and item.get(field) != resolved:
+                item[field] = resolved
+                changed = True
+        proposed_objects.append(item)
+    return {**proposal, "proposed_objects": proposed_objects}, changed
+
+
 def validate_proposed_items(proposal: dict[str, Any]) -> list[dict[str, Any]]:
+    proposal, _ = _normalize_proposal_references(proposal)
     results: list[dict[str, Any]] = []
     for index, raw_item in enumerate(proposal.get("proposed_objects") or []):
         errors: list[str] = []
@@ -199,9 +243,16 @@ def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
 
 def validate_proposal(proposal_id: str, *, actor: str | None = None) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
+    proposal, changed = _normalize_proposal_references(proposal)
     results = validate_proposed_items(proposal)
     status = "READY_FOR_REVIEW" if results and all(item["valid"] for item in results) else "DRAFT"
-    return _update_proposal_row(proposal_id, validation_results=results, status=status, actor=actor)
+    return _update_proposal_row(
+        proposal_id,
+        proposed_objects=proposal.get("proposed_objects") if changed else None,
+        validation_results=results,
+        status=status,
+        actor=actor,
+    )
 
 
 def approve_proposal(
@@ -213,6 +264,15 @@ def approve_proposal(
     proposal = get_proposal(proposal_id)
     if proposal["status"] in {"REJECTED", "SUPERSEDED"}:
         raise EngineeringValidationError("Abgelehnte oder abgeloeste Vorschlaege koennen nicht freigegeben werden.")
+    proposal, changed = _normalize_proposal_references(proposal)
+    if changed:
+        proposal = _update_proposal_row(
+            proposal_id,
+            proposed_objects=proposal.get("proposed_objects") or [],
+            validation_results=[],
+            status="DRAFT",
+            actor=actor,
+        )
     validation = validate_proposed_items(proposal)
     selected = set(indexes if indexes is not None else [item["index"] for item in validation if item["valid"]])
     proposed_objects = [dict(item) for item in proposal.get("proposed_objects") or []]
@@ -268,15 +328,29 @@ def approve_proposal(
 
 
 def approve_all_valid_proposals(*, actor: str | None = None) -> list[dict[str, Any]]:
-    proposals = list_proposals(limit=1000)
     approved = []
-    for proposal in proposals:
-        if proposal["status"] in {"AI_GENERATED", "DRAFT", "READY_FOR_REVIEW", "PARTIALLY_APPROVED"}:
-            validation = validate_proposed_items(proposal)
-            indexes = [item["index"] for item in validation if item["valid"]]
-            pending = [index for index in indexes if not (proposal.get("proposed_objects") or [])[index].get("canonical_id")]
-            if pending:
-                approved.append(approve_proposal(str(proposal["proposal_id"]), indexes=pending, actor=actor))
+    for _ in range(6):
+        progressed = False
+        proposals = list_proposals(limit=1000)
+        for proposal in proposals:
+            if proposal["status"] in {"AI_GENERATED", "DRAFT", "READY_FOR_REVIEW", "PARTIALLY_APPROVED"}:
+                proposal, changed = _normalize_proposal_references(proposal)
+                if changed:
+                    proposal = _update_proposal_row(
+                        str(proposal["proposal_id"]),
+                        proposed_objects=proposal.get("proposed_objects") or [],
+                        validation_results=[],
+                        status="DRAFT",
+                        actor=actor,
+                    )
+                validation = validate_proposed_items(proposal)
+                indexes = [item["index"] for item in validation if item["valid"]]
+                pending = [index for index in indexes if not (proposal.get("proposed_objects") or [])[index].get("canonical_id")]
+                if pending:
+                    approved.append(approve_proposal(str(proposal["proposal_id"]), indexes=pending, actor=actor))
+                    progressed = True
+        if not progressed:
+            break
     return approved
 
 

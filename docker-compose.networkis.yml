@@ -1,0 +1,45 @@
+services:
+  networkis-db:
+    image: postgres:16-alpine
+    container_name: NetworkIS-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eip_blocker
+      POSTGRES_USER: eip_user
+      POSTGRES_PASSWORD: localDockerOnly7a1c9e4f2b8d6a3c5e0f
+    volumes:
+      - networkis-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eip_user -d eip_blocker"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  networkis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: NetworkIS
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    depends_on:
+      networkis-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://eip_user:localDockerOnly7a1c9e4f2b8d6a3c5e0f@networkis-db:5432/eip_blocker
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 15050
+      FRONTEND_PORT: 13500
+      SIMULATOR_BACKEND_API_URL: http://127.0.0.1:15050/api
+      NEXT_TELEMETRY_DISABLED: "1"
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+      NVIDIA_AI_MODEL: ${NVIDIA_AI_MODEL:-nvidia/nemotron-3-nano-30b-a3b}
+    ports:
+      - "13500:13500"
+      - "15050:15050"
+    volumes:
+      - ./backend/runtime:/app/backend/runtime
+
+volumes:
+  networkis-db-data:

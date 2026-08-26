@@ -340,13 +340,9 @@ def reject_routes(route_ids: list[str], *, actor: str | None = None, reason: str
 
 def delete_route(route_id: str, *, actor: str | None = None) -> None:
     current = get_route(route_id)
-    if current["approval_state"] == "APPROVED" or current["status"] in (
-        "RELEASED",
-        "REJECTED",
-        "OUTDATED",
-    ):
+    if current["approval_state"] == "APPROVED" or current["status"] in ("APPROVED", "RELEASED"):
         raise EngineeringValidationError(
-            "Freigegebene, abgelehnte oder veraltete Routing-Revisionen dürfen nicht gelöscht werden."
+            "Freigegebene Routing-Revisionen dürfen nicht gelöscht werden."
         )
     with get_connection() as connection:
         _audit(connection, route_id, "ROUTE_DELETED", actor=actor, before=current)

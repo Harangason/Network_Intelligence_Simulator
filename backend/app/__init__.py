@@ -22,9 +22,9 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
     def add_cors_headers(response):
         configured_origin = os.environ.get("FRONTEND_ORIGIN")
         request_origin = request.headers.get("Origin", "")
-        local_origins = {"http://127.0.0.1:3500", "http://localhost:3500"}
+        local_origins = {"http://127.0.0.1:13500", "http://localhost:13500"}
         origin = configured_origin or (
-            request_origin if request_origin in local_origins else "http://127.0.0.1:3500"
+            request_origin if request_origin in local_origins else "http://127.0.0.1:13500"
         )
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Project-ID"

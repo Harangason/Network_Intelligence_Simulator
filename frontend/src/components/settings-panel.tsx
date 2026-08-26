@@ -106,7 +106,7 @@ export function SettingsPanel() {
           <div><dt>Datenbank</dt><dd>PostgreSQL</dd></div>
           <div><dt>Modell</dt><dd>Kanonisch · Schema v2</dd></div>
           <div><dt>Engineering-API</dt><dd className="mono">:5050</dd></div>
-          <div><dt>Studio</dt><dd className="mono">:3500</dd></div>
+          <div><dt>Studio</dt><dd className="mono">:13500</dd></div>
         </dl>
       </aside>
     </div>

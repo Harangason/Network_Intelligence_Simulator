@@ -148,7 +148,7 @@ function WorkflowHeaderContent() {
           </Link>
         ))}
       </nav>
-      {workflow?.stale_reasons[activeStep] && (
+      {workflow?.stale_reasons?.[activeStep] && (
         <p className="workflow-stale-reason">
           <strong>Neuberechnung erforderlich:</strong> {workflow.stale_reasons[activeStep]}
         </p>

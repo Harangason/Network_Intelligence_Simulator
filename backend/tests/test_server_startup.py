@@ -120,7 +120,7 @@ def test_frontend_dev_command_uses_local_next_cli(
         "node.exe",
         str(next_cli),
         "dev",
-        "--turbopack",
+        "--webpack",
         "-p",
         str(LAUNCHER.FRONTEND_PORT),
     ]

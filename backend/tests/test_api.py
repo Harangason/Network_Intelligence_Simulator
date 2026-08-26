@@ -31,11 +31,11 @@ def test_local_studio_origin_is_allowed() -> None:
 
     response = client.options(
         "/api/engineering/imports/commit",
-        headers={"Origin": "http://127.0.0.1:3500"},
+        headers={"Origin": "http://127.0.0.1:13500"},
     )
 
     assert response.status_code == 200
-    assert response.headers["Access-Control-Allow-Origin"] == "http://127.0.0.1:3500"
+    assert response.headers["Access-Control-Allow-Origin"] == "http://127.0.0.1:13500"
     assert "X-Project-ID" in response.headers["Access-Control-Allow-Headers"]
 
 

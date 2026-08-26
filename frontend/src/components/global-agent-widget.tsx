@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AgentChatCore } from "@/components/agent-chat-core";
 import { WorkflowStatusOverview } from "@/components/workflow-status-overview";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 
 export function GlobalAgentWidget() {
   const [activeProject, setActiveProject] = useState("default");
+  const pathname = usePathname();
+  const showWorkflowStatus = pathname.startsWith("/studio") || pathname.startsWith("/workflow");
 
   useEffect(() => {
     const initial = readUserSettings();
@@ -22,9 +25,9 @@ export function GlobalAgentWidget() {
   return (
     <aside
       aria-label="Engineering-Assistent"
-      className="agent-widget has-workflow-status"
+      className={`agent-widget ${showWorkflowStatus ? "has-workflow-status" : ""}`}
     >
-      <WorkflowStatusOverview />
+      {showWorkflowStatus && <WorkflowStatusOverview />}
       <div className="agent-widget-panel">
         <div className="agent-widget-header">
           <div>
