@@ -482,4 +482,4 @@ function RoutingEditorDialog({ mode, route, schema, hardware, interfaces, messag
 function interfaceProtocol(type: string) { return ({ CAN: "CAN", CAN_FD: "CAN_FD", LIN: "LIN", FlexRay: "FLEXRAY", Ethernet: "ETHERNET", EtherCAT: "ETHERCAT", ProfiNET: "PROFINET", ModbusTCP: "MODBUS", ModbusRTU: "MODBUS", OPCUA: "OPC_UA" } as Record<string, string>)[type] ?? "CUSTOM"; }
 function networkId(item?: EngInterface) { return item ? `network-${String(item.configuration?.bus ?? item.interface_type).toLowerCase()}` : null; }
 function Status({ value }: { value: string }) { return <span className={`routing-status ${value.toLowerCase().replaceAll("_", "-")}`}>{value.replaceAll("_", " ")}</span>; }
-function EmptyRouting({ text }: { text: string }) { return <div className="empty-result routing-empty"><span className="empty-icon">⌁</span><strong>{text}</strong></div>; }
+function EmptyRouting({ text }: { text: string }) { return <div className="empty-result routing-empty"><span className="empty-icon">◇</span><strong>{text}</strong></div>; }

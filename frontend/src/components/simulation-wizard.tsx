@@ -913,7 +913,7 @@ function NumberField({
 function TechnologyCard({ technology }: { technology: Technology }) {
   return (
     <div className="technology-card">
-      <div className="technology-symbol">⌁</div>
+      <div className="technology-symbol">◈</div>
       <div>
         <strong>{technology.family}</strong>
         <span>
