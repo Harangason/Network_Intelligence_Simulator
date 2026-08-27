@@ -9,6 +9,7 @@ import sys
 from werkzeug.serving import ThreadedWSGIServer
 
 from . import create_app
+from .runtime_config import runtime_settings
 
 
 class ExclusiveThreadedWSGIServer(ThreadedWSGIServer):
@@ -41,6 +42,37 @@ def main() -> int:
     host, port, debug = _server_settings()
     app = create_app()
     app.debug = debug
+    if not debug:
+        try:
+            from waitress import serve
+        except ImportError as error:
+            raise SystemExit(
+                "Waitress ist nicht installiert. Führe `uv sync --project backend` aus."
+            ) from error
+        settings = runtime_settings()
+        os.environ["SIMULATOR_SERVER"] = "waitress"
+        print(
+            f"Simulator-Backend via Waitress auf http://{host}:{port} "
+            f"({settings.api_threads} Threads, {settings.simulation_workers} Worker)",
+            flush=True,
+        )
+        try:
+            serve(
+                app,
+                host=host,
+                port=port,
+                threads=settings.api_threads,
+                clear_untrusted_proxy_headers=True,
+            )
+        except OSError as error:
+            print(
+                f"Simulator-Backend nicht gestartet: {host}:{port} ist bereits belegt.",
+                file=sys.stderr,
+            )
+            return 2
+        return 0
+
+    os.environ["SIMULATOR_SERVER"] = "werkzeug"
     try:
         server = ExclusiveThreadedWSGIServer(host, port, app)
     except SystemExit:

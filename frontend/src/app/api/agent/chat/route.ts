@@ -1,5 +1,13 @@
-import { createAgentUIStreamResponse, UIMessage } from "ai";
-import { engineeringAgent, engineeringAgentProvider } from "@/lib/agent/engineering-agent";
+import { createAgentUIStreamResponse, createUIMessageStream, createUIMessageStreamResponse, UIMessage } from "ai";
+import {
+  engineeringAgent,
+  engineeringAgentModel,
+  engineeringAgentOrchestrator,
+  engineeringAgentProvider,
+  registerEngineeringSpecification,
+} from "@/lib/agent/engineering-agent";
+import { AGENT_OUTPUT_RECOVERY_CONTEXT, inspectAgentText } from "@/lib/agent/agent-output-safety";
+import { isStructuredEngineeringSpecification } from "@/lib/agent/engineering-specification";
 import { runWithAgentProject } from "@/lib/agent/request-context";
 
 export const maxDuration = 300;
@@ -26,6 +34,74 @@ function uiMessageText(message: UIMessage | undefined) {
     .slice(0, 180);
 }
 
+function uiMessageFullText(message: UIMessage | undefined) {
+  if (!message) return "";
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n");
+}
+
+function sanitizeAgentHistory(messages: UIMessage[]) {
+  let blockedOutputs = 0;
+  const sanitized = messages.map((message) => {
+    if (message.role !== "assistant") return message;
+    return {
+      ...message,
+      parts: message.parts.map((part) => {
+        if (part.type !== "text") return part;
+        const safety = inspectAgentText(part.text);
+        if (!safety.blocked) return part;
+        blockedOutputs += 1;
+        return { ...part, text: AGENT_OUTPUT_RECOVERY_CONTEXT };
+      }),
+    };
+  });
+  return { blockedOutputs, messages: sanitized };
+}
+
+function specificationSummary(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  const failures = Array.isArray(result.failures) ? result.failures.length : 0;
+  const registered = Number(result.registered_chains ?? 0);
+  const recognized = Number(result.recognized ?? 0);
+  if (failures > 0) {
+    return `${registered} von ${recognized} erkannten Teilnehmern wurden vollstaendig registriert. ${failures} Teilnehmer konnten nicht angelegt werden.`;
+  }
+  return `${recognized} Teilnehmer erkannt. ${registered} vollstaendige Engineering-Ketten mit Hardware, Funktion, Interface, Nachricht und Signal wurden registriert.`;
+}
+
+function createSpecificationResponse(messages: UIMessage[], specificationText: string) {
+  const stream = createUIMessageStream({
+    originalMessages: messages,
+    onError: (error) => error instanceof Error ? error.message : "Die Spezifikation konnte nicht verarbeitet werden.",
+    execute: async ({ writer }) => {
+      const toolCallId = crypto.randomUUID();
+      writer.write({ type: "start-step" });
+      writer.write({
+        type: "tool-input-available",
+        toolCallId,
+        toolName: "createEngineeringModelFromSpecification",
+        input: {},
+      });
+      try {
+        const result = await registerEngineeringSpecification(specificationText);
+        writer.write({ type: "tool-output-available", toolCallId, output: result });
+        const textId = crypto.randomUUID();
+        writer.write({ type: "text-start", id: textId });
+        writer.write({ type: "text-delta", id: textId, delta: specificationSummary(result) });
+        writer.write({ type: "text-end", id: textId });
+      } catch (error) {
+        const errorText = error instanceof Error ? error.message : String(error);
+        writer.write({ type: "tool-output-error", toolCallId, errorText });
+        throw error;
+      } finally {
+        writer.write({ type: "finish-step" });
+      }
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
+}
+
 export async function POST(request: Request) {
   let payload: { messages?: UIMessage[] };
   try {
@@ -41,12 +117,17 @@ export async function POST(request: Request) {
 
   const requestId = crypto.randomUUID();
   const projectId = request.headers.get("X-Project-ID") ?? "default";
+  const sanitizedHistory = sanitizeAgentHistory(payload.messages);
   const lastUserMessage = [...payload.messages].reverse().find((message) => message.role === "user");
+  const requestText = uiMessageFullText(lastUserMessage);
   audit("request started", {
     requestId,
     projectId,
     provider: engineeringAgentProvider,
+    model: engineeringAgentModel,
+    orchestrator: engineeringAgentOrchestrator,
     messages: payload.messages.length,
+    blockedOutputs: sanitizedHistory.blockedOutputs,
     prompt: uiMessageText(lastUserMessage),
   });
 
@@ -55,16 +136,25 @@ export async function POST(request: Request) {
     return Response.json(
       {
         error:
-          "Der Engineering-Agent ist nicht konfiguriert. Für lokale Entwicklung muss OPENAI_API_KEY oder NVIDIA_API_KEY im NetworkIS-Container gesetzt sein.",
+          "Der Engineering-Agent ist nicht konfiguriert. Setze AI_PROVIDER auf local, openai oder nvidia und konfiguriere den gewählten Provider.",
       },
       { status: 503 },
+    );
+  }
+
+  if (isStructuredEngineeringSpecification(requestText)) {
+    audit("structured specification execution started", { requestId, projectId });
+    return runWithAgentProject(
+      request.headers.get("X-Project-ID"),
+      () => createSpecificationResponse(sanitizedHistory.messages, requestText),
+      requestText,
     );
   }
 
   return runWithAgentProject(request.headers.get("X-Project-ID"), () =>
     createAgentUIStreamResponse({
       agent: engineeringAgent,
-      uiMessages: payload.messages!,
+      uiMessages: sanitizedHistory.messages,
       onStepEnd: (step) => {
         audit("step finished", {
           requestId,
@@ -73,6 +163,6 @@ export async function POST(request: Request) {
           toolResults: step.toolResults.length,
         });
       },
-    }),
+    }), requestText,
   );
 }

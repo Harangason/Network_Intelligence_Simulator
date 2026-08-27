@@ -21,6 +21,7 @@ import {
   updateEngineeringProposal,
   validateEngineeringProposal,
 } from "@/lib/engineering-api";
+import { ENGINEERING_MODEL_CHANGED_EVENT } from "@/lib/engineering-events";
 import type {
   EngineeringObject,
   EngineeringProposal,
@@ -31,6 +32,8 @@ import type {
   EngineeringSchema,
 } from "@/lib/types";
 import { setWorkflowContext } from "@/lib/workflow-api";
+import { queueEngineeringAgentTask, takePendingEngineeringAgentWizard } from "@/lib/agent-task-events";
+import { EngineeringAgentWizard } from "@/components/agent-chat-core";
 
 const RESOURCES: EngineeringResource[] = [
   "hardware-nodes",
@@ -409,7 +412,12 @@ export function EngineeringWorkbench() {
   const [showCreate, setShowCreate] = useState(false);
   const [hardwarePreset, setHardwarePreset] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [showAgentWizard, setShowAgentWizard] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (takePendingEngineeringAgentWizard()) setShowAgentWizard(true);
+  }, []);
 
   useEffect(() => {
     getEngineeringSchema()
@@ -436,6 +444,25 @@ export function EngineeringWorkbench() {
 
   useEffect(() => {
     setSelectedId(null);
+  }, [resource]);
+
+  useEffect(() => {
+    if (!showAgentWizard) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowAgentWizard(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showAgentWizard]);
+
+  useEffect(() => {
+    const handleModelChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ resource?: string; id?: string }>).detail;
+      setRefreshKey((key) => key + 1);
+      if (detail?.resource === resource && detail.id) setSelectedId(detail.id);
+    };
+    window.addEventListener(ENGINEERING_MODEL_CHANGED_EVENT, handleModelChanged);
+    return () => window.removeEventListener(ENGINEERING_MODEL_CHANGED_EVENT, handleModelChanged);
   }, [resource]);
 
   const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId]);
@@ -476,7 +503,7 @@ export function EngineeringWorkbench() {
 
   return (
     <>
-    <div className="workspace-grid">
+    <div className="workspace-grid engineering-workspace">
       <div className="panel config-panel">
         <div className="panel-heading">
           <div>
@@ -490,12 +517,13 @@ export function EngineeringWorkbench() {
             <button
               className="button primary"
               onClick={() => {
+                setShowCreate(false);
                 setHardwarePreset(null);
-                setShowCreate((value) => !value);
+                setShowAgentWizard(true);
               }}
               type="button"
             >
-              {showCreate ? "Abbrechen" : "+ Neu anlegen"}
+              + Neu anlegen
             </button>
           </div>
         </div>
@@ -577,48 +605,41 @@ export function EngineeringWorkbench() {
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr
-                    className={item.id === selectedId ? "selected" : ""}
-                    key={item.id}
-                    onClick={() => setSelectedId(item.id)}
-                  >
-                    {resourceTableValues(resource, item, referenceNames).map((value, index) => (
-                      <td className={index === 0 ? undefined : "muted"} key={`${item.id}:${index}`}>
-                        {value}
-                      </td>
-                    ))}
-                  </tr>
+                  <Fragment key={item.id}>
+                    <tr
+                      className={item.id === selectedId ? "selected" : ""}
+                      onClick={() => setSelectedId(item.id)}
+                    >
+                      {resourceTableValues(resource, item, referenceNames).map((value, index) => (
+                        <td className={index === 0 ? undefined : "muted"} key={`${item.id}:${index}`}>
+                          {value}
+                        </td>
+                      ))}
+                    </tr>
+                    {item.id === selectedId && (
+                      <tr className="eng-detail-row">
+                        <td colSpan={RESOURCE_TABLE_HEADERS[resource].length}>
+                          <DetailPanel
+                            item={item}
+                            resource={resource}
+                            relations={relations}
+                            schema={schema}
+                            onChanged={refresh}
+                            onDeleted={() => {
+                              setSelectedId(null);
+                              refresh();
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
-
-      <aside className="side-column">
-        {selected ? (
-          <DetailPanel
-            item={selected}
-            resource={resource}
-            relations={relations}
-            schema={schema}
-            onChanged={refresh}
-            onDeleted={() => {
-              setSelectedId(null);
-              refresh();
-            }}
-          />
-        ) : (
-          <div className="panel overview-panel">
-            <p className="eyebrow">Detailansicht</p>
-            <h2>Kein Objekt gewählt</h2>
-            <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
-              Wähle ein Objekt aus der Liste, um Details, Governance-Status und
-              Relations zu sehen.
-            </p>
-          </div>
-        )}
-      </aside>
     </div>
     {showImport && (
       <ImportWizard
@@ -628,12 +649,46 @@ export function EngineeringWorkbench() {
         }}
       />
     )}
-    <ProposalReviewPanel />
+    {showAgentWizard && (
+      <div
+        className="engineering-agent-wizard-backdrop"
+        onMouseDown={(event) => event.target === event.currentTarget && setShowAgentWizard(false)}
+        role="presentation"
+      >
+        <section aria-labelledby="engineering-agent-wizard-title" aria-modal="true" className="engineering-agent-wizard-dialog" role="dialog">
+          <header className="engineering-agent-wizard-header">
+            <div>
+              <p className="eyebrow">Geführte Anlage</p>
+              <h2 id="engineering-agent-wizard-title">Engineering-Auftrag erstellen</h2>
+              <span>Technische Vorgaben festlegen und anschließend vom Agenten ausführen lassen.</span>
+            </div>
+            <button aria-label="Wizard schließen" className="eng-dialog-close" onClick={() => setShowAgentWizard(false)} type="button">×</button>
+          </header>
+          <EngineeringAgentWizard
+            busy={false}
+            mode="full"
+            onSubmit={(text) => {
+              setShowAgentWizard(false);
+              queueEngineeringAgentTask(text);
+            }}
+            title="Technische Vorgaben"
+          />
+        </section>
+      </div>
+    )}
     </>
   );
 }
 
-function ProposalReviewPanel() {
+function ProposalReviewPanel({
+  item,
+  resource,
+  onChanged,
+}: {
+  item: EngineeringObject;
+  resource: EngineeringResource;
+  onChanged: () => void;
+}) {
   const [proposals, setProposals] = useState<EngineeringProposal[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [wizard, setWizard] = useState<{ proposalId: string; index: number } | null>(null);
@@ -650,7 +705,7 @@ function ProposalReviewPanel() {
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [item.id]);
 
   async function act(key: string, action: () => Promise<unknown>, message: string) {
     setBusy(key);
@@ -659,6 +714,7 @@ function ProposalReviewPanel() {
       await action();
       setNotice(message);
       await refresh();
+      onChanged();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Aktion fehlgeschlagen.");
     } finally {
@@ -692,24 +748,41 @@ function ProposalReviewPanel() {
     setWizard(null);
   }
 
-  const open = proposals.filter((proposal) => !["APPROVED", "REJECTED", "SUPERSEDED"].includes(proposal.status));
-  const wizardProposal = wizard ? proposals.find((proposal) => proposal.proposal_id === wizard.proposalId) : undefined;
+  const relevant = proposals.filter((proposal) => {
+    const target = (proposal as EngineeringProposal & { target_object?: Record<string, unknown> }).target_object;
+    const targetResource = String(target?.resource ?? "");
+    return proposal.proposed_objects.some((candidate) => {
+      const canonicalId = String(candidate.canonical_id ?? "");
+      const sameObject = canonicalId === item.id
+        || (targetResource === resource && String(candidate.name ?? "") === item.name);
+      const relatedObject = proposal.proposal_type === "RELATION"
+        && (String(candidate.source_id ?? "") === item.id || String(candidate.target_id ?? "") === item.id);
+      return sameObject || relatedObject;
+    });
+  });
+  const open = relevant.filter((proposal) => !["APPROVED", "REJECTED", "SUPERSEDED"].includes(proposal.status));
+  const wizardProposal = wizard ? relevant.find((proposal) => proposal.proposal_id === wizard.proposalId) : undefined;
 
   return (
-    <section className="panel eng-proposal-review">
+    <details className="eng-detail-section eng-proposal-review embedded">
+      <summary>
+        <span>KI-Audit</span>
+        <strong>{relevant.length} {relevant.length === 1 ? "Vorgang" : "Vorgänge"}</strong>
+      </summary>
+      <div className="eng-detail-section-body">
       <div className="panel-heading">
-        <div><p className="eyebrow">Human Review</p><h2>KI-Engineering-Vorschläge</h2></div>
+        <div><p className="eyebrow">KI-Audit</p><h2>Vorschläge und Werkzeuge</h2></div>
         <div className="panel-heading-actions">
           <span className="status-badge">{open.length} offen</span>
           <button className="button secondary tiny" disabled={!open.length || Boolean(busy)} onClick={() => void act("approve-all", approveAllValidEngineeringProposals, "Alle validen Vorschlaege freigegeben.")} type="button">Alle validen freigeben</button>
         </div>
       </div>
       {notice && <div className="notice">{notice}</div>}
-      {!proposals.length ? (
-        <div className="eng-proposal-empty">Keine KI-Vorschläge zur Prüfung.</div>
+      {!relevant.length ? (
+        <div className="eng-proposal-empty">Für dieses Objekt liegt noch keine KI-Auditspur vor.</div>
       ) : (
         <div className="eng-proposal-list">
-          {proposals.map((proposal) => {
+          {relevant.map((proposal) => {
             const editing = editingId === proposal.proposal_id;
             return (
               <form className="eng-proposal-row" key={proposal.proposal_id} onSubmit={(event) => void save(event, proposal)}>
@@ -763,7 +836,8 @@ function ProposalReviewPanel() {
           proposal={wizardProposal}
         />
       )}
-    </section>
+      </div>
+    </details>
   );
 }
 
@@ -1691,141 +1765,155 @@ function DetailPanel({
   }
 
   return (
-    <>
-      <div className="panel overview-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">{RESOURCE_TO_OBJECT_TYPE[resource]}</p>
-            <h2>{item.name}</h2>
-          </div>
-          <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
-            {showEdit ? "Abbrechen" : "Bearbeiten"}
-          </button>
-        </div>
-        {showEdit && (
-          <EditObjectForm
-            item={item}
-            resource={resource}
-            schema={schema}
-            onSaved={() => {
-              setShowEdit(false);
-              onChanged();
-            }}
-          />
-        )}
-        <dl className="overview-list">
-          <div>
-            <dt>Domäne</dt>
-            <dd>{item.domain ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Version</dt>
-            <dd>v{item.version}</dd>
-          </div>
-          <div>
-            <dt>Quelle</dt>
-            <dd>{item.source}</dd>
-          </div>
-          <div>
-            <dt>Approval</dt>
-            <dd>{item.approval_state}</dd>
-          </div>
-        </dl>
-        {item.description && <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>{item.description}</p>}
-
-        <div className="section-title">
-          <span>Lifecycle</span>
-        </div>
-        <div className="eng-pill-row">
-          {["draft", "active", "deprecated", "superseded"].map((state) => (
-            <button
-              className={`button secondary tiny ${item.lifecycle_state === state ? "active" : ""}`}
-              disabled={busy}
-              key={state}
-              onClick={() => setLifecycle(state)}
-              type="button"
-            >
-              {state}
+    <div className="eng-detail-dropdown">
+      <details className="eng-detail-section" open>
+        <summary>
+          <span>{RESOURCE_TO_OBJECT_TYPE[resource]}</span>
+          <strong>{item.name}</strong>
+        </summary>
+        <div className="eng-detail-section-body">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">{RESOURCE_TO_OBJECT_TYPE[resource]}</p>
+              <h2>{item.name}</h2>
+            </div>
+            <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
+              {showEdit ? "Abbrechen" : "Bearbeiten"}
             </button>
-          ))}
-        </div>
-
-        <div className="section-title">
-          <span>Review</span>
-        </div>
-        <div className="eng-pill-row">
-          {["unreviewed", "in_review", "reviewed", "rejected"].map((state) => (
-            <button
-              className={`button secondary tiny ${item.review_state === state ? "active" : ""}`}
-              disabled={busy}
-              key={state}
-              onClick={() => setReview(state)}
-              type="button"
-            >
-              {state}
-            </button>
-          ))}
-        </div>
-
-        {notice && <div className="notice error">{notice}</div>}
-
-        <div className="form-actions">
-          <button className="button secondary" disabled={busy || item.lifecycle_state !== "draft"} onClick={remove} type="button">
-            Löschen
-          </button>
-        </div>
-      </div>
-
-      <div className="panel overview-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Relations</p>
-            <h2 style={{ fontSize: 16 }}>Knowledge-Graph-Kanten</h2>
           </div>
-          <button className="button secondary" onClick={() => setShowRelationForm((v) => !v)} type="button">
-            {showRelationForm ? "Abbrechen" : "+ Relation"}
-          </button>
-        </div>
+          {showEdit && (
+            <EditObjectForm
+              item={item}
+              resource={resource}
+              schema={schema}
+              onSaved={() => {
+                setShowEdit(false);
+                onChanged();
+              }}
+            />
+          )}
+          <dl className="overview-list">
+            <div>
+              <dt>Domäne</dt>
+              <dd>{item.domain ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Version</dt>
+              <dd>v{item.version}</dd>
+            </div>
+            <div>
+              <dt>Quelle</dt>
+              <dd>{item.source}</dd>
+            </div>
+            <div>
+              <dt>Approval</dt>
+              <dd>{item.approval_state}</dd>
+            </div>
+          </dl>
+          {item.description && <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>{item.description}</p>}
 
-        {showRelationForm && (
-          <RelationForm
-            sourceType={RESOURCE_TO_OBJECT_TYPE[resource]}
-            sourceId={item.id}
-            onCreated={() => {
-              setShowRelationForm(false);
-              onChanged();
-            }}
-          />
-        )}
-
-        {relations.length === 0 ? (
-          <p className="muted" style={{ fontSize: 12, marginTop: 14 }}>
-            Noch keine Relations für dieses Objekt.
-          </p>
-        ) : (
-          <ul className="eng-relation-list">
-            {relations.map((relation) => (
-              <li key={relation.id}>
-                <span className="tag">{relation.relation_type}</span>
-                <span className="mono muted" style={{ fontSize: 11 }}>
-                  {relation.source_type}:{relation.source_id.slice(0, 8)} →{" "}
-                  {relation.target_type}:{relation.target_id.slice(0, 8)}
-                </span>
-                <button
-                  aria-label="Relation löschen"
-                  className="eng-relation-remove"
-                  disabled={busy}
-                  onClick={() => removeRelation(relation.id)}
-                  type="button"
-                >
-                  ×
-                </button>
-              </li>
+          <div className="section-title">
+            <span>Lifecycle</span>
+          </div>
+          <div className="eng-pill-row">
+            {["draft", "active", "deprecated", "superseded"].map((state) => (
+              <button
+                className={`button secondary tiny ${item.lifecycle_state === state ? "active" : ""}`}
+                disabled={busy}
+                key={state}
+                onClick={() => setLifecycle(state)}
+                type="button"
+              >
+                {state}
+              </button>
             ))}
-          </ul>
-        )}
-      </div>
-    </>
+          </div>
+
+          <div className="section-title">
+            <span>Review</span>
+          </div>
+          <div className="eng-pill-row">
+            {["unreviewed", "in_review", "reviewed", "rejected"].map((state) => (
+              <button
+                className={`button secondary tiny ${item.review_state === state ? "active" : ""}`}
+                disabled={busy}
+                key={state}
+                onClick={() => setReview(state)}
+                type="button"
+              >
+                {state}
+              </button>
+            ))}
+          </div>
+
+          {notice && <div className="notice error">{notice}</div>}
+
+          <div className="form-actions">
+            <button className="button secondary" disabled={busy || item.lifecycle_state !== "draft"} onClick={remove} type="button">
+              Löschen
+            </button>
+          </div>
+        </div>
+      </details>
+
+      <details className="eng-detail-section">
+        <summary>
+          <span>Relations</span>
+          <strong>Knowledge-Graph-Kanten</strong>
+        </summary>
+        <div className="eng-detail-section-body">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Relations</p>
+              <h2 style={{ fontSize: 16 }}>Knowledge-Graph-Kanten</h2>
+            </div>
+            <button className="button secondary" onClick={() => setShowRelationForm((v) => !v)} type="button">
+              {showRelationForm ? "Abbrechen" : "+ Relation"}
+            </button>
+          </div>
+
+          {showRelationForm && (
+            <RelationForm
+              sourceType={RESOURCE_TO_OBJECT_TYPE[resource]}
+              sourceId={item.id}
+              onCreated={() => {
+                setShowRelationForm(false);
+                onChanged();
+              }}
+            />
+          )}
+
+          {relations.length === 0 ? (
+            <p className="muted" style={{ fontSize: 12, marginTop: 14 }}>
+              Noch keine Relations für dieses Objekt.
+            </p>
+          ) : (
+            <ul className="eng-relation-list">
+              {relations.map((relation) => (
+                <li key={relation.id}>
+                  <span className="tag">{relation.relation_type}</span>
+                  <span className="mono muted" style={{ fontSize: 11 }}>
+                    {relation.source_type}:{relation.source_id.slice(0, 8)} →{" "}
+                    {relation.target_type}:{relation.target_id.slice(0, 8)}
+                  </span>
+                  <button
+                    aria-label="Relation löschen"
+                    className="eng-relation-remove"
+                    disabled={busy}
+                    onClick={() => removeRelation(relation.id)}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </details>
+
+      <ProposalReviewPanel item={item} onChanged={onChanged} resource={resource} />
+    </div>
   );
 }
 

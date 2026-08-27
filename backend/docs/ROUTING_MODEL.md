@@ -35,4 +35,3 @@ Accepting a proposal creates pending drafts, never approved routes.
 A rule stores `condition`, `action`, `priority`, status and version. It supports
 conditional and fallback routing without embedding executable code. Approved or
 released rules are immutable and cannot be deleted.
-

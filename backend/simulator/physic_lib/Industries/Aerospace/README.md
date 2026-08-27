@@ -22,4 +22,3 @@ Expected folders:
 - `ServiceProfiles/`
 - `MissionProfiles/`
 - `Learning/`
-

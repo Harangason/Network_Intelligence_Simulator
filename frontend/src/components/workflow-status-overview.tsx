@@ -93,7 +93,7 @@ function buildDonutGradient(buckets: StatusBucket[], total: number) {
   return `conic-gradient(${stops.join(", ")})`;
 }
 
-export function WorkflowStatusOverview() {
+export function WorkflowStatusOverview({ compact = false }: { compact?: boolean }) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -142,7 +142,11 @@ export function WorkflowStatusOverview() {
   const summary = buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(", ");
 
   return (
-    <section className="workflow-status-overview" aria-busy={loading} aria-label="Workflow-Gesamtstatus">
+    <section
+      className={`workflow-status-overview ${compact ? "compact" : ""}`}
+      aria-busy={loading}
+      aria-label="Workflow-Gesamtstatus"
+    >
       <header className="workflow-status-overview-header">
         <div>
           <p className="agent-widget-eyebrow">Project workflow</p>
@@ -174,27 +178,31 @@ export function WorkflowStatusOverview() {
         </dl>
       </div>
 
-      <nav className="workflow-status-step-list" aria-label="Status aller Workflow-Schritte">
-        {steps.map((step) => (
-          <Link
-            className={`workflow-status-step status-${step.status.toLowerCase()} ${step.id === workflow?.active_step ? "active" : ""}`}
-            href={STEP_LINKS[step.id]}
-            key={step.id}
-            title={step.reason || `${step.label}: ${STATUS_LABELS[step.status]}`}
-          >
-            <span>{step.position}</span>
-            <span>
-              <strong>{step.label}</strong>
-              <small><i aria-hidden="true" />{STATUS_LABELS[step.status]} · v{step.version}</small>
-            </span>
-          </Link>
-        ))}
-      </nav>
+      {!compact && (
+        <>
+          <nav className="workflow-status-step-list" aria-label="Status aller Workflow-Schritte">
+            {steps.map((step) => (
+              <Link
+                className={`workflow-status-step status-${step.status.toLowerCase()} ${step.id === workflow?.active_step ? "active" : ""}`}
+                href={STEP_LINKS[step.id]}
+                key={step.id}
+                title={step.reason || `${step.label}: ${STATUS_LABELS[step.status]}`}
+              >
+                <span>{step.position}</span>
+                <span>
+                  <strong>{step.label}</strong>
+                  <small><i aria-hidden="true" />{STATUS_LABELS[step.status]} · v{step.version}</small>
+                </span>
+              </Link>
+            ))}
+          </nav>
 
-      <footer className="workflow-status-overview-footer">
-        <span className={error ? "workflow-status-error" : ""}>{error || `${currentCount}/${total} Schritte aktuell`}</span>
-        <span>{workflow?.project_id ?? "Projekt wird geladen"}</span>
-      </footer>
+          <footer className="workflow-status-overview-footer">
+            <span className={error ? "workflow-status-error" : ""}>{error || `${currentCount}/${total} Schritte aktuell`}</span>
+            <span>{workflow?.project_id ?? "Projekt wird geladen"}</span>
+          </footer>
+        </>
+      )}
     </section>
   );
 }

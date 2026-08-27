@@ -11,7 +11,6 @@ import { NetworkEditor } from "./network-editor";
 import {
   busProfiles,
   engineeringHardwareKind,
-  initialTopology,
   type BusType,
   type NetworkTopology,
   type TopologyNode,
@@ -176,7 +175,8 @@ export function SimulationWizard({
   const [savedMessage, setSavedMessage] = useState("");
   const [storedParameters, setStoredParameters] = useState<Record<string, unknown>>({});
   const mode = initialMode;
-  const [topology, setTopology] = useState<NetworkTopology>(initialTopology);
+  const [topology, setTopology] = useState<NetworkTopology>(() => ({ nodes: [], edges: [] }));
+  const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [modelHardware, setModelHardware] = useState<HardwareNode[]>([]);
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
   const [routingLoadError, setRoutingLoadError] = useState("");
@@ -260,14 +260,19 @@ export function SimulationWizard({
         const storedTopology = state.topology;
         if (Array.isArray(storedTopology.nodes) && Array.isArray(storedTopology.edges)) {
           setTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges });
+        } else {
+          setTopology({ nodes: [], edges: [] });
         }
         if (typeof state.parameters.industry === "string") setDomainId(state.parameters.industry);
         if (typeof state.parameters.technology === "string") setTechnologyId(state.parameters.technology);
         if (Array.isArray(state.parameters.formats)) {
           setFormats(state.parameters.formats.map(String));
         }
+        setWorkflowLoaded(true);
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        setFormError(error instanceof Error ? error.message : "Workflow konnte nicht geladen werden.");
+      });
   }, []);
 
   useEffect(() => {
@@ -292,7 +297,12 @@ export function SimulationWizard({
   }, []);
 
   useEffect(() => {
-    if (mode !== "network") return;
+    if (mode !== "network" || !workflowLoaded) return;
+    if (topology.nodes.length === 0) {
+      setEngineeringSync({ status: "idle", linked: 0, error: "" });
+      setModelHardware([]);
+      return;
+    }
     if (!automaticModelSync && syncRequest === 0) {
       return;
     }
@@ -350,7 +360,7 @@ export function SimulationWizard({
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [automaticModelSync, mode, syncRequest, topologySignature]);
+  }, [automaticModelSync, mode, syncRequest, topology.nodes.length, topologySignature, workflowLoaded]);
 
   const domain = useMemo(
     () => catalog?.domains.find((item) => item.id === domainId),
@@ -611,9 +621,11 @@ export function SimulationWizard({
                       ? "Wird synchronisiert …"
                       : engineeringSync.status === "synced"
                         ? `${engineeringSync.linked}/${topology.nodes.length} Geräte verknüpft`
-                        : engineeringSync.status === "error"
+                      : engineeringSync.status === "error"
                           ? "Synchronisierung fehlgeschlagen"
-                          : "Noch nicht synchronisiert"}
+                          : topology.nodes.length === 0
+                            ? "Keine Geräte vorhanden"
+                            : "Noch nicht synchronisiert"}
                   </strong>
                 </div>
               </div>
@@ -621,7 +633,7 @@ export function SimulationWizard({
                 <Link href="/studio/engineering">Modell öffnen ↗</Link>
                 <button
                   className="net-add"
-                  disabled={engineeringSync.status === "syncing"}
+                  disabled={!workflowLoaded || topology.nodes.length === 0 || engineeringSync.status === "syncing"}
                   onClick={() => setSyncRequest((request) => request + 1)}
                   type="button"
                 >

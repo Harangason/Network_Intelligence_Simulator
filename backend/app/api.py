@@ -8,6 +8,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, request, send_file
 
 from .job_service import JOBS
+from .runtime_config import runtime_status
 from ..engineering.workflow.service import WorkflowStatusService
 
 
@@ -16,7 +17,12 @@ api = Blueprint("api", __name__)
 
 @api.route("/health", methods=["GET"])
 def health():
-    response = {"status": "ok", "service": "communication-simulator"}
+    response = {
+        "status": "ok",
+        "service": "communication-simulator",
+        "runtime": runtime_status(),
+        "jobs": JOBS.runtime_summary(),
+    }
     instance_id = os.environ.get("SIMULATOR_INSTANCE_ID")
     if instance_id:
         response["instance_id"] = instance_id

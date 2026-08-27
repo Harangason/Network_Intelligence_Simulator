@@ -22,4 +22,3 @@ runtime simulation. Simulation observations are linked back to the route through
 
 Validation never changes approval. Editing path-affecting fields clears previous
 validation, returning the route to draft review.
-

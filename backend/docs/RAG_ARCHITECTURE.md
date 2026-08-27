@@ -30,5 +30,10 @@ hybrid principles. `POST /api/engineering/knowledge/search` exposes the read-onl
 pipeline to the Engineering Agent.
 
 The local exact vector index and hashed semantic baseline are development
-implementations. pgvector, Qdrant, FAISS or a hosted embedding/reranking model can
-replace them without changing Engineering persistence or governance.
+implementations. The v2 local embedding enriches normalized German and English
+surface words with weighted engineering concept axes for canonical object types,
+relations, workflow actions, status terms, routing, and API contracts. This keeps
+phrases such as `Schnittstelle zuordnen` and `HAS_INTERFACE` in the same local
+vector region without auto-merging entities. pgvector, Qdrant, FAISS or a hosted
+embedding/reranking model can replace it without changing Engineering persistence
+or governance.

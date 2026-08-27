@@ -341,11 +341,18 @@ class RoutingValidator:
 
     def validate_table(self, routes: list[dict[str, Any]]) -> dict[str, Any]:
         results = [self.validate(route, exclude_route_id=str(route.get("id")) if route.get("id") else None) for route in routes]
+        table_errors = [] if results else [
+            {
+                "code": "ROUTING_TABLE_EMPTY",
+                "message": "Die Routing-Tabelle enthaelt noch keine Route.",
+            }
+        ]
         return {
-            "valid": all(result["valid"] for result in results),
+            "valid": bool(results) and all(result["valid"] for result in results),
             "route_count": len(routes),
             "valid_count": sum(1 for result in results if result["valid"]),
-            "error_count": sum(len(result["errors"]) for result in results),
+            "error_count": len(table_errors) + sum(len(result["errors"]) for result in results),
             "warning_count": sum(len(result["warnings"]) for result in results),
+            "table_errors": table_errors,
             "results": results,
         }

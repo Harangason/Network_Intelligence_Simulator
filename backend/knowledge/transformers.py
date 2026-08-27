@@ -5,12 +5,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from hashlib import sha256
 from math import sqrt
-import re
 from typing import Any
+
+from .semantic_vocabulary import EngineeringSemanticVocabulary, engineering_tokens
 
 
 def tokenize(value: str) -> list[str]:
-    return [token for token in re.findall(r"[a-z0-9]+", value.lower()) if len(token) > 1]
+    return engineering_tokens(value)
 
 
 def cosine(left: list[float], right: list[float]) -> float:
@@ -44,22 +45,25 @@ class LocalTransformerService(TransformerService):
     replace it through the same contract without changing knowledge or business code.
     """
 
-    model_name = "local-hashed-engineering-embedding-v1"
+    model_name = "local-hashed-engineering-embedding-v2"
 
-    def __init__(self, dimensions: int = 256) -> None:
+    def __init__(
+        self,
+        dimensions: int = 256,
+        vocabulary: EngineeringSemanticVocabulary | None = None,
+    ) -> None:
         if dimensions < 32:
             raise ValueError("dimensions must be at least 32.")
         self.dimensions = dimensions
+        self.vocabulary = vocabulary or EngineeringSemanticVocabulary()
 
     def _embed_one(self, text: str) -> list[float]:
-        tokens = tokenize(text)
-        features = [*tokens, *(f"{left}_{right}" for left, right in zip(tokens, tokens[1:]))]
         vector = [0.0] * self.dimensions
-        for feature in features:
+        for feature, weight in self.vocabulary.vector_features(text):
             digest = sha256(feature.encode("utf-8")).digest()
             index = int.from_bytes(digest[:4], "big") % self.dimensions
             sign = 1.0 if digest[4] % 2 == 0 else -1.0
-            vector[index] += sign
+            vector[index] += sign * weight
         norm = sqrt(sum(value * value for value in vector))
         return [value / norm for value in vector] if norm else vector
 
@@ -67,12 +71,12 @@ class LocalTransformerService(TransformerService):
         return [self._embed_one(str(text)) for text in texts]
 
     def rerank(self, query: str, candidates: list[dict[str, Any]], *, limit: int = 20) -> list[dict[str, Any]]:
-        query_tokens = set(tokenize(query))
+        query_tokens = self.vocabulary.lexical_features(query)
         query_vector = self._embed_one(query)
         ranked = []
         for candidate in candidates:
             text = str(candidate.get("text") or candidate.get("name") or candidate.get("reason") or "")
-            candidate_tokens = set(tokenize(text))
+            candidate_tokens = self.vocabulary.lexical_features(text)
             lexical = len(query_tokens & candidate_tokens) / max(1, len(query_tokens))
             semantic = cosine(query_vector, self._embed_one(text))
             prior = float(candidate.get("score") or 0.0)

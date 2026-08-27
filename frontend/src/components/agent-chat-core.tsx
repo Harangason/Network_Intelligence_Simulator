@@ -5,7 +5,15 @@ import { DefaultChatTransport } from "ai";
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { EngineeringAgentUIMessage } from "@/lib/agent/engineering-agent";
 import { getCatalog } from "@/lib/api";
-import type { TechnologyDomain } from "@/lib/types";
+import {
+  ENGINEERING_AGENT_PENDING_TASK_KEY,
+  ENGINEERING_AGENT_TASK_EVENT,
+  takePendingEngineeringAgentTask,
+  type EngineeringAgentTask,
+} from "@/lib/agent-task-events";
+import { inspectAgentText } from "@/lib/agent/agent-output-safety";
+import { publishEngineeringModelChanged } from "@/lib/engineering-events";
+import type { EngineeringResource, TechnologyDomain } from "@/lib/types";
 import { readActiveProjectId } from "@/lib/user-settings";
 import { AgentToolResult } from "./agent-tool-result";
 
@@ -21,38 +29,20 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
     transport,
   });
   const [input, setInput] = useState("");
-  const [handledQuestionnaires, setHandledQuestionnaires] = useState<string[]>([]);
-  const [forcedQuestionnaire, setForcedQuestionnaire] = useState<GuidedQuestionnaire | null>(null);
-  const [projectBrief, setProjectBrief] = useState("");
   const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const publishedToolResultsRef = useRef(new Set<string>());
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!input.trim() || status !== "ready") return;
-    const text = projectBrief
-      ? `${projectBrief}\n\nKonkrete Aufgabe des Nutzers, per Senden bestaetigt:\n${input.trim()}\n\nStarte jetzt die Analyse und arbeite selbststaendig bis zum genannten Ziel. Warte nicht auf weitere Kommandos, ausser Human Review oder eine echte fachliche Entscheidung blockiert den naechsten Schritt.`
-      : input.trim();
-    sendMessage({ text });
-    if (projectBrief) {
-      setProjectBrief("");
-      window.sessionStorage.removeItem("networkis:agent-project-brief");
-    }
+    sendMessage({ text: input.trim() });
     setInput("");
   }
 
   const busy = status === "submitted" || status === "streaming";
   const activityEntries = useMemo(() => buildAgentActivity(messages, busy, error?.message), [messages, busy, error]);
   const confirmationRequest = useMemo(() => findPendingConfirmation(messages), [messages]);
-  const guidedQuestionnaire = useMemo(() => {
-    if (status !== "ready") return null;
-    if (forcedQuestionnaire && !handledQuestionnaires.includes(forcedQuestionnaire.key)) {
-      return forcedQuestionnaire;
-    }
-    const questionnaire = findGuidedQuestionnaire(messages);
-    if (!questionnaire || handledQuestionnaires.includes(questionnaire.key)) return null;
-    return questionnaire;
-  }, [forcedQuestionnaire, messages, handledQuestionnaires, status]);
 
   useEffect(() => {
     const thread = threadRef.current;
@@ -60,10 +50,20 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
   }, [messages, busy]);
 
   useEffect(() => {
-    setHandledQuestionnaires(readHandledQuestionnaires());
-    setForcedQuestionnaire(readForcedQuestionnaire());
-    setProjectBrief(readProjectBrief());
-  }, []);
+    messages.forEach((message) => {
+      message.parts.forEach((part, index) => {
+        if (!part.type.startsWith("tool-")) return;
+        const toolPart = part as { state: string; output?: unknown; toolCallId?: string };
+        if (toolPart.state !== "output-available") return;
+        const resultKey = toolPart.toolCallId ?? `${message.id}:${index}`;
+        if (publishedToolResultsRef.current.has(resultKey)) return;
+        publishedToolResultsRef.current.add(resultKey);
+        for (const item of canonicalObjectsFromToolOutput(toolPart.output)) {
+          publishEngineeringModelChanged(item);
+        }
+      });
+    });
+  }, [messages]);
 
   useEffect(() => {
     const ask = (event: Event) => {
@@ -75,51 +75,21 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
   }, [sendMessage, status]);
 
   useEffect(() => {
-    function resetQuestionnaireState() {
-      setHandledQuestionnaires([]);
-      window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
-    }
-
-    function forceStartQuestionnaire(projectId: string) {
-      const next: GuidedQuestionnaire = {
-        key: `full:new-project:${projectId}`,
-        mode: "full",
-        title: "Technische Vorgaben",
-      };
-      setForcedQuestionnaire(next);
-      window.sessionStorage.setItem("networkis:forced-agent-questionnaire", JSON.stringify(next));
-    }
-
-    function openNewProjectQuestionnaire(projectId: string) {
-      resetQuestionnaireState();
-      forceStartQuestionnaire(projectId);
-      return true;
-    }
-
-    const handleNewProject = (event: Event) => {
-      const detail = (event as CustomEvent<{ projectId?: string }>).detail;
-      const projectId = detail?.projectId ?? readActiveProjectId();
-      if (openNewProjectQuestionnaire(projectId)) {
-        window.sessionStorage.removeItem("networkis:pending-agent-new-project");
-      }
+    const runTask = (task: EngineeringAgentTask) => {
+      if (!task.text.trim() || status !== "ready") return;
+      window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
+      void sendMessage({ text: task.text });
     };
-
-    window.addEventListener("engineering-agent:new-project", handleNewProject);
-    const pending = window.sessionStorage.getItem("networkis:pending-agent-new-project");
-    if (pending) {
-      let projectId = readActiveProjectId();
-      try {
-        const detail = JSON.parse(pending) as { projectId?: string };
-        projectId = detail.projectId ?? projectId;
-      } catch {
-        window.sessionStorage.removeItem("networkis:pending-agent-new-project");
-      }
-      if (openNewProjectQuestionnaire(projectId)) {
-        window.sessionStorage.removeItem("networkis:pending-agent-new-project");
-      }
+    const handleTask = (event: Event) => {
+      runTask((event as CustomEvent<EngineeringAgentTask>).detail);
+    };
+    window.addEventListener(ENGINEERING_AGENT_TASK_EVENT, handleTask);
+    if (status === "ready") {
+      const pending = takePendingEngineeringAgentTask();
+      if (pending) runTask(pending);
     }
-    return () => window.removeEventListener("engineering-agent:new-project", handleNewProject);
-  }, []);
+    return () => window.removeEventListener(ENGINEERING_AGENT_TASK_EVENT, handleTask);
+  }, [sendMessage, status]);
 
   useEffect(() => {
     const textarea = inputRef.current;
@@ -137,26 +107,11 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
 
   function allowRequestedAction() {
     if (!confirmationRequest || status !== "ready") return;
-    void sendMessage({ text: "Bestätigt. Bitte fahre mit dem vorgeschlagenen nächsten Schritt fort." });
-  }
-
-  function handleGuidedQuestionnaireSubmit(key: string, text: string, startAgent = false) {
-    if (status !== "ready") return;
-    const next = Array.from(new Set([...handledQuestionnaires, key]));
-    setHandledQuestionnaires(next);
-    window.sessionStorage.setItem("networkis:handled-agent-questionnaires", JSON.stringify(next));
-    if (forcedQuestionnaire?.key === key) {
-      setForcedQuestionnaire(null);
-      window.sessionStorage.removeItem("networkis:forced-agent-questionnaire");
-    }
-    if (startAgent) {
-      sendMessage({ text });
-      setProjectBrief("");
-      window.sessionStorage.removeItem("networkis:agent-project-brief");
-      return;
-    }
-    setProjectBrief(text);
-    window.sessionStorage.setItem("networkis:agent-project-brief", text);
+    void sendMessage({
+      text: confirmationRequest.recovery
+        ? "Setze den zuletzt begonnenen Auftrag jetzt fort. Verwende ausschließlich die bereitgestellten Simulator-Tools und arbeite bis zu einem echten Ergebnis oder einem klar sichtbaren Review-Gate."
+        : "Bestätigt. Bitte fahre mit dem vorgeschlagenen nächsten Schritt fort.",
+    });
   }
 
   return (
@@ -177,7 +132,11 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
               <span className="eng-agent-role">{message.role === "user" ? "Du" : "Engineering-Agent"}</span>
               <div className="eng-agent-bubble">
                 {message.parts.map((part, index) => (
-                  <MessagePart key={`${message.id}-${index}`} part={part} />
+                  <MessagePart
+                    hideText={message.role === "assistant" && hasCompactEngineeringResult(message.parts)}
+                    key={`${message.id}-${index}`}
+                    part={part}
+                  />
                 ))}
               </div>
             </div>
@@ -208,30 +167,21 @@ export function AgentChatCore({ compact = false }: { compact?: boolean }) {
 
       {activityEntries.length > 0 && <AgentActivityLog entries={activityEntries} />}
 
-      {guidedQuestionnaire && (
-        <AgentGuidedQuestionnaire
-          busy={busy}
-          mode={guidedQuestionnaire.mode}
-          onSubmit={(text) => handleGuidedQuestionnaireSubmit(guidedQuestionnaire.key, text, true)}
-          title={guidedQuestionnaire.title}
-        />
-      )}
-
-      {confirmationRequest && !guidedQuestionnaire && (
+      {confirmationRequest && (
         <div className="eng-agent-approval">
           <div>
             <strong>Bestätigung erforderlich</strong>
-            <span>Der Agent wartet auf deine Freigabe für den vorgeschlagenen nächsten Schritt.</span>
+            <span>
+              {confirmationRequest.proposalCount > 0
+                ? `${confirmationRequest.proposalCount} ${confirmationRequest.proposalCount === 1 ? "Objekt wartet" : "Objekte warten"} am Review-Gate auf Freigabe.`
+                : confirmationRequest.recovery
+                  ? "Die letzte Agent-Ausgabe wurde verworfen. Der ursprüngliche Auftrag ist noch offen und kann kontrolliert mit Simulator-Tools fortgesetzt werden."
+                : "Der Agent wartet auf deine Freigabe für den vorgeschlagenen nächsten Schritt."}
+            </span>
           </div>
           <button className="button primary" disabled={busy} onClick={allowRequestedAction} type="button">
-            Allow
+            {confirmationRequest.recovery ? "Fortsetzen" : "Allow"}
           </button>
-        </div>
-      )}
-
-      {projectBrief && !guidedQuestionnaire && (
-        <div className="notice info">
-          Technische Vorgaben übernommen. Bitte gib jetzt die konkrete Aufgabe ein und bestätige sie mit Senden.
         </div>
       )}
 
@@ -259,13 +209,6 @@ type AgentActivityEntry = {
   kind: "request" | "goal" | "assumption" | "tool" | "decision" | "answer" | "status" | "error";
   title: string;
   detail: string;
-};
-
-type GuidedQuestionnaire = {
-  key: string;
-  messageId?: string;
-  mode: "full" | "can";
-  title: string;
 };
 
 type TaskAttachment = {
@@ -366,7 +309,7 @@ const PROCESS_GROUP: ChoiceGroup = {
     ],
 };
 
-function AgentGuidedQuestionnaire({
+export function EngineeringAgentWizard({
   busy,
   mode,
   onSubmit,
@@ -846,120 +789,83 @@ function findPendingConfirmation(messages: EngineeringAgentUIMessage[]) {
     const message = messages[index];
     if (message.role === "user") return null;
     if (message.role !== "assistant") continue;
-    const text = textFromParts(message.parts).toLowerCase();
-    if (text.includes("bitte bestätigen") || text.includes("soll ich") || text.includes("möchtest du")) {
-      return { messageId: message.id };
+    const text = textFromParts(message.parts);
+    if (inspectAgentText(text).blocked) {
+      return { messageId: message.id, proposalCount: 0, recovery: true };
+    }
+    let proposalCount = 0;
+    let approvedInMessage = false;
+    for (const part of message.parts) {
+      if (!part.type.startsWith("tool-")) continue;
+      const toolPart = part as { type: string; state: string; output?: unknown };
+      if (toolPart.state !== "output-available") continue;
+      if (toolPart.type.includes("approveEngineeringProposal") || toolPart.type.includes("approveAllValidEngineeringProposals")) {
+        approvedInMessage = true;
+      }
+      if (toolPart.type === "tool-proposeEngineeringObject" || toolPart.type === "tool-proposeEngineeringRelation") {
+        const output = toolPart.output && typeof toolPart.output === "object"
+          ? toolPart.output as Record<string, unknown>
+          : {};
+        const canonicalObjects = Array.isArray(output.canonical_objects) ? output.canonical_objects : [];
+        const proposal = output.proposal && typeof output.proposal === "object"
+          ? output.proposal as Record<string, unknown>
+          : {};
+        if (!canonicalObjects.length && proposal.status !== "APPROVED") proposalCount += 1;
+      }
+      if (toolPart.type === "tool-inspectEngineeringProposals" && toolPart.output && typeof toolPart.output === "object") {
+        const items = (toolPart.output as { items?: unknown[] }).items ?? [];
+        proposalCount += items.filter((item) => {
+          if (!item || typeof item !== "object") return false;
+          return !["APPROVED", "REJECTED", "SUPERSEDED"].includes(
+            String((item as Record<string, unknown>).status ?? ""),
+          );
+        }).length;
+      }
+    }
+    if (approvedInMessage) return null;
+    if (proposalCount > 0) return { messageId: message.id, proposalCount };
+    const normalizedText = text.toLowerCase();
+    if (normalizedText.includes("bitte bestätigen") || normalizedText.includes("soll ich") || normalizedText.includes("möchtest du")) {
+      return { messageId: message.id, proposalCount: 0 };
     }
   }
   return null;
-}
-
-function readForcedQuestionnaire(): GuidedQuestionnaire | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const parsed = JSON.parse(window.sessionStorage.getItem("networkis:forced-agent-questionnaire") ?? "null") as Partial<GuidedQuestionnaire> | null;
-    if (!parsed || !parsed.key || (parsed.mode !== "full" && parsed.mode !== "can") || !parsed.title) return null;
-    return {
-      key: parsed.key,
-      mode: parsed.mode,
-      title: parsed.title,
-    };
-  } catch {
-    window.sessionStorage.removeItem("networkis:forced-agent-questionnaire");
-    return null;
-  }
-}
-
-function readHandledQuestionnaires() {
-  if (typeof window === "undefined") return [];
-  try {
-    const parsed = JSON.parse(window.sessionStorage.getItem("networkis:handled-agent-questionnaires") ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
-  } catch {
-    window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
-    return [];
-  }
-}
-
-function readProjectBrief() {
-  if (typeof window === "undefined") return "";
-  return window.sessionStorage.getItem("networkis:agent-project-brief") ?? "";
-}
-
-function findGuidedQuestionnaire(messages: EngineeringAgentUIMessage[]) {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message.role === "user") return null;
-    if (message.role !== "assistant") continue;
-    const text = textFromParts(message.parts).toLowerCase();
-    if (text.includes("ich fahre jetzt") || text.includes("ich beginne jetzt") || text.includes("sonst werden")) {
-      return null;
-    }
-    const asksForChoices =
-      /hast du .*?\?/.test(text) ||
-      /welche .*?\?/.test(text) ||
-      /soll ich .*?\?/.test(text) ||
-      text.includes("bitte wähle") ||
-      text.includes("bitte waehle") ||
-      text.includes("bitte auswählen") ||
-      text.includes("bitte auswaehlen");
-    const engineeringTopic =
-      text.includes("sensor") ||
-      text.includes("ecu") ||
-      text.includes("gateway") ||
-      text.includes("can") ||
-      text.includes("ethernet") ||
-      text.includes("schnittstelle") ||
-      text.includes("bus");
-    const choiceTopic =
-      text.includes("spezielle wünsche") ||
-      text.includes("netzwerktechnologien") ||
-      text.includes("industrie") ||
-      text.includes("plausible defaults") ||
-      text.includes("technologien");
-    if (asksForChoices && engineeringTopic && choiceTopic) {
-      const previousUserText = textFromParts(findPreviousUserMessage(messages, index)?.parts ?? []).toLowerCase();
-      const isNewProjectStart = previousUserText.includes("neues projekt gestartet");
-      const asksForIndustry =
-        text.includes("industrie") ||
-        text.includes("zielbranche") ||
-        text.includes("branche") ||
-        text.includes("domain") ||
-        text.includes("bereich");
-      const asksForModelBasics =
-        text.includes("sensor") &&
-        text.includes("ecu") &&
-        (text.includes("gateway") || text.includes("topologie") || text.includes("grundobjekte"));
-      const isCanFollowUp =
-        !isNewProjectStart &&
-        !asksForIndustry &&
-        !asksForModelBasics &&
-        (/\bcan[\s-]?(fd|xl)?\b/.test(text) || text.includes("can-fd"));
-      const mode = isCanFollowUp ? "can" : "full";
-      return {
-        key: isNewProjectStart ? `full:new-project:${stableQuestionKey(previousUserText)}` : `${mode}:${stableQuestionKey(text)}`,
-        messageId: message.id,
-        mode,
-        title: mode === "can" ? "CAN-Vorgaben" : "Technische Vorgaben",
-      } as const;
-    }
-  }
-  return null;
-}
-
-function findPreviousUserMessage(messages: EngineeringAgentUIMessage[], beforeIndex: number) {
-  for (let index = beforeIndex - 1; index >= 0; index -= 1) {
-    if (messages[index].role === "user") return messages[index];
-  }
-  return null;
-}
-
-function stableQuestionKey(text: string) {
-  return text.replace(/\s+/g, " ").trim().slice(0, 220);
 }
 
 function textFromParts(parts: EngineeringAgentUIMessage["parts"]) {
   return parts.filter((part) => part.type === "text").map((part) => part.text).join(" ");
+}
+
+function hasCompactEngineeringResult(parts: EngineeringAgentUIMessage["parts"]) {
+  return parts.some((part) => (
+    part.type === "tool-createEngineeringChain"
+    || part.type === "tool-createEngineeringModelFromSpecification"
+    || part.type === "tool-createRoutableEngineeringPair"
+    || part.type === "tool-proposeEngineeringObject"
+    || part.type === "tool-proposeEngineeringRelation"
+  ));
+}
+
+function canonicalObjectsFromToolOutput(output: unknown) {
+  if (!output || typeof output !== "object") return [];
+  const items = (output as { canonical_objects?: unknown[] }).canonical_objects;
+  if (!Array.isArray(items)) return [];
+  const resources = new Set<EngineeringResource | "relations">([
+    "hardware-nodes",
+    "functions",
+    "interfaces",
+    "messages",
+    "signals",
+    "relations",
+  ]);
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const value = item as Record<string, unknown>;
+    const resource = String(value.resource ?? "") as EngineeringResource | "relations";
+    const id = String(value.id ?? "");
+    if (!resources.has(resource) || !id) return [];
+    return [{ resource, id, name: String(value.name ?? "Engineering-Objekt") }];
+  });
 }
 
 function trimActivityText(text: string) {
@@ -972,8 +878,11 @@ function toolLabel(type: string) {
   const labels: Record<string, string> = {
     listEngineeringObjects: "Engineering-Objekte gelesen",
     listEngineeringRelations: "Engineering-Relationen gelesen",
-    proposeEngineeringObject: "Objektvorschlag erzeugt",
-    proposeEngineeringRelation: "Relationsvorschlag erzeugt",
+    createEngineeringChain: "Engineering-Kette registriert",
+    createEngineeringModelFromSpecification: "Spezifikation ins Engineering-Modell übernommen",
+    createRoutableEngineeringPair: "Routing-Paket registriert",
+    proposeEngineeringObject: "Engineering-Objekt registriert",
+    proposeEngineeringRelation: "Engineering-Relation registriert",
     inspectEngineeringProposals: "Engineering-Vorschläge gelesen",
     validateEngineeringProposal: "Engineering-Vorschlag validiert",
     approveEngineeringProposal: "Engineering-Vorschlag übernommen",
@@ -1001,14 +910,14 @@ function inferAgentGoal(text: string) {
   if (lower.includes("interface") || lower.includes("schnittstelle") || lower.includes("can") || lower.includes("ethernet")) return "Schnittstellen und Bus-Technik im Engineering-Modell prüfen.";
   if (lower.includes("valid") || lower.includes("fehler") || lower.includes("konflikt") || lower.includes("preflight")) return "Technische Befunde finden, Ursache benennen und nächste Reparaturentscheidung ableiten.";
   if (lower.includes("kapaz") || lower.includes("latenz") || lower.includes("jitter") || lower.includes("timing")) return "Capacity- und Timing-Daten auswerten und Engpässe erklären.";
-  if (lower.includes("vorschlag") || lower.includes("erstelle") || lower.includes("schlage")) return "Einen prüfbaren Proposal-Datensatz erzeugen, ohne das freigegebene Modell direkt zu verändern.";
+  if (lower.includes("vorschlag") || lower.includes("erstelle") || lower.includes("schlage")) return "Engineering-Inhalte mit Auditspur erzeugen und valide Ergebnisse direkt im kanonischen Modell registrieren.";
   return "Nutzerfrage im aktiven Projektkontext beantworten und dafür benötigte Engineering-Daten lesen.";
 }
 
 function inferAgentAssumption(text: string, goal: string) {
   const lower = text.toLowerCase();
   if (goal.includes("Proposal") || lower.includes("neu") || lower.includes("erstelle") || lower.includes("schlage")) {
-    return "Neue Inhalte werden als Vorschlag angelegt; Freigabe und Übernahme bleiben beim Menschen.";
+    return "Neue Engineering-Inhalte werden als Proposal auditiert, validiert und unmittelbar kanonisch registriert.";
   }
   if (lower.includes("aktuell") || lower.includes("jetzt") || lower.includes("status")) {
     return "Der Agent nutzt den aktiven Projekt- und Workflow-Kontext als maßgebliche Quelle.";
@@ -1025,8 +934,10 @@ function toolPurpose(type: string) {
     inspect_workflow: "Warum: aktiven Workflow, Projekt und Selektion feststellen.",
     listEngineeringObjects: "Warum: vorhandene Modellobjekte prüfen, bevor neue Vorschläge entstehen.",
     listEngineeringRelations: "Warum: Beziehungen im Engineering-Graphen nachvollziehen.",
-    proposeEngineeringObject: "Warum: neues Objekt als überprüfbaren Vorschlag speichern.",
-    proposeEngineeringRelation: "Warum: neue Beziehung als überprüfbaren Vorschlag speichern.",
+    createEngineeringChain: "Warum: die vollständige Elternkette bis zum Signal in einem konsistenten Lauf registrieren.",
+    createRoutableEngineeringPair: "Warum: Producer, Consumer, Payload und Routingvorschlag in einem konsistenten Lauf registrieren.",
+    proposeEngineeringObject: "Warum: neues Objekt auditieren, validieren und kanonisch registrieren.",
+    proposeEngineeringRelation: "Warum: neue Beziehung auditieren, validieren und kanonisch registrieren.",
     inspectEngineeringProposals: "Warum: offene Vorschläge für die Übernahme ins Modell prüfen.",
     validateEngineeringProposal: "Warum: Vorschlag technisch prüfen, bevor echte Objekte angelegt werden.",
     approveEngineeringProposal: "Warum: bestätigten Vorschlag ins kanonische Modell übernehmen.",
@@ -1048,6 +959,12 @@ function toolPurpose(type: string) {
 function toolOutcomeDecision(type: string, output: unknown) {
   if (!output || typeof output !== "object") return "Ergebnis ist unstrukturiert; der Agent muss es vorsichtig zusammenfassen.";
   const value = output as Record<string, unknown>;
+  if (value.blocked === true) {
+    return `Schritt ist blockiert: ${String(value.reason ?? "Voraussetzungen fehlen.")}`;
+  }
+  if (Array.isArray(value.canonical_objects)) {
+    return `${value.canonical_objects.length} Engineering-${value.canonical_objects.length === 1 ? "Eintrag wurde" : "Einträge wurden"} kanonisch registriert.`;
+  }
   if (typeof value.valid === "boolean") {
     return value.valid ? "Validierung bestanden; Freigabe oder nächster Workflow-Schritt ist möglich." : "Validierung hat Befunde; Ursache und Reparaturschritt müssen benannt werden.";
   }
@@ -1060,7 +977,7 @@ function toolOutcomeDecision(type: string, output: unknown) {
   if (Array.isArray(value.items)) {
     return value.items.length > 0 ? "Objekte gefunden; Auswahl oder Zusammenfassung kann erfolgen." : "Keine Objekte gefunden; Annahmen müssen vermieden werden.";
   }
-  if (value.proposal || value.proposal_id) return "Vorschlag wurde erzeugt; menschliche Prüfung/Freigabe bleibt erforderlich.";
+  if (value.proposal || value.proposal_id) return "Proposal-Auditspur wurde gespeichert; der Registrierungsstatus muss aus dem Ergebnis gelesen werden.";
   if (typeof value.status === "string") return `Status '${value.status}' gelesen; nächste Antwort muss diesen Status berücksichtigen.`;
   const name = type.replace("tool-", "");
   if (name.includes("inspect")) return "Kontext wurde gelesen; der Agent sollte daraus eine konkrete Aussage ableiten.";
@@ -1086,21 +1003,41 @@ function summarizeToolInput(input: unknown) {
   return hints.length ? `: ${hints.join(" · ")}.` : ".";
 }
 
-function MessagePart({ part }: { part: EngineeringAgentUIMessage["parts"][number] }) {
+function MessagePart({
+  hideText = false,
+  part,
+}: {
+  hideText?: boolean;
+  part: EngineeringAgentUIMessage["parts"][number];
+}) {
   if (part.type === "text") {
-    return <p className="eng-agent-text">{part.text}</p>;
+    const text = inspectAgentText(part.text).displayText;
+    return hideText || !text ? null : <p className="eng-agent-text">{text}</p>;
   }
 
   if (part.type === "tool-listEngineeringObjects" || part.type === "tool-listEngineeringRelations") {
-    return <ToolCallCard label="Suche im Engineering-Modell" part={part} />;
+    return null;
   }
 
   if (part.type === "tool-proposeEngineeringObject") {
-    return <ToolCallCard label="Vorschlag: neues Objekt" part={part} />;
+    return <ObjectStatusRow part={part} />;
+  }
+
+  if (part.type === "tool-createEngineeringChain" || part.type === "tool-createRoutableEngineeringPair") {
+    return <EngineeringChainStatusRows part={part} />;
   }
 
   if (part.type === "tool-proposeEngineeringRelation") {
-    return <ToolCallCard label="Vorschlag: neue Relation" part={part} />;
+    return <ToolCallCard details={false} label="Relation modelliert" part={part} />;
+  }
+
+  if (
+    part.type === "tool-inspectEngineeringProposals"
+    || part.type === "tool-validateEngineeringProposal"
+    || part.type === "tool-approveEngineeringProposal"
+    || part.type === "tool-approveAllValidEngineeringProposals"
+  ) {
+    return null;
   }
 
   if (part.type.startsWith("tool-")) {
@@ -1114,9 +1051,11 @@ function MessagePart({ part }: { part: EngineeringAgentUIMessage["parts"][number
 }
 
 function ToolCallCard({
+  details = true,
   label,
   part,
 }: {
+  details?: boolean;
   label: string;
   part: { state: string; input?: unknown; output?: unknown; errorText?: string };
 }) {
@@ -1130,10 +1069,12 @@ function ToolCallCard({
       {part.state === "output-available" && (
         <>
           <p className="eng-agent-tool-summary">{outputSummary}</p>
-          <details className="eng-agent-tool-details">
-            <summary>Ergebnis anzeigen</summary>
-            <AgentToolResult output={part.output} />
-          </details>
+          {details && (
+            <details className="eng-agent-tool-details">
+              <summary>Details</summary>
+              <AgentToolResult output={part.output} />
+            </details>
+          )}
         </>
       )}
       {part.state === "output-error" && <span className="notice error">{part.errorText}</span>}
@@ -1141,9 +1082,92 @@ function ToolCallCard({
   );
 }
 
+function ObjectStatusRow({
+  part,
+}: {
+  part: { state: string; input?: unknown; output?: unknown; errorText?: string };
+}) {
+  const input = part.input && typeof part.input === "object" ? part.input as Record<string, unknown> : {};
+  const output = part.output && typeof part.output === "object" ? part.output as Record<string, unknown> : {};
+  const proposal = output.proposal && typeof output.proposal === "object"
+    ? output.proposal as Record<string, unknown>
+    : {};
+  const proposedObjects = Array.isArray(proposal.proposed_objects) ? proposal.proposed_objects : [];
+  const proposedObject = proposedObjects.find((item) => item && typeof item === "object") as Record<string, unknown> | undefined;
+  const name = String(proposedObject?.name ?? input.name ?? "Engineering-Objekt");
+  const canonicalObjects = canonicalObjectsFromToolOutput(part.output);
+  const statuses = part.state === "output-error"
+    ? ["Fehler"]
+    : part.state === "output-available"
+      ? canonicalObjects.length
+        ? ["gefunden", "modelliert", "registriert"]
+        : ["gefunden", "modelliert", "Registrierung offen"]
+      : ["gefunden", "wird modelliert"];
+
+  return (
+    <div className={`eng-agent-object-status ${part.state === "output-error" ? "error" : ""}`}>
+      <strong>{name}</strong>
+      <span>{statuses.join(" · ")}</span>
+      {part.state === "output-error" && <small>{part.errorText ?? "Objekt konnte nicht registriert werden."}</small>}
+    </div>
+  );
+}
+
+function EngineeringChainStatusRows({
+  part,
+}: {
+  part: { state: string; input?: unknown; output?: unknown; errorText?: string };
+}) {
+  const input = part.input && typeof part.input === "object" ? part.input as Record<string, unknown> : {};
+  const pendingNames = [
+    input.hardware_name,
+    input.function_name,
+    input.interface_name,
+    input.message_name,
+    input.signal_name,
+  ].filter((name): name is string => typeof name === "string" && Boolean(name));
+  const source = input.source && typeof input.source === "object" ? input.source as Record<string, unknown> : {};
+  const destination = input.destination && typeof input.destination === "object"
+    ? input.destination as Record<string, unknown>
+    : {};
+  const pairNames = [
+    source.hardware_name,
+    source.function_name,
+    source.interface_name,
+    source.message_name,
+    source.signal_name,
+    destination.hardware_name,
+    destination.function_name,
+    destination.interface_name,
+  ].filter((name): name is string => typeof name === "string" && Boolean(name));
+  const canonicalObjects = canonicalObjectsFromToolOutput(part.output);
+  const items = canonicalObjects.length
+    ? canonicalObjects.map((item) => item.name)
+    : pendingNames.length ? pendingNames : pairNames;
+
+  return (
+    <div className="eng-agent-chain-status" aria-live="polite">
+      {items.map((name) => (
+        <div className={`eng-agent-object-status ${part.state === "output-error" ? "error" : ""}`} key={name}>
+          <strong>{name}</strong>
+          <span>
+            {part.state === "output-error"
+              ? "Fehler"
+              : part.state === "output-available"
+                ? "gefunden · modelliert · registriert"
+                : "gefunden · wird modelliert"}
+          </span>
+        </div>
+      ))}
+      {part.state === "output-error" && <small className="notice error">{part.errorText ?? "Engineering-Kette konnte nicht registriert werden."}</small>}
+    </div>
+  );
+}
+
 function summarizeToolOutput(output: unknown): string {
   if (!output || typeof output !== "object") return "Analyse abgeschlossen.";
   const value = output as Record<string, unknown>;
+  if (value.blocked === true) return String(value.reason ?? "Voraussetzungen fehlen; Schritt wurde nicht ausgeführt.");
   if (typeof value.count === "number") {
     return `${value.count} ${value.count === 1 ? "Eintrag" : "Einträge"} gefunden.`;
   }

@@ -5,6 +5,11 @@ import { useState } from "react";
 import { openProjectBundleFromFile, saveProjectBundleToFile } from "@/lib/project-file";
 import { exportProjectBundle, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
 import { normalizeProjectId, readUserSettings, writeUserSettings } from "@/lib/user-settings";
+import {
+  ENGINEERING_AGENT_PENDING_TASK_KEY,
+  ENGINEERING_AGENT_PENDING_WIZARD_KEY,
+  requestEngineeringAgentWizard,
+} from "@/lib/agent-task-events";
 import { notifyWorkflowChanged } from "./workflow-header";
 
 type ProjectActionsProps = {
@@ -15,8 +20,9 @@ type ProjectActionsProps = {
 export function ProjectActions({ className = "project-actions", showMessage = true }: ProjectActionsProps) {
   const router = useRouter();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [busy, setBusy] = useState<"new" | "save" | "open" | "">("");
+  const [busy, setBusy] = useState<"new" | "clear" | "save" | "open" | "">("");
   const [message, setMessage] = useState("");
 
   function setActiveProject(nextProjectId: string) {
@@ -30,15 +36,8 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   }
 
   function notifyAgentAboutNewProject(nextProjectId: string) {
-    const detail = { projectId: nextProjectId, createdAt: Date.now() };
-    window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
-    window.sessionStorage.removeItem("networkis:agent-project-brief");
-    window.sessionStorage.setItem(
-      "networkis:forced-agent-questionnaire",
-      JSON.stringify({ key: `full:new-project:${nextProjectId}`, mode: "full", title: "Technische Vorgaben" }),
-    );
-    window.sessionStorage.setItem("networkis:pending-agent-new-project", JSON.stringify(detail));
-    window.dispatchEvent(new CustomEvent("engineering-agent:new-project", { detail }));
+    window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
+    requestEngineeringAgentWizard(nextProjectId);
   }
 
   async function handleNew() {
@@ -91,6 +90,29 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     await saveProject();
   }
 
+  async function handleClear() {
+    setBusy("clear");
+    setMessage("");
+    try {
+      const current = readUserSettings().activeProject;
+      const reset = await resetProjectWorkspace(current);
+      setActiveProject(reset.project_id);
+      setClearDialogOpen(false);
+      window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
+      window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_WIZARD_KEY);
+      window.sessionStorage.removeItem("networkis:forced-agent-questionnaire");
+      window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
+      window.sessionStorage.removeItem("networkis:agent-project-brief");
+      window.sessionStorage.removeItem("networkis:pending-agent-new-project");
+      setMessage(`Geleert: ${reset.project_id}`);
+      window.location.reload();
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : "Workspace konnte nicht geleert werden.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function handleOpen() {
     setBusy("open");
     setMessage("");
@@ -115,9 +137,31 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       <div className={className}>
         {showMessage && message && <span className="project-file-message" role="status">{message}</span>}
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleNew()} type="button">Neu</button>
+        <button className="topbar-command danger" disabled={Boolean(busy)} onClick={() => setClearDialogOpen(true)} type="button">Clear</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleSave()} type="button">Speichern</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleOpen()} type="button">Öffnen</button>
       </div>
+
+      {clearDialogOpen && (
+        <div className="project-dialog-backdrop" role="presentation">
+          <section aria-labelledby="project-clear-title" aria-modal="true" className="project-dialog" role="dialog">
+            <div>
+              <p className="eyebrow">Workspace bereinigen</p>
+              <h2 id="project-clear-title">Aktives Projekt leeren?</h2>
+              <p>
+                Das kanonische Modell, Routing, Vorschläge, Analysen, Simulationen und der Workflowstatus
+                von <strong>{readUserSettings().activeProject}</strong> werden dauerhaft entfernt.
+              </p>
+            </div>
+            <div className="project-dialog-actions">
+              <button autoFocus className="button secondary" disabled={busy === "clear"} onClick={() => setClearDialogOpen(false)} type="button">Abbrechen</button>
+              <button className="button danger" disabled={busy === "clear"} onClick={() => void handleClear()} type="button">
+                {busy === "clear" ? "Wird geleert ..." : "Workspace leeren"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {saveDialogOpen && (
         <div className="project-dialog-backdrop" role="presentation">

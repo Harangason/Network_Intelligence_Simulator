@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   busProfiles,
   engineeringHardwareKind,
-  initialTopology,
   type BusType,
   type NetworkTopology,
   type NodeKind,
@@ -425,7 +424,7 @@ export function NetworkEditor({
         ? hardware.identity.topology_node_id
         : null;
     const preferredId = identityNodeId ?? (hardware ? `engineering-${hardware.id}` : null);
-    const extraIndex = Math.max(0, topology.nodes.length - initialTopology.nodes.length);
+    const extraIndex = topology.nodes.length;
     const node: TopologyNode = {
       id: preferredId && !topology.nodes.some((item) => item.id === preferredId)
         ? preferredId
@@ -832,5 +831,3 @@ export function NetworkEditor({
     </div>
   );
 }
-
-export { initialTopology };

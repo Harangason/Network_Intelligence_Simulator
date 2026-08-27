@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from psycopg.types.json import Jsonb
-
 from .db import get_connection
 from .models import (
     RELATABLE_OBJECT_TYPES,
@@ -119,11 +118,14 @@ def _canonical_id_from_proposal_reference(value: Any) -> str | None:
         validate_uuid(str(value))
     except (EngineeringValidationError, ValueError):
         return None
-    with get_connection() as conn:
-        row = conn.execute(
-            "SELECT proposed_objects FROM engineering_ai_proposals WHERE proposal_id = %s",
-            (str(value),),
-        ).fetchone()
+    try:
+        with get_connection() as conn:
+            row = conn.execute(
+                "SELECT proposed_objects FROM engineering_ai_proposals WHERE proposal_id = %s",
+                (str(value),),
+            ).fetchone()
+    except Exception:
+        return None
     if row is None:
         return None
     for item in row.get("proposed_objects") or []:

@@ -121,6 +121,15 @@ def test_unmapped_route_is_visible_without_becoming_an_automatic_approval():
     assert any(warning["code"] == "UNMAPPED_ROUTE" for warning in result["warnings"])
 
 
+def test_empty_routing_table_is_not_reported_as_valid():
+    result = FakeValidator().validate_table([])
+
+    assert result["valid"] is False
+    assert result["route_count"] == 0
+    assert result["error_count"] == 1
+    assert result["table_errors"][0]["code"] == "ROUTING_TABLE_EMPTY"
+
+
 def test_network_path_becomes_reviewable_gateway_routing_proposal():
     topology = {
         "nodes": [

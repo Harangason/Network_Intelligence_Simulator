@@ -86,6 +86,11 @@ class ProjectBundleService:
         target = normalize_project_id(project_id)
         with get_connection() as connection:
             with connection.transaction():
+                for table in reversed(PROJECT_TABLES):
+                    connection.execute(
+                        sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table)),
+                        (target,),
+                    )
                 connection.execute(
                     sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
                         sql.SQL(", ").join(sql.Identifier(table) for table in WORKSPACE_RESET_TABLES)
@@ -95,7 +100,7 @@ class ProjectBundleService:
                 self._refresh_sequences(connection)
         return {
             "project_id": target,
-            "cleared_tables": list(WORKSPACE_RESET_TABLES),
+            "cleared_tables": [*WORKSPACE_RESET_TABLES, *PROJECT_TABLES],
             "workflow": WorkflowStatusService(target).get(),
         }
 

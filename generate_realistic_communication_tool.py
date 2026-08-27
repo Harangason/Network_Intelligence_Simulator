@@ -24,6 +24,8 @@ BACKEND_PORT = 15050
 FRONTEND_HOST = "127.0.0.1"
 FRONTEND_PORT = 13500
 SERVICE_LOG_ROOT = ROOT / "backend" / "runtime" / "service-logs"
+DEFAULT_LOCAL_AI_URL = "http://127.0.0.1:11434/v1"
+DEFAULT_LOCAL_AI_MODEL = "qwen3.8:27b"
 
 
 def _wait_for_url(
@@ -140,6 +142,132 @@ def _frontend_dev_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str
     return [node, str(next_cli), "dev", "--webpack", "-p", str(port)]
 
 
+def _ollama_api_root(environment: dict[str, str]) -> str:
+    return environment.get("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL).rstrip("/").removesuffix("/v1")
+
+
+def _ollama_models(environment: dict[str, str]) -> list[str] | None:
+    try:
+        with urlopen(f"{_ollama_api_root(environment)}/api/tags", timeout=1.0) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return [
+            str(item.get("name") or item.get("model"))
+            for item in payload.get("models", [])
+            if isinstance(item, dict) and (item.get("name") or item.get("model"))
+        ]
+    except (OSError, URLError, UnicodeError, json.JSONDecodeError):
+        return None
+
+
+def _model_is_installed(requested: str, installed: list[str]) -> bool:
+    normalized = requested.lower().removesuffix(":latest")
+    return any(item.lower().removesuffix(":latest") == normalized for item in installed)
+
+
+def _ensure_local_ai(
+    environment: dict[str, str],
+    log_handle,
+) -> subprocess.Popen[object] | None:
+    provider = environment.get("AI_PROVIDER", "hybrid-demand").strip().lower()
+    if provider not in {"local", "ollama", "hybrid", "hybrid-demand"}:
+        return None
+
+    models = _ollama_models(environment)
+    owned_process: subprocess.Popen[object] | None = None
+    if models is None:
+        executable = shutil.which("ollama")
+        if executable is None:
+            raise RuntimeError(
+                "Ollama wurde nicht gefunden. Installiere Ollama und lade "
+                f"anschließend `{environment['LOCAL_AI_MODEL']}`."
+            )
+        owned_process = subprocess.Popen(
+            [executable, "serve"],
+            cwd=ROOT,
+            env=environment,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            **_popen_options(),
+        )
+        deadline = time.monotonic() + 15.0
+        while time.monotonic() < deadline:
+            models = _ollama_models(environment)
+            if models is not None:
+                break
+            if owned_process.poll() is not None:
+                break
+            time.sleep(0.25)
+    if models is None:
+        if owned_process is not None:
+            _terminate_process_tree(owned_process)
+        raise RuntimeError("Der lokale Ollama-Dienst wurde nicht bereit.")
+
+    requested_model = environment["LOCAL_AI_MODEL"]
+    if not _model_is_installed(requested_model, models):
+        if owned_process is not None:
+            _terminate_process_tree(owned_process)
+        raise RuntimeError(
+            f"Das lokale Modell `{requested_model}` fehlt. Führe "
+            f"`ollama pull {requested_model}` aus."
+        )
+    return owned_process
+
+
+def _load_runtime_env_file(environment: dict[str, str], path: Path) -> None:
+    """Load KEY=VALUE entries while preserving valid explicit process values."""
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or not key.replace("_", "").isalnum() or key[0].isdigit():
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        current = environment.get(key)
+        invalid_api_key = key.endswith("_API_KEY") and (
+            not current
+            or len(current.strip()) < 20
+            or current.strip().upper().startswith(("YOUR", "DEIN", "PLACEHOLDER", "CHANGEME"))
+        )
+        if current is None or invalid_api_key:
+            environment[key] = value
+
+
+def _runtime_environment() -> dict[str, str]:
+    environment = os.environ.copy()
+    _load_runtime_env_file(environment, ROOT / ".env.local")
+    shared_env_file = Path(
+        environment.get("NETWORKIS_SHARED_ENV_FILE", str(ROOT.parent / ".env"))
+    ).expanduser()
+    _load_runtime_env_file(environment, shared_env_file)
+    shared_openai_key = environment.get("OPEN_AI_KEY", "").strip()
+    if len(shared_openai_key) >= 20:
+        # Accept the organization-wide alias and make it authoritative for NetworkIS.
+        environment["OPENAI_API_KEY"] = shared_openai_key
+    logical_cores = max(1, os.cpu_count() or 1)
+    environment.setdefault("AI_PROVIDER", "hybrid-demand")
+    environment.setdefault("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL)
+    environment.setdefault("LOCAL_AI_MODEL", DEFAULT_LOCAL_AI_MODEL)
+    environment.setdefault("CLOUD_ESCALATION", "on_failure")
+    environment.setdefault("OLLAMA_MODELS", r"I:\engineering-intelligence-platform\models\ollama")
+    environment.setdefault("OLLAMA_CONTEXT_LENGTH", "8192")
+    environment.setdefault("OLLAMA_KEEP_ALIVE", "10m")
+    environment.setdefault("WAITRESS_THREADS", str(min(32, max(8, logical_cores // 2))))
+    environment.setdefault("SIMULATION_WORKERS", str(min(12, max(2, logical_cores // 2))))
+    environment.setdefault("SIMULATION_EXECUTOR", "process")
+    # Each worker gets one numeric-library thread; parallelism is owned by the process pool.
+    environment.setdefault("OMP_NUM_THREADS", "1")
+    environment.setdefault("OPENBLAS_NUM_THREADS", "1")
+    environment.setdefault("MKL_NUM_THREADS", "1")
+    environment.setdefault("NUMEXPR_NUM_THREADS", "1")
+    return environment
+
+
 def _run_web() -> int:
     frontend = ROOT / "frontend"
     if not (frontend / "node_modules").is_dir():
@@ -155,26 +283,32 @@ def _run_web() -> int:
     _ensure_port_available(FRONTEND_HOST, frontend_port, "Frontend")
 
     instance_id = uuid.uuid4().hex
-    backend_environment = os.environ.copy()
+    service_environment = _runtime_environment()
+    backend_environment = service_environment.copy()
     backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
 
     SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
     backend_log_path = SERVICE_LOG_ROOT / "backend.log"
     frontend_log_path = SERVICE_LOG_ROOT / "frontend.log"
+    ollama_log_path = SERVICE_LOG_ROOT / "ollama.log"
     backend_log = backend_log_path.open("w", encoding="utf-8", buffering=1)
     frontend_log = frontend_log_path.open("w", encoding="utf-8", buffering=1)
+    ollama_log = ollama_log_path.open("w", encoding="utf-8", buffering=1)
 
-    backend_process = subprocess.Popen(
-        [sys.executable, "-m", "backend.app"],
-        cwd=ROOT,
-        env=backend_environment,
-        stdout=backend_log,
-        stderr=subprocess.STDOUT,
-        **_popen_options(),
-    )
+    backend_process: subprocess.Popen[object] | None = None
     frontend_process: subprocess.Popen[object] | None = None
+    ollama_process: subprocess.Popen[object] | None = None
     launcher_error = False
     try:
+        ollama_process = _ensure_local_ai(service_environment, ollama_log)
+        backend_process = subprocess.Popen(
+            [sys.executable, "-m", "backend.app"],
+            cwd=ROOT,
+            env=backend_environment,
+            stdout=backend_log,
+            stderr=subprocess.STDOUT,
+            **_popen_options(),
+        )
         backend_url = f"http://{backend_host}:{backend_port}"
         if not _wait_for_url(
             f"{backend_url}/api/health",
@@ -190,6 +324,7 @@ def _run_web() -> int:
         frontend_process = subprocess.Popen(
             frontend_command,
             cwd=frontend,
+            env=service_environment,
             stdout=frontend_log,
             stderr=subprocess.STDOUT,
             **_popen_options(),
@@ -206,7 +341,12 @@ def _run_web() -> int:
         print(f"Frontend: {frontend_url} (exklusiv)")
         print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
         print("Beenden mit Strg+C")
-        webbrowser.open(frontend_url, new=2)
+        if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
+            "0",
+            "false",
+            "no",
+        }:
+            webbrowser.open(frontend_url, new=2)
         while backend_process.poll() is None and frontend_process.poll() is None:
             time.sleep(0.5)
         failed_service = "Backend" if backend_process.poll() is not None else "Frontend"
@@ -225,9 +365,13 @@ def _run_web() -> int:
     finally:
         if frontend_process is not None:
             _terminate_process_tree(frontend_process)
-        _terminate_process_tree(backend_process)
+        if backend_process is not None:
+            _terminate_process_tree(backend_process)
+        if ollama_process is not None:
+            _terminate_process_tree(ollama_process)
         backend_log.close()
         frontend_log.close()
+        ollama_log.close()
     if launcher_error:
         return 1
     return backend_process.returncode or (frontend_process.returncode if frontend_process else 0) or 0

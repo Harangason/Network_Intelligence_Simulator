@@ -36,4 +36,3 @@ request -> retrieval -> proposal -> validation -> human review -> approval
 
 Proposal acceptance means "create draft". Only explicit UI/API approval moves a
 valid route into the approved table.
-

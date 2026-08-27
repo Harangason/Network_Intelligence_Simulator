@@ -46,7 +46,11 @@ def test_health_exposes_launcher_instance_id(monkeypatch: pytest.MonkeyPatch) ->
 
     response = create_app(testing=True).test_client().get("/api/health")
 
-    assert response.get_json()["instance_id"] == "test-instance"
+    payload = response.get_json()
+    assert payload["instance_id"] == "test-instance"
+    assert payload["runtime"]["cpu"]["logical_cores"] >= 1
+    assert payload["runtime"]["ai"]["local_model"]
+    assert payload["jobs"]["max_workers"] >= 1
 
 
 def test_launcher_rejects_an_occupied_port() -> None:
@@ -124,6 +128,158 @@ def test_frontend_dev_command_uses_local_next_cli(
         "-p",
         str(LAUNCHER.FRONTEND_PORT),
     ]
+
+
+def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "AI_PROVIDER",
+        "LOCAL_AI_BASE_URL",
+        "LOCAL_AI_MODEL",
+        "CLOUD_ESCALATION",
+        "OLLAMA_MODELS",
+        "OLLAMA_CONTEXT_LENGTH",
+        "OLLAMA_KEEP_ALIVE",
+        "NETWORKIS_SHARED_ENV_FILE",
+        "WAITRESS_THREADS",
+        "SIMULATION_WORKERS",
+        "SIMULATION_EXECUTOR",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(LAUNCHER.os, "cpu_count", lambda: 32)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["AI_PROVIDER"] == "hybrid-demand"
+    assert environment["LOCAL_AI_MODEL"] == "qwen3.8:27b"
+    assert environment["CLOUD_ESCALATION"] == "on_failure"
+    assert environment["OLLAMA_CONTEXT_LENGTH"] == "8192"
+    assert environment["WAITRESS_THREADS"] == "16"
+    assert environment["SIMULATION_WORKERS"] == "12"
+    assert environment["SIMULATION_EXECUTOR"] == "process"
+    assert environment["OMP_NUM_THREADS"] == "1"
+
+
+def test_runtime_environment_loads_local_env_without_overwriting_process_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".env.local").write_text(
+        "OPENAI_API_KEY=file-key\nAI_PROVIDER=hybrid\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setenv("AI_PROVIDER", "local")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["OPENAI_API_KEY"] == "file-key"
+    assert environment["AI_PROVIDER"] == "local"
+
+
+def test_runtime_environment_replaces_invalid_process_api_key_placeholder(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".env.local").write_text(
+        "OPENAI_API_KEY=file-key-with-sufficient-length\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setenv("OPENAI_API_KEY", "placeholder")
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["OPENAI_API_KEY"] == "file-key-with-sufficient-length"
+
+
+def test_runtime_environment_prefers_shared_openai_organization_alias(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    project_root = tmp_path / "simulator"
+    project_root.mkdir()
+    (project_root / ".env.local").write_text(
+        "OPENAI_API_KEY=project-key-with-sufficient-length\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".env").write_text(
+        "OPEN_AI_KEY=organization-key-with-sufficient-length\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", project_root)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPEN_AI_KEY", raising=False)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["OPENAI_API_KEY"] == "organization-key-with-sufficient-length"
+
+
+def test_runtime_environment_loads_shared_parent_env_as_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    project_root = tmp_path / "simulator"
+    project_root.mkdir()
+    (tmp_path / ".env").write_text(
+        "NVIDIA_API_KEY=shared-nvidia-key\nLOCAL_AI_MODEL=shared-model\n",
+        encoding="utf-8",
+    )
+    (project_root / ".env.local").write_text(
+        "LOCAL_AI_MODEL=project-model\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", project_root)
+    monkeypatch.delenv("NVIDIA_API_KEY", raising=False)
+    monkeypatch.delenv("LOCAL_AI_MODEL", raising=False)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["NVIDIA_API_KEY"] == "shared-nvidia-key"
+    assert environment["LOCAL_AI_MODEL"] == "project-model"
+
+
+def test_runtime_environment_loads_explicit_shared_env_after_project_move(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    project_root = tmp_path / "moved" / "simulator"
+    project_root.mkdir(parents=True)
+    shared_env = tmp_path / "original-location.env"
+    shared_env.write_text(
+        "OPEN_AI_KEY=organization-key-after-project-move\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", project_root)
+    monkeypatch.setenv("NETWORKIS_SHARED_ENV_FILE", str(shared_env))
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPEN_AI_KEY", raising=False)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["OPENAI_API_KEY"] == "organization-key-after-project-move"
+
+
+def test_ollama_model_matching_accepts_latest_alias() -> None:
+    assert LAUNCHER._model_is_installed("qwen3.8", ["qwen3.8:latest"])
+
+
+def test_hybrid_demand_checks_local_ollama_model(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: ["qwen3.8:27b"])
+
+    owned_process = LAUNCHER._ensure_local_ai(
+        {"AI_PROVIDER": "hybrid-demand", "LOCAL_AI_MODEL": "qwen3.8:27b"},
+        None,
+    )
+
+    assert owned_process is None
 
 
 def test_engineering_database_url_accepts_sqlalchemy_psycopg_scheme(

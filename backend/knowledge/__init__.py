@@ -14,6 +14,7 @@ from .sources import (
     SourceRequest,
     StagedEntity,
 )
+from .semantic_vocabulary import EngineeringSemanticVocabulary, SemanticConcept
 from .stores import GraphStore, LocalGraphStore, LocalVectorStore, VectorStore
 from .transformers import LocalTransformerService, TransformerService
 
@@ -21,6 +22,7 @@ __all__ = [
     "AIModelGateway",
     "AIProvider",
     "EngineeringContextBuilder",
+    "EngineeringSemanticVocabulary",
     "EngineeringChunk",
     "EngineeringChunker",
     "EntityResolutionResult",
@@ -41,6 +43,7 @@ __all__ = [
     "SourceIngestionService",
     "SourceRequest",
     "StagedEntity",
+    "SemanticConcept",
     "TransformerService",
     "VectorStore",
 ]

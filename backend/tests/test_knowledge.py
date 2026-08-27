@@ -4,6 +4,7 @@ from backend.knowledge import (
     AIModelGateway,
     EngineeringChunker,
     EngineeringContextBuilder,
+    EngineeringSemanticVocabulary,
     EntityResolutionService,
     HybridRetrievalService,
     KnowledgeDocument,
@@ -13,6 +14,7 @@ from backend.knowledge import (
     LocalTransformerService,
     LocalVectorStore,
 )
+from backend.knowledge.transformers import cosine
 
 
 def test_local_graph_store_supports_traversal_paths_and_subgraphs():
@@ -61,6 +63,35 @@ def test_local_transformer_is_deterministic_and_reranks_relevant_text():
     )
     assert ranked[0]["object_id"] == "battery"
     assert transformer.classify("CAN FD frame", ["Ethernet", "CAN FD"])["label"] == "CAN FD"
+
+
+def test_engineering_vocabulary_normalizes_identifiers_and_multilingual_synonyms():
+    vocabulary = EngineeringSemanticVocabulary()
+    concepts = vocabulary.concept_weights("Verkn\u00fcpfe die ECU mit der Schnittstelle")
+
+    assert "intent:relation_mutation" in concepts
+    assert "entity:hardware_node" in concepts
+    assert "entity:interface" in concepts
+    assert "relation:has_interface" in concepts
+    assert "api:canonical_reference" in vocabulary.concept_weights("object_id")
+    assert "api:relation_contract" in vocabulary.concept_weights("relationType")
+
+
+def test_local_transformer_places_relation_synonyms_in_same_vector_region():
+    transformer = LocalTransformerService(dimensions=256)
+    german = transformer.embed(["Verbinde den HardwareNode mit einer Schnittstelle"])[0]
+    canonical = transformer.embed(["HAS_INTERFACE relation for HardwareNode and Interface"])[0]
+    unrelated = transformer.embed(["calculate network latency histogram"])[0]
+
+    assert cosine(german, canonical) > cosine(german, unrelated)
+    ranked = transformer.rerank(
+        "Ordne der ECU ein Interface zu",
+        [
+            {"object_id": "routing", "text": "validate routing table", "score": 0.2},
+            {"object_id": "relation", "text": "HAS_INTERFACE engineering relation", "score": 0.2},
+        ],
+    )
+    assert ranked[0]["object_id"] == "relation"
 
 
 def test_hybrid_retrieval_combines_vector_keyword_metadata_and_multihop_graph():
@@ -112,7 +143,7 @@ def test_hybrid_retrieval_combines_vector_keyword_metadata_and_multihop_graph():
     assert {"vector", "keyword", "metadata", "graph"}.issubset(signal["retrieval_sources"])
     assert signal["graph_path"] == ["powertrain", "battery-function", "battery-soc"]
     assert signal["evidence"] == [{"source": "battery.dbc", "line": 41}]
-    assert signal["metadata"]["embedding_model"] == "local-hashed-engineering-embedding-v1"
+    assert signal["metadata"]["embedding_model"] == "local-hashed-engineering-embedding-v2"
 
 
 def test_context_builder_prioritizes_selected_objects_and_respects_budget():

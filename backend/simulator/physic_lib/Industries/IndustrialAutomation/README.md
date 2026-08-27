@@ -21,4 +21,3 @@ Expected folders:
 - `ServiceProfiles/`
 - `ProcessProfiles/`
 - `Learning/`
-

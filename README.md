@@ -42,6 +42,36 @@ Weboberfläche im Browser:
 uv run --project backend python generate_realistic_communication_tool.py
 ```
 
+Für die lokale Workstation-Konfiguration mit CUDA-fähigem Ollama, Waitress und
+Multiprocess-Simulation kann alternativ direkt gestartet werden mit:
+
+```powershell
+.\start-networkis-local-ai.bat
+```
+
+Der Launcher prüft, ob Ollama unter `http://127.0.0.1:11434` erreichbar und das
+Modell `qwen3.8:27b` installiert ist. Die empfohlenen Variablen stehen in
+`runtime-performance.env.example`. Standardmäßig nutzt das Backend 16
+Waitress-Threads und 12 getrennte Simulationsprozesse. NumPy-/BLAS-Threads sind
+pro Worker auf eins begrenzt, damit die 32 logischen CPU-Kerne nicht mehrfach
+überbucht werden.
+
+Der Agent läuft standardmäßig im Modus `hybrid-demand`: Qwen 3.8 27B übernimmt
+Unterhaltung, Analyse und Werkzeugsteuerung lokal über Ollama. OpenAI und
+NVIDIA NIM/Nemotron werden nur auf ausdrücklichen Wunsch oder bei einer
+angeforderten Wiederaufnahme nach lokalem Fehlschlag verwendet. Strukturierte
+Engineering-Spezifikationen durchlaufen zuerst den deterministischen Parser.
+Werte aus `.env.local` und der explizit konfigurierten gemeinsamen `.env` werden
+beim Start geladen; Prozessvariablen haben Vorrang.
+
+Der kanonische Projektpfad ist `I:\PycharmProjects\My_first_Network_Simulator`.
+Details zum Umzug und zu den externen Laufzeitdaten stehen in
+`backend/docs/PROJECT_LOCATION.md`.
+
+Die vollständige Beschreibung der Agent-Laufzeit, Provider-Auswahl,
+Ressourcennutzung, kompakten Statusdarstellung und des Human-Review-Ablaufs
+steht in `backend/docs/AI_AGENT_RUNTIME_AND_REVIEW.md`.
+
 - Oberfläche: `http://127.0.0.1:13500`
 - Flask-API: `http://127.0.0.1:15050/api`
 
@@ -56,7 +86,7 @@ vollständige Engineering-Pfad über `SIMULATOR_ENGINEERING_API_URL` gesetzt
 werden. Eine generische `ENGINEERING_API_URL` wird aus Kollisionsschutz nur
 übernommen, wenn sie bereits `/api/engineering` enthält.
 
-Beide Ports werden exklusiv verwendet. Ist `3500` oder `5050` bereits durch
+Beide Ports werden exklusiv verwendet. Ist `13500` oder `15050` bereits durch
 ein anderes Werkzeug belegt, bricht der Launcher mit einer eindeutigen Meldung
 ab, statt unbemerkt einen fremden Dienst zu verwenden oder auf einen anderen
 Port auszuweichen. Beim Beenden räumt er den vollständigen Backend- und

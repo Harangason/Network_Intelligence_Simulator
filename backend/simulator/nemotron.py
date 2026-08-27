@@ -107,7 +107,7 @@ def _get_nemotron_client():
     return _nemotron_client
 
 LOCAL_AI_BASE_URL = os.getenv("LOCAL_AI_BASE_URL", "http://localhost:11434/v1")
-LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "llama3.1:8b")
+LOCAL_AI_MODEL = os.getenv("LOCAL_AI_MODEL", "qwen3.8:27b")
 LOCAL_AI_API_KEY = os.getenv("LOCAL_AI_API_KEY", "local")
 
 PROJECT_PROFILES = {

@@ -4,6 +4,15 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { ToolLoopAgent, InferAgentUIMessage, isStepCount, tool } from "ai";
 import { z } from "zod";
 import {
+  currentAgentProjectId,
+  currentAgentRequestText,
+  setCurrentAgentRequestText,
+} from "@/lib/agent/request-context";
+import {
+  extractEngineeringSpecification,
+  isStructuredEngineeringSpecification,
+} from "@/lib/agent/engineering-specification";
+import {
   createProposal,
   deleteRoutingProposal,
   findRoutingPaths,
@@ -39,6 +48,15 @@ import {
 
 const RESOURCE_ENUM = ["hardware-nodes", "functions", "interfaces", "messages", "signals"] as const;
 const OBJECT_TYPE_ENUM = ["HardwareNode", "Function", "Interface", "Message", "Signal"] as const;
+type EngineeringResourceName = typeof RESOURCE_ENUM[number];
+
+const OBJECT_TYPE_RESOURCE: Record<typeof OBJECT_TYPE_ENUM[number], EngineeringResourceName> = {
+  HardwareNode: "hardware-nodes",
+  Function: "functions",
+  Interface: "interfaces",
+  Message: "messages",
+  Signal: "signals",
+};
 
 const WORKFLOW_MANIFEST = [
   {
@@ -55,8 +73,8 @@ const WORKFLOW_MANIFEST = [
       "Signal gehoert zu einer Message.",
       "Relations verbinden fachliche Graphkanten wie HAS_FUNCTION, HAS_INTERFACE, CONTAINS_SIGNAL und CONNECTED_TO.",
     ],
-    tools: ["listEngineeringObjects", "proposeEngineeringObject", "listEngineeringRelations", "proposeEngineeringRelation", "inspectEngineeringProposals", "validateEngineeringProposal", "approveEngineeringProposal", "approveAllValidEngineeringProposals"],
-    doneWhen: "Alle fuer das Ziel benoetigten Objekte existieren im kanonischen Modell oder liegen valide am Review-Gate.",
+    tools: ["listEngineeringObjects", "createEngineeringModelFromSpecification", "createEngineeringChain", "createRoutableEngineeringPair", "proposeEngineeringObject", "listEngineeringRelations", "proposeEngineeringRelation", "inspectEngineeringProposals", "validateEngineeringProposal", "approveEngineeringProposal", "approveAllValidEngineeringProposals"],
+    doneWhen: "Alle fuer das Ziel benoetigten Objekte existieren im kanonischen Modell und ihre AIProposals bilden die Auditspur.",
   },
   {
     id: "routing",
@@ -216,13 +234,19 @@ function concreteRequestText(request: string) {
   const normalized = request.toLowerCase();
   const markerIndex = normalized.indexOf(marker);
   if (markerIndex < 0) return normalized;
-  return normalized.slice(markerIndex);
+  const separatorIndex = normalized.indexOf(":", markerIndex + marker.length);
+  const startIndex = separatorIndex >= 0 ? separatorIndex + 1 : markerIndex + marker.length;
+  const trailingInstructionIndex = normalized.indexOf("\n\nstarte jetzt", startIndex);
+  return normalized.slice(startIndex, trailingInstructionIndex >= 0 ? trailingInstructionIndex : undefined);
 }
 
 function inferWorkflowTarget(request: string) {
   const normalized = concreteRequestText(request);
   const matches = Object.entries(WORKFLOW_TARGET_ALIASES)
-    .filter(([alias]) => normalized.includes(alias))
+    .filter(([alias]) => {
+      const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9äöüß])${escapedAlias}([^a-z0-9äöüß]|$)`, "i").test(normalized);
+    })
     .map(([, stepId]) => stepId)
     .sort((left, right) => WORKFLOW_STEP_ORDER.indexOf(right) - WORKFLOW_STEP_ORDER.indexOf(left));
   return matches[0] ?? "engineering_model";
@@ -234,19 +258,115 @@ function usableApiKey(value: string | undefined): value is string {
 
 const openAIKey = process.env.OPENAI_API_KEY;
 const nvidiaKey = process.env.NVIDIA_API_KEY;
-const engineeringModel = usableApiKey(openAIKey)
-  ? createOpenAI({ apiKey: openAIKey })("gpt-4.1")
-  : createOpenAI({
+const requestedProvider = (process.env.AI_PROVIDER ?? "hybrid-demand").trim().toLowerCase();
+const localAIBaseURL = (process.env.LOCAL_AI_BASE_URL ?? "http://127.0.0.1:11434/v1").replace(/\/$/, "");
+const localAIModel = process.env.LOCAL_AI_MODEL ?? "qwen3.8:27b";
+const cloudEscalationPolicy = (process.env.CLOUD_ESCALATION ?? "on_failure").trim().toLowerCase();
+const EXPLICIT_OPENAI_PATTERN = /(?:nutze|verwende|mit|ueber|über)\s+(?:openai|gpt(?:-?5)?|cloud)\b/i;
+const EXPLICIT_NVIDIA_PATTERN = /(?:nutze|verwende|mit|ueber|über)\s+(?:nvidia|nemotron|nim)\b/i;
+
+function selectEngineeringModels() {
+  const local = () => ({
+    provider: "ollama" as const,
+    label: localAIModel,
+    model: createOpenAI({
+      apiKey: process.env.LOCAL_AI_API_KEY ?? "ollama",
+      baseURL: localAIBaseURL,
+      name: "ollama",
+    }).chat(localAIModel),
+  });
+  const openai = () => ({
+    provider: "openai" as const,
+    label: process.env.OPENAI_AI_MODEL ?? "gpt-5-mini",
+    model: createOpenAI({ apiKey: openAIKey })(process.env.OPENAI_AI_MODEL ?? "gpt-5-mini"),
+  });
+  const nvidia = () => ({
+    provider: "nvidia-nim" as const,
+    label: process.env.NVIDIA_AI_MODEL ?? "nvidia/nemotron-3-nano-30b-a3b",
+    model: createOpenAI({
       apiKey: nvidiaKey,
       baseURL: "https://integrate.api.nvidia.com/v1",
       name: "nvidia-nim",
-    }).chat(process.env.NVIDIA_AI_MODEL ?? "nvidia/nemotron-3-nano-30b-a3b");
+    }).chat(process.env.NVIDIA_AI_MODEL ?? "nvidia/nemotron-3-nano-30b-a3b"),
+  });
+  const onDemandOpenAI = usableApiKey(openAIKey) ? openai() : null;
+  const onDemandNvidia = usableApiKey(nvidiaKey) ? nvidia() : null;
+  const selection = (
+    primary: ReturnType<typeof local> | ReturnType<typeof openai> | ReturnType<typeof nvidia>,
+    orchestrator: ReturnType<typeof local> | ReturnType<typeof openai> | ReturnType<typeof nvidia>,
+    provider: string,
+  ) => ({ primary, orchestrator, provider, onDemandOpenAI, onDemandNvidia });
 
-export const engineeringAgentProvider = usableApiKey(openAIKey)
-  ? "openai"
-  : usableApiKey(nvidiaKey)
-    ? "nvidia-nim"
-    : "unconfigured";
+  if (requestedProvider === "local" || requestedProvider === "ollama") {
+    const localSelection = local();
+    return selection(localSelection, localSelection, "ollama");
+  }
+  if (requestedProvider === "openai" && usableApiKey(openAIKey)) {
+    const openAISelection = openai();
+    return selection(openAISelection, openAISelection, "openai");
+  }
+  if ((requestedProvider === "nvidia" || requestedProvider === "nvidia-nim") && usableApiKey(nvidiaKey)) {
+    const nvidiaSelection = nvidia();
+    return selection(nvidiaSelection, nvidiaSelection, "nvidia-nim");
+  }
+  if (requestedProvider === "hybrid-demand") {
+    const localSelection = local();
+    return selection(localSelection, localSelection, "hybrid-demand");
+  }
+  if (requestedProvider === "hybrid") {
+    const primary = local();
+    const orchestrator = usableApiKey(openAIKey)
+      ? openai()
+      : usableApiKey(nvidiaKey)
+        ? nvidia()
+        : primary;
+    return selection(primary, orchestrator, `hybrid-${orchestrator.provider}`);
+  }
+  if (requestedProvider === "auto") {
+    const automaticSelection = usableApiKey(openAIKey) ? openai() : usableApiKey(nvidiaKey) ? nvidia() : local();
+    return selection(automaticSelection, automaticSelection, automaticSelection.provider);
+  }
+
+  const unconfigured = {
+    provider: "unconfigured" as const,
+    label: "gpt-5-mini",
+    model: createOpenAI({ apiKey: "unconfigured" })("gpt-5-mini"),
+  };
+  return { primary: unconfigured, orchestrator: unconfigured, provider: "unconfigured", onDemandOpenAI, onDemandNvidia };
+}
+
+const engineeringModelSelection = selectEngineeringModels();
+const engineeringModel = engineeringModelSelection.primary.model;
+const engineeringOrchestrationModel = engineeringModelSelection.orchestrator.model;
+const engineeringOnDemandOpenAIModel = engineeringModelSelection.onDemandOpenAI?.model ?? null;
+const engineeringOnDemandNvidiaModel = engineeringModelSelection.onDemandNvidia?.model ?? null;
+
+export const engineeringAgentProvider = engineeringModelSelection.provider;
+export const engineeringAgentModel = engineeringModelSelection.primary.label;
+export const engineeringAgentOrchestrator =
+  requestedProvider === "hybrid-demand"
+    ? `local-first;openai=${engineeringModelSelection.onDemandOpenAI?.label ?? "off"};nvidia=${engineeringModelSelection.onDemandNvidia?.label ?? "off"}`
+    : `${engineeringModelSelection.orchestrator.provider}/${engineeringModelSelection.orchestrator.label}`;
+
+function demandModelForRequest(request: string, recovery: boolean, actionable: boolean) {
+  if (requestedProvider !== "hybrid-demand") {
+    return {
+      model: actionable ? engineeringOrchestrationModel : engineeringModel,
+      source: actionable ? engineeringModelSelection.orchestrator.provider : engineeringModelSelection.primary.provider,
+    };
+  }
+  if (EXPLICIT_NVIDIA_PATTERN.test(request) && engineeringOnDemandNvidiaModel) {
+    return { model: engineeringOnDemandNvidiaModel, source: "nvidia-on-demand" };
+  }
+  if (EXPLICIT_OPENAI_PATTERN.test(request) && engineeringOnDemandOpenAIModel) {
+    return { model: engineeringOnDemandOpenAIModel, source: "openai-on-demand" };
+  }
+  if (recovery && cloudEscalationPolicy === "on_failure") {
+    if (engineeringOnDemandOpenAIModel) return { model: engineeringOnDemandOpenAIModel, source: "openai-recovery" };
+    if (engineeringOnDemandNvidiaModel) return { model: engineeringOnDemandNvidiaModel, source: "nvidia-recovery" };
+  }
+  return { model: engineeringModel, source: "local" };
+}
 
 function auditAgent(message: string, details: Record<string, unknown> = {}) {
   const suffix = Object.entries(details)
@@ -254,6 +374,267 @@ function auditAgent(message: string, details: Record<string, unknown> = {}) {
     .map(([key, value]) => `${key}=${String(value)}`)
     .join(" ");
   console.info(`[NetworkIS Agent] ${message}${suffix ? ` ${suffix}` : ""}`);
+}
+
+const proposalQueues = new Map<string, Promise<void>>();
+
+async function serializeProposalCreation<T>(work: () => Promise<T>): Promise<T> {
+  const projectId = currentAgentProjectId();
+  const previous = proposalQueues.get(projectId) ?? Promise.resolve();
+  const result = previous.then(work, work);
+  const settled = result.then(() => undefined, () => undefined);
+  proposalQueues.set(projectId, settled);
+  void settled.finally(() => {
+    if (proposalQueues.get(projectId) === settled) proposalQueues.delete(projectId);
+  });
+  return result;
+}
+
+function usableReference(value: string | undefined) {
+  const normalized = value?.trim();
+  if (!normalized || /^(none|null|undefined)$/i.test(normalized)) return undefined;
+  return normalized;
+}
+
+async function resolveObjectReference(value: string | undefined, resource: typeof RESOURCE_ENUM[number]) {
+  const normalized = usableReference(value);
+  if (!normalized) return undefined;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalized)) {
+    return normalized;
+  }
+
+  const canonical = await listObjects(resource);
+  const canonicalMatch = canonical.items.find(
+    (item) => String(item.name ?? "").localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0,
+  );
+  if (canonicalMatch?.id) return String(canonicalMatch.id);
+
+  const proposals = await listEngineeringProposals();
+  const proposalMatch = proposals.items.find((proposal) => {
+    if (["REJECTED", "SUPERSEDED"].includes(String(proposal.status ?? ""))) return false;
+    const target = proposal.target_object as Record<string, unknown> | undefined;
+    if (target?.resource !== resource) return false;
+    const items = Array.isArray(proposal.proposed_objects) ? proposal.proposed_objects : [];
+    return items.some((item) => {
+      if (!item || typeof item !== "object") return false;
+      return String((item as Record<string, unknown>).name ?? "").localeCompare(
+        normalized,
+        undefined,
+        { sensitivity: "accent" },
+      ) === 0;
+    });
+  });
+  return proposalMatch?.proposal_id ? String(proposalMatch.proposal_id) : normalized;
+}
+
+async function resolveCanonicalObjectReference(
+  value: string | undefined,
+  resource: typeof RESOURCE_ENUM[number],
+) {
+  const normalized = usableReference(value);
+  if (!normalized) return undefined;
+  const canonical = await listObjects(resource);
+  const match = canonical.items.find((item) => (
+    String(item.id ?? "") === normalized
+    || String(item.name ?? "").localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0
+  ));
+  return match?.id ? String(match.id) : undefined;
+}
+
+type EngineeringObjectInput = {
+  resource: EngineeringResourceName;
+  name: string;
+  description?: string;
+  domain?: string;
+  device_type?: string;
+  interface_type?: string;
+  hardware_node_id?: string;
+  function_id?: string;
+  interface_id?: string;
+  message_id?: string;
+  direction?: "rx" | "tx" | "bidirectional";
+  message_id_hex?: string;
+  cycle_ms?: number;
+  dlc?: number;
+  display_name?: string;
+  start_bit?: number;
+  length_bits?: number;
+  byte_order?: "little_endian" | "big_endian";
+  data_type?: string;
+  factor?: number;
+  offset_value?: number;
+  unit?: string;
+  min_value?: number;
+  max_value?: number;
+};
+
+type CanonicalEngineeringObject = {
+  resource: EngineeringResourceName;
+  id: string;
+  name: string;
+};
+
+function sameEngineeringName(value: unknown, expected: string) {
+  return String(value ?? "").localeCompare(expected, undefined, { sensitivity: "accent" }) === 0;
+}
+
+const CANONICAL_DEVICE_TYPES = new Set([
+  "ECU", "PLC", "RobotController", "SensorController", "ActuatorController", "Gateway",
+  "EmbeddedController", "IndustrialPC", "FlightComputer", "BatteryManagementSystem",
+  "EnergyController", "BuildingController", "GenericDevice", "CustomDevice",
+]);
+
+const CANONICAL_INTERFACE_TYPES = new Set([
+  "CAN", "CAN_FD", "LIN", "FlexRay", "Ethernet", "EtherCAT", "ProfiNET", "ModbusTCP",
+  "ModbusRTU", "RS232", "RS485", "SPI", "I2C", "USB", "MQTT", "OPCUA", "Other",
+]);
+
+function canonicalDeviceType(value: string | undefined) {
+  const candidate = value?.trim() || "ECU";
+  if (CANONICAL_DEVICE_TYPES.has(candidate)) return candidate;
+  const normalized = candidate.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (normalized.includes("gateway")) return "Gateway";
+  if (normalized.includes("sensor")) return "SensorController";
+  if (normalized.includes("actuator")) return "ActuatorController";
+  if (normalized.includes("plc")) return "PLC";
+  if (normalized.includes("robot")) return "RobotController";
+  if (normalized.includes("ecu") || normalized.includes("electroniccontrolunit")) return "ECU";
+  return "GenericDevice";
+}
+
+function canonicalInterfaceType(value: string | undefined) {
+  const candidate = value?.trim() || "CAN";
+  if (CANONICAL_INTERFACE_TYPES.has(candidate)) return candidate;
+  const normalized = candidate.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  if (normalized.includes("canfd") || normalized.includes("canxl")) return "CAN_FD";
+  if (normalized === "can" || normalized.includes("controllerareanetwork")) return "CAN";
+  if (normalized.includes("automotiveethernet") || normalized === "ethernet") return "Ethernet";
+  if (normalized.includes("ethercat")) return "EtherCAT";
+  if (normalized.includes("profinet")) return "ProfiNET";
+  if (normalized.includes("modbustcp")) return "ModbusTCP";
+  if (normalized.includes("modbusrtu")) return "ModbusRTU";
+  if (normalized.includes("flexray")) return "FlexRay";
+  if (normalized === "lin") return "LIN";
+  if (normalized.includes("opcua")) return "OPCUA";
+  if (normalized.includes("mqtt")) return "MQTT";
+  return "Other";
+}
+
+function canonicalObjectsFromProposal(
+  proposal: Record<string, unknown>,
+  resource: EngineeringResourceName,
+): CanonicalEngineeringObject[] {
+  const proposedObjects = Array.isArray(proposal.proposed_objects) ? proposal.proposed_objects : [];
+  return proposedObjects.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const candidate = item as Record<string, unknown>;
+    const id = String(candidate.canonical_id ?? "");
+    if (!id) return [];
+    return [{ resource, id, name: String(candidate.name ?? candidate.relation_type ?? "Engineering-Objekt") }];
+  });
+}
+
+async function findCanonicalEngineeringObject(resource: EngineeringResourceName, name: string) {
+  const canonical = await listObjects(resource);
+  return canonical.items.find((item) => sameEngineeringName(item.name, name));
+}
+
+async function createAndApproveEngineeringObject(input: EngineeringObjectInput) {
+  const { resource, ...rest } = input;
+  const existingCanonical = await findCanonicalEngineeringObject(resource, rest.name);
+  if (existingCanonical?.id) {
+    return {
+      created: false,
+      reused: true,
+      resource,
+      proposal: null,
+      canonical_objects: [{ resource, id: String(existingCanonical.id), name: rest.name }],
+      note: "Das gleichnamige Objekt war bereits im kanonischen Modell registriert.",
+    };
+  }
+
+  const proposals = await listEngineeringProposals();
+  const existingProposal = proposals.items.find((proposal) => {
+    if (["APPROVED", "REJECTED", "SUPERSEDED"].includes(String(proposal.status ?? ""))) return false;
+    const target = proposal.target_object as Record<string, unknown> | undefined;
+    if (target?.resource !== resource) return false;
+    const proposedObjects = Array.isArray(proposal.proposed_objects) ? proposal.proposed_objects : [];
+    return proposedObjects.some((item) => item && typeof item === "object" && sameEngineeringName(
+      (item as Record<string, unknown>).name,
+      rest.name,
+    ));
+  });
+
+  let proposal = existingProposal;
+  if (!proposal) {
+    const payload: Record<string, unknown> = {
+      name: rest.name,
+      description: rest.description ?? null,
+      domain: rest.domain ?? null,
+      source: "ai_generated",
+      review_state: "unreviewed",
+      approval_state: "pending",
+      provenance: { agent: "engineering-chat-agent", reason: "user-requested object" },
+    };
+    if (resource === "hardware-nodes") payload.device_type = canonicalDeviceType(rest.device_type);
+    if (resource === "functions") {
+      payload.hardware_node_id = await resolveObjectReference(rest.hardware_node_id, "hardware-nodes") ?? null;
+    }
+    if (resource === "interfaces") {
+      payload.interface_type = canonicalInterfaceType(rest.interface_type);
+      payload.hardware_node_id = await resolveObjectReference(rest.hardware_node_id, "hardware-nodes") ?? null;
+      payload.function_id = await resolveObjectReference(rest.function_id, "functions") ?? null;
+    }
+    if (resource === "messages") {
+      payload.interface_id = await resolveObjectReference(rest.interface_id, "interfaces") ?? null;
+      payload.direction = rest.direction ?? "tx";
+      payload.message_id_hex = rest.message_id_hex ?? null;
+      payload.cycle_ms = rest.cycle_ms ?? 10;
+      payload.dlc = rest.dlc ?? 8;
+    }
+    if (resource === "signals") {
+      payload.message_id = await resolveObjectReference(rest.message_id, "messages") ?? null;
+      payload.display_name = rest.display_name ?? rest.name;
+      payload.start_bit = rest.start_bit ?? 0;
+      payload.length_bits = rest.length_bits ?? 16;
+      payload.byte_order = rest.byte_order ?? "little_endian";
+      payload.data_type = rest.data_type ?? "unsigned";
+      payload.factor = rest.factor ?? 1;
+      payload.offset_value = rest.offset_value ?? 0;
+      payload.unit = rest.unit ?? null;
+      payload.min_value = rest.min_value ?? null;
+      payload.max_value = rest.max_value ?? null;
+    }
+
+    proposal = await createProposal({
+      proposal_type: "OBJECT",
+      target_object: { resource },
+      prompt: `Erzeuge ${resource}: ${rest.name}`,
+      model: engineeringAgentOrchestrator,
+      proposed_objects: [payload],
+      evidence: [],
+      retrieved_context: [],
+      validation_results: [],
+      created_by: "engineering-chat-agent",
+    });
+  }
+
+  const proposalId = String(proposal.proposal_id ?? "");
+  if (!proposalId) throw new Error(`Proposal fuer ${rest.name} besitzt keine ID.`);
+  await validateEngineeringProposal(proposalId);
+  const approved = await approveEngineeringProposal(proposalId);
+  const canonicalObjects = canonicalObjectsFromProposal(approved, resource);
+  if (!canonicalObjects.length) {
+    throw new Error(`${rest.name} konnte nicht in das kanonische Modell uebernommen werden.`);
+  }
+  return {
+    created: true,
+    reused: Boolean(existingProposal),
+    resource,
+    proposal: approved,
+    canonical_objects: canonicalObjects,
+    note: "Objekt wurde als AIProposal auditiert, validiert und sofort kanonisch registriert.",
+  };
 }
 
 const listEngineeringObjects = tool({
@@ -280,8 +661,8 @@ const listEngineeringObjects = tool({
 
 const proposeEngineeringObject = tool({
   description:
-    "Erzeuge einen getrennt gespeicherten AIProposal für ein neues Engineering-Objekt. " +
-    "Das freigegebene Modell bleibt unverändert, bis ein Mensch den Vorschlag geprüft hat.",
+    "Erzeuge ein Engineering-Objekt, halte den KI-Vorschlag als Auditspur fest und " +
+    "registriere das valide Ergebnis sofort im kanonischen Modell.",
   inputSchema: z.object({
     resource: z.enum(RESOURCE_ENUM),
     name: z.string(),
@@ -300,49 +681,196 @@ const proposeEngineeringObject = tool({
     interface_id: z.string().optional().describe("Für 'messages': zugehöriges Interface."),
     message_id: z.string().optional().describe("Für 'signals': zugehörige Message."),
     direction: z.enum(["rx", "tx", "bidirectional"]).optional().describe("Nur für 'messages'."),
+    message_id_hex: z.string().optional().describe("Nur für 'messages', z. B. 0x180."),
+    cycle_ms: z.number().positive().optional().describe("Nur für 'messages'."),
+    dlc: z.number().int().positive().optional().describe("Nur für 'messages'."),
+    display_name: z.string().optional().describe("Nur für 'signals'."),
+    start_bit: z.number().int().min(0).optional().describe("Nur für 'signals'."),
+    length_bits: z.number().int().positive().optional().describe("Nur für 'signals'."),
+    byte_order: z.enum(["little_endian", "big_endian"]).optional().describe("Nur für 'signals'."),
+    data_type: z.string().optional().describe("Nur für 'signals'."),
+    factor: z.number().optional().describe("Nur für 'signals'."),
+    offset_value: z.number().optional().describe("Nur für 'signals'."),
+    unit: z.string().optional().describe("Nur für 'signals'."),
+    min_value: z.number().optional().describe("Nur für 'signals'."),
+    max_value: z.number().optional().describe("Nur für 'signals'."),
   }),
-  execute: async (input) => {
-    const { resource, ...rest } = input;
-    const payload: Record<string, unknown> = {
-      name: rest.name,
-      description: rest.description ?? null,
-      domain: rest.domain ?? null,
-      source: "ai_generated",
-      review_state: "unreviewed",
-      approval_state: "pending",
-      provenance: { agent: "engineering-chat-agent", reason: "user-requested proposal" },
-    };
-    if (resource === "hardware-nodes") payload.device_type = rest.device_type ?? "GenericDevice";
-    if (resource === "interfaces") {
-      payload.interface_type = rest.interface_type ?? "Other";
-      payload.hardware_node_id = rest.hardware_node_id ?? null;
-      payload.function_id = rest.function_id ?? null;
-    }
-    if (resource === "functions") payload.hardware_node_id = rest.hardware_node_id ?? null;
-    if (resource === "messages") {
-      payload.interface_id = rest.interface_id ?? null;
-      payload.direction = rest.direction ?? "tx";
-    }
-    if (resource === "signals") payload.message_id = rest.message_id ?? null;
+  execute: async (input) => serializeProposalCreation(() => createAndApproveEngineeringObject(input)),
+});
 
-    const proposal = await createProposal({
-      proposal_type: "OBJECT",
-      target_object: { resource },
-      prompt: `Erzeuge ${resource}: ${rest.name}`,
-      model: "openai/gpt-4.1",
-      proposed_objects: [payload],
-      evidence: [],
-      retrieved_context: [],
-      validation_results: [],
-      created_by: "engineering-chat-agent",
+const engineeringChainInputSchema = z.object({
+    hardware_name: z.string().describe("Name des Hardware-Knotens, z. B. ThermalECU."),
+    hardware_description: z.string().optional(),
+    device_type: z.string().optional().describe("Standard: ECU."),
+    function_name: z.string(),
+    function_description: z.string().optional(),
+    interface_name: z.string(),
+    interface_type: z.string().optional().describe("Standard: CAN."),
+    message_name: z.string(),
+    message_id_hex: z.string().optional(),
+    direction: z.enum(["rx", "tx", "bidirectional"]).optional(),
+    cycle_ms: z.number().positive().optional(),
+    dlc: z.number().int().positive().optional(),
+    signal_name: z.string(),
+    signal_display_name: z.string().optional(),
+    start_bit: z.number().int().min(0).optional(),
+    length_bits: z.number().int().positive().optional(),
+    byte_order: z.enum(["little_endian", "big_endian"]).optional(),
+    data_type: z.string().optional(),
+    factor: z.number().optional(),
+    offset_value: z.number().optional(),
+    unit: z.string().optional(),
+    min_value: z.number().optional(),
+    max_value: z.number().optional(),
+    domain: z.string().optional(),
+  });
+
+type EngineeringChainInput = z.infer<typeof engineeringChainInputSchema>;
+
+async function registerEngineeringChain(input: EngineeringChainInput) {
+    const canonicalObjects: CanonicalEngineeringObject[] = [];
+    const steps: Array<Record<string, unknown>> = [];
+
+    const hardware = await createAndApproveEngineeringObject({
+      resource: "hardware-nodes",
+      name: input.hardware_name,
+      description: input.hardware_description,
+      domain: input.domain,
+      device_type: input.device_type ?? "ECU",
     });
+    canonicalObjects.push(...hardware.canonical_objects);
+    steps.push(hardware);
+    const hardwareId = hardware.canonical_objects[0]?.id;
+
+    const engineeringFunction = await createAndApproveEngineeringObject({
+      resource: "functions",
+      name: input.function_name,
+      description: input.function_description,
+      domain: input.domain,
+      hardware_node_id: hardwareId,
+    });
+    canonicalObjects.push(...engineeringFunction.canonical_objects);
+    steps.push(engineeringFunction);
+    const functionId = engineeringFunction.canonical_objects[0]?.id;
+
+    const engineeringInterface = await createAndApproveEngineeringObject({
+      resource: "interfaces",
+      name: input.interface_name,
+      domain: input.domain,
+      hardware_node_id: hardwareId,
+      function_id: functionId,
+      interface_type: input.interface_type ?? "CAN",
+    });
+    canonicalObjects.push(...engineeringInterface.canonical_objects);
+    steps.push(engineeringInterface);
+    const interfaceId = engineeringInterface.canonical_objects[0]?.id;
+
+    const message = await createAndApproveEngineeringObject({
+      resource: "messages",
+      name: input.message_name,
+      domain: input.domain,
+      interface_id: interfaceId,
+      message_id_hex: input.message_id_hex,
+      direction: input.direction ?? "tx",
+      cycle_ms: input.cycle_ms ?? 10,
+      dlc: input.dlc ?? 8,
+    });
+    canonicalObjects.push(...message.canonical_objects);
+    steps.push(message);
+    const messageId = message.canonical_objects[0]?.id;
+
+    const signal = await createAndApproveEngineeringObject({
+      resource: "signals",
+      name: input.signal_name,
+      display_name: input.signal_display_name,
+      domain: input.domain,
+      message_id: messageId,
+      start_bit: input.start_bit ?? 0,
+      length_bits: input.length_bits ?? 16,
+      byte_order: input.byte_order ?? "little_endian",
+      data_type: input.data_type ?? "unsigned",
+      factor: input.factor ?? 1,
+      offset_value: input.offset_value ?? 0,
+      unit: input.unit,
+      min_value: input.min_value,
+      max_value: input.max_value,
+    });
+    canonicalObjects.push(...signal.canonical_objects);
+    steps.push(signal);
+
     return {
-      created: false,
-      resource,
-      proposal,
-      note: "Vorschlag wurde getrennt vom freigegebenen Engineering-Modell gespeichert und muss geprüft werden.",
+      created: true,
+      complete: canonicalObjects.length === RESOURCE_ENUM.length,
+      canonical_objects: canonicalObjects,
+      steps,
+      note: "Vollstaendige Engineering-Kette wurde kanonisch registriert; die Proposals bleiben als Auditspur erhalten.",
     };
-  },
+}
+
+const createEngineeringChain = tool({
+  description:
+    "Erzeuge eine vollstaendige kanonische Engineering-Kette in einem Lauf: HardwareNode, Function, Interface, " +
+    "Message und Signal. Jedes Element wird als AIProposal auditiert, validiert und sofort registriert.",
+  inputSchema: engineeringChainInputSchema,
+  execute: async (input) => serializeProposalCreation(() => registerEngineeringChain(input)),
+});
+
+export async function registerEngineeringSpecification(specificationText: string) {
+  return serializeProposalCreation(async () => {
+    const extracted = extractEngineeringSpecification(specificationText);
+    if (!extracted.chains.length) {
+      return {
+        created: false,
+        complete: false,
+        recognized: 0,
+        failures: [{ name: "Spezifikation", error: "Keine benannten Hardware-Objekte erkannt." }],
+        canonical_objects: [],
+      };
+    }
+
+    const canonicalObjects: CanonicalEngineeringObject[] = [];
+    const results: Array<Record<string, unknown>> = [];
+    const failures: Array<{ name: string; error: string }> = [];
+    for (const chain of extracted.chains) {
+      try {
+        const result = await registerEngineeringChain(chain);
+        canonicalObjects.push(...result.canonical_objects);
+        results.push({
+          hardware_name: chain.hardware_name,
+          complete: result.complete,
+          canonical_count: result.canonical_objects.length,
+        });
+      } catch (error) {
+        failures.push({
+          name: chain.hardware_name,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      created: canonicalObjects.length > 0,
+      complete: failures.length === 0 && results.length === extracted.chains.length,
+      recognized: extracted.chains.length,
+      registered_chains: results.length,
+      domain: extracted.domain,
+      interface_type: extracted.interfaceType,
+      results,
+      failures,
+      canonical_objects: canonicalObjects,
+      note: failures.length
+        ? "Die fehlerfreien Teilnehmer wurden registriert; fehlgeschlagene Teilnehmer sind einzeln ausgewiesen."
+        : "Alle aus dem Text erkannten Teilnehmer wurden als vollstaendige Engineering-Ketten registriert.",
+    };
+  });
+}
+
+const createEngineeringModelFromSpecification = tool({
+  description:
+    "Erkennt alle benannten Hardware-Objekte und technischen Parameter direkt aus der aktuellen strukturierten Nutzerspezifikation. " +
+    "Registriert fuer jeden Teilnehmer eine vollstaendige kanonische Kette und verarbeitet weitere Teilnehmer auch dann, wenn eine einzelne Kette fehlschlaegt.",
+  inputSchema: z.object({}),
+  execute: async () => registerEngineeringSpecification(currentAgentRequestText()),
 });
 
 const listEngineeringRelationsTool = tool({
@@ -360,8 +888,8 @@ const listEngineeringRelationsTool = tool({
 
 const proposeEngineeringRelation = tool({
   description:
-    "Schlage eine neue Relation zwischen zwei Engineering-Objekten vor (z. B. " +
-    "HardwareNode HAS_INTERFACE Interface, oder Message CONTAINS_SIGNAL Signal).",
+    "Erzeuge eine Relation zwischen zwei Engineering-Objekten, halte sie als AIProposal-Auditspur fest " +
+    "und registriere sie nach erfolgreicher Validierung sofort.",
   inputSchema: z.object({
     source_type: z.enum(OBJECT_TYPE_ENUM),
     source_id: z.string(),
@@ -369,20 +897,45 @@ const proposeEngineeringRelation = tool({
     target_id: z.string(),
     relation_type: z.string().describe("z. B. HAS_INTERFACE, CONNECTED_TO, CONTAINS_SIGNAL, COMMUNICATES_WITH."),
   }),
-  execute: async (input) => {
+  execute: async (input) => serializeProposalCreation(async () => {
+    const [sourceId, targetId] = await Promise.all([
+      resolveCanonicalObjectReference(input.source_id, OBJECT_TYPE_RESOURCE[input.source_type]),
+      resolveCanonicalObjectReference(input.target_id, OBJECT_TYPE_RESOURCE[input.target_type]),
+    ]);
+    const missing = [
+      ...(!sourceId ? [{ role: "source", type: input.source_type, reference: input.source_id }] : []),
+      ...(!targetId ? [{ role: "target", type: input.target_type, reference: input.target_id }] : []),
+    ];
+    if (missing.length) {
+      return {
+        created: false,
+        missing,
+        note: "Relation nicht angelegt: Quelle und Ziel muessen bereits kanonisch registriert sein.",
+      };
+    }
     const proposal = await createProposal({
       proposal_type: "RELATION",
-      target_object: { source_type: input.source_type, source_id: input.source_id },
+      target_object: { source_type: input.source_type, source_id: sourceId },
       prompt: `Erzeuge Relation ${input.relation_type}`,
-      model: "openai/gpt-4.1",
-      proposed_objects: [{ object_type: "Relation", ...input }],
+      model: engineeringAgentOrchestrator,
+      proposed_objects: [{ object_type: "Relation", ...input, source_id: sourceId, target_id: targetId }],
       evidence: [],
       retrieved_context: [],
       validation_results: [],
       created_by: "engineering-chat-agent",
     });
-    return { created: false, proposal };
-  },
+    const proposalId = String(proposal.proposal_id ?? "");
+    await validateEngineeringProposal(proposalId);
+    const approved = await approveEngineeringProposal(proposalId);
+    const proposedObjects = Array.isArray(approved.proposed_objects) ? approved.proposed_objects : [];
+    const canonicalRelations = proposedObjects.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const candidate = item as Record<string, unknown>;
+      const id = String(candidate.canonical_id ?? "");
+      return id ? [{ resource: "relations", id, name: String(candidate.relation_type ?? "Relation") }] : [];
+    });
+    return { created: true, proposal: approved, canonical_objects: canonicalRelations };
+  }),
 });
 
 const inspectEngineeringProposals = tool({
@@ -493,19 +1046,239 @@ const inspectRoute = tool({
   execute: async ({ route_id }) => getRoutingEntry(route_id),
 });
 
+const routeProposalInputSchema = z.object({
+    prompt: z.string(),
+    source_node_id: z.string().describe("Kanonische ID oder exakter Name des sendenden HardwareNode."),
+    destination_node_ids: z.array(z.string()).min(1).describe("Kanonische IDs oder exakte Namen anderer HardwareNodes."),
+    message_id: z.string().optional().describe("Kanonische ID oder exakter Name der Message."),
+    signal_ids: z.array(z.string()).optional().describe("Kanonische IDs oder exakte Namen der Signals."),
+    routing_type: z.string().optional(),
+  });
+
+type RouteProposalInput = z.infer<typeof routeProposalInputSchema>;
+
+async function createVerifiedRouteProposal(input: RouteProposalInput) {
+    const hardware = await listObjects("hardware-nodes");
+    const resolveFrom = (items: Record<string, unknown>[], value: string) => items.find(
+      (item) => String(item.id ?? "") === value || sameEngineeringName(item.name, value),
+    );
+    const source = resolveFrom(hardware.items, input.source_node_id);
+    const destinations = input.destination_node_ids.map((value) => resolveFrom(hardware.items, value));
+    const missingDestinations = input.destination_node_ids.filter((_, index) => !destinations[index]);
+    const availableNodes = hardware.items.map((item) => ({ id: item.id, name: item.name }));
+
+    if (!source || missingDestinations.length) {
+      return {
+        created: false,
+        blocked: true,
+        reason: !source
+          ? `Source HardwareNode '${input.source_node_id}' wurde nicht gefunden.`
+          : `Destination HardwareNode(s) nicht gefunden: ${missingDestinations.join(", ")}.`,
+        available_nodes: availableNodes,
+      };
+    }
+    const sourceId = String(source.id);
+    const destinationIds = destinations.map((item) => String(item?.id ?? ""));
+    if (destinationIds.some((id) => id === sourceId)) {
+      return {
+        created: false,
+        blocked: true,
+        reason: "Source und Destination muessen verschiedene HardwareNodes sein.",
+        available_nodes: availableNodes,
+      };
+    }
+    if (hardware.items.length < 2) {
+      return {
+        created: false,
+        blocked: true,
+        reason: "Routing benoetigt mindestens zwei kanonische HardwareNodes (Producer und Consumer).",
+        available_nodes: availableNodes,
+      };
+    }
+
+    let messageId: string | undefined;
+    if (input.message_id) {
+      const messages = await listObjects("messages");
+      const message = resolveFrom(messages.items, input.message_id);
+      if (!message) {
+        return {
+          created: false,
+          blocked: true,
+          reason: `Message '${input.message_id}' wurde nicht im kanonischen Modell gefunden.`,
+        };
+      }
+      messageId = String(message.id);
+    }
+
+    let signalIds: string[] | undefined;
+    if (input.signal_ids?.length) {
+      const signals = await listObjects("signals");
+      const resolvedSignals = input.signal_ids.map((value) => resolveFrom(signals.items, value));
+      const missingSignals = input.signal_ids.filter((_, index) => !resolvedSignals[index]);
+      if (missingSignals.length) {
+        return {
+          created: false,
+          blocked: true,
+          reason: `Signal(s) nicht im kanonischen Modell gefunden: ${missingSignals.join(", ")}.`,
+        };
+      }
+      signalIds = resolvedSignals.map((item) => String(item?.id ?? ""));
+    }
+
+    const proposals = await listRoutingProposals();
+    const duplicate = proposals.items.find((proposal) => {
+      if (["REJECTED", "SUPERSEDED"].includes(String(proposal.status ?? ""))) return false;
+      const routes = Array.isArray(proposal.generated_routes) ? proposal.generated_routes : [];
+      return routes.some((route) => {
+        if (!route || typeof route !== "object") return false;
+        const candidate = route as Record<string, unknown>;
+        const routeSource = candidate.source && typeof candidate.source === "object"
+          ? candidate.source as Record<string, unknown>
+          : {};
+        const payload = candidate.payload && typeof candidate.payload === "object"
+          ? candidate.payload as Record<string, unknown>
+          : {};
+        const destinations = Array.isArray(candidate.destinations) ? candidate.destinations : [];
+        const candidateDestinationIds = destinations.flatMap((destination) => {
+          if (!destination || typeof destination !== "object") return [];
+          return [String((destination as Record<string, unknown>).node_id ?? "")];
+        });
+        return String(routeSource.node_id ?? "") === sourceId
+          && destinationIds.every((id) => candidateDestinationIds.includes(id))
+          && (!messageId || String(payload.message_id ?? "") === messageId);
+      });
+    });
+    if (duplicate) {
+      return {
+        created: false,
+        reused: true,
+        proposal: duplicate,
+        note: "Ein inhaltlich gleicher aktiver RoutingProposal existiert bereits; es wurde kein Duplikat erzeugt.",
+      };
+    }
+
+    try {
+      return await generateRoutingProposal({
+        ...input,
+        source_node_id: sourceId,
+        destination_node_ids: destinationIds,
+        message_id: messageId,
+        signal_ids: signalIds,
+        actor: "engineering-chat-agent",
+      });
+    } catch (error) {
+      return {
+        created: false,
+        blocked: true,
+        reason: error instanceof Error ? error.message : "RoutingProposal konnte nicht erzeugt werden.",
+        available_nodes: availableNodes,
+      };
+    }
+}
+
 const createRouteProposal = tool({
   description:
     "Erzeugt einen getrennten RoutingProposal anhand von Topologie, Nodes, Interfaces, Message und Signal-Selektion. " +
-    "Aktiviert oder genehmigt niemals Routen.",
+    "Akzeptiert kanonische IDs oder exakte Objektnamen, prüft alle Referenzen vorab und aktiviert oder genehmigt niemals Routen.",
+  inputSchema: routeProposalInputSchema,
+  execute: createVerifiedRouteProposal,
+});
+
+const routingEndpointInputSchema = z.object({
+  hardware_name: z.string().describe("Eindeutiger Name des empfangenden HardwareNode."),
+  hardware_description: z.string().optional(),
+  device_type: z.string().optional().describe("Standard: ECU."),
+  function_name: z.string().describe("Empfangende oder verarbeitende Funktion."),
+  function_description: z.string().optional(),
+  interface_name: z.string().describe("Eindeutiger Name des empfangenden Interface."),
+  interface_type: z.string().optional().describe("Standard: CAN."),
+  domain: z.string().optional(),
+});
+
+const createRoutableEngineeringPair = tool({
+  description:
+    "Erzeugt atomisch eine vollstaendige Producer-Kette, einen separaten Consumer-Endpunkt und danach einen " +
+    "RoutingProposal mit ausschliesslich kanonischen IDs. Verwende dieses Tool, wenn fuer ein Routing-Ziel noch " +
+    "Engineering-Teilnehmer oder Payload-Objekte fehlen.",
   inputSchema: z.object({
     prompt: z.string(),
-    source_node_id: z.string(),
-    destination_node_ids: z.array(z.string()).min(1),
-    message_id: z.string().optional(),
-    signal_ids: z.array(z.string()).optional(),
+    source: engineeringChainInputSchema.describe("Producer-Kette inklusive Message und Signal."),
+    destination: routingEndpointInputSchema,
     routing_type: z.string().optional(),
   }),
-  execute: async (input) => generateRoutingProposal({ ...input, actor: "engineering-chat-agent" }),
+  execute: async ({ prompt, source, destination, routing_type }) => serializeProposalCreation(async () => {
+    if (sameEngineeringName(source.hardware_name, destination.hardware_name)) {
+      return {
+        created: false,
+        blocked: true,
+        reason: "Producer und Consumer muessen verschiedene HardwareNodes sein.",
+      };
+    }
+
+    const sourceResult = await registerEngineeringChain(source);
+    const sourceObjects = sourceResult.canonical_objects;
+    const sourceNode = sourceObjects.find((item) => item.resource === "hardware-nodes");
+    const message = sourceObjects.find((item) => item.resource === "messages");
+    const signal = sourceObjects.find((item) => item.resource === "signals");
+
+    const destinationHardware = await createAndApproveEngineeringObject({
+      resource: "hardware-nodes",
+      name: destination.hardware_name,
+      description: destination.hardware_description,
+      domain: destination.domain ?? source.domain,
+      device_type: destination.device_type ?? "ECU",
+    });
+    const destinationNode = destinationHardware.canonical_objects[0];
+    const destinationFunction = await createAndApproveEngineeringObject({
+      resource: "functions",
+      name: destination.function_name,
+      description: destination.function_description,
+      domain: destination.domain ?? source.domain,
+      hardware_node_id: destinationNode?.id,
+    });
+    const destinationInterface = await createAndApproveEngineeringObject({
+      resource: "interfaces",
+      name: destination.interface_name,
+      interface_type: destination.interface_type ?? source.interface_type ?? "CAN",
+      domain: destination.domain ?? source.domain,
+      hardware_node_id: destinationNode?.id,
+      function_id: destinationFunction.canonical_objects[0]?.id,
+    });
+    const canonicalObjects = [
+      ...sourceObjects,
+      ...destinationHardware.canonical_objects,
+      ...destinationFunction.canonical_objects,
+      ...destinationInterface.canonical_objects,
+    ];
+
+    if (!sourceNode?.id || !destinationNode?.id || !message?.id || !signal?.id) {
+      return {
+        created: false,
+        blocked: true,
+        reason: "Das Routing-Paket konnte die kanonischen Producer-, Consumer- oder Payload-IDs nicht vollstaendig aufloesen.",
+        canonical_objects: canonicalObjects,
+      };
+    }
+
+    const routingProposal = await createVerifiedRouteProposal({
+      prompt,
+      source_node_id: sourceNode.id,
+      destination_node_ids: [destinationNode.id],
+      message_id: message.id,
+      signal_ids: [signal.id],
+      routing_type,
+    });
+    if (routingProposal && typeof routingProposal === "object" && "blocked" in routingProposal && routingProposal.blocked) {
+      return { ...routingProposal, canonical_objects: canonicalObjects };
+    }
+    return {
+      created: true,
+      complete: true,
+      canonical_objects: canonicalObjects,
+      routing_proposal: routingProposal,
+      note: "Producer, Consumer und Payload wurden kanonisch registriert; der RoutingProposal wurde mit aufgeloesten IDs erzeugt.",
+    };
+  }),
 });
 
 const listRouteProposals = tool({
@@ -815,8 +1588,259 @@ const proposeOptimization = tool({
   }),
 });
 
+const engineeringTools = {
+  inspect_workflow: inspectWorkflow,
+  inspect_workflow_map: inspectWorkflowMap,
+  plan_workflow_target: planWorkflowTarget,
+  inspect_capacity_timing: inspectCapacity,
+  calculate_capacity_timing: calculateCapacity,
+  inspect_preflight: inspectPreflight,
+  run_preflight: runPreflight,
+  create_simulation_snapshot: createSimulationSnapshot,
+  inspect_intelligence: inspectIntelligence,
+  create_optimization_proposal: proposeOptimization,
+  retrieve_engineering_knowledge: retrieveEngineeringKnowledge,
+  analyze_capacity_scenario: analyzeCapacityScenario,
+  inspect_timing: inspectCapacitySection("timing", "Liest Timing, E2E-Latenz, Deadline- und Jitterstatus mit Provenance."),
+  inspect_jitter: inspectCapacitySection("routes", "Liest routebezogene Jitterwerte, Budgets und Verletzungen."),
+  inspect_latency: inspectCapacitySection("critical_paths", "Liest kritische Pfade mit Latenzaufschluesselung und Anforderungen."),
+  inspect_queue: inspectCapacitySection("routes", "Liest Queueing-Verzoegerung, Policy, Prioritaet und Route-Bottlenecks."),
+  inspect_gateway_load: inspectCapacitySection("gateways", "Liest Gateway-Durchsatz, Queue-, Processing- und Conversion-Last."),
+  inspect_synchronization: inspectCapacitySection("synchronization", "Liest Clock Drift, Sync Precision und maximalen Synchronisationsfehler."),
+  identify_bottleneck: inspectCapacitySection("bottlenecks", "Identifiziert berechnete Capacity- und Timing-Bottlenecks."),
+  identify_deadline_violation: inspectViolations(["TIMING_DEADLINE", "TIMING_TIMEOUT", "TIMING_FRESHNESS"], "Liest Deadline-, Timeout- und Freshness-Verletzungen."),
+  identify_jitter_violation: inspectViolations(["TIMING_JITTER"], "Liest Jitterverletzungen und Empfehlungen."),
+  identify_reliability_violation: inspectViolations(["RELIABILITY_"], "Liest Reliability-Verletzungen und Empfehlungen."),
+  optimize_capacity: optimizeCapacity,
+  listEngineeringObjects,
+  createEngineeringModelFromSpecification,
+  createEngineeringChain,
+  createRoutableEngineeringPair,
+  proposeEngineeringObject,
+  listEngineeringRelations: listEngineeringRelationsTool,
+  proposeEngineeringRelation,
+  inspectEngineeringProposals,
+  validateEngineeringProposal: validateEngineeringProposalTool,
+  approveEngineeringProposal: approveEngineeringProposalTool,
+  approveAllValidEngineeringProposals: approveAllValidEngineeringProposalsTool,
+  inspect_routing_table: inspectRoutingTable,
+  inspect_route: inspectRoute,
+  inspect_topology: inspectTopology,
+  inspect_network: inspectNetwork,
+  inspect_node: inspectRoutingObject("hardware-nodes", "Hardware Node"),
+  inspect_interface: inspectRoutingObject("interfaces", "Interface"),
+  inspect_message: inspectRoutingObject("messages", "Message"),
+  inspect_signal: inspectRoutingObject("signals", "Signal"),
+  inspect_gateway: inspectGateway,
+  inspect_protocol: inspectProtocol,
+  find_route: findPaths,
+  find_all_routes: findPaths,
+  find_paths: findPaths,
+  get_neighbors: inspectNeighbors,
+  get_subgraph: inspectNeighbors,
+  create_route_proposal: createRouteProposal,
+  create_routing_table_proposal: createRouteProposal,
+  update_route_proposal: updateRouteProposal,
+  delete_route_proposal: deleteRouteProposal,
+  inspect_routing_proposals: listRouteProposals,
+  validate_route: validateRouteTool,
+  validate_routing_table: validateRoutingTableTool,
+  calculate_route_latency: validateRouteTool,
+  calculate_route_load: validateRouteTool,
+  detect_routing_loop: inspectRoutePath,
+  detect_duplicate_route: validateRouteTool,
+  detect_missing_route: validateRoutingTableTool,
+  detect_unreachable_consumer: validateRouteTool,
+  check_protocol_compatibility: validateRouteTool,
+  show_route_evidence: inspectRouteEvidence,
+  suggest_destination: suggestDestination,
+  suggest_gateway: inspectGateway,
+  suggest_network: inspectNetwork,
+  suggest_protocol: inspectProtocol,
+  suggest_alternative_route: findPaths,
+} as const;
+
+type EngineeringToolName = keyof typeof engineeringTools;
+
+const WORKFLOW_TOOL_GROUPS: Record<string, readonly EngineeringToolName[]> = {
+  engineering_model: [
+    "inspect_workflow",
+    "listEngineeringObjects",
+    "createEngineeringModelFromSpecification",
+    "createEngineeringChain",
+    "createRoutableEngineeringPair",
+    "proposeEngineeringObject",
+    "listEngineeringRelations",
+    "proposeEngineeringRelation",
+    "inspectEngineeringProposals",
+    "validateEngineeringProposal",
+    "approveEngineeringProposal",
+    "approveAllValidEngineeringProposals",
+  ],
+  routing: [
+    "inspect_workflow",
+    "inspect_routing_table",
+    "inspect_routing_proposals",
+    "create_route_proposal",
+    "validate_routing_table",
+    "find_paths",
+    "inspect_topology",
+    "listEngineeringObjects",
+  ],
+  network_editor: [
+    "inspect_workflow",
+    "inspect_topology",
+    "inspect_network",
+    "get_neighbors",
+    "find_paths",
+    "validate_routing_table",
+  ],
+  parameters: ["inspect_workflow", "inspect_protocol", "inspect_network", "inspect_routing_table"],
+  capacity_timing: [
+    "inspect_workflow",
+    "calculate_capacity_timing",
+    "inspect_capacity_timing",
+    "identify_bottleneck",
+    "optimize_capacity",
+  ],
+  validation: ["inspect_workflow", "run_preflight", "inspect_preflight", "inspect_capacity_timing"],
+  simulation: ["inspect_workflow", "create_simulation_snapshot", "inspect_preflight"],
+  results_analysis: ["inspect_workflow", "inspect_capacity_timing", "inspect_preflight"],
+  data_science_intelligence: [
+    "inspect_workflow",
+    "inspect_intelligence",
+    "retrieve_engineering_knowledge",
+    "create_optimization_proposal",
+  ],
+};
+
+const WORKFLOW_FIRST_TOOL: Record<string, EngineeringToolName> = {
+  engineering_model: "listEngineeringObjects",
+  routing: "inspect_routing_table",
+  network_editor: "inspect_topology",
+  parameters: "inspect_workflow",
+  capacity_timing: "calculate_capacity_timing",
+  validation: "run_preflight",
+  simulation: "create_simulation_snapshot",
+  results_analysis: "inspect_workflow",
+  data_science_intelligence: "inspect_intelligence",
+};
+
+const WORKFLOW_PROGRESS_TOOLS: Record<string, readonly EngineeringToolName[]> = {
+  engineering_model: [
+    "createEngineeringModelFromSpecification",
+    "createEngineeringChain",
+    "createRoutableEngineeringPair",
+    "proposeEngineeringObject",
+    "proposeEngineeringRelation",
+    "approveEngineeringProposal",
+    "approveAllValidEngineeringProposals",
+  ],
+  routing: ["create_route_proposal", "validate_routing_table"],
+  network_editor: ["inspect_topology", "validate_routing_table"],
+  parameters: ["inspect_workflow", "inspect_protocol"],
+  capacity_timing: ["calculate_capacity_timing"],
+  validation: ["run_preflight"],
+  simulation: ["create_simulation_snapshot"],
+  results_analysis: ["inspect_workflow"],
+  data_science_intelligence: ["inspect_intelligence", "create_optimization_proposal"],
+};
+
+const COMPLETE_WORKFLOW_STATUSES = new Set(["COMPLETE", "APPROVED"]);
+const CONFIRMATION_PATTERN = /\b(allow|bestaetigt|bestätigt|freigeben|uebernehmen|übernehmen|fortfahren|weiter)\b/i;
+const RECOVERY_PATTERN =
+  /\b(warum[\s\S]{0,40}(gestoppt|abgebrochen|aufgehoert|aufgehört)|gestoppt|abgebrochen|mach weiter|weiterarbeiten|fortsetzen|setze[\s\S]{0,50}fort|wieder aufnehmen|erneut ausfuehren|erneut ausführen)\b/i;
+const MUTATION_PATTERN =
+  /\b(erzeuge|generiere|erstelle|anlegen|aufbauen|ausfuehren|ausführen|starte|berechne|validiere|simuliere|optimier|reparier|verbinde|verknuepfe|verknüpfe|ordne|zuordnen|registriere)\b/i;
+const FULL_ENGINEERING_CHAIN_PATTERN =
+  /(hardwarenodes?[\s\S]*functions?[\s\S]*interfaces?[\s\S]*messages?[\s\S]*signals?)|(hardware[\s\S]*funktion[\s\S]*interface[\s\S]*(nachricht|message)[\s\S]*(signal))|(vollstaendige|vollständige|komplette)[\s\S]*?(kette|modell)|(bis einschliesslich signale|bis einschließlich signale)/i;
+const RELATION_REQUEST_PATTERN =
+  /\b(relation|has_interface|has_function|contains_signal|connected_to|communicates_with|verbinde|verknuepfe|verknüpfe|zuordnen)\b/i;
+
+function modelContentText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const text = "text" in part ? part.text : undefined;
+      return typeof text === "string" ? text : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function userRequestContext(messages: Array<{ role: string; content: unknown }>) {
+  const requests = messages
+    .filter((message) => message.role === "user")
+    .map((message) => modelContentText(message.content))
+    .filter(Boolean);
+  const latest = requests.at(-1) ?? "";
+  const previousTask = [...requests.slice(0, -1)].reverse().find(
+    (request) => !RECOVERY_PATTERN.test(concreteRequestText(request)),
+  ) ?? latest;
+  return {
+    latest,
+    previousTask,
+    conversation: requests.join("\n\n"),
+  };
+}
+
+function isActionableRequest(request: string) {
+  const concrete = concreteRequestText(request);
+  return MUTATION_PATTERN.test(concrete) || CONFIRMATION_PATTERN.test(concrete);
+}
+
+function isConfirmationRequest(request: string) {
+  const concrete = concreteRequestText(request);
+  return CONFIRMATION_PATTERN.test(concrete) && !MUTATION_PATTERN.test(concrete);
+}
+
+function isRecoveryRequest(request: string) {
+  return RECOVERY_PATTERN.test(concreteRequestText(request));
+}
+
+function requestsFullEngineeringChain(request: string) {
+  return FULL_ENGINEERING_CHAIN_PATTERN.test(concreteRequestText(request));
+}
+
+async function engineeringHierarchyStatus() {
+  const results = await Promise.all(RESOURCE_ENUM.map(async (resource) => {
+    const result = await listObjects(resource);
+    return [resource, result.count] as const;
+  }));
+  const counts = Object.fromEntries(results) as Record<EngineeringResourceName, number>;
+  return {
+    complete: RESOURCE_ENUM.every((resource) => counts[resource] > 0),
+    routingReady: counts["hardware-nodes"] >= 2 && RESOURCE_ENUM.slice(1).every((resource) => counts[resource] > 0),
+    counts,
+  };
+}
+
+async function currentWorkflowPhase(target: string) {
+  try {
+    const state = await inspectWorkflowState();
+    const statuses = (state.statuses ?? {}) as Record<string, unknown>;
+    const phase = workflowStepIdsUntil(target).find(
+      (stepId) => !COMPLETE_WORKFLOW_STATUSES.has(String(statuses[stepId] ?? "EMPTY").toUpperCase()),
+    );
+    return phase ?? target;
+  } catch (error) {
+    auditAgent("workflow phase lookup failed", {
+      target,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return target;
+  }
+}
+
 export const engineeringAgent = new ToolLoopAgent({
   model: engineeringModel,
+  providerOptions: {
+    openai: {
+      parallelToolCalls: false,
+    },
+  },
   onStart: (event) => {
     auditAgent("model run started", {
       callId: event.callId,
@@ -855,6 +1879,113 @@ export const engineeringAgent = new ToolLoopAgent({
       steps: event.steps.length,
       toolCalls: event.toolCalls.length,
     });
+  },
+  prepareStep: async ({ steps, initialMessages }) => {
+    const request = userRequestContext(initialMessages);
+    const confirmation = isConfirmationRequest(request.latest);
+    const recovery = isRecoveryRequest(request.latest);
+    const continuation = confirmation || recovery;
+    const requestBasis = continuation ? request.previousTask : request.latest;
+    setCurrentAgentRequestText(requestBasis);
+    const structuredSpecification = isStructuredEngineeringSpecification(requestBasis);
+    const target = inferWorkflowTarget(requestBasis);
+    const workflowSteps = workflowStepIdsUntil(target);
+    const targetNeedsRouting = target !== "engineering_model" && workflowSteps.includes("engineering_model");
+    const hierarchy = targetNeedsRouting ? await engineeringHierarchyStatus() : null;
+    let phase = await currentWorkflowPhase(target);
+    if (structuredSpecification) phase = "engineering_model";
+    if (targetNeedsRouting && hierarchy && !hierarchy.routingReady) phase = "engineering_model";
+    const fullEngineeringChainRequested = requestsFullEngineeringChain(
+      requestBasis,
+    );
+    const relationOnlyRequest = phase === "engineering_model"
+      && RELATION_REQUEST_PATTERN.test(concreteRequestText(requestBasis))
+      && !fullEngineeringChainRequested;
+    const activeTools = structuredSpecification
+      ? ["createEngineeringModelFromSpecification"] satisfies EngineeringToolName[]
+      : relationOnlyRequest
+      ? ["listEngineeringObjects", "listEngineeringRelations", "proposeEngineeringRelation"] satisfies EngineeringToolName[]
+      : [...(WORKFLOW_TOOL_GROUPS[phase] ?? WORKFLOW_TOOL_GROUPS.engineering_model)];
+    const calledTools = steps.flatMap((step) => step.toolCalls.map((call) => call.toolName));
+    const firstTool = confirmation && phase === "engineering_model" && !relationOnlyRequest
+      ? "inspectEngineeringProposals"
+      : WORKFLOW_FIRST_TOOL[phase] ?? "inspect_workflow";
+    const progressTools = WORKFLOW_PROGRESS_TOOLS[phase] ?? [];
+    const progressCalls = calledTools.filter((toolName) => progressTools.includes(toolName as EngineeringToolName)).length;
+    const minimumProgressCalls = 1;
+    const relationLookupCalls = calledTools.filter((toolName) => toolName === "listEngineeringObjects").length;
+    const relationProposalCalls = calledTools.filter((toolName) => toolName === "proposeEngineeringRelation").length;
+    const specificationCalls = calledTools.filter((toolName) => toolName === "createEngineeringModelFromSpecification").length;
+    const resumedMutation = isActionableRequest(requestBasis) || fullEngineeringChainRequested || structuredSpecification;
+    const actionable = isActionableRequest(request.latest) || fullEngineeringChainRequested || structuredSpecification || recovery;
+    const routingPackageCalls = calledTools.filter((toolName) => toolName === "createRoutableEngineeringPair").length;
+    const routingPackageCompleted = routingPackageCalls > 0;
+    const routingProposalInspected = calledTools.includes("inspect_routing_proposals");
+    const routingProposalCreated = calledTools.includes("create_route_proposal");
+    const fullEngineeringChain = phase === "engineering_model" && (
+      structuredSpecification
+      ||
+      fullEngineeringChainRequested
+      || Boolean(targetNeedsRouting && hierarchy && !hierarchy.routingReady)
+    );
+    const toolChoice = structuredSpecification
+      ? specificationCalls < 1
+        ? { type: "tool" as const, toolName: "createEngineeringModelFromSpecification" as const }
+        : "none" as const
+      : relationOnlyRequest
+      ? relationLookupCalls < 2
+        ? { type: "tool" as const, toolName: "listEngineeringObjects" as const }
+        : relationProposalCalls < 1
+          ? { type: "tool" as const, toolName: "proposeEngineeringRelation" as const }
+          : "none" as const
+      : !actionable
+      ? "auto" as const
+      : !calledTools.includes(firstTool)
+        ? { type: "tool" as const, toolName: firstTool }
+        : recovery && !resumedMutation
+          ? "none" as const
+        : phase === "routing" && routingProposalCreated
+          ? "none" as const
+        : phase === "routing" && routingPackageCompleted && !routingProposalInspected
+          ? { type: "tool" as const, toolName: "inspect_routing_proposals" as const }
+          : phase === "routing" && routingPackageCompleted
+            ? "none" as const
+        : targetNeedsRouting && hierarchy && !hierarchy.routingReady && routingPackageCalls < 1
+          ? { type: "tool" as const, toolName: "createRoutableEngineeringPair" as const }
+          : fullEngineeringChain && !calledTools.includes("createEngineeringChain")
+            ? { type: "tool" as const, toolName: "createEngineeringChain" as const }
+          : progressCalls < minimumProgressCalls
+            ? "required" as const
+            : "auto" as const;
+    const demandModel = demandModelForRequest(request.latest, recovery, actionable);
+
+    auditAgent("step orchestration", {
+      step: steps.length + 1,
+      target,
+      phase,
+      activeTools: activeTools.length,
+      toolChoice: typeof toolChoice === "string" ? toolChoice : toolChoice.toolName,
+      progressCalls,
+      fullEngineeringChain,
+      relationOnlyRequest,
+      structuredSpecification,
+      specificationCalls,
+      recovery,
+      resumedMutation,
+      relationLookupCalls,
+      relationProposalCalls,
+      routingPackageCalls,
+      routingProposalInspected,
+      routingProposalCreated,
+      modelSource: demandModel.source,
+      hierarchy: hierarchy ? JSON.stringify(hierarchy.counts) : undefined,
+    });
+
+    return {
+      activeTools,
+      toolChoice,
+      model: demandModel.model,
+    };
   },
   instructions: `Du bist der Network-Engineering-Assistent des Communication Simulators.
 
@@ -904,8 +2035,14 @@ Regeln:
   5) calculate_capacity_timing persistent ausfuehren,
   6) run_preflight ausfuehren,
   7) nur bei ready_for_simulation create_simulation_snapshot ausfuehren.
-  Wenn Human Review blockiert, bleibst du nicht still stehen: validiere offene
-  Proposals, fordere einmal klar Allow an und setze nach Allow mit der Folge fort.
+  Engineering-Objekte werden dabei sofort validiert und kanonisch registriert.
+- Bevor du create_route_proposal aufrufst, muessen mindestens zwei verschiedene
+  kanonische HardwareNodes sowie die referenzierte Message und ihre Signals
+  existieren. Nutze nur IDs oder exakte Namen aus den Lese-Tools. Wenn Producer
+  oder Consumer fehlen, vervollstaendige zuerst das Engineering-Modell oder
+  melde den fehlenden Teilnehmer klar; wiederhole keinen identischen Fehlerlauf.
+- Eine Routing-Tabelle mit null Eintraegen ist nicht valide und darf niemals als
+  "technische Pruefung bestanden" zusammengefasst werden.
 - Beende deine Antwort nicht nach einem einzelnen Zwischenschritt, wenn klar ist,
   dass noch Folgeobjekte, Validierung, Freigabe, Routing, Preflight oder
   Nachpruefung zum genannten Ziel gehoeren.
@@ -917,22 +2054,41 @@ Regeln:
   fehlen. Nenne dabei klar Industrie, Netzwerktechnologien, Modellumfang und
   plausible Defaults; der Client kann daraus eine Auswahlmaske mit Checkboxen
   anzeigen. Formuliere diese Rueckfragen nicht als lange, verstreute Textliste.
-- Wenn eine Aufgabe wegen Human Review nicht vollstaendig bis ins kanonische
-  Modell geschrieben werden darf, erstelle trotzdem alle notwendigen Proposals
-  bis zum naechsten Review-Gate und benenne genau, was danach noch freigegeben
-  werden muss.
 - Nutze die Lese-Tools, um bestehende Objekte zu recherchieren, bevor du neue vorschlägst.
 - Wenn der Nutzer ein neues Objekt oder eine neue Relation möchte, nutze die
-  "propose"-Tools. Sie speichern Ergebnisse IMMER getrennt als AIProposal.
-  Das freigegebene Engineering-Modell wird dadurch nicht verändert.
+  Engineering-Tools. Sie speichern zuerst ein AIProposal als Auditspur,
+  validieren es und registrieren valide Ergebnisse sofort im kanonischen Modell.
+- Gib niemals erfundene externe URLs, API-Tokens, Authentifizierungsdaten oder
+  Python-/requests-/curl-Beispielcode als Ersatz fuer einen Simulator-Toolaufruf
+  aus. example.com, YOUR_API_TOKEN und vergleichbare Platzhalter sind in einem
+  Arbeitsergebnis unzulaessig. Mutationen am Modell erfolgen ausschliesslich mit
+  den bereitgestellten Engineering-Tools.
+- Schreibe Toolaufrufe niemals als Freitext, XML, <tool_call>, <function> oder
+  aehnliche Markup-Imitation. Entweder rufst du ein bereitgestelltes Tool real
+  auf oder du fasst das vorhandene Toolergebnis knapp auf Deutsch zusammen.
+- Wenn die Anwendung eine vorherige Antwort als unsichere externe API- oder
+  Pseudo-Tool-Ausgabe verworfen hat und der Nutzer nach dem Stopp fragt oder
+  fortsetzen moechte, benenne diesen konkreten Grund knapp und setze den letzten
+  echten Nutzerauftrag mit den Simulator-Tools fort. Behaupte nicht, eine externe
+  API sei eingestellt oder nicht auffindbar.
+- Wenn der Nutzer eine Relation anlegen, verbinden, verknuepfen oder zuordnen
+  moechte, recherchiere Quelle und Ziel mit listEngineeringObjects und nutze
+  anschliessend proposeEngineeringRelation. Erfinde keine object_id und fordere
+  keine API-Zugangsdaten an.
 - Fuer ein neues Systemmodell erstelle zuerst HardwareNodes, dann Functions je
   Hardware, dann Interfaces an Functions, danach Messages und erst danach
   Signals. Messages duerfen nur auf Interfaces zeigen, Signals nur auf Messages.
-- Wenn der Nutzer danach ausdruecklich bestaetigt, z. B. mit "Allow",
-  "bestaetigt", "ja", "freigeben" oder "uebernehmen", validiere die offenen
-  Engineering-Proposals und nutze die approve-Tools. Nur dann werden valide
-  Vorschlaege als echte Simulator-Objekte oder Relations angelegt.
-- Nach einer Freigabe lies die betroffenen Engineering-Objekte erneut und
+- Nutze createEngineeringChain, sobald ein vollstaendiges Modell oder die Kette
+  bis zum Signal verlangt wird. Das Tool muss mindestens einmal erfolgreich
+  laufen, bevor du einen solchen Auftrag als abgeschlossen meldest.
+- Wenn der Nutzer eine strukturierte Spezifikation mit benannten Sensoren, ECUs,
+  Gateways, Controllern oder PLCs und technischen Parametern sendet, ist das ein
+  bestaetigter Erzeugungsauftrag. Nutze createEngineeringModelFromSpecification,
+  verarbeite alle erkannten Teilnehmer und stoppe nicht nach dem ersten Objekt.
+- Erzeuge voneinander abhaengige Engineering-Objekte nacheinander und verwende
+  die kanonische ID des gerade registrierten Elternobjekts. Verwende niemals
+  "None" oder erfundene UUIDs fuer Elternreferenzen.
+- Nach der Registrierung lies die betroffenen Engineering-Objekte erneut und
   bestaetige knapp, welche Objekte im Simulator-Modell angekommen sind.
 - Verwende fuer Kennzahlen, Reifegrad, Anomalien und Korrelationen immer die
   deterministische Intelligence-Bewertung. Erfinde oder ueberschreibe keine Werte.
@@ -942,78 +2098,17 @@ Regeln:
 - Wenn Angaben fehlen (z. B. UUIDs für Relations), frage danach oder nutze die
   Such-Tools, um sie zu finden, statt sie zu erfinden.
 - Erkläre kurz, was du getan hast, nachdem ein Tool ausgeführt wurde.
+- Halte die sichtbare Antwort kompakt. Pro Objekt genuegt eine Statuszeile:
+  "Objektname · gefunden · modelliert · registriert". Wiederhole weder
+  Tool-Parameter noch lange Objektbeschreibungen oder interne Statusdaten.
+- Human Review bleibt fuer OptimizationProposals verbindlich. Engineering-
+  Objekt-Proposals sind dagegen Auditspuren und werden bei valider Struktur
+  automatisch registriert.
 - Für Tests muss dein Vorgehen nachvollziehbar sein: nenne bei komplexeren
   Aufgaben kurz Ziel, Arbeitsannahme und Ergebnisbewertung. Halte diese
   Hinweise knapp und nutzerverständlich, nicht als JSON und nicht als
   interne Gedankenkette.`,
-  tools: {
-    inspect_workflow: inspectWorkflow,
-    inspect_workflow_map: inspectWorkflowMap,
-    plan_workflow_target: planWorkflowTarget,
-    inspect_capacity_timing: inspectCapacity,
-    calculate_capacity_timing: calculateCapacity,
-    inspect_preflight: inspectPreflight,
-    run_preflight: runPreflight,
-    create_simulation_snapshot: createSimulationSnapshot,
-    inspect_intelligence: inspectIntelligence,
-    create_optimization_proposal: proposeOptimization,
-    retrieve_engineering_knowledge: retrieveEngineeringKnowledge,
-    analyze_capacity_scenario: analyzeCapacityScenario,
-    inspect_timing: inspectCapacitySection("timing", "Liest Timing, E2E-Latenz, Deadline- und Jitterstatus mit Provenance."),
-    inspect_jitter: inspectCapacitySection("routes", "Liest routebezogene Jitterwerte, Budgets und Verletzungen."),
-    inspect_latency: inspectCapacitySection("critical_paths", "Liest kritische Pfade mit Latenzaufschluesselung und Anforderungen."),
-    inspect_queue: inspectCapacitySection("routes", "Liest Queueing-Verzoegerung, Policy, Prioritaet und Route-Bottlenecks."),
-    inspect_gateway_load: inspectCapacitySection("gateways", "Liest Gateway-Durchsatz, Queue-, Processing- und Conversion-Last."),
-    inspect_synchronization: inspectCapacitySection("synchronization", "Liest Clock Drift, Sync Precision und maximalen Synchronisationsfehler."),
-    identify_bottleneck: inspectCapacitySection("bottlenecks", "Identifiziert berechnete Capacity- und Timing-Bottlenecks."),
-    identify_deadline_violation: inspectViolations(["TIMING_DEADLINE", "TIMING_TIMEOUT", "TIMING_FRESHNESS"], "Liest Deadline-, Timeout- und Freshness-Verletzungen."),
-    identify_jitter_violation: inspectViolations(["TIMING_JITTER"], "Liest Jitterverletzungen und Empfehlungen."),
-    identify_reliability_violation: inspectViolations(["RELIABILITY_"], "Liest Reliability-Verletzungen und Empfehlungen."),
-    optimize_capacity: optimizeCapacity,
-    listEngineeringObjects,
-    proposeEngineeringObject,
-    listEngineeringRelations: listEngineeringRelationsTool,
-    proposeEngineeringRelation,
-    inspectEngineeringProposals,
-    validateEngineeringProposal: validateEngineeringProposalTool,
-    approveEngineeringProposal: approveEngineeringProposalTool,
-    approveAllValidEngineeringProposals: approveAllValidEngineeringProposalsTool,
-    inspect_routing_table: inspectRoutingTable,
-    inspect_route: inspectRoute,
-    inspect_topology: inspectTopology,
-    inspect_network: inspectNetwork,
-    inspect_node: inspectRoutingObject("hardware-nodes", "Hardware Node"),
-    inspect_interface: inspectRoutingObject("interfaces", "Interface"),
-    inspect_message: inspectRoutingObject("messages", "Message"),
-    inspect_signal: inspectRoutingObject("signals", "Signal"),
-    inspect_gateway: inspectGateway,
-    inspect_protocol: inspectProtocol,
-    find_route: findPaths,
-    find_all_routes: findPaths,
-    find_paths: findPaths,
-    get_neighbors: inspectNeighbors,
-    get_subgraph: inspectNeighbors,
-    create_route_proposal: createRouteProposal,
-    create_routing_table_proposal: createRouteProposal,
-    update_route_proposal: updateRouteProposal,
-    delete_route_proposal: deleteRouteProposal,
-    inspect_routing_proposals: listRouteProposals,
-    validate_route: validateRouteTool,
-    validate_routing_table: validateRoutingTableTool,
-    calculate_route_latency: validateRouteTool,
-    calculate_route_load: validateRouteTool,
-    detect_routing_loop: inspectRoutePath,
-    detect_duplicate_route: validateRouteTool,
-    detect_missing_route: validateRoutingTableTool,
-    detect_unreachable_consumer: validateRouteTool,
-    check_protocol_compatibility: validateRouteTool,
-    show_route_evidence: inspectRouteEvidence,
-    suggest_destination: suggestDestination,
-    suggest_gateway: inspectGateway,
-    suggest_network: inspectNetwork,
-    suggest_protocol: inspectProtocol,
-    suggest_alternative_route: findPaths,
-  },
+  tools: engineeringTools,
   stopWhen: isStepCount(30),
 });
 
