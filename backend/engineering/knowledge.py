@@ -7,6 +7,7 @@ from typing import Any
 from backend.knowledge import EngineeringContextBuilder, HybridRetrievalService, KnowledgeDocument
 
 from .db import get_connection
+from .project_context import current_project_id
 
 
 class CanonicalKnowledgeService:
@@ -24,8 +25,10 @@ class CanonicalKnowledgeService:
         with get_connection() as connection:
             for object_type, table, extra_columns in self.ENTITY_TABLES:
                 rows = connection.execute(
-                    f"SELECT id, name, description, domain, source, approval_state, version, created_at{extra_columns} "
-                    f"FROM {table} ORDER BY modified_at DESC LIMIT 1000"
+                    f"SELECT id, name, description, domain, source, review_state, approval_state, "
+                    f"version, created_at{extra_columns} FROM {table} "
+                    f"WHERE project_id = %s ORDER BY modified_at DESC LIMIT 1000",
+                    (current_project_id(),),
                 ).fetchall()
                 for row in rows:
                     object_id = str(row["id"])
@@ -64,7 +67,9 @@ class CanonicalKnowledgeService:
                     indexed_ids.add(object_id)
             relations = connection.execute(
                 "SELECT id, source_id, target_id, relation_type, attributes AS properties "
-                "FROM engineering_relations ORDER BY created_at DESC LIMIT 5000"
+                "FROM engineering_relations WHERE project_id = %s "
+                "ORDER BY created_at DESC LIMIT 5000",
+                (current_project_id(),),
             ).fetchall()
 
         for relation in relations:

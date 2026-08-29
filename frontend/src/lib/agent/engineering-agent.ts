@@ -8,11 +8,14 @@ import {
   currentAgentRequestText,
   setCurrentAgentRequestText,
 } from "@/lib/agent/request-context";
+import { agentLearningContext } from "@/lib/agent/feedback-store";
 import {
   extractEngineeringSpecification,
   isStructuredEngineeringSpecification,
+  type ExtractedEngineeringChain,
 } from "@/lib/agent/engineering-specification";
 import {
+  acceptRoutingProposal,
   createProposal,
   deleteRoutingProposal,
   findRoutingPaths,
@@ -30,21 +33,37 @@ import {
   validateRoutingEntry,
   validateRoutingTable,
   inspectWorkflowState,
+  inspectWorkflowSnapshots,
+  saveWorkflowTopology,
+  saveWorkflowParameters,
   inspectCapacityAnalysis,
   calculateCapacityAnalysis,
   inspectPreflightAnalysis,
   runPreflightAnalysis,
-  createWorkflowSimulationSnapshot,
+  startWorkflowSimulation,
   calculateCapacityScenario,
   optimizeCapacityAnalysis,
   searchEngineeringKnowledge,
   inspectIntelligenceAssessment,
+  runIntelligenceAssessment,
   createIntelligenceProposal,
   approveAllValidEngineeringProposals,
   approveEngineeringProposal,
   listEngineeringProposals,
   validateEngineeringProposal,
+  inspectSimulationModelCatalog,
+  inspectSimulationFaultProposals,
+  proposeSimulationFaults,
+  reviewSimulationFaultProposal,
+  inspectSimulationTraces,
+  startSimulationCampaign,
+  inspectSimulationCampaign,
+  inspectSimulationScenarios,
+  createSimulationScenarioDefinition,
 } from "@/lib/engineering-server-client";
+import { routingApprovalProgress } from "@/lib/routing-approval";
+import { normalizePhysicalTopology, topologyToConfig, type BusType, type NetworkTopology, type NodeKind } from "@/lib/topology";
+import type { RoutingEntry } from "@/lib/types";
 
 const RESOURCE_ENUM = ["hardware-nodes", "functions", "interfaces", "messages", "signals"] as const;
 const OBJECT_TYPE_ENUM = ["HardwareNode", "Function", "Interface", "Message", "Signal"] as const;
@@ -89,7 +108,7 @@ const WORKFLOW_MANIFEST = [
       "Eine Route ist erst belastbar, wenn Pfad, Quelle, Ziel, Payload und Protokoll validiert sind.",
     ],
     tools: ["inspect_routing_table", "create_route_proposal", "inspect_routing_proposals", "validate_routing_table", "find_paths", "inspect_topology"],
-    doneWhen: "Routen sind erzeugt, validiert und fuer fehlende Freigaben klar am Review-Gate benannt.",
+    doneWhen: "Der Freigabezaehler meldet approved === total und complete === true. Freigaben bleiben beim Menschen; solange der Zaehler offen ist, wartet der Agent am Review-Gate und beginnt keine Folgeschritte.",
   },
   {
     id: "network_editor",
@@ -102,8 +121,8 @@ const WORKFLOW_MANIFEST = [
       "Edges verbinden Ports oder HardwareNodes ohne Boxen zu kreuzen.",
       "Sensoren stehen vor verarbeitenden ECUs, Gateways vermitteln, Aktoren/Consumer stehen nachgelagert.",
     ],
-    tools: ["inspect_topology", "inspect_network", "find_paths", "validate_routing_table"],
-    doneWhen: "Routing und Netzwerk sind synchron und der Workflow meldet keine offene Topologie-Luecke.",
+    tools: ["build_network_topology", "inspect_topology", "inspect_network", "find_paths", "validate_routing_table"],
+    doneWhen: "Mindestens zwei verknuepfte Nodes, gueltige Ports und eine persistierte Edge sind mit dem Routing synchronisiert.",
   },
   {
     id: "parameters",
@@ -115,8 +134,8 @@ const WORKFLOW_MANIFEST = [
       "Parameter haengen an Netzwerk- und Routentechnologien.",
       "Leere Felder werden mit plausiblen technologieabhaengigen Defaults gefuellt, sofern der Nutzer nichts anderes vorgibt.",
     ],
-    tools: ["inspect_protocol", "inspect_network", "inspect_workflow"],
-    doneWhen: "Parameter sind ausreichend fuer Capacity-Berechnung und Preflight.",
+    tools: ["configure_workflow_parameters", "inspect_protocol", "inspect_network", "inspect_workflow"],
+    doneWhen: "Technologie, Bitrate, Payload, Cycle, Queue, Grenzwerte und Ausgabeformate sind gueltig persistiert.",
   },
   {
     id: "capacity_timing",
@@ -154,8 +173,8 @@ const WORKFLOW_MANIFEST = [
       "Simulation darf nur nach aktuellem erfolgreichem Preflight gestartet werden.",
       "Wenn Preflight blockiert, stoppt der Agent mit konkreten Reparaturschritten.",
     ],
-    tools: ["create_simulation_snapshot", "inspect_workflow"],
-    doneWhen: "Ein SimulationSnapshot wurde erzeugt oder ein Preflight-Blocker verhindert den Start.",
+    tools: ["create_simulation_snapshot", "inspect_simulation_models", "propose_simulation_faults", "review_simulation_fault", "inspect_simulation_traces", "inspect_workflow"],
+    doneWhen: "Snapshot und echter Simulator-Job sind abgeschlossen; ein auswertbares Ergebnisartefakt liegt vor.",
   },
   {
     id: "results_analysis",
@@ -167,8 +186,8 @@ const WORKFLOW_MANIFEST = [
       "Results duerfen nur als aktuell gelten, wenn ihre Quellversionen zum aktuellen Workflow passen.",
       "Fehlende oder veraltete Simulationen muessen klar als Blocker benannt werden.",
     ],
-    tools: ["inspect_workflow", "inspect_capacity_timing", "inspect_preflight"],
-    doneWhen: "Aktuelle Simulationsergebnisse sind vorhanden oder der fehlende Simulationsstand ist klar benannt.",
+    tools: ["inspect_results_analysis", "inspect_workflow", "inspect_capacity_timing", "inspect_preflight"],
+    doneWhen: "Eine persistierte AnalysisSummary referenziert einen aktuellen abgeschlossenen Simulatorlauf.",
   },
   {
     id: "data_science_intelligence",
@@ -180,8 +199,8 @@ const WORKFLOW_MANIFEST = [
       "Intelligence bewertet den Gesamtzustand anhand von Workflow-, Graph-, RAG- und Analyse-Evidence.",
       "Optimierungsvorschlaege bleiben getrennt und benoetigen Human Review.",
     ],
-    tools: ["inspect_intelligence", "create_optimization_proposal", "inspect_workflow"],
-    doneWhen: "Eine aktuelle Bewertung liegt vor oder fehlende Voraussetzungen sind benannt.",
+    tools: ["assess_intelligence", "inspect_intelligence", "create_optimization_proposal", "inspect_workflow"],
+    doneWhen: "Eine aktuelle deterministische Intelligence-Bewertung liegt fuer die aktuelle Results-Analyse vor.",
   },
 ] as const;
 
@@ -261,19 +280,21 @@ const nvidiaKey = process.env.NVIDIA_API_KEY;
 const requestedProvider = (process.env.AI_PROVIDER ?? "hybrid-demand").trim().toLowerCase();
 const localAIBaseURL = (process.env.LOCAL_AI_BASE_URL ?? "http://127.0.0.1:11434/v1").replace(/\/$/, "");
 const localAIModel = process.env.LOCAL_AI_MODEL ?? "qwen3.8:27b";
+const localAIFastModel = process.env.LOCAL_AI_FAST_MODEL ?? "llama3.1:8b";
 const cloudEscalationPolicy = (process.env.CLOUD_ESCALATION ?? "on_failure").trim().toLowerCase();
 const EXPLICIT_OPENAI_PATTERN = /(?:nutze|verwende|mit|ueber|über)\s+(?:openai|gpt(?:-?5)?|cloud)\b/i;
 const EXPLICIT_NVIDIA_PATTERN = /(?:nutze|verwende|mit|ueber|über)\s+(?:nvidia|nemotron|nim)\b/i;
+const DEEP_LOCAL_PATTERN = /\b(?:tiefenanalyse|deep analysis|gruendlich|gründlich|qwen|27b)\b/i;
 
 function selectEngineeringModels() {
-  const local = () => ({
+  const local = (modelName = localAIFastModel) => ({
     provider: "ollama" as const,
-    label: localAIModel,
+    label: modelName,
     model: createOpenAI({
       apiKey: process.env.LOCAL_AI_API_KEY ?? "ollama",
       baseURL: localAIBaseURL,
       name: "ollama",
-    }).chat(localAIModel),
+    }).chat(modelName),
   });
   const openai = () => ({
     provider: "openai" as const,
@@ -291,11 +312,12 @@ function selectEngineeringModels() {
   });
   const onDemandOpenAI = usableApiKey(openAIKey) ? openai() : null;
   const onDemandNvidia = usableApiKey(nvidiaKey) ? nvidia() : null;
+  const localDeep = local(localAIModel);
   const selection = (
     primary: ReturnType<typeof local> | ReturnType<typeof openai> | ReturnType<typeof nvidia>,
     orchestrator: ReturnType<typeof local> | ReturnType<typeof openai> | ReturnType<typeof nvidia>,
     provider: string,
-  ) => ({ primary, orchestrator, provider, onDemandOpenAI, onDemandNvidia });
+  ) => ({ primary, orchestrator, provider, onDemandOpenAI, onDemandNvidia, localDeep });
 
   if (requestedProvider === "local" || requestedProvider === "ollama") {
     const localSelection = local();
@@ -332,7 +354,7 @@ function selectEngineeringModels() {
     label: "gpt-5-mini",
     model: createOpenAI({ apiKey: "unconfigured" })("gpt-5-mini"),
   };
-  return { primary: unconfigured, orchestrator: unconfigured, provider: "unconfigured", onDemandOpenAI, onDemandNvidia };
+  return { primary: unconfigured, orchestrator: unconfigured, provider: "unconfigured", onDemandOpenAI, onDemandNvidia, localDeep };
 }
 
 const engineeringModelSelection = selectEngineeringModels();
@@ -340,16 +362,20 @@ const engineeringModel = engineeringModelSelection.primary.model;
 const engineeringOrchestrationModel = engineeringModelSelection.orchestrator.model;
 const engineeringOnDemandOpenAIModel = engineeringModelSelection.onDemandOpenAI?.model ?? null;
 const engineeringOnDemandNvidiaModel = engineeringModelSelection.onDemandNvidia?.model ?? null;
+const engineeringDeepLocalModel = engineeringModelSelection.localDeep.model;
 
 export const engineeringAgentProvider = engineeringModelSelection.provider;
 export const engineeringAgentModel = engineeringModelSelection.primary.label;
 export const engineeringAgentOrchestrator =
   requestedProvider === "hybrid-demand"
-    ? `local-first;openai=${engineeringModelSelection.onDemandOpenAI?.label ?? "off"};nvidia=${engineeringModelSelection.onDemandNvidia?.label ?? "off"}`
+    ? `local-fast=${engineeringModelSelection.primary.label};local-deep=${engineeringModelSelection.localDeep.label};openai=${engineeringModelSelection.onDemandOpenAI?.label ?? "off"};nvidia=${engineeringModelSelection.onDemandNvidia?.label ?? "off"}`
     : `${engineeringModelSelection.orchestrator.provider}/${engineeringModelSelection.orchestrator.label}`;
 
 function demandModelForRequest(request: string, recovery: boolean, actionable: boolean) {
   if (requestedProvider !== "hybrid-demand") {
+    if (DEEP_LOCAL_PATTERN.test(request) && engineeringModelSelection.primary.provider === "ollama") {
+      return { model: engineeringDeepLocalModel, source: "local-deep" };
+    }
     return {
       model: actionable ? engineeringOrchestrationModel : engineeringModel,
       source: actionable ? engineeringModelSelection.orchestrator.provider : engineeringModelSelection.primary.provider,
@@ -365,7 +391,8 @@ function demandModelForRequest(request: string, recovery: boolean, actionable: b
     if (engineeringOnDemandOpenAIModel) return { model: engineeringOnDemandOpenAIModel, source: "openai-recovery" };
     if (engineeringOnDemandNvidiaModel) return { model: engineeringOnDemandNvidiaModel, source: "nvidia-recovery" };
   }
-  return { model: engineeringModel, source: "local" };
+  if (DEEP_LOCAL_PATTERN.test(request)) return { model: engineeringDeepLocalModel, source: "local-deep" };
+  return { model: engineeringModel, source: "local-fast" };
 }
 
 function auditAgent(message: string, details: Record<string, unknown> = {}) {
@@ -474,8 +501,56 @@ type CanonicalEngineeringObject = {
   name: string;
 };
 
+type EngineeringRegistrationIndex = {
+  canonical: Record<EngineeringResourceName, Map<string, CanonicalEngineeringObject>>;
+  proposals: Record<string, unknown>[];
+};
+
 function sameEngineeringName(value: unknown, expected: string) {
   return String(value ?? "").localeCompare(expected, undefined, { sensitivity: "accent" }) === 0;
+}
+
+function engineeringNameKey(value: unknown) {
+  return String(value ?? "").trim().toLocaleLowerCase("de-DE");
+}
+
+async function createEngineeringRegistrationIndex(): Promise<EngineeringRegistrationIndex> {
+  const [hardware, functions, interfaces, messages, signals, proposals] = await Promise.all([
+    listObjects("hardware-nodes"),
+    listObjects("functions"),
+    listObjects("interfaces"),
+    listObjects("messages"),
+    listObjects("signals"),
+    listEngineeringProposals(),
+  ]);
+  const source: Record<EngineeringResourceName, Record<string, unknown>[]> = {
+    "hardware-nodes": hardware.items,
+    functions: functions.items,
+    interfaces: interfaces.items,
+    messages: messages.items,
+    signals: signals.items,
+  };
+  const canonical = {} as EngineeringRegistrationIndex["canonical"];
+  for (const resource of RESOURCE_ENUM) {
+    canonical[resource] = new Map(
+      source[resource].flatMap((item) => {
+        const id = String(item.id ?? "");
+        const name = String(item.name ?? "");
+        return id && name ? [[engineeringNameKey(name), { resource, id, name }] as const] : [];
+      }),
+    );
+  }
+  return { canonical, proposals: proposals.items };
+}
+
+function rememberCanonicalObjects(
+  index: EngineeringRegistrationIndex | undefined,
+  canonicalObjects: CanonicalEngineeringObject[],
+) {
+  if (!index) return;
+  for (const item of canonicalObjects) {
+    index.canonical[item.resource].set(engineeringNameKey(item.name), item);
+  }
 }
 
 const CANONICAL_DEVICE_TYPES = new Set([
@@ -534,16 +609,26 @@ function canonicalObjectsFromProposal(
   });
 }
 
-async function findCanonicalEngineeringObject(resource: EngineeringResourceName, name: string) {
+async function findCanonicalEngineeringObject(
+  resource: EngineeringResourceName,
+  name: string,
+  registrationIndex?: EngineeringRegistrationIndex,
+) {
+  if (registrationIndex) {
+    return registrationIndex.canonical[resource].get(engineeringNameKey(name));
+  }
   const canonical = await listObjects(resource);
   return canonical.items.find((item) => sameEngineeringName(item.name, name));
 }
 
-async function createAndApproveEngineeringObject(input: EngineeringObjectInput) {
+async function createAndApproveEngineeringObject(
+  input: EngineeringObjectInput,
+  registrationIndex?: EngineeringRegistrationIndex,
+) {
   const { resource, ...rest } = input;
-  const existingCanonical = await findCanonicalEngineeringObject(resource, rest.name);
+  const existingCanonical = await findCanonicalEngineeringObject(resource, rest.name, registrationIndex);
   if (existingCanonical?.id) {
-    return {
+    const result = {
       created: false,
       reused: true,
       resource,
@@ -551,10 +636,12 @@ async function createAndApproveEngineeringObject(input: EngineeringObjectInput) 
       canonical_objects: [{ resource, id: String(existingCanonical.id), name: rest.name }],
       note: "Das gleichnamige Objekt war bereits im kanonischen Modell registriert.",
     };
+    rememberCanonicalObjects(registrationIndex, result.canonical_objects);
+    return result;
   }
 
-  const proposals = await listEngineeringProposals();
-  const existingProposal = proposals.items.find((proposal) => {
+  const proposals = registrationIndex?.proposals ?? (await listEngineeringProposals()).items;
+  const existingProposal = proposals.find((proposal) => {
     if (["APPROVED", "REJECTED", "SUPERSEDED"].includes(String(proposal.status ?? ""))) return false;
     const target = proposal.target_object as Record<string, unknown> | undefined;
     if (target?.resource !== resource) return false;
@@ -617,6 +704,7 @@ async function createAndApproveEngineeringObject(input: EngineeringObjectInput) 
       validation_results: [],
       created_by: "engineering-chat-agent",
     });
+    registrationIndex?.proposals.push(proposal);
   }
 
   const proposalId = String(proposal.proposal_id ?? "");
@@ -627,6 +715,7 @@ async function createAndApproveEngineeringObject(input: EngineeringObjectInput) 
   if (!canonicalObjects.length) {
     throw new Error(`${rest.name} konnte nicht in das kanonische Modell uebernommen werden.`);
   }
+  rememberCanonicalObjects(registrationIndex, canonicalObjects);
   return {
     created: true,
     reused: Boolean(existingProposal),
@@ -727,7 +816,10 @@ const engineeringChainInputSchema = z.object({
 
 type EngineeringChainInput = z.infer<typeof engineeringChainInputSchema>;
 
-async function registerEngineeringChain(input: EngineeringChainInput) {
+async function registerEngineeringChain(
+  input: EngineeringChainInput,
+  registrationIndex?: EngineeringRegistrationIndex,
+) {
     const canonicalObjects: CanonicalEngineeringObject[] = [];
     const steps: Array<Record<string, unknown>> = [];
 
@@ -737,7 +829,7 @@ async function registerEngineeringChain(input: EngineeringChainInput) {
       description: input.hardware_description,
       domain: input.domain,
       device_type: input.device_type ?? "ECU",
-    });
+    }, registrationIndex);
     canonicalObjects.push(...hardware.canonical_objects);
     steps.push(hardware);
     const hardwareId = hardware.canonical_objects[0]?.id;
@@ -748,7 +840,7 @@ async function registerEngineeringChain(input: EngineeringChainInput) {
       description: input.function_description,
       domain: input.domain,
       hardware_node_id: hardwareId,
-    });
+    }, registrationIndex);
     canonicalObjects.push(...engineeringFunction.canonical_objects);
     steps.push(engineeringFunction);
     const functionId = engineeringFunction.canonical_objects[0]?.id;
@@ -760,7 +852,7 @@ async function registerEngineeringChain(input: EngineeringChainInput) {
       hardware_node_id: hardwareId,
       function_id: functionId,
       interface_type: input.interface_type ?? "CAN",
-    });
+    }, registrationIndex);
     canonicalObjects.push(...engineeringInterface.canonical_objects);
     steps.push(engineeringInterface);
     const interfaceId = engineeringInterface.canonical_objects[0]?.id;
@@ -774,7 +866,7 @@ async function registerEngineeringChain(input: EngineeringChainInput) {
       direction: input.direction ?? "tx",
       cycle_ms: input.cycle_ms ?? 10,
       dlc: input.dlc ?? 8,
-    });
+    }, registrationIndex);
     canonicalObjects.push(...message.canonical_objects);
     steps.push(message);
     const messageId = message.canonical_objects[0]?.id;
@@ -794,7 +886,7 @@ async function registerEngineeringChain(input: EngineeringChainInput) {
       unit: input.unit,
       min_value: input.min_value,
       max_value: input.max_value,
-    });
+    }, registrationIndex);
     canonicalObjects.push(...signal.canonical_objects);
     steps.push(signal);
 
@@ -824,51 +916,93 @@ export async function registerEngineeringSpecification(specificationText: string
         complete: false,
         recognized: 0,
         failures: [{ name: "Spezifikation", error: "Keine benannten Hardware-Objekte erkannt." }],
+        target_counts: extracted.targetCounts,
         canonical_objects: [],
       };
     }
 
+    const packageSize = 5;
+    const registrationIndex = await createEngineeringRegistrationIndex();
     const canonicalObjects: CanonicalEngineeringObject[] = [];
-    const results: Array<Record<string, unknown>> = [];
+    const registeredNames = new Set<string>();
     const failures: Array<{ name: string; error: string }> = [];
-    for (const chain of extracted.chains) {
-      try {
-        const result = await registerEngineeringChain(chain);
-        canonicalObjects.push(...result.canonical_objects);
-        results.push({
-          hardware_name: chain.hardware_name,
-          complete: result.complete,
-          canonical_count: result.canonical_objects.length,
-        });
-      } catch (error) {
-        failures.push({
-          name: chain.hardware_name,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+    const workPackages: Array<Record<string, unknown>> = [];
+    for (let offset = 0; offset < extracted.chains.length; offset += packageSize) {
+      const packageChains = extracted.chains.slice(offset, offset + packageSize);
+      const settled = await Promise.all(packageChains.map(async (chain) => {
+        try {
+          const result = await registerEngineeringChain(chain, registrationIndex);
+          canonicalObjects.push(...result.canonical_objects);
+          registeredNames.add(engineeringNameKey(chain.hardware_name));
+          return { chain, complete: result.complete, error: "" };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          failures.push({ name: chain.hardware_name, error: message });
+          return { chain, complete: false, error: message };
+        }
+      }));
+      const packageFailures = settled.filter((item) => !item.complete);
+      workPackages.push({
+        package: Math.floor(offset / packageSize) + 1,
+        requested: packageChains.length,
+        registered: settled.length - packageFailures.length,
+        status: packageFailures.length ? "PARTIAL" : "COMPLETED",
+        first_object: packageChains[0]?.hardware_name,
+        last_object: packageChains.at(-1)?.hardware_name,
+      });
     }
+
+    const actualCounts = extracted.chains.reduce(
+      (counts, chain) => {
+        if (!registeredNames.has(engineeringNameKey(chain.hardware_name))) return counts;
+        if (chain.device_type === "SensorController") counts.sensors += 1;
+        else if (chain.device_type === "Gateway") counts.gateways += 1;
+        else if (chain.device_type === "ECU") counts.ecus += 1;
+        return counts;
+      },
+      { sensors: 0, ecus: 0, gateways: 0 },
+    );
+    const targetCounts = extracted.targetCounts;
+    const missingCounts = {
+      sensors: Math.max(0, targetCounts.sensors - actualCounts.sensors),
+      ecus: Math.max(0, targetCounts.ecus - actualCounts.ecus),
+      gateways: Math.max(0, targetCounts.gateways - actualCounts.gateways),
+    };
+    const targetsSatisfied = Object.values(missingCounts).every((count) => count === 0);
+    const complete = failures.length === 0
+      && registeredNames.size === extracted.chains.length
+      && targetsSatisfied;
 
     return {
       created: canonicalObjects.length > 0,
-      complete: failures.length === 0 && results.length === extracted.chains.length,
+      complete,
       recognized: extracted.chains.length,
-      registered_chains: results.length,
+      registered_chains: registeredNames.size,
       domain: extracted.domain,
       interface_type: extracted.interfaceType,
-      results,
+      target_counts: {
+        sensors: targetCounts.sensors,
+        ecus: targetCounts.ecus,
+        gateways: targetCounts.gateways,
+      },
+      actual_counts: actualCounts,
+      missing_counts: missingCounts,
+      work_packages: workPackages,
       failures,
-      canonical_objects: canonicalObjects,
-      note: failures.length
-        ? "Die fehlerfreien Teilnehmer wurden registriert; fehlgeschlagene Teilnehmer sind einzeln ausgewiesen."
-        : "Alle aus dem Text erkannten Teilnehmer wurden als vollstaendige Engineering-Ketten registriert.",
+      canonical_object_count: canonicalObjects.length,
+      canonical_objects: canonicalObjects.slice(0, 20),
+      canonical_objects_truncated: canonicalObjects.length > 20,
+      note: complete
+        ? "Alle Zielmengen wurden in begrenzten Arbeitspaketen als vollstaendige Engineering-Ketten registriert."
+        : "Der Auftrag bleibt offen: Fehlgeschlagene Ketten oder fehlende Zielmengen sind einzeln ausgewiesen.",
     };
   });
 }
 
 const createEngineeringModelFromSpecification = tool({
   description:
-    "Erkennt alle benannten Hardware-Objekte und technischen Parameter direkt aus der aktuellen strukturierten Nutzerspezifikation. " +
-    "Registriert fuer jeden Teilnehmer eine vollstaendige kanonische Kette und verarbeitet weitere Teilnehmer auch dann, wenn eine einzelne Kette fehlschlaegt.",
+    "Erkennt benannte Hardware-Objekte, Ausbauphasen, Zielmengen und technische Parameter direkt aus der aktuellen strukturierten Nutzerspezifikation. " +
+    "Zerlegt grosse Zielarchitekturen in begrenzte Arbeitspakete und meldet erst dann Vollstaendigkeit, wenn die Soll-/Ist-Mengen erfuellt sind.",
   inputSchema: z.object({}),
   execute: async () => registerEngineeringSpecification(currentAgentRequestText()),
 });
@@ -976,9 +1110,24 @@ const approveAllValidEngineeringProposalsTool = tool({
 });
 
 const inspectRoutingTable = tool({
-  description: "Liest die aktuelle Routing-Tabelle inklusive Status, Validierung und Freigabe. Reines Read Tool.",
+  description: "Liest die aktuelle Routing-Tabelle inklusive Status, Validierung, menschlicher Freigabe und Freigabezaehler. Reines Read Tool.",
   inputSchema: z.object({}),
-  execute: async () => listRoutingEntries(),
+  execute: async () => {
+    const result = await listRoutingEntries();
+    const progress = routingApprovalProgress(result.items as unknown as RoutingEntry[]);
+    return {
+      ...result,
+      approval_progress: {
+        approved: progress.approved,
+        total: progress.total,
+        pending: progress.pending,
+        awaiting_validation: progress.awaitingValidation,
+        awaiting_user_approval: progress.awaitingApproval,
+        complete: progress.complete,
+        current_route_codes: progress.routes.map((route) => route.route_code),
+      },
+    };
+  },
 });
 
 const inspectRoutingObject = (resource: (typeof RESOURCE_ENUM)[number], label: string) => tool({
@@ -1026,11 +1175,29 @@ const inspectGateway = tool({
 });
 
 const inspectProtocol = tool({
-  description: "Liest unterstützte Routingprotokolle und Routingarten.",
+  description: "Liest unterstützte Routingprotokolle, Routingarten und validierte technische Referenzwerte.",
   inputSchema: z.object({ protocol: z.string().optional() }),
   execute: async ({ protocol }) => {
     const schema = await getRoutingSchema();
-    return { requested: protocol, schema };
+    return {
+      requested: protocol,
+      schema,
+      reference: {
+        CAN: {
+          payload_bytes: 8,
+          nominal_bitrate_bps_max: 1_000_000,
+          simulator_default_bitrate_bps: 500_000,
+          note: "Klassisches CAN verwendet eine einheitliche Bitrate für Arbitration und Datenphase.",
+        },
+        CAN_FD: {
+          payload_bytes: 64,
+          arbitration_phase: "CAN-kompatible nominale Bitrate",
+          data_phase: "separat beschleunigbar; im Simulator standardmäßig 2 Mbit/s, häufig bis 8 Mbit/s implementiert",
+          simulator_default_bitrate_bps: 2_000_000,
+          note: "CAN FD nutzt einen erweiterten CRC; eine pauschale universelle Maximalrate darf nicht behauptet werden.",
+        },
+      },
+    };
   },
 });
 
@@ -1174,6 +1341,197 @@ async function createVerifiedRouteProposal(input: RouteProposalInput) {
         available_nodes: availableNodes,
       };
     }
+}
+
+type SpecificationRoutePlan = {
+  source: ExtractedEngineeringChain;
+  destinations: ExtractedEngineeringChain[];
+};
+
+function routeKey(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function processorForSensor(
+  sensor: ExtractedEngineeringChain,
+  processors: ExtractedEngineeringChain[],
+) {
+  const sourceKey = routeKey(`${sensor.hardware_name} ${sensor.hardware_description}`);
+  return processors
+    .map((processor, index) => {
+      const processorName = routeKey(processor.hardware_name);
+      const processorTokens = processorName.split(" ").filter((token) => token.length > 2 && token !== "ecu");
+      let score = sourceKey.includes(processorName) ? 100 : 0;
+      score += processorTokens.filter((token) => sourceKey.includes(token)).length * 10;
+      if (/temperatur|thermal/.test(sourceKey) && /temperatur|thermal/.test(processorName)) score += 50;
+      if (/drehzahl|motorstrom|motor/.test(sourceKey) && /motion|motor/.test(processorName)) score += 50;
+      return { processor, score, index };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.processor;
+}
+
+function specificationRoutePlans(chains: ExtractedEngineeringChain[]) {
+  const sensors = chains.filter((chain) => routeKey(chain.device_type).includes("sensor"));
+  const gateways = chains.filter((chain) => routeKey(chain.device_type).includes("gateway"));
+  const processors = chains.filter((chain) => !sensors.includes(chain) && !gateways.includes(chain));
+  const gateway = gateways[0];
+  const plans: SpecificationRoutePlan[] = [];
+
+  for (const sensor of sensors) {
+    const processor = processorForSensor(sensor, processors);
+    if (processor) plans.push({ source: sensor, destinations: [processor] });
+  }
+  if (gateway) {
+    for (const processor of processors) plans.push({ source: processor, destinations: [gateway] });
+    if (processors.length) plans.push({ source: gateway, destinations: processors });
+  }
+  if (!plans.length && chains.length >= 2) {
+    plans.push({ source: chains[0], destinations: chains.slice(1) });
+  }
+
+  const unique = new Map<string, SpecificationRoutePlan>();
+  for (const plan of plans) {
+    const key = [plan.source.hardware_name, ...plan.destinations.map((item) => item.hardware_name)]
+      .map(routeKey)
+      .join("->");
+    unique.set(key, plan);
+  }
+  return [...unique.values()];
+}
+
+export async function registerRoutingProposalForSpecification(specificationText: string) {
+  const extracted = extractEngineeringSpecification(specificationText);
+  if (extracted.chains.length < 2) {
+    return {
+      created: false,
+      blocked: true,
+      reason: "Ein Routing-Vorschlag benötigt mindestens zwei benannte Hardware-Teilnehmer.",
+    };
+  }
+
+  const proposals: Array<Record<string, unknown>> = [];
+  const failures: Array<{ source: string; destinations: string[]; reason: string }> = [];
+  const wizardConfirmed = /per Wizard-Uebernehmen bestaetigt/i.test(specificationText);
+  let created = false;
+  let acceptedRouteCount = 0;
+
+  for (const plan of specificationRoutePlans(extracted.chains)) {
+    const result = await createVerifiedRouteProposal({
+      prompt: concreteRequestText(specificationText),
+      source_node_id: plan.source.hardware_name,
+      destination_node_ids: plan.destinations.map((chain) => chain.hardware_name),
+      message_id: plan.source.message_name,
+      signal_ids: [plan.source.signal_name],
+      routing_type: plan.destinations.length > 1 ? "MULTICAST" : "UNICAST",
+    });
+    const routeResult = result && typeof result === "object" ? result as Record<string, unknown> : {};
+    if (routeResult.blocked === true) {
+      failures.push({
+        source: plan.source.hardware_name,
+        destinations: plan.destinations.map((item) => item.hardware_name),
+        reason: String(routeResult.reason ?? "Routing-Vorschlag konnte nicht erzeugt werden."),
+      });
+      continue;
+    }
+
+    const existingProposal = routeResult.proposal && typeof routeResult.proposal === "object"
+      ? routeResult.proposal as Record<string, unknown>
+      : routeResult;
+    const validationResults = Array.isArray(existingProposal.validation_results)
+      ? existingProposal.validation_results
+      : [];
+    const alreadyReady = ["READY_FOR_REVIEW", "APPROVED", "PARTIALLY_APPROVED"].includes(
+      String(existingProposal.status ?? ""),
+    );
+    const valid = validationResults.length > 0 && validationResults.every((item) => (
+      item && typeof item === "object" && (item as Record<string, unknown>).valid === true
+    ));
+    const proposalId = String(existingProposal.proposal_id ?? "");
+    const reviewedProposal = !alreadyReady && valid && proposalId
+      ? await updateRoutingProposal(proposalId, {
+          actor: "engineering-wizard",
+          status: "READY_FOR_REVIEW",
+        })
+      : existingProposal;
+    const reviewedRoutes = Array.isArray(reviewedProposal.generated_routes)
+      ? reviewedProposal.generated_routes
+      : [];
+    const reviewedValidations = Array.isArray(reviewedProposal.validation_results)
+      ? reviewedProposal.validation_results
+      : validationResults;
+    const validIndexes = reviewedRoutes.flatMap((route, index) => {
+      const routeRecord = route && typeof route === "object" ? route as Record<string, unknown> : {};
+      const routeValidation = routeRecord.validation && typeof routeRecord.validation === "object"
+        ? routeRecord.validation as Record<string, unknown>
+        : reviewedValidations[index] && typeof reviewedValidations[index] === "object"
+          ? reviewedValidations[index] as Record<string, unknown>
+          : {};
+      return routeValidation.valid === true ? [index] : [];
+    });
+    const reviewedStatus = String(reviewedProposal.status ?? "");
+    const accepted = wizardConfirmed
+      && proposalId
+      && reviewedStatus === "READY_FOR_REVIEW"
+      && validIndexes.length > 0
+      ? await acceptRoutingProposal(proposalId, validIndexes, "engineering-wizard")
+      : { items: [], count: 0 };
+    acceptedRouteCount += Number(accepted.count ?? accepted.items.length);
+    created ||= routeResult.created !== false && routeResult.reused !== true;
+    proposals.push({
+      source: plan.source.hardware_name,
+      destinations: plan.destinations.map((item) => item.hardware_name),
+      ready_for_review: alreadyReady || valid,
+      proposal: reviewedProposal,
+      accepted_routes: accepted.items,
+    });
+  }
+
+  const readyForReview = proposals.length > 0
+    && failures.length === 0
+    && proposals.every((item) => item.ready_for_review === true);
+  const routeCount = proposals.reduce((count, item) => {
+    const proposal = item.proposal && typeof item.proposal === "object"
+      ? item.proposal as Record<string, unknown>
+      : {};
+    return count + (Array.isArray(proposal.generated_routes) ? proposal.generated_routes.length : 0);
+  }, 0);
+  const routingEntries = wizardConfirmed ? await listRoutingEntries() : { items: [], count: 0 };
+  const routingTablePopulated = routingEntries.count > 0;
+  const approvalProgress = routingApprovalProgress(routingEntries.items as unknown as RoutingEntry[]);
+
+  return {
+    created,
+    reused: !created && proposals.length > 0,
+    complete: wizardConfirmed ? routingTablePopulated && failures.length === 0 : readyForReview,
+    ready_for_review: readyForReview,
+    routing_table_populated: routingTablePopulated,
+    awaiting_route_review: routingTablePopulated,
+    proposal_count: proposals.length,
+    route_count: routeCount,
+    accepted_route_count: acceptedRouteCount,
+    draft_route_count: approvalProgress.pending,
+    approval_progress: {
+      approved: approvalProgress.approved,
+      total: approvalProgress.total,
+      pending: approvalProgress.pending,
+      complete: approvalProgress.complete,
+    },
+    proposal: proposals[0]?.proposal,
+    proposals,
+    failures,
+    note: routingTablePopulated
+      ? "Valide Vorschlaege wurden als DRAFT-Routen in die Routing-Tabelle uebernommen. Technische Pruefung und finale Freigabe bleiben beim Menschen."
+      : readyForReview
+        ? "Alle fachlichen Routing-Vorschlaege sind technisch valide und warten am Human-Review-Gate."
+        : "Routing-Vorschlaege wurden erzeugt; offene Validierungsbefunde bleiben sichtbar.",
+  };
 }
 
 const createRouteProposal = tool({
@@ -1339,6 +1697,290 @@ const suggestDestination = tool({
   },
 });
 
+function busForProtocol(value: unknown): BusType {
+  const protocol = String(value ?? "").toUpperCase();
+  if (protocol.includes("LIN")) return "lin";
+  if (protocol.includes("FLEXRAY")) return "flexray";
+  if (
+    protocol.includes("ETHERNET")
+    || protocol.includes("SOME_IP")
+    || protocol.includes("TCP")
+    || protocol.includes("UDP")
+    || protocol.includes("ETHERCAT")
+    || protocol.includes("PROFINET")
+    || protocol.includes("OPC")
+    || protocol.includes("MODBUS")
+  ) return "automotive_ethernet";
+  return "can_fd";
+}
+
+function nodeKindForHardware(item: Record<string, unknown>): NodeKind {
+  const type = String(item.device_type ?? "").toLowerCase();
+  const name = String(item.name ?? "").toLowerCase();
+  if (type.includes("gateway") || name.includes("gateway")) return "gateway";
+  if (type.includes("sensor")) return "sensor";
+  if (type.includes("actuator")) return "actuator";
+  return "ecu";
+}
+
+function objectRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function routePathNodeIds(route: Record<string, unknown>) {
+  const source = objectRecord(route.source);
+  const destinations = Array.isArray(route.destinations)
+    ? route.destinations.map(objectRecord)
+    : [];
+  const path = objectRecord(route.route);
+  const hops = Array.isArray(path.hops)
+    ? path.hops.map((hop) => String(objectRecord(hop).node_id ?? hop ?? "")).filter(Boolean)
+    : [];
+  const sourceId = String(source.node_id ?? "");
+  const destinationId = String(destinations[0]?.node_id ?? "");
+  const ordered = hops.length >= 2 ? hops : [sourceId, destinationId];
+  if (sourceId && ordered[0] !== sourceId) ordered.unshift(sourceId);
+  if (destinationId && ordered.at(-1) !== destinationId) ordered.push(destinationId);
+  return [...new Set(ordered.filter(Boolean))];
+}
+
+const buildNetworkTopology = tool({
+  description:
+    "Erzeugt und speichert die physische Netzwerk-Topologie aus allen freigegebenen Routing-Eintraegen. " +
+    "Kanonische Hardware- und Interface-IDs bleiben erhalten; Nodes, Ports, Edges und CONNECTED_TO-Kanten werden synchronisiert.",
+  inputSchema: z.object({}),
+  execute: async () => {
+    const [hardwareResult, interfaceResult, routeResult, workflowResult] = await Promise.all([
+      listObjects("hardware-nodes"),
+      listObjects("interfaces"),
+      listRoutingEntries(),
+      inspectWorkflowState(),
+    ]);
+    const approvalProgress = routingApprovalProgress(routeResult.items as unknown as RoutingEntry[]);
+    if (!approvalProgress.complete) {
+      throw new Error(
+        `Routing-Freigabezaehler offen: ${approvalProgress.approved}/${approvalProgress.total}. `
+        + "Die Topologie wird erst nach vollstaendiger menschlicher Freigabe aufgebaut.",
+      );
+    }
+    const routes = approvalProgress.routes as unknown as Record<string, unknown>[];
+    const hardware = new Map(hardwareResult.items.map((item) => [String(item.id), item]));
+    const interfacesByNode = new Map<string, Record<string, unknown>[]>();
+    interfaceResult.items.forEach((item) => {
+      const nodeId = String(item.hardware_node_id ?? "");
+      if (!nodeId) return;
+      interfacesByNode.set(nodeId, [...(interfacesByNode.get(nodeId) ?? []), item]);
+    });
+    const involvedIds = [...new Set(routes.flatMap(routePathNodeIds))];
+    const missingHardware = involvedIds.filter((id) => !hardware.has(id));
+    if (missingHardware.length) {
+      throw new Error(`Routing referenziert unbekannte HardwareNodes: ${missingHardware.join(", ")}`);
+    }
+    const missingInterfaces = involvedIds.filter((id) => !(interfacesByNode.get(id)?.length));
+    if (missingInterfaces.length) {
+      throw new Error(`Fuer Routing-Nodes fehlen Interfaces: ${missingInterfaces.join(", ")}`);
+    }
+    const nodeId = (engineeringId: string) => `engineering-${engineeringId}`;
+    const portId = (engineeringId: string) => `engineering-port-${engineeringId}`;
+    const existingTopology = objectRecord(workflowResult.topology) as NetworkTopology;
+    const existingNodes = Array.isArray(existingTopology.nodes) ? existingTopology.nodes : [];
+    const existingEdges = Array.isArray(existingTopology.edges) ? existingTopology.edges : [];
+    const existingNodesByEngineeringId = new Map(
+      existingNodes
+        .filter((node) => node.engineeringId)
+        .map((node) => [node.engineeringId as string, node]),
+    );
+    const generatedNodes = involvedIds.map((engineeringId, index) => {
+      const item = hardware.get(engineeringId) ?? {};
+      const interfaces = interfacesByNode.get(engineeringId) ?? [];
+      const existingNode = existingNodesByEngineeringId.get(engineeringId);
+      const existingPorts = existingNode?.ports ?? [];
+      const generatedPorts = interfaces.map((engineeringInterface, portIndex) => ({
+        id: portId(String(engineeringInterface.id)),
+        name: String(engineeringInterface.name ?? engineeringInterface.interface_type ?? `Port ${portIndex + 1}`),
+        bus: busForProtocol(engineeringInterface.interface_type),
+        side: portIndex % 2 === 0 ? "right" as const : "left" as const,
+        offset: 52 + portIndex * 24,
+        engineeringId: String(engineeringInterface.id),
+      }));
+      return {
+        ...existingNode,
+        id: existingNode?.id ?? nodeId(engineeringId),
+        name: String(item.name ?? engineeringId),
+        kind: nodeKindForHardware(item),
+        x: existingNode?.x ?? 80 + (index % 4) * 280,
+        y: existingNode?.y ?? 100 + Math.floor(index / 4) * 220,
+        engineeringId,
+        ports: [
+          ...existingPorts,
+          ...generatedPorts.filter((port) => !existingPorts.some(
+            (existingPort) => existingPort.engineeringId === port.engineeringId,
+          )),
+        ],
+      };
+    });
+    const generatedNodesByEngineeringId = new Map(
+      generatedNodes.map((node) => [node.engineeringId, node]),
+    );
+    const nodes = [
+      ...existingNodes.map((node) => (
+        node.engineeringId && generatedNodesByEngineeringId.has(node.engineeringId)
+          ? generatedNodesByEngineeringId.get(node.engineeringId)!
+          : node
+      )),
+      ...generatedNodes.filter((node) => !existingNodesByEngineeringId.has(node.engineeringId)),
+    ];
+    const topologyNodeId = (engineeringId: string) => (
+      nodes.find((node) => node.engineeringId === engineeringId)?.id ?? nodeId(engineeringId)
+    );
+    const topologyPortId = (engineeringNodeId: string, engineeringInterfaceId: string) => (
+      nodes
+        .find((node) => node.engineeringId === engineeringNodeId)
+        ?.ports.find((port) => port.engineeringId === engineeringInterfaceId)?.id
+      ?? portId(engineeringInterfaceId)
+    );
+    const interfaceFor = (engineeringNodeId: string, explicit: unknown, bus: BusType) => {
+      const candidates = interfacesByNode.get(engineeringNodeId) ?? [];
+      const explicitId = String(explicit ?? "");
+      return candidates.find((item) => String(item.id) === explicitId)
+        ?? candidates.find((item) => busForProtocol(item.interface_type) === bus)
+        ?? candidates[0];
+    };
+    const edges: NetworkTopology["edges"] = [];
+    routes.forEach((route, routeIndex) => {
+      const source = objectRecord(route.source);
+      const destinations = Array.isArray(route.destinations) ? route.destinations.map(objectRecord) : [];
+      destinations.forEach((destination, destinationIndex) => {
+        const sourceId = String(source.node_id ?? "");
+        const destinationId = String(destination.node_id ?? "");
+        const path = routePathNodeIds({ ...route, destinations: [destination] });
+        const bus = busForProtocol(source.protocol ?? destination.protocol);
+        for (let segment = 0; segment < path.length - 1; segment += 1) {
+          const left = path[segment];
+          const right = path[segment + 1];
+          const leftInterface = interfaceFor(left, segment === 0 ? source.interface_id : undefined, bus);
+          const rightInterface = interfaceFor(
+            right,
+            segment === path.length - 2 ? destination.interface_id : undefined,
+            bus,
+          );
+          if (!leftInterface?.id || !rightInterface?.id) {
+            throw new Error(`Fuer den physischen Pfad ${left} -> ${right} fehlt ein Interface.`);
+          }
+          edges.push({
+            id: `route-${String(route.id)}-${destinationIndex}-${segment}`,
+            source: topologyNodeId(left || sourceId),
+            sourcePort: topologyPortId(left || sourceId, String(leftInterface.id)),
+            target: topologyNodeId(right || destinationId),
+            targetPort: topologyPortId(right || destinationId, String(rightInterface.id)),
+            bus,
+            routingEntryId: String(route.id ?? `route-${routeIndex}`),
+            origin: "ROUTING_TABLE",
+          });
+        }
+      });
+    });
+    if (!edges.length) throw new Error("Aus den freigegebenen Routen konnte keine physische Verbindung erzeugt werden.");
+    const manualEdges = existingEdges.filter((edge) => edge.origin !== "ROUTING_TABLE");
+    const physicalTopology = normalizePhysicalTopology({ nodes, edges: [...manualEdges, ...edges] });
+    const saved = await saveWorkflowTopology(physicalTopology);
+    return {
+      created: true,
+      node_count: physicalTopology.nodes.length,
+      edge_count: physicalTopology.edges.length,
+      workflow_status: objectRecord(saved.statuses).network_editor,
+      routing_sync: saved.routing_sync,
+    };
+  },
+});
+
+const configureWorkflowParameters = tool({
+  description:
+    "Leitet eine vollstaendige technologieabhaengige Parameterkonfiguration aus freigegebenem Routing und Engineering-Modell ab und speichert sie. " +
+    "Plausible Defaults werden nur verwendet, wenn der Nutzer keinen Wert vorgegeben hat.",
+  inputSchema: z.object({ overrides: z.record(z.string(), z.unknown()).optional() }),
+  execute: async ({ overrides }) => {
+    const [workflow, routeResult, hardwareResult, messageResult] = await Promise.all([
+      inspectWorkflowState(),
+      listRoutingEntries(),
+      listObjects("hardware-nodes"),
+      listObjects("messages"),
+    ]);
+    const approvalProgress = routingApprovalProgress(routeResult.items as unknown as RoutingEntry[]);
+    if (!approvalProgress.complete) {
+      throw new Error(
+        `Routing-Freigabezaehler offen: ${approvalProgress.approved}/${approvalProgress.total}. `
+        + "Parameter werden erst nach vollstaendiger menschlicher Freigabe abgeleitet.",
+      );
+    }
+    const routes = approvalProgress.routes as unknown as Record<string, unknown>[];
+    const firstRoute = routes[0];
+    const protocol = String(objectRecord(firstRoute.source).protocol ?? "CAN_FD").toUpperCase();
+    const technology = busForProtocol(protocol);
+    const bitrate = technology === "lin" ? 19_200
+      : technology === "flexray" ? 10_000_000
+      : technology === "automotive_ethernet" ? 100_000_000
+      : protocol === "CAN" ? 500_000 : 2_000_000;
+    const cycles = routes
+      .map((route) => Number(objectRecord(route.timing).cycle_time_ms))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    const validationPayloads = routes
+      .map((route) => Number(objectRecord(objectRecord(route.validation).metrics).payload_bytes))
+      .filter((value) => Number.isFinite(value) && value >= 0);
+    const messagePayloads = messageResult.items
+      .map((message) => Number(message.dlc))
+      .filter((value) => Number.isFinite(value) && value >= 0);
+    const cycleMs = cycles.length ? Math.min(...cycles) : 10;
+    const payloadBytes = Math.max(1, ...validationPayloads, ...messagePayloads);
+    const existing = objectRecord(workflow.parameters);
+    const parameters: Record<string, unknown> = {
+      industry: String(hardwareResult.items[0]?.domain ?? existing.industry ?? "automotive"),
+      technology,
+      bitrate,
+      payload_bytes: payloadBytes,
+      cycle_ms: cycleMs,
+      minimum_cycle_time_ms: Math.max(0.001, cycleMs / 10),
+      deadline_ms: cycleMs,
+      timeout_ms: Math.max(100, cycleMs * 5),
+      maximum_latency_ms: Math.max(20, cycleMs),
+      jitter_ms: Math.max(0.1, cycleMs * 0.1),
+      freshness_ms: Math.max(100, cycleMs * 3),
+      source_processing_delay_ms: 0.1,
+      target_processing_delay_ms: 0.1,
+      propagation_delay_ms: 0.01,
+      peak_factor: 1.15,
+      burst_factor: 1.5,
+      burst_window_ms: 100,
+      target_bus_load_percent: 60,
+      warning_threshold: 60,
+      critical_threshold: 75,
+      overload_threshold: 90,
+      queue_size: 256,
+      queue_policy: "FIFO",
+      qos_priority: 3,
+      traffic_class: "CONTROL",
+      packet_loss_probability: 0,
+      retransmission_rate: 0,
+      required_reliability: 0.999,
+      clock_drift_ppm: 20,
+      sync_precision_ms: 0.1,
+      duration_s: 1,
+      formats: ["universal-jsonl", "universal-csv"],
+      ...existing,
+      ...(overrides ?? {}),
+    };
+    const saved = await saveWorkflowParameters(parameters);
+    return {
+      saved: true,
+      parameters,
+      workflow_status: objectRecord(saved.statuses).parameters,
+      artifact_check: objectRecord(saved.artifact_checks).parameters,
+    };
+  },
+});
+
 const inspectWorkflowMap = tool({
   description:
     "Liefert die verbindliche Workflow-Landkarte inklusive Schrittzielen, Beziehungen, erlaubten Tools und Done-Kriterien. " +
@@ -1387,12 +2029,197 @@ const runPreflight = tool({
 
 const createSimulationSnapshot = tool({
   description:
-    "Legt nach erfolgreichem aktuellem Preflight einen SimulationSnapshot an und setzt den Workflow auf Simulation. " +
-    "Stoppt mit einem Workflow-Konflikt, wenn Preflight fehlt oder veraltet ist.",
+    "Erzeugt nach erfolgreichem aktuellem Preflight einen SimulationSnapshot, startet den echten Simulator-Job, " +
+    "wartet auf dessen Abschluss und persistiert die Results-/Analysis-Auswertung.",
   inputSchema: z.object({
     configuration: z.record(z.string(), z.unknown()).optional(),
   }),
-  execute: async ({ configuration }) => createWorkflowSimulationSnapshot(configuration ?? { mode: "agent-default", source: "engineering-chat-agent" }),
+  execute: async ({ configuration }) => {
+    const workflow = await inspectWorkflowState();
+    const statuses = objectRecord(workflow.statuses);
+    if (!["APPROVED", "WARNING"].includes(String(statuses.validation ?? "").toUpperCase())) {
+      throw new Error(`Preflight ist nicht simulationsbereit (${String(statuses.validation ?? "EMPTY")}).`);
+    }
+    const topology = objectRecord(workflow.topology) as NetworkTopology;
+    const parameters = objectRecord(workflow.parameters);
+    const formats = Array.isArray(parameters.formats)
+      ? parameters.formats.map(String)
+      : ["universal-jsonl", "universal-csv"];
+    const generated = topologyToConfig(topology, formats).config;
+    const config = {
+      ...generated,
+      ...parameters,
+      ...configuration,
+      name: String(configuration?.name ?? `workflow-${currentAgentProjectId()}`),
+      topology,
+      formats,
+    };
+    return startWorkflowSimulation(config);
+  },
+});
+
+const inspectSimulationModels = tool({
+  description: "Liest Verhaltenstypen, Modellkennzeichnungen und den vollständigen Fault-Katalog der modellbasierten Simulation.",
+  inputSchema: z.object({}),
+  execute: async () => inspectSimulationModelCatalog(),
+});
+
+const inspectFaultProposals = tool({
+  description: "Liest reviewpflichtige KI-Fehlervorschläge. Dieses Tool aktiviert niemals einen Fehler.",
+  inputSchema: z.object({}),
+  execute: async () => inspectSimulationFaultProposals(),
+});
+
+const proposeFaultScenarios = tool({
+  description: "Erzeugt evidenzbasierte Signal-, Message- und Netzwerk-Fault-Vorschläge. Alle Vorschläge bleiben bis zur Nutzerfreigabe in READY_FOR_REVIEW.",
+  inputSchema: z.object({}),
+  execute: async () => proposeSimulationFaults(),
+});
+
+const reviewFaultScenario = tool({
+  description: "Übernimmt, ändert oder verwirft genau einen Fault-Vorschlag nach ausdrücklicher Nutzerentscheidung.",
+  inputSchema: z.object({
+    proposal_id: z.string().uuid(),
+    action: z.enum(["ACCEPT", "EDIT", "REJECT"]),
+    changes: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async ({ proposal_id, action, changes }) => reviewSimulationFaultProposal(proposal_id, action, changes),
+});
+
+const inspectModelTraces = tool({
+  description: "Liest persistierte Trace-Metadaten mit Szenario, Seed, Modellversionen, Artefakten und Golden/Fault-Vergleich.",
+  inputSchema: z.object({ job_id: z.string().optional() }),
+  execute: async ({ job_id }) => inspectSimulationTraces(job_id),
+});
+
+const runSimulationCampaign = tool({
+  description: "Startet eine reproduzierbare Batch-Kampagne über mehrere freigegebene Szenarien und Seeds. Maximal 50 Läufe.",
+  inputSchema: z.object({
+    name: z.string().min(1),
+    seeds: z.array(z.number().int()).min(1).max(50),
+    scenarios: z.array(z.record(z.string(), z.unknown())).min(1).max(50),
+    configuration: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async ({ name, seeds, scenarios, configuration }) => startSimulationCampaign({
+    name,
+    seeds,
+    scenarios,
+    config: configuration ?? {},
+  }),
+});
+
+const inspectCampaign = tool({
+  description: "Liest Status und Einzelläufe einer Simulationskampagne.",
+  inputSchema: z.object({ campaign_id: z.string().uuid() }),
+  execute: async ({ campaign_id }) => inspectSimulationCampaign(campaign_id),
+});
+
+const inspectSimulationScenario = tool({
+  description: "Liest persistierte Simulationsszenarien einschließlich Modus, Seed, Profile, Expected Behavior und Fault Campaign.",
+  inputSchema: z.object({ scenario_id: z.string().uuid().optional() }),
+  execute: async ({ scenario_id }) => {
+    const result = await inspectSimulationScenarios();
+    return scenario_id ? result.items.find((item) => String(item.scenario_id) === scenario_id) ?? null : result;
+  },
+});
+
+const inspectSignalBehavior = tool({
+  description: "Liest Engineering-Signaldefinition und unterstützte Behavior Models, ohne Werte zu erfinden.",
+  inputSchema: z.object({ signal_id: z.string().uuid() }),
+  execute: async ({ signal_id }) => {
+    const [signal, catalog] = await Promise.all([getObject("signals", signal_id), inspectSimulationModelCatalog()]);
+    return { signal, behavior_types: catalog.behavior_types, model_labels: catalog.model_labels };
+  },
+});
+
+const createNormalScenario = tool({
+  description: "Speichert ein reproduzierbares fehlerfreies Golden-/Normal-Szenario aus Nutzerparametern.",
+  inputSchema: z.object({
+    name: z.string().min(1), duration_s: z.number().positive(), seed: z.number().int(),
+    initial_conditions: z.record(z.string(), z.unknown()).optional(),
+    signal_profiles: z.array(z.record(z.string(), z.unknown())).optional(),
+    expected_behavior: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async (payload) => createSimulationScenarioDefinition({ ...payload, mode: "NORMAL", faults: [], source: "ai_generated", created_by: "engineering-chat-agent" }),
+});
+
+const createFaultScenario = tool({
+  description: "Speichert ein Nutzer- oder bereits bestätigtes KI-Fehlerszenario. Unbestätigte KI-Faults werden serverseitig abgewiesen.",
+  inputSchema: z.object({
+    name: z.string().min(1), duration_s: z.number().positive(), seed: z.number().int(),
+    mode: z.enum(["USER_DEFINED_FAULT", "AI_GENERATED_FAULT", "STRESS"]),
+    faults: z.array(z.record(z.string(), z.unknown())).min(1),
+    expected_behavior: z.record(z.string(), z.unknown()).optional(),
+  }),
+  execute: async (payload) => createSimulationScenarioDefinition({ ...payload, source: "ai_generated", created_by: "engineering-chat-agent" }),
+});
+
+const compareGoldenFaultTrace = tool({
+  description: "Liest den persistierten Expected/Actual-Vergleich eines Modelltraces mit Changed Samples und RMSE.",
+  inputSchema: z.object({ job_id: z.string() }),
+  execute: async ({ job_id }) => {
+    const traces = await inspectSimulationTraces(job_id);
+    const trace = traces.items[0] ?? null;
+    return { job_id, comparison: (trace?.trace_summary as Record<string, unknown> | undefined)?.comparison ?? null, scenario: trace?.scenario_snapshot ?? null };
+  },
+});
+
+const analyzeSignalDeviation = tool({
+  description: "Analysiert die persistierte Golden/Fault-Abweichung eines Laufs anhand strukturierter Trace-Metadaten.",
+  inputSchema: z.object({ job_id: z.string() }),
+  execute: async ({ job_id }) => {
+    const traces = await inspectSimulationTraces(job_id);
+    const trace = traces.items[0] ?? null;
+    return { job_id, deviation: (trace?.trace_summary as Record<string, unknown> | undefined)?.comparison ?? null };
+  },
+});
+
+const analyzeBusLoad = tool({
+  description: "Liest simulierte Runtime-Last aus tatsächlichen Frames und unterscheidet sie von Engineering-Berechnungswerten.",
+  inputSchema: z.object({ job_id: z.string() }),
+  execute: async ({ job_id }) => {
+    const traces = await inspectSimulationTraces(job_id);
+    return { job_id, runtime_metrics: (traces.items[0]?.trace_summary as Record<string, unknown> | undefined)?.runtime_metrics ?? null, source: "SIMULATED_LOAD_FROM_ACTUAL_FRAMES" };
+  },
+});
+
+const identifyFirstAnomaly = tool({
+  description: "Identifiziert aus dem Szenario-Snapshot den zeitlich ersten injizierten Fault als Startpunkt der Ursachenanalyse.",
+  inputSchema: z.object({ job_id: z.string() }),
+  execute: async ({ job_id }) => {
+    const traces = await inspectSimulationTraces(job_id);
+    const trace = traces.items[0] ?? {};
+    const scenario = trace.scenario_snapshot as Record<string, unknown> | undefined;
+    const faults = Array.isArray(scenario?.faults) ? scenario.faults as Array<Record<string, unknown>> : [];
+    const sorted = [...faults].sort((left, right) => Number(left.start_s ?? 0) - Number(right.start_s ?? 0));
+    return { job_id, first_anomaly: sorted[0] ?? null, evidence: trace.trace_summary ?? null };
+  },
+});
+
+const identifyCausalChain = tool({
+  description: "Baut aus erstem Fault, betroffenen Zielen, Routing- und Laufzeitevidence eine nachvollziehbare Ursachenfolge.",
+  inputSchema: z.object({ job_id: z.string() }),
+  execute: async ({ job_id }) => {
+    const [traces, workflow] = await Promise.all([inspectSimulationTraces(job_id), inspectWorkflowState()]);
+    const trace = traces.items[0] ?? {};
+    const scenario = trace.scenario_snapshot as Record<string, unknown> | undefined;
+    const faults = Array.isArray(scenario?.faults) ? scenario.faults as Array<Record<string, unknown>> : [];
+    const first = [...faults].sort((left, right) => Number(left.start_s ?? 0) - Number(right.start_s ?? 0))[0] ?? null;
+    return { first_anomaly: first, path: ["FAULT", "SIGNAL_OR_MESSAGE", "ROUTING", "NETWORK", "TRACE_FINDING"], workflow_versions: workflow.versions };
+  },
+});
+
+const inspectResultsAnalysis = tool({
+  description:
+    "Liest die persistierte Results-/Analysis-Auswertung und den zugehoerigen abgeschlossenen Simulatorlauf.",
+  inputSchema: z.object({}),
+  execute: async () => {
+    const snapshots = await inspectWorkflowSnapshots();
+    return {
+      results_analysis: snapshots.results_analysis,
+      simulations: Array.isArray(snapshots.simulations) ? snapshots.simulations.slice(0, 10) : [],
+    };
+  },
 });
 
 const inspectWorkflow = tool({
@@ -1566,6 +2393,174 @@ const inspectIntelligence = tool({
   },
 });
 
+const assessIntelligence = tool({
+  description:
+    "Fuehrt die deterministische Data-Science-&-Intelligence-Bewertung fuer aktuelle Simulationsergebnisse persistent aus.",
+  inputSchema: z.object({}),
+  execute: async () => runIntelligenceAssessment(),
+});
+
+export type EngineeringWorkflowAutomationEvent = {
+  phase: "start" | "complete" | "error";
+  step: string;
+  toolName: string;
+  output?: unknown;
+  error?: string;
+};
+
+export type EngineeringWorkflowAutomationResult = {
+  complete: boolean;
+  target: string;
+  completedSteps: string[];
+  blockedStep?: string;
+  reason?: string;
+  statuses: Record<string, unknown>;
+};
+
+type WorkflowToolExecutor = (
+  input: Record<string, unknown>,
+  options: { toolCallId: string; messages: never[]; abortSignal: AbortSignal },
+) => unknown;
+
+async function executeWorkflowTool(definition: unknown, input: Record<string, unknown> = {}) {
+  const execute = (definition as { execute?: WorkflowToolExecutor }).execute;
+  if (!execute) throw new Error("Der Workflow-Schritt besitzt keinen ausführbaren Simulator-Handler.");
+  return await execute(input, {
+    toolCallId: crypto.randomUUID(),
+    messages: [],
+    abortSignal: new AbortController().signal,
+  });
+}
+
+export async function runEngineeringWorkflowAutomation(
+  target: string,
+  onEvent?: (event: EngineeringWorkflowAutomationEvent) => void,
+): Promise<EngineeringWorkflowAutomationResult> {
+  const requiredSteps = workflowStepIdsUntil(target);
+  const completedSteps: string[] = [];
+  const automaticSteps: Record<string, { toolName: string; execute: () => Promise<unknown> }> = {
+    network_editor: {
+      toolName: "build_network_topology",
+      execute: () => executeWorkflowTool(buildNetworkTopology),
+    },
+    parameters: {
+      toolName: "configure_workflow_parameters",
+      execute: () => executeWorkflowTool(configureWorkflowParameters),
+    },
+    capacity_timing: {
+      toolName: "calculate_capacity_timing",
+      execute: () => calculateCapacityAnalysis({}),
+    },
+    validation: {
+      toolName: "run_preflight",
+      execute: () => runPreflightAnalysis(),
+    },
+    simulation: {
+      toolName: "create_simulation_snapshot",
+      execute: () => executeWorkflowTool(createSimulationSnapshot),
+    },
+    results_analysis: {
+      toolName: "inspect_results_analysis",
+      execute: () => inspectWorkflowSnapshots(),
+    },
+    data_science_intelligence: {
+      toolName: "assess_intelligence",
+      execute: () => runIntelligenceAssessment(),
+    },
+  };
+
+  for (let attempt = 0; attempt < requiredSteps.length + 3; attempt += 1) {
+    const before = await inspectWorkflowState();
+    const statuses = objectRecord(before.statuses);
+    const blockedStep = requiredSteps.find((step) => String(statuses[step] ?? "EMPTY").toUpperCase() === "ERROR");
+    if (blockedStep) {
+      return {
+        complete: false,
+        target,
+        completedSteps,
+        blockedStep,
+        reason: String(objectRecord(before.stale_reasons)[blockedStep] ?? `Workflow-Schritt ${blockedStep} meldet ERROR.`),
+        statuses,
+      };
+    }
+    const currentStep = requiredSteps.find(
+      (step) => !COMPLETE_WORKFLOW_STATUSES.has(String(statuses[step] ?? "EMPTY").toUpperCase()),
+    );
+    if (!currentStep) return { complete: true, target, completedSteps, statuses };
+    if (currentStep === "engineering_model" || currentStep === "routing") {
+      return {
+        complete: false,
+        target,
+        completedSteps,
+        blockedStep: currentStep,
+        reason: currentStep === "routing"
+          ? "Die Routing-Tabelle benötigt vollständige technische Validierung und menschliche Freigabe."
+          : "Das kanonische Engineering-Modell ist noch nicht vollständig.",
+        statuses,
+      };
+    }
+
+    const operation = automaticSteps[currentStep];
+    if (!operation) {
+      return {
+        complete: false,
+        target,
+        completedSteps,
+        blockedStep: currentStep,
+        reason: `Für ${currentStep} ist kein automatischer Build-Schritt registriert.`,
+        statuses,
+      };
+    }
+
+    onEvent?.({ phase: "start", step: currentStep, toolName: operation.toolName });
+    let output: unknown;
+    try {
+      output = await operation.execute();
+      onEvent?.({ phase: "complete", step: currentStep, toolName: operation.toolName, output });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      onEvent?.({ phase: "error", step: currentStep, toolName: operation.toolName, error: message });
+      return {
+        complete: false,
+        target,
+        completedSteps,
+        blockedStep: currentStep,
+        reason: message,
+        statuses,
+      };
+    }
+    completedSteps.push(currentStep);
+
+    const after = await inspectWorkflowState();
+    const afterStatuses = objectRecord(after.statuses);
+    if (
+      String(afterStatuses[currentStep] ?? "EMPTY").toUpperCase()
+      === String(statuses[currentStep] ?? "EMPTY").toUpperCase()
+    ) {
+      return {
+        complete: false,
+        target,
+        completedSteps,
+        blockedStep: currentStep,
+        reason: `Der Schritt ${currentStep} wurde ausgeführt, hat den Workflowstatus aber nicht fortgeschrieben.`,
+        statuses: afterStatuses,
+      };
+    }
+  }
+
+  const state = await inspectWorkflowState();
+  return {
+    complete: false,
+    target,
+    completedSteps,
+    blockedStep: requiredSteps.find(
+      (step) => !COMPLETE_WORKFLOW_STATUSES.has(String(objectRecord(state.statuses)[step] ?? "EMPTY").toUpperCase()),
+    ),
+    reason: "Der automatische Build hat sein Sicherheitslimit erreicht.",
+    statuses: objectRecord(state.statuses),
+  };
+}
+
 const proposeOptimization = tool({
   description:
     "Speichert eine nachvollziehbare OptimizationProposal aus einer vorhandenen Intelligence-Empfehlung. " +
@@ -1597,6 +2592,26 @@ const engineeringTools = {
   inspect_preflight: inspectPreflight,
   run_preflight: runPreflight,
   create_simulation_snapshot: createSimulationSnapshot,
+  inspect_results_analysis: inspectResultsAnalysis,
+  assess_intelligence: assessIntelligence,
+  inspect_simulation_models: inspectSimulationModels,
+  inspect_simulation_fault_proposals: inspectFaultProposals,
+  propose_simulation_faults: proposeFaultScenarios,
+  review_simulation_fault: reviewFaultScenario,
+  inspect_simulation_traces: inspectModelTraces,
+  run_simulation_campaign: runSimulationCampaign,
+  inspect_simulation_campaign: inspectCampaign,
+  inspect_simulation_scenario: inspectSimulationScenario,
+  inspect_signal_behavior: inspectSignalBehavior,
+  create_normal_scenario: createNormalScenario,
+  create_fault_scenario: createFaultScenario,
+  suggest_faults: proposeFaultScenarios,
+  create_fault_campaign: runSimulationCampaign,
+  compare_golden_and_fault_trace: compareGoldenFaultTrace,
+  analyze_signal_deviation: analyzeSignalDeviation,
+  analyze_bus_load: analyzeBusLoad,
+  identify_first_anomaly: identifyFirstAnomaly,
+  identify_causal_chain: identifyCausalChain,
   inspect_intelligence: inspectIntelligence,
   create_optimization_proposal: proposeOptimization,
   retrieve_engineering_knowledge: retrieveEngineeringKnowledge,
@@ -1627,6 +2642,8 @@ const engineeringTools = {
   inspect_route: inspectRoute,
   inspect_topology: inspectTopology,
   inspect_network: inspectNetwork,
+  build_network_topology: buildNetworkTopology,
+  configure_workflow_parameters: configureWorkflowParameters,
   inspect_node: inspectRoutingObject("hardware-nodes", "Hardware Node"),
   inspect_interface: inspectRoutingObject("interfaces", "Interface"),
   inspect_message: inspectRoutingObject("messages", "Message"),
@@ -1689,13 +2706,14 @@ const WORKFLOW_TOOL_GROUPS: Record<string, readonly EngineeringToolName[]> = {
   ],
   network_editor: [
     "inspect_workflow",
+    "build_network_topology",
     "inspect_topology",
     "inspect_network",
     "get_neighbors",
     "find_paths",
     "validate_routing_table",
   ],
-  parameters: ["inspect_workflow", "inspect_protocol", "inspect_network", "inspect_routing_table"],
+  parameters: ["inspect_workflow", "configure_workflow_parameters", "inspect_protocol", "inspect_network", "inspect_routing_table"],
   capacity_timing: [
     "inspect_workflow",
     "calculate_capacity_timing",
@@ -1704,10 +2722,33 @@ const WORKFLOW_TOOL_GROUPS: Record<string, readonly EngineeringToolName[]> = {
     "optimize_capacity",
   ],
   validation: ["inspect_workflow", "run_preflight", "inspect_preflight", "inspect_capacity_timing"],
-  simulation: ["inspect_workflow", "create_simulation_snapshot", "inspect_preflight"],
-  results_analysis: ["inspect_workflow", "inspect_capacity_timing", "inspect_preflight"],
+  simulation: [
+    "inspect_workflow",
+    "create_simulation_snapshot",
+    "inspect_preflight",
+    "inspect_simulation_models",
+    "inspect_simulation_fault_proposals",
+    "propose_simulation_faults",
+    "review_simulation_fault",
+    "inspect_simulation_traces",
+    "run_simulation_campaign",
+    "inspect_simulation_campaign",
+    "inspect_simulation_scenario",
+    "inspect_signal_behavior",
+    "create_normal_scenario",
+    "create_fault_scenario",
+    "suggest_faults",
+    "create_fault_campaign",
+    "compare_golden_and_fault_trace",
+    "analyze_signal_deviation",
+    "analyze_bus_load",
+    "identify_first_anomaly",
+    "identify_causal_chain",
+  ],
+  results_analysis: ["inspect_workflow", "inspect_results_analysis", "inspect_capacity_timing", "inspect_preflight"],
   data_science_intelligence: [
     "inspect_workflow",
+    "assess_intelligence",
     "inspect_intelligence",
     "retrieve_engineering_knowledge",
     "create_optimization_proposal",
@@ -1717,13 +2758,13 @@ const WORKFLOW_TOOL_GROUPS: Record<string, readonly EngineeringToolName[]> = {
 const WORKFLOW_FIRST_TOOL: Record<string, EngineeringToolName> = {
   engineering_model: "listEngineeringObjects",
   routing: "inspect_routing_table",
-  network_editor: "inspect_topology",
-  parameters: "inspect_workflow",
+  network_editor: "build_network_topology",
+  parameters: "configure_workflow_parameters",
   capacity_timing: "calculate_capacity_timing",
   validation: "run_preflight",
   simulation: "create_simulation_snapshot",
-  results_analysis: "inspect_workflow",
-  data_science_intelligence: "inspect_intelligence",
+  results_analysis: "inspect_results_analysis",
+  data_science_intelligence: "assess_intelligence",
 };
 
 const WORKFLOW_PROGRESS_TOOLS: Record<string, readonly EngineeringToolName[]> = {
@@ -1737,25 +2778,29 @@ const WORKFLOW_PROGRESS_TOOLS: Record<string, readonly EngineeringToolName[]> = 
     "approveAllValidEngineeringProposals",
   ],
   routing: ["create_route_proposal", "validate_routing_table"],
-  network_editor: ["inspect_topology", "validate_routing_table"],
-  parameters: ["inspect_workflow", "inspect_protocol"],
+  network_editor: ["build_network_topology"],
+  parameters: ["configure_workflow_parameters"],
   capacity_timing: ["calculate_capacity_timing"],
   validation: ["run_preflight"],
   simulation: ["create_simulation_snapshot"],
-  results_analysis: ["inspect_workflow"],
-  data_science_intelligence: ["inspect_intelligence", "create_optimization_proposal"],
+  results_analysis: ["inspect_results_analysis"],
+  data_science_intelligence: ["assess_intelligence", "create_optimization_proposal"],
 };
 
-const COMPLETE_WORKFLOW_STATUSES = new Set(["COMPLETE", "APPROVED"]);
+const COMPLETE_WORKFLOW_STATUSES = new Set(["COMPLETE", "APPROVED", "WARNING"]);
 const CONFIRMATION_PATTERN = /\b(allow|bestaetigt|bestätigt|freigeben|uebernehmen|übernehmen|fortfahren|weiter)\b/i;
 const RECOVERY_PATTERN =
   /\b(warum[\s\S]{0,40}(gestoppt|abgebrochen|aufgehoert|aufgehört)|gestoppt|abgebrochen|mach weiter|weiterarbeiten|fortsetzen|setze[\s\S]{0,50}fort|wieder aufnehmen|erneut ausfuehren|erneut ausführen)\b/i;
 const MUTATION_PATTERN =
-  /\b(erzeuge|generiere|erstelle|anlegen|aufbauen|ausfuehren|ausführen|starte|berechne|validiere|simuliere|optimier|reparier|verbinde|verknuepfe|verknüpfe|ordne|zuordnen|registriere)\b/i;
+  /\b(erzeuge|generiere|erstelle|anlegen|aufbauen|ausfuehren|ausführen|starte|berechne|validiere|simuliere|optimier|reparier|korrigier|ergaenz\w*|ergänz\w*|verbinde|verknuepfe|verknüpfe|ordne|zuordnen|registriere)\b/i;
 const FULL_ENGINEERING_CHAIN_PATTERN =
   /(hardwarenodes?[\s\S]*functions?[\s\S]*interfaces?[\s\S]*messages?[\s\S]*signals?)|(hardware[\s\S]*funktion[\s\S]*interface[\s\S]*(nachricht|message)[\s\S]*(signal))|(vollstaendige|vollständige|komplette)[\s\S]*?(kette|modell)|(bis einschliesslich signale|bis einschließlich signale)/i;
 const RELATION_REQUEST_PATTERN =
   /\b(relation|has_interface|has_function|contains_signal|connected_to|communicates_with|verbinde|verknuepfe|verknüpfe|zuordnen)\b/i;
+const PROJECT_CONTEXT_PATTERN =
+  /\b(aktuell|dies(?:e|er|es|em|en)|hier|mein(?:e|er|es|em|en)?|unser(?:e|er|es|em|en)?|projekt|workflow|befund|issue|proposal|graph|evidence)\b/i;
+const PROJECT_QUERY_PATTERN =
+  /\b(zeige|liste|öffne|oeffne|finde|suche|welche|wie\s+(?:viele|hoch))\b[\s\S]{0,100}\b(modell|hardware|knoten|ecu|gateway|interface|schnittstelle|message|nachricht|signal|route|routing|netzwerk|buslast|capacity|timing|validation|simulation|ergebnis)\b/i;
 
 function modelContentText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -1789,6 +2834,13 @@ function userRequestContext(messages: Array<{ role: string; content: unknown }>)
 function isActionableRequest(request: string) {
   const concrete = concreteRequestText(request);
   return MUTATION_PATTERN.test(concrete) || CONFIRMATION_PATTERN.test(concrete);
+}
+
+function needsProjectContext(request: string) {
+  const concrete = concreteRequestText(request);
+  return isActionableRequest(concrete)
+    || PROJECT_CONTEXT_PATTERN.test(concrete)
+    || PROJECT_QUERY_PATTERN.test(concrete);
 }
 
 function isConfirmationRequest(request: string) {
@@ -1836,6 +2888,9 @@ async function currentWorkflowPhase(target: string) {
 
 export const engineeringAgent = new ToolLoopAgent({
   model: engineeringModel,
+  maxRetries: 0,
+  maxOutputTokens: 1800,
+  temperature: 0.1,
   providerOptions: {
     openai: {
       parallelToolCalls: false,
@@ -1880,7 +2935,7 @@ export const engineeringAgent = new ToolLoopAgent({
       toolCalls: event.toolCalls.length,
     });
   },
-  prepareStep: async ({ steps, initialMessages }) => {
+  prepareStep: async ({ steps, initialMessages, messages }) => {
     const request = userRequestContext(initialMessages);
     const confirmation = isConfirmationRequest(request.latest);
     const recovery = isRecoveryRequest(request.latest);
@@ -1888,11 +2943,12 @@ export const engineeringAgent = new ToolLoopAgent({
     const requestBasis = continuation ? request.previousTask : request.latest;
     setCurrentAgentRequestText(requestBasis);
     const structuredSpecification = isStructuredEngineeringSpecification(requestBasis);
+    const projectContextNeeded = structuredSpecification || needsProjectContext(requestBasis);
     const target = inferWorkflowTarget(requestBasis);
     const workflowSteps = workflowStepIdsUntil(target);
-    const targetNeedsRouting = target !== "engineering_model" && workflowSteps.includes("engineering_model");
+    const targetNeedsRouting = projectContextNeeded && target !== "engineering_model" && workflowSteps.includes("engineering_model");
     const hierarchy = targetNeedsRouting ? await engineeringHierarchyStatus() : null;
-    let phase = await currentWorkflowPhase(target);
+    let phase = projectContextNeeded ? await currentWorkflowPhase(target) : "general";
     if (structuredSpecification) phase = "engineering_model";
     if (targetNeedsRouting && hierarchy && !hierarchy.routingReady) phase = "engineering_model";
     const fullEngineeringChainRequested = requestsFullEngineeringChain(
@@ -1901,7 +2957,9 @@ export const engineeringAgent = new ToolLoopAgent({
     const relationOnlyRequest = phase === "engineering_model"
       && RELATION_REQUEST_PATTERN.test(concreteRequestText(requestBasis))
       && !fullEngineeringChainRequested;
-    const activeTools = structuredSpecification
+    const activeTools = !projectContextNeeded
+      ? [] satisfies EngineeringToolName[]
+      : structuredSpecification
       ? ["createEngineeringModelFromSpecification"] satisfies EngineeringToolName[]
       : relationOnlyRequest
       ? ["listEngineeringObjects", "listEngineeringRelations", "proposeEngineeringRelation"] satisfies EngineeringToolName[]
@@ -1928,7 +2986,9 @@ export const engineeringAgent = new ToolLoopAgent({
       fullEngineeringChainRequested
       || Boolean(targetNeedsRouting && hierarchy && !hierarchy.routingReady)
     );
-    const toolChoice = structuredSpecification
+    const toolChoice = !projectContextNeeded
+      ? "none" as const
+      : structuredSpecification
       ? specificationCalls < 1
         ? { type: "tool" as const, toolName: "createEngineeringModelFromSpecification" as const }
         : "none" as const
@@ -1958,6 +3018,37 @@ export const engineeringAgent = new ToolLoopAgent({
             ? "required" as const
             : "auto" as const;
     const demandModel = demandModelForRequest(request.latest, recovery, actionable);
+    const localModelRun = demandModel.source === "ollama" || demandModel.source.startsWith("local");
+    const learningContext = localModelRun
+      ? await agentLearningContext(currentAgentProjectId(), requestBasis).catch((error) => {
+          auditAgent("learning context unavailable", { error: error instanceof Error ? error.message : String(error) });
+          return "";
+        })
+      : "";
+    const localContinuationMessages = localModelRun
+      && steps.length > 0
+      && messages.at(-1)?.role !== "user"
+      ? [
+          ...messages,
+          {
+            role: "user" as const,
+            content: `Setze den bestaetigten Simulator-Auftrag mit den vorliegenden Tool-Ergebnissen fort. Bleibe beim Ziel: ${requestBasis.slice(0, 1200)}`,
+          },
+        ]
+      : undefined;
+    const preparedMessages = learningContext
+      ? [
+          {
+            role: "user" as const,
+            content: `Lokales, bestaetigtes Projektwissen aus frueherem Nutzerfeedback. Dies ist kein neuer Auftrag. Nutze es nur, wenn es fachlich zur aktuellen Frage passt:\n\n${learningContext}`,
+          },
+          {
+            role: "assistant" as const,
+            content: "Verstanden. Ich verwende passende bestaetigte Erkenntnisse und bevorzuge weiterhin aktuelle Simulator-Daten.",
+          },
+          ...(localContinuationMessages ?? messages),
+        ]
+      : localContinuationMessages;
 
     auditAgent("step orchestration", {
       step: steps.length + 1,
@@ -1978,6 +3069,8 @@ export const engineeringAgent = new ToolLoopAgent({
       routingProposalInspected,
       routingProposalCreated,
       modelSource: demandModel.source,
+      projectContext: projectContextNeeded,
+      learnedExamples: Boolean(learningContext),
       hierarchy: hierarchy ? JSON.stringify(hierarchy.counts) : undefined,
     });
 
@@ -1985,9 +3078,16 @@ export const engineeringAgent = new ToolLoopAgent({
       activeTools,
       toolChoice,
       model: demandModel.model,
+      ...(preparedMessages ? { messages: preparedMessages } : {}),
     };
   },
   instructions: `Du bist der Network-Engineering-Assistent des Communication Simulators.
+
+Beantworte allgemeine Fachfragen direkt. Sage niemals, eine Frage gehe nicht auf
+den Workflow oder das Engineering-Modell ein. Beginne mit der fachlichen Antwort.
+Technische Zahlen müssen aus Simulator-Tools, deterministischen Ergebnissen oder
+explizit validiertem Lernwissen stammen. Trenne Simulator-Defaults von allgemeinen
+Technologiegrenzen und benenne Unsicherheit knapp, statt Werte zu erfinden.
 
 Du hilfst dabei, das kanonische Engineering-Modell zu verstehen und zu erweitern:
 HardwareNode (Geräte wie ECU, PLC, Gateway), Function (Funktionen auf einem
@@ -2030,11 +3130,14 @@ Regeln:
 - Fuer Zielzustand "Simulation" ist die Mindestfolge:
   1) Engineering-Objekte und Relations vorbereiten oder bestaetigen,
   2) Routingvorschlaege/Routen vorbereiten oder bestaetigen,
-  3) Topologie/Netzwerk-Synchronitaet pruefen,
-  4) Parameter pruefen,
+  3) build_network_topology ausfuehren und Topologie/Netzwerk-Synchronitaet pruefen,
+  4) configure_workflow_parameters ausfuehren,
   5) calculate_capacity_timing persistent ausfuehren,
   6) run_preflight ausfuehren,
-  7) nur bei ready_for_simulation create_simulation_snapshot ausfuehren.
+  7) nur bei ready_for_simulation create_simulation_snapshot ausfuehren; dieses Tool
+     startet den echten Simulatorlauf und wartet bis Results / Analysis persistiert ist,
+  8) inspect_results_analysis pruefen,
+  9) bei Ziel Intelligence assess_intelligence ausfuehren.
   Engineering-Objekte werden dabei sofort validiert und kanonisch registriert.
 - Bevor du create_route_proposal aufrufst, muessen mindestens zwei verschiedene
   kanonische HardwareNodes sowie die referenzierte Message und ihre Signals
@@ -2109,7 +3212,7 @@ Regeln:
   Hinweise knapp und nutzerverständlich, nicht als JSON und nicht als
   interne Gedankenkette.`,
   tools: engineeringTools,
-  stopWhen: isStepCount(30),
+  stopWhen: isStepCount(16),
 });
 
 export type EngineeringAgentUIMessage = InferAgentUIMessage<typeof engineeringAgent>;

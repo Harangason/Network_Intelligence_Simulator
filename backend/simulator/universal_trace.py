@@ -12,6 +12,7 @@ from typing import Any
 
 from bus_technologies import normalize_technology_id, resolve_technology, technology_registry
 from hardware_profile import iter_network_interfaces
+from model_based_simulation import ModelBasedSimulationEngine
 
 
 def _utc(timestamp: float) -> str:
@@ -145,11 +146,16 @@ def _generate_universal_events(
     routes = _build_routes(config, profile)
     events: list[dict[str, Any]] = []
     rng = random.Random(seed)
+    model_engine = ModelBasedSimulationEngine(config)
+    scenario_is_explicit = isinstance(config.get("scenario"), dict)
+    scenario = config.get("scenario") if scenario_is_explicit else {}
+    scenario_mode = str(scenario.get("mode") or "NORMAL").upper()
+    suppress_root_faults = scenario_is_explicit and scenario_mode == "NORMAL"
     root_faults = {
-        "dropout_probability": config.get("dropout_probability"),
-        "corruption_probability": config.get("corruption_probability"),
-        "duplicate_probability": config.get("duplicate_probability"),
-        "reordering_probability": config.get("reordering_probability"),
+        "dropout_probability": 0 if suppress_root_faults else config.get("dropout_probability"),
+        "corruption_probability": 0 if suppress_root_faults else config.get("corruption_probability"),
+        "duplicate_probability": 0 if suppress_root_faults else config.get("duplicate_probability"),
+        "reordering_probability": 0 if suppress_root_faults else config.get("reordering_probability"),
     }
 
     for route in routes:
@@ -163,6 +169,8 @@ def _generate_universal_events(
         if isinstance(max_payload, int) and max_payload > 0:
             payload_size = min(payload_size, max_payload)
         cycle_s = float(route["cycle_ms"]) / 1000.0
+        if scenario_mode == "STRESS":
+            cycle_s *= max(0.05, float(scenario.get("cycle_factor") or 0.5))
         if str(sender.get("health")).lower() in {"degraded", "faulty"}:
             cycle_s *= 2
         network_metadata = route.get("network_metadata") if isinstance(route.get("network_metadata"), dict) else {}
@@ -209,7 +217,12 @@ def _generate_universal_events(
                             break
             if status != "dropped" and rng.random() < corruption_probability:
                 status = "corrupted"
-            payload_hex = _payload(route["id"], sequence, payload_size)
+            model_payload = model_engine.encode_event(route, relative_time, payload_size)
+            payload_hex = (
+                str(model_payload["payload_hex"])
+                if model_payload.get("signals")
+                else _payload(route["id"], sequence, payload_size)
+            )
             if status == "corrupted" and payload_hex:
                 payload_hex = ("FF" + payload_hex[2:]) if len(payload_hex) >= 2 else "FF"
             event = {
@@ -235,6 +248,7 @@ def _generate_universal_events(
                 "receiver_hardware": [item["hardware_id"] for item in receivers],
                 "receiver_interfaces": [item["interface_id"] for item in receivers],
                 "gateway_ids": gateways,
+                "message_ids": route.get("metadata", {}).get("message_ids") or [],
                 "payload_bytes": payload_size,
                 "payload_hex": payload_hex,
                 "priority": route.get("priority"),
@@ -250,7 +264,28 @@ def _generate_universal_events(
                     or 1_000_000
                 ),
             }
+            event["signals"] = model_payload.get("signals") or []
+            if event["signals"]:
+                first_signal = event["signals"][0]
+                event["signal"] = first_signal.get("signal")
+                event["signal_id"] = first_signal.get("signal_id")
+                event["signal_value"] = first_signal.get("value")
+                event["value"] = first_signal.get("value")
+                event["unit"] = first_signal.get("unit")
+                event["golden_value"] = first_signal.get("golden_value")
+                event["model_label"] = first_signal.get("model_label")
+                event["behavior_type"] = first_signal.get("behavior_type")
+            event["faults"] = model_engine.faults.event_faults(event)
+            if scenario_mode == "STRESS":
+                event["fault_load_multiplier"] = max(1.0, float(scenario.get("load_factor") or 2.0))
             events.append(event)
+            if event.get("duplicate_injected") and len(events) < max_events:
+                events.append({
+                    **event,
+                    "sequence": sequence * 1_000_000 + 1,
+                    "time_s": event_time + 0.000001,
+                    "duplicate_of": sequence,
+                })
             sequence += 1
             relative_time = sequence * cycle_s
         if len(events) >= max_events:
@@ -272,6 +307,7 @@ def _generate_universal_events(
             wire_bits = int((payload_bytes * 8 + 47) * 1.2)
         else:
             wire_bits = (payload_bytes + 24) * 8
+        wire_bits = int(wire_bits * max(1.0, float(event.get("fault_load_multiplier") or 1.0)))
         transmission_s = wire_bits / bitrate * (1 + int(event.get("retransmission_count") or 0))
         available_at = network_available_at.get(network_id, 0.0)
         transmit_start = max(requested_at, available_at)
@@ -324,7 +360,8 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         "payload_hex", "priority", "status", "configured_bitrate", "queue_delay_ms",
         "queue_depth_estimate", "transmission_latency_ms", "end_to_end_latency_ms",
         "gateway_ids", "retransmission_count", "duplicate_injected", "reordered",
-        "retry_delay_ms", "drop_reason",
+        "retry_delay_ms", "drop_reason", "signal", "signal_id", "signal_value",
+        "value", "golden_value", "unit", "behavior_type", "model_label", "message_ids", "signals", "faults",
     ]
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=columns)
@@ -336,6 +373,9 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
                     "receiver_hardware": ",".join(event["receiver_hardware"]),
                     "receiver_interfaces": ",".join(event["receiver_interfaces"]),
                     "gateway_ids": ",".join(event.get("gateway_ids") or []),
+                    "message_ids": ",".join(str(item) for item in event.get("message_ids") or []),
+                    "signals": json.dumps(event.get("signals") or [], ensure_ascii=False),
+                    "faults": ",".join(str(item) for item in event.get("faults") or []),
                 }
             )
     return path

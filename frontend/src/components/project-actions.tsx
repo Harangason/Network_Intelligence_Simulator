@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { clearEngineeringAgentHistory } from "@/lib/agent-chat-history";
 import { openProjectBundleFromFile, saveProjectBundleToFile } from "@/lib/project-file";
 import { exportProjectBundle, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
 import { normalizeProjectId, readUserSettings, writeUserSettings } from "@/lib/user-settings";
@@ -31,13 +32,13 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   }
 
   function createProjectId() {
-    const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
-    return `network-project-${stamp}`;
+    const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
+    return `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
   }
 
   function notifyAgentAboutNewProject(nextProjectId: string) {
     window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
-    requestEngineeringAgentWizard(nextProjectId);
+    requestEngineeringAgentWizard(nextProjectId, { dispatch: false });
   }
 
   async function handleNew() {
@@ -45,10 +46,9 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     setMessage("");
     try {
       const nextProjectId = createProjectId();
-      const reset = await resetProjectWorkspace(nextProjectId);
-      setActiveProject(reset.project_id);
-      notifyAgentAboutNewProject(reset.project_id);
-      setMessage(`Neu: leerer Workspace ${reset.project_id}`);
+      setActiveProject(nextProjectId);
+      notifyAgentAboutNewProject(nextProjectId);
+      setMessage(`Neu: leerer Workspace ${nextProjectId}`);
       if (window.location.pathname === "/studio/engineering") {
         window.location.reload();
       } else {
@@ -96,6 +96,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     try {
       const current = readUserSettings().activeProject;
       const reset = await resetProjectWorkspace(current);
+      await clearEngineeringAgentHistory(current);
       setActiveProject(reset.project_id);
       setClearDialogOpen(false);
       window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);

@@ -7,6 +7,7 @@ from typing import Any
 
 from ..db import get_connection
 from ..models import EngineeringValidationError
+from ..project_context import current_project_id
 from .repository import create_proposal
 from .retrieval import HybridRoutingRetriever
 from .validation import RoutingValidator
@@ -31,9 +32,9 @@ class RoutingGenerationService:
     def _node(self, value: str) -> dict[str, Any]:
         with get_connection() as connection:
             row = connection.execute(
-                "SELECT * FROM engineering_hardware_nodes WHERE id::text = %s OR lower(name) = lower(%s) "
-                "ORDER BY CASE WHEN id::text = %s THEN 0 ELSE 1 END LIMIT 1",
-                (value, value, value),
+                "SELECT * FROM engineering_hardware_nodes WHERE (id::text = %s OR lower(name) = lower(%s)) "
+                "AND project_id = %s ORDER BY CASE WHEN id::text = %s THEN 0 ELSE 1 END LIMIT 1",
+                (value, value, current_project_id(), value),
             ).fetchone()
         if row is None:
             raise EngineeringValidationError(f"Hardware Node {value!r} wurde nicht gefunden.")
@@ -42,9 +43,22 @@ class RoutingGenerationService:
     def _interface_candidates(self, node_id: str) -> list[dict[str, Any]]:
         with get_connection() as connection:
             return connection.execute(
-                "SELECT * FROM engineering_interfaces WHERE hardware_node_id = %s ORDER BY created_at",
-                (node_id,),
+                "SELECT * FROM engineering_interfaces WHERE hardware_node_id = %s "
+                "AND project_id = %s ORDER BY created_at",
+                (node_id, current_project_id()),
             ).fetchall()
+
+    def _message_context(self, message_id: str | None) -> dict[str, Any] | None:
+        if not message_id:
+            return None
+        with get_connection() as connection:
+            return connection.execute(
+                "SELECT m.*, i.hardware_node_id, i.interface_type "
+                "FROM engineering_messages m "
+                "LEFT JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id "
+                "WHERE m.id = %s AND m.project_id = %s LIMIT 1",
+                (message_id, current_project_id()),
+            ).fetchone()
 
     def _hardware_graph(self) -> tuple[dict[str, set[str]], dict[tuple[str, str], dict[str, Any]]]:
         adjacency: dict[str, set[str]] = defaultdict(set)
@@ -56,7 +70,9 @@ class RoutingGenerationService:
                 "ti.interface_type AS target_type_name FROM engineering_relations r "
                 "JOIN engineering_interfaces si ON r.source_type = 'Interface' AND r.source_id = si.id "
                 "JOIN engineering_interfaces ti ON r.target_type = 'Interface' AND r.target_id = ti.id "
-                "WHERE r.relation_type = 'CONNECTED_TO'"
+                "WHERE r.relation_type = 'CONNECTED_TO' AND r.project_id = %s "
+                "AND si.project_id = r.project_id AND ti.project_id = r.project_id",
+                (current_project_id(),),
             ).fetchall()
         for row in rows:
             source = str(row["source_node_id"])
@@ -108,8 +124,9 @@ class RoutingGenerationService:
             nodes = {
                 str(row["id"]): row
                 for row in connection.execute(
-                    "SELECT id, name, device_type FROM engineering_hardware_nodes WHERE id = ANY(%s::uuid[])",
-                    (node_ids,),
+                    "SELECT id, name, device_type FROM engineering_hardware_nodes "
+                    "WHERE id = ANY(%s::uuid[]) AND project_id = %s",
+                    (node_ids, current_project_id()),
                 ).fetchall()
             }
         candidates = []
@@ -169,16 +186,65 @@ class RoutingGenerationService:
         source = self._node(source_node_id)
         destination = self._node(destination_node_id)
         candidate = self.find_candidate_paths(str(source["id"]), str(destination["id"]))[0]
-        source_interface = candidate.get("connections", [{}])[0].get("source_interface_id") if candidate.get("connections") else None
-        destination_interface = candidate.get("connections", [{}])[-1].get("target_interface_id") if candidate.get("connections") else None
-        protocol = candidate["protocol"]
+        connections = candidate.get("connections") or []
+        message = self._message_context(message_id)
+        source_interfaces = self._interface_candidates(str(source["id"]))
+        destination_interfaces = self._interface_candidates(str(destination["id"]))
+
+        source_interface_id = connections[0].get("source_interface_id") if connections else None
+        source_interface = next(
+            (item for item in source_interfaces if str(item["id"]) == str(source_interface_id)),
+            None,
+        )
+        if (
+            source_interface is None
+            and message
+            and str(message.get("hardware_node_id") or "") == str(source["id"])
+        ):
+            source_interface = next(
+                (
+                    item
+                    for item in source_interfaces
+                    if str(item["id"]) == str(message.get("interface_id") or "")
+                ),
+                None,
+            )
+        if source_interface is None and source_interfaces:
+            source_interface = source_interfaces[0]
+
+        destination_interface_id = connections[-1].get("target_interface_id") if connections else None
+        destination_interface = next(
+            (item for item in destination_interfaces if str(item["id"]) == str(destination_interface_id)),
+            None,
+        )
+        source_interface_type = str((source_interface or {}).get("interface_type") or "")
+        if destination_interface is None and source_interface_type:
+            destination_interface = next(
+                (
+                    item
+                    for item in destination_interfaces
+                    if str(item.get("interface_type") or "") == source_interface_type
+                ),
+                None,
+            )
+        if destination_interface is None and destination_interfaces:
+            destination_interface = destination_interfaces[0]
+
+        protocol = str(candidate.get("protocol") or "CUSTOM")
+        if protocol == "CUSTOM" and source_interface_type:
+            protocol = INTERFACE_TO_PROTOCOL.get(source_interface_type, "CUSTOM")
+        source_interface_id = str(source_interface["id"]) if source_interface else None
+        destination_interface_id = (
+            str(destination_interface["id"]) if destination_interface else None
+        )
+        cycle_time_ms = float(message.get("cycle_ms") or 100) if message else 100
         route = {
             "name": f"{source['name']} → {destination['name']}",
             "description": "Graphbasierter Routing-Vorschlag des Engineering-Agenten.",
             "source": {
                 "node_id": str(source["id"]),
                 "port_id": None,
-                "interface_id": source_interface,
+                "interface_id": source_interface_id,
                 "network_id": None,
                 "protocol": protocol,
             },
@@ -192,7 +258,7 @@ class RoutingGenerationService:
             "destinations": [
                 {
                     "node_id": str(destination["id"]),
-                    "interface_id": destination_interface,
+                    "interface_id": destination_interface_id,
                     "network_id": None,
                     "protocol": protocol,
                 }
@@ -204,7 +270,7 @@ class RoutingGenerationService:
                 "priority": "NORMAL",
             },
             "timing": {
-                "cycle_time_ms": 100,
+                "cycle_time_ms": cycle_time_ms,
                 "timeout_ms": 500,
                 "max_latency_ms": 20,
                 "jitter_limit_ms": 5,
@@ -276,8 +342,8 @@ class RoutingGenerationService:
         with get_connection() as connection:
             return connection.execute(
                 "SELECT id, name, device_type FROM engineering_hardware_nodes WHERE id <> %s "
-                "ORDER BY CASE device_type WHEN 'Gateway' THEN 1 ELSE 0 END, name LIMIT 20",
-                (source["id"],),
+                "AND project_id = %s ORDER BY CASE device_type WHEN 'Gateway' THEN 1 ELSE 0 END, name LIMIT 20",
+                (source["id"], current_project_id()),
             ).fetchall()
 
     def suggest_gateway(self, source_node_id: str, target_node_id: str) -> list[dict[str, Any]]:

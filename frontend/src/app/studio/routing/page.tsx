@@ -10,7 +10,7 @@ export default async function RoutingPage({
 }) {
   const { view } = await searchParams;
   return (
-    <main className="shell routing-shell">
+    <main className="shell studio-shell routing-shell">
       <StudioTopbar />
       <WorkflowHeader />
       <StudioWorkflowHero eyebrow="Routing Manager" title="Informationen sicher zu ihren Consumern führen.">

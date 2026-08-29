@@ -54,6 +54,11 @@ export type WorkflowState = {
   steps: WorkflowStep[];
   simulation_snapshots: SimulationSnapshot[];
   rule: string;
+  artifact_checks?: Record<string, {
+    complete?: boolean;
+    counts?: Record<string, number>;
+    status?: string;
+  }>;
   routing_sync?: {
     counts: {
       created: number;
@@ -83,6 +88,43 @@ function defaultVersions(): Record<WorkflowStepId, number> {
 
 function defaultStatuses(): Record<WorkflowStepId, WorkflowStatus> {
   return Object.fromEntries(WORKFLOW_STEP_DEFINITIONS.map((step) => [step.id, "EMPTY"])) as Record<WorkflowStepId, WorkflowStatus>;
+}
+
+function localWorkflowState(patch: Partial<WorkflowState> = {}): WorkflowState {
+  return normalizeWorkflowState({
+    project_id: readActiveProjectId(),
+    active_step: "engineering_model",
+    versions: defaultVersions(),
+    statuses: defaultStatuses(),
+    stale_reasons: {},
+    context: {},
+    parameters: {},
+    topology: {},
+    steps: [],
+    simulation_snapshots: [],
+    rule: "",
+    ...patch,
+  });
+}
+
+function canUseLocalWorkflowState(error: unknown): boolean {
+  if (typeof window === "undefined" || !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+    return false;
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return message === "Der Workflow-Dienst ist nicht erreichbar." || message === "Workflow-Fehler 500";
+}
+
+async function withLocalWorkflowState(
+  operation: () => Promise<WorkflowState>,
+  patch: Partial<WorkflowState> = {},
+): Promise<WorkflowState> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (canUseLocalWorkflowState(error)) return localWorkflowState(patch);
+    throw error;
+  }
 }
 
 function normalizeWorkflowState(payload: WorkflowState): WorkflowState {
@@ -159,6 +201,9 @@ export type CapacityNetwork = {
   available_capacity_percent?: number;
   capacity_reserve_percent: number;
   capacity_margin_percent?: number;
+  target_bus_load_percent?: number;
+  target_margin_percent?: number;
+  target_status?: "PASS" | "EXCEEDED";
   worst_end_to_end_latency_ms: number;
   top_contributors?: Array<{ route_id: string; name: string; load_percent: number }>;
   status: "NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD";
@@ -205,6 +250,7 @@ export type CapacityResults = {
     load_status_counts: Record<"NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD", number>;
     max_peak_load_percent: number;
     max_burst_load_percent: number;
+    target_bus_load_percent?: number;
     minimum_capacity_reserve_percent: number;
     minimum_capacity_margin_percent: number;
     worst_end_to_end_latency_ms: number;
@@ -315,22 +361,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export const getWorkflow = () => request<WorkflowState>("/workflow").then(normalizeWorkflowState);
+export const getWorkflow = () =>
+  withLocalWorkflowState(() => request<WorkflowState>("/workflow").then(normalizeWorkflowState));
 
 export const setWorkflowContext = (context: Record<string, unknown>) =>
-  request<WorkflowState>("/workflow/context", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState);
+  withLocalWorkflowState(
+    () => request<WorkflowState>("/workflow/context", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState),
+    { context },
+  );
 
 export const saveWorkflowParameters = (parameters: Record<string, unknown>) =>
-  request<WorkflowState>("/workflow/parameters", {
-    method: "PATCH",
-    body: JSON.stringify({ parameters }),
-  }).then(normalizeWorkflowState);
+  withLocalWorkflowState(
+    () =>
+      request<WorkflowState>("/workflow/parameters", {
+        method: "PATCH",
+        body: JSON.stringify({ parameters }),
+      }).then(normalizeWorkflowState),
+    { parameters },
+  );
 
 export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "edges">) =>
-  request<WorkflowState>("/workflow/topology", {
-    method: "PUT",
-    body: JSON.stringify({ topology }),
-  }).then(normalizeWorkflowState);
+  withLocalWorkflowState(
+    () =>
+      request<WorkflowState>("/workflow/topology", {
+        method: "PUT",
+        body: JSON.stringify({ topology }),
+      }).then(normalizeWorkflowState),
+    { topology },
+  );
 
 export const calculateCapacity = (overrides?: Record<string, unknown>) =>
   request<{
@@ -383,7 +441,10 @@ export const getWorkflowSnapshots = () =>
     capacity: AnalysisSnapshot | null;
     preflight: AnalysisSnapshot | null;
     simulations: SimulationSnapshot[];
-  }>("/workflow/snapshots");
+  }>("/workflow/snapshots").catch((error) => {
+    if (canUseLocalWorkflowState(error)) return { capacity: null, preflight: null, simulations: [] };
+    throw error;
+  });
 
 export type IntelligenceIssue = {
   severity: "ERROR" | "WARNING" | "INFO";
@@ -452,6 +513,79 @@ export type IntelligenceSnapshot = Omit<AnalysisSnapshot, "results"> & {
   results: IntelligenceResults;
 };
 
+function localIntelligenceSnapshot(): IntelligenceSnapshot {
+  return {
+    id: "local-intelligence-empty",
+    analysis_type: "intelligence",
+    source_versions: defaultVersions(),
+    results: {
+      system_health: {
+        score: 0,
+        counts: {
+          nodes: 0,
+          networks: 0,
+          routes: 0,
+          messages: 0,
+          signals: 0,
+          routing_errors: 0,
+          timing_violations: 0,
+          capacity_warnings: 0,
+          unmapped_signals: 0,
+          simulation_failures: 0,
+        },
+        metrics: {
+          routing_coverage: 0,
+          signal_coverage: 0,
+          interface_completeness: 0,
+          network_reachability: 0,
+          validation_pass_rate: 0,
+          timing_compliance: 0,
+          capacity_reserve: 0,
+          simulation_pass_rate: 0,
+          data_quality: 0,
+          requirement_coverage: 0,
+        },
+      },
+      maturity: {
+        overall_score: 0,
+        level: "L0",
+        level_name: "Empty",
+        target_level: "L1",
+        target_level_name: "Loaded",
+        dimensions: {
+          model: 0,
+          routing: 0,
+          validation: 0,
+          simulation: 0,
+        },
+        gaps: [],
+        criteria: {
+          L0: "Keine Engineering-Daten geladen.",
+          L1: "Engineering-Daten geladen und prüfbar.",
+        },
+      },
+      critical_issues: [],
+      data_quality: {},
+      routing_analytics: {},
+      network_analytics: {},
+      capacity_timing_analytics: { requirements: [] },
+      anomalies: [],
+      trends: { points: [], direction: "empty", comparison_modes: [] },
+      root_causes: [],
+      correlations: [],
+      recommendations: [],
+      rag_knowledge_insights: [],
+      graph_insights: {},
+      governance: {},
+    },
+    findings: [],
+    provenance: { source: "local-empty-state" },
+    status: "EMPTY",
+    is_outdated: false,
+    created_at: new Date().toISOString(),
+  };
+}
+
 export type OptimizationProposal = {
   proposal_id: string;
   category: string;
@@ -468,17 +602,28 @@ export type OptimizationProposal = {
   status: "PROPOSED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED" | "APPLIED_AS_DRAFT" | "SUPERSEDED";
 };
 
-export const getIntelligence = () => request<IntelligenceSnapshot>("/intelligence");
+export const getIntelligence = () =>
+  request<IntelligenceSnapshot>("/intelligence").catch((error) => {
+    if (canUseLocalWorkflowState(error)) return localIntelligenceSnapshot();
+    throw error;
+  });
 
 export const assessIntelligence = () =>
-  request<IntelligenceSnapshot>("/intelligence/assess", { method: "POST", body: "{}", signal: AbortSignal.timeout(30000) });
+  request<IntelligenceSnapshot>("/intelligence/assess", { method: "POST", body: "{}", signal: AbortSignal.timeout(30000) }).catch((error) => {
+    if (canUseLocalWorkflowState(error)) return localIntelligenceSnapshot();
+    throw error;
+  });
 
 export const listOptimizationProposals = () =>
-  request<{ items: OptimizationProposal[]; count: number }>("/intelligence/proposals");
+  request<{ items: OptimizationProposal[]; count: number }>("/intelligence/proposals").catch((error) => {
+    if (canUseLocalWorkflowState(error)) return { items: [], count: 0 };
+    throw error;
+  });
 
-export const createOptimizationProposal = (proposal: IntelligenceRecommendation) =>
+export const createOptimizationProposal = (proposal: IntelligenceRecommendation, projectId?: string) =>
   request<OptimizationProposal>("/intelligence/proposals", {
     method: "POST",
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
     body: JSON.stringify(proposal),
   });
 

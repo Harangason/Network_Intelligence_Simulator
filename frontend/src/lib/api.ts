@@ -13,6 +13,11 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+function projectPath(path: string, projectId: string) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}project_id=${encodeURIComponent(projectId)}`;
+}
+
 function announceMode(mode: "backend" | "browser") {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("simulator-mode", { detail: mode }));
 }
@@ -55,5 +60,43 @@ export async function getSimulation(id: string): Promise<SimulationJob> {
 }
 
 export async function cancelSimulation(id: string): Promise<SimulationJob> {
-  return apiRequest<SimulationJob>(`/api/simulations/${id}`, { method: "POST", body: "{}" });
+  return apiRequest<SimulationJob>(`/api/simulations/${id}/cancel`, { method: "POST", body: "{}" });
+}
+
+export type FaultProposal = {
+  proposal_id: string;
+  title: string;
+  fault_scope: "SIGNAL" | "MESSAGE" | "NETWORK";
+  fault_type: string;
+  target: Record<string, unknown>;
+  configuration: Record<string, unknown>;
+  rationale: string;
+  evidence: Array<Record<string, unknown>>;
+  model: string;
+  status: "AI_GENERATED" | "READY_FOR_REVIEW" | "APPROVED" | "REJECTED" | "SUPERSEDED";
+};
+
+export async function saveSimulationScenario(projectId: string, payload: Record<string, unknown>) {
+  return apiRequest<Record<string, unknown>>(projectPath("/api/engineering/simulation/scenarios", projectId), {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listSimulationFaultProposals(projectId: string) {
+  return apiRequest<{ items: FaultProposal[]; count: number }>(projectPath("/api/engineering/simulation/fault-proposals", projectId));
+}
+
+export async function createSimulationFaultProposals(projectId: string) {
+  return apiRequest<{ items: FaultProposal[]; count: number }>(projectPath("/api/engineering/simulation/fault-proposals", projectId), {
+    method: "POST",
+    body: JSON.stringify({ project_id: projectId }),
+  });
+}
+
+export async function reviewSimulationFaultProposal(projectId: string, proposalId: string, action: "ACCEPT" | "EDIT" | "REJECT", changes?: Record<string, unknown>) {
+  return apiRequest<FaultProposal>(projectPath(`/api/engineering/simulation/fault-proposals/${proposalId}/review`, projectId), {
+    method: "POST",
+    body: JSON.stringify({ project_id: projectId, action, changes, actor: "simulation-user" }),
+  });
 }

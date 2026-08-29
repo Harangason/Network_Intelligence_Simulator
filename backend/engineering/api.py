@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 
 import psycopg
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 from psycopg_pool import PoolTimeout
 
 from .models import DEVICE_TYPES, EngineeringValidationError, INTERFACE_TYPES, MESSAGE_DIRECTIONS
@@ -68,10 +68,21 @@ from .routing.repository import (
 from .routing.validation import RoutingValidator, detect_routing_loop
 from .capacity.service import CapacityTimingService, PreflightService
 from .workflow.models import WORKFLOW_STEPS
-from .workflow.service import WorkflowConflictError, WorkflowStatusService
+from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change
 from .intelligence import IntelligenceService
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
+from .project_context import activate_project
+from .workloads import EngineeringWorkloadOrchestrator
+from .simulation import (
+    FAULTS_BY_SCOPE,
+    list_fault_proposals,
+    list_scenarios,
+    propose_faults,
+    review_fault_proposal,
+    save_scenario,
+    trace_metadata,
+)
 
 engineering_api = Blueprint("engineering_api", __name__)
 logger = logging.getLogger(__name__)
@@ -111,43 +122,58 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
         if isinstance(edge, dict) and edge.get("topology_edge_id")
     }
     nodes = []
+    interface_names_by_port: dict[str, str] = {}
     for raw_node in topology.get("nodes", []):
         if not isinstance(raw_node, dict):
             continue
         synced = synced_nodes.get(str(raw_node.get("id"))) or {}
         interfaces = {
-            str(item.get("topology_port_id")): item.get("engineering_id")
+            str(item.get("topology_port_id")): item
             for item in synced.get("interfaces", [])
             if isinstance(item, dict) and item.get("topology_port_id")
         }
+        ports = []
+        for port in raw_node.get("ports", []):
+            if not isinstance(port, dict):
+                continue
+            synced_interface = interfaces.get(str(port.get("id"))) or {}
+            interface_name = synced_interface.get("engineering_name") or port.get("name")
+            if port.get("id") and interface_name:
+                interface_names_by_port[str(port.get("id"))] = str(interface_name)
+            ports.append(
+                {
+                    **port,
+                    "name": interface_name,
+                    "engineeringId": synced_interface.get("engineering_id")
+                    or port.get("engineeringId"),
+                }
+            )
         nodes.append(
             {
                 **raw_node,
                 "engineeringId": synced.get("engineering_id") or raw_node.get("engineeringId"),
                 "engineeringFunctionId": synced.get("function_id")
                 or raw_node.get("engineeringFunctionId"),
-                "ports": [
-                    {
-                        **port,
-                        "engineeringId": interfaces.get(str(port.get("id")))
-                        or port.get("engineeringId"),
-                    }
-                    for port in raw_node.get("ports", [])
-                    if isinstance(port, dict)
-                ],
+                "ports": ports,
             }
         )
-    edges = [
-        {
-            **edge,
-            "engineeringRelationId": (
-                synced_edges.get(str(edge.get("id"))) or {}
-            ).get("engineering_relation_id")
-            or edge.get("engineeringRelationId"),
-        }
-        for edge in topology.get("edges", [])
-        if isinstance(edge, dict)
-    ]
+    edges = []
+    for edge in topology.get("edges", []):
+        if not isinstance(edge, dict):
+            continue
+        edges.append(
+            {
+                **edge,
+                "sourceInterfaceName": interface_names_by_port.get(str(edge.get("sourcePort")))
+                or edge.get("sourceInterfaceName"),
+                "targetInterfaceName": interface_names_by_port.get(str(edge.get("targetPort")))
+                or edge.get("targetInterfaceName"),
+                "engineeringRelationId": (
+                    synced_edges.get(str(edge.get("id"))) or {}
+                ).get("engineering_relation_id")
+                or edge.get("engineeringRelationId"),
+            }
+        )
     return {"nodes": nodes, "edges": edges}
 
 
@@ -222,14 +248,21 @@ def _project_id() -> str:
     )
 
 
+@engineering_api.before_request
+def _activate_request_project() -> None:
+    activate_project(_project_id())
+
+
 def _auto_recalculate_capacity(project_id: str) -> None:
     """Refresh derived engineering metrics when enough source data exists."""
     state = WorkflowStatusService(project_id).get()
-    topology = state.get("topology") or {}
-    has_topology = bool(topology.get("nodes")) and bool(topology.get("edges"))
-    has_parameters = bool(state.get("parameters"))
-    has_routes = bool(list_routes(limit=1))
-    if has_topology and has_parameters and has_routes:
+    required = {
+        "engineering_model": "COMPLETE",
+        "routing": "APPROVED",
+        "network_editor": "COMPLETE",
+        "parameters": "COMPLETE",
+    }
+    if all(state["statuses"].get(step) == status for step, status in required.items()):
         CapacityTimingService(project_id).calculate()
 
 
@@ -243,11 +276,36 @@ def _propagate_source_changes(response):
         return response
     step = None
     reason = None
-    if relative_path.startswith("/routing") and "/validate" not in relative_path:
+    status = "COMPLETE"
+    if relative_path.startswith("/routing"):
         step = "routing"
         reason = "Die logische Routing-Tabelle wurde geaendert."
+        active_routes = [
+            route
+            for route in list_routes(limit=500)
+            if route.get("status") not in {"SUPERSEDED", "DEPRECATED", "REJECTED"}
+        ]
+        if not active_routes:
+            status = "IN_PROGRESS"
+            reason = "Routing-Vorschlaege wurden vorbereitet; die Routing-Tabelle ist noch leer."
+        elif all(route.get("approval_state") == "APPROVED" for route in active_routes):
+            status = "APPROVED"
+            reason = "Alle aktiven Routen sind technisch geprueft und freigegeben."
+        else:
+            status = "WARNING"
+            reason = "Die Routing-Tabelle enthaelt noch nicht freigegebene Routen."
     elif relative_path.startswith("/topology/sync"):
         return response
+    elif (
+        relative_path == "/proposals/approve-all-valid"
+        or (relative_path.startswith("/proposals/") and relative_path.endswith("/approve"))
+        or (
+            relative_path.startswith("/workloads/")
+            and relative_path.endswith(("/approve-selected", "/approve-all-valid"))
+        )
+    ) and getattr(g, "engineering_proposal_changed", False):
+        step = "engineering_model"
+        reason = "Ein freigegebener Engineering-Vorschlag wurde in das kanonische Modell uebernommen."
     elif relative_path.startswith(("/imports/commit", "/relations")) or any(
         relative_path.startswith(f"/{resource}") for resource in RESOURCES
     ):
@@ -256,7 +314,11 @@ def _propagate_source_changes(response):
     if step:
         try:
             project_id = _project_id()
-            WorkflowStatusService(project_id).mark_changed(step, reason or "Quelldaten geaendert.")
+            WorkflowStatusService(project_id).mark_changed(
+                step,
+                reason or "Quelldaten geaendert.",
+                status=status,
+            )
             _auto_recalculate_capacity(project_id)
         except Exception:
             logger.exception("Workflow-Invalidierung konnte nicht persistiert werden")
@@ -291,6 +353,84 @@ def schema():
     )
 
 
+@engineering_api.route("/simulation/catalog", methods=["GET"])
+def simulation_catalog_route():
+    return jsonify(
+        {
+            "behavior_types": [
+                "CONSTANT", "STEP", "RAMP", "LINEAR", "SINE", "TRIANGLE", "SAWTOOTH",
+                "PULSE", "RANDOM_WALK", "BOUNDED_RANDOM", "STATE_DEPENDENT", "FORMULA",
+                "LOOKUP_TABLE", "EXTERNAL_SERIES",
+            ],
+            "model_labels": [
+                "PHYSICS_BASED", "RULE_BASED", "EMPIRICAL", "SYNTHETIC", "GENERIC_ESTIMATE",
+            ],
+            "faults": {scope.lower(): sorted(values) for scope, values in FAULTS_BY_SCOPE.items()},
+            "fault_catalog": {
+                scope.lower(): [
+                    {
+                        "id": fault_id,
+                        "name": fault_id.replace("_", " ").title(),
+                        "category": scope,
+                        "applicable_object_types": [scope],
+                        "parameters": ["target", "start_s", "end_s", "magnitude"],
+                        "constraints": {"start_s": {"minimum": 0}, "end_s": {"after": "start_s"}},
+                        "simulation_handler": "FaultInjectionEngine",
+                    }
+                    for fault_id in sorted(values)
+                ]
+                for scope, values in FAULTS_BY_SCOPE.items()
+            },
+            "modes": ["NORMAL", "USER_DEFINED_FAULT", "AI_GENERATED_FAULT", "STRESS"],
+        }
+    )
+
+
+@engineering_api.route("/simulation/scenarios", methods=["GET"])
+def simulation_scenarios_route():
+    items = list_scenarios()
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/simulation/scenarios", methods=["POST"])
+def create_simulation_scenario_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise EngineeringValidationError("Ein Szenario-Objekt wird erwartet.")
+    return jsonify(save_scenario(payload)), 201
+
+
+@engineering_api.route("/simulation/fault-proposals", methods=["GET"])
+def simulation_fault_proposals_route():
+    items = list_fault_proposals()
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/simulation/fault-proposals", methods=["POST"])
+def create_simulation_fault_proposals_route():
+    items = propose_faults()
+    return jsonify({"items": items, "count": len(items)}), 201
+
+
+@engineering_api.route("/simulation/fault-proposals/<proposal_id>/review", methods=["POST"])
+def review_simulation_fault_proposal_route(proposal_id: str):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        raise EngineeringValidationError("Review-Daten werden erwartet.")
+    return jsonify(review_fault_proposal(
+        proposal_id,
+        str(payload.get("action") or ""),
+        str(payload.get("actor") or "user"),
+        payload.get("changes") if isinstance(payload.get("changes"), dict) else None,
+    ))
+
+
+@engineering_api.route("/simulation/traces", methods=["GET"])
+def simulation_trace_metadata_route():
+    items = trace_metadata(request.args.get("job_id"))
+    return jsonify({"items": items, "count": len(items)})
+
+
 @engineering_api.route("/topology/sync", methods=["POST"])
 def sync_topology_route():
     payload = request.get_json(silent=True)
@@ -298,17 +438,18 @@ def sync_topology_route():
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     project_id = _project_id()
     result = sync_topology(payload)
-    topology = _topology_with_engineering_links(payload, result)
-    WorkflowStatusService(project_id).save_topology(
-        topology,
-        actor=str(payload.get("actor") or "network-editor"),
-    )
-    result["routing_sync"] = synchronize_network_routes(
-        project_id,
-        topology,
-        actor=str(payload.get("actor") or "network-editor"),
-    )
-    _auto_recalculate_capacity(project_id)
+    if payload.get("persist_workflow", True) is not False:
+        topology = _topology_with_engineering_links(payload, result)
+        WorkflowStatusService(project_id).save_topology(
+            topology,
+            actor=str(payload.get("actor") or "network-editor"),
+        )
+        result["routing_sync"] = synchronize_network_routes(
+            project_id,
+            topology,
+            actor=str(payload.get("actor") or "network-editor"),
+        )
+        _auto_recalculate_capacity(project_id)
     return jsonify(result)
 
 
@@ -388,12 +529,20 @@ def update_workflow_topology_route():
     topology = payload.get("topology") if isinstance(payload.get("topology"), dict) else payload
     project_id = _project_id()
     actor = str(payload.get("actor") or "network-editor")
+    workflow = WorkflowStatusService(project_id)
+    if is_topology_layout_only_change(workflow.get()["topology"], topology):
+        state = workflow.save_topology(topology, actor=actor)
+        state["routing_sync"] = {
+            "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
+            "skipped": [],
+        }
+        return jsonify(state)
     sync_result = sync_topology(topology)
     topology = _topology_with_engineering_links(topology, sync_result)
-    WorkflowStatusService(project_id).save_topology(topology, actor=actor)
+    workflow.save_topology(topology, actor=actor)
     routing_sync = synchronize_network_routes(project_id, topology, actor=actor)
     _auto_recalculate_capacity(project_id)
-    state = WorkflowStatusService(project_id).get()
+    state = workflow.get()
     state["routing_sync"] = routing_sync
     return jsonify(state)
 
@@ -403,11 +552,13 @@ def workflow_snapshots_route():
     service = WorkflowStatusService(_project_id())
     capacity = service.latest_analysis("capacity_timing", include_outdated=True)
     preflight = service.latest_analysis("preflight", include_outdated=True)
+    results_analysis = service.latest_analysis("results_analysis", include_outdated=True)
     state = service.get()
     return jsonify(
         {
             "capacity": capacity,
             "preflight": preflight,
+            "results_analysis": results_analysis,
             "simulations": state["simulation_snapshots"],
         }
     )
@@ -981,6 +1132,155 @@ def routing_entry_versions_route(route_id: str):
     return jsonify({"items": list_route_versions(route["route_code"])})
 
 
+# ---------------------------------------------------------------------------
+# Engineering Workloads
+# ---------------------------------------------------------------------------
+
+
+def _workload_payload() -> dict:
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        raise EngineeringValidationError("Ein JSON-Objekt wird erwartet.")
+    return payload
+
+
+@engineering_api.route("/workloads/registry", methods=["GET"])
+def workload_registry_route():
+    orchestrator = EngineeringWorkloadOrchestrator(_project_id())
+    return jsonify({"types": orchestrator.registry.types()})
+
+
+@engineering_api.route("/workloads", methods=["GET"])
+def list_workloads_route():
+    limit, offset = _pagination_args()
+    items = EngineeringWorkloadOrchestrator(_project_id()).list_workloads(
+        status=request.args.get("status"),
+        workload_type=request.args.get("workload_type"),
+        limit=limit,
+        offset=offset,
+    )
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/workloads", methods=["POST"])
+def create_workload_route():
+    workload = EngineeringWorkloadOrchestrator(_project_id()).create_workload(_workload_payload())
+    return jsonify(workload), 201
+
+
+@engineering_api.route("/workloads/<workload_id>", methods=["GET"])
+def get_workload_route(workload_id: str):
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).get_workload(workload_id))
+
+
+@engineering_api.route("/workloads/<workload_id>/start", methods=["POST"])
+def start_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(
+        EngineeringWorkloadOrchestrator(_project_id()).start_workload(
+            workload_id,
+            actor=payload.get("actor"),
+        )
+    )
+
+
+@engineering_api.route("/workloads/<workload_id>/pause", methods=["POST"])
+def pause_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).pause(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/resume", methods=["POST"])
+def resume_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).resume(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/cancel", methods=["POST"])
+def cancel_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).cancel(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/validate", methods=["POST"])
+def validate_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).validate_workload(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/generate-missing", methods=["POST"])
+def generate_missing_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).generate_missing(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/retry-invalid", methods=["POST"])
+def retry_invalid_workload_route(workload_id: str):
+    payload = _workload_payload()
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).retry_invalid(workload_id, actor=payload.get("actor")))
+
+
+@engineering_api.route("/workloads/<workload_id>/progress", methods=["GET"])
+def workload_progress_route(workload_id: str):
+    return jsonify(EngineeringWorkloadOrchestrator(_project_id()).progress(workload_id))
+
+
+@engineering_api.route("/workloads/<workload_id>/objects", methods=["GET"])
+def workload_objects_route(workload_id: str):
+    items = EngineeringWorkloadOrchestrator(_project_id()).list_workload_objects(workload_id)
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/workloads/<workload_id>/dependencies", methods=["GET"])
+def workload_dependencies_route(workload_id: str):
+    items = EngineeringWorkloadOrchestrator(_project_id()).dependencies(workload_id)
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/workloads/<workload_id>/events", methods=["GET"])
+def workload_events_route(workload_id: str):
+    items = EngineeringWorkloadOrchestrator(_project_id()).list_events(workload_id)
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/workloads/<workload_id>/audit", methods=["GET"])
+def workload_audit_route(workload_id: str):
+    items = EngineeringWorkloadOrchestrator(_project_id()).list_events(workload_id)
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/workloads/<workload_id>/approve-selected", methods=["POST"])
+def approve_selected_workload_route(workload_id: str):
+    payload = _workload_payload()
+    selections = payload.get("selections")
+    if not isinstance(selections, dict):
+        raise EngineeringValidationError("selections muss Proposal-IDs auf Indexlisten abbilden.")
+    before = EngineeringWorkloadOrchestrator(_project_id()).list_workload_objects(workload_id)
+    canonical_before = sum(bool(item.get("canonical_id")) for item in before)
+    result = EngineeringWorkloadOrchestrator(_project_id()).approve_valid(
+        workload_id,
+        actor=str(payload.get("actor") or ""),
+        selections=selections,
+    )
+    after = EngineeringWorkloadOrchestrator(_project_id()).list_workload_objects(workload_id)
+    g.engineering_proposal_changed = sum(bool(item.get("canonical_id")) for item in after) > canonical_before
+    return jsonify(result)
+
+
+@engineering_api.route("/workloads/<workload_id>/approve-all-valid", methods=["POST"])
+def approve_all_valid_workload_route(workload_id: str):
+    payload = _workload_payload()
+    orchestrator = EngineeringWorkloadOrchestrator(_project_id())
+    before = orchestrator.list_workload_objects(workload_id)
+    canonical_before = sum(bool(item.get("canonical_id")) for item in before)
+    result = orchestrator.approve_valid(workload_id, actor=str(payload.get("actor") or ""))
+    after = orchestrator.list_workload_objects(workload_id)
+    g.engineering_proposal_changed = sum(bool(item.get("canonical_id")) for item in after) > canonical_before
+    return jsonify(result)
+
+
 @engineering_api.route("/<resource>", methods=["GET"])
 def list_resource(resource: str):
     object_type = _resource_object_type(resource)
@@ -1115,7 +1415,12 @@ def approve_proposal_route(proposal_id: str):
     indexes = payload.get("indexes")
     if indexes is not None and not isinstance(indexes, list):
         raise EngineeringValidationError("indexes muss eine Liste sein.")
-    return jsonify(approve_proposal(proposal_id, indexes=indexes, actor=payload.get("actor")))
+    before = get_proposal(proposal_id)
+    canonical_before = sum(bool(item.get("canonical_id")) for item in before.get("proposed_objects") or [])
+    approved = approve_proposal(proposal_id, indexes=indexes, actor=payload.get("actor"))
+    canonical_after = sum(bool(item.get("canonical_id")) for item in approved.get("proposed_objects") or [])
+    g.engineering_proposal_changed = canonical_after > canonical_before
+    return jsonify(approved)
 
 
 @engineering_api.route("/proposals/<proposal_id>/reject", methods=["POST"])
@@ -1128,6 +1433,7 @@ def reject_proposal_route(proposal_id: str):
 def approve_all_valid_proposals_route():
     payload = request.get_json(silent=True) or {}
     items = approve_all_valid_proposals(actor=payload.get("actor"))
+    g.engineering_proposal_changed = bool(items)
     return jsonify({"items": items, "count": len(items)})
 
 

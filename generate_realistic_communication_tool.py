@@ -13,11 +13,13 @@ import time
 import uuid
 import webbrowser
 from pathlib import Path
+from urllib.parse import urlparse
 from urllib.error import URLError
 from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parent
+CANONICAL_ROOT = Path(r"I:\PycharmProjects\My_first_Network_Simulator")
 SIMULATOR_ROOT = ROOT / "backend" / "simulator"
 BACKEND_HOST = "127.0.0.1"
 BACKEND_PORT = 15050
@@ -26,6 +28,14 @@ FRONTEND_PORT = 13500
 SERVICE_LOG_ROOT = ROOT / "backend" / "runtime" / "service-logs"
 DEFAULT_LOCAL_AI_URL = "http://127.0.0.1:11434/v1"
 DEFAULT_LOCAL_AI_MODEL = "qwen3.8:27b"
+DEFAULT_LOCAL_AI_FAST_MODEL = "llama3.1:8b"
+DEFAULT_DATABASE_URL = (
+    "postgresql+psycopg://eip_user:localDockerOnly7a1c9e4f2b8d6a3c5e0f"
+    "@127.0.0.1:5432/eip_blocker"
+)
+ENGINEERING_DB_CONTAINER = "network-simulator-engineering-db"
+DEPENDENCY_HEALTH_INTERVAL_SECONDS = 5.0
+DEFAULT_SERVICE_RESTART_LIMIT = 5
 
 
 def _wait_for_url(
@@ -54,6 +64,26 @@ def _wait_for_url(
     return False
 
 
+def _url_available(url: str, timeout_s: float = 0.8) -> bool:
+    """Return true only for a successful local HTTP health response."""
+    try:
+        with urlopen(url, timeout=timeout_s) as response:
+            return 200 <= response.status < 300
+    except (OSError, URLError):
+        return False
+
+
+def _service_restart_limit(environment: dict[str, str]) -> int:
+    raw = environment.get("NETWORKIS_SERVICE_RESTARTS", str(DEFAULT_SERVICE_RESTART_LIMIT))
+    try:
+        value = int(raw)
+    except ValueError as error:
+        raise RuntimeError("NETWORKIS_SERVICE_RESTARTS muss eine ganze Zahl sein.") from error
+    if value < 0:
+        raise RuntimeError("NETWORKIS_SERVICE_RESTARTS darf nicht negativ sein.")
+    return value
+
+
 def _ensure_port_available(host: str, port: int, service: str) -> None:
     """Fail before spawning children if a fixed application port is occupied."""
     probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,6 +101,29 @@ def _ensure_port_available(host: str, port: int, service: str) -> None:
         probe.close()
 
 
+def _assert_canonical_project_root() -> None:
+    if os.environ.get("NETWORKIS_ALLOW_NON_CANONICAL_ROOT", "").strip().lower() in {"1", "true", "yes"}:
+        return
+    try:
+        current = ROOT.resolve()
+        canonical = CANONICAL_ROOT.resolve()
+    except OSError:
+        current = ROOT
+        canonical = CANONICAL_ROOT
+    if os.name == "nt":
+        current_text = str(current).lower()
+        canonical_text = str(canonical).lower()
+    else:
+        current_text = str(current)
+        canonical_text = str(canonical)
+    if current_text != canonical_text:
+        raise SystemExit(
+            "Falscher Simulator-Projektpfad. Dieser Launcher darf standardmäßig nur aus "
+            f"{CANONICAL_ROOT} gestartet werden. Aktuell: {ROOT}. "
+            "Setze NETWORKIS_ALLOW_NON_CANONICAL_ROOT=1 nur für bewusste Diagnose-Kopien."
+        )
+
+
 def _port_from_environment(name: str, default: int) -> int:
     raw_port = os.environ.get(name, str(default)).strip()
     try:
@@ -80,6 +133,134 @@ def _port_from_environment(name: str, default: int) -> int:
     if not 1 <= port <= 65535:
         raise SystemExit(f"{name} muss zwischen 1 und 65535 liegen.")
     return port
+
+
+def _tcp_endpoint_available(host: str, port: int, timeout_s: float = 1.0) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+        client.settimeout(timeout_s)
+        try:
+            client.connect((host, port))
+            return True
+        except OSError:
+            return False
+
+
+def _database_endpoint(database_url: str) -> tuple[str, int]:
+    normalized = database_url.replace("postgresql+psycopg://", "postgresql://", 1)
+    parsed = urlparse(normalized)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 5432
+    return host, port
+
+
+def _run_command(arguments: list[str], *, timeout_s: float | None = None) -> subprocess.CompletedProcess[str]:
+    def _timeout_text(value: str | bytes | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return value
+
+    try:
+        return subprocess.run(
+            arguments,
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout_s,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        return subprocess.CompletedProcess(
+            arguments,
+            124,
+            _timeout_text(error.stdout)
+            + _timeout_text(error.stderr)
+            + "\nBefehl wurde wegen Timeout beendet.",
+        )
+
+
+def _docker_available() -> bool:
+    docker = shutil.which("docker")
+    if docker is None:
+        return False
+    return _run_command([docker, "info"], timeout_s=5).returncode == 0
+
+
+def _try_start_docker_desktop() -> None:
+    docker = shutil.which("docker")
+    if docker is not None:
+        _run_command([docker, "desktop", "start"], timeout_s=8)
+    docker_desktop = Path(r"C:\Program Files\Docker\Docker\Docker Desktop.exe")
+    if docker_desktop.is_file():
+        subprocess.Popen([str(docker_desktop)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def _wait_for_docker(timeout_s: float = 35.0) -> bool:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        if _docker_available():
+            return True
+        time.sleep(2.0)
+    return False
+
+
+def _ensure_engineering_database(environment: dict[str, str]) -> None:
+    environment.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
+    host, port = _database_endpoint(environment["DATABASE_URL"])
+    endpoint_available = _tcp_endpoint_available(host, port)
+
+    compose_file = ROOT / "docker-compose.engineering-db.yml"
+    if not compose_file.is_file():
+        raise RuntimeError(f"Engineering-Datenbank ist nicht erreichbar und {compose_file.name} fehlt.")
+
+    if not _docker_available():
+        if endpoint_available:
+            return
+        _try_start_docker_desktop()
+        if not _wait_for_docker():
+            raise RuntimeError(
+                "Docker Desktop wurde nicht bereit. Die Engineering-Datenbank kann deshalb nicht "
+                "automatisch gestartet werden. Starte Docker Desktop einmal mit den nötigen "
+                "Windows-Rechten; danach startet NetworkIS die Datenbank selbst."
+            )
+
+    docker = shutil.which("docker")
+    if docker is None:
+        raise RuntimeError("Docker CLI wurde nicht gefunden. Die Engineering-Datenbank kann nicht gestartet werden.")
+    origin = _run_command(
+        [
+            docker,
+            "inspect",
+            "--format",
+            '{{ index .Config.Labels "com.docker.compose.project.working_dir" }}',
+            ENGINEERING_DB_CONTAINER,
+        ],
+        timeout_s=5,
+    )
+    container_root = Path(origin.stdout.strip()) if origin.returncode == 0 and origin.stdout.strip() else None
+    wrong_project = container_root is not None and container_root.resolve() != ROOT.resolve()
+    if endpoint_available and not wrong_project:
+        return
+
+    compose_command = [docker, "compose", "-f", str(compose_file), "up", "-d"]
+    if wrong_project:
+        compose_command.append("--force-recreate")
+    started = _run_command(compose_command, timeout_s=120)
+    if started.returncode != 0:
+        raise RuntimeError(f"Engineering-Datenbank konnte nicht gestartet werden:\n{started.stdout.strip()}")
+
+    deadline = time.monotonic() + 60.0
+    while time.monotonic() < deadline:
+        ready = _run_command(
+            [docker, "exec", ENGINEERING_DB_CONTAINER, "pg_isready", "-U", "eip_user", "-d", "eip_blocker"],
+            timeout_s=5,
+        )
+        if ready.returncode == 0 and _tcp_endpoint_available(host, port):
+            return
+        time.sleep(1.0)
+    raise RuntimeError("Engineering-Datenbankcontainer läuft nicht rechtzeitig gesund.")
 
 
 def _popen_options() -> dict[str, object]:
@@ -146,6 +327,18 @@ def _ollama_api_root(environment: dict[str, str]) -> str:
     return environment.get("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL).rstrip("/").removesuffix("/v1")
 
 
+def _ollama_executable() -> str | None:
+    executable = shutil.which("ollama")
+    if executable is not None:
+        return executable
+    local_app_data = os.environ.get("LOCALAPPDATA", "").strip()
+    candidates = [
+        Path(local_app_data) / "Programs" / "Ollama" / "ollama.exe" if local_app_data else None,
+        Path(r"C:\Program Files\Ollama\ollama.exe"),
+    ]
+    return next((str(path) for path in candidates if path is not None and path.is_file()), None)
+
+
 def _ollama_models(environment: dict[str, str]) -> list[str] | None:
     try:
         with urlopen(f"{_ollama_api_root(environment)}/api/tags", timeout=1.0) as response:
@@ -175,7 +368,7 @@ def _ensure_local_ai(
     models = _ollama_models(environment)
     owned_process: subprocess.Popen[object] | None = None
     if models is None:
-        executable = shutil.which("ollama")
+        executable = _ollama_executable()
         if executable is None:
             raise RuntimeError(
                 "Ollama wurde nicht gefunden. Installiere Ollama und lade "
@@ -210,6 +403,9 @@ def _ensure_local_ai(
             f"Das lokale Modell `{requested_model}` fehlt. Führe "
             f"`ollama pull {requested_model}` aus."
         )
+    fast_model = environment.get("LOCAL_AI_FAST_MODEL", requested_model).strip() or requested_model
+    if not _model_is_installed(fast_model, models):
+        environment["LOCAL_AI_FAST_MODEL"] = requested_model
     return owned_process
 
 
@@ -253,7 +449,9 @@ def _runtime_environment() -> dict[str, str]:
     environment.setdefault("AI_PROVIDER", "hybrid-demand")
     environment.setdefault("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL)
     environment.setdefault("LOCAL_AI_MODEL", DEFAULT_LOCAL_AI_MODEL)
+    environment.setdefault("LOCAL_AI_FAST_MODEL", DEFAULT_LOCAL_AI_FAST_MODEL)
     environment.setdefault("CLOUD_ESCALATION", "on_failure")
+    environment.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
     environment.setdefault("OLLAMA_MODELS", r"I:\engineering-intelligence-platform\models\ollama")
     environment.setdefault("OLLAMA_CONTEXT_LENGTH", "8192")
     environment.setdefault("OLLAMA_KEEP_ALIVE", "10m")
@@ -269,6 +467,7 @@ def _runtime_environment() -> dict[str, str]:
 
 
 def _run_web() -> int:
+    _assert_canonical_project_root()
     frontend = ROOT / "frontend"
     if not (frontend / "node_modules").is_dir():
         raise SystemExit(
@@ -299,9 +498,13 @@ def _run_web() -> int:
     frontend_process: subprocess.Popen[object] | None = None
     ollama_process: subprocess.Popen[object] | None = None
     launcher_error = False
-    try:
-        ollama_process = _ensure_local_ai(service_environment, ollama_log)
-        backend_process = subprocess.Popen(
+    restart_counts = {"Backend": 0, "Frontend": 0}
+    restart_limit = _service_restart_limit(service_environment)
+    backend_url = f"http://{backend_host}:{backend_port}"
+    frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+
+    def start_backend() -> subprocess.Popen[object]:
+        return subprocess.Popen(
             [sys.executable, "-m", "backend.app"],
             cwd=ROOT,
             env=backend_environment,
@@ -309,7 +512,22 @@ def _run_web() -> int:
             stderr=subprocess.STDOUT,
             **_popen_options(),
         )
-        backend_url = f"http://{backend_host}:{backend_port}"
+
+    def start_frontend() -> subprocess.Popen[object]:
+        return subprocess.Popen(
+            frontend_command,
+            cwd=frontend,
+            env=service_environment,
+            stdout=frontend_log,
+            stderr=subprocess.STDOUT,
+            **_popen_options(),
+        )
+
+    try:
+        _ensure_engineering_database(service_environment)
+        backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
+        ollama_process = _ensure_local_ai(service_environment, ollama_log)
+        backend_process = start_backend()
         if not _wait_for_url(
             f"{backend_url}/api/health",
             backend_process,
@@ -320,16 +538,13 @@ def _run_web() -> int:
                 "Das Simulator-Backend wurde nicht bereit"
                 + (f" (Exit-Code {return_code})." if return_code is not None else ".")
             )
+        if not _wait_for_url(f"{backend_url}/api/engineering/health", backend_process):
+            raise RuntimeError(
+                "Die Engineering-Datenbank wurde nicht bereit. Starte zuerst "
+                "`start-engineering-db.bat` oder prüfe DATABASE_URL."
+            )
 
-        frontend_process = subprocess.Popen(
-            frontend_command,
-            cwd=frontend,
-            env=service_environment,
-            stdout=frontend_log,
-            stderr=subprocess.STDOUT,
-            **_popen_options(),
-        )
-        frontend_url = f"http://{FRONTEND_HOST}:{frontend_port}"
+        frontend_process = start_frontend()
         if not _wait_for_url(frontend_url, frontend_process):
             return_code = frontend_process.poll()
             raise RuntimeError(
@@ -347,16 +562,85 @@ def _run_web() -> int:
             "no",
         }:
             webbrowser.open(frontend_url, new=2)
-        while backend_process.poll() is None and frontend_process.poll() is None:
+
+        next_dependency_check = time.monotonic() + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+        while True:
+            if backend_process.poll() is not None:
+                restart_counts["Backend"] += 1
+                if restart_counts["Backend"] > restart_limit:
+                    print(
+                        f"Backend wurde nach {restart_limit} Neustarts nicht stabil "
+                        f"(letzter Exit-Code {backend_process.returncode}).",
+                        file=sys.stderr,
+                    )
+                    launcher_error = True
+                    break
+                print(
+                    f"Backend wurde unerwartet beendet (Exit-Code {backend_process.returncode}). "
+                    f"Automatischer Neustart {restart_counts['Backend']}/{restart_limit}.",
+                    file=sys.stderr,
+                )
+                time.sleep(min(2 ** (restart_counts["Backend"] - 1), 5))
+                backend_process = start_backend()
+                if not _wait_for_url(
+                    f"{backend_url}/api/health",
+                    backend_process,
+                    expected_instance_id=instance_id,
+                ):
+                    _terminate_process_tree(backend_process)
+                    continue
+                print("Backend ist nach dem automatischen Neustart wieder bereit.")
+
+            if frontend_process.poll() is not None:
+                restart_counts["Frontend"] += 1
+                if restart_counts["Frontend"] > restart_limit:
+                    print(
+                        f"Frontend wurde nach {restart_limit} Neustarts nicht stabil "
+                        f"(letzter Exit-Code {frontend_process.returncode}).",
+                        file=sys.stderr,
+                    )
+                    launcher_error = True
+                    break
+                print(
+                    f"Frontend wurde unerwartet beendet (Exit-Code {frontend_process.returncode}). "
+                    f"Automatischer Neustart {restart_counts['Frontend']}/{restart_limit}.",
+                    file=sys.stderr,
+                )
+                time.sleep(min(2 ** (restart_counts["Frontend"] - 1), 5))
+                frontend_process = start_frontend()
+                if not _wait_for_url(frontend_url, frontend_process):
+                    _terminate_process_tree(frontend_process)
+                    continue
+                print("Frontend ist nach dem automatischen Neustart wieder bereit.")
+
+            now = time.monotonic()
+            if now >= next_dependency_check:
+                next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
+                local_ai_required = service_environment.get("AI_PROVIDER", "hybrid-demand").strip().lower() in {
+                    "local",
+                    "ollama",
+                    "hybrid",
+                    "hybrid-demand",
+                }
+                if local_ai_required and _ollama_models(service_environment) is None:
+                    if ollama_process is not None and ollama_process.poll() is None:
+                        _terminate_process_tree(ollama_process)
+                    ollama_process = None
+                    try:
+                        ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                        print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
+                    except RuntimeError as error:
+                        print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+
+                database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
+                if not _tcp_endpoint_available(database_host, database_port):
+                    try:
+                        _ensure_engineering_database(service_environment)
+                        print("Engineering-Datenbank wurde automatisch wiederhergestellt.")
+                    except RuntimeError as error:
+                        print(f"Engineering-Datenbank bleibt nicht verfügbar: {error}", file=sys.stderr)
+
             time.sleep(0.5)
-        failed_service = "Backend" if backend_process.poll() is not None else "Frontend"
-        failed_process = backend_process if failed_service == "Backend" else frontend_process
-        print(
-            f"{failed_service} wurde unerwartet beendet "
-            f"(Exit-Code {failed_process.returncode}). Der andere Dienst wird ebenfalls beendet.",
-            file=sys.stderr,
-        )
-        launcher_error = True
     except KeyboardInterrupt:
         pass
     except RuntimeError as error:

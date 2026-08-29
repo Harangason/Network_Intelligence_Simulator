@@ -11,6 +11,7 @@ from typing import Any
 
 from bus_technologies import catalog_summary, normalize_technology_id, technology_registry
 from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
+from model_based_simulation import build_model_trace
 from universal_trace import generate_universal_events, trace_summary, write_csv, write_jsonl
 
 
@@ -224,6 +225,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     warnings: list[str] = []
     routes: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
+    model_trace: dict[str, Any] = {}
 
     if not validate_only and validation["valid"]:
         routes, events = generate_universal_events(config, profile)
@@ -231,6 +233,32 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
             written.append(write_jsonl(out_dir / "traces" / "universal_trace.jsonl", events))
         if "universal-csv" in formats:
             written.append(write_csv(out_dir / "traces" / "universal_trace.csv", events))
+        model_trace = build_model_trace(events, config)
+        model_trace_path = out_dir / "traces" / "model_trace.json"
+        model_trace_path.parent.mkdir(parents=True, exist_ok=True)
+        model_trace_path.write_text(
+            json.dumps(model_trace, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        written.append(model_trace_path)
+        if any(event.get("signals") for event in events):
+            golden_events = []
+            for event in events:
+                golden_signals = [
+                    {**signal, "value": signal.get("golden_value"), "faults": []}
+                    for signal in event.get("signals") or []
+                ]
+                golden_events.append({
+                    **event,
+                    "status": "transmitted",
+                    "faults": [],
+                    "signals": golden_signals,
+                    "signal_value": golden_signals[0].get("value") if golden_signals else None,
+                    "value": golden_signals[0].get("value") if golden_signals else None,
+                })
+            written.append(write_jsonl(out_dir / "traces" / "golden_trace.jsonl", golden_events))
+            if model_trace.get("scenario", {}).get("mode") != "NORMAL":
+                written.append(write_jsonl(out_dir / "traces" / "fault_trace.jsonl", events))
 
         native_config = _native_configuration(config, profile, out_dir, formats)
         if native_config is not None:
@@ -259,6 +287,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "hardware_validation": validation,
         "technology_catalog": catalog_summary(registry),
         "trace": trace_summary(routes, events),
+        "model_simulation": model_trace,
     }
     manifest_path = out_dir / "generation_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
@@ -273,6 +302,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "hardware_profile": summary,
         "hardware_validation": validation,
         "trace": trace_summary(routes, events),
+        "model_simulation": model_trace,
     }
     result_path = out_dir / "simulation_result.json"
     result["artifacts"].append(str(result_path))

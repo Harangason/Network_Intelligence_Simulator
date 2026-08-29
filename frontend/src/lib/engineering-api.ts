@@ -12,6 +12,54 @@ import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering";
 
+const DEV_ENGINEERING_SCHEMA: EngineeringSchema = {
+  resources: ["hardware-nodes", "functions", "interfaces", "messages", "signals"],
+  device_types: [
+    "ECU",
+    "PLC",
+    "RobotController",
+    "SensorController",
+    "ActuatorController",
+    "Gateway",
+    "EmbeddedController",
+    "IndustrialPC",
+    "FlightComputer",
+    "BatteryManagementSystem",
+    "EnergyController",
+    "BuildingController",
+    "GenericDevice",
+    "CustomDevice",
+  ],
+  interface_types: [
+    "CAN",
+    "CAN_FD",
+    "LIN",
+    "FlexRay",
+    "Ethernet",
+    "EtherCAT",
+    "ProfiNET",
+    "ModbusTCP",
+    "ModbusRTU",
+    "RS232",
+    "RS485",
+    "SPI",
+    "I2C",
+    "USB",
+    "MQTT",
+    "OPCUA",
+    "Other",
+  ],
+  message_directions: ["rx", "tx", "bidirectional"],
+};
+
+function canUseLocalEmptyState(error: unknown): boolean {
+  if (typeof window === "undefined" || !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+    return false;
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return message === "API-Fehler 500" || message === "Die Engineering-API ist nicht erreichbar.";
+}
+
 function importBaseUrl(): string {
   if (typeof window !== "undefined" && window.location.port === "13500") {
     return "http://127.0.0.1:15050/api/engineering";
@@ -65,7 +113,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getEngineeringSchema(): Promise<EngineeringSchema> {
-  return request<EngineeringSchema>("/schema");
+  return request<EngineeringSchema>("/schema").catch((error) => {
+    if (canUseLocalEmptyState(error)) return DEV_ENGINEERING_SCHEMA;
+    throw error;
+  });
 }
 
 export function syncEngineeringTopology(
@@ -73,7 +124,13 @@ export function syncEngineeringTopology(
 ): Promise<TopologySyncResult> {
   return request<TopologySyncResult>("/topology/sync", {
     method: "POST",
-    body: JSON.stringify({ topology_id: "studio-network", ...topology }),
+    body: JSON.stringify({
+      topology_id: "studio-network",
+      ...topology,
+      // This call enriches the editor with canonical Engineering IDs. Only the
+      // explicit workflow topology endpoint may persist and invalidate builds.
+      persist_workflow: false,
+    }),
     signal: null,
   });
 }
@@ -103,10 +160,15 @@ export async function listEngineeringObjects(
     if (value) params.set(key, value);
   }
   const query = params.toString();
-  const { items } = await request<{ items: EngineeringObject[]; count: number }>(
-    `/${resource}${query ? `?${query}` : ""}`,
-  );
-  return items;
+  try {
+    const { items } = await request<{ items: EngineeringObject[]; count: number }>(
+      `/${resource}${query ? `?${query}` : ""}`,
+    );
+    return items;
+  } catch (error) {
+    if (canUseLocalEmptyState(error)) return [];
+    throw error;
+  }
 }
 
 export async function listAllEngineeringObjects(
@@ -114,13 +176,18 @@ export async function listAllEngineeringObjects(
 ): Promise<EngineeringObject[]> {
   const items: EngineeringObject[] = [];
   const pageSize = 500;
-  for (let offset = 0; ; offset += pageSize) {
-    const page = await listEngineeringObjects(resource, {
-      limit: String(pageSize),
-      offset: String(offset),
-    });
-    items.push(...page);
-    if (page.length < pageSize) return items;
+  try {
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await listEngineeringObjects(resource, {
+        limit: String(pageSize),
+        offset: String(offset),
+      });
+      items.push(...page);
+      if (page.length < pageSize) return items;
+    }
+  } catch (error) {
+    if (canUseLocalEmptyState(error)) return [];
+    throw error;
   }
 }
 

@@ -6,12 +6,15 @@ import hashlib
 import json
 from copy import deepcopy
 from typing import Any
+from uuid import UUID
 
 from psycopg.types.json import Jsonb
 
 from ..db import get_connection
+from ..project_context import activate_project
 from .models import normalize_route
 from .repository import _audit, _insert_route, _route_code
+from .validation import RoutingValidator
 
 
 BUS_PROTOCOLS = {
@@ -41,6 +44,152 @@ def _engineering_id(node: dict[str, Any]) -> str:
 def _port(node: dict[str, Any], port_id: str) -> dict[str, Any]:
     ports = node.get("ports") if isinstance(node.get("ports"), list) else []
     return next((item for item in ports if isinstance(item, dict) and item.get("id") == port_id), {})
+
+
+def _edge_route_ids(edge: dict[str, Any]) -> set[str]:
+    route_ids = {
+        str(item).strip()
+        for item in edge.get("routingEntryIds", [])
+        if str(item).strip()
+    } if isinstance(edge.get("routingEntryIds"), list) else set()
+    direct = str(edge.get("routingEntryId") or edge.get("routing_entry_id") or "").strip()
+    if direct:
+        route_ids.add(direct)
+    return route_ids
+
+
+def enrich_route_from_linked_topology(
+    route: dict[str, Any],
+    topology: dict[str, Any],
+) -> dict[str, Any]:
+    """Project physical bus and port assignments back into one logical route."""
+    route_id = str(route.get("id") or "").strip()
+    if not route_id:
+        return deepcopy(route)
+    nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
+    edges = topology.get("edges") if isinstance(topology.get("edges"), list) else []
+    topology_by_engineering_id = {
+        _engineering_id(node): str(node.get("id"))
+        for node in nodes
+        if isinstance(node, dict) and node.get("id") and _engineering_id(node)
+    }
+    linked_edges = [
+        edge
+        for edge in edges
+        if isinstance(edge, dict) and route_id in _edge_route_ids(edge)
+    ]
+    if not linked_edges:
+        return deepcopy(route)
+
+    def enrich_endpoint(endpoint: dict[str, Any]) -> dict[str, Any]:
+        engineering_id = str(endpoint.get("node_id") or "")
+        topology_id = topology_by_engineering_id.get(engineering_id)
+        if not topology_id:
+            return deepcopy(endpoint)
+        incident = [
+            edge
+            for edge in linked_edges
+            if str(edge.get("source") or "") == topology_id
+            or str(edge.get("target") or "") == topology_id
+        ]
+        if not incident:
+            return deepcopy(endpoint)
+        protocol = str(endpoint.get("protocol") or "").upper()
+        matching = [edge for edge in incident if BUS_PROTOCOLS.get(str(edge.get("bus") or "")) == protocol]
+        edge = sorted(matching or incident, key=lambda item: str(item.get("id") or ""))[0]
+        bus = str(edge.get("bus") or "").strip()
+        if not bus:
+            return deepcopy(endpoint)
+        is_source = str(edge.get("source") or "") == topology_id
+        port_id = str(
+            (edge.get("sourcePort") if is_source else edge.get("targetPort")) or ""
+        ).strip()
+        return {
+            **endpoint,
+            "port_id": port_id or endpoint.get("port_id"),
+            "network_id": f"network-{bus}",
+        }
+
+    enriched = deepcopy(route)
+    enriched["source"] = enrich_endpoint(route.get("source") or {})
+    enriched["destinations"] = [
+        enrich_endpoint(destination)
+        for destination in route.get("destinations", [])
+        if isinstance(destination, dict)
+    ]
+    return enriched
+
+
+def reconcile_linked_routes(
+    project_id: str,
+    topology: dict[str, Any],
+    *,
+    actor: str,
+) -> list[dict[str, Any]]:
+    """Refresh linked routes after the agent materializes their physical topology."""
+    raw_edges = topology.get("edges") if isinstance(topology.get("edges"), list) else []
+    raw_ids = sorted({route_id for edge in raw_edges if isinstance(edge, dict) for route_id in _edge_route_ids(edge)})
+    route_ids: list[str] = []
+    for route_id in raw_ids:
+        try:
+            route_ids.append(str(UUID(route_id)))
+        except ValueError:
+            continue
+    if not route_ids:
+        return []
+
+    reconciled: list[dict[str, Any]] = []
+    validator = RoutingValidator(project_id)
+    with get_connection() as connection:
+        rows = connection.execute(
+            "SELECT * FROM engineering_routing_entries "
+            "WHERE id = ANY(%s::uuid[]) AND project_id = %s FOR UPDATE",
+            (route_ids, project_id),
+        ).fetchall()
+        for current in rows:
+            enriched = enrich_route_from_linked_topology(current, topology)
+            validation = validator.validate(enriched, exclude_route_id=str(current["id"]))
+            current_validation = {
+                key: value
+                for key, value in (current.get("validation") or {}).items()
+                if key != "validation_timestamp"
+            }
+            next_validation = {
+                key: value
+                for key, value in validation.items()
+                if key != "validation_timestamp"
+            }
+            if (
+                enriched.get("source") == current.get("source")
+                and enriched.get("destinations") == current.get("destinations")
+                and next_validation == current_validation
+            ):
+                continue
+            updated = connection.execute(
+                "UPDATE engineering_routing_entries "
+                "SET source = %s, destinations = %s, validation = %s, modified_by = %s, modified_at = now() "
+                "WHERE id = %s AND project_id = %s RETURNING *",
+                (
+                    Jsonb(enriched["source"]),
+                    Jsonb(enriched["destinations"]),
+                    Jsonb(validation),
+                    actor,
+                    current["id"],
+                    project_id,
+                ),
+            ).fetchone()
+            _audit(
+                connection,
+                str(current["id"]),
+                "ROUTE_PHYSICAL_CONTEXT_RECONCILED",
+                actor=actor,
+                before=current,
+                after=updated,
+                reason="Physical topology was projected back into the logical route.",
+            )
+            reconciled.append(updated)
+        connection.commit()
+    return reconciled
 
 
 def build_network_route_candidates(
@@ -100,12 +249,13 @@ def build_network_route_candidates(
             for edge in path_edges
         }
         routing_entry_ids.discard("")
-        if len(routing_entry_ids) == 1 and all(
+        if routing_entry_ids and all(
             edge.get("routingEntryId") or edge.get("routing_entry_id")
             for edge in path_edges
         ):
-            # This physical path was explicitly accepted from an existing
-            # routing entry. It must not create a duplicate route proposal.
+            # Every segment already belongs to an accepted routing entry. A
+            # gateway may join segments from multiple entries, but that must
+            # not synthesize another route and reopen the human-review gate.
             continue
         source_node = nodes[source_topology_id]
         target_node = nodes[target_topology_id]
@@ -229,7 +379,9 @@ def synchronize_network_routes(
     actor: str | None = None,
 ) -> dict[str, Any]:
     """Version network-derived routes without ever approving them automatically."""
+    activate_project(project_id)
     actor = actor or "network-editor"
+    reconciled = reconcile_linked_routes(project_id, topology, actor=actor)
     candidates, skipped = build_network_route_candidates(project_id, topology)
     desired = {str(candidate["source_id"]): candidate for candidate in candidates}
     prefix = f"{project_id}:network-path:%"
@@ -240,9 +392,9 @@ def synchronize_network_routes(
     with get_connection() as connection:
         rows = connection.execute(
             "SELECT * FROM engineering_routing_entries "
-            "WHERE origin = 'NETWORK_EDITOR' AND source_id LIKE %s "
+            "WHERE origin = 'NETWORK_EDITOR' AND source_id LIKE %s AND project_id = %s "
             "ORDER BY source_id, revision DESC, modified_at DESC",
-            (prefix,),
+            (prefix, project_id),
         ).fetchall()
         latest: dict[str, dict[str, Any]] = {}
         for row in rows:
@@ -276,8 +428,9 @@ def synchronize_network_routes(
             row = connection.execute(
                 "UPDATE engineering_routing_entries SET status = 'OUTDATED', "
                 "approval_state = 'PENDING', review_state = 'IN_REVIEW', validation = %s, "
-                "modified_by = %s, modified_at = now() WHERE id = %s RETURNING *",
-                (Jsonb(validation), actor, current["id"]),
+                "modified_by = %s, modified_at = now() "
+                "WHERE id = %s AND project_id = %s RETURNING *",
+                (Jsonb(validation), actor, current["id"], project_id),
             ).fetchone()
             _audit(
                 connection,
@@ -335,11 +488,13 @@ def synchronize_network_routes(
         "created": created,
         "outdated": outdated,
         "unchanged": unchanged,
+        "reconciled": reconciled,
         "skipped": skipped,
         "counts": {
             "created": len(created),
             "outdated": len(outdated),
             "unchanged": len(unchanged),
+            "reconciled": len(reconciled),
             "skipped": len(skipped),
         },
     }

@@ -68,6 +68,49 @@ def test_graph_analytics_finds_articulation_point_and_isolated_node():
     assert result["node_count"] == 3
 
 
+def test_graph_analytics_normalizes_agent_topology_and_interface_edges():
+    hardware = [
+        {"id": "node-a", "name": "A"},
+        {"id": "node-b", "name": "B"},
+    ]
+    interfaces = [
+        {"id": "interface-a", "hardware_node_id": "node-a"},
+        {"id": "interface-b", "hardware_node_id": "node-b"},
+    ]
+    topology = {
+        "nodes": [
+            {"id": "engineering-node-a", "engineeringId": "node-a"},
+            {"id": "engineering-node-b", "engineeringId": "node-b"},
+        ],
+        "edges": [
+            {"source": "engineering-node-a", "target": "engineering-node-b"},
+        ],
+    }
+    relations = [
+        {
+            "relation_type": "CONNECTED_TO",
+            "source_type": "Interface",
+            "source_id": "interface-a",
+            "target_type": "Interface",
+            "target_id": "interface-b",
+        }
+    ]
+
+    result = GraphAnalyticsService().analyze(
+        hardware,
+        interfaces,
+        [],
+        topology,
+        relations,
+        [],
+    )
+
+    assert result["node_count"] == 2
+    assert result["edge_count"] == 1
+    assert result["isolated_nodes"] == []
+    assert not any(issue["code"] == "ISOLATED_NODE" for issue in result["issues"])
+
+
 def test_anomaly_detection_marks_unusual_cycle_without_calling_it_an_error():
     routes = [
         {"id": "r1", "name": "Fast", "payload": {"payload_bytes": 8}, "timing": {"cycle_time_ms": 1}},

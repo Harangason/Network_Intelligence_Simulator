@@ -45,6 +45,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <Link className="primary-link" href="/studio">Start simulating <Arrow /></Link>
+            <Link className="primary-link trace-link" href="/trace-analysis">Start Trace Analyse <Arrow /></Link>
             <Link className="text-link" href="/platform">Explore the platform <Arrow /></Link>
           </div>
         </div>

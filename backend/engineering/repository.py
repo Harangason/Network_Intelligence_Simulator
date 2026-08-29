@@ -19,6 +19,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from .db import get_connection
+from .project_context import current_project_id
 from .models import (
     APPROVAL_STATES,
     DEVICE_TYPES,
@@ -218,9 +219,13 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     columns = list(BASE_COLUMNS) + list(spec.own_columns)
     payload = {col: data.get(col) for col in columns}
     payload.update(_governance_defaults(data))
+    project_id = current_project_id()
+    parent_link = PARENT_LINKS.get(object_type)
+    if parent_link and payload.get(parent_link[0]):
+        get_object(parent_link[1], str(payload[parent_link[0]]))
 
-    insert_columns = list(payload.keys())
-    values = [_wrap_value(col, payload[col], spec) for col in insert_columns]
+    insert_columns = ["project_id", *payload.keys()]
+    values = [project_id, *[_wrap_value(col, payload[col], spec) for col in payload]]
 
     query = sql.SQL(
         "INSERT INTO {table} ({cols}) VALUES ({placeholders}) RETURNING *"
@@ -234,15 +239,15 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
         row = conn.execute(query, values).fetchone()
         row = _decorate_row(spec, row)
         _write_version_snapshot(conn, spec, row, changed_by=payload.get("created_by"), summary="created")
-        parent_link = PARENT_LINKS.get(object_type)
         if parent_link:
             parent_field, parent_type, relation_type = parent_link
             conn.execute(
                 "INSERT INTO engineering_relations "
-                "(relation_type, source_type, source_id, target_type, target_id, "
+                "(project_id, relation_type, source_type, source_id, target_type, target_id, "
                 "source, provenance, review_state, approval_state, created_by) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (
+                    project_id,
                     relation_type,
                     parent_type,
                     payload[parent_field],
@@ -262,9 +267,9 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
 def get_object(object_type: str, object_id: str) -> dict[str, Any]:
     spec = get_spec(object_type)
     _validate_uuid(object_id)
-    query = sql.SQL("SELECT * FROM {table} WHERE id = %s").format(table=sql.Identifier(spec.table))
+    query = sql.SQL("SELECT * FROM {table} WHERE id = %s AND project_id = %s").format(table=sql.Identifier(spec.table))
     with get_connection() as conn:
-        row = conn.execute(query, (object_id,)).fetchone()
+        row = conn.execute(query, (object_id, current_project_id())).fetchone()
     if row is None:
         raise NotFoundError(f"{object_type} {object_id} nicht gefunden.")
     return _decorate_row(spec, row)
@@ -280,15 +285,15 @@ def list_objects(
     spec = get_spec(object_type)
     filters = filters or {}
     allowed_filter_columns = set(_all_columns(spec)) | {"id", "lifecycle_state", "review_state", "approval_state"}
-    where_clauses: list[sql.Composable] = []
-    values: list[Any] = []
+    where_clauses: list[sql.Composable] = [sql.SQL("project_id = %s")]
+    values: list[Any] = [current_project_id()]
     for column, value in filters.items():
         if column not in allowed_filter_columns or value is None:
             continue
         where_clauses.append(sql.SQL("{col} = %s").format(col=sql.Identifier(column)))
         values.append(value)
 
-    where_sql = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(where_clauses) if where_clauses else sql.SQL("")
+    where_sql = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(where_clauses)
     query = sql.SQL(
         "SELECT * FROM {table}{where} ORDER BY created_at DESC LIMIT %s OFFSET %s"
     ).format(table=sql.Identifier(spec.table), where=where_sql)
@@ -340,11 +345,11 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     ]
 
     query = sql.SQL(
-        "UPDATE {table} SET {set_sql}, modified_at = now() WHERE id = %s RETURNING *"
+        "UPDATE {table} SET {set_sql}, modified_at = now() WHERE id = %s AND project_id = %s RETURNING *"
     ).format(table=sql.Identifier(spec.table), set_sql=set_sql)
 
     with get_connection() as conn:
-        row = conn.execute(query, [*values, object_id]).fetchone()
+        row = conn.execute(query, [*values, object_id, current_project_id()]).fetchone()
         row = _decorate_row(spec, row)
         _write_version_snapshot(
             conn, spec, row, changed_by=actor, summary=data.get("change_summary", "updated")
@@ -367,18 +372,19 @@ def delete_object(object_type: str, object_id: str) -> None:
             "Setze den lifecycle_state auf 'deprecated', um ein freigegebenes "
             "Objekt stattdessen auszumustern."
         )
-    query = sql.SQL("DELETE FROM {table} WHERE id = %s").format(table=sql.Identifier(spec.table))
+    project_id = current_project_id()
+    query = sql.SQL("DELETE FROM {table} WHERE id = %s AND project_id = %s").format(table=sql.Identifier(spec.table))
     with get_connection() as conn:
         conn.execute(
             "DELETE FROM engineering_relations "
-            "WHERE (source_type = %s AND source_id = %s) "
-            "OR (target_type = %s AND target_id = %s)",
-            (object_type, object_id, object_type, object_id),
+            "WHERE project_id = %s AND ((source_type = %s AND source_id = %s) "
+            "OR (target_type = %s AND target_id = %s))",
+            (project_id, object_type, object_id, object_type, object_id),
         )
-        conn.execute(query, (object_id,))
+        conn.execute(query, (object_id, project_id))
         conn.execute(
-            "DELETE FROM engineering_object_versions WHERE object_type = %s AND object_id = %s",
-            (object_type, object_id),
+            "DELETE FROM engineering_object_versions WHERE project_id = %s AND object_type = %s AND object_id = %s",
+            (project_id, object_type, object_id),
         )
         conn.commit()
 
@@ -389,8 +395,8 @@ def list_versions(object_type: str, object_id: str) -> list[dict[str, Any]]:
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT * FROM engineering_object_versions "
-            "WHERE object_type = %s AND object_id = %s ORDER BY version DESC",
-            (object_type, object_id),
+            "WHERE project_id = %s AND object_type = %s AND object_id = %s ORDER BY version DESC",
+            (current_project_id(), object_type, object_id),
         ).fetchall()
     return rows
 
@@ -398,9 +404,10 @@ def list_versions(object_type: str, object_id: str) -> list[dict[str, Any]]:
 def _write_version_snapshot(conn, spec: EntitySpec, row: dict[str, Any], *, changed_by, summary) -> None:
     conn.execute(
         "INSERT INTO engineering_object_versions "
-        "(object_type, object_id, version, snapshot, change_summary, changed_by) "
-        "VALUES (%s, %s, %s, %s, %s, %s)",
+        "(project_id, object_type, object_id, version, snapshot, change_summary, changed_by) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
         (
+            current_project_id(),
             spec.object_type,
             row["id"],
             row["version"],

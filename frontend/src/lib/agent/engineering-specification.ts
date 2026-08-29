@@ -29,12 +29,42 @@ export type ExtractedEngineeringSpecification = {
   chains: ExtractedEngineeringChain[];
   domain: string;
   interfaceType: string;
+  targetCounts: EngineeringTargetCounts;
+};
+
+export type EngineeringTargetCounts = {
+  sensors: number;
+  ecus: number;
+  gateways: number;
+  explicit: boolean;
+};
+
+type ArchitectureTemplate = {
+  hardwareName: string;
+  deviceType: "SensorController" | "ECU" | "Gateway";
+  signalName: string;
+  interfaceType: string;
+  cycleMs: number;
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
+  factor?: number;
 };
 
 type HardwareOccurrence = {
   index: number;
   name: string;
 };
+
+const INLINE_HARDWARE_PATTERN = /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/giu;
+const GENERIC_INLINE_HARDWARE_LABELS = new Set([
+  "sensor",
+  "ecu",
+  "gateway",
+  "plc",
+  "controller",
+  "steuergeraet",
+]);
 
 const GENERIC_HARDWARE_LABELS = new Set([
   "hardware objekte",
@@ -47,6 +77,150 @@ const GENERIC_HARDWARE_LABELS = new Set([
 
 const PARAMETER_LABEL_PATTERN =
   /^(messbereich|aufloesung|auflösung|schrittweite|sollwert|grenzwerte?|kommunikationsprotokoll|kreistellen|warnhinweis|mindest|maximum|minimum|parameter|technische parameter|funktions parameter)/i;
+
+const COUNT_WORDS: Record<string, number> = {
+  ein: 1,
+  eine: 1,
+  einem: 1,
+  einen: 1,
+  einer: 1,
+  eins: 1,
+  zwei: 2,
+  drei: 3,
+  vier: 4,
+  fuenf: 5,
+  funf: 5,
+  sechs: 6,
+  sieben: 7,
+  acht: 8,
+  neun: 9,
+  zehn: 10,
+};
+
+const COUNT_TOKEN = "(\\d+|ein|eine|einem|einen|einer|eins|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn)";
+
+const ECU_NAMES = [
+  "Thermal-ECU",
+  "Motion-ECU",
+  "Batteriemanagement-ECU",
+  "Motorsteuerung-ECU",
+  "Getriebesteuerung-ECU",
+  "Bremsregelung-ECU",
+  "Lenkung-ECU",
+  "Fahrwerk-ECU",
+  "Klimatisierung-ECU",
+  "BodyControl-ECU",
+  "Fahrertuer-ECU",
+  "Beifahrertuer-ECU",
+  "FondtuerLinks-ECU",
+  "FondtuerRechts-ECU",
+  "Fahrersitz-ECU",
+  "Beifahrersitz-ECU",
+  "Aussenlicht-ECU",
+  "Innenlicht-ECU",
+  "Airbag-ECU",
+  "Kombiinstrument-ECU",
+  "Infotainment-ECU",
+  "Telematik-ECU",
+  "Diagnose-ECU",
+  "Fahrerassistenz-ECU",
+  "Energieversorgung-ECU",
+  "Ladesteuerung-ECU",
+  "Invertersteuerung-ECU",
+  "Elektromotorsteuerung-ECU",
+  "Thermomanagement-ECU",
+  "Kraftstoffsystem-ECU",
+  "Abgasnachbehandlung-ECU",
+  "Daempferregelung-ECU",
+  "Stabilitaetsregelung-ECU",
+  "Reifendruckkontrolle-ECU",
+  "Parkassistenz-ECU",
+  "Radarverarbeitung-ECU",
+  "Kameraverarbeitung-ECU",
+  "Ultraschallverarbeitung-ECU",
+  "Zentralrechner-ECU",
+  "Konnektivitaet-ECU",
+  "Wegfahrsperre-ECU",
+  "KeylessEntry-ECU",
+  "Wischersteuerung-ECU",
+  "Schiebedach-ECU",
+  "Heckklappe-ECU",
+  "Anhaengersteuerung-ECU",
+  "Hinterachslenkung-ECU",
+  "Fahrdynamik-ECU",
+  "Soundsystem-ECU",
+  "HeadUpDisplay-ECU",
+] as const;
+
+const POSITIONAL_SENSOR_FAMILIES = [
+  { name: "WheelSpeed", signal: "Raddrehzahl", unit: "rpm", min: 0, max: 2500, factor: 1, cycle: 5 },
+  { name: "TirePressure", signal: "Reifendruck", unit: "kPa", min: 0, max: 500, factor: 1, cycle: 100 },
+  { name: "TireTemperature", signal: "Reifentemperatur", unit: "degC", min: -40, max: 180, factor: 0.1, cycle: 100 },
+  { name: "BrakeTemperature", signal: "Bremstemperatur", unit: "degC", min: -40, max: 900, factor: 0.5, cycle: 50 },
+  { name: "SuspensionTravel", signal: "Federweg", unit: "mm", min: -150, max: 150, factor: 0.1, cycle: 10 },
+  { name: "WheelLoad", signal: "Radlast", unit: "N", min: 0, max: 15000, factor: 1, cycle: 10 },
+  { name: "DamperPosition", signal: "Daempferposition", unit: "%", min: 0, max: 100, factor: 0.1, cycle: 10 },
+  { name: "WheelAcceleration", signal: "Radbeschleunigung", unit: "m/s2", min: -100, max: 100, factor: 0.01, cycle: 5 },
+  { name: "BrakePressure", signal: "Bremsdruck", unit: "bar", min: 0, max: 250, factor: 0.1, cycle: 5 },
+  { name: "WheelTorque", signal: "Raddrehmoment", unit: "Nm", min: -5000, max: 5000, factor: 1, cycle: 5 },
+  { name: "WheelAngle", signal: "Radwinkel", unit: "deg", min: -60, max: 60, factor: 0.01, cycle: 10 },
+  { name: "TireWear", signal: "Reifenverschleiss", unit: "mm", min: 0, max: 12, factor: 0.01, cycle: 1000 },
+] as const;
+
+const CENTRAL_SENSOR_DEFINITIONS = [
+  ["CoolantTemperature", "Kuehlmitteltemperatur", "degC", -40, 150, 0.1, 20],
+  ["OilTemperature", "Oeltemperatur", "degC", -40, 180, 0.1, 20],
+  ["IntakeAirTemperature", "Ansauglufttemperatur", "degC", -40, 120, 0.1, 20],
+  ["ExhaustGasTemperature", "Abgastemperatur", "degC", 0, 1100, 1, 10],
+  ["CabinTemperature", "Innenraumtemperatur", "degC", -40, 85, 0.1, 100],
+  ["AmbientTemperature", "Aussentemperatur", "degC", -50, 85, 0.1, 500],
+  ["BatteryTemperature", "Batterietemperatur", "degC", -40, 100, 0.1, 50],
+  ["InverterTemperature", "Invertertemperatur", "degC", -40, 180, 0.1, 20],
+  ["MotorTemperature", "Motortemperatur", "degC", -40, 200, 0.1, 20],
+  ["TransmissionOilTemperature", "Getriebeoeltemperatur", "degC", -40, 180, 0.1, 50],
+  ["EngineSpeed", "Motordrehzahl", "rpm", 0, 9000, 1, 5],
+  ["MotorSpeed", "Elektromotordrehzahl", "rpm", -20000, 20000, 1, 5],
+  ["TransmissionInputSpeed", "Getriebeeingangsdrehzahl", "rpm", 0, 12000, 1, 5],
+  ["TransmissionOutputSpeed", "Getriebeausgangsdrehzahl", "rpm", 0, 12000, 1, 5],
+  ["TurboSpeed", "Turboladerdrehzahl", "rpm", 0, 250000, 10, 10],
+  ["EngineOilPressure", "Motoroeldruck", "bar", 0, 12, 0.01, 10],
+  ["FuelPressure", "Kraftstoffdruck", "bar", 0, 2500, 0.1, 10],
+  ["BoostPressure", "Ladedruck", "kPa", 0, 400, 0.1, 10],
+  ["RefrigerantPressure", "Kaeltemitteldruck", "bar", 0, 40, 0.01, 100],
+  ["BatteryCoolantPressure", "Batteriekuehldruck", "bar", 0, 10, 0.01, 100],
+  ["BatteryCurrent", "Batteriestrom", "A", -1000, 1000, 0.1, 10],
+  ["MotorCurrent", "Motorstrom", "A", -1500, 1500, 0.1, 5],
+  ["AlternatorCurrent", "Generatorstrom", "A", -300, 300, 0.1, 50],
+  ["AccessoryCurrent", "Nebenverbraucherstrom", "A", 0, 300, 0.1, 100],
+  ["BatteryVoltage", "Batteriespannung", "V", 0, 1000, 0.1, 10],
+  ["DCLinkVoltage", "Zwischenkreisspannung", "V", 0, 1200, 0.1, 5],
+  ["LowVoltageSupply", "Bordnetzspannung", "V", 0, 32, 0.01, 100],
+  ["CellVoltageMin", "MinimaleZellspannung", "V", 0, 5, 0.001, 50],
+  ["CellVoltageMax", "MaximaleZellspannung", "V", 0, 5, 0.001, 50],
+  ["SteeringAngle", "Lenkwinkel", "deg", -720, 720, 0.1, 5],
+  ["SteeringTorque", "Lenkmoment", "Nm", -30, 30, 0.01, 5],
+  ["AcceleratorPosition", "Fahrpedalstellung", "%", 0, 100, 0.1, 10],
+  ["BrakePedalPosition", "Bremspedalstellung", "%", 0, 100, 0.1, 10],
+  ["ClutchPosition", "Kupplungsstellung", "%", 0, 100, 0.1, 20],
+  ["GearSelectorPosition", "Gangwahlstellung", "code", 0, 15, 1, 50],
+  ["ThrottlePosition", "Drosselklappenstellung", "%", 0, 100, 0.1, 10],
+  ["EGRValvePosition", "AGRVentilstellung", "%", 0, 100, 0.1, 20],
+  ["LongitudinalAcceleration", "Laengsbeschleunigung", "m/s2", -30, 30, 0.01, 5],
+  ["LateralAcceleration", "Querbeschleunigung", "m/s2", -30, 30, 0.01, 5],
+  ["VerticalAcceleration", "Vertikalbeschleunigung", "m/s2", -30, 30, 0.01, 5],
+  ["YawRate", "Gierrate", "deg/s", -300, 300, 0.01, 5],
+  ["PitchRate", "Nickrate", "deg/s", -300, 300, 0.01, 5],
+  ["RollRate", "Rollrate", "deg/s", -300, 300, 0.01, 5],
+  ["FuelLevel", "Kraftstofffuellstand", "%", 0, 100, 0.1, 500],
+  ["UreaLevel", "Harnstofffuellstand", "%", 0, 100, 0.1, 500],
+  ["WasherFluidLevel", "Waschwasserfuellstand", "%", 0, 100, 0.1, 1000],
+  ["CoolantLevel", "Kuehlmittelfuellstand", "%", 0, 100, 0.1, 500],
+  ["OilLevel", "Oelfuellstand", "%", 0, 100, 0.1, 500],
+  ["FrontRadarDistance", "Frontabstand", "m", 0, 300, 0.1, 20],
+  ["RearRadarDistance", "Heckabstand", "m", 0, 200, 0.1, 20],
+  ["Rain", "Regenintensitaet", "%", 0, 100, 0.1, 100],
+  ["AmbientLight", "Umgebungshelligkeit", "lx", 0, 150000, 1, 200],
+] as const;
 
 function cleanLabel(value: string) {
   return value
@@ -67,8 +241,183 @@ function normalized(value: string) {
     .trim();
 }
 
+function countValue(value: string) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : COUNT_WORDS[value] ?? 0;
+}
+
+function requestedCount(text: string, nounPattern: string, modifierPattern = "") {
+  const source = normalized(text);
+  const modifiers = modifierPattern ? `(?:(?:${modifierPattern})\\s+){0,2}` : "";
+  const pattern = new RegExp(`\\b${COUNT_TOKEN}\\s+${modifiers}${nounPattern}\\b`, "g");
+  return [...source.matchAll(pattern)].reduce((maximum, match) => Math.max(maximum, countValue(match[1] ?? "")), 0);
+}
+
+export function extractEngineeringTargetCounts(text: string): EngineeringTargetCounts {
+  const sensors = requestedCount(text, "sensor(?:en|s)?", "technische|physikalische|logische|fahrzeugrelevante");
+  const ecus = requestedCount(text, "ecu(?:s)?", "funktions|zentrale|typische|weitere");
+  const gateways = requestedCount(text, "gateway(?:s)?", "zentralen|zentrales|zentraler|zentrale|einziges|einzigen");
+  return {
+    sensors,
+    ecus,
+    gateways,
+    explicit: sensors > 0 || ecus > 0 || gateways > 0,
+  };
+}
+
+function chainCounts(chains: ExtractedEngineeringChain[]) {
+  return chains.reduce(
+    (counts, chain) => {
+      if (chain.device_type === "SensorController") counts.sensors += 1;
+      else if (chain.device_type === "Gateway") counts.gateways += 1;
+      else if (chain.device_type === "ECU") counts.ecus += 1;
+      return counts;
+    },
+    { sensors: 0, ecus: 0, gateways: 0 },
+  );
+}
+
+function ecuInterfaceType(name: string) {
+  if (/infotainment|telematik|diagnose|fahrerassistenz|radar|kamera|zentralrechner|konnektivitaet/i.test(name)) {
+    return "Ethernet";
+  }
+  if (/tuer|sitz|licht|keyless|wischer|schiebedach|heckklappe|soundsystem|headup/i.test(name)) {
+    return "LIN";
+  }
+  return "CAN_FD";
+}
+
+function architectureTemplates(): ArchitectureTemplate[] {
+  const positions = [
+    ["FrontLeft", "VorneLinks"],
+    ["FrontRight", "VorneRechts"],
+    ["RearLeft", "HintenLinks"],
+    ["RearRight", "HintenRechts"],
+  ] as const;
+  const positionalSensors = POSITIONAL_SENSOR_FAMILIES.flatMap((family) => positions.map(([name, signal]) => ({
+    hardwareName: `${name}${family.name}Sensor`,
+    deviceType: "SensorController" as const,
+    signalName: `${family.signal}${signal}`,
+    interfaceType: family.cycle >= 100 ? "LIN" : "CAN_FD",
+    cycleMs: family.cycle,
+    unit: family.unit,
+    minValue: family.min,
+    maxValue: family.max,
+    factor: family.factor,
+  })));
+  const centralSensors = CENTRAL_SENSOR_DEFINITIONS.map(([name, signal, unit, min, max, factor, cycle], index) => ({
+    hardwareName: `${name}Sensor`,
+    deviceType: "SensorController" as const,
+    signalName: signal,
+    interfaceType: /Radar/.test(name) ? "Ethernet" : cycle >= 200 || index % 7 === 0 ? "LIN" : "CAN_FD",
+    cycleMs: cycle,
+    unit,
+    minValue: min,
+    maxValue: max,
+    factor,
+  }));
+  const ecus = ECU_NAMES.map((name) => ({
+    hardwareName: name,
+    deviceType: "ECU" as const,
+    signalName: `${identifier(baseName(name))}Status`,
+    interfaceType: ecuInterfaceType(name),
+    cycleMs: ecuInterfaceType(name) === "Ethernet" ? 20 : 10,
+    unit: "code",
+    minValue: 0,
+    maxValue: 255,
+    factor: 1,
+  }));
+  return [
+    ...positionalSensors,
+    ...centralSensors,
+    ...ecus,
+    {
+      hardwareName: "System-Gateway",
+      deviceType: "Gateway",
+      signalName: "GatewayStatus",
+      interfaceType: "Ethernet",
+      cycleMs: 20,
+      unit: "code",
+      minValue: 0,
+      maxValue: 255,
+      factor: 1,
+    },
+  ];
+}
+
+function chainFromTemplate(template: ArchitectureTemplate, index: number, domain: string): ExtractedEngineeringChain {
+  const hardwareId = identifier(template.hardwareName);
+  const functionSuffix = template.deviceType === "SensorController"
+    ? "Erfassung"
+    : template.deviceType === "Gateway"
+      ? "Kommunikation"
+      : "Steuerung";
+  return {
+    hardware_name: template.hardwareName,
+    hardware_description: `Aus dem geforderten Fahrzeugarchitektur-Skalierungsziel abgeleiteter ${template.deviceType}.`,
+    device_type: template.deviceType,
+    function_name: `${hardwareId}_${functionSuffix}`,
+    function_description: `Fachfunktion fuer ${template.hardwareName} im skalierten Musterprojekt.`,
+    interface_name: `${hardwareId}_${template.interfaceType}`,
+    interface_type: template.interfaceType,
+    message_name: `${hardwareId}Data`,
+    message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
+    direction: "tx",
+    cycle_ms: template.cycleMs,
+    dlc: template.interfaceType === "Ethernet" ? 64 : 8,
+    signal_name: template.signalName,
+    signal_display_name: template.signalName,
+    start_bit: 0,
+    length_bits: 16,
+    byte_order: "little_endian",
+    data_type: (template.minValue ?? 0) < 0 ? "signed" : "unsigned",
+    factor: template.factor ?? 1,
+    offset_value: 0,
+    unit: template.unit,
+    min_value: template.minValue,
+    max_value: template.maxValue,
+    domain,
+  };
+}
+
+function expandArchitectureChains(
+  recognizedChains: ExtractedEngineeringChain[],
+  requested: EngineeringTargetCounts,
+  domain: string,
+) {
+  const chains = [...recognizedChains];
+  const names = new Set(chains.map((chain) => normalized(chain.hardware_name)));
+  const recognizedCounts = chainCounts(chains);
+  const targets: EngineeringTargetCounts = {
+    sensors: requested.sensors || recognizedCounts.sensors,
+    ecus: requested.ecus || recognizedCounts.ecus,
+    gateways: requested.gateways || recognizedCounts.gateways,
+    explicit: requested.explicit,
+  };
+  if (!requested.explicit) return { chains, targets };
+
+  const templates = architectureTemplates();
+  const targetFor = (deviceType: ArchitectureTemplate["deviceType"]) => (
+    deviceType === "SensorController" ? targets.sensors : deviceType === "Gateway" ? targets.gateways : targets.ecus
+  );
+  for (const template of templates) {
+    const current = chainCounts(chains);
+    const currentCount = template.deviceType === "SensorController"
+      ? current.sensors
+      : template.deviceType === "Gateway"
+        ? current.gateways
+        : current.ecus;
+    if (currentCount >= targetFor(template.deviceType)) continue;
+    const key = normalized(template.hardwareName);
+    if (names.has(key)) continue;
+    chains.push(chainFromTemplate(template, chains.length, domain));
+    names.add(key);
+  }
+  return { chains, targets };
+}
+
 function headingLabel(line: string) {
-  const bold = line.match(/\*\*(.+?)\*\*/)?.[1];
+  const bold = line.match(/^\s*(?:(?:[-*]|\d+\.)\s+)?\*\*(.+?)\*\*(?:\s*:|\s*$)/)?.[1];
   if (bold) return cleanLabel(bold);
   const bullet = line.match(/^\s*(?:[-*]|\d+\.)\s+(.+?)\s*$/)?.[1];
   if (!bullet) return "";
@@ -81,10 +430,33 @@ function hardwareName(label: string) {
   const name = cleanLabel(label);
   const key = normalized(name);
   if (!key || GENERIC_HARDWARE_LABELS.has(key)) return "";
+  const typeMentions = key.match(/\b(?:sensor(?:en|s)?|ecu(?:s)?|gateway(?:s)?|plc(?:s)?|controller(?:s)?|steuergeraet(?:e)?)\b/g) ?? [];
+  const countedGroup = /\b(?:ein(?:e|em|en|er)?|zwei|drei|vier|fuenf|fünf|sechs|\d+)\s+(?:sensor(?:en)?|ecu(?:s)?|gateway(?:s)?)\b/.test(key);
+  if (typeMentions.length > 1 || countedGroup) return "";
   if (/^(gateway|central gateway|can fd gateway)$/i.test(name)) return name;
   return /(?:sensor|ecu|gateway|plc|controller|steuergeraet)$/i.test(key.replace(/\s+/g, ""))
     ? name
     : "";
+}
+
+function inlineHardwareNames(line: string) {
+  const names = line.match(INLINE_HARDWARE_PATTERN) ?? [];
+  return names
+    .map((name) => cleanLabel(name))
+    .filter((name) => !GENERIC_INLINE_HARDWARE_LABELS.has(normalized(name)))
+    .filter((name) => Boolean(hardwareName(name)));
+}
+
+function impliedHardwareNames(line: string) {
+  const key = normalized(line);
+  const names: string[] = [];
+  if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {
+    names.push("Motorstromsensor");
+  }
+  if (/\bgateway\b/.test(key) && /\b(?:verbindet|koppelt|vermittelt|uebertraegt|ueberbrueckt)\b/.test(key)) {
+    names.push("System-Gateway");
+  }
+  return names;
 }
 
 function deviceType(name: string) {
@@ -181,21 +553,22 @@ function signalName(name: string, context: string) {
 export function extractEngineeringSpecification(text: string): ExtractedEngineeringSpecification {
   const lines = text.split(/\r?\n/);
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
-    const name = hardwareName(headingLabel(line));
-    return name ? [{ index, name }] : [];
+    const headingName = hardwareName(headingLabel(line));
+    const names = [headingName, ...inlineHardwareNames(line), ...impliedHardwareNames(line)].filter(Boolean);
+    return [...new Map(names.map((name) => [normalized(name), name])).values()].map((name) => ({ index, name }));
   });
   const contexts = new Map<string, { name: string; lines: string[] }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
     const key = normalized(occurrence.name);
     const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
-    existing.lines.push(...lines.slice(occurrence.index, nextIndex));
+    existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, nextIndex)));
     contexts.set(key, existing);
   });
 
   const domain = domainFrom(text);
   const interfaceType = protocolFrom(text);
-  const chains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
+  const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const range = rangeFrom(context);
     const unit = unitFrom(context);
@@ -230,7 +603,10 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
     };
   });
 
-  return { chains, domain, interfaceType };
+  const requestedTargets = extractEngineeringTargetCounts(text);
+  const expanded = expandArchitectureChains(recognizedChains, requestedTargets, domain);
+
+  return { chains: expanded.chains, domain, interfaceType, targetCounts: expanded.targets };
 }
 
 export function isStructuredEngineeringSpecification(text: string) {

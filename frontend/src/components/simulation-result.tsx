@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import type { SimulationJob } from "@/lib/types";
 import { getSimulation } from "@/lib/api";
 
@@ -10,10 +10,12 @@ export function SimulationResult({
   jobId,
   standalone = false,
   onJobChange,
+  action,
 }: {
   jobId: string;
   standalone?: boolean;
   onJobChange?: (job: SimulationJob) => void;
+  action?: ReactNode;
 }) {
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [error, setError] = useState("");
@@ -78,10 +80,13 @@ export function SimulationResult({
                   : "Simulation abgeschlossen"}
           </h2>
         </div>
-        <span className={`status-badge ${job.status}`}>
-          {running && <span className="spinner" />}
-          {job.status}
-        </span>
+        <div className="result-heading-actions">
+          <span className={`status-badge ${job.status}`}>
+            {running && <span className="spinner" />}
+            {job.status}
+          </span>
+          {action}
+        </div>
       </div>
 
       {job.error && <div className="notice error">{job.error}</div>}

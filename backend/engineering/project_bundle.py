@@ -55,6 +55,25 @@ WORKSPACE_RESET_TABLES = (
     "engineering_hardware_nodes",
 )
 
+SOURCE_UUID_KEYS = {
+    "engineering_hardware_nodes": "id",
+    "engineering_functions": "id",
+    "engineering_interfaces": "id",
+    "engineering_messages": "id",
+    "engineering_signals": "id",
+    "engineering_relations": "id",
+    "engineering_ai_proposals": "proposal_id",
+    "engineering_routing_entries": "id",
+    "engineering_routing_proposals": "proposal_id",
+    "engineering_routing_rules": "id",
+}
+
+PROJECT_UUID_KEYS = {
+    "engineering_analysis_snapshots": "id",
+    "engineering_simulation_snapshots": "id",
+    "engineering_optimization_proposals": "proposal_id",
+}
+
 
 def normalize_project_id(value: Any) -> str:
     project_id = str(value or "").strip()
@@ -81,6 +100,69 @@ def _db_value(value: Any) -> Any:
     return Jsonb(value) if isinstance(value, (dict, list)) else value
 
 
+def _replace_identifiers(value: Any, identifier_map: dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        return {key: _replace_identifiers(item, identifier_map) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_replace_identifiers(item, identifier_map) for item in value]
+    if isinstance(value, tuple):
+        return [_replace_identifiers(item, identifier_map) for item in value]
+    return identifier_map.get(str(value), value) if value is not None else None
+
+
+def _clone_source_data(
+    source_data: dict[str, list[dict[str, Any]]],
+    project_id: str,
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, str]]:
+    identifier_map: dict[str, str] = {}
+    for table, key in SOURCE_UUID_KEYS.items():
+        for row in source_data.get(table) or []:
+            current = row.get(key)
+            if current:
+                identifier_map[str(current)] = str(uuid.uuid4())
+
+    cloned: dict[str, list[dict[str, Any]]] = {}
+    for table in SOURCE_TABLES:
+        if table == "engineering_routing_audit":
+            cloned[table] = []
+            continue
+        rows: list[dict[str, Any]] = []
+        for source_row in source_data.get(table) or []:
+            row = _replace_identifiers(source_row, identifier_map)
+            row["project_id"] = project_id
+            if table == "engineering_object_versions":
+                row.pop("id", None)
+            rows.append(row)
+        cloned[table] = rows
+    return cloned, identifier_map
+
+
+def _clone_project_data(
+    project_data: dict[str, list[dict[str, Any]]],
+    project_id: str,
+    identifier_map: dict[str, str],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, str]]:
+    combined_map = dict(identifier_map)
+    for table, key in PROJECT_UUID_KEYS.items():
+        for row in project_data.get(table) or []:
+            current = row.get(key)
+            if current:
+                combined_map[str(current)] = str(uuid.uuid4())
+
+    cloned: dict[str, list[dict[str, Any]]] = {}
+    for table in PROJECT_TABLES:
+        if table == "engineering_workflow_events":
+            cloned[table] = []
+            continue
+        rows: list[dict[str, Any]] = []
+        for source_row in project_data.get(table) or []:
+            row = _replace_identifiers(source_row, combined_map)
+            row["project_id"] = project_id
+            rows.append(row)
+        cloned[table] = rows
+    return cloned, combined_map
+
+
 class ProjectBundleService:
     def reset_workspace(self, project_id: str) -> dict[str, Any]:
         target = normalize_project_id(project_id)
@@ -91,13 +173,12 @@ class ProjectBundleService:
                         sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table)),
                         (target,),
                     )
-                connection.execute(
-                    sql.SQL("TRUNCATE TABLE {} RESTART IDENTITY CASCADE").format(
-                        sql.SQL(", ").join(sql.Identifier(table) for table in WORKSPACE_RESET_TABLES)
+                for table in WORKSPACE_RESET_TABLES:
+                    connection.execute(
+                        sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table)),
+                        (target,),
                     )
-                )
                 connection.execute("DELETE FROM engineering_workflow_projects WHERE project_id = %s", (target,))
-                self._refresh_sequences(connection)
         return {
             "project_id": target,
             "cleared_tables": [*WORKSPACE_RESET_TABLES, *PROJECT_TABLES],
@@ -118,12 +199,11 @@ class ProjectBundleService:
             "parameters": source_state["parameters"],
             "topology": source_state["topology"],
         }
-        if target != source_project_id:
-            self._upsert_workflow(target, workflow)
         with get_connection() as connection:
             source_data = {
                 table: [_json_safe(row) for row in connection.execute(
-                    sql.SQL("SELECT * FROM {} ORDER BY 1").format(sql.Identifier(table))
+                    sql.SQL("SELECT * FROM {} WHERE project_id = %s ORDER BY 1").format(sql.Identifier(table)),
+                    (source_project_id,),
                 ).fetchall()]
                 for table in SOURCE_TABLES
             }
@@ -134,18 +214,22 @@ class ProjectBundleService:
                 ).fetchall()]
                 for table in PROJECT_TABLES
             }
+        bundle_source_project_id = source_project_id
         if target != source_project_id:
-            for rows in project_data.values():
-                for row in rows:
-                    row["project_id"] = target
+            source_data, identifier_map = _clone_source_data(source_data, target)
+            project_data, identifier_map = _clone_project_data(project_data, target, identifier_map)
+            workflow = _replace_identifiers(workflow, identifier_map)
+            workflow["project_id"] = target
+            workflow["context"] = {**(workflow.get("context") or {}), "active_project": target}
+            bundle_source_project_id = target
         return {
             "format": "network-intelligence-project",
             "bundle_version": BUNDLE_VERSION,
             "application": "Communication Simulator",
             "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "project_id": target,
-            "source_project_id": source_project_id,
-            "engineering_scope": "shared-source-of-truth",
+            "source_project_id": bundle_source_project_id,
+            "engineering_scope": "project-isolated-source-of-truth",
             "workflow": workflow,
             "source_data": source_data,
             "project_data": project_data,
@@ -167,6 +251,13 @@ class ProjectBundleService:
         project_data = bundle.get("project_data") or {}
         if not isinstance(source_data, dict) or not isinstance(project_data, dict):
             raise EngineeringValidationError("source_data und project_data muessen Objekte sein.")
+        if target != source_project_id:
+            source_data, identifier_map = _clone_source_data(source_data, target)
+            project_data, identifier_map = _clone_project_data(project_data, target, identifier_map)
+            workflow = _replace_identifiers(workflow, identifier_map)
+            workflow["project_id"] = target
+            workflow["context"] = {**(workflow.get("context") or {}), "active_project": target}
+            source_project_id = target
 
         report = {"inserted": 0, "existing": 0, "tables": {}}
         with get_connection() as connection:
@@ -175,7 +266,13 @@ class ProjectBundleService:
                 rows = source_data.get(table) or []
                 if table == "engineering_routing_entries":
                     rows = sorted(rows, key=lambda row: (str(row.get("route_code") or ""), int(row.get("revision") or 1)))
-                inserted, existing = self._insert_rows(connection, table, rows, preserve_ids=True)
+                inserted, existing = self._insert_rows(
+                    connection,
+                    table,
+                    rows,
+                    preserve_ids=True,
+                    project_id=target,
+                )
                 report["inserted"] += inserted
                 report["existing"] += existing
                 report["tables"][table] = {"inserted": inserted, "existing": existing}

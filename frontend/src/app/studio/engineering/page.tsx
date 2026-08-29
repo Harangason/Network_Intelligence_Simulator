@@ -5,7 +5,7 @@ import { WorkflowHeader } from "@/components/workflow-header";
 
 export default function EngineeringPage() {
   return (
-    <main className="shell">
+    <main className="shell studio-shell">
       <StudioTopbar />
       <WorkflowHeader />
 

@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request, send_file
 from .job_service import JOBS
 from .runtime_config import runtime_status
 from ..engineering.workflow.service import WorkflowStatusService
+from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
 
 
 api = Blueprint("api", __name__)
@@ -99,3 +100,53 @@ def artifact(job_id: str, artifact_index: int):
     if path is None:
         return jsonify({"error": "Artefakt nicht gefunden."}), 404
     return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@api.route("/simulation-campaigns", methods=["POST"])
+def create_simulation_campaign():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein Kampagnen-Objekt wird erwartet."}), 400
+    project_id = str(payload.get("project_id") or "default")
+    workflow = WorkflowStatusService(project_id).get()
+    if workflow.get("statuses", {}).get("validation") not in {"APPROVED", "WARNING"}:
+        return jsonify({"error": "Eine aktuelle erfolgreiche Validierung ist für Kampagnen erforderlich."}), 409
+    seeds = payload.get("seeds") if isinstance(payload.get("seeds"), list) else [42]
+    scenarios = payload.get("scenarios") if isinstance(payload.get("scenarios"), list) else [{}]
+    run_count = len(seeds) * len(scenarios)
+    if run_count < 1 or run_count > 50:
+        return jsonify({"error": "Eine Kampagne muss zwischen 1 und 50 Läufe enthalten."}), 400
+    base_config = payload.get("config") if isinstance(payload.get("config"), dict) else {}
+    runs = []
+    for scenario in scenarios:
+        if not isinstance(scenario, dict):
+            return jsonify({"error": "Jedes Kampagnenszenario muss ein Objekt sein."}), 400
+        for seed in seeds:
+            run_payload = {
+                "project_id": project_id,
+                "config": {**base_config, "seed": int(seed), "scenario": scenario},
+                "scenario": scenario,
+                "seed": int(seed),
+            }
+            job = JOBS.submit(run_payload)
+            runs.append({"job_id": job["id"], "seed": int(seed), "scenario": scenario, "status": job["status"]})
+    campaign = create_campaign_record(
+        project_id,
+        str(payload.get("name") or "Simulation campaign"),
+        {"seeds": seeds, "scenarios": scenarios, "config": base_config},
+        runs,
+    )
+    return jsonify(campaign), 202
+
+
+@api.route("/simulation-campaigns/<campaign_id>", methods=["GET"])
+def simulation_campaign(campaign_id: str):
+    project_id = str(request.args.get("project_id") or request.headers.get("X-Project-ID") or "default")
+    campaign = get_campaign_record(project_id, campaign_id)
+    if campaign is None:
+        return jsonify({"error": "Simulationskampagne nicht gefunden."}), 404
+    statuses = {
+        str(run["job_id"]): str((JOBS.get(str(run["job_id"])) or {}).get("status") or run["status"])
+        for run in campaign["runs"]
+    }
+    return jsonify(update_campaign_record(project_id, campaign_id, statuses))

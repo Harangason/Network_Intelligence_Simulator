@@ -7,9 +7,9 @@ from backend.engineering.capacity.calculators import (
     utilization_percent,
 )
 from backend.engineering.capacity import service as capacity_service_module
-from backend.engineering.capacity.service import CapacityTimingService
-from backend.engineering.workflow.models import default_statuses, default_versions, transition_state
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.engineering.capacity.service import CapacityTimingService, PreflightService
+from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
+from backend.engineering.workflow.service import WorkflowStatusService, is_topology_layout_only_change
 
 
 def test_engineering_change_marks_existing_dependent_results_outdated():
@@ -57,6 +57,19 @@ def test_empty_future_steps_stay_empty_until_a_result_exists():
     assert changed["statuses"]["routing"] == "COMPLETE"
     assert changed["statuses"]["capacity_timing"] == "EMPTY"
     assert "capacity_timing" not in changed["stale_reasons"]
+
+
+def test_completed_simulation_drops_previous_recalculation_reason():
+    state = {
+        "versions": default_versions(),
+        "statuses": {**default_statuses(), "simulation": "OUTDATED"},
+        "stale_reasons": {"simulation": "Validation / Preflight wurde neu ausgefuehrt."},
+    }
+
+    completed = set_step_status(state, "simulation", "COMPLETE")
+
+    assert completed["statuses"]["simulation"] == "COMPLETE"
+    assert "simulation" not in completed["stale_reasons"]
 
 
 def test_can_fd_uses_separate_arbitration_and_data_phases():
@@ -134,6 +147,98 @@ def test_workflow_state_always_exposes_complete_agent_context():
     }
 
 
+def test_workflow_state_hides_stale_reason_after_step_is_complete():
+    row = {
+        "project_id": "project-a",
+        "active_step": "simulation",
+        "versions": {},
+        "statuses": {"simulation": "COMPLETE", "results_analysis": "ERROR"},
+        "stale_reasons": {
+            "simulation": "Validation / Preflight wurde neu ausgefuehrt.",
+            "results_analysis": "Kein Ergebnisartefakt vorhanden.",
+        },
+        "context": {},
+        "parameters": {},
+        "topology": {},
+        "updated_at": None,
+    }
+
+    state = WorkflowStatusService._state(row)
+
+    assert "simulation" not in state["stale_reasons"]
+    assert state["stale_reasons"]["results_analysis"] == "Kein Ergebnisartefakt vorhanden."
+
+
+def test_topology_layout_change_ignores_only_visual_fields():
+    current = {
+        "nodes": [
+            {
+                "id": "gateway",
+                "kind": "gateway",
+                "name": "Gateway",
+                "x": 10,
+                "y": 20,
+                "ports": [
+                    {"id": "port-a", "name": "CAN", "bus": "can_fd", "side": "left", "offset": 0.5}
+                ],
+            }
+        ],
+        "edges": [],
+    }
+    rearranged = {
+        "nodes": [
+            {
+                **current["nodes"][0],
+                "x": 500,
+                "y": 160,
+                "width": 190,
+                "height": 100,
+                "ports": [{**current["nodes"][0]["ports"][0], "side": "right", "offset": 0.75}],
+            }
+        ],
+        "edges": [],
+    }
+    renamed = {
+        **rearranged,
+        "nodes": [{**rearranged["nodes"][0], "name": "Changed Gateway"}],
+    }
+
+    assert is_topology_layout_only_change(current, rearranged) is True
+    assert is_topology_layout_only_change(current, current) is False
+    assert is_topology_layout_only_change(current, renamed) is False
+
+
+def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {
+            **default_statuses(),
+            "engineering_model": "COMPLETE",
+            "routing": "COMPLETE",
+            "network_editor": "IN_PROGRESS",
+            "parameters": "COMPLETE",
+            "capacity_timing": "COMPLETE",
+        },
+        "parameters": {},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        service.workflow,
+        "create_analysis_snapshot",
+        lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+    )
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    response = service.run()
+
+    network_codes = {item["code"] for item in response["category_checks"]["network"]}
+    assert "WORKFLOW_STEP_NOT_READY" in network_codes
+
+
 def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync(monkeypatch):
     state = {
         "project_id": "analysis-project",
@@ -148,6 +253,7 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
             "cycle_ms": 10,
             "peak_factor": 1.2,
             "burst_factor": 1.5,
+            "target_bus_load_percent": 1,
             "gateway_delay_ms": 1.0,
             "gateway_queue_delay_ms": 0.5,
             "protocol_conversion_delay_ms": 0.25,
@@ -166,7 +272,9 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
         "id": "route-1",
         "route_code": "RT-1",
         "name": "Critical route",
-        "status": "DRAFT",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "validation": {"valid": True, "errors": [], "warnings": []},
         "source": {"node_id": "producer", "protocol": "can_fd", "network_id": "can-a"},
         "payload": {"message_id": "message-1", "signal_ids": ["signal-1"], "payload_bytes": 64},
         "destinations": [{"node_id": "consumer"}],
@@ -198,6 +306,7 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
 
     assert network["average_load_percent"] < network["peak_load_percent"] < network["burst_load_percent"]
     assert network["capacity_reserve_percent"] == round(100 - network["average_load_percent"], 4)
+    assert network["target_status"] == "EXCEEDED"
     assert analyzed_route["gateway_latency_ms"] == 1.75
     assert analyzed_route["requirement_status"] == "FAIL"
     assert results["gateways"][0]["status"] == "OVERLOAD"
@@ -205,5 +314,5 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
     assert results["synchronization"]["status"] == "FAIL"
     assert results["critical_paths"][0]["route_id"] == "route-1"
     assert results["bottlenecks"]
-    assert {"TIMING_DEADLINE_MISS", "TIMING_JITTER_EXCEEDED", "TIMING_TIMEOUT_RISK", "TIMING_FRESHNESS_RISK", "GATEWAY_OVERLOAD", "RELIABILITY_REQUIREMENT_MISS", "SYNCHRONIZATION_REQUIREMENT_MISS"} <= codes
+    assert {"CAPACITY_TARGET_LOAD_EXCEEDED", "TIMING_DEADLINE_MISS", "TIMING_JITTER_EXCEEDED", "TIMING_TIMEOUT_RISK", "TIMING_FRESHNESS_RISK", "GATEWAY_OVERLOAD", "RELIABILITY_REQUIREMENT_MISS", "SYNCHRONIZATION_REQUIREMENT_MISS"} <= codes
     assert response["provenance"]["calculation_model"] == "TECHNOLOGY_AWARE_CAPACITY_TIMING"

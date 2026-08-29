@@ -6,6 +6,7 @@ from typing import Any
 
 from psycopg.types.json import Jsonb
 from .db import get_connection
+from .project_context import current_project_id
 from .models import (
     RELATABLE_OBJECT_TYPES,
     RELATION_TYPES,
@@ -53,11 +54,12 @@ def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as conn:
         row = conn.execute(
             "INSERT INTO engineering_ai_proposals "
-            "(proposal_type, target_object, prompt, model, model_version, retrieved_context, "
+            "(project_id, proposal_type, target_object, prompt, model, model_version, retrieved_context, "
             "evidence, confidence, proposed_objects, validation_results, status, created_by) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'AI_GENERATED', %s) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'AI_GENERATED', %s) "
             "RETURNING *",
             (
+                current_project_id(),
                 proposal_type,
                 Jsonb(data.get("target_object", {})),
                 prompt,
@@ -79,7 +81,8 @@ def get_proposal(proposal_id: str) -> dict[str, Any]:
     validate_uuid(proposal_id)
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT * FROM engineering_ai_proposals WHERE proposal_id = %s", (proposal_id,)
+            "SELECT * FROM engineering_ai_proposals WHERE proposal_id = %s AND project_id = %s",
+            (proposal_id, current_project_id()),
         ).fetchone()
     if row is None:
         raise NotFoundError(f"AIProposal {proposal_id} nicht gefunden.")
@@ -87,12 +90,12 @@ def get_proposal(proposal_id: str) -> dict[str, Any]:
 
 
 def list_proposals(*, status: str | None = None, limit: int = 100, offset: int = 0):
-    values: list[Any] = []
-    where = ""
+    values: list[Any] = [current_project_id()]
+    where = " WHERE project_id = %s"
     if status:
         if status not in PROPOSAL_STATUSES:
             raise EngineeringValidationError(f"Unbekannter Proposal-Status: {status!r}.")
-        where = " WHERE status = %s"
+        where += " AND status = %s"
         values.append(status)
     values.extend((limit, offset))
     with get_connection() as conn:
@@ -121,8 +124,8 @@ def _canonical_id_from_proposal_reference(value: Any) -> str | None:
     try:
         with get_connection() as conn:
             row = conn.execute(
-                "SELECT proposed_objects FROM engineering_ai_proposals WHERE proposal_id = %s",
-                (str(value),),
+                "SELECT proposed_objects FROM engineering_ai_proposals WHERE proposal_id = %s AND project_id = %s",
+                (str(value), current_project_id()),
             ).fetchone()
     except Exception:
         return None
@@ -215,10 +218,10 @@ def _update_proposal_row(
             raise EngineeringValidationError(f"Unbekannter Proposal-Status: {status!r}.")
         assignments.append("status = %s")
         values.append(status)
-    values.append(proposal_id)
+    values.extend((proposal_id, current_project_id()))
     with get_connection() as conn:
         row = conn.execute(
-            f"UPDATE engineering_ai_proposals SET {', '.join(assignments)} WHERE proposal_id = %s RETURNING *",
+            f"UPDATE engineering_ai_proposals SET {', '.join(assignments)} WHERE proposal_id = %s AND project_id = %s RETURNING *",
             values,
         ).fetchone()
         conn.commit()

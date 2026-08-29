@@ -54,13 +54,61 @@ const FALLBACK_STEPS: WorkflowStep[] = [
 }));
 
 export const WORKFLOW_CHANGED_EVENT = "workflow:changed";
+type WorkflowHeaderVariant = "engineering" | "trace-analysis";
+
+const TRACE_ANALYSIS_STEPS = [
+  { id: "session", label: "Session / Daten laden", status: "LOADED" },
+  { id: "messages", label: "Botschaften", status: "INSPECT" },
+  { id: "sequence", label: "Sequenz", status: "ORDER" },
+  { id: "signals", label: "Signale", status: "VALUES" },
+  { id: "trace", label: "Trace", status: "SYNC" },
+  { id: "findings", label: "Findings / Gaps", status: "CONTEXT" },
+  { id: "root-cause", label: "Root Cause", status: "EXPLAIN" },
+] as const;
 
 export function notifyWorkflowChanged() {
   window.dispatchEvent(new CustomEvent(WORKFLOW_CHANGED_EVENT));
 }
 
-export function WorkflowHeader() {
+export function WorkflowHeader({ variant = "engineering" }: { variant?: WorkflowHeaderVariant }) {
+  if (variant === "trace-analysis") return <TraceAnalysisHeader />;
   return <Suspense fallback={<WorkflowHeaderSkeleton />}><WorkflowHeaderContent /></Suspense>;
+}
+
+function TraceAnalysisHeader() {
+  const search = useSearchParams();
+  const activeView = search.get("view") || "session";
+  const jobId = search.get("job");
+  return (
+    <section className="workflow-header trace-workflow-header" aria-label="Verbindlicher Trace-Analyse-Workflow">
+      <div className="workflow-heading">
+        <div>
+          <span className="eyebrow">Trace workflow</span>
+          <strong>Load → Filter → Inspect Messages → Follow Sequence → Inspect Signals → Synchronize Trace → Detect Findings</strong>
+        </div>
+        <div className="workflow-heading-status">
+          <span className="workflow-project mono">Analysis projection only</span>
+        </div>
+      </div>
+      <nav className="workflow-steps trace-workflow-steps">
+        {TRACE_ANALYSIS_STEPS.map((step, index) => (
+          <Link
+            aria-current={step.id === activeView ? "step" : undefined}
+            className={`workflow-step ${step.id === activeView ? "active" : ""}`}
+            href={`/trace-analysis?view=${step.id}${jobId ? `&job=${encodeURIComponent(jobId)}` : ""}`}
+            key={step.id}
+            title={step.label}
+          >
+            <span className="workflow-step-number">{index + 1}</span>
+            <span className="workflow-step-copy">
+              <strong>{step.label}</strong>
+              <small className="workflow-status status-in_progress"><i aria-hidden="true" /> {step.status}</small>
+            </span>
+          </Link>
+        ))}
+      </nav>
+    </section>
+  );
 }
 
 function WorkflowHeaderSkeleton() {
@@ -117,6 +165,11 @@ function WorkflowHeaderContent() {
     void setWorkflowContext({ active_workflow_step: activeStep }).catch(() => undefined);
   }, [activeStep]);
 
+  const activeStepStatus = workflow?.steps.find((step) => step.id === activeStep)?.status;
+  const activeStaleReason = activeStepStatus === "OUTDATED"
+    ? workflow?.stale_reasons?.[activeStep]
+    : undefined;
+
   return (
     <section className="workflow-header" aria-label="Verbindlicher Engineering-Workflow">
       <div className="workflow-heading">
@@ -148,9 +201,9 @@ function WorkflowHeaderContent() {
           </Link>
         ))}
       </nav>
-      {workflow?.stale_reasons?.[activeStep] && (
+      {activeStaleReason && (
         <p className="workflow-stale-reason">
-          <strong>Neuberechnung erforderlich:</strong> {workflow.stale_reasons[activeStep]}
+          <strong>Neuberechnung erforderlich:</strong> {activeStaleReason}
         </p>
       )}
     </section>

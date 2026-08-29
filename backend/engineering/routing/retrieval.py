@@ -7,6 +7,7 @@ from typing import Any
 from backend.knowledge import HybridRetrievalService, KnowledgeDocument
 
 from ..db import get_connection
+from ..project_context import current_project_id
 
 
 class HybridRoutingRetriever:
@@ -34,8 +35,9 @@ class HybridRoutingRetriever:
         with get_connection() as connection:
             for object_type, table in self.ENTITY_TABLES:
                 rows = connection.execute(
-                    f"SELECT id, name, description, domain, source, approval_state, version, created_at FROM {table} "
-                    "ORDER BY modified_at DESC LIMIT 500"
+                    f"SELECT * FROM {table} WHERE project_id = %s "
+                    "ORDER BY modified_at DESC LIMIT 500",
+                    (current_project_id(),),
                 ).fetchall()
                 for row in rows:
                     object_id = str(row["id"])
@@ -68,12 +70,15 @@ class HybridRoutingRetriever:
                     indexed_ids.add(object_id)
 
             relations = connection.execute(
-                "SELECT id, source_id, target_id, relation_type, attributes AS properties FROM engineering_relations LIMIT 3000"
+                "SELECT id, source_id, target_id, relation_type, attributes AS properties "
+                "FROM engineering_relations WHERE project_id = %s LIMIT 3000",
+                (current_project_id(),),
             ).fetchall()
             approved_routes = connection.execute(
                 "SELECT id, route_code, name, source, payload, destinations, route, timing, created_at "
                 "FROM engineering_routing_entries WHERE approval_state = 'APPROVED' "
-                "ORDER BY approved_at DESC NULLS LAST LIMIT 50"
+                "AND project_id = %s ORDER BY approved_at DESC NULLS LAST LIMIT 50",
+                (current_project_id(),),
             ).fetchall()
 
         for relation in relations:

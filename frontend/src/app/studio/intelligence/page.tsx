@@ -5,7 +5,7 @@ import { WorkflowHeader } from "@/components/workflow-header";
 
 export default function IntelligencePage() {
   return (
-    <main className="shell workflow-shell">
+    <main className="shell studio-shell workflow-shell">
       <StudioTopbar />
       <WorkflowHeader />
       <StudioWorkflowHero eyebrow="Workflow 09" title="Systemqualität bewerten. Schwächen gezielt verbessern.">

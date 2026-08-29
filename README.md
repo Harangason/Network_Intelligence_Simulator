@@ -49,14 +49,24 @@ Multiprocess-Simulation kann alternativ direkt gestartet werden mit:
 .\start-networkis-local-ai.bat
 ```
 
+Dieser Launcher ist der stabile lokale Startpfad. Er startet nicht nur die
+Next.js-Oberfläche, sondern prüft vor dem Frontend auch Projektpfad,
+Engineering-Datenbank, Backend-Readiness und feste Ports. `npm run dev` am
+Repo-Root verweist deshalb ebenfalls auf diesen Launcher. Ein isolierter
+Next.js-Start im Ordner `frontend` ist nur für reine UI-Diagnose gedacht,
+weil sonst Workflow, "Neu" und Engineering-Daten ohne Backend/DB instabil
+werden.
+
 Der Launcher prüft, ob Ollama unter `http://127.0.0.1:11434` erreichbar und das
-Modell `qwen3.8:27b` installiert ist. Die empfohlenen Variablen stehen in
+Modell `qwen3.8:27b` installiert ist. Für Standardfragen nutzt der Agent das
+GPU-taugliche `llama3.1:8b`; das größere Modell bleibt für ausdrücklich tiefe
+Analysen verfügbar. Die empfohlenen Variablen stehen in
 `runtime-performance.env.example`. Standardmäßig nutzt das Backend 16
 Waitress-Threads und 12 getrennte Simulationsprozesse. NumPy-/BLAS-Threads sind
 pro Worker auf eins begrenzt, damit die 32 logischen CPU-Kerne nicht mehrfach
 überbucht werden.
 
-Der Agent läuft standardmäßig im Modus `hybrid-demand`: Qwen 3.8 27B übernimmt
+Der Agent läuft standardmäßig im Modus `hybrid-demand`: Llama 3.1 8B übernimmt
 Unterhaltung, Analyse und Werkzeugsteuerung lokal über Ollama. OpenAI und
 NVIDIA NIM/Nemotron werden nur auf ausdrücklichen Wunsch oder bei einer
 angeforderten Wiederaufnahme nach lokalem Fehlschlag verwendet. Strukturierte

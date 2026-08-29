@@ -61,6 +61,39 @@ export type SimulationResultPayload = {
     duration_s?: number;
   };
   runtime_metrics?: RuntimeMetrics;
+  model_simulation?: ModelSimulationTrace;
+};
+
+export type ModelSignalPoint = {
+  time_s: number;
+  value: number | null;
+  golden_value: number | null;
+  faults: string[];
+};
+
+export type ModelSignalSeries = {
+  signal_id: string;
+  signal: string;
+  unit: string;
+  minimum: number;
+  maximum: number;
+  resolution: number;
+  cycle_ms: number;
+  behavior_type: string;
+  model_label: "PHYSICS_BASED" | "RULE_BASED" | "EMPIRICAL" | "SYNTHETIC" | "GENERIC_ESTIMATE";
+  points: ModelSignalPoint[];
+};
+
+export type ModelSimulationTrace = {
+  schema: string;
+  scenario: { name: string; mode: string; duration_s: number; speed: number; seed: number; trace_formats: string[] };
+  signals: ModelSignalSeries[];
+  events: Array<{ time_s: number; severity: string; event_type: string; scope: string; target: string; node?: string; message?: string; signal?: string; network?: string; description: string; faults: string[] }>;
+  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; status: string; sender: string; receivers: string[] }>;
+  bus_load: Array<{ network_id: string; time_s: number; load_percent: number; window_ms: number }>;
+  comparison: { available: boolean; changed_samples: number; rmse: number; baseline: string; candidate: string };
+  model_labels: string[];
+  clock: string;
 };
 
 export type RuntimeNetworkMetric = {
@@ -356,7 +389,9 @@ export type RoutingEntry = {
   source: RoutingEndpoint;
   payload: {
     interface_definition_id?: string | null;
+    interface_definition_ids?: string[];
     message_id?: string | null;
+    message_ids?: string[];
     signal_ids: string[];
     topic?: string | null;
     data_object?: string | null;

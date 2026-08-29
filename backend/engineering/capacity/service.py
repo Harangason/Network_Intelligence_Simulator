@@ -36,9 +36,14 @@ def _payload_bytes(route: dict[str, Any], messages: dict[str, dict[str, Any]], d
     direct = payload.get("payload_bytes") or payload.get("length_bytes") or payload.get("dlc")
     if direct is not None:
         return max(0, int(_number(direct, default)))
-    message_id = str(payload.get("message_id") or "")
-    message = messages.get(message_id, {})
-    return max(0, int(_number(message.get("dlc"), default)))
+    message_ids = list(dict.fromkeys([
+        *[str(item) for item in payload.get("message_ids", []) if item],
+        *([str(payload.get("message_id"))] if payload.get("message_id") else []),
+    ]))
+    selected = [messages[item] for item in message_ids if item in messages]
+    if selected:
+        return sum(max(0, int(_number(message.get("dlc"), default))) for message in selected)
+    return default
 
 
 def _requirement_value(
@@ -105,10 +110,12 @@ class CapacityTimingService:
             "critical": _number(parameters.get("critical_threshold"), 75.0),
             "overload": _number(parameters.get("overload_threshold"), 90.0),
         }
+        target_bus_load = min(max(_number(parameters.get("target_bus_load_percent"), 60.0), 0.0), 100.0)
         routes = [
             route
             for route in list_routes(limit=500)
-            if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED"}
+            if route.get("approval_state") == "APPROVED"
+            and route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
         ]
         messages = {str(item["id"]): item for item in list_objects("Message", limit=500)}
         signals = {str(item["id"]): item for item in list_objects("Signal", limit=2000)}
@@ -290,6 +297,9 @@ class CapacityTimingService:
                     "available_capacity_percent": round(100.0 - average, 4),
                     "capacity_reserve_percent": round(100.0 - average, 4),
                     "capacity_margin_percent": round(100.0 - governing_load, 4),
+                    "target_bus_load_percent": target_bus_load,
+                    "target_margin_percent": round(target_bus_load - governing_load, 4),
+                    "target_status": "PASS" if governing_load <= target_bus_load else "EXCEEDED",
                     "status": classify_load(governing_load, thresholds),
                     "worst_end_to_end_latency_ms": round(
                         max((item["end_to_end_latency_ms"] for item in items), default=0.0), 6
@@ -340,6 +350,23 @@ class CapacityTimingService:
             )
 
         findings: list[dict[str, Any]] = []
+        for step, accepted in (
+            ("engineering_model", {"COMPLETE"}),
+            ("routing", {"APPROVED"}),
+            ("network_editor", {"COMPLETE"}),
+            ("parameters", {"COMPLETE"}),
+        ):
+            current_status = state["statuses"].get(step)
+            if current_status not in accepted:
+                findings.append(
+                    {
+                        "severity": "ERROR",
+                        "code": "CAPACITY_SOURCE_NOT_READY",
+                        "message": f"{WORKFLOW_LABELS[step]} ist nicht vollstaendig ({current_status}).",
+                        "step": step,
+                        "recommendation": f"Workflow-Schritt {WORKFLOW_LABELS[step]} vervollstaendigen.",
+                    }
+                )
         if not state.get("parameters"):
             findings.append(
                 {
@@ -359,6 +386,25 @@ class CapacityTimingService:
                 }
             )
         for network in network_metrics:
+            if network["target_status"] == "EXCEEDED":
+                governing_load = max(
+                    network["average_load_percent"],
+                    network["peak_load_percent"],
+                    network["burst_load_percent"],
+                )
+                findings.append(
+                    {
+                        "severity": "ERROR" if governing_load >= thresholds["overload"] else "WARNING",
+                        "code": "CAPACITY_TARGET_LOAD_EXCEEDED",
+                        "object_type": "Network",
+                        "object_id": network["network_id"],
+                        "message": (
+                            f"{network['network_id']} erreicht {governing_load:.2f}% und ueberschreitet "
+                            f"die Ziel-Buslast von {target_bus_load:.2f}%."
+                        ),
+                        "recommendation": "Zyklus, Payload, Bitrate oder Ziel-Buslast pruefen.",
+                    }
+                )
             if network["status"] in {"WARNING", "CRITICAL", "OVERLOAD"}:
                 severity = "ERROR" if network["status"] == "OVERLOAD" else "WARNING"
                 findings.append(
@@ -572,6 +618,7 @@ class CapacityTimingService:
                 "max_burst_load_percent": max(
                     (item["burst_load_percent"] for item in network_metrics), default=0.0
                 ),
+                "target_bus_load_percent": target_bus_load,
                 "minimum_capacity_reserve_percent": min(
                     (item["capacity_reserve_percent"] for item in network_metrics), default=100.0
                 ),
@@ -640,6 +687,7 @@ class CapacityTimingService:
                 "clock_drift_ppm": clock_drift_ppm,
                 "sync_precision_ms": sync_precision_ms,
                 "thresholds": thresholds,
+                "target_bus_load_percent": target_bus_load,
                 "generic_models": sorted(generic_models),
             },
             "timestamp": _now(),
@@ -754,7 +802,10 @@ class PreflightService:
         for step in required:
             status = state["statuses"][step]
             if status in {"EMPTY", "IN_PROGRESS", "ERROR", "OUTDATED"}:
-                category = "capacity" if step == "capacity_timing" else step
+                category = {
+                    "network_editor": "network",
+                    "capacity_timing": "capacity",
+                }.get(step, step)
                 add(
                     category,
                     "ERROR",
@@ -763,7 +814,10 @@ class PreflightService:
                     step=step,
                 )
             elif status == "WARNING":
-                category = "capacity" if step == "capacity_timing" else step
+                category = {
+                    "network_editor": "network",
+                    "capacity_timing": "capacity",
+                }.get(step, step)
                 add(
                     category,
                     "WARNING",
@@ -865,6 +919,9 @@ class PreflightService:
         overload = _number(parameters.get("overload_threshold"), 90.0)
         if not (0 <= warning < critical < overload):
             add("parameters", "ERROR", "PARAMETER_THRESHOLDS_INVALID", "Load-Grenzwerte muessen aufsteigend sein.")
+        target_bus_load = _number(parameters.get("target_bus_load_percent"), 60.0)
+        if not 0 <= target_bus_load <= 100:
+            add("parameters", "ERROR", "PARAMETER_TARGET_BUS_LOAD_INVALID", "Ziel-Buslast muss zwischen 0 und 100 Prozent liegen.")
         queue_size = _number(parameters.get("queue_size"), 1.0)
         if queue_size <= 0:
             add("parameters", "ERROR", "PARAMETER_QUEUE_INVALID", "Queue Size muss groesser als null sein.")

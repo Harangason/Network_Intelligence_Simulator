@@ -9,6 +9,7 @@ from typing import Any
 from psycopg.types.json import Jsonb
 
 from ..db import get_connection
+from ..project_context import current_project_id
 
 PROTOCOL_CAPACITY = {
     "CAN": (500_000, 8),
@@ -68,7 +69,7 @@ class RoutingValidator:
     """Validates references, path semantics, timing, payload and estimated load."""
 
     def __init__(self, project_id: str | None = None):
-        self.project_id = project_id
+        self.project_id = project_id or current_project_id()
 
     def _physical_path_mapping(
         self,
@@ -128,7 +129,8 @@ class RoutingValidator:
             return {}
         with get_connection() as connection:
             rows = connection.execute(
-                f"SELECT * FROM {table} WHERE id = ANY(%s::uuid[])", (ids,)
+                f"SELECT * FROM {table} WHERE id = ANY(%s::uuid[]) AND project_id = %s",
+                (ids, self.project_id),
             ).fetchall()
         return {str(row["id"]): row for row in rows}
 
@@ -144,13 +146,15 @@ class RoutingValidator:
                 "SELECT id, route_code FROM engineering_routing_entries "
                 "WHERE source ->> 'node_id' = %s AND payload = %s AND destinations = %s "
                 "AND (%s::uuid IS NULL OR id <> %s::uuid) "
-                "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED')",
+                "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED') "
+                "AND project_id = %s",
                 (
                     source_node_id,
                     Jsonb(payload),
                     Jsonb(destinations),
                     exclude_route_id,
                     exclude_route_id,
+                    self.project_id,
                 ),
             ).fetchall()
 
@@ -219,11 +223,15 @@ class RoutingValidator:
             elif interface.get("hardware_node_id") and str(interface["hardware_node_id"]) != str(destination.get("node_id")):
                 error("DESTINATION_INTERFACE_MISMATCH", "Ein Destination Interface gehört nicht zum gewählten Node.")
 
-        message_id = str(payload.get("message_id") or "")
-        messages = self._rows("engineering_messages", [message_id] if message_id else [])
-        message = messages.get(message_id)
-        if message_id and message is None:
-            error("MESSAGE_NOT_FOUND", "Die referenzierte Message existiert nicht.")
+        message_ids = list(dict.fromkeys([
+            *[str(item) for item in payload.get("message_ids", []) if item],
+            *([str(payload.get("message_id"))] if payload.get("message_id") else []),
+        ]))
+        messages = self._rows("engineering_messages", message_ids)
+        for message_id in message_ids:
+            if message_id not in messages:
+                error("MESSAGE_NOT_FOUND", f"Die referenzierte Message {message_id} existiert nicht.")
+        message = messages.get(message_ids[0]) if message_ids else None
 
         signal_ids = [str(item) for item in payload.get("signal_ids", []) if item]
         signals = self._rows("engineering_signals", signal_ids)
@@ -231,9 +239,9 @@ class RoutingValidator:
             signal = signals.get(signal_id)
             if signal is None:
                 error("SIGNAL_NOT_FOUND", f"Signal {signal_id} existiert nicht.")
-            elif message_id and str(signal.get("message_id") or "") != message_id:
-                error("SIGNAL_MESSAGE_MISMATCH", f"Signal {signal.get('name')} gehört nicht zur gewählten Message.")
-        if not message_id and not signal_ids and not payload.get("topic") and not payload.get("data_object"):
+            elif message_ids and str(signal.get("message_id") or "") not in message_ids:
+                error("SIGNAL_MESSAGE_MISMATCH", f"Signal {signal.get('name')} gehört zu keiner gewählten Message.")
+        if not message_ids and not signal_ids and not payload.get("topic") and not payload.get("data_object"):
             warn("PAYLOAD_UNSPECIFIED", "Die Route hat noch keinen konkreten Payload.")
 
         protocol = str(source.get("protocol") or "CUSTOM").upper()
@@ -271,14 +279,22 @@ class RoutingValidator:
             warn("FALLBACK_MISSING", "Redundantes Routing besitzt keine Fallback-Route.")
 
         payload_bits = 0
+        frame_payload_bytes = 0
         if signals:
             payload_bits = sum(int(signal.get("length_bits") or 0) for signal in signals.values())
-        elif message:
-            payload_bits = int(message.get("dlc") or 0) * 8
+            bits_by_message: dict[str, int] = {}
+            for signal in signals.values():
+                key = str(signal.get("message_id") or "unassigned")
+                bits_by_message[key] = bits_by_message.get(key, 0) + int(signal.get("length_bits") or 0)
+            frame_payload_bytes = max((ceil(bits / 8) for bits in bits_by_message.values()), default=0)
+        elif messages:
+            message_payloads = [int(item.get("dlc") or 0) for item in messages.values()]
+            payload_bits = sum(message_payloads) * 8
+            frame_payload_bytes = max(message_payloads, default=0)
         payload_bytes = ceil(payload_bits / 8) if payload_bits else 0
         bitrate, max_payload = PROTOCOL_CAPACITY[protocol]
-        if payload_bytes > max_payload:
-            error("PAYLOAD_TOO_LARGE", f"Payload {payload_bytes} Byte überschreitet {max_payload} Byte für {protocol}.")
+        if frame_payload_bytes > max_payload:
+            error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {protocol}.")
 
         hop_count = max(1, len(path.get("hops", [])) - 1)
         gateway_count = len(gateways)
@@ -293,7 +309,8 @@ class RoutingValidator:
         if jitter and float(jitter) < gateway_count * 0.1:
             warn("JITTER_TIGHT", "Das Jitter-Limit ist für die Gateway-Anzahl sehr knapp.")
 
-        message_cycle_ms = message.get("cycle_ms") if message else None
+        message_cycles = [float(item.get("cycle_ms")) for item in messages.values() if item.get("cycle_ms")]
+        message_cycle_ms = min(message_cycles) if message_cycles else None
         cycle_ms = float(timing.get("cycle_time_ms") or message_cycle_ms or 100.0)
         cycle_ms = cycle_ms or 100.0
         route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits else 0.0

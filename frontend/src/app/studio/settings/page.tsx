@@ -3,7 +3,7 @@ import { StudioTopbar } from "@/components/studio-topbar";
 
 export default function SettingsPage() {
   return (
-    <main className="shell">
+    <main className="shell studio-shell">
       <StudioTopbar />
       <section className="settings-heading">
         <p className="eyebrow">Einstellungen</p>

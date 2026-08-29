@@ -28,6 +28,12 @@ export type TopologyNode = {
 
 export type TopologyEdge = {
   id: string;
+  name?: string;
+  sourceInterfaceName?: string;
+  targetInterfaceName?: string;
+  relationType?: "CONNECTED_TO" | "COMMUNICATES_WITH" | "CONNECTED_VIA";
+  description?: string;
+  direction?: "BIDIRECTIONAL" | "SOURCE_TO_TARGET" | "TARGET_TO_SOURCE";
   source: string;
   sourcePort: string;
   target: string;
@@ -35,6 +41,7 @@ export type TopologyEdge = {
   bus: BusType;
   engineeringRelationId?: string;
   routingEntryId?: string;
+  routingEntryIds?: string[];
   origin?: "ROUTING_TABLE";
 };
 
@@ -44,7 +51,7 @@ export type TopologySyncResult = {
     topology_node_id: string;
     engineering_id: string;
     function_id: string;
-    interfaces: Array<{ topology_port_id: string; engineering_id: string }>;
+    interfaces: Array<{ topology_port_id: string; engineering_id: string; engineering_name?: string }>;
   }>;
   edges: Array<{ topology_edge_id: string; engineering_relation_id: string }>;
   counts: {
@@ -58,6 +65,85 @@ export type NetworkTopology = {
   nodes: TopologyNode[];
   edges: TopologyEdge[];
 };
+
+function physicalEdgeKey(edge: TopologyEdge) {
+  const endpoints = [
+    `${edge.source}:${edge.sourcePort}`,
+    `${edge.target}:${edge.targetPort}`,
+  ].sort();
+  return `${edge.bus}:${endpoints[0]}:${endpoints[1]}`;
+}
+
+export function collapsePhysicalEdges(edges: TopologyEdge[]): TopologyEdge[] {
+  const physicalEdges = new Map<string, TopologyEdge>();
+  for (const edge of edges) {
+    const key = physicalEdgeKey(edge);
+    const current = physicalEdges.get(key);
+    const routeIds = [...new Set([
+      ...(current?.routingEntryIds ?? []),
+      ...(current?.routingEntryId ? [current.routingEntryId] : []),
+      ...(edge.routingEntryIds ?? []),
+      ...(edge.routingEntryId ? [edge.routingEntryId] : []),
+    ])];
+    if (current) {
+      physicalEdges.set(key, {
+        ...current,
+        engineeringRelationId: current.engineeringRelationId ?? edge.engineeringRelationId,
+        routingEntryId: current.routingEntryId ?? edge.routingEntryId,
+        routingEntryIds: routeIds,
+      });
+      continue;
+    }
+    physicalEdges.set(key, {
+      ...edge,
+      routingEntryIds: routeIds,
+    });
+  }
+  return [...physicalEdges.values()];
+}
+
+export function expandSharedPhysicalPorts(topology: NetworkTopology): NetworkTopology {
+  type PortUse = { edgeId: string; endpoint: "source" | "target" };
+  const portUses = new Map<string, PortUse[]>();
+  const portKey = (nodeId: string, portId: string) => `${nodeId}\u0000${portId}`;
+
+  for (const edge of topology.edges) {
+    const sourceKey = portKey(edge.source, edge.sourcePort);
+    const targetKey = portKey(edge.target, edge.targetPort);
+    portUses.set(sourceKey, [...(portUses.get(sourceKey) ?? []), { edgeId: edge.id, endpoint: "source" }]);
+    portUses.set(targetKey, [...(portUses.get(targetKey) ?? []), { edgeId: edge.id, endpoint: "target" }]);
+  }
+
+  const replacementIds = new Map<string, string>();
+  const nodes = topology.nodes.map((node) => ({
+    ...node,
+    ports: node.ports.flatMap((port) => {
+      const uses = [...(portUses.get(portKey(node.id, port.id)) ?? [])]
+        .sort((left, right) => left.edgeId.localeCompare(right.edgeId) || left.endpoint.localeCompare(right.endpoint));
+      if (uses.length <= 1) return [{ ...port }];
+      return uses.map((use, index) => {
+        const id = `${port.id}--connection-${index + 1}`;
+        replacementIds.set(`${use.edgeId}\u0000${use.endpoint}`, id);
+        return {
+          ...port,
+          id,
+          offset: (index + 1) / (uses.length + 1),
+        };
+      });
+    }),
+  }));
+
+  const edges = topology.edges.map((edge) => ({
+    ...edge,
+    sourcePort: replacementIds.get(`${edge.id}\u0000source`) ?? edge.sourcePort,
+    targetPort: replacementIds.get(`${edge.id}\u0000target`) ?? edge.targetPort,
+  }));
+  return { ...topology, nodes, edges };
+}
+
+export function normalizePhysicalTopology(topology: NetworkTopology): NetworkTopology {
+  return expandSharedPhysicalPorts({ ...topology, edges: collapsePhysicalEdges(topology.edges) });
+}
 
 export function engineeringHardwareKind(
   hardware: Pick<HardwareNode, "device_type" | "name">,
@@ -123,6 +209,8 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
     technology: edge.bus,
     cycle_ms: busProfiles[edge.bus].cycleMs,
     payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
+    routing_entry_id: edge.routingEntryId,
+    routing_entry_ids: edge.routingEntryIds ?? (edge.routingEntryId ? [edge.routingEntryId] : []),
   }));
 
   return {

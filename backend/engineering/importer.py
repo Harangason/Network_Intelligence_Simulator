@@ -359,7 +359,7 @@ def commit_import(plan: dict[str, Any]) -> dict[str, Any]:
         for item in plan.get("interfaces", []):
             function_id = ids[item["function_key"]]
             with get_connection() as connection:
-                function = connection.execute("SELECT hardware_node_id FROM engineering_functions WHERE id = %s", (function_id,)).fetchone()
+                function = get_object("Function", function_id)
             ids[item["key"]] = persist("Interface", item, {"name": item["name"], "domain": item.get("domain") or "generic", "function_id": function_id, "hardware_node_id": str(function["hardware_node_id"]), "interface_type": item.get("interface_type") or "Other"})
         for item in plan.get("messages", []):
             ids[item["key"]] = persist("Message", item, {"name": item["name"], "domain": item.get("domain") or "generic", "interface_id": ids[item["interface_key"]], "message_id_hex": item.get("message_id_hex"), "direction": item.get("direction"), "cycle_ms": item.get("cycle_ms"), "dlc": item.get("dlc")})

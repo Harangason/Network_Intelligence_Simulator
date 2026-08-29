@@ -1,3 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import {
+  createOptimizationProposal,
+  type IntelligenceRecommendation,
+} from "@/lib/workflow-api";
+
 type DataRecord = Record<string, unknown>;
 
 type FlowStep = {
@@ -49,6 +57,7 @@ const TITLE_KEYS = ["name", "display_name", "route_code", "code", "relation_type
 const DESCRIPTION_KEYS = ["description", "summary", "message", "problem", "recommendation", "note", "text"];
 const META_KEYS = ["device_type", "interface_type", "object_type", "protocol", "status", "approval_state", "review_state", "origin", "category", "severity"];
 const FLOW_COLLECTION_KEYS = ["routes", "items", "candidates", "generated_routes", "paths", "relations"];
+const ACTION_COLLECTION_KEY = "action_suggestions";
 
 function isRecord(value: unknown): value is DataRecord {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -185,6 +194,7 @@ function RecordList({ items }: { items: DataRecord[] }) {
 }
 
 function ValueSection({ name, value, depth = 0 }: { name: string; value: unknown; depth?: number }) {
+  if (name === ACTION_COLLECTION_KEY) return null;
   if (Array.isArray(value)) {
     if (value.length === 0) return <p className="eng-agent-result-empty">{labelFor(name)}: keine Einträge</p>;
     if (value.every(isScalar)) {
@@ -206,8 +216,9 @@ function ValueSection({ name, value, depth = 0 }: { name: string; value: unknown
     return <div className="eng-agent-result-metric"><span>{labelFor(name)}</span><strong>{formatScalar(value)}</strong></div>;
   }
 
-  const scalarEntries = Object.entries(value).filter(([, item]) => isScalar(item));
-  const nestedEntries = Object.entries(value).filter(([, item]) => !isScalar(item));
+  const entries = Object.entries(value).filter(([key]) => key !== ACTION_COLLECTION_KEY);
+  const scalarEntries = entries.filter(([, item]) => isScalar(item));
+  const nestedEntries = entries.filter(([, item]) => !isScalar(item));
   return (
     <section className="eng-agent-result-section">
       {name !== "result" && <strong>{labelFor(name)}</strong>}
@@ -247,10 +258,75 @@ function FlowView({ flows }: { flows: ResultFlow[] }) {
   );
 }
 
+type DiagnosticAction = {
+  id: string;
+  label: string;
+  kind: "navigate" | "create_optimization_proposal";
+  href?: string;
+  proposal?: IntelligenceRecommendation;
+};
+
+function actionSuggestions(output: unknown): DiagnosticAction[] {
+  if (!isRecord(output) || !Array.isArray(output[ACTION_COLLECTION_KEY])) return [];
+  return output[ACTION_COLLECTION_KEY].filter((item): item is DiagnosticAction => (
+    isRecord(item)
+    && typeof item.id === "string"
+    && typeof item.label === "string"
+    && (item.kind === "navigate" || item.kind === "create_optimization_proposal")
+  ));
+}
+
+function ActionSuggestions({ actions }: { actions: DiagnosticAction[] }) {
+  const [busyAction, setBusyAction] = useState("");
+  const [message, setMessage] = useState("");
+  if (!actions.length) return null;
+
+  async function selectAction(action: DiagnosticAction) {
+    setMessage("");
+    if (action.kind === "navigate" && action.href) {
+      window.location.assign(action.href);
+      return;
+    }
+    if (action.kind === "create_optimization_proposal" && action.proposal) {
+      setBusyAction(action.id);
+      try {
+        await createOptimizationProposal(action.proposal);
+        setMessage("Proposal wurde angelegt und wartet auf Human Review.");
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Proposal konnte nicht angelegt werden.");
+      } finally {
+        setBusyAction("");
+      }
+    }
+  }
+
+  return (
+    <section className="eng-agent-result-section">
+      <strong>Auswählbare Schritte</strong>
+      <div className="eng-agent-action-row">
+        {actions.map((action) => (
+          <button
+            className={action.kind === "create_optimization_proposal" ? "button primary tiny" : "button secondary tiny"}
+            disabled={busyAction === action.id}
+            key={action.id}
+            onClick={() => void selectAction(action)}
+            type="button"
+          >
+            {busyAction === action.id ? "läuft ..." : action.label}
+          </button>
+        ))}
+      </div>
+      {message && <p className="eng-agent-result-more">{message}</p>}
+    </section>
+  );
+}
+
 export function AgentToolResult({ output }: { output: unknown }) {
   const flows = extractFlows(output);
+  const actions = actionSuggestions(output);
   return (
     <div className="eng-agent-tool-output-view">
+      <ActionSuggestions actions={actions} />
       {flows.length > 0 && <FlowView flows={flows} />}
       <ValueSection name="result" value={output} />
     </div>

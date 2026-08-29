@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Any
 
 from ..db import get_connection
+from ..project_context import current_project_id
 
 PROTOCOL_TO_TECHNOLOGY = {
     "CAN": "can",
@@ -49,10 +50,34 @@ class CommunicationConfigBuilder:
             nodes = {
                 str(row["id"]): row
                 for row in connection.execute(
-                    "SELECT id, name, device_type FROM engineering_hardware_nodes WHERE id = ANY(%s::uuid[])",
-                    (node_ids,),
+                    "SELECT id, name, device_type FROM engineering_hardware_nodes "
+                    "WHERE id = ANY(%s::uuid[]) AND project_id = %s",
+                    (node_ids, current_project_id()),
                 ).fetchall()
             } if node_ids else {}
+            interface_rows = connection.execute(
+                "SELECT id, name, hardware_node_id, interface_type, configuration "
+                "FROM engineering_interfaces WHERE hardware_node_id = ANY(%s::uuid[]) "
+                "AND project_id = %s AND approval_state = 'approved'",
+                (node_ids, current_project_id()),
+            ).fetchall() if node_ids else []
+        interfaces_by_node: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for interface in interface_rows:
+            configuration = interface.get("configuration") or {}
+            interface_type = str(interface.get("interface_type") or "CUSTOM").upper()
+            technology = PROTOCOL_TO_TECHNOLOGY.get(interface_type, "generic")
+            interfaces_by_node[str(interface.get("hardware_node_id"))].append(
+                {
+                    "id": str(interface["id"]),
+                    "name": str(interface.get("name") or interface["id"]),
+                    "technology": technology,
+                    "network": str(
+                        configuration.get("network_id")
+                        or configuration.get("network")
+                        or f"network-{technology}"
+                    ),
+                }
+            )
 
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         communications = []
@@ -111,7 +136,7 @@ class CommunicationConfigBuilder:
                             "id": node_id,
                             "name": nodes.get(node_id, {}).get("name", node_id),
                             "type": nodes.get(node_id, {}).get("device_type", "GenericDevice"),
-                            "interfaces": [],
+                            "interfaces": interfaces_by_node.get(node_id, []),
                         }
                         for node_id in node_ids
                     ]

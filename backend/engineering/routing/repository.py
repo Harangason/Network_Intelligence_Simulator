@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 
 from ..db import get_connection
 from ..models import EngineeringValidationError, validate_uuid
+from ..project_context import current_project_id
 from ..repository import NotFoundError
 from .models import PRIORITIES, PROPOSAL_STATUSES, ROUTE_STATUSES, normalize_route
 
@@ -60,9 +61,10 @@ def _audit(
 ) -> None:
     connection.execute(
         "INSERT INTO engineering_routing_audit "
-        "(route_id, action, actor, agent, model, before_state, after_state, reason, evidence) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        "(project_id, route_id, action, actor, agent, model, before_state, after_state, reason, evidence) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         (
+            current_project_id(),
             route_id,
             action,
             actor,
@@ -85,6 +87,7 @@ def _insert_route(
     supersedes_id: str | None = None,
 ) -> dict[str, Any]:
     columns = [
+        "project_id",
         "route_code",
         "revision",
         "supersedes_id",
@@ -92,7 +95,7 @@ def _insert_route(
         "created_by",
         "modified_by",
     ]
-    values = [route_code, revision, supersedes_id]
+    values = [current_project_id(), route_code, revision, supersedes_id]
     for field in EDITABLE_FIELDS:
         value = data.get(field)
         values.append(Jsonb(value) if field in JSON_FIELDS else value)
@@ -125,7 +128,8 @@ def get_route(route_id: str) -> dict[str, Any]:
     validate_uuid(route_id)
     with get_connection() as connection:
         row = connection.execute(
-            "SELECT * FROM engineering_routing_entries WHERE id = %s", (route_id,)
+            "SELECT * FROM engineering_routing_entries WHERE id = %s AND project_id = %s",
+            (route_id, current_project_id()),
         ).fetchone()
     if row is None:
         raise NotFoundError(f"RoutingEntry {route_id} nicht gefunden.")
@@ -140,15 +144,21 @@ def list_routes(
     limit: int = 200,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
-    clauses = []
-    values: list[Any] = []
+    clauses = [sql.SQL("project_id = %s")]
+    values: list[Any] = [current_project_id()]
     for column, value in (("status", status), ("approval_state", approval_state), ("origin", origin)):
         if value:
             clauses.append(sql.SQL("{} = %s").format(sql.Identifier(column)))
             values.append(value.upper())
     where = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(clauses) if clauses else sql.SQL("")
     query = sql.SQL(
-        "SELECT * FROM engineering_routing_entries{} ORDER BY modified_at DESC LIMIT %s OFFSET %s"
+        "SELECT * FROM engineering_routing_entries{} "
+        "ORDER BY ("
+        "SELECT MIN(history.created_at) FROM engineering_routing_entries AS history "
+        "WHERE history.project_id = engineering_routing_entries.project_id "
+        "AND history.route_code = engineering_routing_entries.route_code"
+        ") DESC, route_code DESC, revision DESC, created_at DESC, id DESC "
+        "LIMIT %s OFFSET %s"
     ).format(where)
     values.extend((limit, offset))
     with get_connection() as connection:
@@ -161,46 +171,15 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
         raise EngineeringValidationError("Freigaben sind nur über den Approval-Endpunkt zulässig.")
     normalized = normalize_route(data, current)
     actor = normalized.get("modified_by")
-    if current["approval_state"] == "APPROVED" or current["status"] in (
+    governance_locked = current["approval_state"] == "APPROVED" or current["status"] in (
         "APPROVED",
         "RELEASED",
         "REJECTED",
         "OUTDATED",
-    ):
-        normalized.update(
-            {
-                "status": "PENDING_CONFIRMATION"
-                if normalized["origin"] == "NETWORK_EDITOR"
-                else "DRAFT",
-                "approval_state": "PENDING",
-                "review_state": "UNREVIEWED",
-            }
-        )
-        normalized["validation"] = {}
-        normalized["origin"] = "AI_MODIFIED" if current["origin"] == "AI_GENERATED" else current["origin"]
-        with get_connection() as connection:
-            row = _insert_route(
-                connection,
-                normalized,
-                route_code=current["route_code"],
-                revision=int(current["revision"]) + 1,
-                supersedes_id=str(current["id"]),
-            )
-            _audit(
-                connection,
-                str(row["id"]),
-                "ROUTE_REVISION_CREATED",
-                actor=actor,
-                before=current,
-                after=row,
-                reason=data.get("reason"),
-            )
-            connection.commit()
-        return row
-
+    )
     updates = {field: normalized[field] for field in EDITABLE_FIELDS if field in normalized}
     route_changed = any(field in data for field in ("source", "payload", "destinations", "route", "timing", "routing_policy"))
-    if route_changed:
+    if governance_locked or route_changed:
         updates.update(
             {
                 "validation": {},
@@ -210,12 +189,22 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
                 "review_state": "UNREVIEWED",
             }
         )
+    if governance_locked:
+        updates["approval_state"] = "PENDING"
+        updates["origin"] = "AI_MODIFIED" if current["origin"] == "AI_GENERATED" else current["origin"]
     assignments = [sql.SQL("{} = %s").format(sql.Identifier(field)) for field in updates]
+    if governance_locked:
+        assignments.extend((sql.SQL("approved_at = NULL"), sql.SQL("approved_by = NULL")))
     values = [Jsonb(value) if field in JSON_FIELDS else value for field, value in updates.items()]
-    values.extend((actor, route_id))
+    values.extend((actor, route_id, current_project_id()))
     query = sql.SQL(
-        "UPDATE engineering_routing_entries SET {}, revision = revision + 1, "
-        "modified_by = %s, modified_at = now() WHERE id = %s RETURNING *"
+        "UPDATE engineering_routing_entries SET {}, revision = ("
+        "SELECT COALESCE(MAX(history.revision), 0) + 1 "
+        "FROM engineering_routing_entries AS history "
+        "WHERE history.project_id = engineering_routing_entries.project_id "
+        "AND history.route_code = engineering_routing_entries.route_code"
+        "), "
+        "modified_by = %s, modified_at = now() WHERE id = %s AND project_id = %s RETURNING *"
     ).format(sql.SQL(", ").join(assignments))
     with get_connection() as connection:
         row = connection.execute(query, values).fetchone()
@@ -234,8 +223,16 @@ def save_validation(route_id: str, validation: dict[str, Any], actor: str | None
     with get_connection() as connection:
         row = connection.execute(
             "UPDATE engineering_routing_entries SET validation = %s, status = %s, "
-            "review_state = %s, modified_at = now(), modified_by = %s WHERE id = %s RETURNING *",
-            (Jsonb(validation), status, "IN_REVIEW" if validation.get("valid") else "UNREVIEWED", actor, route_id),
+            "review_state = %s, modified_at = now(), modified_by = %s "
+            "WHERE id = %s AND project_id = %s RETURNING *",
+            (
+                Jsonb(validation),
+                status,
+                "IN_REVIEW" if validation.get("valid") else "UNREVIEWED",
+                actor,
+                route_id,
+                current_project_id(),
+            ),
         ).fetchone()
         _audit(connection, route_id, "ROUTE_VALIDATED", actor=actor, before=current, after=row, evidence=validation.get("evidence"))
         connection.commit()
@@ -250,13 +247,14 @@ def _publish_graph(connection, route: dict[str, Any], actor: str | None) -> None
             continue
         connection.execute(
             "INSERT INTO engineering_relations "
-            "(relation_type, source_type, source_id, target_type, target_id, attributes, source, "
+            "(project_id, relation_type, source_type, source_id, target_type, target_id, attributes, source, "
             "provenance, review_state, approval_state, created_by) "
-            "VALUES ('ROUTES_TO', 'HardwareNode', %s, 'HardwareNode', %s, %s, 'manual', %s, "
+            "VALUES (%s, 'ROUTES_TO', 'HardwareNode', %s, 'HardwareNode', %s, %s, 'manual', %s, "
             "'reviewed', 'approved', %s) ON CONFLICT "
-            "(relation_type, source_type, source_id, target_type, target_id) "
+            "(project_id, relation_type, source_type, source_id, target_type, target_id) "
             "DO UPDATE SET attributes = EXCLUDED.attributes, approval_state = 'approved'",
             (
+                current_project_id(),
                 source_id,
                 target_id,
                 Jsonb({"route_id": str(route["id"]), "route_code": route["route_code"]}),
@@ -267,11 +265,12 @@ def _publish_graph(connection, route: dict[str, Any], actor: str | None) -> None
     for signal_id in route["payload"].get("signal_ids", []):
         connection.execute(
             "INSERT INTO engineering_relations "
-            "(relation_type, source_type, source_id, target_type, target_id, attributes, source, "
+            "(project_id, relation_type, source_type, source_id, target_type, target_id, attributes, source, "
             "provenance, review_state, approval_state, created_by) "
-            "VALUES ('USES_ROUTE', 'Signal', %s, 'RoutingEntry', %s, %s, 'manual', %s, "
+            "VALUES (%s, 'USES_ROUTE', 'Signal', %s, 'RoutingEntry', %s, %s, 'manual', %s, "
             "'reviewed', 'approved', %s) ON CONFLICT DO NOTHING",
             (
+                current_project_id(),
                 signal_id,
                 route["id"],
                 Jsonb({"route_code": route["route_code"]}),
@@ -288,7 +287,8 @@ def approve_routes(route_ids: list[str], *, actor: str | None = None, approve_al
                 str(row["id"])
                 for row in connection.execute(
                     "SELECT id FROM engineering_routing_entries WHERE validation ->> 'valid' = 'true' "
-                    "AND approval_state = 'PENDING'"
+                    "AND approval_state = 'PENDING' AND project_id = %s",
+                    (current_project_id(),),
                 ).fetchall()
             ]
     approved: list[dict[str, Any]] = []
@@ -296,7 +296,9 @@ def approve_routes(route_ids: list[str], *, actor: str | None = None, approve_al
         for route_id in route_ids:
             validate_uuid(route_id)
             current = connection.execute(
-                "SELECT * FROM engineering_routing_entries WHERE id = %s FOR UPDATE", (route_id,)
+                "SELECT * FROM engineering_routing_entries "
+                "WHERE id = %s AND project_id = %s FOR UPDATE",
+                (route_id, current_project_id()),
             ).fetchone()
             if current is None:
                 raise NotFoundError(f"RoutingEntry {route_id} nicht gefunden.")
@@ -307,8 +309,8 @@ def approve_routes(route_ids: list[str], *, actor: str | None = None, approve_al
             row = connection.execute(
                 "UPDATE engineering_routing_entries SET status = 'APPROVED', review_state = 'REVIEWED', "
                 "approval_state = 'APPROVED', approved_by = %s, approved_at = now(), modified_by = %s, "
-                "modified_at = now() WHERE id = %s RETURNING *",
-                (actor, actor, route_id),
+                "modified_at = now() WHERE id = %s AND project_id = %s RETURNING *",
+                (actor, actor, route_id, current_project_id()),
             ).fetchone()
             _publish_graph(connection, row, actor)
             _audit(connection, route_id, "ROUTE_APPROVED", actor=actor, before=current, after=row)
@@ -323,14 +325,16 @@ def reject_routes(route_ids: list[str], *, actor: str | None = None, reason: str
         for route_id in route_ids:
             validate_uuid(route_id)
             current = connection.execute(
-                "SELECT * FROM engineering_routing_entries WHERE id = %s", (route_id,)
+                "SELECT * FROM engineering_routing_entries WHERE id = %s AND project_id = %s",
+                (route_id, current_project_id()),
             ).fetchone()
             if current is None:
                 raise NotFoundError(f"RoutingEntry {route_id} nicht gefunden.")
             row = connection.execute(
                 "UPDATE engineering_routing_entries SET status = 'REJECTED', review_state = 'REJECTED', "
-                "approval_state = 'REJECTED', modified_by = %s, modified_at = now() WHERE id = %s RETURNING *",
-                (actor, route_id),
+                "approval_state = 'REJECTED', modified_by = %s, modified_at = now() "
+                "WHERE id = %s AND project_id = %s RETURNING *",
+                (actor, route_id, current_project_id()),
             ).fetchone()
             _audit(connection, route_id, "ROUTE_REJECTED", actor=actor, before=current, after=row, reason=reason)
             rejected.append(row)
@@ -346,7 +350,10 @@ def delete_route(route_id: str, *, actor: str | None = None) -> None:
         )
     with get_connection() as connection:
         _audit(connection, route_id, "ROUTE_DELETED", actor=actor, before=current)
-        connection.execute("DELETE FROM engineering_routing_entries WHERE id = %s", (route_id,))
+        connection.execute(
+            "DELETE FROM engineering_routing_entries WHERE id = %s AND project_id = %s",
+            (route_id, current_project_id()),
+        )
         connection.commit()
 
 
@@ -358,10 +365,11 @@ def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as connection:
         row = connection.execute(
             "INSERT INTO engineering_routing_proposals "
-            "(prompt, target_objects, generated_routes, retrieved_context, evidence, confidence, "
+            "(project_id, prompt, target_objects, generated_routes, retrieved_context, evidence, confidence, "
             "validation_results, model, model_version, status, created_by) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'AI_GENERATED', %s) RETURNING *",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'AI_GENERATED', %s) RETURNING *",
             (
+                current_project_id(),
                 prompt,
                 Jsonb(data.get("target_objects", [])),
                 Jsonb(generated_routes),
@@ -389,13 +397,13 @@ def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_proposals(*, status: str | None = None, limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
-    values: list[Any] = []
-    where = ""
+    values: list[Any] = [current_project_id()]
+    where = " WHERE project_id = %s"
     if status:
         normalized = status.upper()
         if normalized not in PROPOSAL_STATUSES:
             raise EngineeringValidationError(f"Unbekannter Proposal-Status: {status!r}.")
-        where = " WHERE status = %s"
+        where += " AND status = %s"
         values.append(normalized)
     values.extend((limit, offset))
     with get_connection() as connection:
@@ -409,7 +417,8 @@ def get_proposal(proposal_id: str) -> dict[str, Any]:
     validate_uuid(proposal_id)
     with get_connection() as connection:
         row = connection.execute(
-            "SELECT * FROM engineering_routing_proposals WHERE proposal_id = %s", (proposal_id,)
+            "SELECT * FROM engineering_routing_proposals WHERE proposal_id = %s AND project_id = %s",
+            (proposal_id, current_project_id()),
         ).fetchone()
     if row is None:
         raise NotFoundError(f"RoutingProposal {proposal_id} nicht gefunden.")
@@ -425,8 +434,9 @@ def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as connection:
         row = connection.execute(
             "UPDATE engineering_routing_proposals SET generated_routes = %s, status = %s, "
-            "modified_by = %s, modified_at = now() WHERE proposal_id = %s RETURNING *",
-            (Jsonb(generated_routes), status, data.get("actor"), proposal_id),
+            "modified_by = %s, modified_at = now() "
+            "WHERE proposal_id = %s AND project_id = %s RETURNING *",
+            (Jsonb(generated_routes), status, data.get("actor"), proposal_id, current_project_id()),
         ).fetchone()
         connection.commit()
     return row
@@ -438,7 +448,8 @@ def delete_proposal(proposal_id: str, *, actor: str | None = None) -> None:
         raise EngineeringValidationError("Übernommene Routing-Proposals dürfen nicht gelöscht werden.")
     with get_connection() as connection:
         connection.execute(
-            "DELETE FROM engineering_routing_proposals WHERE proposal_id = %s", (proposal_id,)
+            "DELETE FROM engineering_routing_proposals WHERE proposal_id = %s AND project_id = %s",
+            (proposal_id, current_project_id()),
         )
         _audit(
             connection,
@@ -475,11 +486,11 @@ def accept_proposal_routes(proposal_id: str, indexes: list[int], *, actor: str |
 
 
 def list_audit_events(route_id: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
-    values: list[Any] = []
-    where = ""
+    values: list[Any] = [current_project_id()]
+    where = " WHERE project_id = %s"
     if route_id:
         validate_uuid(route_id)
-        where = " WHERE route_id = %s"
+        where += " AND route_id = %s"
         values.append(route_id)
     values.append(limit)
     with get_connection() as connection:
@@ -492,8 +503,9 @@ def list_audit_events(route_id: str | None = None, limit: int = 200) -> list[dic
 def list_route_versions(route_code: str) -> list[dict[str, Any]]:
     with get_connection() as connection:
         return connection.execute(
-            "SELECT * FROM engineering_routing_entries WHERE route_code = %s ORDER BY revision DESC",
-            (route_code,),
+            "SELECT * FROM engineering_routing_entries "
+            "WHERE route_code = %s AND project_id = %s ORDER BY revision DESC",
+            (route_code, current_project_id()),
         ).fetchall()
 
 
@@ -522,9 +534,10 @@ def create_rule(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as connection:
         row = connection.execute(
             "INSERT INTO engineering_routing_rules "
-            "(name, condition, action, priority, status, created_by, modified_by) "
-            "VALUES (%s, %s, %s, %s, 'DRAFT', %s, %s) RETURNING *",
+            "(project_id, name, condition, action, priority, status, created_by, modified_by) "
+            "VALUES (%s, %s, %s, %s, %s, 'DRAFT', %s, %s) RETURNING *",
             (
+                current_project_id(),
                 normalized["name"], Jsonb(normalized["condition"]), Jsonb(normalized["action"]),
                 normalized["priority"], data.get("actor"), data.get("actor"),
             ),
@@ -535,10 +548,10 @@ def create_rule(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_rules(*, status: str | None = None) -> list[dict[str, Any]]:
-    values: list[Any] = []
-    where = ""
+    values: list[Any] = [current_project_id()]
+    where = " WHERE project_id = %s"
     if status:
-        where = " WHERE status = %s"
+        where += " AND status = %s"
         values.append(status.upper())
     with get_connection() as connection:
         return connection.execute(
@@ -550,7 +563,8 @@ def get_rule(rule_id: str) -> dict[str, Any]:
     validate_uuid(rule_id)
     with get_connection() as connection:
         row = connection.execute(
-            "SELECT * FROM engineering_routing_rules WHERE id = %s", (rule_id,)
+            "SELECT * FROM engineering_routing_rules WHERE id = %s AND project_id = %s",
+            (rule_id, current_project_id()),
         ).fetchone()
     if row is None:
         raise NotFoundError(f"RoutingRule {rule_id} nicht gefunden.")
@@ -566,10 +580,11 @@ def update_rule(rule_id: str, data: dict[str, Any]) -> dict[str, Any]:
         row = connection.execute(
             "UPDATE engineering_routing_rules SET name = %s, condition = %s, action = %s, "
             "priority = %s, status = %s, version = version + 1, modified_by = %s, "
-            "modified_at = now() WHERE id = %s RETURNING *",
+            "modified_at = now() WHERE id = %s AND project_id = %s RETURNING *",
             (
                 normalized["name"], Jsonb(normalized["condition"]), Jsonb(normalized["action"]),
                 normalized["priority"], normalized["status"], data.get("actor"), rule_id,
+                current_project_id(),
             ),
         ).fetchone()
         _audit(connection, None, "ROUTING_RULE_EDITED", actor=data.get("actor"), before=current, after=row)
@@ -582,7 +597,10 @@ def delete_rule(rule_id: str, *, actor: str | None = None) -> None:
     if current["status"] in ("APPROVED", "RELEASED"):
         raise EngineeringValidationError("Freigegebene RoutingRules dürfen nicht gelöscht werden.")
     with get_connection() as connection:
-        connection.execute("DELETE FROM engineering_routing_rules WHERE id = %s", (rule_id,))
+        connection.execute(
+            "DELETE FROM engineering_routing_rules WHERE id = %s AND project_id = %s",
+            (rule_id, current_project_id()),
+        )
         _audit(connection, None, "ROUTING_RULE_DELETED", actor=actor, before=current)
         connection.commit()
 
@@ -602,20 +620,22 @@ def record_simulation_results(
         for route_id in route_ids:
             validate_uuid(route_id)
             row = connection.execute(
-                "SELECT id, route_code FROM engineering_routing_entries WHERE id = %s",
-                (route_id,),
+                "SELECT id, route_code FROM engineering_routing_entries "
+                "WHERE id = %s AND project_id = %s",
+                (route_id, current_project_id()),
             ).fetchone()
             if row is None:
                 continue
             connection.execute(
                 "INSERT INTO engineering_relations "
-                "(relation_type, source_type, source_id, target_type, target_id, attributes, source, "
+                "(project_id, relation_type, source_type, source_id, target_type, target_id, attributes, source, "
                 "provenance, review_state, approval_state, created_by) "
-                "VALUES ('SIMULATED_IN', 'RoutingEntry', %s, 'SimulationRun', %s, %s, "
+                "VALUES (%s, 'SIMULATED_IN', 'RoutingEntry', %s, 'SimulationRun', %s, %s, "
                 "'simulation_derived', %s, 'reviewed', 'approved', 'simulation-service') "
-                "ON CONFLICT (relation_type, source_type, source_id, target_type, target_id) "
+                "ON CONFLICT (project_id, relation_type, source_type, source_id, target_type, target_id) "
                 "DO UPDATE SET attributes = EXCLUDED.attributes",
                 (
+                    current_project_id(),
                     route_id,
                     job_id,
                     Jsonb({"job_id": job_id, "observation": observation}),

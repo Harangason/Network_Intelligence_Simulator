@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Fragment, useEffect, useMemo, useState } from "react";
+import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   createEngineeringObject,
   createEngineeringRelation,
@@ -30,9 +30,14 @@ import type {
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
+  EngSignal,
 } from "@/lib/types";
-import { setWorkflowContext } from "@/lib/workflow-api";
-import { queueEngineeringAgentTask, takePendingEngineeringAgentWizard } from "@/lib/agent-task-events";
+import { getWorkflow, setWorkflowContext } from "@/lib/workflow-api";
+import {
+  ENGINEERING_AGENT_WIZARD_OPEN_EVENT,
+  takePendingEngineeringAgentWizard,
+} from "@/lib/agent-task-events";
+import { readActiveProjectId } from "@/lib/user-settings";
 import { EngineeringAgentWizard } from "@/components/agent-chat-core";
 
 const RESOURCES: EngineeringResource[] = [
@@ -42,14 +47,17 @@ const RESOURCES: EngineeringResource[] = [
   "messages",
   "signals",
 ];
+const ENGINEERING_PAGE_SIZE = 50;
 
 const HARDWARE_PRESETS = [
   { label: "ECU", deviceType: "ECU" },
   { label: "Gateway", deviceType: "Gateway" },
   { label: "Sensor", deviceType: "SensorController" },
+  { label: "Aktor", deviceType: "ActuatorController" },
 ] as const;
 
 const REQUIREMENT_FIELDS = [
+  { key: "cycle_time_ms", label: "Zyklus", unit: "ms" },
   { key: "deadline_ms", label: "Deadline", unit: "ms" },
   { key: "timeout_ms", label: "Timeout", unit: "ms" },
   { key: "maximum_latency_ms", label: "Max. Latenz", unit: "ms" },
@@ -413,10 +421,19 @@ export function EngineeringWorkbench() {
   const [hardwarePreset, setHardwarePreset] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [showAgentWizard, setShowAgentWizard] = useState(false);
+  const [activeInterfaceIds, setActiveInterfaceIds] = useState<Set<string> | null>(null);
+  const [showUnusedInterfaces, setShowUnusedInterfaces] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (takePendingEngineeringAgentWizard()) setShowAgentWizard(true);
+    const openRequestedWizard = () => {
+      if (takePendingEngineeringAgentWizard(readActiveProjectId())) setShowAgentWizard(true);
+    };
+    openRequestedWizard();
+    window.addEventListener(ENGINEERING_AGENT_WIZARD_OPEN_EVENT, openRequestedWizard);
+    return () => window.removeEventListener(ENGINEERING_AGENT_WIZARD_OPEN_EVENT, openRequestedWizard);
   }, []);
 
   useEffect(() => {
@@ -444,7 +461,34 @@ export function EngineeringWorkbench() {
 
   useEffect(() => {
     setSelectedId(null);
+    setColumnFilters([]);
+    setPage(1);
   }, [resource]);
+
+  useEffect(() => {
+    if (resource !== "interfaces") {
+      setActiveInterfaceIds(null);
+      return;
+    }
+    let cancelled = false;
+    getWorkflow()
+      .then((state) => {
+        if (cancelled) return;
+        const ids = new Set<string>();
+        for (const node of state.topology.nodes ?? []) {
+          for (const port of node.ports ?? []) {
+            if (port.engineeringId) ids.add(port.engineeringId);
+          }
+        }
+        setActiveInterfaceIds(ids);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveInterfaceIds(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [resource, refreshKey]);
 
   useEffect(() => {
     if (!showAgentWizard) return;
@@ -465,7 +509,48 @@ export function EngineeringWorkbench() {
     return () => window.removeEventListener(ENGINEERING_MODEL_CHANGED_EVENT, handleModelChanged);
   }, [resource]);
 
-  const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId]);
+  const unusedNetworkInterfaces = useMemo(
+    () => resource === "interfaces" && activeInterfaceIds
+      ? items.filter((item) => (
+          item.provenance.origin === "network-editor"
+          && !activeInterfaceIds.has(item.id)
+        ))
+      : [],
+    [activeInterfaceIds, items, resource],
+  );
+  const baseVisibleItems = useMemo(
+    () => resource === "interfaces" && !showUnusedInterfaces && unusedNetworkInterfaces.length
+      ? items.filter((item) => !unusedNetworkInterfaces.some((unused) => unused.id === item.id))
+      : items,
+    [items, resource, showUnusedInterfaces, unusedNetworkInterfaces],
+  );
+  const visibleItems = useMemo(
+    () => baseVisibleItems.filter((item) => {
+      const values = resourceTableValues(resource, item, referenceNames);
+      return columnFilters.every((filter, index) => {
+        const query = (filter ?? "").trim().toLocaleLowerCase("de-DE");
+        return !query || (values[index] ?? "").toLocaleLowerCase("de-DE").includes(query);
+      });
+    }),
+    [baseVisibleItems, columnFilters, referenceNames, resource],
+  );
+  const totalPages = Math.max(1, Math.ceil(visibleItems.length / ENGINEERING_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedItems = useMemo(
+    () => visibleItems.slice(
+      (currentPage - 1) * ENGINEERING_PAGE_SIZE,
+      currentPage * ENGINEERING_PAGE_SIZE,
+    ),
+    [currentPage, visibleItems],
+  );
+  const selected = useMemo(
+    () => paginatedItems.find((item) => item.id === selectedId) ?? null,
+    [paginatedItems, selectedId],
+  );
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   useEffect(() => {
     void setWorkflowContext({
@@ -490,14 +575,22 @@ export function EngineeringWorkbench() {
 
   if (error) {
     return (
-      <div className="panel error-card">
-        <p className="eyebrow">Engineering-API nicht erreichbar</p>
-        <h2>{error}</h2>
-        <p className="muted">Prüfe Backend und Datenbankverbindung oder versuche es erneut.</p>
-        <button className="button secondary" onClick={refresh} type="button">
-          Erneut prüfen
-        </button>
-      </div>
+      <>
+        <div className="panel error-card">
+          <p className="eyebrow">Engineering-API nicht erreichbar</p>
+          <h2>{error}</h2>
+          <p className="muted">Prüfe Backend und Datenbankverbindung oder versuche es erneut.</p>
+          <div className="form-actions error-card-actions">
+            <button className="button secondary" onClick={refresh} type="button">
+              Erneut prüfen
+            </button>
+            <button className="button primary" onClick={() => setShowAgentWizard(true)} type="button">
+              Projekt-Wizard öffnen
+            </button>
+          </div>
+        </div>
+        {showAgentWizard && <EngineeringAgentWizardDialog onClose={() => setShowAgentWizard(false)} />}
+      </>
     );
   }
 
@@ -511,19 +604,11 @@ export function EngineeringWorkbench() {
             <h2>{RESOURCE_LABELS[resource]}</h2>
           </div>
           <div className="panel-heading-actions">
+            <button className="button secondary" onClick={() => setShowAgentWizard(true)} type="button">
+              Agent-Auftrag
+            </button>
             <button className="button secondary" onClick={() => setShowImport(true)} type="button">
               Importieren
-            </button>
-            <button
-              className="button primary"
-              onClick={() => {
-                setShowCreate(false);
-                setHardwarePreset(null);
-                setShowAgentWizard(true);
-              }}
-              type="button"
-            >
-              + Neu anlegen
             </button>
           </div>
         </div>
@@ -551,6 +636,40 @@ export function EngineeringWorkbench() {
           ))}
         </div>
 
+        <div className="eng-resource-wizard-bar">
+          <div>
+            <p className="eyebrow">Objekt-Wizard</p>
+            <strong>{RESOURCE_LABELS[resource]} geführt anlegen</strong>
+            <span>Identität → Zuordnung → technische Details → Prüfung</span>
+          </div>
+          <button
+            className="button primary"
+            onClick={() => {
+              setHardwarePreset(null);
+              setShowCreate(true);
+            }}
+            type="button"
+          >
+            Wizard starten
+          </button>
+        </div>
+
+        {resource === "interfaces" && unusedNetworkInterfaces.length > 0 && (
+          <label className="eng-unused-interface-toggle">
+            <input
+              checked={showUnusedInterfaces}
+              onChange={(event) => {
+                setShowUnusedInterfaces(event.target.checked);
+                setSelectedId(null);
+                setPage(1);
+              }}
+              type="checkbox"
+            />
+            <span>Verwaiste Netzwerk-Interfaces anzeigen</span>
+            <small>{unusedNetworkInterfaces.length} nicht mehr in der Topologie verwendet</small>
+          </label>
+        )}
+
         {resource === "hardware-nodes" && (
           <div
             aria-label="Hardware-Typ auswählen"
@@ -577,6 +696,10 @@ export function EngineeringWorkbench() {
           <CreateForm
             hardwarePreset={hardwarePreset}
             key={`${resource}:${hardwarePreset ?? "custom"}`}
+            onClose={() => {
+              setShowCreate(false);
+              setHardwarePreset(null);
+            }}
             resource={resource}
             schema={schema}
             onCreated={() => {
@@ -589,7 +712,7 @@ export function EngineeringWorkbench() {
 
         {loading ? (
           <div className="loading-panel">Lädt …</div>
-        ) : items.length === 0 ? (
+        ) : baseVisibleItems.length === 0 ? (
           <div className="empty-result">
             <span className="empty-icon">◇</span>
             <strong>Keine Objekte vorhanden</strong>
@@ -602,9 +725,38 @@ export function EngineeringWorkbench() {
                 <tr>
                   {RESOURCE_TABLE_HEADERS[resource].map((header) => <th key={header}>{header}</th>)}
                 </tr>
+                <tr className="eng-table-filter-row">
+                  {RESOURCE_TABLE_HEADERS[resource].map((header, index) => (
+                    <th key={`${header}:filter`}>
+                      <input
+                        aria-label={`${header} filtern`}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setColumnFilters((current) => {
+                            const next = [...current];
+                            next[index] = value;
+                            return next;
+                          });
+                          setSelectedId(null);
+                          setPage(1);
+                        }}
+                        placeholder="Filtern"
+                        type="search"
+                        value={columnFilters[index] ?? ""}
+                      />
+                    </th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {visibleItems.length === 0 && (
+                  <tr className="eng-table-filter-empty">
+                    <td colSpan={RESOURCE_TABLE_HEADERS[resource].length}>
+                      Keine Einträge entsprechen den Spaltenfiltern.
+                    </td>
+                  </tr>
+                )}
+                {paginatedItems.map((item) => (
                   <Fragment key={item.id}>
                     <tr
                       className={item.id === selectedId ? "selected" : ""}
@@ -621,6 +773,7 @@ export function EngineeringWorkbench() {
                         <td colSpan={RESOURCE_TABLE_HEADERS[resource].length}>
                           <DetailPanel
                             item={item}
+                            referenceNames={referenceNames}
                             resource={resource}
                             relations={relations}
                             schema={schema}
@@ -637,6 +790,32 @@ export function EngineeringWorkbench() {
                 ))}
               </tbody>
             </table>
+            {visibleItems.length > 0 && (
+              <footer className="eng-table-pagination">
+                <span>
+                  {(currentPage - 1) * ENGINEERING_PAGE_SIZE + 1}-{Math.min(currentPage * ENGINEERING_PAGE_SIZE, visibleItems.length)} von {visibleItems.length} Einträgen · {ENGINEERING_PAGE_SIZE} pro Seite
+                </span>
+                <div>
+                  <button
+                    className="button secondary tiny"
+                    disabled={currentPage === 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    type="button"
+                  >
+                    Zurück
+                  </button>
+                  <span>Seite {currentPage} von {totalPages}</span>
+                  <button
+                    className="button secondary tiny"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    type="button"
+                  >
+                    Weiter
+                  </button>
+                </div>
+              </footer>
+            )}
           </div>
         )}
       </div>
@@ -649,34 +828,35 @@ export function EngineeringWorkbench() {
         }}
       />
     )}
-    {showAgentWizard && (
-      <div
-        className="engineering-agent-wizard-backdrop"
-        onMouseDown={(event) => event.target === event.currentTarget && setShowAgentWizard(false)}
-        role="presentation"
-      >
-        <section aria-labelledby="engineering-agent-wizard-title" aria-modal="true" className="engineering-agent-wizard-dialog" role="dialog">
-          <header className="engineering-agent-wizard-header">
-            <div>
-              <p className="eyebrow">Geführte Anlage</p>
-              <h2 id="engineering-agent-wizard-title">Engineering-Auftrag erstellen</h2>
-              <span>Technische Vorgaben festlegen und anschließend vom Agenten ausführen lassen.</span>
-            </div>
-            <button aria-label="Wizard schließen" className="eng-dialog-close" onClick={() => setShowAgentWizard(false)} type="button">×</button>
-          </header>
-          <EngineeringAgentWizard
-            busy={false}
-            mode="full"
-            onSubmit={(text) => {
-              setShowAgentWizard(false);
-              queueEngineeringAgentTask(text);
-            }}
-            title="Technische Vorgaben"
-          />
-        </section>
-      </div>
-    )}
+    {showAgentWizard && <EngineeringAgentWizardDialog onClose={() => setShowAgentWizard(false)} />}
     </>
+  );
+}
+
+function EngineeringAgentWizardDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="engineering-agent-wizard-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      role="presentation"
+    >
+      <section aria-labelledby="engineering-agent-wizard-title" aria-modal="true" className="engineering-agent-wizard-dialog" role="dialog">
+        <header className="engineering-agent-wizard-header">
+          <div>
+            <p className="eyebrow">Geführte Anlage</p>
+            <h2 id="engineering-agent-wizard-title">Engineering-Auftrag erstellen</h2>
+            <span>Technische Vorgaben festlegen und anschließend vom Agenten ausführen lassen.</span>
+          </div>
+          <button aria-label="Wizard schließen" className="eng-dialog-close" onClick={onClose} type="button">×</button>
+        </header>
+        <EngineeringAgentWizard
+          busy={false}
+          mode="full"
+          onFinish={onClose}
+          title="Technische Vorgaben"
+        />
+      </section>
+    </div>
   );
 }
 
@@ -1455,15 +1635,20 @@ function ImportWizard({
 
 function CreateForm({
   hardwarePreset,
+  onClose,
   resource,
   schema,
   onCreated,
 }: {
   hardwarePreset: string | null;
+  onClose: () => void;
   resource: EngineeringResource;
   schema: EngineeringSchema | null;
   onCreated: () => void;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [step, setStep] = useState(0);
+  const [reviewValues, setReviewValues] = useState<Record<string, unknown>>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [deviceType, setDeviceType] = useState(
@@ -1473,6 +1658,11 @@ function CreateForm({
   const [parentId, setParentId] = useState("");
   const [loadingParents, setLoadingParents] = useState(false);
   const hierarchy = RESOURCE_HIERARCHY[resource];
+  const objectType = RESOURCE_TO_OBJECT_TYPE[resource];
+  const references = useMemo<Partial<Record<EngineeringResource, EngineeringObject[]>>>(() => (
+    hierarchy ? { [hierarchy.parentResource]: parents } : {}
+  ), [hierarchy, parents]);
+  const missing = missingProposalFields(objectType, reviewValues);
 
   useEffect(() => {
     if (!hierarchy) {
@@ -1501,22 +1691,26 @@ function CreateForm({
     };
   }, [hierarchy]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitting(true);
-    setFormError("");
-    const form = new FormData(event.currentTarget);
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !submitting) onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose, submitting]);
+
+  function optionalFormNumber(form: FormData, name: string) {
+    const value = form.get(name);
+    return value === null || value === "" ? null : Number(value);
+  }
+
+  function payloadFrom(form: FormData) {
     const payload: Record<string, unknown> = {
       name: form.get("name"),
       description: form.get("description") || null,
       domain: form.get("domain") || null,
     };
     const parent = parents.find((item) => item.id === parentId);
-    if (hierarchy && !parent) {
-      setFormError(`Wähle zuerst eine übergeordnete ${hierarchy.parentLabel}.`);
-      setSubmitting(false);
-      return;
-    }
     if (resource === "hardware-nodes") payload.device_type = form.get("device_type");
     if (resource === "functions") payload.hardware_node_id = parentId;
     if (resource === "interfaces") payload.interface_type = form.get("interface_type");
@@ -1528,16 +1722,45 @@ function CreateForm({
       payload.interface_id = parentId;
       payload.message_id_hex = form.get("message_id_hex") || null;
       payload.direction = form.get("direction") || null;
-      payload.cycle_ms = form.get("cycle_ms") ? Number(form.get("cycle_ms")) : null;
-      payload.dlc = form.get("dlc") ? Number(form.get("dlc")) : null;
+      payload.cycle_ms = optionalFormNumber(form, "cycle_ms");
+      payload.dlc = optionalFormNumber(form, "dlc");
       payload.configuration = requirementPayload(form, "requirement_");
     }
     if (resource === "signals") {
       payload.message_id = parentId;
       payload.display_name = form.get("display_name") || null;
-      payload.start_bit = form.get("start_bit") ? Number(form.get("start_bit")) : null;
-      payload.length_bits = form.get("length_bits") ? Number(form.get("length_bits")) : null;
+      payload.start_bit = optionalFormNumber(form, "start_bit");
+      payload.length_bits = optionalFormNumber(form, "length_bits");
+      payload.byte_order = form.get("byte_order") || null;
+      payload.data_type = form.get("data_type") || null;
+      payload.factor = optionalFormNumber(form, "factor");
+      payload.offset_value = optionalFormNumber(form, "offset_value");
+      payload.unit = form.get("unit") || null;
+      payload.min_value = optionalFormNumber(form, "min_value");
+      payload.max_value = optionalFormNumber(form, "max_value");
       payload.communication = requirementPayload(form, "requirement_");
+    }
+    return payload;
+  }
+
+  function openStep(nextStep: number) {
+    if (nextStep === WIZARD_STEPS.length - 1 && formRef.current) {
+      setReviewValues(payloadFrom(new FormData(formRef.current)));
+    }
+    setStep(nextStep);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    setFormError("");
+    const form = new FormData(event.currentTarget);
+    const payload = payloadFrom(form);
+    const parent = parents.find((item) => item.id === parentId);
+    if (hierarchy && !parent) {
+      setFormError(`Wähle zuerst eine übergeordnete ${hierarchy.parentLabel}.`);
+      setSubmitting(false);
+      return;
     }
     try {
       await createEngineeringObject(resource, payload);
@@ -1550,7 +1773,39 @@ function CreateForm({
   }
 
   return (
-    <form className="eng-create-form" onSubmit={submit}>
+    <div className="proposal-wizard-backdrop" onMouseDown={(event) => event.target === event.currentTarget && !submitting && onClose()} role="presentation">
+    <form aria-modal="true" className="proposal-wizard eng-object-wizard" onMouseDown={(event) => event.stopPropagation()} onSubmit={submit} ref={formRef} role="dialog">
+      <header>
+        <div>
+          <p className="eyebrow">Objekt-Wizard</p>
+          <h3>{RESOURCE_LABELS[resource]} anlegen</h3>
+          <span>Das Objekt wird nach der Prüfung im kanonischen Engineering-Modell gespeichert.</span>
+        </div>
+        <button className="button secondary tiny" disabled={submitting} onClick={onClose} type="button">Abbrechen</button>
+      </header>
+
+      <div className="proposal-wizard-steps">
+        {WIZARD_STEPS.map((label, index) => (
+          <button className={index === step ? "active" : ""} key={label} onClick={() => openStep(index)} type="button"><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>
+        ))}
+      </div>
+
+      <div className="proposal-wizard-grid" hidden={step !== 0}>
+        <div className="field">
+          <label htmlFor="name">Name</label>
+          <input autoFocus id="name" name="name" placeholder={hardwarePreset ? `${HARDWARE_PRESETS.find((item) => item.deviceType === hardwarePreset)?.label} Name` : undefined} required type="text" />
+        </div>
+        <div className="field">
+          <label htmlFor="domain">Domäne</label>
+          <input id="domain" name="domain" placeholder="z. B. automotive" type="text" />
+        </div>
+        <div className="field full-width">
+          <label htmlFor="description">Beschreibung</label>
+          <textarea id="description" name="description" rows={3} />
+        </div>
+      </div>
+
+      <div className="proposal-wizard-grid" hidden={step !== 1}>
       {hierarchy && (
         <div className="field eng-parent-field">
           <label htmlFor="parent_id">Enthalten in: {hierarchy.parentLabel}</label>
@@ -1574,24 +1829,6 @@ function CreateForm({
           )}
         </div>
       )}
-      <div className="form-grid">
-        <div className="field">
-          <label htmlFor="name">Name</label>
-          <input
-            autoFocus
-            id="name"
-            name="name"
-            placeholder={hardwarePreset ? `${HARDWARE_PRESETS.find((item) => item.deviceType === hardwarePreset)?.label} Name` : undefined}
-            required
-            type="text"
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="domain">Domäne</label>
-          <input id="domain" name="domain" type="text" placeholder="z. B. automotive" />
-        </div>
-      </div>
-
       {resource === "hardware-nodes" && (
         <div className="field">
           <label htmlFor="device_type">Gerätetyp</label>
@@ -1621,6 +1858,15 @@ function CreateForm({
               </option>
             ))}
           </select>
+        </div>
+      )}
+      </div>
+
+      <div className="proposal-wizard-grid three" hidden={step !== 2}>
+      {!(["messages", "signals"] as EngineeringResource[]).includes(resource) && (
+        <div className="proposal-wizard-help">
+          <strong>Keine weiteren technischen Pflichtfelder</strong>
+          <span>Identität und Zuordnung reichen für diesen Objekttyp aus. Zusätzliche Beziehungen können anschließend am Objekt gepflegt werden.</span>
         </div>
       )}
 
@@ -1663,33 +1909,46 @@ function CreateForm({
             <label htmlFor="length_bits">Länge (Bit)</label>
             <input id="length_bits" min="1" name="length_bits" type="number" />
           </div>
+          <div className="field"><label htmlFor="byte_order">Byte-Reihenfolge</label><select id="byte_order" name="byte_order"><option value="">—</option>{SIGNAL_BYTE_ORDERS.map((order) => <option key={order} value={order}>{order}</option>)}</select></div>
+          <div className="field"><label htmlFor="data_type">Datentyp</label><input id="data_type" list="create-signal-data-types" name="data_type" placeholder="unsigned" type="text" /><datalist id="create-signal-data-types"><option value="unsigned" /><option value="signed" /><option value="float" /><option value="boolean" /><option value="string" /><option value="bytes" /></datalist></div>
+          <div className="field"><label htmlFor="factor">Faktor</label><input id="factor" name="factor" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="offset_value">Offset</label><input id="offset_value" name="offset_value" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="unit">Einheit</label><input id="unit" name="unit" type="text" /></div>
+          <div className="field"><label htmlFor="min_value">Minimum</label><input id="min_value" name="min_value" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="max_value">Maximum</label><input id="max_value" name="max_value" step="any" type="number" /></div>
         </div>
         <RequirementFields prefix="requirement_" />
         </>
       )}
+      </div>
 
-      <div className="field full-width">
-        <label htmlFor="description">Beschreibung</label>
-        <textarea id="description" name="description" rows={2} />
+      <div className="proposal-wizard-review" hidden={step !== 3}>
+        <div className={missing.length ? "proposal-wizard-verdict invalid" : "proposal-wizard-verdict valid"}>
+          <strong>{missing.length ? "Noch nicht vollständig" : "Bereit zum Anlegen"}</strong>
+          <span>{missing.length ? `${missing.length} Pflichtfeld(er) fehlen.` : "Alle bekannten Pflichtfelder sind gefüllt."}</span>
+        </div>
+        {missing.length > 0 && <div className="proposal-wizard-checks">{missing.map((field) => <span key={field}>{FIELD_LABELS[field] ?? field}</span>)}</div>}
+        <ProposalWizardSummary objectType={objectType} references={references} values={reviewValues} />
       </div>
 
       {formError && <div className="notice error">{formError}</div>}
 
-      <div className="form-actions">
-        <button
-          className="button primary"
-          disabled={submitting || Boolean(hierarchy && (loadingParents || !parentId))}
-          type="submit"
-        >
-          {submitting ? "Wird angelegt …" : "Anlegen"}
-        </button>
-      </div>
+      <footer>
+        <button className="button secondary" disabled={step === 0 || submitting} onClick={() => openStep(Math.max(0, step - 1))} type="button">Zurück</button>
+        {step < WIZARD_STEPS.length - 1 ? (
+          <button className="button primary" disabled={loadingParents} onClick={() => openStep(Math.min(WIZARD_STEPS.length - 1, step + 1))} type="button">Weiter</button>
+        ) : (
+          <button className="button primary" disabled={submitting || missing.length > 0 || Boolean(hierarchy && !parentId)} type="submit">{submitting ? "Wird angelegt …" : "Objekt anlegen"}</button>
+        )}
+      </footer>
     </form>
+    </div>
   );
 }
 
 function DetailPanel({
   item,
+  referenceNames,
   resource,
   relations,
   schema,
@@ -1697,6 +1956,7 @@ function DetailPanel({
   onDeleted,
 }: {
   item: EngineeringObject;
+  referenceNames: Record<string, string>;
   resource: EngineeringResource;
   relations: EngineeringRelation[];
   schema: EngineeringSchema | null;
@@ -1810,6 +2070,9 @@ function DetailPanel({
               <dd>{item.approval_state}</dd>
             </div>
           </dl>
+          {resource === "signals" && "start_bit" in item && (
+            <SignalParameterOverview item={item} referenceNames={referenceNames} />
+          )}
           {item.description && <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>{item.description}</p>}
 
           <div className="section-title">
@@ -1889,13 +2152,12 @@ function DetailPanel({
             </p>
           ) : (
             <ul className="eng-relation-list">
-              {relations.map((relation) => (
-                <li key={relation.id}>
+              {relations.map((relation) => {
+                const relationName = typeof relation.attributes?.name === "string" ? relation.attributes.name : "";
+                const relationDescription = typeof relation.attributes?.description === "string" ? relation.attributes.description : "";
+                return <li key={relation.id}>
                   <span className="tag">{relation.relation_type}</span>
-                  <span className="mono muted" style={{ fontSize: 11 }}>
-                    {relation.source_type}:{relation.source_id.slice(0, 8)} →{" "}
-                    {relation.target_type}:{relation.target_id.slice(0, 8)}
-                  </span>
+                  <span className="eng-relation-content"><strong>{relationName || relation.relation_type}</strong><small>{relation.source_type}:{relation.source_id.slice(0, 8)} → {relation.target_type}:{relation.target_id.slice(0, 8)}</small>{relationDescription && <small>{relationDescription}</small>}</span>
                   <button
                     aria-label="Relation löschen"
                     className="eng-relation-remove"
@@ -1906,7 +2168,7 @@ function DetailPanel({
                     ×
                   </button>
                 </li>
-              ))}
+              })}
             </ul>
           )}
         </div>
@@ -1914,6 +2176,57 @@ function DetailPanel({
 
       <ProposalReviewPanel item={item} onChanged={onChanged} resource={resource} />
     </div>
+  );
+}
+
+function signalParameterValue(value: unknown, unit?: string | null) {
+  if (value === null || value === undefined || value === "") return "—";
+  const suffix = unit ? ` ${unit}` : "";
+  return `${String(value)}${suffix}`;
+}
+
+function SignalParameterOverview({
+  item,
+  referenceNames,
+}: {
+  item: EngSignal;
+  referenceNames: Record<string, string>;
+}) {
+  const communication = item.communication ?? {};
+  const message = item.message_id ? referenceNames[item.message_id] ?? item.message_id : "—";
+  return (
+    <>
+      <div className="section-title signal-parameter-heading">
+        <span>Signalparameter</span>
+      </div>
+      <dl className="overview-list eng-signal-parameter-list">
+        <div><dt>Nachricht</dt><dd>{message}</dd></div>
+        <div><dt>Anzeigename</dt><dd>{signalParameterValue(item.display_name)}</dd></div>
+        <div><dt>Start-Bit</dt><dd>{signalParameterValue(item.start_bit)}</dd></div>
+        <div><dt>Länge</dt><dd>{signalParameterValue(item.length_bits, "Bit")}</dd></div>
+        <div><dt>Byte-Reihenfolge</dt><dd>{signalParameterValue(item.byte_order)}</dd></div>
+        <div><dt>Datentyp</dt><dd>{signalParameterValue(item.data_type)}</dd></div>
+        <div><dt>Faktor</dt><dd>{signalParameterValue(item.factor)}</dd></div>
+        <div><dt>Offset</dt><dd>{signalParameterValue(item.offset_value)}</dd></div>
+        <div><dt>Einheit</dt><dd>{signalParameterValue(item.unit)}</dd></div>
+        <div><dt>Minimum</dt><dd>{signalParameterValue(item.min_value, item.unit)}</dd></div>
+        <div><dt>Maximum</dt><dd>{signalParameterValue(item.max_value, item.unit)}</dd></div>
+      </dl>
+
+      <div className="section-title signal-parameter-heading">
+        <span>Timing &amp; Qualität</span>
+      </div>
+      <dl className="overview-list eng-signal-parameter-list">
+        {REQUIREMENT_FIELDS.map((field) => (
+          <div key={field.key}>
+            <dt>{field.label}</dt>
+            <dd>{signalParameterValue(communication[field.key], field.unit)}</dd>
+          </div>
+        ))}
+        <div><dt>Priorität</dt><dd>{signalParameterValue(communication.priority)}</dd></div>
+        <div><dt>Reliability</dt><dd>{signalParameterValue(communication.reliability_requirement)}</dd></div>
+      </dl>
+    </>
   );
 }
 
@@ -2072,18 +2385,26 @@ function EditObjectForm({
 
       {resource === "signals" && "start_bit" in item && (
         <>
-        <div className="form-grid three">
-          <div className="field"><label htmlFor="edit_display_name">Anzeigename</label><input defaultValue={item.display_name ?? ""} id="edit_display_name" name="edit_display_name" type="text" /></div>
-          <div className="field"><label htmlFor="edit_start_bit">Start-Bit</label><input defaultValue={item.start_bit ?? ""} id="edit_start_bit" min="0" name="edit_start_bit" type="number" /></div>
-          <div className="field"><label htmlFor="edit_length_bits">Länge (Bit)</label><input defaultValue={item.length_bits ?? ""} id="edit_length_bits" min="1" name="edit_length_bits" type="number" /></div>
-          <div className="field"><label htmlFor="edit_byte_order">Byte-Reihenfolge</label><select defaultValue={item.byte_order ?? ""} id="edit_byte_order" name="edit_byte_order"><option value="">—</option><option value="little_endian">little_endian</option><option value="big_endian">big_endian</option></select></div>
-          <div className="field"><label htmlFor="edit_data_type">Datentyp</label><input defaultValue={item.data_type ?? ""} id="edit_data_type" name="edit_data_type" type="text" /></div>
-          <div className="field"><label htmlFor="edit_unit">Einheit</label><input defaultValue={item.unit ?? ""} id="edit_unit" name="edit_unit" type="text" /></div>
-          <div className="field"><label htmlFor="edit_factor">Faktor</label><input defaultValue={item.factor ?? ""} id="edit_factor" name="edit_factor" step="any" type="number" /></div>
-          <div className="field"><label htmlFor="edit_offset_value">Offset</label><input defaultValue={item.offset_value ?? ""} id="edit_offset_value" name="edit_offset_value" step="any" type="number" /></div>
-          <div className="field"><label htmlFor="edit_min_value">Minimum</label><input defaultValue={item.min_value ?? ""} id="edit_min_value" name="edit_min_value" step="any" type="number" /></div>
-          <div className="field"><label htmlFor="edit_max_value">Maximum</label><input defaultValue={item.max_value ?? ""} id="edit_max_value" name="edit_max_value" step="any" type="number" /></div>
-        </div>
+        <fieldset className="eng-requirement-fields eng-signal-edit-group">
+          <legend>Signal-Layout &amp; Codierung</legend>
+          <div className="form-grid three">
+            <div className="field"><label htmlFor="edit_display_name">Anzeigename</label><input defaultValue={item.display_name ?? ""} id="edit_display_name" name="edit_display_name" type="text" /></div>
+            <div className="field"><label htmlFor="edit_start_bit">Start-Bit</label><input defaultValue={item.start_bit ?? ""} id="edit_start_bit" min="0" name="edit_start_bit" type="number" /></div>
+            <div className="field"><label htmlFor="edit_length_bits">Länge (Bit)</label><input defaultValue={item.length_bits ?? ""} id="edit_length_bits" min="1" name="edit_length_bits" type="number" /></div>
+            <div className="field"><label htmlFor="edit_byte_order">Byte-Reihenfolge</label><select defaultValue={item.byte_order ?? ""} id="edit_byte_order" name="edit_byte_order"><option value="">—</option><option value="little_endian">little_endian</option><option value="big_endian">big_endian</option></select></div>
+            <div className="field"><label htmlFor="edit_data_type">Datentyp</label><input defaultValue={item.data_type ?? ""} id="edit_data_type" list="signal-data-types" name="edit_data_type" type="text" /><datalist id="signal-data-types"><option value="unsigned" /><option value="signed" /><option value="float" /><option value="boolean" /><option value="string" /><option value="bytes" /></datalist></div>
+          </div>
+        </fieldset>
+        <fieldset className="eng-requirement-fields eng-signal-edit-group">
+          <legend>Physikalische Skalierung</legend>
+          <div className="form-grid three">
+            <div className="field"><label htmlFor="edit_factor">Faktor</label><input defaultValue={item.factor ?? ""} id="edit_factor" name="edit_factor" step="any" type="number" /></div>
+            <div className="field"><label htmlFor="edit_offset_value">Offset</label><input defaultValue={item.offset_value ?? ""} id="edit_offset_value" name="edit_offset_value" step="any" type="number" /></div>
+            <div className="field"><label htmlFor="edit_unit">Einheit</label><input defaultValue={item.unit ?? ""} id="edit_unit" name="edit_unit" type="text" /></div>
+            <div className="field"><label htmlFor="edit_min_value">Minimum</label><input defaultValue={item.min_value ?? ""} id="edit_min_value" name="edit_min_value" step="any" type="number" /></div>
+            <div className="field"><label htmlFor="edit_max_value">Maximum</label><input defaultValue={item.max_value ?? ""} id="edit_max_value" name="edit_max_value" step="any" type="number" /></div>
+          </div>
+        </fieldset>
         <RequirementFields defaults={item.communication} prefix="edit_requirement_" />
         </>
       )}

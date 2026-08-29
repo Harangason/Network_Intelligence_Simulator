@@ -159,16 +159,45 @@ class GraphAnalyticsService:
     CALCULATION_VERSION = "1.0"
 
     @staticmethod
-    def _edges(topology: dict[str, Any], relations: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    def _edges(
+        topology: dict[str, Any],
+        relations: list[dict[str, Any]],
+        interfaces: list[dict[str, Any]],
+    ) -> list[tuple[str, str]]:
         edges: set[tuple[str, str]] = set()
+        topology_nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
+        topology_to_hardware = {
+            str(node.get("id")): str(
+                node.get("engineeringId")
+                or node.get("engineering_id")
+                or node.get("id")
+            )
+            for node in topology_nodes
+            if isinstance(node, dict) and node.get("id")
+        }
+        interface_to_hardware = {
+            str(interface.get("id")): str(interface.get("hardware_node_id"))
+            for interface in interfaces
+            if interface.get("id") and interface.get("hardware_node_id")
+        }
         for edge in topology.get("edges") or []:
             source = edge.get("source") or edge.get("sourceId") or edge.get("from")
             target = edge.get("target") or edge.get("targetId") or edge.get("to")
             if source and target:
-                edges.add((str(source), str(target)))
+                source_id = topology_to_hardware.get(str(source), str(source))
+                target_id = topology_to_hardware.get(str(target), str(target))
+                if source_id != target_id:
+                    edges.add((source_id, target_id))
         for relation in relations:
             if relation.get("relation_type") == "CONNECTED_TO":
-                edges.add((str(relation.get("source_id")), str(relation.get("target_id"))))
+                source_id = str(relation.get("source_id") or "")
+                target_id = str(relation.get("target_id") or "")
+                if str(relation.get("source_type") or "").lower() == "interface":
+                    source_id = interface_to_hardware.get(source_id, source_id)
+                if str(relation.get("target_type") or "").lower() == "interface":
+                    target_id = interface_to_hardware.get(target_id, target_id)
+                if source_id and target_id and source_id != target_id:
+                    edges.add((source_id, target_id))
         return sorted(edges)
 
     @staticmethod
@@ -216,7 +245,7 @@ class GraphAnalyticsService:
     ) -> dict[str, Any]:
         nodes = {str(item.get("id")) for item in hardware}
         node_names = {str(item.get("id")): str(item.get("name") or item.get("id")) for item in hardware}
-        edges = self._edges(topology, relations)
+        edges = self._edges(topology, relations, interfaces)
         adjacency: dict[str, set[str]] = defaultdict(set)
         for source, target in edges:
             nodes.update((source, target))

@@ -14,6 +14,10 @@ import {
   type IntelligenceSnapshot,
   type OptimizationProposal,
 } from "@/lib/workflow-api";
+import {
+  ENGINEERING_AGENT_OPEN_EVENT,
+  queueEngineeringAgentTask,
+} from "@/lib/agent-task-events";
 import { notifyWorkflowChanged } from "./workflow-header";
 
 type View = "overview" | "analytics" | "insights" | "knowledge";
@@ -188,7 +192,7 @@ function Insights({ snapshot, proposals, onCreate, onReview }: { snapshot: Intel
     <div className="intelligence-view">
       <section className="intelligence-section full">
         <div className="section-heading"><div><p className="eyebrow">Recommendations</p><h3>Priorisierte Verbesserungen</h3></div><span className="governance-note">Proposal → Review → Approval</span></div>
-        <div className="recommendation-list">{recommendations.map((item, index) => <article key={item.candidate_id}><div className="recommendation-priority"><span>Priority {index + 1}</span><strong>{item.priority}</strong></div><div><h4>{item.problem}</h4><p>{item.recommendation}</p><small>{item.category} · Confidence {(item.confidence * 100).toFixed(0)} % · Effort {item.implementation_effort}</small></div><div className="recommendation-actions"><button className="button secondary tiny" onClick={() => askAgent(`Erkläre mit Evidence und Graph-Kontext: ${item.problem}`)} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(item)} type="button">Create Proposal</button></div></article>)}</div>
+        <div className="recommendation-list">{recommendations.map((item, index) => <article key={item.candidate_id}><div className="recommendation-priority"><span>Priority {index + 1}</span><strong>{item.priority}</strong></div><div><h4>{item.problem}</h4><p>{item.recommendation}</p><small>{item.category} · Confidence {(item.confidence * 100).toFixed(0)} % · Effort {item.implementation_effort}</small></div><div className="recommendation-actions"><button className="button secondary tiny" onClick={() => askAgent(buildRecommendationAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(item)} type="button">Create Proposal</button></div></article>)}</div>
       </section>
 
       {!!proposals.length && <section className="intelligence-section full"><div className="section-heading"><div><p className="eyebrow">Proposal governance</p><h3>Human Review</h3></div></div><div className="proposal-list">{proposals.map((item) => <article key={item.proposal_id}><div><Status value={item.status} /><h4>{item.problem}</h4><p>{item.recommendation}</p></div><div className="recommendation-actions"><button className="button secondary tiny" disabled={item.status !== "PROPOSED"} onClick={() => void onReview(item.proposal_id, "UNDER_REVIEW")} type="button">Review</button><button className="button primary tiny" disabled={!(["PROPOSED", "UNDER_REVIEW"] as string[]).includes(item.status)} onClick={() => void onReview(item.proposal_id, "ACCEPTED")} type="button">Accept</button><button className="button danger tiny" disabled={!(["PROPOSED", "UNDER_REVIEW"] as string[]).includes(item.status)} onClick={() => void onReview(item.proposal_id, "REJECTED")} type="button">Reject</button></div></article>)}</div></section>}
@@ -245,7 +249,7 @@ function IssueTable({ issues, proposals, onCreate }: { issues: IntelligenceIssue
     <section className="intelligence-section full issue-table-section">
       <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><span>{filtered.length} von {issues.length}</span></div>
       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; return <Fragment key={rowKey}><tr><td><Status value={item.severity} /></td><td>{item.category}</td><td><strong>{item.object_id}</strong><small>{item.object_type}</small></td><td>{item.problem}<small>{item.code}</small></td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><Link className="button secondary tiny" href={objectLink(item)}>{item.object_type === "RoutingEntry" ? "Open Route" : "Open Object"}</Link><Link className="button secondary tiny" href="/studio?mode=network">Open Network</Link><button className="button secondary tiny" onClick={() => setExpanded((current) => current === rowKey ? "" : rowKey)} type="button">Evidence</button><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(`Analysiere ${item.code} für ${item.object_id}: ${item.problem}`)} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>{expanded === rowKey && <tr className="issue-evidence-row"><td colSpan={8}><strong>Evidence & Provenance</strong><pre>{JSON.stringify({ evidence: item.evidence, affected_objects: item.affected_objects, cause: item.detected_cause }, null, 2)}</pre></td></tr>}</Fragment>; })}</tbody></table></div>
+      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; return <Fragment key={rowKey}><tr><td><Status value={item.severity} /></td><td>{item.category}</td><td><strong>{item.object_id}</strong><small>{item.object_type}</small></td><td>{item.problem}<small>{item.code}</small></td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><Link className="button secondary tiny" href={objectLink(item)}>{item.object_type === "RoutingEntry" ? "Open Route" : "Open Object"}</Link><Link className="button secondary tiny" href="/studio?mode=network">Open Network</Link><button className="button secondary tiny" onClick={() => setExpanded((current) => current === rowKey ? "" : rowKey)} type="button">Evidence</button><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>{expanded === rowKey && <tr className="issue-evidence-row"><td colSpan={8}><strong>Evidence & Provenance</strong><pre>{JSON.stringify({ evidence: item.evidence, affected_objects: item.affected_objects, cause: item.detected_cause }, null, 2)}</pre></td></tr>}</Fragment>; })}</tbody></table></div>
       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
     </section>
   );
@@ -297,8 +301,44 @@ function recommendationFromIssue(issue: IntelligenceIssue): IntelligenceRecommen
   };
 }
 
+function buildIssueAgentPrompt(issue: IntelligenceIssue) {
+  return [
+    "Analysiere diesen Intelligence-Befund als Engineering-Agent.",
+    "Nutze die verfügbaren Simulator-Tools, prüfe Status, Graph-/Netzwerk-Kontext und Evidence, und erkläre präzise, wie der Befund entstehen konnte.",
+    "Bewerte danach konkrete Verbesserungen. Wenn das Modell wirklich lückenhaft ist, lege einen OptimizationProposal-Kandidaten mit klarer Begründung zur Human-Review an; ändere keine Engineering-Daten ohne Review.",
+    "",
+    `Befund-Code: ${issue.code}`,
+    `Severity: ${issue.severity}`,
+    `Kategorie: ${issue.category}`,
+    `Objekt: ${issue.object_type} ${issue.object_id}`,
+    `Problem: ${issue.problem}`,
+    `Erkannte Ursache: ${issue.detected_cause}`,
+    `Empfehlung der deterministischen Analyse: ${issue.recommendation}`,
+    `Betroffene Objekte: ${issue.affected_objects.length ? issue.affected_objects.join(", ") : issue.object_id}`,
+    `Evidence: ${JSON.stringify(issue.evidence).slice(0, 1800)}`,
+  ].join("\n");
+}
+
+function buildRecommendationAgentPrompt(item: IntelligenceRecommendation) {
+  return [
+    "Bewerte diese Intelligence-Empfehlung als Engineering-Agent.",
+    "Prüfe Evidence, Graph-Kontext und Umsetzungsrisiko. Erkläre, ob der Vorschlag technisch sinnvoll ist, und lege bei belastbarer Evidence einen OptimizationProposal-Kandidaten zur Human-Review an.",
+    "",
+    `Kategorie: ${item.category}`,
+    `Problem: ${item.problem}`,
+    `Empfehlung: ${item.recommendation}`,
+    `Priorität: ${item.priority}`,
+    `Confidence: ${(item.confidence * 100).toFixed(0)} %`,
+    `Effort: ${item.implementation_effort}`,
+    `Betroffene Objekte: ${item.affected_objects.join(", ")}`,
+    `Evidence: ${JSON.stringify(item.evidence).slice(0, 1800)}`,
+    `Graph-Kontext: ${JSON.stringify(item.graph_context).slice(0, 1200)}`,
+  ].join("\n");
+}
+
 function askAgent(question: string) {
-  window.dispatchEvent(new CustomEvent("engineering-agent:ask", { detail: question }));
+  window.dispatchEvent(new CustomEvent(ENGINEERING_AGENT_OPEN_EVENT));
+  queueEngineeringAgentTask(question);
 }
 
 function arrayOfRecords(value: unknown): Array<Record<string, unknown>> {

@@ -17,6 +17,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from .db import get_connection
+from .project_context import current_project_id
 from .models import (
     APPROVAL_STATES,
     EngineeringValidationError,
@@ -56,11 +57,12 @@ def create_relation(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as conn:
         row = conn.execute(
             "INSERT INTO engineering_relations "
-            "(relation_type, source_type, source_id, target_type, target_id, "
+            "(project_id, relation_type, source_type, source_id, target_type, target_id, "
             "attributes, source, provenance, confidence, review_state, "
             "approval_state, created_by) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
             (
+                current_project_id(),
                 data["relation_type"],
                 data["source_type"],
                 data["source_id"],
@@ -83,7 +85,8 @@ def get_relation(relation_id: str) -> dict[str, Any]:
     _validate_uuid(relation_id)
     with get_connection() as conn:
         row = conn.execute(
-            "SELECT * FROM engineering_relations WHERE id = %s", (relation_id,)
+            "SELECT * FROM engineering_relations WHERE id = %s AND project_id = %s",
+            (relation_id, current_project_id()),
         ).fetchone()
     if row is None:
         raise NotFoundError(f"Relation {relation_id} nicht gefunden.")
@@ -98,8 +101,8 @@ def list_relations(
     limit: int = 200,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
-    clauses: list[sql.Composable] = []
-    values: list[Any] = []
+    clauses: list[sql.Composable] = [sql.SQL("project_id = %s")]
+    values: list[Any] = [current_project_id()]
 
     if object_type and object_id:
         _validate_uuid(object_id)
@@ -113,7 +116,7 @@ def list_relations(
         clauses.append(sql.SQL("relation_type = %s"))
         values.append(relation_type)
 
-    where_sql = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(clauses) if clauses else sql.SQL("")
+    where_sql = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(clauses)
     query = sql.SQL(
         "SELECT * FROM engineering_relations{where} ORDER BY created_at DESC LIMIT %s OFFSET %s"
     ).format(where=where_sql)
@@ -127,5 +130,8 @@ def list_relations(
 def delete_relation(relation_id: str) -> None:
     get_relation(relation_id)
     with get_connection() as conn:
-        conn.execute("DELETE FROM engineering_relations WHERE id = %s", (relation_id,))
+        conn.execute(
+            "DELETE FROM engineering_relations WHERE id = %s AND project_id = %s",
+            (relation_id, current_project_id()),
+        )
         conn.commit()

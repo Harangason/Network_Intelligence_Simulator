@@ -171,6 +171,64 @@ def test_hierarchy_relations_are_created_automatically() -> None:
     client.delete(f"/api/engineering/hardware-nodes/{node['id']}")
 
 
+def test_approved_engineering_proposal_invalidates_workflow() -> None:
+    client = _client()
+    headers = {"X-Project-ID": "pytest-proposal-workflow-invalidation"}
+    before = client.get("/api/engineering/workflow", headers=headers).get_json()
+
+    proposal_response = client.post(
+        "/api/engineering/proposals",
+        headers=headers,
+        json={
+            "proposal_type": "OBJECT",
+            "target_object": {"resource": "hardware-nodes"},
+            "prompt": "Erzeuge einen Hardware-Knoten fuer den Mutationstest.",
+            "model": "pytest",
+            "proposed_objects": [
+                {
+                    "object_type": "HardwareNode",
+                    "resource": "hardware-nodes",
+                    "name": "Proposal-Workflow-Test-ECU",
+                    "device_type": "ECU",
+                    "domain": "automotive",
+                }
+            ],
+            "created_by": "pytest",
+        },
+    )
+    assert proposal_response.status_code == 201
+    proposal_id = proposal_response.get_json()["proposal_id"]
+
+    validation = client.post(
+        f"/api/engineering/proposals/{proposal_id}/validate",
+        headers=headers,
+        json={"actor": "pytest"},
+    )
+    assert validation.status_code == 200
+    unchanged = client.get("/api/engineering/workflow", headers=headers).get_json()
+    assert unchanged["versions"]["engineering_model"] == before["versions"]["engineering_model"]
+
+    approval = client.post(
+        f"/api/engineering/proposals/{proposal_id}/approve",
+        headers=headers,
+        json={"actor": "pytest"},
+    )
+    assert approval.status_code == 200
+    after = client.get("/api/engineering/workflow", headers=headers).get_json()
+    assert after["versions"]["engineering_model"] == before["versions"]["engineering_model"] + 1
+    assert after["active_step"] == "engineering_model"
+    assert after["statuses"]["engineering_model"] == "IN_PROGRESS"
+
+    repeated_approval = client.post(
+        f"/api/engineering/proposals/{proposal_id}/approve",
+        headers=headers,
+        json={"actor": "pytest"},
+    )
+    assert repeated_approval.status_code == 200
+    after_repeat = client.get("/api/engineering/workflow", headers=headers).get_json()
+    assert after_repeat["versions"]["engineering_model"] == after["versions"]["engineering_model"]
+
+
 def test_network_topology_sync_is_idempotent() -> None:
     client = _client()
     topology_id = "pytest-network-sync"
@@ -193,6 +251,10 @@ def test_network_topology_sync_is_idempotent() -> None:
         "edges": [
             {
                 "id": "gateway-ecu",
+                "name": "Gateway zu Test ECU",
+                "relationType": "CONNECTED_VIA",
+                "description": "Manuell definierte CAN-FD-Verbindung",
+                "direction": "BIDIRECTIONAL",
                 "source": "gateway",
                 "sourcePort": "gateway-can",
                 "target": "ecu",
@@ -217,10 +279,203 @@ def test_network_topology_sync_is_idempotent() -> None:
         "engineering_relation_id"
     ]
 
+    payload["edges"][0].update(
+        {
+            "name": "Gateway kommuniziert mit Test ECU",
+            "relationType": "COMMUNICATES_WITH",
+            "description": "Aktualisierte gerichtete CAN-FD-Verbindung",
+            "direction": "SOURCE_TO_TARGET",
+        }
+    )
+    update_response = client.post("/api/engineering/topology/sync", json=payload)
+    assert update_response.status_code == 200
+    updated = update_response.get_json()
+    assert updated["edges"][0]["engineering_relation_id"] == first["edges"][0][
+        "engineering_relation_id"
+    ]
+
+    relation_response = client.get(
+        "/api/engineering/relations?relation_type=COMMUNICATES_WITH"
+    )
+    assert relation_response.status_code == 200
+    relation = next(
+        item
+        for item in relation_response.get_json()["items"]
+        if item["id"] == first["edges"][0]["engineering_relation_id"]
+    )
+    assert relation["attributes"]["name"] == "Gateway kommuniziert mit Test ECU"
+    assert relation["attributes"]["description"] == "Aktualisierte gerichtete CAN-FD-Verbindung"
+    assert relation["attributes"]["direction"] == "SOURCE_TO_TARGET"
+
     for node in first["nodes"]:
         for interface in node["interfaces"]:
             client.delete(f"/api/engineering/interfaces/{interface['engineering_id']}")
     for node in first["nodes"]:
+        client.delete(f"/api/engineering/functions/{node['function_id']}")
+        client.delete(f"/api/engineering/hardware-nodes/{node['engineering_id']}")
+
+
+def test_network_topology_sync_reuses_existing_compatible_interface() -> None:
+    client = _client()
+    node = client.post(
+        "/api/engineering/hardware-nodes",
+        json={"name": "Reuse Gateway", "device_type": "Gateway", "actor": "pytest"},
+    ).get_json()
+    function = client.post(
+        "/api/engineering/functions",
+        json={
+            "name": "Reuse Gateway Communication",
+            "hardware_node_id": node["id"],
+            "actor": "pytest",
+        },
+    ).get_json()
+    interface = client.post(
+        "/api/engineering/interfaces",
+        json={
+            "name": "CAN FD",
+            "interface_type": "CAN_FD",
+            "hardware_node_id": node["id"],
+            "function_id": function["id"],
+            "actor": "pytest",
+        },
+    ).get_json()
+    payload = {
+        "topology_id": "pytest-interface-reuse",
+        "nodes": [
+            {
+                "id": "reuse-gateway",
+                "engineeringId": node["id"],
+                "name": "Reuse Gateway",
+                "kind": "gateway",
+                "ports": [
+                    {"id": "visual-can-port", "name": "CAN FD", "bus": "can_fd"}
+                ],
+            },
+            {
+                "id": "reuse-ecu",
+                "name": "Reuse ECU",
+                "kind": "ecu",
+                "ports": [{"id": "ecu-can-port", "name": "CAN FD", "bus": "can_fd"}],
+            },
+        ],
+        "edges": [
+            {
+                "id": "reuse-edge",
+                "source": "reuse-gateway",
+                "sourcePort": "visual-can-port",
+                "target": "reuse-ecu",
+                "targetPort": "ecu-can-port",
+                "bus": "can_fd",
+                "sourceInterfaceName": "ReuseGateway_CAN_FD",
+                "targetInterfaceName": "ReuseECU_CAN_FD",
+            }
+        ],
+    }
+
+    response = client.post("/api/engineering/topology/sync", json=payload)
+    assert response.status_code == 200
+    result = response.get_json()
+    gateway_sync = next(
+        item for item in result["nodes"] if item["topology_node_id"] == "reuse-gateway"
+    )
+    assert gateway_sync["interfaces"][0]["engineering_id"] == interface["id"]
+    assert gateway_sync["interfaces"][0]["engineering_name"] == "ReuseGateway_CAN_FD"
+
+    listed = client.get("/api/engineering/interfaces").get_json()["items"]
+    gateway_interfaces = [
+        item for item in listed if item.get("hardware_node_id") == node["id"]
+    ]
+    assert [item["id"] for item in gateway_interfaces] == [interface["id"]]
+    assert gateway_interfaces[0]["name"] == "ReuseGateway_CAN_FD"
+
+    ecu_sync = next(
+        item for item in result["nodes"] if item["topology_node_id"] == "reuse-ecu"
+    )
+    client.delete(
+        f"/api/engineering/interfaces/{ecu_sync['interfaces'][0]['engineering_id']}"
+    )
+    client.delete(f"/api/engineering/interfaces/{interface['id']}")
+    client.delete(f"/api/engineering/functions/{ecu_sync['function_id']}")
+    client.delete(f"/api/engineering/hardware-nodes/{ecu_sync['engineering_id']}")
+    client.delete(f"/api/engineering/functions/{function['id']}")
+    client.delete(f"/api/engineering/hardware-nodes/{node['id']}")
+
+
+def test_network_topology_sync_keeps_one_interface_per_port() -> None:
+    client = _client()
+    topology_id = "pytest-multi-lin-interface"
+    payload = {
+        "topology_id": topology_id,
+        "persist_workflow": False,
+        "nodes": [
+            {
+                "id": "gateway",
+                "name": "Gateway",
+                "kind": "gateway",
+                "ports": [
+                    {"id": "gateway-lin-1", "name": "Gateway_LIN", "bus": "lin"},
+                    {"id": "gateway-lin-2", "name": "Gateway_LIN", "bus": "lin"},
+                ],
+            },
+            {
+                "id": "actor-1",
+                "name": "Actor 1",
+                "kind": "actuator",
+                "ports": [{"id": "actor-1-lin", "name": "Actor1_LIN", "bus": "lin"}],
+            },
+            {
+                "id": "actor-2",
+                "name": "Actor 2",
+                "kind": "actuator",
+                "ports": [{"id": "actor-2-lin", "name": "Actor2_LIN", "bus": "lin"}],
+            },
+        ],
+        "edges": [
+            {
+                "id": "gateway-actor-1",
+                "source": "gateway",
+                "sourcePort": "gateway-lin-1",
+                "sourceInterfaceName": "Gateway_LIN",
+                "target": "actor-1",
+                "targetPort": "actor-1-lin",
+                "targetInterfaceName": "Actor1_LIN",
+                "bus": "lin",
+            },
+            {
+                "id": "gateway-actor-2",
+                "source": "gateway",
+                "sourcePort": "gateway-lin-2",
+                "sourceInterfaceName": "Gateway_LIN",
+                "target": "actor-2",
+                "targetPort": "actor-2-lin",
+                "targetInterfaceName": "Actor2_LIN",
+                "bus": "lin",
+            },
+        ],
+    }
+
+    first = client.post("/api/engineering/topology/sync", json=payload)
+    assert first.status_code == 200
+    first_result = first.get_json()
+    gateway = next(item for item in first_result["nodes"] if item["topology_node_id"] == "gateway")
+    assert first_result["counts"] == {"hardware_nodes": 3, "interfaces": 4, "connections": 2}
+    assert [item["engineering_name"] for item in gateway["interfaces"]] == [
+        "Gateway_LIN_1",
+        "Gateway_LIN_2",
+    ]
+    assert len({item["engineering_id"] for item in gateway["interfaces"]}) == 2
+
+    second = client.post("/api/engineering/topology/sync", json=payload)
+    assert second.status_code == 200
+    second_gateway = next(
+        item for item in second.get_json()["nodes"] if item["topology_node_id"] == "gateway"
+    )
+    assert second_gateway["interfaces"] == gateway["interfaces"]
+
+    for node in first_result["nodes"]:
+        for interface in node["interfaces"]:
+            client.delete(f"/api/engineering/interfaces/{interface['engineering_id']}")
+    for node in first_result["nodes"]:
         client.delete(f"/api/engineering/functions/{node['function_id']}")
         client.delete(f"/api/engineering/hardware-nodes/{node['engineering_id']}")
 

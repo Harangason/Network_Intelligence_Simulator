@@ -10,7 +10,9 @@ import type { Catalog, HardwareNode, RoutingEntry, Technology, TechnologyParamet
 import { NetworkEditor } from "./network-editor";
 import {
   busProfiles,
+  collapsePhysicalEdges,
   engineeringHardwareKind,
+  normalizePhysicalTopology,
   type BusType,
   type NetworkTopology,
   type TopologyNode,
@@ -18,9 +20,15 @@ import {
 } from "@/lib/topology";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters, saveWorkflowTopology } from "@/lib/workflow-api";
-import { notifyWorkflowChanged } from "./workflow-header";
+import { notifyWorkflowChanged, WORKFLOW_CHANGED_EVENT } from "./workflow-header";
 
 const universalFormats = ["universal-jsonl", "universal-csv"];
+const busLoadRangeKeys = new Set([
+  "target_bus_load_percent",
+  "warning_threshold",
+  "critical_threshold",
+  "overload_threshold",
+]);
 const parameterCategoryLabels: Record<TechnologyParameterField["category"], string> = {
   physical: "Netzwerk & Physik",
   timing: "Timing",
@@ -75,7 +83,13 @@ function routePath(route: RoutingEntry, destinationId: string) {
   );
 }
 
-function physicalPathExists(topology: NetworkTopology, sourceId: string, targetId: string) {
+function routingSegmentIsLinked(
+  topology: NetworkTopology,
+  sourceId: string,
+  targetId: string,
+  bus: BusType,
+  routeId: string,
+) {
   const nodeIds = new Map(
     topology.nodes
       .filter((node) => node.engineeringId)
@@ -84,24 +98,25 @@ function physicalPathExists(topology: NetworkTopology, sourceId: string, targetI
   const sourceTopologyId = nodeIds.get(sourceId);
   const targetTopologyId = nodeIds.get(targetId);
   if (!sourceTopologyId || !targetTopologyId) return false;
-  const adjacency = new Map<string, Set<string>>();
-  for (const edge of topology.edges) {
-    adjacency.set(edge.source, new Set([...(adjacency.get(edge.source) ?? []), edge.target]));
-    adjacency.set(edge.target, new Set([...(adjacency.get(edge.target) ?? []), edge.source]));
-  }
-  const reachable = new Set([sourceTopologyId]);
-  const pending = [sourceTopologyId];
-  while (pending.length > 0) {
-    const current = pending.shift()!;
-    for (const neighbor of adjacency.get(current) ?? []) {
-      if (neighbor === targetTopologyId) return true;
-      if (!reachable.has(neighbor)) {
-        reachable.add(neighbor);
-        pending.push(neighbor);
-      }
-    }
-  }
-  return sourceTopologyId === targetTopologyId;
+  return topology.edges.some((edge) => {
+    const connectsSegment = edge.bus === bus && (
+      (edge.source === sourceTopologyId && edge.target === targetTopologyId)
+      || (edge.source === targetTopologyId && edge.target === sourceTopologyId)
+    );
+    const routeIds = new Set([
+      ...(edge.routingEntryIds ?? []),
+      ...(edge.routingEntryId ? [edge.routingEntryId] : []),
+    ]);
+    return connectsSegment
+      && routeIds.has(routeId)
+      && Boolean(
+        edge.name
+        && edge.sourceInterfaceName
+        && edge.targetInterfaceName
+        && edge.relationType
+        && edge.direction,
+      );
+  });
 }
 
 function buildRoutingNetworkSuggestions(
@@ -128,12 +143,12 @@ function buildRoutingNetworkSuggestions(
         for (let index = 0; index < path.length - 1; index += 1) {
           const sourceId = path[index];
           const targetId = path[index + 1];
-          if (physicalPathExists(topology, sourceId, targetId)) continue;
           const lastSegment = index === path.length - 2;
           const bus = routingBus(
             lastSegment ? destination.protocol ?? route.source.protocol : route.source.protocol,
             lastSegment ? destination.network_id ?? route.source.network_id : route.source.network_id,
           );
+          if (routingSegmentIsLinked(topology, sourceId, targetId, bus, route.id)) continue;
           segments.set(`${sourceId}:${targetId}:${bus}`, {
             sourceId,
             targetId,
@@ -190,34 +205,48 @@ export function SimulationWizard({
   }>({ status: "idle", linked: 0, error: "" });
   const [routingSyncMessage, setRoutingSyncMessage] = useState("");
 
-  const topologySignature = useMemo(
-    () =>
-      JSON.stringify({
+  const topologySignature = useMemo(() => {
+    const connectedPortIds = new Set(
+      topology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
+    );
+    return JSON.stringify({
         nodes: topology.nodes.map((node) => ({
           id: node.id,
           name: node.name,
           kind: node.kind,
           engineeringId: node.engineeringId,
-          ports: node.ports.map((port) => ({ id: port.id, name: port.name, bus: port.bus })),
+          ports: node.ports
+            .filter((port) => port.engineeringId || connectedPortIds.has(port.id))
+            .map((port) => ({
+              id: port.id,
+              name: port.name,
+              bus: port.bus,
+              engineeringId: port.engineeringId,
+            })),
         })),
         edges: topology.edges.map((edge) => ({
           id: edge.id,
+          name: edge.name,
+          sourceInterfaceName: edge.sourceInterfaceName,
+          targetInterfaceName: edge.targetInterfaceName,
+          relationType: edge.relationType,
+          description: edge.description,
+          direction: edge.direction,
           source: edge.source,
           sourcePort: edge.sourcePort,
           target: edge.target,
           targetPort: edge.targetPort,
           bus: edge.bus,
         })),
-      }),
-    [topology],
-  );
+      });
+  }, [topology]);
 
   const persistNetworkRelationships = useCallback(async (next: NetworkTopology) => {
     setRoutingSyncMessage("Routing-Vorschläge werden abgeglichen …");
     try {
-      const state = await saveWorkflowTopology(next);
+      const state = await saveWorkflowTopology(normalizePhysicalTopology(next));
       if (Array.isArray(state.topology.nodes) && Array.isArray(state.topology.edges)) {
-        setTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
+        setTopology(normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges }));
       }
       const counts = state.routing_sync?.counts;
       if (!counts) {
@@ -259,7 +288,7 @@ export function SimulationWizard({
         setStoredParameters(state.parameters ?? {});
         const storedTopology = state.topology;
         if (Array.isArray(storedTopology.nodes) && Array.isArray(storedTopology.edges)) {
-          setTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges });
+          setTopology(normalizePhysicalTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges }));
         } else {
           setTopology({ nodes: [], edges: [] });
         }
@@ -277,14 +306,26 @@ export function SimulationWizard({
 
   useEffect(() => {
     if (mode !== "network") return;
-    setRoutingLoadError("");
-    listRoutes()
-      .then(setRoutingEntries)
-      .catch((error) => {
-        setRoutingLoadError(
-          error instanceof Error ? error.message : "Routing-Tabelle konnte nicht geladen werden.",
-        );
-      });
+    let active = true;
+    const refreshRoutes = () => {
+      setRoutingLoadError("");
+      void listRoutes()
+        .then((items) => {
+          if (active) setRoutingEntries(items);
+        })
+        .catch((error) => {
+          if (!active) return;
+          setRoutingLoadError(
+            error instanceof Error ? error.message : "Routing-Tabelle konnte nicht geladen werden.",
+          );
+        });
+    };
+    refreshRoutes();
+    window.addEventListener(WORKFLOW_CHANGED_EVENT, refreshRoutes);
+    return () => {
+      active = false;
+      window.removeEventListener(WORKFLOW_CHANGED_EVENT, refreshRoutes);
+    };
   }, [mode]);
 
   useEffect(() => {
@@ -318,27 +359,31 @@ export function SimulationWizard({
           setModelHardware(items.filter((item): item is HardwareNode => "device_type" in item));
           const nodesById = new Map(result.nodes.map((node) => [node.topology_node_id, node]));
           const edgesById = new Map(result.edges.map((edge) => [edge.topology_edge_id, edge]));
-          setTopology({
-            nodes: topology.nodes.map((node) => {
+          setTopology((current) => ({
+            nodes: current.nodes.map((node) => {
               const linked = nodesById.get(node.id);
               const interfacesById = new Map(
-                linked?.interfaces.map((item) => [item.topology_port_id, item.engineering_id]) ?? [],
+                (linked?.interfaces ?? []).map((item) => [item.topology_port_id, item] as const),
               );
               return {
                 ...node,
                 engineeringId: linked?.engineering_id,
                 engineeringFunctionId: linked?.function_id,
-                ports: node.ports.map((port) => ({
-                  ...port,
-                  engineeringId: interfacesById.get(port.id),
-                })),
+                ports: node.ports.map((port) => {
+                  const linkedInterface = interfacesById.get(port.id);
+                  return {
+                    ...port,
+                    name: linkedInterface?.engineering_name || port.name,
+                    engineeringId: linkedInterface?.engineering_id,
+                  };
+                }),
               };
             }),
-            edges: topology.edges.map((edge) => ({
+            edges: current.edges.map((edge) => ({
               ...edge,
               engineeringRelationId: edgesById.get(edge.id)?.engineering_relation_id,
             })),
-          });
+          }));
           setEngineeringSync({
             status: "synced",
             linked: result.counts.hardware_nodes,
@@ -363,11 +408,11 @@ export function SimulationWizard({
   }, [automaticModelSync, mode, syncRequest, topology.nodes.length, topologySignature, workflowLoaded]);
 
   const domain = useMemo(
-    () => catalog?.domains.find((item) => item.id === domainId),
+    () => (catalog?.domains ?? []).find((item) => item.id === domainId),
     [catalog, domainId],
   );
   const technology = useMemo(
-    () => domain?.technologies.find((item) => item.id === technologyId),
+    () => (domain?.technologies ?? []).find((item) => item.id === technologyId),
     [domain, technologyId],
   );
   const availableFormats = useMemo(
@@ -380,11 +425,16 @@ export function SimulationWizard({
   const parameterGroups = useMemo(() => {
     const groups = new Map<TechnologyParameterField["category"], TechnologyParameterField[]>();
     for (const field of technology?.parameter_schema ?? []) {
+      if (busLoadRangeKeys.has(field.key)) continue;
       const category = field.category ?? "physical";
       groups.set(category, [...(groups.get(category) ?? []), field]);
     }
     return Array.from(groups.entries());
   }, [technology]);
+  const busLoadField = useMemo(
+    () => technology?.parameter_schema?.find((field) => field.key === "target_bus_load_percent"),
+    [technology],
+  );
   const routingNetworkSuggestions = useMemo(
     () => buildRoutingNetworkSuggestions(routingEntries, topology, modelHardware),
     [modelHardware, routingEntries, topology],
@@ -392,8 +442,8 @@ export function SimulationWizard({
 
   function chooseDomain(value: string) {
     setDomainId(value);
-    const nextDomain = catalog?.domains.find((item) => item.id === value);
-    const nextTechnology = nextDomain?.technologies[0];
+    const nextDomain = (catalog?.domains ?? []).find((item) => item.id === value);
+    const nextTechnology = nextDomain?.technologies?.[0];
     if (nextTechnology) {
       setTechnologyId(nextTechnology.id);
       setFormats(universalFormats);
@@ -479,13 +529,37 @@ export function SimulationWizard({
       suggestion.segments.forEach((segment, index) => {
         const sourceNodeId = ensureNode(segment.sourceId);
         const targetNodeId = ensureNode(segment.targetId);
-        if (edges.some(
-          (edge) =>
-            (edge.source === sourceNodeId && edge.target === targetNodeId) ||
-            (edge.source === targetNodeId && edge.target === sourceNodeId),
-        )) return;
         const sourceNode = nodes.find((node) => node.id === sourceNodeId)!;
         const targetNode = nodes.find((node) => node.id === targetNodeId)!;
+        const existingEdgeIndex = edges.findIndex(
+          (edge) => edge.bus === segment.bus && (
+            (edge.source === sourceNodeId && edge.target === targetNodeId)
+            || (edge.source === targetNodeId && edge.target === sourceNodeId)
+          ),
+        );
+        if (existingEdgeIndex >= 0) {
+          const existingEdge = edges[existingEdgeIndex];
+          const edgeSourceNode = nodes.find((node) => node.id === existingEdge.source);
+          const edgeTargetNode = nodes.find((node) => node.id === existingEdge.target);
+          const routeIds = [...new Set([
+            ...(existingEdge.routingEntryIds ?? []),
+            ...(existingEdge.routingEntryId ? [existingEdge.routingEntryId] : []),
+            suggestion.route.id,
+          ])];
+          edges[existingEdgeIndex] = {
+            ...existingEdge,
+            name: existingEdge.name || `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}`,
+            sourceInterfaceName: existingEdge.sourceInterfaceName || edgeSourceNode?.ports.find((port) => port.id === existingEdge.sourcePort)?.name,
+            targetInterfaceName: existingEdge.targetInterfaceName || edgeTargetNode?.ports.find((port) => port.id === existingEdge.targetPort)?.name,
+            description: existingEdge.description || suggestion.route.name,
+            relationType: existingEdge.relationType ?? "COMMUNICATES_WITH",
+            direction: existingEdge.direction ?? "SOURCE_TO_TARGET",
+            routingEntryId: existingEdge.routingEntryId ?? suggestion.route.id,
+            routingEntryIds: routeIds,
+            origin: "ROUTING_TABLE",
+          };
+          return;
+        }
         const sourceOnLeft = sourceNode.x <= targetNode.x;
         const segmentKey = `${index + 1}`;
         const sourcePort = ensurePort(
@@ -504,16 +578,23 @@ export function SimulationWizard({
         );
         edges.push({
           id: `routing-${routeKey}-${segmentKey}`,
+          name: `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}`,
+          sourceInterfaceName: sourceNode.ports.find((port) => port.id === sourcePort)?.name,
+          targetInterfaceName: targetNode.ports.find((port) => port.id === targetPort)?.name,
+          relationType: "COMMUNICATES_WITH",
+          description: suggestion.route.description || suggestion.route.name,
+          direction: "SOURCE_TO_TARGET",
           source: sourceNodeId,
           sourcePort,
           target: targetNodeId,
           targetPort,
           bus: segment.bus,
           routingEntryId: suggestion.route.id,
+          routingEntryIds: [suggestion.route.id],
           origin: "ROUTING_TABLE",
         });
       });
-      const saved = await persistNetworkRelationships({ nodes, edges });
+      const saved = await persistNetworkRelationships({ nodes, edges: collapsePhysicalEdges(edges) });
       if (saved) {
         setRoutingSyncMessage(`${suggestion.route.route_code} wurde als physischer Netzwerkpfad übernommen.`);
       }
@@ -523,6 +604,20 @@ export function SimulationWizard({
       setApplyingRoute("");
     }
   }
+
+  useEffect(() => {
+    if (
+      mode !== "network"
+      || !workflowLoaded
+      || engineeringSync.status === "syncing"
+      || applyingRoute
+      || routingNetworkSuggestions.length === 0
+    ) return;
+    const timer = window.setTimeout(() => {
+      void applyRoutingSuggestion(routingNetworkSuggestions[0]);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [applyingRoute, engineeringSync.status, mode, routingNetworkSuggestions, workflowLoaded]);
 
   async function submit(formElement: HTMLFormElement | null) {
     setSubmitting(true);
@@ -548,6 +643,23 @@ export function SimulationWizard({
             return [field.key, String(raw ?? "")];
           }),
         );
+        if (form.has("warning_threshold") && form.has("overload_threshold")) {
+          const warningThreshold = Number(form.get("warning_threshold"));
+          const overloadThreshold = Number(form.get("overload_threshold"));
+          if (
+            !Number.isFinite(warningThreshold)
+            || !Number.isFinite(overloadThreshold)
+            || warningThreshold < 0
+            || overloadThreshold > 100
+            || warningThreshold >= overloadThreshold
+          ) {
+            throw new Error("'Gut bis' muss kleiner als 'Limit ab' sein.");
+          }
+          dynamicParameters.target_bus_load_percent = warningThreshold;
+          dynamicParameters.warning_threshold = warningThreshold;
+          dynamicParameters.critical_threshold = Math.round((warningThreshold + overloadThreshold) / 2);
+          dynamicParameters.overload_threshold = overloadThreshold;
+        }
         const parameters = {
           industry: domainId,
           technology: technologyId,
@@ -583,7 +695,7 @@ export function SimulationWizard({
 
   return (
     <>
-      <div className={`workspace-grid ${mode === "network" ? "network-mode" : ""}`}>
+      <div className={`workspace-grid ${mode === "network" ? "network-mode" : "parameters-mode"}`}>
       <form
         key={`${mode}:${JSON.stringify(storedParameters)}`}
         className="panel config-panel"
@@ -598,16 +710,31 @@ export function SimulationWizard({
             <h2>{mode === "network" ? "ECU-Netzwerk" : "Konfiguration"}</h2>
           </div>
           {mode === "parameters" && (
-            <label className="mode-switch">
-              <input
-                checked={advanced}
-                onChange={(event) => setAdvanced(event.target.checked)}
-                type="checkbox"
-              />
-              <span>JSON-Modus</span>
-            </label>
+            <div className="panel-heading-actions parameter-heading-actions">
+              <label className="mode-switch">
+                <input
+                  checked={advanced}
+                  onChange={(event) => setAdvanced(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>JSON-Modus</span>
+              </label>
+              <Link className="button secondary" href="/studio/capacity">
+                Weiter zu Capacity
+              </Link>
+              <button
+                className="button primary"
+                disabled={submitting || (!advanced && formats.length === 0)}
+                type="submit"
+              >
+                {submitting ? "Wird gespeichert …" : "Parameter speichern →"}
+              </button>
+            </div>
           )}
         </div>
+
+        {mode === "parameters" && formError && <div className="notice error">{formError}</div>}
+        {mode === "parameters" && savedMessage && <div className="notice success">{savedMessage}</div>}
 
         {mode === "network" ? (
           <>
@@ -642,6 +769,14 @@ export function SimulationWizard({
               </div>
               {engineeringSync.error && <p>{engineeringSync.error}</p>}
             </div>
+            <NetworkEditor
+              modelHardware={modelHardware}
+              onChange={setTopology}
+              onRelationshipsChange={persistNetworkRelationships}
+              routingEntries={routingEntries}
+              topology={topology}
+            />
+            {routingSyncMessage && <p className="net-routing-sync">{routingSyncMessage}</p>}
             <section className="net-route-suggestions" aria-label="Vorschläge aus der Routing-Tabelle">
               <div className="net-route-suggestions-heading">
                 <div>
@@ -662,7 +797,7 @@ export function SimulationWizard({
                       </div>
                       <div className="net-route-suggestion-path">
                         <strong>{suggestion.path}</strong>
-                        <span>{suggestion.protocol} · {suggestion.segments.length} fehlende Verbindung(en)</span>
+                        <span>{suggestion.protocol} · {suggestion.segments.length} fehlende Routing-Beziehung(en)</span>
                       </div>
                       <button
                         className="net-add"
@@ -679,13 +814,6 @@ export function SimulationWizard({
                 <p className="net-route-suggestions-complete">Alle aktiven Routing-Pfade sind in der Topologie abgebildet.</p>
               )}
             </section>
-            <NetworkEditor
-              modelHardware={modelHardware}
-              onChange={setTopology}
-              onRelationshipsChange={persistNetworkRelationships}
-              topology={topology}
-            />
-            {routingSyncMessage && <p className="net-routing-sync">{routingSyncMessage}</p>}
             <div className="network-output-row">
               <div>
                 <span>Topologie</span>
@@ -758,6 +886,14 @@ export function SimulationWizard({
               <span>02</span>
               Technologie- und Timing-Parameter
             </div>
+            {busLoadField && (
+              <BusLoadParameterControl
+                field={busLoadField}
+                key={technology.id}
+                parameters={storedParameters}
+                technology={technology}
+              />
+            )}
             <div className="parameter-groups">
               {parameterGroups.map(([category, fields]) => (
                 <fieldset className={`parameter-group parameter-group-${category}`} key={category}>
@@ -800,58 +936,39 @@ export function SimulationWizard({
           </>
         )}
 
-        {formError && <div className="notice error">{formError}</div>}
-        {savedMessage && <div className="notice success">{savedMessage}</div>}
+        {mode === "network" && formError && <div className="notice error">{formError}</div>}
+        {mode === "network" && savedMessage && <div className="notice success">{savedMessage}</div>}
 
-        <div className="form-actions">
-          <Link className="button secondary" href={mode === "network" ? "/studio?mode=parameters" : "/studio/capacity"}>
-            {mode === "network" ? "Weiter zu Parametern" : "Weiter zu Capacity"}
-          </Link>
-          <button
-            className="button primary"
-            disabled={submitting || (!advanced && formats.length === 0)}
-            type="submit"
-          >
-            {submitting ? "Wird gespeichert …" : mode === "network" ? "Netzwerk speichern →" : "Parameter speichern →"}
-          </button>
-        </div>
+        {mode === "network" && (
+          <div className="form-actions">
+            <Link className="button secondary" href="/studio?mode=parameters">
+              Weiter zu Parametern
+            </Link>
+            <button
+              className="button primary"
+              disabled={submitting || formats.length === 0}
+              type="submit"
+            >
+              {submitting ? "Wird gespeichert …" : "Netzwerk speichern →"}
+            </button>
+          </div>
+        )}
       </form>
 
-      <aside className="side-column">
-        <div className="panel overview-panel">
-          <p className="eyebrow">Run overview</p>
-          <h2>{mode === "network" ? "ECU TOPOLOGY" : technology.id.replaceAll("_", " ").toUpperCase()}</h2>
-          <dl className="overview-list">
-            {mode === "network" ? (
-              <>
-                <div><dt>Geräte</dt><dd>{topology.nodes.length}</dd></div>
-                <div><dt>Verbindungen</dt><dd>{topology.edges.length}</dd></div>
-                <div><dt>Busse</dt><dd>{new Set(topology.edges.map((edge) => edge.bus)).size}</dd></div>
-                <div><dt>Formate</dt><dd>{formats.length}</dd></div>
-              </>
-            ) : (
-              <>
-                <div><dt>Bereich</dt><dd>{domain.label}</dd></div>
-                <div><dt>Medium</dt><dd>{technology.medium}</dd></div>
-                <div><dt>Topologie</dt><dd>{technology.topology}</dd></div>
-                <div><dt>Formate</dt><dd>{formats.length}</dd></div>
-              </>
-            )}
-          </dl>
-        </div>
-
-        <div className="empty-result workflow-next-panel">
-          <strong>{mode === "network" ? "Technischen Pfad sichern" : "Berechnung folgt separat"}</strong>
-          <p>
-            {mode === "network"
-              ? "Die Topologie beschreibt den realen Kommunikationspfad. Routing bleibt die logische Quelle."
-              : "Capacity & Timing berechnet Last, Reserve und Latenz vor dem Preflight."}
-          </p>
-          <Link href={mode === "network" ? "/studio?mode=parameters" : "/studio/capacity"}>
-            Nächsten Schritt öffnen →
-          </Link>
-        </div>
-      </aside>
+      {mode === "network" && (
+        <aside className="side-column">
+          <div className="panel overview-panel">
+            <p className="eyebrow">Run overview</p>
+            <h2>ECU TOPOLOGY</h2>
+            <dl className="overview-list">
+              <div><dt>Geräte</dt><dd>{topology.nodes.length}</dd></div>
+              <div><dt>Verbindungen</dt><dd>{topology.edges.length}</dd></div>
+              <div><dt>Busse</dt><dd>{new Set(topology.edges.map((edge) => edge.bus)).size}</dd></div>
+              <div><dt>Formate</dt><dd>{formats.length}</dd></div>
+            </dl>
+          </div>
+        </aside>
+      )}
       </div>
     </>
   );
@@ -897,6 +1014,104 @@ function ParameterControl({ field, value }: { field: TechnologyParameterField; v
         step="any"
         value={String(value ?? 0)}
       />
+    </div>
+  );
+}
+
+function BusLoadParameterControl({
+  field,
+  parameters,
+  technology,
+}: {
+  field: TechnologyParameterField;
+  parameters: Record<string, unknown>;
+  technology: Technology;
+}) {
+  const minimum = field.min ?? 0;
+  const maximum = field.max ?? 100;
+  const schemaDefaults = Object.fromEntries(
+    (technology.parameter_schema ?? []).map((item) => [item.key, item.default]),
+  );
+  const initialGood = Number(
+    parameters.warning_threshold
+      ?? parameters.target_bus_load_percent
+      ?? schemaDefaults.warning_threshold
+      ?? field.default
+      ?? 60,
+  );
+  const initialLimit = Number(
+    parameters.overload_threshold
+      ?? schemaDefaults.overload_threshold
+      ?? 90,
+  );
+  const normalizedGood = Number.isFinite(initialGood)
+    ? Math.min(maximum, Math.max(minimum, initialGood))
+    : 60;
+  const normalizedLimit = Number.isFinite(initialLimit)
+    ? Math.min(maximum, Math.max(minimum, initialLimit))
+    : 90;
+  const [goodLimit, setGoodLimit] = useState(normalizedGood);
+  const [limitStart, setLimitStart] = useState(normalizedLimit);
+  const span = Math.max(1, maximum - minimum);
+  const goodEnd = ((goodLimit - minimum) / span) * 100;
+  const limitBegin = ((limitStart - minimum) / span) * 100;
+  const boundariesValid = goodLimit < limitStart;
+  const trackBackground = boundariesValid
+    ? `linear-gradient(90deg, var(--accent) 0 ${goodEnd}%, var(--warning) ${goodEnd}% ${limitBegin}%, var(--danger) ${limitBegin}% 100%)`
+    : "var(--danger)";
+
+  return (
+    <div className="bus-load-parameter" title={field.description}>
+      <div className="bus-load-parameter-head">
+        <strong>Buslast-Grenzen</strong>
+        <span className={boundariesValid ? undefined : "invalid"}>{goodLimit.toFixed(0)}–{limitStart.toFixed(0)} %</span>
+      </div>
+      <div className="bus-load-slider-row bus-load-slider-good">
+        <label htmlFor="bus_load_good_limit">Gut bis</label>
+        <input
+          aria-label="Obergrenze für gute Buslast"
+          aria-valuetext={`Gut bis ${goodLimit.toFixed(0)} Prozent`}
+          className="bus-load-range-good"
+          id="bus_load_good_limit"
+          max={maximum}
+          min={minimum}
+          name="warning_threshold"
+          onInput={(event) => setGoodLimit(Number(event.currentTarget.value))}
+          step="1"
+          style={{ "--bus-slider-position": `${goodEnd}%` } as React.CSSProperties}
+          type="range"
+          value={goodLimit}
+        />
+        <output htmlFor="bus_load_good_limit">{goodLimit.toFixed(0)} %</output>
+      </div>
+      <div className="bus-load-slider-row bus-load-slider-limit">
+        <label htmlFor="bus_load_limit_start">Limit ab</label>
+        <input
+          aria-label="Beginn des Buslast-Limitbereichs"
+          aria-valuetext={`Limit ab ${limitStart.toFixed(0)} Prozent`}
+          className="bus-load-range-limit"
+          id="bus_load_limit_start"
+          max={maximum}
+          min={minimum}
+          name="overload_threshold"
+          onInput={(event) => setLimitStart(Number(event.currentTarget.value))}
+          step="1"
+          style={{ "--bus-slider-position": `${limitBegin}%` } as React.CSSProperties}
+          type="range"
+          value={limitStart}
+        />
+        <output htmlFor="bus_load_limit_start">{limitStart.toFixed(0)} %</output>
+      </div>
+      <span aria-hidden="true" className="bus-load-range-track" style={{ background: trackBackground }} />
+      {boundariesValid ? (
+        <div aria-hidden="true" className="bus-load-zones" style={{ gridTemplateColumns: `${Math.max(goodEnd, 1)}fr ${Math.max(limitBegin - goodEnd, 1)}fr ${Math.max(100 - limitBegin, 1)}fr` }}>
+          <span>Gut · {minimum.toFixed(0)}–{goodLimit.toFixed(0)} %</span>
+          <span>Mittel · {(goodLimit + 1).toFixed(0)}–{(limitStart - 1).toFixed(0)} %</span>
+          <span>Limit · {limitStart.toFixed(0)}–{maximum.toFixed(0)} %</span>
+        </div>
+      ) : (
+        <p className="bus-load-boundary-error" role="alert">"Gut bis" muss kleiner als "Limit ab" sein.</p>
+      )}
     </div>
   );
 }

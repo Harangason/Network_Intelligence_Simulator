@@ -16,7 +16,7 @@ export default async function StudioPage({
   const initialMode = mode === "network" ? "network" : "parameters";
 
   return (
-    <main className="shell">
+    <main className="shell studio-shell">
       <StudioTopbar />
       <WorkflowHeader />
 

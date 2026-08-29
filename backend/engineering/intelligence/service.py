@@ -12,7 +12,7 @@ from ..relations import list_relations
 from ..repository import list_objects
 from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
-from ..workflow.service import WorkflowStatusService
+from ..workflow.service import WorkflowConflictError, WorkflowStatusService
 from .repository import (
     create_optimization_proposal,
     list_optimization_proposals,
@@ -86,10 +86,11 @@ class IntelligenceService:
                 SELECT DISTINCT ON (project_id)
                        project_id, id, status, results, is_outdated, created_at
                 FROM engineering_analysis_snapshots
-                WHERE analysis_type = 'intelligence'
+                WHERE analysis_type = 'intelligence' AND project_id = %s
                 ORDER BY project_id, created_at DESC
                 LIMIT 100
-                """
+                """,
+                (self.project_id,),
             ).fetchall()
         points = []
         for row in rows:
@@ -157,7 +158,8 @@ class IntelligenceService:
             path = route.get("route") or {}
             statuses[str(route.get("status") or "UNKNOWN")] += 1
             destination_ids = tuple(sorted(str(item.get("node_id")) for item in destinations if item.get("node_id")))
-            key = (str(source.get("node_id") or ""), destination_ids, str(payload.get("message_id") or payload.get("name") or ""))
+            message_key = ",".join(sorted(str(item) for item in payload.get("message_ids", []) if item)) or str(payload.get("message_id") or payload.get("name") or "")
+            key = (str(source.get("node_id") or ""), destination_ids, message_key)
             keys[key] += 1
             if not source.get("node_id"):
                 issues.append(_issue("ERROR", "Routing", "MISSING_PRODUCER", "Route besitzt keinen Producer.", object_type="RoutingEntry", object_id=route_id, cause="source.node_id ist leer.", recommendation="Producer im Routing Manager setzen."))
@@ -167,7 +169,7 @@ class IntelligenceService:
                 issues.append(_issue("WARNING", "Routing", "SOURCE_INTERFACE_MISSING", "Source Interface ist nicht zugeordnet.", object_type="RoutingEntry", object_id=route_id, cause="Logische Route ist nicht vollstaendig auf Interfaces abgebildet.", recommendation="Source Interface im Routing Manager auswaehlen."))
             if any(not item.get("interface_id") for item in destinations):
                 issues.append(_issue("WARNING", "Routing", "DESTINATION_INTERFACE_MISSING", "Mindestens ein Destination Interface fehlt.", object_type="RoutingEntry", object_id=route_id, cause="Consumer ist nicht vollstaendig technisch gemappt.", recommendation="Destination Interface ergaenzen."))
-            if not payload.get("message_id") and not payload.get("signal_ids"):
+            if not payload.get("message_id") and not payload.get("message_ids") and not payload.get("signal_ids"):
                 issues.append(_issue("WARNING", "Routing", "PAYLOAD_UNSPECIFIED", "Route besitzt keine Message oder Signale.", object_type="RoutingEntry", object_id=route_id, cause="Der transportierte Informationsumfang ist nicht definiert.", recommendation="Message und Signale zuordnen."))
             loop_nodes = detect_routing_loop(path.get("hops") or [])
             if loop_nodes:
@@ -287,6 +289,11 @@ class IntelligenceService:
         ]
 
     def assess(self, *, persist: bool = True) -> dict[str, Any]:
+        results_analysis = self.workflow.latest_analysis("results_analysis")
+        if not results_analysis or results_analysis.get("status") not in {"COMPLETE", "APPROVED", "WARNING"}:
+            raise WorkflowConflictError(
+                "Eine aktuelle Results-/Analysis-Auswertung ist vor der Intelligence-Bewertung erforderlich."
+            )
         data = self._collect()
         objects = data["objects"]
         data_quality = DataQualityService().analyze(objects)

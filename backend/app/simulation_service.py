@@ -23,12 +23,13 @@ from standalone_cli import (  # noqa: E402
     domain_for_technology,
 )
 
-from .runtime_analysis import analyze_runtime_trace
+from .runtime_analysis import RuntimeBusLoadMonitor
 
 
 class SimulationService:
     def __init__(self) -> None:
         self.simulator = CommunicationSimulator()
+        self.runtime_load_monitor = RuntimeBusLoadMonitor()
 
     def catalog(self) -> dict[str, Any]:
         domains: list[dict[str, Any]] = []
@@ -108,6 +109,7 @@ class SimulationService:
             field("source_processing_delay_ms", "Source Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
             field("target_processing_delay_ms", "Target Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
             field("propagation_delay_ms", "Propagation", "timing", "network", unit="ms", minimum=0, default=0.01),
+            field("target_bus_load_percent", "Ziel-Buslast", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=60, description="Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.", simulation_relevant=False),
             field("peak_factor", "Peak Factor", "capacity", "analysis", minimum=1, default=1.15, simulation_relevant=False),
             field("burst_factor", "Burst Factor", "capacity", "analysis", minimum=1, default=1.5, simulation_relevant=False),
             field("burst_window_ms", "Burst Window", "capacity", "analysis", unit="ms", minimum=0.1, default=100, simulation_relevant=False),
@@ -187,6 +189,13 @@ class SimulationService:
             raise TypeError("Die Simulationsanfrage muss ein JSON-Objekt sein.")
         if isinstance(payload.get("config"), dict):
             config = copy.deepcopy(payload["config"])
+            for key in (
+                "project_id", "scenario", "duration_s", "seed", "formats", "max_events",
+                "dropout_probability", "corruption_probability", "duplicate_probability",
+                "reordering_probability",
+            ):
+                if key in payload:
+                    config[key] = copy.deepcopy(payload[key])
             config["output_dir"] = str(output_dir)
             return config
 
@@ -256,7 +265,20 @@ class SimulationService:
         validate_only: bool = False,
     ) -> dict[str, Any]:
         config = self.prepare_config(payload, output_dir)
+        project_id = str(payload.get("project_id") or config.get("project_id") or "default")
+        if payload.get("workflow_managed") or project_id != "default":
+            from ..engineering.simulation import enrich_simulation_config, validate_scenario
+
+            config = enrich_simulation_config(config, project_id)
+            config["scenario"] = validate_scenario(
+                config.get("scenario") if isinstance(config.get("scenario"), dict) else {},
+                config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {},
+            )
         result = self.simulator.run(config, validate_only=validate_only)
         if not validate_only:
-            result["runtime_metrics"] = analyze_runtime_trace(result, config)
+            result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
+            if payload.get("workflow_managed") or project_id != "default":
+                from ..engineering.simulation import artifact_job_id, persist_trace_metadata
+
+                persist_trace_metadata(project_id, artifact_job_id(output_dir), result, config)
         return result

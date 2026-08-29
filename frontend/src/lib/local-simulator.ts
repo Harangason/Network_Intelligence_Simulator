@@ -19,18 +19,75 @@ export const localCatalog: Catalog = {
   ],
 };
 
-const STORAGE_KEY = "communication-simulator-jobs-v1";
+const LEGACY_STORAGE_KEY = "communication-simulator-jobs-v1";
+const runtimeJobs = new Map<string, SimulationJob>();
+let legacyMigration: Promise<void> | null = null;
 
-function readJobs(): Record<string, SimulationJob> {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}"); } catch { return {}; }
+function isSimulationJob(value: unknown): value is SimulationJob {
+  if (!value || typeof value !== "object") return false;
+  const job = value as Partial<SimulationJob>;
+  return typeof job.id === "string" && typeof job.status === "string";
 }
 
-function saveJob(job: SimulationJob) {
+async function cacheJob(job: SimulationJob) {
+  const response = await fetch("/api/program-cache/simulation-jobs", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(job),
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) throw new Error("Lokaler Simulationslauf konnte nicht im Programm-Cache gespeichert werden.");
+}
+
+async function readCachedJob(id: string) {
+  const response = await fetch(`/api/program-cache/simulation-jobs?id=${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) return null;
+  const payload = await response.json();
+  return isSimulationJob(payload) ? payload : null;
+}
+
+async function migrateLegacyJobs() {
   if (typeof window === "undefined") return;
-  const jobs = readJobs();
-  jobs[job.id] = job;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
+  let jobs: SimulationJob[] = [];
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(LEGACY_STORAGE_KEY) ?? "{}") as Record<string, unknown>;
+    jobs = Object.values(stored)
+      .filter(isSimulationJob)
+      .sort((left, right) => String(right.updated_at).localeCompare(String(left.updated_at)))
+      .slice(0, 30);
+  } catch {
+    try {
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // Browser persistence may be disabled.
+    }
+    return;
+  }
+  let complete = true;
+  for (const job of jobs) {
+    runtimeJobs.set(job.id, job);
+    try {
+      await cacheJob(job);
+    } catch {
+      complete = false;
+    }
+  }
+  if (complete) {
+    try {
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      // The jobs are already safe in the program cache.
+    }
+  }
+}
+
+function ensureLegacyMigration() {
+  legacyMigration ??= migrateLegacyJobs();
+  return legacyMigration;
 }
 
 function download(name: string, content: string, index: number): ArtifactDownload {
@@ -42,7 +99,7 @@ function numberValue(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export function createLocalSimulation(rawPayload: Record<string, unknown>, validateOnly: boolean): SimulationJob {
+export async function createLocalSimulation(rawPayload: Record<string, unknown>, validateOnly: boolean): Promise<SimulationJob> {
   const config = (rawPayload.config && typeof rawPayload.config === "object" ? rawPayload.config : rawPayload) as Record<string, unknown>;
   const topology = config.topology && typeof config.topology === "object" ? config.topology as { nodes?: unknown[]; edges?: Array<{ bus?: string }> } : null;
   const duration = numberValue(config.duration_s, 1);
@@ -77,15 +134,26 @@ export function createLocalSimulation(rawPayload: Record<string, unknown>, valid
 
   const job: SimulationJob = {
     id, status: "completed", validate_only: validateOnly, created_at: createdAt, updated_at: createdAt, error: null,
-    result: { status: "completed", output_dir: "browser://local-simulator", warnings, hardware_validation: { valid: true, findings: [] }, trace: { events, routes: topology?.edges?.length ?? nodes * (nodes - 1), technologies: topologyTechnologies.length ? topologyTechnologies : [technologyId], duration_s: duration } },
+    result: { status: "completed", output_dir: "program-cache://local-simulator", warnings, hardware_validation: { valid: true, findings: [] }, trace: { events, routes: topology?.edges?.length ?? nodes * (nodes - 1), technologies: topologyTechnologies.length ? topologyTechnologies : [technologyId], duration_s: duration } },
     artifact_downloads: artifacts,
   };
-  saveJob(job);
+  runtimeJobs.set(job.id, job);
+  await ensureLegacyMigration();
+  await cacheJob(job).catch(() => undefined);
   return job;
 }
 
-export function getLocalSimulation(id: string): SimulationJob {
-  const job = readJobs()[id];
+export async function getLocalSimulation(id: string): Promise<SimulationJob> {
+  const inMemory = runtimeJobs.get(id);
+  if (inMemory) return inMemory;
+  let job = await readCachedJob(id);
+  if (!job) {
+    await ensureLegacyMigration();
+    job = runtimeJobs.get(id) ?? await readCachedJob(id);
+  }
   if (!job) throw new Error("Dieser lokale Simulationslauf wurde nicht gefunden. Starte im Studio einen neuen Lauf.");
+  runtimeJobs.set(job.id, job);
   return job;
 }
+
+if (typeof window !== "undefined") void ensureLegacyMigration();

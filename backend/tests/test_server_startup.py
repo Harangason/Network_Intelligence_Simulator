@@ -137,6 +137,7 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
         "AI_PROVIDER",
         "LOCAL_AI_BASE_URL",
         "LOCAL_AI_MODEL",
+        "LOCAL_AI_FAST_MODEL",
         "CLOUD_ESCALATION",
         "OLLAMA_MODELS",
         "OLLAMA_CONTEXT_LENGTH",
@@ -145,6 +146,7 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
         "WAITRESS_THREADS",
         "SIMULATION_WORKERS",
         "SIMULATION_EXECUTOR",
+        "DATABASE_URL",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(LAUNCHER.os, "cpu_count", lambda: 32)
@@ -153,12 +155,37 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
 
     assert environment["AI_PROVIDER"] == "hybrid-demand"
     assert environment["LOCAL_AI_MODEL"] == "qwen3.8:27b"
+    assert environment["LOCAL_AI_FAST_MODEL"] == "llama3.1:8b"
     assert environment["CLOUD_ESCALATION"] == "on_failure"
     assert environment["OLLAMA_CONTEXT_LENGTH"] == "8192"
     assert environment["WAITRESS_THREADS"] == "16"
     assert environment["SIMULATION_WORKERS"] == "12"
     assert environment["SIMULATION_EXECUTOR"] == "process"
     assert environment["OMP_NUM_THREADS"] == "1"
+    assert environment["DATABASE_URL"] == LAUNCHER.DEFAULT_DATABASE_URL
+
+
+def test_launcher_rejects_non_canonical_project_root(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "CANONICAL_ROOT", tmp_path / "canonical")
+    monkeypatch.delenv("NETWORKIS_ALLOW_NON_CANONICAL_ROOT", raising=False)
+
+    with pytest.raises(SystemExit, match="Falscher Simulator-Projektpfad"):
+        LAUNCHER._assert_canonical_project_root()
+
+
+def test_launcher_can_explicitly_allow_diagnostic_project_copy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "CANONICAL_ROOT", tmp_path / "canonical")
+    monkeypatch.setenv("NETWORKIS_ALLOW_NON_CANONICAL_ROOT", "1")
+
+    LAUNCHER._assert_canonical_project_root()
 
 
 def test_runtime_environment_loads_local_env_without_overwriting_process_values(
@@ -280,6 +307,26 @@ def test_hybrid_demand_checks_local_ollama_model(
     )
 
     assert owned_process is None
+    assert LAUNCHER._service_restart_limit({}) == 5
+
+
+def test_missing_fast_model_falls_back_to_deep_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(LAUNCHER, "_ollama_models", lambda _environment: ["qwen3.8:27b"])
+    environment = {
+        "AI_PROVIDER": "hybrid-demand",
+        "LOCAL_AI_MODEL": "qwen3.8:27b",
+        "LOCAL_AI_FAST_MODEL": "missing:8b",
+    }
+
+    assert LAUNCHER._ensure_local_ai(environment, None) is None
+    assert environment["LOCAL_AI_FAST_MODEL"] == "qwen3.8:27b"
+
+
+def test_service_restart_limit_rejects_invalid_values() -> None:
+    with pytest.raises(RuntimeError, match="ganze Zahl"):
+        LAUNCHER._service_restart_limit({"NETWORKIS_SERVICE_RESTARTS": "many"})
+    with pytest.raises(RuntimeError, match="nicht negativ"):
+        LAUNCHER._service_restart_limit({"NETWORKIS_SERVICE_RESTARTS": "-1"})
 
 
 def test_engineering_database_url_accepts_sqlalchemy_psycopg_scheme(

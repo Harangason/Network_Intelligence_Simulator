@@ -55,22 +55,21 @@ def analyze_runtime_trace(
         (Path(path) for path in result.get("artifacts") or [] if str(path).endswith("universal_trace.jsonl")),
         None,
     )
-    if trace_path is None or not trace_path.is_file():
-        return {
-            "available": False,
-            "reason": "Universal trace is not available.",
-            "calculation_model": "RUNTIME_TRACE_ANALYSIS_V1",
-        }
-
     events: list[dict[str, Any]] = []
-    with trace_path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            if line.strip():
-                events.append(json.loads(line))
+    trace_source = "model_simulation.frames"
+    if trace_path is not None and trace_path.is_file():
+        trace_source = "universal_trace.jsonl"
+        with trace_path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    events.append(json.loads(line))
+    else:
+        model_simulation = result.get("model_simulation") if isinstance(result.get("model_simulation"), dict) else {}
+        events = [item for item in model_simulation.get("frames") or [] if isinstance(item, dict)]
     if not events:
         return {
             "available": False,
-            "reason": "Universal trace contains no events.",
+            "reason": "Simulation trace contains no frame events.",
             "calculation_model": "RUNTIME_TRACE_ANALYSIS_V1",
         }
 
@@ -88,6 +87,8 @@ def analyze_runtime_trace(
         transmitted = [item for item in items if item.get("status") != "dropped"]
         busy_s = sum(_number(item.get("transmission_latency_ms")) / 1000.0 for item in transmitted)
         average = busy_s / observed_duration * 100.0
+        peak = max(average, _load_in_window(items, 0.01))
+        burst = max(average, _load_in_window(items, 0.1))
         network_metrics.append(
             {
                 "network_id": network_id,
@@ -97,8 +98,8 @@ def analyze_runtime_trace(
                 "dropped_count": sum(item.get("status") == "dropped" for item in items),
                 "corrupted_count": sum(item.get("status") == "corrupted" for item in items),
                 "average_load_percent": round(average, 6),
-                "peak_load_percent": round(_load_in_window(items, 0.01), 6),
-                "burst_load_percent": round(_load_in_window(items, 0.1), 6),
+                "peak_load_percent": round(peak, 6),
+                "burst_load_percent": round(burst, 6),
                 "average_queue_depth": round(
                     sum(_number(item.get("queue_depth_estimate")) for item in items) / len(items), 6
                 ),
@@ -264,6 +265,7 @@ def analyze_runtime_trace(
         "available": True,
         "calculation_model": "RUNTIME_TRACE_ANALYSIS_V1",
         "calculation_version": "1.0",
+        "trace_source": trace_source,
         "jitter_definition": "abs(actual_interval - expected_interval)",
         "peak_window_ms": 10,
         "burst_window_ms": 100,
@@ -304,3 +306,10 @@ def analyze_runtime_trace(
         "gateways": gateway_metrics,
         "bottlenecks": bottlenecks,
     }
+
+
+class RuntimeBusLoadMonitor:
+    """Calculate simulated load exclusively from emitted frame timing and wire size."""
+
+    def analyze(self, result: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+        return analyze_runtime_trace(result, config)

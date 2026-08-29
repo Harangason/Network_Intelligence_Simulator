@@ -121,6 +121,25 @@ def normalize_route(data: dict[str, Any], existing: dict[str, Any] | None = None
 
     payload = _object(base.get("payload"), "payload")
     payload["signal_ids"] = _list(payload.get("signal_ids"), "payload.signal_ids")
+    message_ids = _list(payload.get("message_ids"), "payload.message_ids")
+    if payload.get("message_id"):
+        message_ids.insert(0, payload["message_id"])
+    payload["message_ids"] = list(dict.fromkeys(str(item) for item in message_ids if item))
+    payload["message_id"] = payload["message_ids"][0] if payload["message_ids"] else None
+    interface_definition_ids = _list(
+        payload.get("interface_definition_ids"),
+        "payload.interface_definition_ids",
+    )
+    if payload.get("interface_definition_id"):
+        interface_definition_ids.insert(0, payload["interface_definition_id"])
+    payload["interface_definition_ids"] = list(
+        dict.fromkeys(str(item) for item in interface_definition_ids if item)
+    )
+    payload["interface_definition_id"] = (
+        payload["interface_definition_ids"][0]
+        if payload["interface_definition_ids"]
+        else None
+    )
     route = _object(base.get("route"), "route")
     route["hops"] = _list(route.get("hops"), "route.hops")
     route["gateways"] = _list(route.get("gateways"), "route.gateways")

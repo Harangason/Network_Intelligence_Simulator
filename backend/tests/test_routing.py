@@ -5,7 +5,8 @@ import pytest
 from backend.engineering.models import EngineeringValidationError
 from backend.engineering.routing.generation import RoutingGenerationService
 from backend.engineering.routing.models import normalize_route
-from backend.engineering.routing.network_sync import build_network_route_candidates
+from backend.engineering.routing.network_sync import build_network_route_candidates, enrich_route_from_linked_topology
+from backend.engineering.routing import repository as routing_repository
 from backend.engineering.routing.validation import RoutingValidator, detect_routing_loop
 
 
@@ -14,6 +15,7 @@ TARGET = "00000000-0000-0000-0000-000000000002"
 SOURCE_INTERFACE = "00000000-0000-0000-0000-000000000011"
 TARGET_INTERFACE = "00000000-0000-0000-0000-000000000012"
 MESSAGE = "00000000-0000-0000-0000-000000000021"
+MESSAGE_2 = "00000000-0000-0000-0000-000000000022"
 SIGNAL = "00000000-0000-0000-0000-000000000031"
 
 
@@ -73,12 +75,126 @@ def test_routing_entry_model_normalizes_governance_and_signal_selection():
     assert route["approval_state"] == "PENDING"
 
 
+def test_routing_entry_model_preserves_multiple_messages_with_legacy_primary():
+    route = normalize_route(route_payload(payload={
+        "message_id": MESSAGE,
+        "message_ids": [MESSAGE, MESSAGE_2, MESSAGE],
+        "signal_ids": [SIGNAL],
+    }))
+
+    assert route["payload"]["message_id"] == MESSAGE
+    assert route["payload"]["message_ids"] == [MESSAGE, MESSAGE_2]
+    assert route["payload"]["signal_ids"] == [SIGNAL]
+
+
+def test_routing_validator_accepts_signals_from_any_selected_message():
+    result = FakeValidator().validate(route_payload(payload={
+        "message_id": MESSAGE,
+        "message_ids": [MESSAGE, MESSAGE_2],
+        "signal_ids": [SIGNAL],
+    }))
+
+    assert not any(error["code"] in {"MESSAGE_NOT_FOUND", "SIGNAL_MESSAGE_MISMATCH"} for error in result["errors"])
+
+
 def test_network_editor_governance_values_are_supported():
     route = normalize_route(
         route_payload(origin="NETWORK_EDITOR", status="PENDING_CONFIRMATION")
     )
     assert route["origin"] == "NETWORK_EDITOR"
     assert route["status"] == "PENDING_CONFIRMATION"
+
+
+def test_route_listing_keeps_edited_revisions_in_their_logical_position(monkeypatch):
+    class Connection:
+        def __init__(self):
+            self.query = ""
+            self.values = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, query, values):
+            self.query = query.as_string()
+            self.values = values
+            return self
+
+        def fetchall(self):
+            return []
+
+    connection = Connection()
+    monkeypatch.setattr(routing_repository, "get_connection", lambda: connection)
+    monkeypatch.setattr(routing_repository, "current_project_id", lambda: "project-a")
+
+    assert routing_repository.list_routes() == []
+    assert "MIN(history.created_at)" in connection.query
+    assert "revision DESC" in connection.query
+    assert "modified_at DESC" not in connection.query
+    assert connection.values == ["project-a", 200, 0]
+
+
+def test_editing_approved_route_updates_same_record(monkeypatch):
+    route_id = "00000000-0000-0000-0000-000000000099"
+    current = {
+        **normalize_route(route_payload()),
+        "id": route_id,
+        "route_code": "RT-EXAMPLE",
+        "revision": 3,
+        "status": "APPROVED",
+        "review_state": "REVIEWED",
+        "approval_state": "APPROVED",
+        "approved_at": "2026-08-28T10:00:00+00:00",
+        "approved_by": "reviewer",
+    }
+
+    class Connection:
+        def __init__(self):
+            self.queries = []
+            self.row = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, query, values):
+            query_text = query.as_string() if hasattr(query, "as_string") else str(query)
+            self.queries.append((query_text, values))
+            if query_text.startswith("UPDATE engineering_routing_entries"):
+                self.row = {
+                    **current,
+                    "name": "Updated route",
+                    "revision": 4,
+                    "status": "DRAFT",
+                    "review_state": "UNREVIEWED",
+                    "approval_state": "PENDING",
+                    "approved_at": None,
+                    "approved_by": None,
+                }
+            return self
+
+        def fetchone(self):
+            return self.row
+
+        def commit(self):
+            return None
+
+    connection = Connection()
+    monkeypatch.setattr(routing_repository, "get_route", lambda _route_id: current)
+    monkeypatch.setattr(routing_repository, "get_connection", lambda: connection)
+    monkeypatch.setattr(routing_repository, "current_project_id", lambda: "project-a")
+
+    updated = routing_repository.update_route(route_id, {"name": "Updated route", "actor": "routing-ui"})
+
+    assert updated["id"] == route_id
+    assert updated["revision"] == 4
+    assert updated["approval_state"] == "PENDING"
+    assert any("WHERE id = %s" in query for query, _values in connection.queries)
+    assert not any("INSERT INTO engineering_routing_entries" in query for query, _values in connection.queries)
 
 
 def test_manual_route_requires_source_and_destination():
@@ -280,6 +396,100 @@ def test_network_path_accepted_from_routing_table_does_not_duplicate_route():
     assert skipped == []
 
 
+def test_linked_agent_route_receives_physical_network_and_ports():
+    route_id = "00000000-0000-0000-0000-000000000099"
+    route = {
+        **normalize_route(route_payload()),
+        "id": route_id,
+        "source": {**route_payload()["source"], "network_id": None, "port_id": None},
+        "destinations": [
+            {**route_payload()["destinations"][0], "network_id": None, "port_id": None}
+        ],
+    }
+    topology = {
+        "nodes": [
+            {"id": "source", "engineeringId": SOURCE},
+            {"id": "target", "engineeringId": TARGET},
+        ],
+        "edges": [
+            {
+                "id": "routing-edge",
+                "source": "source",
+                "sourcePort": "source-port",
+                "target": "target",
+                "targetPort": "target-port",
+                "bus": "can_fd",
+                "routingEntryIds": [route_id],
+            }
+        ],
+    }
+
+    enriched = enrich_route_from_linked_topology(route, topology)
+
+    assert enriched["source"]["network_id"] == "network-can_fd"
+    assert enriched["source"]["port_id"] == "source-port"
+    assert enriched["destinations"][0]["network_id"] == "network-can_fd"
+    assert enriched["destinations"][0]["port_id"] == "target-port"
+
+
+def test_gateway_path_composed_from_accepted_routes_does_not_reopen_review():
+    topology = {
+        "nodes": [
+            {
+                "id": "source",
+                "name": "Source",
+                "kind": "ecu",
+                "engineeringId": SOURCE,
+                "ports": [{"id": "source-port", "bus": "can_fd"}],
+            },
+            {
+                "id": "gateway",
+                "name": "Gateway",
+                "kind": "gateway",
+                "engineeringId": "00000000-0000-0000-0000-000000000003",
+                "ports": [
+                    {"id": "gateway-left", "bus": "can_fd"},
+                    {"id": "gateway-right", "bus": "can_fd"},
+                ],
+            },
+            {
+                "id": "target",
+                "name": "Target",
+                "kind": "ecu",
+                "engineeringId": TARGET,
+                "ports": [{"id": "target-port", "bus": "can_fd"}],
+            },
+        ],
+        "edges": [
+            {
+                "id": "route-a-edge",
+                "source": "source",
+                "sourcePort": "source-port",
+                "target": "gateway",
+                "targetPort": "gateway-left",
+                "bus": "can_fd",
+                "origin": "ROUTING_TABLE",
+                "routingEntryId": "route-a",
+            },
+            {
+                "id": "route-b-edge",
+                "source": "gateway",
+                "sourcePort": "gateway-right",
+                "target": "target",
+                "targetPort": "target-port",
+                "bus": "can_fd",
+                "origin": "ROUTING_TABLE",
+                "routingEntryId": "route-b",
+            },
+        ],
+    }
+
+    candidates, skipped = build_network_route_candidates("project-a", topology)
+
+    assert candidates == []
+    assert skipped == []
+
+
 def test_candidate_ranking_prefers_fewer_hops_and_gateways():
     ranked = RoutingGenerationService().rank_candidate_paths(
         [
@@ -289,3 +499,85 @@ def test_candidate_ranking_prefers_fewer_hops_and_gateways():
     )
     assert ranked[0]["hop_count"] == 1
     assert ranked[0]["score"] > ranked[1]["score"]
+
+
+def test_graph_publication_uses_project_scoped_relation_conflict_key():
+    class Connection:
+        def __init__(self):
+            self.queries = []
+
+        def execute(self, query, _params):
+            self.queries.append(query)
+
+    connection = Connection()
+    routing_repository._publish_graph(
+        connection,
+        {
+            "id": "00000000-0000-0000-0000-000000000099",
+            "route_code": "RT-PROJECT",
+            "source": {"node_id": SOURCE},
+            "destinations": [{"node_id": TARGET}],
+            "payload": {"signal_ids": []},
+        },
+        "test",
+    )
+
+    assert "ON CONFLICT (project_id, relation_type" in connection.queries[0]
+
+
+def test_generation_reuses_canonical_interfaces_protocol_and_message_cycle(monkeypatch):
+    service = RoutingGenerationService()
+    nodes = {
+        SOURCE: {"id": SOURCE, "name": "Sensor", "device_type": "SensorController"},
+        TARGET: {"id": TARGET, "name": "ECU", "device_type": "ECU"},
+    }
+    interfaces = {
+        SOURCE: [{"id": SOURCE_INTERFACE, "hardware_node_id": SOURCE, "interface_type": "CAN_FD"}],
+        TARGET: [{"id": TARGET_INTERFACE, "hardware_node_id": TARGET, "interface_type": "CAN_FD"}],
+    }
+    monkeypatch.setattr(service, "_node", lambda node_id: nodes[node_id])
+    monkeypatch.setattr(service, "_interface_candidates", lambda node_id: interfaces[node_id])
+    monkeypatch.setattr(
+        service,
+        "_message_context",
+        lambda message_id: {
+            "id": message_id,
+            "interface_id": SOURCE_INTERFACE,
+            "hardware_node_id": SOURCE,
+            "interface_type": "CAN_FD",
+            "cycle_ms": 10,
+        },
+    )
+    monkeypatch.setattr(
+        service,
+        "find_candidate_paths",
+        lambda source_id, target_id: [
+            {
+                "nodes": [
+                    {"node_id": source_id, "name": "Sensor"},
+                    {"node_id": target_id, "name": "ECU"},
+                ],
+                "connections": [],
+                "gateways": [],
+                "protocol": "CUSTOM",
+                "score": 0.93,
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        "backend.engineering.routing.generation.RoutingValidator.validate",
+        lambda validator, route: {"valid": True, "errors": [], "warnings": []},
+    )
+
+    route = service.generate_route(
+        source_node_id=SOURCE,
+        destination_node_id=TARGET,
+        message_id=MESSAGE,
+        signal_ids=[SIGNAL],
+    )
+
+    assert route["source"]["interface_id"] == SOURCE_INTERFACE
+    assert route["destinations"][0]["interface_id"] == TARGET_INTERFACE
+    assert route["source"]["protocol"] == "CAN_FD"
+    assert route["destinations"][0]["protocol"] == "CAN_FD"
+    assert route["timing"]["cycle_time_ms"] == 10
