@@ -79,3 +79,21 @@ test("die Referenzarchitektur erzeugt genau 100 Sensor- und 50 Gateway-Pfade", (
   assert.equal(plans.some((plan) => plan.source.device_type === "Gateway"), false);
   assert.equal(ecuPlans.every((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
 });
+
+test("Variante 3 bindet Sensoren und ECUs direkt an das Gateway an", () => {
+  const specification = extractEngineeringSpecification(SAMPLE);
+  const plans = semanticRoutePlans(specification.chains, "gateway_direct");
+
+  assert.equal(plans.length, 150);
+  assert.equal(plans.every((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
+});
+
+test("der KI-Hybrid kombiniert ECU-vermittelte und direkte Gateway-Pfade", () => {
+  const specification = extractEngineeringSpecification(SAMPLE);
+  const plans = semanticRoutePlans(specification.chains, "hybrid_ai");
+  const sensorPlans = plans.filter((plan) => plan.source.device_type === "SensorController");
+
+  assert.equal(sensorPlans.length, 100);
+  assert.equal(sensorPlans.some((plan) => plan.destinations[0]?.device_type === "ECU"), true);
+  assert.equal(sensorPlans.some((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
+});

@@ -520,7 +520,7 @@ def test_network_topology_sync_keeps_one_interface_per_port() -> None:
     gateway = next(item for item in first_result["nodes"] if item["topology_node_id"] == "gateway")
     assert first_result["counts"] == {"hardware_nodes": 3, "interfaces": 4, "connections": 2}
     assert [item["engineering_name"] for item in gateway["interfaces"]] == [
-        "Gateway_LIN_1",
+        "Gateway_LIN",
         "Gateway_LIN_2",
     ]
     assert len({item["engineering_id"] for item in gateway["interfaces"]}) == 2

@@ -30,8 +30,11 @@ export type ExtractedEngineeringSpecification = {
   domain: string;
   interfaceType: string;
   communicationSystems: string[];
+  networkArchitecture: NetworkArchitectureMode;
   targetCounts: EngineeringTargetCounts;
 };
+
+export type NetworkArchitectureMode = "eva" | "ecu_gateway" | "gateway_direct" | "hybrid_ai";
 
 export type EngineeringTargetCounts = {
   sensors: number;
@@ -109,6 +112,17 @@ const COUNT_WORDS: Record<string, number> = {
 };
 
 const COUNT_TOKEN = "(\\d+|ein|eine|einem|einen|einer|eins|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn)";
+
+export function extractNetworkArchitectureMode(text: string): NetworkArchitectureMode {
+  const explicit = text.match(/Netzarchitektur-ID:\s*(eva|ecu_gateway|gateway_direct|hybrid_ai)\b/i)?.[1]
+    ?.toLowerCase() as NetworkArchitectureMode | undefined;
+  if (explicit) return explicit;
+  if (/KI-Kombination|Kombination\s+aus\s+Variante\s*2\s*(?:\+|und)\s*3/i.test(text)) return "hybrid_ai";
+  if (/Variante\s*3|Gateway-direkt/i.test(text)) return "gateway_direct";
+  if (/Variante\s*2|ECU-vermittelt/i.test(text)) return "ecu_gateway";
+  if (/Variante\s*1|einfaches?\s+EVA/i.test(text)) return "eva";
+  return "ecu_gateway";
+}
 
 const ECU_NAMES = [
   "Thermal-ECU",
@@ -631,6 +645,7 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
   const domain = domainFrom(text);
   const interfaceType = protocolFrom(text);
   const communicationSystems = extractCommunicationSystems(text);
+  const networkArchitecture = extractNetworkArchitectureMode(text);
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const range = rangeFrom(context);
@@ -679,6 +694,7 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
     domain,
     interfaceType,
     communicationSystems,
+    networkArchitecture,
     targetCounts: expanded.targets,
   };
 }

@@ -566,12 +566,65 @@ const PROCESS_GROUP: ChoiceGroup = {
     ],
 };
 
+type NetworkArchitectureId = "eva" | "ecu_gateway" | "gateway_direct" | "hybrid_ai";
+
+type NetworkArchitectureOption = {
+  id: NetworkArchitectureId;
+  label: string;
+  detail: string;
+  diagram: string;
+  rules: string;
+};
+
+const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
+  {
+    id: "eva",
+    label: "Variante 1 · Einfaches EVA",
+    detail: "Eingabe, Verarbeitung und Ausgabe bleiben je System fachlich zusammengefasst.",
+    diagram: "Sensor/Aktor → ECU → Gateway",
+    rules: "EVA je Systemrahmen: Sensoren und Eingaben zur ECU, ECU-Verarbeitung zu Aktoren und Ausgaben; die Gateway-Anbindung vermittelt nur die Systemkommunikation.",
+  },
+  {
+    id: "ecu_gateway",
+    label: "Variante 2 · ECU-vermittelt",
+    detail: "Sensoren und Aktoren hängen an der ECU; die ECU kommuniziert mit Gateway oder BCM.",
+    diagram: "Sensor ─┐\n        ├─ ECU ─ Gateway / BCM\nAktor ──┘",
+    rules: "Sensoren und Aktoren werden ihrer fachlich zuständigen ECU zugeordnet; ausschließlich die ECU bindet den Systemrahmen an Gateway oder BCM an.",
+  },
+  {
+    id: "gateway_direct",
+    label: "Variante 3 · Gateway-direkt",
+    detail: "Sensoren, ECUs und Aktoren erhalten jeweils eine direkte Gateway- oder BCM-Anbindung.",
+    diagram: "Sensor ─────┐\nECU ────────┼─ Gateway / BCM\nAktor ──────┘",
+    rules: "Sensoren, ECUs und Aktoren werden als eigenständige Teilnehmer direkt an Gateway oder BCM angebunden.",
+  },
+  {
+    id: "hybrid_ai",
+    label: "KI-Kombination · Variante 2 + 3",
+    detail: "Die KI entscheidet je Teilnehmer zwischen lokaler ECU-Zuordnung und direkter Gateway-Anbindung.",
+    diagram: "lokal → ECU ─┐\n              ├─ Gateway / BCM\ndirekt ───────┘",
+    rules: "Kombination aus Variante 2 und 3: lokale, echtzeit- oder regelungskritische Teilnehmer über die fachliche ECU; systemweite, zentrale oder hochbandbreitige Teilnehmer direkt über Gateway oder BCM.",
+  },
+];
+
+function architectureOption(id: NetworkArchitectureId | "") {
+  return NETWORK_ARCHITECTURES.find((option) => option.id === id);
+}
+
 type AgentWizardContext = {
   agent_prompt?: string;
   attachments: Array<{ kind: string; name: string; size: number }>;
   confirmed_at: string;
   industry: string;
   mode: "full" | "can";
+  network_architecture?: {
+    ai_proposal: string;
+    approved: true;
+    approved_at: string;
+    id: NetworkArchitectureId;
+    label: string;
+    rules: string;
+  };
   notes: string;
   parameters: string;
   process: string[];
@@ -599,12 +652,26 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
       && typeof (item as Record<string, unknown>).size === "number"
     ))
     : [];
+  const rawArchitecture = context.network_architecture && typeof context.network_architecture === "object"
+    ? context.network_architecture as Record<string, unknown>
+    : null;
+  const architectureId = rawArchitecture && NETWORK_ARCHITECTURES.some((option) => option.id === rawArchitecture.id)
+    ? rawArchitecture.id as NetworkArchitectureId
+    : null;
   return {
     agent_prompt: typeof context.agent_prompt === "string" ? context.agent_prompt : undefined,
     attachments,
     confirmed_at: String(context.confirmed_at ?? ""),
     industry: String(context.industry ?? "Aus Projektkontext ableiten"),
     mode: context.mode === "can" ? "can" : "full",
+    network_architecture: architectureId && rawArchitecture?.approved === true ? {
+      ai_proposal: String(rawArchitecture.ai_proposal ?? ""),
+      approved: true,
+      approved_at: String(rawArchitecture.approved_at ?? ""),
+      id: architectureId,
+      label: String(rawArchitecture.label ?? architectureOption(architectureId)?.label ?? architectureId),
+      rules: String(rawArchitecture.rules ?? architectureOption(architectureId)?.rules ?? ""),
+    } : undefined,
     notes: String(context.notes ?? ""),
     parameters: String(context.parameters ?? "Technologie-Defaults verwenden"),
     process: strings("process"),
@@ -756,6 +823,9 @@ export function EngineeringAgentWizard({
   const [step, setStep] = useState(0);
   const [selectedIndustry, setSelectedIndustry] = useState("automotive");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
+  const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("");
+  const [architectureApproved, setArchitectureApproved] = useState(false);
+  const [architectureAiProposal, setArchitectureAiProposal] = useState("");
   const [scope, setScope] = useState<string[]>(SCOPE_GROUP.options.map((option) => option.id));
   const [process, setProcess] = useState<string[]>(PROCESS_GROUP.options.map((option) => option.id));
   const [parameterMode, setParameterMode] = useState<"defaults" | "custom">("defaults");
@@ -845,7 +915,7 @@ export function EngineeringAgentWizard({
       setTaskText(restored.task);
       setSubmittedAt(0);
       setPhase("status");
-      setStep(5);
+      setStep(6);
       void writeWizardDiagnostic("workflow", {
         projectId,
         runId: restored.run_id,
@@ -1048,6 +1118,7 @@ export function EngineeringAgentWizard({
   const questionnaireSteps = [
     ...(mode === "full" ? [{ id: "industry", label: "Industrie" }] : []),
     { id: "technologies", label: "Technologien" },
+    { id: "architecture", label: "Netzarchitektur" },
     ...(mode === "can" ? [{ id: "parameters", label: "Parameter" }] : []),
     { id: "scope", label: "Umfang" },
     { id: "process", label: "Arbeitsweise" },
@@ -1059,6 +1130,13 @@ export function EngineeringAgentWizard({
   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
   const effectiveBusy = busy || submitting;
+  const selectedArchitecture = architectureOption(networkArchitecture);
+  const architectureReady = Boolean(
+    selectedArchitecture
+    && architectureApproved
+    && (networkArchitecture !== "hybrid_ai" || architectureAiProposal.trim()),
+  );
+  const architectureStepIndex = questionnaireSteps.findIndex((item) => item.id === "architecture");
 
   function toggle(group: ChoiceGroup, optionId: string) {
     if (group.id === "industry") {
@@ -1084,8 +1162,28 @@ export function EngineeringAgentWizard({
     setTaskFiles(attachments);
   }
 
+  function selectNetworkArchitecture(id: NetworkArchitectureId) {
+    setNetworkArchitecture(id);
+    setArchitectureApproved(false);
+    if (id !== "hybrid_ai") setArchitectureAiProposal("");
+  }
+
+  function generateHybridArchitecture() {
+    const technologies = technologyGroup.options
+      .filter((option) => selectedTechnologies.includes(option.id))
+      .map((option) => option.label)
+      .join(", ");
+    setNetworkArchitecture("hybrid_ai");
+    setArchitectureApproved(false);
+    setArchitectureAiProposal(
+      `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren der fachlich zuständigen ECU zu. ` +
+      `Binde zentrale, diagnoseorientierte oder hochbandbreitige Teilnehmer direkt an Gateway/BCM an. ` +
+      `Begründe jede Direktanbindung anhand von Semantik, Safety, Latenz und Bandbreite${technologies ? ` für ${technologies}` : ""}.`,
+    );
+  }
+
   async function submitQuestionnaire() {
-    if (!taskReady || submitting) return;
+    if (!taskReady || !architectureReady || !selectedArchitecture || submitting) return;
     setSubmitting(true);
     setStatusError("");
     const selectedTechnologyValues = technologyGroup.options
@@ -1108,6 +1206,14 @@ export function EngineeringAgentWizard({
       confirmed_at: confirmedAt,
       industry: mode === "can" ? "Aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry,
       mode,
+      network_architecture: {
+        ai_proposal: architectureAiProposal.trim(),
+        approved: true,
+        approved_at: confirmedAt,
+        id: selectedArchitecture.id,
+        label: selectedArchitecture.label,
+        rules: selectedArchitecture.rules,
+      },
       notes: notes.trim(),
       parameters: parameterSummary,
       process: selectedProcessValues,
@@ -1125,6 +1231,11 @@ export function EngineeringAgentWizard({
         `- Abfrage-Modus: ${mode === "can" ? "reduziert fuer CAN/CAN-FD" : "vollstaendig"}\n` +
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
         `- Netzwerktechnologien: ${selectedTechnologyValues.length ? selectedTechnologyValues.join("; ") : "nicht vorgegeben, passende Technologien aus der gewaehlten Industrie verwenden"}\n` +
+        `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
+        `- Netzarchitektur: ${selectedArchitecture.label}\n` +
+        `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
+        `- Netzarchitektur-Freigabe: explizit durch den Nutzer erteilt am ${confirmedAt}\n` +
+        `${architectureAiProposal.trim() ? `- KI-Architekturvorgabe: ${architectureAiProposal.trim()}\n` : ""}` +
         `- Parameter: ${parameterSummary}\n` +
         `- Workflowumfang: ${selectedScopeValues.length ? selectedScopeValues.join("; ") : "nicht vorgegeben, Ziel aus Nutzeranfrage ableiten"}\n` +
         `- Arbeitsweise: ${selectedProcessValues.length ? selectedProcessValues.join("; ") : "nicht vorgegeben, vorsichtig mit Review-Gate arbeiten"}${note}\n` +
@@ -1200,7 +1311,10 @@ export function EngineeringAgentWizard({
       void submitQuestionnaire();
       return;
     }
-    setStep((current) => Math.min(current + 1, questionnaireSteps.length - 1));
+    setStep((current) => {
+      if (questionnaireSteps[current]?.id === "architecture" && !architectureReady) return current;
+      return Math.min(current + 1, questionnaireSteps.length - 1);
+    });
   }
 
   async function finishWizard() {
@@ -1390,6 +1504,9 @@ export function EngineeringAgentWizard({
 
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
+  const primaryDisabled = effectiveBusy
+    || (atLastStep && !taskReady)
+    || (activeStepId === "architecture" && !architectureReady);
   const visibleQuestion = currentQuestion?.key === answeredQuestionKey ? null : currentQuestion;
   const persistedStatusRows = SCOPE_GROUP.options.map((option, index) => {
     const workflowStepId = option.id as WorkflowStepId;
@@ -1468,7 +1585,7 @@ export function EngineeringAgentWizard({
         {phase === "status" ? (
           <span className={`agent-wizard-live ${statusError ? "error" : ""}`}><i aria-hidden="true" /> {statusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : "Live"}</span>
         ) : (
-          <button className="button primary tiny" disabled={effectiveBusy || (atLastStep && !taskReady)} onClick={handlePrimary} type="button">
+          <button className="button primary tiny" disabled={primaryDisabled} onClick={handlePrimary} type="button">
             {submitting ? "Wird übernommen ..." : atLastStep ? "Übernehmen" : "Weiter"}
           </button>
         )}
@@ -1477,7 +1594,11 @@ export function EngineeringAgentWizard({
         {visibleSteps.map((item, index) => (
           <button
             className={index === step ? "active" : ""}
-            disabled={effectiveBusy || phase === "status"}
+            disabled={
+              effectiveBusy
+              || phase === "status"
+              || (index > architectureStepIndex && !architectureReady)
+            }
             key={item.id}
             onClick={() => setStep(index)}
             type="button"
@@ -1549,6 +1670,72 @@ export function EngineeringAgentWizard({
               </label>
             </div>
           )}
+        </fieldset>
+      )}
+      {activeStepId === "architecture" && (
+        <fieldset className="agent-choice-group agent-architecture-group">
+          <legend>Verbindliche Netzarchitektur</legend>
+          <div className="agent-architecture-grid">
+            {NETWORK_ARCHITECTURES.map((option) => {
+              const checked = option.id === networkArchitecture;
+              return (
+                <label className={`agent-architecture-choice ${checked ? "selected" : ""}`} key={option.id}>
+                  <input
+                    checked={checked}
+                    disabled={effectiveBusy}
+                    name="network-architecture"
+                    onChange={() => selectNetworkArchitecture(option.id)}
+                    type="radio"
+                  />
+                  <span className="agent-architecture-copy">
+                    <strong>{option.label}</strong>
+                    <small>{option.detail}</small>
+                    <code aria-label={`Schema ${option.label}`}>{option.diagram}</code>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="agent-architecture-ai">
+            <div>
+              <strong>KI-Architekturentwurf</strong>
+              <small>Erstellt eine prüfbare Kombination aus Variante 2 und 3. Erst deine Freigabe macht sie verbindlich.</small>
+            </div>
+            <button className="button secondary tiny" disabled={effectiveBusy} onClick={generateHybridArchitecture} type="button">
+              KI-Entwurf erstellen
+            </button>
+          </div>
+          {networkArchitecture === "hybrid_ai" && (
+            <label className="agent-questionnaire-note">
+              <span>KI-Leitplanke</span>
+              <textarea
+                disabled={effectiveBusy}
+                onChange={(event) => {
+                  setArchitectureAiProposal(event.target.value);
+                  setArchitectureApproved(false);
+                }}
+                placeholder="Beschreibe, welche Teilnehmer lokal über eine ECU oder direkt über Gateway/BCM geführt werden sollen."
+                rows={3}
+                value={architectureAiProposal}
+              />
+            </label>
+          )}
+          <label className={`agent-architecture-approval ${architectureApproved ? "approved" : ""}`}>
+            <input
+              checked={architectureApproved}
+              disabled={
+                effectiveBusy
+                || !selectedArchitecture
+                || (networkArchitecture === "hybrid_ai" && !architectureAiProposal.trim())
+              }
+              onChange={(event) => setArchitectureApproved(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <strong>Netzarchitektur verbindlich freigeben</strong>
+              <small>Der Schritt kann erst nach Auswahl und ausdrücklicher Freigabe verlassen werden.</small>
+            </span>
+          </label>
         </fieldset>
       )}
       {activeStepId === "process" && (
@@ -1742,7 +1929,13 @@ export function EngineeringAgentWizard({
           <button className="button secondary tiny" disabled={effectiveBusy || step === 0} onClick={() => setStep((current) => Math.max(current - 1, 0))} type="button">
             Zurück
           </button>
-          <span>{activeStepId === "task" ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt" : activeGroup ? selectedFor(activeGroup).length : parameterMode === "defaults" ? "Defaults" : "Eigene Werte"} ausgewählt</span>
+          <span>{activeStepId === "task"
+            ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt"
+            : activeStepId === "architecture"
+              ? architectureReady ? "Verbindlich freigegeben" : selectedArchitecture ? "Freigabe fehlt" : "Auswahl erforderlich"
+              : activeGroup
+                ? `${selectedFor(activeGroup).length} ausgewählt`
+                : parameterMode === "defaults" ? "Defaults ausgewählt" : "Eigene Werte ausgewählt"}</span>
         </div>
       )}
     </section>

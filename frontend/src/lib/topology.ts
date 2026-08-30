@@ -2,7 +2,7 @@ import type { HardwareNode } from "./types";
 
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
 export type BusType = "can_fd" | "lin" | "automotive_ethernet" | "flexray";
-export type PortSide = "left" | "right";
+export type PortSide = "left" | "right" | "top" | "bottom";
 
 export type TopologyPort = {
   id: string;

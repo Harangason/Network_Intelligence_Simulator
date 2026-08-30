@@ -326,7 +326,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const getWorkflow = () =>
-  request<WorkflowState>("/workflow").then(normalizeWorkflowState);
+  request<WorkflowState>("/workflow", { signal: AbortSignal.timeout(180000) }).then(normalizeWorkflowState);
 
 export const getWorkflowSummary = () =>
   request<WorkflowState>("/workflow?view=summary").then(normalizeWorkflowState);
@@ -344,6 +344,7 @@ export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "
   request<WorkflowState>("/workflow/topology", {
     method: "PUT",
     body: JSON.stringify({ topology }),
+    signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
 
 export const calculateCapacity = (overrides?: Record<string, unknown>) =>

@@ -1,4 +1,4 @@
-import type { ExtractedEngineeringChain } from "./engineering-specification";
+import type { ExtractedEngineeringChain, NetworkArchitectureMode } from "./engineering-specification";
 
 type RouteRule = {
   source: string[];
@@ -138,19 +138,35 @@ function gatewayForProcessor(
     )[0]?.gateway;
 }
 
-export function semanticRoutePlans(chains: ExtractedEngineeringChain[]): SemanticRoutePlan[] {
+export function semanticRoutePlans(
+  chains: ExtractedEngineeringChain[],
+  architecture: NetworkArchitectureMode = "ecu_gateway",
+): SemanticRoutePlan[] {
   const sensors = chains.filter((chain) => semanticRouteKey(chain.device_type).includes("sensor"));
+  const actuators = chains.filter((chain) => /actuator|aktor/.test(semanticRouteKey(chain.device_type)));
   const gateways = chains.filter((chain) => semanticRouteKey(chain.device_type).includes("gateway"));
-  const processors = chains.filter((chain) => !sensors.includes(chain) && !gateways.includes(chain));
+  const endpoints = [...sensors, ...actuators];
+  const processors = chains.filter((chain) => !endpoints.includes(chain) && !gateways.includes(chain));
   const plans: SemanticRoutePlan[] = [];
 
-  for (const sensor of sensors) {
-    const processor = semanticProcessorForSensor(sensor, processors);
-    if (processor) plans.push({ source: sensor, destinations: [processor] });
-  }
-  for (const processor of processors) {
-    const gateway = gatewayForProcessor(processor, gateways);
-    if (gateway) plans.push({ source: processor, destinations: [gateway] });
+  if (architecture === "gateway_direct") {
+    for (const participant of [...endpoints, ...processors]) {
+      const gateway = gatewayForProcessor(participant, gateways);
+      if (gateway) plans.push({ source: participant, destinations: [gateway] });
+    }
+  } else {
+    for (const endpoint of endpoints) {
+      const processor = semanticProcessorForSensor(endpoint, processors);
+      const gateway = gatewayForProcessor(endpoint, gateways);
+      const directInHybrid = architecture === "hybrid_ai"
+        && (canonicalInterfaceKey(endpoint.interface_type) === "ethernet" || !processor);
+      if (directInHybrid && gateway) plans.push({ source: endpoint, destinations: [gateway] });
+      else if (processor) plans.push({ source: endpoint, destinations: [processor] });
+    }
+    for (const processor of processors) {
+      const gateway = gatewayForProcessor(processor, gateways);
+      if (gateway) plans.push({ source: processor, destinations: [gateway] });
+    }
   }
   if (!plans.length && chains.length >= 2) {
     plans.push({ source: chains[0], destinations: chains.slice(1) });
@@ -164,4 +180,8 @@ export function semanticRoutePlans(chains: ExtractedEngineeringChain[]): Semanti
     unique.set(key, plan);
   }
   return [...unique.values()];
+}
+
+function canonicalInterfaceKey(value: string) {
+  return semanticRouteKey(value).replace(/\s+/g, "");
 }

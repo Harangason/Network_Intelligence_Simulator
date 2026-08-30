@@ -5089,6 +5089,121 @@ a {
   line-height: 1.35;
 }
 
+.agent-architecture-group {
+  gap: 10px;
+}
+
+.agent-architecture-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.agent-architecture-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #0a0e13;
+  cursor: pointer;
+}
+
+.agent-architecture-choice:hover {
+  border-color: var(--border-strong);
+  background: #0d131a;
+}
+
+.agent-architecture-choice.selected {
+  border-color: #79a847;
+  background: var(--accent-soft);
+}
+
+.agent-architecture-choice > input,
+.agent-architecture-approval > input {
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.agent-architecture-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.agent-architecture-copy strong,
+.agent-architecture-ai strong,
+.agent-architecture-approval strong {
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.agent-architecture-copy small,
+.agent-architecture-ai small,
+.agent-architecture-approval small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.agent-architecture-copy code {
+  display: block;
+  min-height: 46px;
+  margin-top: 3px;
+  padding: 7px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 5px;
+  color: #c5d2df;
+  background: rgba(3, 7, 11, 0.58);
+  font: 600 9px/1.45 var(--font-geist-mono), monospace;
+  white-space: pre;
+}
+
+.agent-architecture-ai,
+.agent-architecture-approval {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(148, 163, 184, 0.035);
+}
+
+.agent-architecture-ai > div,
+.agent-architecture-approval > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.agent-architecture-ai .button {
+  flex-shrink: 0;
+}
+
+.agent-architecture-approval {
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.agent-architecture-approval.approved {
+  border-color: #79a847;
+  background: var(--accent-soft);
+}
+
+.agent-architecture-approval:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.66;
+}
+
 .agent-questionnaire-note {
   display: grid;
   gap: 7px;
@@ -6090,13 +6205,13 @@ a {
   z-index: 0;
   inset: 0;
   display: grid;
-  grid-template-columns: 28% 44% 28%;
+  grid-template-rows: 24% 32% 44%;
   pointer-events: none;
 }
 
 .net-eva-zones span {
   padding: 16px 18px;
-  border-right: 1px solid rgba(115, 167, 255, 0.1);
+  border-bottom: 1px solid rgba(115, 167, 255, 0.1);
   color: #607183;
   background: rgba(242, 201, 76, 0.012);
   font: 600 9px var(--font-geist-mono), monospace;
@@ -6110,13 +6225,13 @@ a {
 }
 
 .net-eva-zones span:nth-child(3) {
-  border-right: 0;
+  border-bottom: 0;
   background: rgba(239, 125, 121, 0.012);
 }
 
 .net-eva-clusters {
   position: absolute;
-  z-index: 0;
+  z-index: 2;
   inset: 0;
   pointer-events: none;
 }
@@ -6135,15 +6250,43 @@ a {
   box-shadow: inset 3px 0 0 rgba(115, 167, 255, 0.5);
 }
 
-.net-eva-cluster > span {
+.net-eva-cluster.dragging {
+  border-color: rgba(159, 234, 78, 0.76);
+  background: rgba(159, 234, 78, 0.055);
+}
+
+.net-eva-cluster-handle {
   position: absolute;
-  top: -8px;
+  top: -11px;
   left: 10px;
+  z-index: 3;
+  max-width: calc(100% - 20px);
+  height: 20px;
   padding: 0 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
   color: #9fb2c3;
   background: #090d12;
   font: 700 9px var(--font-geist-mono), monospace;
+  text-align: left;
   text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.net-eva-cluster-handle:hover,
+.net-eva-cluster-handle:focus-visible {
+  color: var(--text);
+  background: #101720;
+}
+
+.net-eva-cluster-handle:active {
+  cursor: grabbing;
 }
 
 .net-wires {
@@ -6185,7 +6328,7 @@ a {
 
 .net-node {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -6216,6 +6359,45 @@ a {
 .net-node.ecu { border-left-color: #73a7ff; }
 .net-node.sensor { border-left-color: #f2c94c; }
 .net-node.actuator { border-left-color: #ef7d79; }
+
+.net-node.sensor,
+.net-node.actuator {
+  align-items: center;
+  padding: 10px 7px;
+}
+
+.net-node.sensor .net-node-kind,
+.net-node.actuator .net-node-kind {
+  position: absolute;
+  top: 11px;
+  left: 7px;
+  font-size: 7px;
+}
+
+.net-node.sensor .net-node-model-link,
+.net-node.actuator .net-node-model-link {
+  top: 10px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+}
+
+.net-node.sensor .net-node-name,
+.net-node.actuator .net-node-name {
+  position: absolute;
+  top: calc(50% + 10px);
+  left: 50%;
+  max-width: none;
+  max-height: calc(100% - 48px);
+  font-size: 11px;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-orientation: mixed;
+  white-space: nowrap;
+  word-break: normal;
+  writing-mode: vertical-rl;
+  transform: translate(-50%, -50%) rotate(180deg);
+}
 
 .net-node.gateway.eva-hub {
   border-color: var(--accent);
@@ -6403,9 +6585,20 @@ a {
 }
 
 .net-port.left,
-.net-port.right {
+.net-port.right,
+.net-port.top,
+.net-port.bottom {
   border-color: var(--bus, var(--accent));
   background: var(--background);
+}
+
+.net-port.top,
+.net-port.bottom {
+  transform: translateX(-50%);
+}
+
+.net-port.bottom {
+  top: auto;
 }
 
 .net-port.linked {
@@ -6415,6 +6608,11 @@ a {
 .net-port.compatible {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--bus, var(--accent)) 24%, transparent);
   transform: translateY(-50%) scale(1.14);
+}
+
+.net-port.top.compatible,
+.net-port.bottom.compatible {
+  transform: translateX(-50%) scale(1.14);
 }
 
 .net-port:hover {
@@ -7611,6 +7809,19 @@ a {
 
   .engineering-agent-wizard-dialog .agent-choice-grid {
     grid-template-columns: 1fr;
+  }
+
+  .agent-architecture-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-architecture-ai {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .agent-architecture-ai .button {
+    align-self: flex-start;
   }
 
   .agent-wizard-status-summary,

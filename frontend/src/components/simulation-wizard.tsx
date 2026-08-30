@@ -220,6 +220,44 @@ function useRoutingNetworkSuggestions(
   return cache.current.items;
 }
 
+function engineeringTopologySignature(topology: NetworkTopology) {
+  const connectedPortIds = new Set(
+    topology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
+  );
+  return JSON.stringify({
+    nodes: topology.nodes.map((node) => ({
+      id: node.id,
+      name: node.name,
+      kind: node.kind,
+      engineeringId: node.engineeringId,
+      systemOwnerId: node.systemOwnerId,
+      ports: node.ports
+        .filter((port) => port.engineeringId || connectedPortIds.has(port.id))
+        .map((port) => ({
+          id: port.id,
+          name: port.name,
+          bus: port.bus,
+          engineeringId: port.engineeringId,
+        })),
+    })),
+    edges: topology.edges.map((edge) => ({
+      id: edge.id,
+      name: edge.name,
+      sourceInterfaceName: edge.sourceInterfaceName,
+      targetInterfaceName: edge.targetInterfaceName,
+      relationType: edge.relationType,
+      description: edge.description,
+      direction: edge.direction,
+      source: edge.source,
+      sourcePort: edge.sourcePort,
+      target: edge.target,
+      targetPort: edge.targetPort,
+      bus: edge.bus,
+      routingMetadata: edge.routingMetadata,
+    })),
+  });
+}
+
 function mergeRoutingSuggestionsIntoTopology(
   topology: NetworkTopology,
   suggestions: RoutingNetworkSuggestion[],
@@ -423,51 +461,25 @@ export function SimulationWizard({
     error: string;
   }>({ status: "idle", linked: 0, error: "" });
   const [routingSyncMessage, setRoutingSyncMessage] = useState("");
+  const pendingPersistSignatureRef = useRef("");
 
-  const topologySignature = useMemo(() => {
-    const connectedPortIds = new Set(
-      topology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
-    );
-    return JSON.stringify({
-        nodes: topology.nodes.map((node) => ({
-          id: node.id,
-          name: node.name,
-          kind: node.kind,
-          engineeringId: node.engineeringId,
-          systemOwnerId: node.systemOwnerId,
-          ports: node.ports
-            .filter((port) => port.engineeringId || connectedPortIds.has(port.id))
-            .map((port) => ({
-              id: port.id,
-              name: port.name,
-              bus: port.bus,
-              engineeringId: port.engineeringId,
-            })),
-        })),
-        edges: topology.edges.map((edge) => ({
-          id: edge.id,
-          name: edge.name,
-          sourceInterfaceName: edge.sourceInterfaceName,
-          targetInterfaceName: edge.targetInterfaceName,
-          relationType: edge.relationType,
-          description: edge.description,
-          direction: edge.direction,
-          source: edge.source,
-          sourcePort: edge.sourcePort,
-          target: edge.target,
-          targetPort: edge.targetPort,
-          bus: edge.bus,
-          routingMetadata: edge.routingMetadata,
-        })),
-      });
-  }, [topology]);
+  const topologySignature = useMemo(() => engineeringTopologySignature(topology), [topology]);
 
   const persistNetworkRelationships = useCallback(async (next: NetworkTopology) => {
+    pendingPersistSignatureRef.current = engineeringTopologySignature(next);
+    setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));
     setRoutingSyncMessage("Routing-Vorschläge werden abgeglichen …");
     try {
       const state = await saveWorkflowTopology(normalizePhysicalTopology(next));
       if (Array.isArray(state.topology.nodes) && Array.isArray(state.topology.edges)) {
-        setTopology(normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges }));
+        const savedTopology = normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
+        pendingPersistSignatureRef.current = engineeringTopologySignature(savedTopology);
+        setTopology(savedTopology);
+        setEngineeringSync({
+          status: "synced",
+          linked: savedTopology.nodes.filter((node) => node.engineeringId).length,
+          error: "",
+        });
       }
       const counts = state.routing_sync?.counts;
       if (!counts) {
@@ -484,6 +496,12 @@ export function SimulationWizard({
       notifyWorkflowChanged();
       return true;
     } catch (error) {
+      pendingPersistSignatureRef.current = "";
+      setEngineeringSync({
+        status: "error",
+        linked: 0,
+        error: error instanceof Error ? error.message : "Modellabgleich fehlgeschlagen.",
+      });
       setRoutingSyncMessage(
         error instanceof Error ? error.message : "Routing-Synchronisierung fehlgeschlagen.",
       );
@@ -573,6 +591,7 @@ export function SimulationWizard({
     if (!automaticModelSync && syncRequest === 0) {
       return;
     }
+    if (syncRequest === 0 && pendingPersistSignatureRef.current === topologySignature) return;
     let cancelled = false;
     const timeout = window.setTimeout(() => {
       setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));

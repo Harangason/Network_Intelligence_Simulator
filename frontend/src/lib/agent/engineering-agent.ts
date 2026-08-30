@@ -1450,7 +1450,7 @@ export async function registerRoutingProposalForSpecification(specificationText:
   let created = false;
   let acceptedRouteCount = 0;
 
-  const routePlans = semanticRoutePlans(extracted.chains);
+  const routePlans = semanticRoutePlans(extracted.chains, extracted.networkArchitecture);
   await ensureSpecificationRoutingInterfaces(routePlans);
 
   async function processRoutePlan(plan: SemanticRoutePlan) {
@@ -3185,6 +3185,15 @@ Der Routing Manager beschreibt technologieunabhängig, welche Information von
 welchem Producer über welche Interfaces, Netzwerke und Gateways zu welchen
 Consumern gelangt. Nutze Graphpfade, technische Evidence und vorhandene
 Engineering-Objekte, bevor du Routingvorschläge erzeugst.
+
+Eine im Wizard explizit freigegebene Netzarchitektur ist verbindlich. Verwende
+Netzarchitektur-ID eva fuer einfache EVA-Systemrahmen, ecu_gateway fuer
+Sensor/Aktor -> fachliche ECU -> Gateway/BCM, gateway_direct fuer direkte
+Sensor/ECU/Aktor -> Gateway/BCM-Pfade und hybrid_ai fuer die freigegebene
+KI-Kombination. Bei hybrid_ai bleiben lokale, echtzeit- oder regelungskritische
+Teilnehmer an ihrer fachlichen ECU; zentrale, systemweite oder hochbandbreitige
+Teilnehmer duerfen direkt an Gateway/BCM angebunden werden. Ersetze diese
+Entscheidung nicht stillschweigend durch ein anderes Profil.
 
 Der verbindliche Workflow lautet:
 Engineering-Modell -> Routing-Tabelle -> Netzwerk-Editor -> Parameter ->

@@ -325,6 +325,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             port_name = (
                 f"{port_name_base}_{port_name_indexes[port_name_base]}"
                 if port_name_counts[port_name_base] > 1
+                and port_name_indexes[port_name_base] > 1
                 else port_name_base
             )
             configuration = {
@@ -397,6 +398,8 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                         **configuration,
                     }
                 }
+                if kind == "gateway" and requested_interface_names.get(port_id):
+                    reused_changes["name"] = port_name
                 interface = _update_if_changed(
                     "Interface",
                     interface,

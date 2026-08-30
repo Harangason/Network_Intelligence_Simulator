@@ -18,8 +18,15 @@ import { setWorkflowContext } from "@/lib/workflow-api";
 const NODE_DEFAULT_WIDTH = 168;
 const NODE_MIN_WIDTH = 140;
 const NODE_MIN_HEIGHT = 84;
-const PORT_OFFSET = 12;
+const PORT_DIAMETER = 14;
+const PORT_OFFSET = PORT_DIAMETER / 2 + 1;
 const PORT_SAFE_INSET = 18;
+const PORT_VISUAL_GAP = 7.5;
+const PORT_CENTER_GAP = PORT_DIAMETER + PORT_VISUAL_GAP;
+const EDGE_LANE_GAP = 7.5;
+const ENDPOINT_NODE_WIDTH = 62;
+const ENDPOINT_NAME_PADDING = 54;
+const ENDPOINT_CHARACTER_WIDTH = 7.25;
 const MENU_WIDTH = 210;
 const MENU_EDGE_GAP = 8;
 const CANVAS_MARGIN = 36;
@@ -45,6 +52,13 @@ const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
 
 type DragState =
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
+  | {
+      mode: "move-cluster";
+      clusterId: string;
+      startX: number;
+      startY: number;
+      members: Array<{ id: string; x: number; y: number }>;
+    }
   | { mode: "resize"; nodeId: string; startX: number; startY: number; startWidth: number; startHeight: number }
   | { mode: "move-port"; nodeId: string; portId: string }
   | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number };
@@ -96,10 +110,17 @@ function relationshipInterfaceName(
 }
 
 function nodeWidth(node: TopologyNode) {
-  return Math.max(NODE_MIN_WIDTH, node.width ?? NODE_DEFAULT_WIDTH);
+  const minimumWidth = node.kind === "sensor" || node.kind === "actuator"
+    ? ENDPOINT_NODE_WIDTH
+    : NODE_MIN_WIDTH;
+  const defaultWidth = node.kind === "sensor" || node.kind === "actuator"
+    ? ENDPOINT_NODE_WIDTH
+    : NODE_DEFAULT_WIDTH;
+  return Math.max(minimumWidth, node.width ?? defaultWidth);
 }
 
 function nodeContentHeight(node: TopologyNode) {
+  if (node.kind === "sensor" || node.kind === "actuator") return NODE_MIN_HEIGHT;
   const charactersPerLine = Math.max(10, Math.floor((nodeWidth(node) - 32) / 8));
   const nameLines = Math.max(1, Math.ceil(node.name.length / charactersPerLine));
   const contentHeight = node.ports.length === 0 ? 86 : 66;
@@ -114,24 +135,64 @@ function nodeHeight(node: TopologyNode) {
   return Math.max(nodeContentHeight(node), node.height ?? NODE_MIN_HEIGHT);
 }
 
+function endpointNameHeight(name: string) {
+  return Math.ceil(Math.max(NODE_MIN_HEIGHT, ENDPOINT_NAME_PADDING + name.length * ENDPOINT_CHARACTER_WIDTH));
+}
+
+function endpointRowHeight(nodes: TopologyNode[]) {
+  return Math.max(NODE_MIN_HEIGHT, ...nodes.map((node) => endpointNameHeight(node.name)));
+}
+
 function portTop(node: TopologyNode, port: TopologyPort) {
   const height = nodeHeight(node);
   return PORT_SAFE_INSET + Math.max(0, Math.min(1, port.offset ?? 0.5)) * (height - PORT_SAFE_INSET * 2);
 }
 
+function portLeft(node: TopologyNode, port: TopologyPort) {
+  const width = nodeWidth(node);
+  return PORT_SAFE_INSET + Math.max(0, Math.min(1, port.offset ?? 0.5)) * (width - PORT_SAFE_INSET * 2);
+}
+
+function nearestPortPlacement(node: TopologyNode, point: { x: number; y: number }) {
+  const width = nodeWidth(node);
+  const height = nodeHeight(node);
+  const localX = Math.max(0, Math.min(width, point.x - node.x));
+  const localY = Math.max(0, Math.min(height, point.y - node.y));
+  const candidates: Array<{ side: PortSide; distance: number }> = [
+    { side: "left", distance: localX },
+    { side: "right", distance: width - localX },
+    { side: "top", distance: localY },
+    { side: "bottom", distance: height - localY },
+  ];
+  const side = candidates.sort((left, right) => left.distance - right.distance)[0].side;
+  const horizontalAxis = side === "top" || side === "bottom";
+  const coordinate = horizontalAxis ? localX : localY;
+  const axisLength = horizontalAxis ? width : height;
+  const offset = Math.max(0, Math.min(1, (coordinate - PORT_SAFE_INSET) / Math.max(1, axisLength - PORT_SAFE_INSET * 2)));
+  return { side, offset };
+}
+
 function connectedPortSide(topology: NetworkTopology, node: TopologyNode, port: TopologyPort): PortSide {
-  const nodeCenter = node.x + nodeWidth(node) / 2;
+  const nodeCenter = { x: node.x + nodeWidth(node) / 2, y: node.y + nodeHeight(node) / 2 };
   const connectedCenters = topology.edges.flatMap((edge) => {
     const usesSource = edge.source === node.id && edge.sourcePort === port.id;
     const usesTarget = edge.target === node.id && edge.targetPort === port.id;
     if (!usesSource && !usesTarget) return [];
     const otherId = usesSource ? edge.target : edge.source;
     const other = topology.nodes.find((item) => item.id === otherId);
-    return other ? [other.x + nodeWidth(other) / 2] : [];
+    return other ? [{ x: other.x + nodeWidth(other) / 2, y: other.y + nodeHeight(other) / 2 }] : [];
   });
   if (!connectedCenters.length) return port.side;
-  const averageOtherCenter = connectedCenters.reduce((sum, value) => sum + value, 0) / connectedCenters.length;
-  return averageOtherCenter < nodeCenter ? "left" : "right";
+  const averageOtherCenter = connectedCenters.reduce(
+    (sum, value) => ({ x: sum.x + value.x, y: sum.y + value.y }),
+    { x: 0, y: 0 },
+  );
+  averageOtherCenter.x /= connectedCenters.length;
+  averageOtherCenter.y /= connectedCenters.length;
+  const deltaX = averageOtherCenter.x - nodeCenter.x;
+  const deltaY = averageOtherCenter.y - nodeCenter.y;
+  if (Math.abs(deltaY) >= Math.abs(deltaX)) return deltaY < 0 ? "top" : "bottom";
+  return deltaX < 0 ? "left" : "right";
 }
 
 function normalizePortSides(topology: NetworkTopology): NetworkTopology {
@@ -144,8 +205,240 @@ function normalizePortSides(topology: NetworkTopology): NetworkTopology {
   };
 }
 
+function connectedNodesForPort(topology: NetworkTopology, node: TopologyNode, port: TopologyPort) {
+  const nodesById = new Map(topology.nodes.map((item) => [item.id, item]));
+  return topology.edges.flatMap((edge) => {
+    if (edge.source === node.id && edge.sourcePort === port.id) {
+      const other = nodesById.get(edge.target);
+      return other ? [other] : [];
+    }
+    if (edge.target === node.id && edge.targetPort === port.id) {
+      const other = nodesById.get(edge.source);
+      return other ? [other] : [];
+    }
+    return [];
+  });
+}
+
+const gatewayBusLabels: Record<BusType, string> = {
+  can_fd: "CAN",
+  lin: "LIN",
+  automotive_ethernet: "Ethernet",
+  flexray: "FlexRay",
+};
+
+function gatewayDomainLabel(nodeName: string) {
+  const normalized = nodeName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const domains: Array<[RegExp, string]> = [
+    [/motorsteuer|getriebe|abgas|kraftstoff|inverter|elektromotor/, "Antriebs"],
+    [/brems|stabil|fahrwerk|daempfer|dampfer|lenkung|reifen/, "Fahrdynamik"],
+    [/klima|thermal/, "Klima"],
+    [/batterie|energieversorgung|bordnetz/, "Energie"],
+    [/bodycontrol|karosserie/, "Karosserie"],
+    [/fahrassist|\badas\b|radar|kamera/, "ADAS"],
+    [/infotainment/, "Infotainment"],
+    [/konnektiv|telematik/, "Konnektivitaets"],
+    [/diagnose/, "Diagnose"],
+    [/zentralrechner/, "Backbone"],
+  ];
+  const match = domains.find(([pattern]) => pattern.test(normalized));
+  if (match) return match[1];
+  return nodeName
+    .replace(/(?:-|\s)*(?:ECU|Gateway|Sensor|Aktor|Controller)$/i, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-|-$/g, "") || "System";
+}
+
+function semanticGatewayInterfaceName(topology: NetworkTopology, gateway: TopologyNode, port: TopologyPort) {
+  const connectedNode = connectedNodesForPort(topology, gateway, port)[0];
+  if (!connectedNode) return port.name;
+  return `${gatewayDomainLabel(connectedNode.name)}-${gatewayBusLabels[port.bus]}`;
+}
+
+function gatewayInterfaceNames(topology: NetworkTopology) {
+  const names = new Map<string, string>();
+  topology.nodes.filter((node) => node.kind === "gateway").forEach((gateway) => {
+    const occurrences = new Map<string, number>();
+    gateway.ports.forEach((port) => {
+      const baseName = semanticGatewayInterfaceName(topology, gateway, port);
+      const occurrence = (occurrences.get(baseName) ?? 0) + 1;
+      occurrences.set(baseName, occurrence);
+      names.set(`${gateway.id}\u0000${port.id}`, occurrence === 1 ? baseName : `${baseName} ${occurrence}`);
+    });
+  });
+  return names;
+}
+
+function nameGatewayInterfaces(topology: NetworkTopology): NetworkTopology {
+  const interfaceNames = gatewayInterfaceNames(topology);
+  const nodes = topology.nodes.map((node) => {
+    if (node.kind !== "gateway") return node;
+    return {
+      ...node,
+      ports: node.ports.map((port) => {
+        const name = interfaceNames.get(`${node.id}\u0000${port.id}`) ?? port.name;
+        return { ...port, name };
+      }),
+    };
+  });
+  return {
+    ...topology,
+    nodes,
+    edges: topology.edges.map((edge) => ({
+      ...edge,
+      sourceInterfaceName: interfaceNames.get(`${edge.source}\u0000${edge.sourcePort}`) ?? edge.sourceInterfaceName,
+      targetInterfaceName: interfaceNames.get(`${edge.target}\u0000${edge.targetPort}`) ?? edge.targetInterfaceName,
+    })),
+  };
+}
+
+function schemaPortSide(topology: NetworkTopology, node: TopologyNode, port: TopologyPort): PortSide {
+  const connectedNodes = connectedNodesForPort(topology, node, port);
+  if (!connectedNodes.length) return port.side;
+  if (node.kind === "gateway") {
+    const primaryGateway = primaryGatewayFor(topology);
+    if (primaryGateway && node.id !== primaryGateway.id && connectedNodes.some((other) => other.id === primaryGateway.id)) {
+      return "top";
+    }
+    return "bottom";
+  }
+  if (node.kind === "sensor" || node.kind === "actuator") return "top";
+  if (node.kind === "ecu") {
+    return connectedNodes.some((other) => other.kind === "gateway") ? "top" : "bottom";
+  }
+  return connectedPortSide(topology, node, port);
+}
+
+function portAwareNodeSize(topology: NetworkTopology, node: TopologyNode) {
+  const connectedPortIds = new Set(
+    topology.edges.flatMap((edge) => {
+      if (edge.source === node.id) return [edge.sourcePort];
+      if (edge.target === node.id) return [edge.targetPort];
+      return [];
+    }),
+  );
+  const ports = topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD
+    ? node.ports.filter((port) => connectedPortIds.has(port.id))
+    : node.ports;
+  const sideCounts: Record<PortSide, number> = { left: 0, right: 0, top: 0, bottom: 0 };
+  ports.forEach((port) => {
+    sideCounts[schemaPortSide(topology, node, port)] += 1;
+  });
+  const maximumVerticalSideCount = Math.max(sideCounts.left, sideCounts.right);
+  const maximumHorizontalSideCount = Math.max(sideCounts.top, sideCounts.bottom);
+  const portWidth = PORT_SAFE_INSET * 2 + Math.max(0, maximumHorizontalSideCount - 1) * PORT_CENTER_GAP;
+  const defaultWidth = node.kind === "sensor" || node.kind === "actuator"
+    ? ENDPOINT_NODE_WIDTH
+    : NODE_DEFAULT_WIDTH;
+  const width = Math.ceil(Math.max(defaultWidth, portWidth));
+  const height = Math.ceil(Math.max(
+    nodeContentHeight({ ...node, width, height: undefined }),
+    PORT_SAFE_INSET * 2 + Math.max(0, maximumVerticalSideCount - 1) * PORT_CENTER_GAP,
+  ));
+  return { width, height };
+}
+
+function sizeNodesForPorts(topology: NetworkTopology): NetworkTopology {
+  return {
+    ...topology,
+    nodes: topology.nodes.map((node) => ({ ...node, ...portAwareNodeSize(topology, node) })),
+  };
+}
+
+function orderPortsByConnectedNodes(topology: NetworkTopology): NetworkTopology {
+  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
+  return {
+    ...topology,
+    nodes: topology.nodes.map((node) => {
+      const portLayout = node.ports.map((port) => {
+        const connectedNodes = topology.edges.flatMap((edge) => {
+          if (edge.source === node.id && edge.sourcePort === port.id) {
+            const other = nodesById.get(edge.target);
+            return other ? [other] : [];
+          }
+          if (edge.target === node.id && edge.targetPort === port.id) {
+            const other = nodesById.get(edge.source);
+            return other ? [other] : [];
+          }
+          return [];
+        });
+        const averageCounterpartX = connectedNodes.length > 0
+          ? connectedNodes.reduce((total, other) => total + other.x + nodeWidth(other) / 2, 0) / connectedNodes.length
+          : Number.POSITIVE_INFINITY;
+        const averageCounterpartY = connectedNodes.length > 0
+          ? connectedNodes.reduce((total, other) => total + other.y + nodeHeight(other) / 2, 0) / connectedNodes.length
+          : Number.POSITIVE_INFINITY;
+        return {
+          port,
+          side: schemaPortSide(topology, node, port),
+          averageCounterpartX,
+          averageCounterpartY,
+          counterpartName: connectedNodes.map((other) => other.name).sort((left, right) => left.localeCompare(right, "de"))[0] ?? "",
+        };
+      });
+      const updated = new Map<string, TopologyPort>();
+      (["left", "right", "top", "bottom"] as const).forEach((side) => {
+        const horizontalAxis = side === "top" || side === "bottom";
+        const sidePorts = portLayout
+          .filter((item) => item.side === side && Number.isFinite(
+            horizontalAxis ? item.averageCounterpartX : item.averageCounterpartY,
+          ))
+          .sort((left, right) =>
+            (horizontalAxis
+              ? left.averageCounterpartX - right.averageCounterpartX
+              : left.averageCounterpartY - right.averageCounterpartY)
+            || left.counterpartName.localeCompare(right.counterpartName, "de")
+            || busOrder.indexOf(left.port.bus) - busOrder.indexOf(right.port.bus)
+            || left.port.name.localeCompare(right.port.name, "de")
+            || left.port.id.localeCompare(right.port.id)
+          );
+        if (sidePorts.length === 0) return;
+        const dimension = horizontalAxis ? nodeWidth(node) : nodeHeight(node);
+        const usableLength = Math.max(1, dimension - PORT_SAFE_INSET * 2);
+        const counterpartCoordinate = (item: (typeof sidePorts)[number]) =>
+          horizontalAxis ? item.averageCounterpartX - node.x : item.averageCounterpartY - node.y;
+        const centeredStart = dimension / 2 - (sidePorts.length - 1) * PORT_CENTER_GAP / 2;
+        const centers = sidePorts.map((item, index) => side === "top"
+          ? centeredStart + index * PORT_CENTER_GAP
+          : Math.max(
+              PORT_SAFE_INSET,
+              Math.min(dimension - PORT_SAFE_INSET, counterpartCoordinate(item)),
+            ));
+        for (let index = 1; index < centers.length; index += 1) {
+          centers[index] = Math.max(centers[index], centers[index - 1] + PORT_CENTER_GAP);
+        }
+        const overflow = centers[centers.length - 1] - (dimension - PORT_SAFE_INSET);
+        if (overflow > 0) {
+          centers[centers.length - 1] -= overflow;
+          for (let index = centers.length - 2; index >= 0; index -= 1) {
+            centers[index] = Math.min(centers[index], centers[index + 1] - PORT_CENTER_GAP);
+          }
+        }
+        sidePorts.forEach((item, index) => {
+          const offset = Math.max(0, Math.min(1, (centers[index] - PORT_SAFE_INSET) / usableLength));
+          updated.set(item.port.id, { ...item.port, side, offset });
+        });
+      });
+      return {
+        ...node,
+        ports: node.ports.map((port) => updated.get(port.id) ?? port),
+      };
+    }),
+  };
+}
+
 function portPosition(topology: NetworkTopology, node: TopologyNode, port: TopologyPort) {
-  const side = connectedPortSide(topology, node, port);
+  const side = port.side;
+  if (side === "top" || side === "bottom") {
+    return {
+      side,
+      x: node.x + portLeft(node, port),
+      y: side === "top" ? node.y : node.y + nodeHeight(node),
+    };
+  }
   return {
     side,
     x: side === "left" ? node.x : node.x + nodeWidth(node),
@@ -153,7 +446,17 @@ function portPosition(topology: NetworkTopology, node: TopologyNode, port: Topol
   };
 }
 
-function edgeLaneOffset(topology: NetworkTopology, edge: TopologyEdge, from: TopologyNode, to: TopologyNode) {
+function edgeLaneOffset(topology: NetworkTopology, edge: TopologyEdge, _from: TopologyNode, _to: TopologyNode) {
+  const endpoints = (candidate: TopologyEdge) => {
+    const candidateFrom = topology.nodes.find((node) => node.id === candidate.source);
+    const candidateTo = topology.nodes.find((node) => node.id === candidate.target);
+    const candidateFromPort = candidateFrom?.ports.find((port) => port.id === candidate.sourcePort);
+    const candidateToPort = candidateTo?.ports.find((port) => port.id === candidate.targetPort);
+    if (!candidateFrom || !candidateTo || !candidateFromPort || !candidateToPort) return undefined;
+    const start = portPosition(topology, candidateFrom, candidateFromPort);
+    const end = portPosition(topology, candidateTo, candidateToPort);
+    return start.x <= end.x ? { left: start, right: end } : { left: end, right: start };
+  };
   const corridorKey = (candidate: TopologyEdge) => {
     const candidateFrom = topology.nodes.find((node) => node.id === candidate.source);
     const candidateTo = topology.nodes.find((node) => node.id === candidate.target);
@@ -170,11 +473,16 @@ function edgeLaneOffset(topology: NetworkTopology, edge: TopologyEdge, from: Top
   const key = corridorKey(edge);
   const peers = topology.edges
     .filter((candidate) => corridorKey(candidate) === key)
-    .sort((left, right) => left.id.localeCompare(right.id));
+    .sort((left, right) => {
+      const leftEndpoints = endpoints(left);
+      const rightEndpoints = endpoints(right);
+      return (leftEndpoints?.left.y ?? 0) - (rightEndpoints?.left.y ?? 0)
+        || (leftEndpoints?.right.y ?? 0) - (rightEndpoints?.right.y ?? 0)
+        || left.id.localeCompare(right.id);
+    });
   const index = peers.findIndex((candidate) => candidate.id === edge.id);
   const centeredIndex = index < 0 ? 0 : index - (peers.length - 1) / 2;
-  const direction = from.y <= to.y ? 1 : -1;
-  return direction * Math.max(-28, Math.min(28, centeredIndex * 14));
+  return centeredIndex * EDGE_LANE_GAP;
 }
 
 type WirePoint = { x: number; y: number };
@@ -243,24 +551,23 @@ function roundedWirePath(points: WirePoint[]) {
 }
 
 function largeTopologyEdgePath(
+  topology: NetworkTopology,
   edge: TopologyEdge,
   from: TopologyNode,
   fromPort: TopologyPort,
   to: TopologyNode,
   toPort: TopologyPort,
 ) {
-  const startSide = fromPort.side;
-  const endSide = toPort.side;
-  const start = {
-    x: startSide === "left" ? from.x : from.x + nodeWidth(from),
-    y: from.y + portTop(from, fromPort),
-  };
-  const end = {
-    x: endSide === "left" ? to.x : to.x + nodeWidth(to),
-    y: to.y + portTop(to, toPort),
-  };
-  const hash = [...edge.id].reduce((value, character) => ((value * 31) + character.charCodeAt(0)) >>> 0, 0);
-  const laneOffset = ((hash % 7) - 3) * 6;
+  const start = portPosition(topology, from, fromPort);
+  const end = portPosition(topology, to, toPort);
+  const startSide = start.side;
+  const endSide = end.side;
+  const usesHorizontalEdges = [startSide, endSide].every((side) => side === "top" || side === "bottom");
+  if (usesHorizontalEdges) {
+    const laneY = (start.y + end.y) / 2;
+    return roundedWirePath([start, { x: start.x, y: laneY }, { x: end.x, y: laneY }, end]);
+  }
+  const laneOffset = edgeLaneOffset(topology, edge, from, to);
   const laneX = startSide === endSide
     ? startSide === "right"
       ? Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to)) + 34 + Math.abs(laneOffset)
@@ -274,10 +581,15 @@ function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: Top
     topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD ||
     topology.edges.length >= LARGE_TOPOLOGY_EDGE_THRESHOLD
   ) {
-    return largeTopologyEdgePath(edge, from, fromPort, to, toPort);
+    return largeTopologyEdgePath(topology, edge, from, fromPort, to, toPort);
   }
   const start = portPosition(topology, from, fromPort);
   const end = portPosition(topology, to, toPort);
+  const usesHorizontalEdges = [start.side, end.side].every((side) => side === "top" || side === "bottom");
+  if (usesHorizontalEdges) {
+    const laneY = (start.y + end.y) / 2;
+    return roundedWirePath([start, { x: start.x, y: laneY }, { x: end.x, y: laneY }, end]);
+  }
   const startDirection = start.side === "right" ? 1 : -1;
   const endDirection = end.side === "right" ? 1 : -1;
   const clearance = 34;
@@ -338,6 +650,18 @@ function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: Top
 
 function pendingEdgePath(topology: NetworkTopology, from: TopologyNode, fromPort: TopologyPort, to: { x: number; y: number }) {
   const start = portPosition(topology, from, fromPort);
+  if (start.side === "top" || start.side === "bottom") {
+    const startDirection = start.side === "bottom" ? 1 : -1;
+    const startStubY = start.y + startDirection * 28;
+    const laneY = (startStubY + to.y) / 2;
+    return roundedWirePath([
+      start,
+      { x: start.x, y: startStubY },
+      { x: start.x, y: laneY },
+      { x: to.x, y: laneY },
+      to,
+    ]);
+  }
   const startDirection = start.side === "right" ? 1 : -1;
   const laneX = (start.x + to.x) / 2;
   const startStubX = start.x + startDirection * 28;
@@ -533,12 +857,12 @@ function buildEvaGroups(topology: NetworkTopology, routingEntries: RoutingEntry[
   });
 }
 
-function nodeStackHeight(nodes: TopologyNode[]) {
-  return nodes.reduce((total, node) => total + nodeHeight(node), 0) + Math.max(0, nodes.length - 1) * EVA_ROW_GAP;
+function nodeRowWidth(nodes: TopologyNode[]) {
+  return nodes.reduce((total, node) => total + nodeWidth(node), 0) + Math.max(0, nodes.length - 1) * EVA_ROW_GAP;
 }
 
-function evaGroupHeight(group: EvaGroup) {
-  return Math.max(nodeHeight(group.anchor), nodeStackHeight(group.inputs), nodeStackHeight(group.outputs));
+function evaGroupWidth(group: EvaGroup) {
+  return Math.max(nodeWidth(group.anchor), nodeRowWidth([...group.inputs, ...group.outputs]));
 }
 
 function evaClusterLayouts(
@@ -555,6 +879,7 @@ function evaClusterLayouts(
     const bottom = Math.max(...members.map((node) => node.y + nodeHeight(node)));
     return [{
       id: group.anchor.id,
+      memberIds: members.map((node) => node.id),
       label: `System ${group.anchor.name}`,
       count: members.length,
       inputs: group.inputs.length,
@@ -596,17 +921,30 @@ function routingGroupSignature(routingEntries: RoutingEntry[]) {
 }
 
 function topologyLayoutSignature(topology: NetworkTopology) {
-  return topology.nodes
+  const nodes = topology.nodes
     .map((node) => [
       node.id,
       node.x,
       node.y,
       node.width ?? "",
       node.height ?? "",
-      ...node.ports.map((port) => `${port.id}:${port.side}:${port.offset}`),
+      ...node.ports.map((port) => `${port.id}:${port.name}:${port.side}:${port.offset}`),
     ].join(":"))
     .sort()
     .join("|");
+  const interfaces = topology.edges
+    .map((edge) => `${edge.id}:${edge.sourceInterfaceName ?? ""}:${edge.targetInterfaceName ?? ""}`)
+    .sort()
+    .join("|");
+  return `${nodes}::${interfaces}`;
+}
+
+function horizontalLayoutWidth(topology: NetworkTopology, surfaceWidth: number) {
+  return Math.ceil(Math.max(
+    1180,
+    surfaceWidth,
+    ...topology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_MARGIN),
+  ));
 }
 
 function hasLayoutProblems(
@@ -615,47 +953,45 @@ function hasLayoutProblems(
   routingEntries: RoutingEntry[],
   evaGroups = buildEvaGroups(topology, routingEntries),
 ) {
-  const layoutWidth = Math.max(1180, surfaceWidth);
-  const rightLimit = layoutWidth - CANVAS_MARGIN;
+  const layoutWidth = horizontalLayoutWidth(topology, surfaceWidth);
   if (topology.nodes.some((node) =>
     node.x < CANVAS_MARGIN / 2 ||
     node.y < EVA_LABEL_HEIGHT ||
-    node.x + nodeWidth(node) > rightLimit
+    node.x + nodeWidth(node) > layoutWidth
   )) return true;
-  if (topology.nodes.some((node) => {
-    const center = node.x + nodeWidth(node) / 2;
-    if (node.kind === "sensor") return center > layoutWidth * 0.28;
-    if (node.kind === "actuator") return center < layoutWidth * 0.72;
-    return center < layoutWidth * 0.24 || center > layoutWidth * 0.76;
-  })) return true;
   const primaryGateway = primaryGatewayFor(topology);
   if (primaryGateway) {
-    const gatewayCenter = primaryGateway.x + nodeWidth(primaryGateway) / 2;
-    if (Math.abs(gatewayCenter - layoutWidth / 2) > 72) return true;
+    const expectedTop = EVA_LABEL_HEIGHT + 24;
+    if (Math.abs(primaryGateway.y - expectedTop) > 28) return true;
+    if (nodeWidth(primaryGateway) < nodeHeight(primaryGateway) * 2) return true;
   }
   if (evaGroups.some((group) => {
-    const anchorCenter = group.anchor.y + nodeHeight(group.anchor) / 2;
-    return [group.inputs, group.outputs].some((members) => {
-      if (members.length === 0) return false;
-      const top = Math.min(...members.map((node) => node.y));
-      const bottom = Math.max(...members.map((node) => node.y + nodeHeight(node)));
-      return Math.abs(anchorCenter - (top + bottom) / 2) > 28;
-    });
+    const members = [...group.inputs, ...group.outputs];
+    if (members.length === 0) return false;
+    const expectedHeight = endpointRowHeight(members);
+    return members.some((node) =>
+      node.y < group.anchor.y + nodeHeight(group.anchor) + 48 ||
+      Math.abs(nodeWidth(node) - ENDPOINT_NODE_WIDTH) > 0.1 ||
+      Math.abs(nodeHeight(node) - expectedHeight) > 0.1,
+    );
   })) return true;
-  const primaryGatewayId = primaryGateway?.id;
-  const branchBounds = evaGroups
-    .filter((group) => group.anchor.id !== primaryGatewayId || group.inputs.length > 0 || group.outputs.length > 0)
-    .map((group) => {
-      const members = [group.anchor, ...group.inputs, ...group.outputs];
-      return {
-        top: Math.min(...members.map((node) => node.y)),
-        bottom: Math.max(...members.map((node) => node.y + nodeHeight(node))),
-      };
-    })
-    .sort((left, right) => left.top - right.top);
-  if (branchBounds.some((bounds, index) =>
-    index > 0 && bounds.top - branchBounds[index - 1].bottom > EVA_CLUSTER_GAP + 28
-  )) return true;
+  const expectedGatewayNames = gatewayInterfaceNames(topology);
+  if (topology.nodes.some((node) => node.kind === "gateway" && node.ports.some((port) => {
+    const expectedName = expectedGatewayNames.get(`${node.id}\u0000${port.id}`);
+    return expectedName != null && port.name !== expectedName;
+  }))) return true;
+  if (topology.nodes.some((node) => node.ports.some((port) => {
+    if (connectedNodesForPort(topology, node, port).length === 0) return false;
+    return port.side !== schemaPortSide(topology, node, port);
+  }))) return true;
+  if (topology.nodes.some((node) => (["top", "bottom", "left", "right"] as const).some((side) => {
+    const axisLength = side === "top" || side === "bottom" ? nodeWidth(node) : nodeHeight(node);
+    const coordinates = node.ports
+      .filter((port) => port.side === side && connectedNodesForPort(topology, node, port).length > 0)
+      .map((port) => PORT_SAFE_INSET + (port.offset ?? 0.5) * (axisLength - PORT_SAFE_INSET * 2))
+      .sort((left, right) => left - right);
+    return coordinates.some((coordinate, index) => index > 0 && coordinate - coordinates[index - 1] < PORT_CENTER_GAP - 0.1);
+  }))) return true;
   return topology.nodes.some((node, index) =>
     topology.nodes.slice(index + 1).some((other) => {
       const separated =
@@ -673,92 +1009,95 @@ function arrangeTopology(
   surfaceWidth: number,
   routingEntries: RoutingEntry[],
 ): NetworkTopology {
-  const width = Math.max(1180, surfaceWidth);
-  const primaryGateway = primaryGatewayFor(topology);
-  const groups = buildEvaGroups(topology, routingEntries);
+  const sizedTopology = sizeNodesForPorts(topology);
+  const primaryGateway = primaryGatewayFor(sizedTopology);
+  const groups = buildEvaGroups(sizedTopology, routingEntries);
   const primaryGroup = groups.find((group) => group.anchor.id === primaryGateway?.id);
-  const primaryHasEndpoints = Boolean(primaryGroup && (primaryGroup.inputs.length > 0 || primaryGroup.outputs.length > 0));
-  const branchGroups = groups.filter((group) => group.anchor.id !== primaryGateway?.id || primaryHasEndpoints);
-  const primaryHeight = primaryGroup ? evaGroupHeight(primaryGroup) : 0;
+  const branchGroups = groups.filter((group) => group.anchor.id !== primaryGateway?.id);
   const contentTop = EVA_LABEL_HEIGHT + 24;
-  const laneCenters = {
-    input: CANVAS_MARGIN + 92,
-    before: Math.round(width * 0.32),
-    gateway: Math.round(width * 0.5),
-    after: Math.round(width * 0.68),
-    output: width - CANVAS_MARGIN - 92,
-  };
+  const gatewayHeight = primaryGateway ? nodeHeight(primaryGateway) : 0;
+  const processingTop = primaryGateway ? contentTop + gatewayHeight + 112 : contentTop;
   const arranged = new Map<string, TopologyNode>();
-
-  const moveNode = (node: TopologyNode, centerX: number, y: number) => {
-    arranged.set(node.id, {
-      ...node,
-      x: Math.round(centerX - nodeWidth(node) / 2),
-      y: Math.round(y),
-    });
-  };
-  const placeStack = (nodes: TopologyNode[], centerX: number, top: number, height: number) => {
-    let y = top + (height - nodeStackHeight(nodes)) / 2;
-    nodes.forEach((node) => {
-      moveNode(node, centerX, y);
-      y += nodeHeight(node) + EVA_ROW_GAP;
-    });
-  };
-  const placeGroup = (group: EvaGroup, top: number) => {
-    const height = evaGroupHeight(group);
-    const anchorCenter = group.anchor.kind === "gateway"
-      ? laneCenters.gateway
-      : group.outputs.length > group.inputs.length
-        ? laneCenters.after
-        : laneCenters.before;
-    moveNode(group.anchor, anchorCenter, top + (height - nodeHeight(group.anchor)) / 2);
-    placeStack(group.inputs, laneCenters.input, top, height);
-    placeStack(group.outputs, laneCenters.output, top, height);
-  };
-
-  const branchHeight = branchGroups.reduce((total, group) => total + evaGroupHeight(group), 0) +
-    Math.max(0, branchGroups.length - 1) * EVA_CLUSTER_GAP;
-  let branchTop = contentTop + Math.max(0, (300 - branchHeight) / 2);
-  const branchAnchorCenters: number[] = [];
-  branchGroups.forEach((group) => {
-    const height = evaGroupHeight(group);
-    placeGroup(group, branchTop);
-    branchAnchorCenters.push(branchTop + height / 2);
-    branchTop += height + EVA_CLUSTER_GAP;
-  });
-  const branchBottom = branchGroups.length > 0 ? branchTop - EVA_CLUSTER_GAP : contentTop + 300;
-
-  let primaryBottom = contentTop;
-  if (primaryGroup && !primaryHasEndpoints) {
-    const gatewayCenterY = branchAnchorCenters.length > 0
-      ? branchAnchorCenters.reduce((total, center) => total + center, 0) / branchAnchorCenters.length
-      : contentTop + 150;
-    const primaryTop = gatewayCenterY - primaryHeight / 2;
-    placeGroup(primaryGroup, primaryTop);
-    primaryBottom = primaryTop + primaryHeight;
-  }
-
   const groupedIds = new Set(groups.flatMap((group) => [
     group.anchor.id,
     ...group.inputs.map((node) => node.id),
     ...group.outputs.map((node) => node.id),
   ]));
-  const orphanInputs = stableTopologyOrder(
-    topology,
-    topology.nodes.filter((node) => node.kind === "sensor" && !groupedIds.has(node.id)),
+  const primaryEndpoints = primaryGroup
+    ? stableTopologyOrder(sizedTopology, [...primaryGroup.inputs, ...primaryGroup.outputs])
+    : [];
+  const orphanEndpoints = stableTopologyOrder(
+    sizedTopology,
+    sizedTopology.nodes.filter((node) =>
+      (node.kind === "sensor" || node.kind === "actuator") && !groupedIds.has(node.id),
+    ),
   );
-  const orphanOutputs = stableTopologyOrder(
-    topology,
-    topology.nodes.filter((node) => node.kind === "actuator" && !groupedIds.has(node.id)),
+  const directNodes = [...primaryEndpoints, ...orphanEndpoints];
+  const directEndpointHeight = endpointRowHeight(directNodes);
+  const units = [
+    ...branchGroups.map((group) => ({ group, node: undefined as TopologyNode | undefined, width: evaGroupWidth(group) })),
+    ...directNodes.map((node) => ({ group: undefined as EvaGroup | undefined, node, width: nodeWidth(node) })),
+  ];
+  const unitGap = EVA_CLUSTER_GAP;
+  const totalUnitWidth = units.reduce((total, unit) => total + unit.width, 0) + Math.max(0, units.length - 1) * unitGap;
+  const minimumSpan = Math.max(1180, surfaceWidth || 0) - CANVAS_MARGIN * 2;
+  const layoutSpan = Math.max(totalUnitWidth, minimumSpan);
+  const processingHeight = Math.max(
+    NODE_MIN_HEIGHT,
+    ...branchGroups.map((group) => nodeHeight(group.anchor)),
+    ...directNodes.map(() => directEndpointHeight),
   );
-  const orphanTop = Math.max(branchBottom, primaryBottom) + EVA_CLUSTER_GAP;
-  placeStack(orphanInputs, laneCenters.input, orphanTop, nodeStackHeight(orphanInputs));
-  placeStack(orphanOutputs, laneCenters.output, orphanTop, nodeStackHeight(orphanOutputs));
+  const endpointTop = processingTop + processingHeight + 112;
+  let cursorX = CANVAS_MARGIN + Math.max(0, (layoutSpan - totalUnitWidth) / 2);
 
-  return normalizePortSides({
-    ...topology,
-    nodes: topology.nodes.map((node) => arranged.get(node.id) ?? node),
+  units.forEach((unit) => {
+    const centerX = cursorX + unit.width / 2;
+    if (unit.group) {
+      const anchor = { ...unit.group.anchor, width: unit.width };
+      arranged.set(anchor.id, {
+        ...anchor,
+        x: Math.round(centerX - unit.width / 2),
+        y: processingTop,
+      });
+      const endpoints = stableTopologyOrder(sizedTopology, [...unit.group.inputs, ...unit.group.outputs]);
+      const groupEndpointHeight = endpointRowHeight(endpoints);
+      const rowWidth = nodeRowWidth(endpoints);
+      let endpointX = centerX - rowWidth / 2;
+      endpoints.forEach((node) => {
+        arranged.set(node.id, {
+          ...node,
+          x: Math.round(endpointX),
+          y: endpointTop,
+          width: ENDPOINT_NODE_WIDTH,
+          height: groupEndpointHeight,
+        });
+        endpointX += nodeWidth(node) + EVA_ROW_GAP;
+      });
+    } else if (unit.node) {
+      arranged.set(unit.node.id, {
+        ...unit.node,
+        x: Math.round(centerX - nodeWidth(unit.node) / 2),
+        y: processingTop,
+        width: ENDPOINT_NODE_WIDTH,
+        height: directEndpointHeight,
+      });
+    }
+    cursorX += unit.width + unitGap;
   });
+
+  if (primaryGateway) {
+    arranged.set(primaryGateway.id, {
+      ...primaryGateway,
+      x: CANVAS_MARGIN,
+      y: contentTop,
+      width: layoutSpan,
+    });
+  }
+
+  return nameGatewayInterfaces(orderPortsByConnectedNodes({
+    ...sizedTopology,
+    nodes: sizedTopology.nodes.map((node) => arranged.get(node.id) ?? node),
+  }));
 }
 
 export function NetworkEditor({
@@ -837,7 +1176,26 @@ export function NetworkEditor({
     const activeDrag = drag;
     function move(event: PointerEvent) {
       const point = pointFromEvent(event);
-      if (activeDrag.mode === "move") {
+      if (activeDrag.mode === "move-cluster") {
+        const minimumX = Math.min(...activeDrag.members.map((member) => member.x));
+        const minimumY = Math.min(...activeDrag.members.map((member) => member.y));
+        const deltaX = Math.max(
+          point.x - activeDrag.startX,
+          8 + EVA_CLUSTER_PADDING - minimumX,
+        );
+        const deltaY = Math.max(
+          point.y - activeDrag.startY,
+          EVA_LABEL_HEIGHT + EVA_CLUSTER_PADDING - minimumY,
+        );
+        const startPositions = new Map(activeDrag.members.map((member) => [member.id, member]));
+        onChange({
+          ...topology,
+          nodes: topology.nodes.map((node) => {
+            const start = startPositions.get(node.id);
+            return start ? { ...node, x: start.x + deltaX, y: start.y + deltaY } : node;
+          }),
+        });
+      } else if (activeDrag.mode === "move") {
         const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
         onChange(normalizePortSides({
@@ -866,9 +1224,7 @@ export function NetworkEditor({
       } else if (activeDrag.mode === "move-port") {
         const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
-        const height = nodeHeight(node);
-        const side: PortSide = point.x < node.x + nodeWidth(node) / 2 ? "left" : "right";
-        const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
+        const { side, offset } = nearestPortPlacement(node, point);
         onChange({
           ...topology,
           nodes: topology.nodes.map((item) =>
@@ -1157,8 +1513,10 @@ export function NetworkEditor({
     620,
     ...topology.nodes.map((node) => node.y + nodeHeight(node) + CANVAS_EXTRA_SPACE),
   );
+  const layoutGuideWidth = horizontalLayoutWidth(topology, surfaceWidth);
   const canvasWidth = Math.max(
     surfaceWidth + CANVAS_EXTRA_SPACE,
+    layoutGuideWidth + CANVAS_EXTRA_SPACE,
     ...topology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
 
@@ -1288,16 +1646,16 @@ export function NetworkEditor({
           <div
             aria-hidden="true"
             className="net-eva-zones"
-            style={{ width: Math.max(1180, surfaceWidth) }}
+            style={{ width: layoutGuideWidth }}
           >
-            <span>Eingabe</span>
-            <span>Verarbeitung</span>
-            <span>Ausgabe</span>
+            <span>Gateway / BCM</span>
+            <span>ECU</span>
+            <span>Sensor / Aktor</span>
           </div>
-          <div aria-hidden="true" className="net-eva-clusters">
+          <div className="net-eva-clusters">
             {evaClusters.map((cluster) => (
               <div
-                className={`net-eva-cluster ${cluster.kind}`}
+                className={`net-eva-cluster ${cluster.kind} ${drag?.mode === "move-cluster" && drag.clusterId === cluster.id ? "dragging" : ""}`}
                 key={cluster.id}
                 style={{
                   height: cluster.height,
@@ -1306,7 +1664,35 @@ export function NetworkEditor({
                   width: cluster.width,
                 }}
               >
-                <span>{cluster.label} · {cluster.inputs} Eingang · 1 Verarbeitung · {cluster.outputs} Ausgang</span>
+                <button
+                  aria-label={`${cluster.label} verschieben`}
+                  className="net-eva-cluster-handle"
+                  onPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const members = topology.nodes
+                      .filter((node) => cluster.memberIds.includes(node.id))
+                      .map((node) => ({ id: node.id, x: node.x, y: node.y }));
+                    if (members.length === 0) return;
+                    const point = pointFromEvent(event);
+                    setSelectedNode(null);
+                    setSelectedEdge(null);
+                    setMenu(null);
+                    setAddMenu(null);
+                    setDrag({
+                      mode: "move-cluster",
+                      clusterId: cluster.id,
+                      startX: point.x,
+                      startY: point.y,
+                      members,
+                    });
+                  }}
+                  title="Systemrahmen verschieben"
+                  type="button"
+                >
+                  {cluster.label} · {cluster.inputs} Eingang · 1 Verarbeitung · {cluster.outputs} Ausgang
+                </button>
               </div>
             ))}
           </div>
@@ -1370,9 +1756,7 @@ export function NetworkEditor({
                 setSelectedNode(node.id);
                 setSelectedEdge(null);
                 const point = pointFromEvent(event);
-                const height = nodeHeight(node);
-                const side: PortSide = point.x < node.x + nodeWidth(node) / 2 ? "left" : "right";
-                const offset = Math.max(0, Math.min(1, (point.y - node.y - PORT_SAFE_INSET) / (height - PORT_SAFE_INSET * 2)));
+                const { side, offset } = nearestPortPlacement(node, point);
                 setMenu({ nodeId: node.id, x: point.x, y: point.y, side, offset });
               }}
               onDoubleClick={() => openRenameNode(node.id)}
@@ -1400,12 +1784,21 @@ export function NetworkEditor({
               <strong className="net-node-name">{node.name}</strong>
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
               {visiblePorts.map((port) => {
-                const portSide = connectedPortSide(topology, node, port);
+                const portSide = port.side;
                 const compatible =
                   drag?.mode === "wire" && drag.bus === port.bus && drag.nodeId !== node.id && !portIsConnected(port.id);
+                const sideLabel: Record<PortSide, string> = {
+                  left: "links",
+                  right: "rechts",
+                  top: "oben",
+                  bottom: "unten",
+                };
+                const portStyle = portSide === "top" || portSide === "bottom"
+                  ? { [portSide]: -PORT_OFFSET, left: portLeft(node, port) }
+                  : { [portSide]: -PORT_OFFSET, top: portTop(node, port) };
                 return (
                   <button
-                    aria-label={`${port.name}-Port ${portSide === "left" ? "links" : "rechts"}`}
+                    aria-label={`${port.name}-Port ${sideLabel[portSide]}`}
                     className={`net-port ${portSide} ${compatible ? "compatible" : ""} ${portIsConnected(port.id) ? "linked" : ""} ${drag?.mode === "move-port" && drag.portId === port.id ? "dragging" : ""}`}
                     data-node-id={node.id}
                     data-port-bus={port.bus}
@@ -1428,8 +1821,7 @@ export function NetworkEditor({
                       );
                     }}
                     style={{
-                      [portSide === "left" ? "left" : "right"]: -PORT_OFFSET,
-                      top: portTop(node, port),
+                      ...portStyle,
                       ["--bus" as string]: busProfiles[port.bus].color,
                     }}
                     title={

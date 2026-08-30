@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { extractEngineeringSpecification } from "./engineering-specification.ts";
+import { extractEngineeringSpecification, extractNetworkArchitectureMode } from "./engineering-specification.ts";
 
 const SAMPLE = `
 # Musterprojekt - Fahrzeugnetzwerk
@@ -76,4 +76,12 @@ test("specification extraction is stable over 25 project-creation passes", () =>
   for (let pass = 1; pass <= 25; pass += 1) {
     assert.deepEqual(summarize(extractEngineeringSpecification(SAMPLE)), expected, `pass ${pass}`);
   }
+});
+
+test("wizard architecture ids are extracted without ambiguity", () => {
+  assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: eva"), "eva");
+  assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: ecu_gateway"), "ecu_gateway");
+  assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: gateway_direct"), "gateway_direct");
+  assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: hybrid_ai"), "hybrid_ai");
+  assert.equal(extractNetworkArchitectureMode("Kombination aus Variante 2 und 3"), "hybrid_ai");
 });
