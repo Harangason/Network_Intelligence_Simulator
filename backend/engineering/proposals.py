@@ -19,6 +19,7 @@ from .repository import (
     PARENT_LINKS,
     NotFoundError,
     create_object,
+    find_equivalent_hardware_node,
     get_object,
     get_spec,
 )
@@ -230,6 +231,25 @@ def _update_proposal_row(
     return row
 
 
+def _resolve_or_create_object(
+    object_type: str,
+    payload: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Create an object or atomically reuse equivalent canonical hardware."""
+
+    if object_type != "HardwareNode":
+        return create_object(object_type, payload), None
+    with get_connection() as lock_connection:
+        lock_connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtext(%s), hashtext(%s))",
+            (current_project_id(), "semantic-hardware-canonicalization"),
+        )
+        resolution = find_equivalent_hardware_node(payload)
+        if resolution:
+            return resolution["hardware"], resolution
+        return create_object(object_type, payload), None
+
+
 def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
     if proposal["status"] in {"APPROVED", "SUPERSEDED"}:
@@ -315,9 +335,21 @@ def approve_proposal(
                 "actor": actor,
             }
         )
-        created = create_relation(payload) if object_type == "Relation" else create_object(object_type, payload)
+        if object_type == "Relation":
+            created = create_relation(payload)
+            resolution = None
+        else:
+            created, resolution = _resolve_or_create_object(object_type, payload)
         item["canonical_id"] = str(created.get("id"))
         item["proposal_state"] = "APPROVED"
+        if resolution:
+            item["canonical_resolution"] = {
+                "strategy": "semantic_hardware_reuse",
+                "requested_name": item.get("name"),
+                "canonical_name": created.get("name"),
+                "similarity": resolution["similarity"],
+                "reason": resolution["reason"],
+            }
         proposed_objects[index] = item
         _update_proposal_row(proposal_id, proposed_objects=proposed_objects, validation_results=validation, status="PARTIALLY_APPROVED", actor=actor)
 
@@ -364,3 +396,23 @@ def reject_proposal(proposal_id: str, *, actor: str | None = None) -> dict[str, 
     if proposal["status"] == "APPROVED":
         raise EngineeringValidationError("Freigegebene Vorschlaege koennen nicht nachtraeglich abgelehnt werden.")
     return _update_proposal_row(proposal_id, status="REJECTED", actor=actor)
+
+
+def record_proposal_decision(
+    proposal_id: str,
+    *,
+    accepted: bool,
+    actor: str | None = None,
+    proposed_objects: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Persist review feedback for proposals applied by a domain-specific workflow."""
+
+    proposal = get_proposal(proposal_id)
+    if proposal["status"] in {"APPROVED", "REJECTED", "SUPERSEDED"}:
+        return proposal
+    return _update_proposal_row(
+        proposal_id,
+        proposed_objects=proposed_objects,
+        status="APPROVED" if accepted else "REJECTED",
+        actor=actor,
+    )

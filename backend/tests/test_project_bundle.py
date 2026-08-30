@@ -77,3 +77,45 @@ def test_clone_source_data_remaps_cross_table_identifiers() -> None:
     }
     assert cloned_route["id"] == identifiers[route_id]
     assert all(row["project_id"] == "target" for rows in cloned.values() for row in rows)
+
+
+def test_clone_project_data_preserves_child_table_contracts() -> None:
+    workload_id = "11111111-1111-1111-1111-111111111111"
+    package_id = "22222222-2222-2222-2222-222222222222"
+    project_data = {table: [] for table in project_bundle.PROJECT_TABLES}
+    project_data["engineering_workloads"] = [{
+        "workload_id": workload_id,
+        "project_id": "source",
+        "title": "Generate signals",
+    }]
+    project_data["engineering_work_packages"] = [{
+        "work_package_id": package_id,
+        "workload_id": workload_id,
+        "package_code": "WP-1",
+    }]
+    project_data["engineering_workload_objects"] = [{
+        "workload_object_id": "33333333-3333-3333-3333-333333333333",
+        "workload_id": workload_id,
+        "work_package_id": package_id,
+        "object_key": "signal-1",
+    }]
+    project_data["engineering_workload_events"] = [{
+        "event_id": 99,
+        "project_id": "source",
+        "workload_id": workload_id,
+        "event_type": "COMPLETED",
+    }]
+
+    cloned, identifiers = project_bundle._clone_project_data(project_data, "target", {})
+
+    cloned_workload = cloned["engineering_workloads"][0]
+    cloned_package = cloned["engineering_work_packages"][0]
+    cloned_object = cloned["engineering_workload_objects"][0]
+    cloned_event = cloned["engineering_workload_events"][0]
+    assert cloned_workload["project_id"] == "target"
+    assert cloned_package["workload_id"] == identifiers[workload_id]
+    assert cloned_object["work_package_id"] == identifiers[package_id]
+    assert "project_id" not in cloned_package
+    assert "project_id" not in cloned_object
+    assert "event_id" not in cloned_event
+    assert cloned_event["project_id"] == "target"

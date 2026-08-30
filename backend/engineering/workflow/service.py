@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..db import get_connection
+from ..scope_rules import normalize_engineering_scope_rules, scope_placeholder_sql
 from .models import (
     WORKFLOW_LABELS,
     WORKFLOW_STATUSES,
@@ -126,7 +127,7 @@ class WorkflowStatusService:
         ).fetchone()
         return self._state(row)
 
-    def get(self) -> dict[str, Any]:
+    def get(self, *, summary: bool = False) -> dict[str, Any]:
         with get_connection() as connection:
             self._ensure(connection)
             row = connection.execute(
@@ -144,16 +145,18 @@ class WorkflowStatusService:
                 """,
                 (self.project_id,),
             ).fetchall()
-            simulations = connection.execute(
-                """
-                SELECT id, source_versions, validation_snapshot_id, calculated_metrics,
-                       status, job_id, result,
-                       is_outdated, outdated_reason, created_at
-                FROM engineering_simulation_snapshots
-                WHERE project_id = %s ORDER BY created_at DESC LIMIT 20
-                """,
-                (self.project_id,),
-            ).fetchall()
+            simulations = []
+            if not summary:
+                simulations = connection.execute(
+                    """
+                    SELECT id, source_versions, validation_snapshot_id, calculated_metrics,
+                           status, job_id, result,
+                           is_outdated, outdated_reason, created_at
+                    FROM engineering_simulation_snapshots
+                    WHERE project_id = %s ORDER BY created_at DESC LIMIT 20
+                    """,
+                    (self.project_id,),
+                ).fetchall()
         latest_by_type: dict[str, dict[str, Any]] = {}
         for item in latest:
             latest_by_type.setdefault(item["analysis_type"], self._serialize_row(item))
@@ -177,6 +180,9 @@ class WorkflowStatusService:
                 "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
             }
         )
+        if summary:
+            state["parameters"] = {}
+            state["topology"] = {}
         return state
 
     @staticmethod
@@ -190,21 +196,52 @@ class WorkflowStatusService:
         return value
 
     def _model_artifact_check(self, connection) -> dict[str, Any]:
-        tables = {
-            "hardware_nodes": "engineering_hardware_nodes",
-            "functions": "engineering_functions",
-            "interfaces": "engineering_interfaces",
-            "messages": "engineering_messages",
-            "signals": "engineering_signals",
+        placeholder = scope_placeholder_sql("h")
+        count_queries = {
+            "hardware_nodes": (
+                "SELECT COUNT(*) AS count FROM engineering_hardware_nodes h "
+                f"WHERE h.project_id = %s AND NOT {placeholder}"
+            ),
+            "functions": (
+                "SELECT COUNT(*) AS count FROM engineering_functions f "
+                "JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id "
+                f"WHERE f.project_id = %s AND NOT {placeholder}"
+            ),
+            "interfaces": (
+                "SELECT COUNT(*) AS count FROM engineering_interfaces i "
+                "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
+                f"WHERE i.project_id = %s AND NOT {placeholder}"
+            ),
+            "messages": (
+                "SELECT COUNT(*) AS count FROM engineering_messages m "
+                "JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id "
+                "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
+                f"WHERE m.project_id = %s AND NOT {placeholder}"
+            ),
+            "signals": (
+                "SELECT COUNT(*) AS count FROM engineering_signals s "
+                "JOIN engineering_messages m ON m.id = s.message_id AND m.project_id = s.project_id "
+                "JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id "
+                "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
+                f"WHERE s.project_id = %s AND NOT {placeholder}"
+            ),
         }
         counts = {
             label: int(
                 connection.execute(
-                    f"SELECT COUNT(*) AS count FROM {table} WHERE project_id = %s",
+                    query,
                     (self.project_id,),
                 ).fetchone()["count"]
             )
-            for label, table in tables.items()
+            for label, query in count_queries.items()
+        }
+        hardware_by_type = {
+            str(item["device_type"]): int(item["count"])
+            for item in connection.execute(
+                "SELECT h.device_type, COUNT(*) AS count FROM engineering_hardware_nodes h "
+                f"WHERE h.project_id = %s AND NOT {placeholder} GROUP BY h.device_type",
+                (self.project_id,),
+            ).fetchall()
         }
         broken = connection.execute(
             """
@@ -240,6 +277,7 @@ class WorkflowStatusService:
             "status": "COMPLETE" if complete else ("IN_PROGRESS" if has_any else "EMPTY"),
             "complete": complete,
             "counts": counts,
+            "hardware_by_type": hardware_by_type,
             "incomplete": incomplete,
         }
 
@@ -333,6 +371,14 @@ class WorkflowStatusService:
 
     @staticmethod
     def _parameter_artifact_check(parameters: dict[str, Any]) -> dict[str, Any]:
+        if not parameters:
+            return {
+                "status": "APPROVED",
+                "complete": True,
+                "uses_defaults": True,
+                "required": {},
+                "invalid_numeric": [],
+            }
         formats = parameters.get("formats")
         required = {
             "industry": bool(str(parameters.get("industry") or "").strip()),
@@ -371,8 +417,9 @@ class WorkflowStatusService:
         )
         complete = all(required.values()) and not invalid_numeric
         return {
-            "status": "COMPLETE" if complete else ("IN_PROGRESS" if parameters else "EMPTY"),
+            "status": "APPROVED" if complete else "IN_PROGRESS",
             "complete": complete,
+            "uses_defaults": False,
             "required": required,
             "invalid_numeric": invalid_numeric,
         }
@@ -401,7 +448,7 @@ class WorkflowStatusService:
         for step in WORKFLOW_STEPS[:4]:
             check = self._source_artifact_check(connection, step, state)
             checks[step] = check
-            if statuses.get(step) == "OUTDATED":
+            if statuses.get(step) == "OUTDATED" and step != "parameters":
                 continue
             expected = check["status"]
             previous = statuses.get(step)
@@ -502,9 +549,11 @@ class WorkflowStatusService:
             )
         return self.get()
 
-    def set_context(self, context: dict[str, Any]) -> dict[str, Any]:
+    def set_context(self, context: dict[str, Any], *, summary: bool = False) -> dict[str, Any]:
         allowed = {
+            "agent_wizard_status",
             "active_workflow_step",
+            "engineering_scope_rules",
             "selected_object",
             "selected_route",
             "selected_network",
@@ -512,6 +561,10 @@ class WorkflowStatusService:
             "selected_simulation",
         }
         cleaned = {key: value for key, value in context.items() if key in allowed}
+        if "engineering_scope_rules" in cleaned:
+            cleaned["engineering_scope_rules"] = normalize_engineering_scope_rules(
+                cleaned["engineering_scope_rules"]
+            )
         active_step = cleaned.get("active_workflow_step")
         if active_step:
             normalize_step(str(active_step))
@@ -526,7 +579,7 @@ class WorkflowStatusService:
                 """,
                 (active_step or state["active_step"], _json(merged), self.project_id),
             )
-        return self.get()
+        return self.get(summary=summary)
 
     def save_parameters(self, parameters: dict[str, Any], actor: str | None = None) -> dict[str, Any]:
         if not isinstance(parameters, dict) or not parameters:
@@ -691,6 +744,16 @@ class WorkflowStatusService:
             next_state = set_step_status(state, "simulation", "IN_PROGRESS")
             next_versions = next_state["versions"]
             next_versions["simulation"] = int(next_versions.get("simulation", 0)) + 1
+            connection.execute(
+                """
+                UPDATE engineering_simulation_snapshots
+                SET is_outdated = TRUE, status = 'OUTDATED',
+                    outdated_reason = 'Durch einen neueren Simulationslauf ersetzt.',
+                    updated_at = now()
+                WHERE project_id = %s AND is_outdated = FALSE
+                """,
+                (self.project_id,),
+            )
             row = connection.execute(
                 """
                 INSERT INTO engineering_simulation_snapshots
@@ -756,6 +819,9 @@ class WorkflowStatusService:
             if not updated or updated["is_outdated"]:
                 return
             state = self._get_locked(connection)
+            snapshot_versions = updated.get("source_versions") or {}
+            if snapshot_versions.get("simulation") != state["versions"].get("simulation"):
+                return
             next_state = set_step_status(
                 state,
                 "simulation",

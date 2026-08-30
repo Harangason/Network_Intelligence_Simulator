@@ -175,12 +175,16 @@ function specificationSummary(result: Awaited<ReturnType<typeof registerEngineer
   const recognized = Number(result.recognized ?? 0);
   const targets = result.target_counts;
   const actual = result.actual_counts;
+  const excess = result.excess_counts;
   const targetSummary = targets && actual
     ? `Soll/Ist: Sensoren ${targets.sensors}/${actual.sensors}, ECUs ${targets.ecus}/${actual.ecus}, Gateways ${targets.gateways}/${actual.gateways}.`
     : "";
+  const excessSummary = excess && Object.values(excess).some((count) => Number(count) > 0)
+    ? ` Ueberschritten: Sensoren +${excess.sensors}, ECUs +${excess.ecus}, Gateways +${excess.gateways}.`
+    : "";
   if (result.complete !== true) {
     const failureSummary = failures ? ` ${failures} Teilnehmer konnten nicht vollstaendig angelegt werden.` : "";
-    return `${registered} von ${recognized} geplanten Teilnehmern wurden registriert. ${targetSummary}${failureSummary} Der Engineering-Auftrag bleibt offen; Folgeschritte werden nicht gestartet.`;
+    return `${registered} von ${recognized} geplanten Teilnehmern wurden registriert. ${targetSummary}${excessSummary}${failureSummary} Der Engineering-Auftrag bleibt offen; Folgeschritte werden nicht gestartet.`;
   }
   return `${recognized} Teilnehmer geplant. ${registered} vollstaendige Engineering-Ketten mit Hardware, Funktion, Interface, Nachricht und Signal wurden registriert. ${targetSummary}`;
 }

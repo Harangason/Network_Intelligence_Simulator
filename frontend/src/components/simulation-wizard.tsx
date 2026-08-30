@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCatalog } from "@/lib/api";
 import { listAllEngineeringObjects, syncEngineeringTopology } from "@/lib/engineering-api";
 import { localCatalog } from "@/lib/local-simulator";
@@ -20,7 +20,11 @@ import {
 } from "@/lib/topology";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters, saveWorkflowTopology } from "@/lib/workflow-api";
-import { notifyWorkflowChanged, WORKFLOW_CHANGED_EVENT } from "./workflow-header";
+import {
+  notifyWorkflowChanged,
+  notifyWorkflowDraftStatus,
+  WORKFLOW_CHANGED_EVENT,
+} from "./workflow-header";
 
 const universalFormats = ["universal-jsonl", "universal-csv"];
 const busLoadRangeKeys = new Set([
@@ -55,7 +59,7 @@ type RoutingNetworkSuggestion = {
   segments: RoutingNetworkSegment[];
 };
 
-const inactiveRouteStatuses = new Set(["REJECTED", "OUTDATED", "SUPERSEDED"]);
+const inactiveRouteStatuses = new Set(["REJECTED", "OUTDATED", "SUPERSEDED", "DEPRECATED"]);
 
 function routingBus(protocol?: string | null, networkId?: string | null): BusType {
   const value = `${protocol ?? ""} ${networkId ?? ""}`.toUpperCase();
@@ -106,16 +110,9 @@ function routingSegmentIsLinked(
     const routeIds = new Set([
       ...(edge.routingEntryIds ?? []),
       ...(edge.routingEntryId ? [edge.routingEntryId] : []),
+      ...Object.keys(edge.routingMetadata ?? {}),
     ]);
-    return connectsSegment
-      && routeIds.has(routeId)
-      && Boolean(
-        edge.name
-        && edge.sourceInterfaceName
-        && edge.targetInterfaceName
-        && edge.relationType
-        && edge.direction,
-      );
+    return connectsSegment && routeIds.has(routeId);
   });
 }
 
@@ -134,7 +131,9 @@ function buildRoutingNetworkSuggestions(
     .filter(
       (route) =>
         route.origin !== "NETWORK_EDITOR" &&
-        !inactiveRouteStatuses.has(route.status),
+        !inactiveRouteStatuses.has(route.status.toUpperCase()) &&
+        route.approval_state.toUpperCase() === "APPROVED" &&
+        route.validation.valid === true,
     )
     .flatMap((route) => {
       const segments = new Map<string, RoutingNetworkSegment>();
@@ -171,6 +170,225 @@ function buildRoutingNetworkSuggestions(
     });
 }
 
+function routingSuggestionRevision(
+  routes: RoutingEntry[],
+  topology: NetworkTopology,
+  hardware: HardwareNode[],
+) {
+  return JSON.stringify({
+    routes: routes.map((route) => ({
+      id: route.id,
+      status: route.status,
+      approval: route.approval_state,
+      valid: route.validation.valid,
+      source: route.source,
+      destinations: route.destinations,
+      hops: route.route.hops,
+      gateways: route.route.gateways,
+    })),
+    nodes: topology.nodes.map((node) => ({ id: node.id, engineeringId: node.engineeringId, name: node.name })),
+    edges: topology.edges.map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      bus: edge.bus,
+      routingEntryId: edge.routingEntryId,
+      routingEntryIds: edge.routingEntryIds,
+      routingMetadata: edge.routingMetadata,
+      sourceInterfaceName: edge.sourceInterfaceName,
+      targetInterfaceName: edge.targetInterfaceName,
+      relationType: edge.relationType,
+      direction: edge.direction,
+    })),
+    hardware: hardware.map((node) => ({ id: node.id, name: node.name })),
+  });
+}
+
+function useRoutingNetworkSuggestions(
+  routes: RoutingEntry[],
+  topology: NetworkTopology,
+  hardware: HardwareNode[],
+) {
+  const cache = useRef<{ revision: string; items: RoutingNetworkSuggestion[] }>({ revision: "", items: [] });
+  const revision = routingSuggestionRevision(routes, topology, hardware);
+  if (cache.current.revision !== revision) {
+    cache.current = {
+      revision,
+      items: buildRoutingNetworkSuggestions(routes, topology, hardware),
+    };
+  }
+  return cache.current.items;
+}
+
+function mergeRoutingSuggestionsIntoTopology(
+  topology: NetworkTopology,
+  suggestions: RoutingNetworkSuggestion[],
+  modelHardware: HardwareNode[],
+) {
+  const nodes: TopologyNode[] = topology.nodes.map((node) => ({
+    ...node,
+    ports: node.ports.map((port) => ({ ...port })),
+  }));
+  const edges = topology.edges.map((edge) => ({ ...edge }));
+  const topologyIdByEngineering = new Map(
+    nodes
+      .filter((node) => node.engineeringId)
+      .map((node) => [node.engineeringId as string, node.id]),
+  );
+
+  function ensureNode(engineeringId: string) {
+    const existingId = topologyIdByEngineering.get(engineeringId);
+    if (existingId) return existingId;
+    const hardware = modelHardware.find((item) => item.id === engineeringId);
+    if (!hardware) throw new Error(`Hardware-Knoten ${engineeringId} ist nicht im Engineering-Modell verfügbar.`);
+    const index = nodes.length;
+    const id = `engineering-${engineeringId}`;
+    nodes.push({
+      id,
+      name: hardware.name,
+      kind: engineeringHardwareKind(hardware),
+      x: 70 + (index % 4) * 230,
+      y: 100 + Math.floor(index / 4) * 145,
+      ports: [],
+      engineeringId,
+    });
+    topologyIdByEngineering.set(engineeringId, id);
+    return id;
+  }
+
+  for (const suggestion of suggestions) {
+    const routeKey = suggestion.route.route_code.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+    function ensurePort(
+      nodeId: string,
+      bus: BusType,
+      side: "left" | "right",
+      segmentKey: string,
+      engineeringId?: string | null,
+    ) {
+      const node = nodes.find((item) => item.id === nodeId);
+      if (!node) throw new Error(`Topologie-Knoten ${nodeId} wurde nicht gefunden.`);
+      const available = node.ports.find(
+        (port) =>
+          port.bus === bus &&
+          !edges.some((edge) => edge.sourcePort === port.id || edge.targetPort === port.id),
+      );
+      if (available) return available.id;
+      const port: TopologyPort = {
+        id: `routing-${routeKey}-${segmentKey}-${side}`,
+        name: busProfiles[bus].label,
+        bus,
+        side,
+        offset: Math.min(0.82, 0.28 + (node.ports.length % 4) * 0.18),
+        engineeringId: engineeringId ?? undefined,
+      };
+      node.ports.push(port);
+      return port.id;
+    }
+
+    const routeSourceId = ensureNode(suggestion.route.source.node_id);
+    const routeSource = nodes.find((node) => node.id === routeSourceId)!;
+    for (const destination of suggestion.route.destinations) {
+      const destinationId = ensureNode(destination.node_id);
+      const destinationNode = nodes.find((node) => node.id === destinationId)!;
+      if (["sensor", "actuator"].includes(routeSource.kind) && ["ecu", "gateway"].includes(destinationNode.kind)) {
+        routeSource.systemOwnerId = destinationNode.id;
+      }
+      if (["sensor", "actuator"].includes(destinationNode.kind) && ["ecu", "gateway"].includes(routeSource.kind)) {
+        destinationNode.systemOwnerId = routeSource.id;
+      }
+    }
+
+    suggestion.segments.forEach((segment, index) => {
+      const sourceNodeId = ensureNode(segment.sourceId);
+      const targetNodeId = ensureNode(segment.targetId);
+      const sourceNode = nodes.find((node) => node.id === sourceNodeId)!;
+      const targetNode = nodes.find((node) => node.id === targetNodeId)!;
+      const existingEdgeIndex = edges.findIndex(
+        (edge) => edge.bus === segment.bus && (
+          (edge.source === sourceNodeId && edge.target === targetNodeId)
+          || (edge.source === targetNodeId && edge.target === sourceNodeId)
+        ),
+      );
+      if (existingEdgeIndex >= 0) {
+        const existingEdge = edges[existingEdgeIndex];
+        const edgeSourceNode = nodes.find((node) => node.id === existingEdge.source);
+        const edgeTargetNode = nodes.find((node) => node.id === existingEdge.target);
+        const routeIds = [...new Set([
+          ...(existingEdge.routingEntryIds ?? []),
+          ...(existingEdge.routingEntryId ? [existingEdge.routingEntryId] : []),
+          suggestion.route.id,
+        ])];
+        edges[existingEdgeIndex] = {
+          ...existingEdge,
+          name: routeIds.length === 1 ? `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}` : existingEdge.name,
+          sourceInterfaceName: existingEdge.sourceInterfaceName || edgeSourceNode?.ports.find((port) => port.id === existingEdge.sourcePort)?.name,
+          targetInterfaceName: existingEdge.targetInterfaceName || edgeTargetNode?.ports.find((port) => port.id === existingEdge.targetPort)?.name,
+          description: routeIds.length === 1 ? (suggestion.route.description || suggestion.route.name) : existingEdge.description,
+          relationType: existingEdge.relationType ?? "COMMUNICATES_WITH",
+          direction: existingEdge.direction ?? "SOURCE_TO_TARGET",
+          routingEntryId: existingEdge.routingEntryId ?? suggestion.route.id,
+          routingEntryIds: routeIds,
+          routingMetadata: {
+            ...(existingEdge.routingMetadata ?? {}),
+            [suggestion.route.id]: {
+              routeId: suggestion.route.id,
+              routeCode: suggestion.route.route_code,
+              name: suggestion.route.name,
+              description: suggestion.route.description,
+              source: segment.sourceId,
+              target: segment.targetId,
+              sourceInterfaceId: segment.sourceInterfaceId,
+              targetInterfaceId: segment.targetInterfaceId,
+              protocol: suggestion.route.source.protocol,
+              approvalState: suggestion.route.approval_state,
+            },
+          },
+          origin: "ROUTING_TABLE",
+        };
+        return;
+      }
+      const sourceOnLeft = sourceNode.x <= targetNode.x;
+      const segmentKey = `${index + 1}`;
+      const sourcePort = ensurePort(sourceNodeId, segment.bus, sourceOnLeft ? "right" : "left", `${segmentKey}-source`, segment.sourceInterfaceId);
+      const targetPort = ensurePort(targetNodeId, segment.bus, sourceOnLeft ? "left" : "right", `${segmentKey}-target`, segment.targetInterfaceId);
+      edges.push({
+        id: `routing-${routeKey}-${segmentKey}`,
+        name: `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}`,
+        sourceInterfaceName: sourceNode.ports.find((port) => port.id === sourcePort)?.name,
+        targetInterfaceName: targetNode.ports.find((port) => port.id === targetPort)?.name,
+        relationType: "COMMUNICATES_WITH",
+        description: suggestion.route.description || suggestion.route.name,
+        direction: "SOURCE_TO_TARGET",
+        source: sourceNodeId,
+        sourcePort,
+        target: targetNodeId,
+        targetPort,
+        bus: segment.bus,
+        routingEntryId: suggestion.route.id,
+        routingEntryIds: [suggestion.route.id],
+        routingMetadata: {
+          [suggestion.route.id]: {
+            routeId: suggestion.route.id,
+            routeCode: suggestion.route.route_code,
+            name: suggestion.route.name,
+            description: suggestion.route.description,
+            source: segment.sourceId,
+            target: segment.targetId,
+            sourceInterfaceId: segment.sourceInterfaceId,
+            targetInterfaceId: segment.targetInterfaceId,
+            protocol: suggestion.route.source.protocol,
+            approvalState: suggestion.route.approval_state,
+          },
+        },
+        origin: "ROUTING_TABLE",
+      });
+    });
+  }
+
+  return normalizePhysicalTopology({ nodes, edges: collapsePhysicalEdges(edges) });
+}
+
 export function SimulationWizard({
   initialMode = "parameters",
 }: {
@@ -196,6 +414,7 @@ export function SimulationWizard({
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
   const [routingLoadError, setRoutingLoadError] = useState("");
   const [applyingRoute, setApplyingRoute] = useState("");
+  const [applyingAllRoutes, setApplyingAllRoutes] = useState(false);
   const [syncRequest, setSyncRequest] = useState(0);
   const [automaticModelSync, setAutomaticModelSync] = useState(true);
   const [engineeringSync, setEngineeringSync] = useState<{
@@ -215,6 +434,7 @@ export function SimulationWizard({
           name: node.name,
           kind: node.kind,
           engineeringId: node.engineeringId,
+          systemOwnerId: node.systemOwnerId,
           ports: node.ports
             .filter((port) => port.engineeringId || connectedPortIds.has(port.id))
             .map((port) => ({
@@ -237,6 +457,7 @@ export function SimulationWizard({
           target: edge.target,
           targetPort: edge.targetPort,
           bus: edge.bus,
+          routingMetadata: edge.routingMetadata,
         })),
       });
   }, [topology]);
@@ -305,6 +526,11 @@ export function SimulationWizard({
   }, []);
 
   useEffect(() => {
+    if (mode !== "parameters") return;
+    return () => notifyWorkflowDraftStatus("parameters", null);
+  }, [mode]);
+
+  useEffect(() => {
     if (mode !== "network") return;
     let active = true;
     const refreshRoutes = () => {
@@ -367,6 +593,7 @@ export function SimulationWizard({
               );
               return {
                 ...node,
+                name: linked?.engineering_name || node.name,
                 engineeringId: linked?.engineering_id,
                 engineeringFunctionId: linked?.function_id,
                 ports: node.ports.map((port) => {
@@ -435,9 +662,10 @@ export function SimulationWizard({
     () => technology?.parameter_schema?.find((field) => field.key === "target_bus_load_percent"),
     [technology],
   );
-  const routingNetworkSuggestions = useMemo(
-    () => buildRoutingNetworkSuggestions(routingEntries, topology, modelHardware),
-    [modelHardware, routingEntries, topology],
+  const routingNetworkSuggestions = useRoutingNetworkSuggestions(
+    routingEntries,
+    topology,
+    modelHardware,
   );
 
   function chooseDomain(value: string) {
@@ -466,135 +694,9 @@ export function SimulationWizard({
   async function applyRoutingSuggestion(suggestion: RoutingNetworkSuggestion) {
     setApplyingRoute(suggestion.route.id);
     setFormError("");
-    const nodes: TopologyNode[] = topology.nodes.map((node) => ({
-      ...node,
-      ports: node.ports.map((port) => ({ ...port })),
-    }));
-    const edges = topology.edges.map((edge) => ({ ...edge }));
-    const topologyIdByEngineering = new Map(
-      nodes
-        .filter((node) => node.engineeringId)
-        .map((node) => [node.engineeringId as string, node.id]),
-    );
-    const routeKey = suggestion.route.route_code.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-
-    function ensureNode(engineeringId: string) {
-      const existingId = topologyIdByEngineering.get(engineeringId);
-      if (existingId) return existingId;
-      const hardware = modelHardware.find((item) => item.id === engineeringId);
-      if (!hardware) throw new Error(`Hardware-Knoten ${engineeringId} ist nicht im Engineering-Modell verfügbar.`);
-      const index = nodes.length;
-      const id = `engineering-${engineeringId}`;
-      nodes.push({
-        id,
-        name: hardware.name,
-        kind: engineeringHardwareKind(hardware),
-        x: 70 + (index % 4) * 230,
-        y: 100 + Math.floor(index / 4) * 145,
-        ports: [],
-        engineeringId,
-      });
-      topologyIdByEngineering.set(engineeringId, id);
-      return id;
-    }
-
-    function ensurePort(
-      nodeId: string,
-      bus: BusType,
-      side: "left" | "right",
-      segmentKey: string,
-      engineeringId?: string | null,
-    ) {
-      const node = nodes.find((item) => item.id === nodeId);
-      if (!node) throw new Error(`Topologie-Knoten ${nodeId} wurde nicht gefunden.`);
-      const available = node.ports.find(
-        (port) =>
-          port.bus === bus &&
-          !edges.some((edge) => edge.sourcePort === port.id || edge.targetPort === port.id),
-      );
-      if (available) return available.id;
-      const port: TopologyPort = {
-        id: `routing-${routeKey}-${segmentKey}-${side}`,
-        name: busProfiles[bus].label,
-        bus,
-        side,
-        offset: Math.min(0.82, 0.28 + (node.ports.length % 4) * 0.18),
-        engineeringId: engineeringId ?? undefined,
-      };
-      node.ports.push(port);
-      return port.id;
-    }
-
     try {
-      suggestion.segments.forEach((segment, index) => {
-        const sourceNodeId = ensureNode(segment.sourceId);
-        const targetNodeId = ensureNode(segment.targetId);
-        const sourceNode = nodes.find((node) => node.id === sourceNodeId)!;
-        const targetNode = nodes.find((node) => node.id === targetNodeId)!;
-        const existingEdgeIndex = edges.findIndex(
-          (edge) => edge.bus === segment.bus && (
-            (edge.source === sourceNodeId && edge.target === targetNodeId)
-            || (edge.source === targetNodeId && edge.target === sourceNodeId)
-          ),
-        );
-        if (existingEdgeIndex >= 0) {
-          const existingEdge = edges[existingEdgeIndex];
-          const edgeSourceNode = nodes.find((node) => node.id === existingEdge.source);
-          const edgeTargetNode = nodes.find((node) => node.id === existingEdge.target);
-          const routeIds = [...new Set([
-            ...(existingEdge.routingEntryIds ?? []),
-            ...(existingEdge.routingEntryId ? [existingEdge.routingEntryId] : []),
-            suggestion.route.id,
-          ])];
-          edges[existingEdgeIndex] = {
-            ...existingEdge,
-            name: existingEdge.name || `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}`,
-            sourceInterfaceName: existingEdge.sourceInterfaceName || edgeSourceNode?.ports.find((port) => port.id === existingEdge.sourcePort)?.name,
-            targetInterfaceName: existingEdge.targetInterfaceName || edgeTargetNode?.ports.find((port) => port.id === existingEdge.targetPort)?.name,
-            description: existingEdge.description || suggestion.route.name,
-            relationType: existingEdge.relationType ?? "COMMUNICATES_WITH",
-            direction: existingEdge.direction ?? "SOURCE_TO_TARGET",
-            routingEntryId: existingEdge.routingEntryId ?? suggestion.route.id,
-            routingEntryIds: routeIds,
-            origin: "ROUTING_TABLE",
-          };
-          return;
-        }
-        const sourceOnLeft = sourceNode.x <= targetNode.x;
-        const segmentKey = `${index + 1}`;
-        const sourcePort = ensurePort(
-          sourceNodeId,
-          segment.bus,
-          sourceOnLeft ? "right" : "left",
-          `${segmentKey}-source`,
-          segment.sourceInterfaceId,
-        );
-        const targetPort = ensurePort(
-          targetNodeId,
-          segment.bus,
-          sourceOnLeft ? "left" : "right",
-          `${segmentKey}-target`,
-          segment.targetInterfaceId,
-        );
-        edges.push({
-          id: `routing-${routeKey}-${segmentKey}`,
-          name: `${suggestion.route.route_code} · ${sourceNode.name} → ${targetNode.name}`,
-          sourceInterfaceName: sourceNode.ports.find((port) => port.id === sourcePort)?.name,
-          targetInterfaceName: targetNode.ports.find((port) => port.id === targetPort)?.name,
-          relationType: "COMMUNICATES_WITH",
-          description: suggestion.route.description || suggestion.route.name,
-          direction: "SOURCE_TO_TARGET",
-          source: sourceNodeId,
-          sourcePort,
-          target: targetNodeId,
-          targetPort,
-          bus: segment.bus,
-          routingEntryId: suggestion.route.id,
-          routingEntryIds: [suggestion.route.id],
-          origin: "ROUTING_TABLE",
-        });
-      });
-      const saved = await persistNetworkRelationships({ nodes, edges: collapsePhysicalEdges(edges) });
+      const next = mergeRoutingSuggestionsIntoTopology(topology, [suggestion], modelHardware);
+      const saved = await persistNetworkRelationships(next);
       if (saved) {
         setRoutingSyncMessage(`${suggestion.route.route_code} wurde als physischer Netzwerkpfad übernommen.`);
       }
@@ -605,19 +707,24 @@ export function SimulationWizard({
     }
   }
 
-  useEffect(() => {
-    if (
-      mode !== "network"
-      || !workflowLoaded
-      || engineeringSync.status === "syncing"
-      || applyingRoute
-      || routingNetworkSuggestions.length === 0
-    ) return;
-    const timer = window.setTimeout(() => {
-      void applyRoutingSuggestion(routingNetworkSuggestions[0]);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [applyingRoute, engineeringSync.status, mode, routingNetworkSuggestions, workflowLoaded]);
+  async function applyAllRoutingSuggestions() {
+    if (!routingNetworkSuggestions.length) return;
+    setApplyingAllRoutes(true);
+    setFormError("");
+    try {
+      const next = mergeRoutingSuggestionsIntoTopology(topology, routingNetworkSuggestions, modelHardware);
+      const saved = await persistNetworkRelationships(next);
+      if (saved) {
+        setRoutingSyncMessage(
+          `${routingNetworkSuggestions.length} Routing-Pfade wurden gemeinsam in das Netzwerk übernommen.`,
+        );
+      }
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Routing-Vorschläge konnten nicht übernommen werden.");
+    } finally {
+      setApplyingAllRoutes(false);
+    }
+  }
 
   async function submit(formElement: HTMLFormElement | null) {
     setSubmitting(true);
@@ -670,6 +777,7 @@ export function SimulationWizard({
         setStoredParameters(parameters);
         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
       }
+      if (mode === "parameters") notifyWorkflowDraftStatus("parameters", null);
       notifyWorkflowChanged();
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
@@ -699,6 +807,9 @@ export function SimulationWizard({
       <form
         key={`${mode}:${JSON.stringify(storedParameters)}`}
         className="panel config-panel"
+        onChange={() => {
+          if (mode === "parameters") notifyWorkflowDraftStatus("parameters", "OUTDATED");
+        }}
         onSubmit={(event: FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           void submit(event.currentTarget);
@@ -783,7 +894,19 @@ export function SimulationWizard({
                   <span>Routing-Tabelle</span>
                   <strong>Vorgeschlagene physische Verbindungen</strong>
                 </div>
-                <Link href="/studio/routing?view=graph">Routing-Graph öffnen ↗</Link>
+                <div className="net-route-suggestions-actions">
+                  <Link href="/studio/routing?view=graph">Routing-Graph öffnen ↗</Link>
+                  {routingNetworkSuggestions.length > 0 && (
+                    <button
+                      className="net-add"
+                      disabled={Boolean(applyingRoute) || applyingAllRoutes}
+                      onClick={() => void applyAllRoutingSuggestions()}
+                      type="button"
+                    >
+                      {applyingAllRoutes ? "Alle werden übernommen …" : "Alle übernehmen"}
+                    </button>
+                  )}
+                </div>
               </div>
               {routingLoadError ? (
                 <p className="net-route-suggestions-error">{routingLoadError}</p>
@@ -801,7 +924,7 @@ export function SimulationWizard({
                       </div>
                       <button
                         className="net-add"
-                        disabled={Boolean(applyingRoute)}
+                        disabled={Boolean(applyingRoute) || applyingAllRoutes}
                         onClick={() => void applyRoutingSuggestion(suggestion)}
                         type="button"
                       >
@@ -1076,7 +1199,10 @@ function BusLoadParameterControl({
           max={maximum}
           min={minimum}
           name="warning_threshold"
-          onInput={(event) => setGoodLimit(Number(event.currentTarget.value))}
+          onInput={(event) => {
+            setGoodLimit(Number(event.currentTarget.value));
+            notifyWorkflowDraftStatus("parameters", "OUTDATED");
+          }}
           step="1"
           style={{ "--bus-slider-position": `${goodEnd}%` } as React.CSSProperties}
           type="range"
@@ -1094,7 +1220,10 @@ function BusLoadParameterControl({
           max={maximum}
           min={minimum}
           name="overload_threshold"
-          onInput={(event) => setLimitStart(Number(event.currentTarget.value))}
+          onInput={(event) => {
+            setLimitStart(Number(event.currentTarget.value));
+            notifyWorkflowDraftStatus("parameters", "OUTDATED");
+          }}
           step="1"
           style={{ "--bus-slider-position": `${limitBegin}%` } as React.CSSProperties}
           type="range"

@@ -241,6 +241,12 @@ def save_validation(route_id: str, validation: dict[str, Any], actor: str | None
 
 def _publish_graph(connection, route: dict[str, Any], actor: str | None) -> None:
     source_id = route["source"].get("node_id")
+    connection.execute(
+        "DELETE FROM engineering_relations WHERE project_id = %s AND ("
+        "(relation_type = 'ROUTES_TO' AND attributes ->> 'route_id' = %s) OR "
+        "(relation_type = 'USES_ROUTE' AND target_type = 'RoutingEntry' AND target_id = %s))",
+        (current_project_id(), str(route["id"]), route["id"]),
+    )
     for destination in route["destinations"]:
         target_id = destination.get("node_id")
         if not source_id or not target_id:

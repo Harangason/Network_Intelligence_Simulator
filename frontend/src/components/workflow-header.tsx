@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
-  getWorkflow,
+  getWorkflowSummary,
   setWorkflowContext,
   type WorkflowState,
   type WorkflowStatus,
@@ -54,6 +54,7 @@ const FALLBACK_STEPS: WorkflowStep[] = [
 }));
 
 export const WORKFLOW_CHANGED_EVENT = "workflow:changed";
+export const WORKFLOW_DRAFT_STATUS_EVENT = "workflow:draft-status";
 type WorkflowHeaderVariant = "engineering" | "trace-analysis";
 
 const TRACE_ANALYSIS_STEPS = [
@@ -68,6 +69,15 @@ const TRACE_ANALYSIS_STEPS = [
 
 export function notifyWorkflowChanged() {
   window.dispatchEvent(new CustomEvent(WORKFLOW_CHANGED_EVENT));
+}
+
+export function notifyWorkflowDraftStatus(
+  step: WorkflowStepId,
+  status: WorkflowStatus | null,
+) {
+  window.dispatchEvent(new CustomEvent(WORKFLOW_DRAFT_STATUS_EVENT, {
+    detail: { status, step },
+  }));
 }
 
 export function WorkflowHeader({ variant = "engineering" }: { variant?: WorkflowHeaderVariant }) {
@@ -119,6 +129,7 @@ function WorkflowHeaderContent() {
   const pathname = usePathname();
   const search = useSearchParams();
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
+  const [draftStatuses, setDraftStatuses] = useState<Partial<Record<WorkflowStepId, WorkflowStatus>>>({});
   const [error, setError] = useState("");
 
   const activeStep = useMemo<WorkflowStepId>(() => {
@@ -133,7 +144,7 @@ function WorkflowHeaderContent() {
   }, [pathname, search]);
 
   const refresh = useCallback(() => {
-    getWorkflow()
+    getWorkflowSummary()
       .then((state) => {
         setWorkflow(state);
         setError("");
@@ -150,13 +161,27 @@ function WorkflowHeaderContent() {
         })
         .catch((caught) => setError(caught instanceof Error ? caught.message : "Workflow unbekannt."));
     };
+    const handleDraftStatusChanged = (event: Event) => {
+      const { status, step } = (event as CustomEvent<{
+        status: WorkflowStatus | null;
+        step: WorkflowStepId;
+      }>).detail;
+      setDraftStatuses((current) => {
+        const next = { ...current };
+        if (status) next[step] = status;
+        else delete next[step];
+        return next;
+      });
+    };
     refresh();
     const timer = window.setInterval(refresh, 10000);
     window.addEventListener(WORKFLOW_CHANGED_EVENT, refresh);
+    window.addEventListener(WORKFLOW_DRAFT_STATUS_EVENT, handleDraftStatusChanged);
     window.addEventListener(SETTINGS_EVENT, handleSettingsChanged);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, refresh);
+      window.removeEventListener(WORKFLOW_DRAFT_STATUS_EVENT, handleDraftStatusChanged);
       window.removeEventListener(SETTINGS_EVENT, handleSettingsChanged);
     };
   }, [activeStep, refresh]);
@@ -165,9 +190,15 @@ function WorkflowHeaderContent() {
     void setWorkflowContext({ active_workflow_step: activeStep }).catch(() => undefined);
   }, [activeStep]);
 
-  const activeStepStatus = workflow?.steps.find((step) => step.id === activeStep)?.status;
+  const displayedSteps = (workflow?.steps ?? FALLBACK_STEPS).map((step) => {
+    const draftStatus = draftStatuses[step.id];
+    return draftStatus
+      ? { ...step, reason: draftStatus === "OUTDATED" ? "Ungespeicherte Parameteränderungen müssen bestätigt werden." : step.reason, status: draftStatus }
+      : step;
+  });
+  const activeStepStatus = displayedSteps.find((step) => step.id === activeStep)?.status;
   const activeStaleReason = activeStepStatus === "OUTDATED"
-    ? workflow?.stale_reasons?.[activeStep]
+    ? displayedSteps.find((step) => step.id === activeStep)?.reason
     : undefined;
 
   return (
@@ -183,7 +214,7 @@ function WorkflowHeaderContent() {
         </div>
       </div>
       <nav className="workflow-steps">
-        {(workflow?.steps ?? FALLBACK_STEPS).map((step) => (
+        {displayedSteps.map((step) => (
           <Link
             aria-current={step.id === activeStep ? "step" : undefined}
             className={`workflow-step ${step.id === activeStep ? "active" : ""}`}

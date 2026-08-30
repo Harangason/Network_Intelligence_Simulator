@@ -10,8 +10,8 @@ import {
   deleteEngineeringObject,
   deleteEngineeringRelation,
   getEngineeringSchema,
+  listAllEngineeringObjects,
   listEngineeringProposals,
-  listEngineeringObjects,
   listEngineeringRelations,
   previewEngineeringImport,
   rejectEngineeringProposal,
@@ -22,6 +22,13 @@ import {
   validateEngineeringProposal,
 } from "@/lib/engineering-api";
 import { ENGINEERING_MODEL_CHANGED_EVENT } from "@/lib/engineering-events";
+import {
+  engineeringDeviceTypeLabel,
+  engineeringObjectTypeClass,
+  engineeringObjectTypeLabel,
+  engineeringResourceType,
+  isMergedHardwareAlias,
+} from "@/lib/engineering-object-style";
 import type {
   EngineeringObject,
   EngineeringProposal,
@@ -39,6 +46,7 @@ import {
 } from "@/lib/agent-task-events";
 import { readActiveProjectId } from "@/lib/user-settings";
 import { EngineeringAgentWizard } from "@/components/agent-chat-core";
+import { StructureTreeWorkbench } from "@/components/structure-tree-workbench";
 
 const RESOURCES: EngineeringResource[] = [
   "hardware-nodes",
@@ -137,7 +145,7 @@ function resourceTableValues(
 ): string[] {
   switch (resource) {
     case "hardware-nodes":
-      return [item.name, "device_type" in item ? item.device_type : "—", item.domain ?? "—"];
+      return [item.name, "device_type" in item ? engineeringDeviceTypeLabel(item.device_type) : "—", item.domain ?? "—"];
     case "functions":
       return [
         item.name,
@@ -421,6 +429,7 @@ export function EngineeringWorkbench() {
   const [hardwarePreset, setHardwarePreset] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [showAgentWizard, setShowAgentWizard] = useState(false);
+  const [showStructureTree, setShowStructureTree] = useState(false);
   const [activeInterfaceIds, setActiveInterfaceIds] = useState<Set<string> | null>(null);
   const [showUnusedInterfaces, setShowUnusedInterfaces] = useState(false);
   const [columnFilters, setColumnFilters] = useState<string[]>([]);
@@ -446,8 +455,8 @@ export function EngineeringWorkbench() {
     setLoading(true);
     setError("");
     Promise.all([
-      listEngineeringObjects(resource),
-      Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listEngineeringObjects(reference))),
+      listAllEngineeringObjects(resource),
+      Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listAllEngineeringObjects(reference))),
     ])
       .then(([nextItems, referenceGroups]) => {
         setItems(nextItems);
@@ -518,12 +527,14 @@ export function EngineeringWorkbench() {
       : [],
     [activeInterfaceIds, items, resource],
   );
-  const baseVisibleItems = useMemo(
-    () => resource === "interfaces" && !showUnusedInterfaces && unusedNetworkInterfaces.length
-      ? items.filter((item) => !unusedNetworkInterfaces.some((unused) => unused.id === item.id))
-      : items,
-    [items, resource, showUnusedInterfaces, unusedNetworkInterfaces],
-  );
+  const baseVisibleItems = useMemo(() => {
+    const activeItems = resource === "hardware-nodes"
+      ? items.filter((item) => !isMergedHardwareAlias(item))
+      : items;
+    return resource === "interfaces" && !showUnusedInterfaces && unusedNetworkInterfaces.length
+      ? activeItems.filter((item) => !unusedNetworkInterfaces.some((unused) => unused.id === item.id))
+      : activeItems;
+  }, [items, resource, showUnusedInterfaces, unusedNetworkInterfaces]);
   const visibleItems = useMemo(
     () => baseVisibleItems.filter((item) => {
       const values = resourceTableValues(resource, item, referenceNames);
@@ -601,7 +612,7 @@ export function EngineeringWorkbench() {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Kanonisches Modell</p>
-            <h2>{RESOURCE_LABELS[resource]}</h2>
+            <h2 className={showStructureTree ? undefined : `eng-object-label ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{showStructureTree ? "Structure Tree" : RESOURCE_LABELS[resource]}</h2>
           </div>
           <div className="panel-heading-actions">
             <button className="button secondary" onClick={() => setShowAgentWizard(true)} type="button">
@@ -617,9 +628,10 @@ export function EngineeringWorkbench() {
           {RESOURCES.map((res, index) => (
             <Fragment key={res}>
               <button
-                aria-selected={resource === res}
-                className={resource === res ? "active" : ""}
+                aria-selected={!showStructureTree && resource === res}
+                className={`eng-object-accent ${engineeringObjectTypeClass(engineeringResourceType(res))} ${!showStructureTree && resource === res ? "active" : ""}`}
                 onClick={() => {
+                  setShowStructureTree(false);
                   setResource(res);
                   setShowCreate(false);
                   setHardwarePreset(null);
@@ -634,9 +646,27 @@ export function EngineeringWorkbench() {
               )}
             </Fragment>
           ))}
+          <span aria-hidden="true" className="eng-resource-tree-divider" />
+          <button
+            aria-selected={showStructureTree}
+            className={`eng-structure-tree-tab ${showStructureTree ? "active" : ""}`}
+            onClick={() => {
+              setShowStructureTree(true);
+              setShowCreate(false);
+              setHardwarePreset(null);
+              setSelectedId(null);
+            }}
+            role="tab"
+            type="button"
+          >
+            Structure Tree
+          </button>
         </div>
 
-        <div className="eng-resource-wizard-bar">
+        {showStructureTree ? (
+          <StructureTreeWorkbench onChanged={refresh} />
+        ) : <>
+        <div className={`eng-resource-wizard-bar eng-object-surface ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>
           <div>
             <p className="eyebrow">Objekt-Wizard</p>
             <strong>{RESOURCE_LABELS[resource]} geführt anlegen</strong>
@@ -759,7 +789,7 @@ export function EngineeringWorkbench() {
                 {paginatedItems.map((item) => (
                   <Fragment key={item.id}>
                     <tr
-                      className={item.id === selectedId ? "selected" : ""}
+                      className={`eng-object-surface ${engineeringObjectTypeClass(item.object_type)} ${item.id === selectedId ? "selected" : ""}`}
                       onClick={() => setSelectedId(item.id)}
                     >
                       {resourceTableValues(resource, item, referenceNames).map((value, index) => (
@@ -818,6 +848,7 @@ export function EngineeringWorkbench() {
             )}
           </div>
         )}
+        </>}
       </div>
     </div>
     {showImport && (
@@ -974,7 +1005,7 @@ function ProposalReviewPanel({
                   {proposal.proposed_objects.map((item, index) => {
                     const validation = proposal.validation_results.find((candidate) => candidate.index === index);
                     return (
-                      <div className="eng-proposal-object" key={`${proposal.proposal_id}:${index}`}>
+                      <div className={`eng-proposal-object eng-object-surface ${engineeringObjectTypeClass(proposalObjectType(proposal, item))}`} key={`${proposal.proposal_id}:${index}`}>
                         {editing ? (
                           <div className="eng-proposal-fields">
                             <label>Name<input defaultValue={String(item.name ?? "")} name={`name-${index}`} /></label>
@@ -982,7 +1013,7 @@ function ProposalReviewPanel({
                             <label>Beschreibung<input defaultValue={String(item.description ?? "")} name={`description-${index}`} /></label>
                           </div>
                         ) : (
-                          <div><strong>{String(item.name ?? item.relation_type ?? `Objekt ${index + 1}`)}</strong><span>{String(item.object_type ?? proposal.proposal_type)} · {String(item.domain ?? "generic")}</span></div>
+                          <div><strong>{String(item.name ?? item.relation_type ?? `Objekt ${index + 1}`)}</strong><span className={`eng-object-badge ${engineeringObjectTypeClass(proposalObjectType(proposal, item))}`}>{engineeringObjectTypeLabel(proposalObjectType(proposal, item))}</span><span>{String(item.domain ?? "generic")}</span></div>
                         )}
                         <div className="eng-proposal-object-actions">
                           {validation && <span className={`status-badge ${validation.valid ? "completed" : "outdated"}`}>{validation.valid ? "VALID" : "INVALID"}</span>}
@@ -1055,16 +1086,22 @@ function ProposalObjectWizard({
     setLoadError("");
     Promise.all([
       getEngineeringSchema(),
-      listEngineeringObjects("hardware-nodes"),
-      listEngineeringObjects("functions"),
-      listEngineeringObjects("interfaces"),
-      listEngineeringObjects("messages"),
-      listEngineeringObjects("signals"),
+      listAllEngineeringObjects("hardware-nodes"),
+      listAllEngineeringObjects("functions"),
+      listAllEngineeringObjects("interfaces"),
+      listAllEngineeringObjects("messages"),
+      listAllEngineeringObjects("signals"),
     ])
       .then(([nextSchema, hardwareNodes, functions, interfaces, messages, signals]) => {
         if (cancelled) return;
         setSchema(nextSchema);
-        setReferences({ "hardware-nodes": hardwareNodes, functions, interfaces, messages, signals });
+        setReferences({
+          "hardware-nodes": hardwareNodes.filter((item) => !isMergedHardwareAlias(item)),
+          functions,
+          interfaces,
+          messages,
+          signals,
+        });
         setDraft((current) => ({
           ...current,
           ...(objectType === "HardwareNode" && !current.device_type ? { device_type: nextSchema.device_types[0] ?? "ECU" } : {}),
@@ -1227,7 +1264,7 @@ function ProposalObjectWizard({
               <label className="field">
                 <span>Gerätetyp</span>
                 <select required onChange={(event) => updateField("device_type", event.target.value)} value={fieldValue(draft.device_type || schema?.device_types[0] || "ECU")}>
-                  {(schema?.device_types ?? ["ECU"]).map((type) => <option key={type} value={type}>{type}</option>)}
+                  {(schema?.device_types ?? ["ECU"]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
                 </select>
               </label>
             )}
@@ -1672,11 +1709,14 @@ function CreateForm({
     }
     let cancelled = false;
     setLoadingParents(true);
-    listEngineeringObjects(hierarchy.parentResource)
+    listAllEngineeringObjects(hierarchy.parentResource)
       .then((items) => {
         if (cancelled) return;
-        setParents(items);
-        setParentId(items[0]?.id ?? "");
+        const availableItems = hierarchy.parentResource === "hardware-nodes"
+          ? items.filter((item) => !isMergedHardwareAlias(item))
+          : items;
+        setParents(availableItems);
+        setParentId(availableItems[0]?.id ?? "");
       })
       .catch((err) => {
         if (!cancelled) {
@@ -1841,7 +1881,7 @@ function CreateForm({
           >
             {(schema?.device_types ?? ["ECU"]).map((type) => (
               <option key={type} value={type}>
-                {type}
+                {engineeringDeviceTypeLabel(type)}
               </option>
             ))}
           </select>
@@ -2028,13 +2068,13 @@ function DetailPanel({
     <div className="eng-detail-dropdown">
       <details className="eng-detail-section" open>
         <summary>
-          <span>{RESOURCE_TO_OBJECT_TYPE[resource]}</span>
+          <span className={`eng-object-badge ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{engineeringObjectTypeLabel(engineeringResourceType(resource))}</span>
           <strong>{item.name}</strong>
         </summary>
         <div className="eng-detail-section-body">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow">{RESOURCE_TO_OBJECT_TYPE[resource]}</p>
+              <p className={`eyebrow eng-object-label ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{engineeringObjectTypeLabel(engineeringResourceType(resource))}</p>
               <h2>{item.name}</h2>
             </div>
             <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
@@ -2342,7 +2382,7 @@ function EditObjectForm({
         <div className="field">
           <label htmlFor="edit_device_type">Gerätetyp</label>
           <select defaultValue={item.device_type} id="edit_device_type" name="edit_device_type" required>
-            {(schema?.device_types ?? [item.device_type]).map((type) => <option key={type}>{type}</option>)}
+            {(schema?.device_types ?? [item.device_type]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
           </select>
         </div>
       )}

@@ -29,6 +29,7 @@ export type ExtractedEngineeringSpecification = {
   chains: ExtractedEngineeringChain[];
   domain: string;
   interfaceType: string;
+  communicationSystems: string[];
   targetCounts: EngineeringTargetCounts;
 };
 
@@ -67,16 +68,26 @@ const GENERIC_INLINE_HARDWARE_LABELS = new Set([
 ]);
 
 const GENERIC_HARDWARE_LABELS = new Set([
+  "hardware",
   "hardware objekte",
   "hardware objekt",
+  "sensor",
   "sensors",
   "sensoren",
+  "ecu",
   "ecus",
+  "gateway",
   "gateways",
+  "plc",
+  "controller",
+  "steuergeraet",
 ]);
 
 const PARAMETER_LABEL_PATTERN =
-  /^(messbereich|aufloesung|auflösung|schrittweite|sollwert|grenzwerte?|kommunikationsprotokoll|kreistellen|warnhinweis|mindest|maximum|minimum|parameter|technische parameter|funktions parameter)/i;
+  /^(bereich|messbereich|signal|aufloesung|auflösung|schrittweite|sollwert|grenzwerte?|kommunikationsprotokoll|kreistellen|warnhinweis|mindest|maximum|minimum|parameter|technische parameter|funktions parameter|verwendung|aufgaben|eingänge?|eingaenge?|ausgänge?|ausgaenge?|mögliche werte|moegliche werte|beispielregeln?)/i;
+
+const PROSE_HARDWARE_LABEL_PATTERN =
+  /^(verwendung|verarbeitet|verarbeitung|kommunikation|verbindung|beispiel|beispielsweise|aufgaben?|eingänge?|eingaenge?|ausgänge?|ausgaenge?)\b/i;
 
 const COUNT_WORDS: Record<string, number> = {
   ein: 1,
@@ -247,7 +258,12 @@ function countValue(value: string) {
 }
 
 function requestedCount(text: string, nounPattern: string, modifierPattern = "") {
-  const source = normalized(text);
+  const source = normalized(
+    text
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^\s*#{1,6}\s+(?:\d+[.)]\s+)?/, ""))
+      .join("\n"),
+  );
   const modifiers = modifierPattern ? `(?:(?:${modifierPattern})\\s+){0,2}` : "";
   const pattern = new RegExp(`\\b${COUNT_TOKEN}\\s+${modifiers}${nounPattern}\\b`, "g");
   return [...source.matchAll(pattern)].reduce((maximum, match) => Math.max(maximum, countValue(match[1] ?? "")), 0);
@@ -384,16 +400,32 @@ function expandArchitectureChains(
   recognizedChains: ExtractedEngineeringChain[],
   requested: EngineeringTargetCounts,
   domain: string,
+  communicationSystems: string[],
 ) {
-  const chains = [...recognizedChains];
-  const names = new Set(chains.map((chain) => normalized(chain.hardware_name)));
-  const recognizedCounts = chainCounts(chains);
+  const recognizedCounts = chainCounts(recognizedChains);
   const targets: EngineeringTargetCounts = {
     sensors: requested.sensors || recognizedCounts.sensors,
     ecus: requested.ecus || recognizedCounts.ecus,
     gateways: requested.gateways || recognizedCounts.gateways,
     explicit: requested.explicit,
   };
+  const retainedCounts = { sensors: 0, ecus: 0, gateways: 0 };
+  const chains = requested.explicit
+    ? recognizedChains.filter((chain) => {
+      const category = chain.device_type === "SensorController"
+        ? "sensors"
+        : chain.device_type === "Gateway"
+          ? "gateways"
+          : chain.device_type === "ECU"
+            ? "ecus"
+            : null;
+      if (!category) return true;
+      if (retainedCounts[category] >= targets[category]) return false;
+      retainedCounts[category] += 1;
+      return true;
+    })
+    : [...recognizedChains];
+  const names = new Set(chains.map((chain) => normalized(chain.hardware_name)));
   if (!requested.explicit) return { chains, targets };
 
   const templates = architectureTemplates();
@@ -410,7 +442,16 @@ function expandArchitectureChains(
     if (currentCount >= targetFor(template.deviceType)) continue;
     const key = normalized(template.hardwareName);
     if (names.has(key)) continue;
-    chains.push(chainFromTemplate(template, chains.length, domain));
+    const allowedInterfaceType = communicationSystems.includes(template.interfaceType)
+      ? template.interfaceType
+      : communicationSystems.length
+        ? communicationSystems[chains.length % communicationSystems.length]
+        : undefined;
+    chains.push(chainFromTemplate(
+      allowedInterfaceType ? { ...template, interfaceType: allowedInterfaceType } : template,
+      chains.length,
+      domain,
+    ));
     names.add(key);
   }
   return { chains, targets };
@@ -426,20 +467,28 @@ function headingLabel(line: string) {
   return cleanLabel(bullet.split(/\s*[:,]\s*/, 1)[0] ?? "");
 }
 
+function isCountedHardwareGroup(value: string) {
+  const key = normalized(value);
+  return new RegExp(
+    `^${COUNT_TOKEN}\\s+(?:(?:technische|physikalische|logische|fahrzeugrelevante|funktions|zentrale|zentralen|zentrales|zentraler|typische|weitere|einziges|einzigen)\\s+){0,2}(?:sensor(?:en|s)?|ecu(?:s)?|gateway(?:s)?)$`,
+  ).test(key);
+}
+
 function hardwareName(label: string) {
   const name = cleanLabel(label);
   const key = normalized(name);
   if (!key || GENERIC_HARDWARE_LABELS.has(key)) return "";
+  if (PROSE_HARDWARE_LABEL_PATTERN.test(key)) return "";
   const typeMentions = key.match(/\b(?:sensor(?:en|s)?|ecu(?:s)?|gateway(?:s)?|plc(?:s)?|controller(?:s)?|steuergeraet(?:e)?)\b/g) ?? [];
-  const countedGroup = /\b(?:ein(?:e|em|en|er)?|zwei|drei|vier|fuenf|fünf|sechs|\d+)\s+(?:sensor(?:en)?|ecu(?:s)?|gateway(?:s)?)\b/.test(key);
+  const countedGroup = isCountedHardwareGroup(name);
   if (typeMentions.length > 1 || countedGroup) return "";
-  if (/^(gateway|central gateway|can fd gateway)$/i.test(name)) return name;
   return /(?:sensor|ecu|gateway|plc|controller|steuergeraet)$/i.test(key.replace(/\s+/g, ""))
     ? name
     : "";
 }
 
 function inlineHardwareNames(line: string) {
+  if (isCountedHardwareGroup(cleanLabel(line))) return [];
   const names = line.match(INLINE_HARDWARE_PATTERN) ?? [];
   return names
     .map((name) => cleanLabel(name))
@@ -479,6 +528,20 @@ function protocolFrom(text: string) {
   return "CAN";
 }
 
+export function extractCommunicationSystems(text: string) {
+  const key = normalized(text);
+  const systems: string[] = [];
+  if (/\blin\b/.test(key)) systems.push("LIN");
+  if (/\bcan fd\b|\bcanfd\b/.test(key)) systems.push("CAN_FD");
+  else if (/\bcan\b/.test(key)) systems.push("CAN");
+  if (/\bautomotive ethernet\b|\bethernet\b/.test(key)) systems.push("Ethernet");
+  if (/\bethercat\b/.test(key)) systems.push("EtherCAT");
+  if (/\bprofinet\b/.test(key)) systems.push("ProfiNET");
+  if (/\bmodbus tcp\b/.test(key)) systems.push("ModbusTCP");
+  if (/\bopc ua\b/.test(key)) systems.push("OPCUA");
+  return [...new Set(systems)];
+}
+
 function domainFrom(text: string) {
   const key = normalized(text);
   if (/automotive|fahrzeug|ecu|can fd/.test(key)) return "automotive";
@@ -494,7 +557,9 @@ function numeric(value: string | undefined) {
 }
 
 function rangeFrom(text: string) {
-  const match = text.match(/(-?\d+(?:[,.]\d+)?)\s*(?:°\s*c|a|u\s*\/\s*min|\/\s*min)?\s*(?:bis|–|—)\s*\+?(-?\d+(?:[,.]\d+)?)/i);
+  const match = text
+    .replace(/−/g, "-")
+    .match(/(-?\d+(?:[,.]\d+)?)\s*(?:°\s*c|a|u\s*\/\s*min|\/\s*min)?\s*(?:bis|–|—)\s*\+?(-?\d+(?:[,.]\d+)?)/i);
   return { min: numeric(match?.[1]), max: numeric(match?.[2]) };
 }
 
@@ -526,11 +591,8 @@ function identifier(value: string) {
 
 function functionName(name: string, contexts: string[]) {
   for (const line of contexts) {
-    const label = headingLabel(line);
-    if (!label || hardwareName(label) || PARAMETER_LABEL_PATTERN.test(normalized(label))) continue;
-    if (GENERIC_HARDWARE_LABELS.has(normalized(label))) continue;
-    if (/^(hardware objekte|technische parameter|funktions parameter)$/i.test(normalized(label))) continue;
-    return `${identifier(name)}_${identifier(label)}`;
+    const explicit = cleanLabel(line).match(/^\s*(?:[-*]\s*)?funktion(?:sname)?\s*:\s*(.+?)\s*$/i)?.[1];
+    if (explicit) return `${identifier(name)}_${identifier(explicit)}`;
   }
   const key = normalized(name);
   if (key.includes("sensor")) return `${identifier(name)}_Erfassung`;
@@ -568,6 +630,7 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
 
   const domain = domainFrom(text);
   const interfaceType = protocolFrom(text);
+  const communicationSystems = extractCommunicationSystems(text);
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const range = rangeFrom(context);
@@ -604,9 +667,20 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
   });
 
   const requestedTargets = extractEngineeringTargetCounts(text);
-  const expanded = expandArchitectureChains(recognizedChains, requestedTargets, domain);
+  const expanded = expandArchitectureChains(
+    recognizedChains,
+    requestedTargets,
+    domain,
+    communicationSystems,
+  );
 
-  return { chains: expanded.chains, domain, interfaceType, targetCounts: expanded.targets };
+  return {
+    chains: expanded.chains,
+    domain,
+    interfaceType,
+    communicationSystems,
+    targetCounts: expanded.targets,
+  };
 }
 
 export function isStructuredEngineeringSpecification(text: string) {

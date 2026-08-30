@@ -260,7 +260,10 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 },
             )
         else:
-            hardware_updates = {"name": name, "identity": identity}
+            # Existing canonical objects own their human-readable identity. The
+            # network editor may link and enrich them, but opening an older
+            # topology must never rename the Engineering model backwards.
+            hardware_updates = {"identity": identity}
             if (hardware.get("provenance") or {}).get("origin") == ORIGIN:
                 hardware_updates["device_type"] = device_type
             hardware = _update_if_changed(
@@ -270,7 +273,8 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             )
 
         function = _find_function(topology_id, str(hardware["id"]))
-        function_name = f"{name} Kommunikation"
+        canonical_name = str(hardware.get("name") or name)
+        function_name = f"{canonical_name} Kommunikation"
         if function is None:
             function = create_object(
                 "Function",
@@ -390,12 +394,9 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 reused_changes: dict[str, Any] = {
                     "configuration": {
                         **(interface.get("configuration") or {}),
-                        "bus": bus,
-                        "network_id": f"network-{bus}",
+                        **configuration,
                     }
                 }
-                if port_id in requested_interface_names:
-                    reused_changes["name"] = port_name
                 interface = _update_if_changed(
                     "Interface",
                     interface,
@@ -417,6 +418,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             {
                 "topology_node_id": node_id,
                 "engineering_id": str(hardware["id"]),
+                "engineering_name": canonical_name,
                 "function_id": str(function["id"]),
                 "interfaces": synchronized_ports,
             }
@@ -455,6 +457,9 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             "name": raw_edge.get("name"),
             "description": raw_edge.get("description"),
             "direction": raw_edge.get("direction") or "BIDIRECTIONAL",
+            "routing_entry_id": raw_edge.get("routingEntryId"),
+            "routing_entry_ids": raw_edge.get("routingEntryIds") or [],
+            "routing_metadata": raw_edge.get("routingMetadata") or {},
         }
         if relation is None:
             relation = create_relation(

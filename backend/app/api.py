@@ -16,6 +16,10 @@ from ..engineering.simulation import create_campaign_record, get_campaign_record
 api = Blueprint("api", __name__)
 
 
+def _request_project_id() -> str:
+    return str(request.args.get("project_id") or request.headers.get("X-Project-ID") or "default")
+
+
 @api.route("/health", methods=["GET"])
 def health():
     response = {
@@ -37,7 +41,7 @@ def technologies():
 
 @api.route("/simulations", methods=["GET"])
 def list_simulations():
-    return jsonify({"jobs": JOBS.list()})
+    return jsonify({"jobs": JOBS.list(_request_project_id())})
 
 
 @api.route("/simulations", methods=["POST"])
@@ -45,8 +49,14 @@ def create_simulation():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    explicit_project_id = request.args.get("project_id") or request.headers.get("X-Project-ID")
+    request_project_id = str(explicit_project_id or payload.get("project_id") or "default")
+    payload_project_id = str(payload.get("project_id") or request_project_id)
+    if explicit_project_id and payload_project_id != request_project_id:
+        return jsonify({"error": "Projekt-ID in Header und Payload stimmt nicht überein."}), 409
+    payload["project_id"] = request_project_id
     snapshot_id = payload.get("workflow_snapshot_id")
-    project_id = str(payload.get("project_id") or "default")
+    project_id = request_project_id
     if payload.get("workflow_managed") and not snapshot_id:
         return jsonify({"error": "Ein validierter SimulationSnapshot ist erforderlich."}), 409
     if snapshot_id:
@@ -64,13 +74,20 @@ def validate_simulation():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    explicit_project_id = request.args.get("project_id") or request.headers.get("X-Project-ID")
+    request_project_id = str(explicit_project_id or payload.get("project_id") or "default")
+    payload_project_id = str(payload.get("project_id") or request_project_id)
+    if explicit_project_id and payload_project_id != request_project_id:
+        return jsonify({"error": "Projekt-ID in Header und Payload stimmt nicht überein."}), 409
+    payload["project_id"] = request_project_id
     job = JOBS.submit(payload, validate_only=True)
     return jsonify(job), 202
 
 
 @api.route("/simulations/<job_id>", methods=["GET"])
 def simulation(job_id: str):
-    job = JOBS.get(job_id)
+    project_id = _request_project_id()
+    job = JOBS.get(job_id, project_id)
     if job is None:
         return jsonify({"error": "Simulation nicht gefunden."}), 404
     if job.get("result"):
@@ -79,7 +96,7 @@ def simulation(job_id: str):
             {
                 "index": index,
                 "name": Path(path).name,
-                "url": f"/api/simulations/{job_id}/artifacts/{index}",
+                "url": f"/api/simulations/{job_id}/artifacts/{index}?project_id={project_id}",
             }
             for index, path in enumerate(artifacts)
         ]
@@ -88,7 +105,7 @@ def simulation(job_id: str):
 
 @api.route("/simulations/<job_id>/cancel", methods=["POST"])
 def cancel_simulation(job_id: str):
-    job = JOBS.cancel(job_id)
+    job = JOBS.cancel(job_id, _request_project_id())
     if job is None:
         return jsonify({"error": "Simulation nicht gefunden."}), 404
     return jsonify(job)
@@ -96,7 +113,7 @@ def cancel_simulation(job_id: str):
 
 @api.route("/simulations/<job_id>/artifacts/<int:artifact_index>", methods=["GET"])
 def artifact(job_id: str, artifact_index: int):
-    path = JOBS.artifact(job_id, artifact_index)
+    path = JOBS.artifact(job_id, artifact_index, _request_project_id())
     if path is None:
         return jsonify({"error": "Artefakt nicht gefunden."}), 404
     return send_file(path, as_attachment=True, download_name=path.name)
@@ -146,7 +163,7 @@ def simulation_campaign(campaign_id: str):
     if campaign is None:
         return jsonify({"error": "Simulationskampagne nicht gefunden."}), 404
     statuses = {
-        str(run["job_id"]): str((JOBS.get(str(run["job_id"])) or {}).get("status") or run["status"])
+        str(run["job_id"]): str((JOBS.get(str(run["job_id"]), project_id) or {}).get("status") or run["status"])
         for run in campaign["runs"]
     }
     return jsonify(update_campaign_record(project_id, campaign_id, statuses))

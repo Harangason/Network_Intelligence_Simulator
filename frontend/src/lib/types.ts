@@ -321,6 +321,126 @@ export type EngineeringRelation = {
   created_by: string | null;
 };
 
+export type StructureSuggestion = {
+  child_type: Exclude<EngineeringObjectType, "HardwareNode">;
+  child_id: string;
+  child_name: string;
+  parent_type: EngineeringObjectType;
+  parent_id: string;
+  parent_name: string;
+  parent_field: string;
+  relation_type: string;
+  confidence: number;
+  reason: string;
+  current_name: string;
+  recommended_name: string;
+  learning_key: string;
+};
+
+export type StructureEvaluation = {
+  proposal_id: string;
+  model: string;
+  model_version: string;
+  confidence: number;
+  suggestions: StructureSuggestion[];
+  hardware_adjustments: Array<{
+    object_type: "HardwareNode";
+    id: string;
+    name: string;
+    field: "device_type";
+    current_value: string;
+    suggested_value: string;
+    reason: string;
+  }>;
+  learning: {
+    accepted: number;
+    rejected: number;
+    reviewed: number;
+  };
+};
+
+export type StructureAssignment = StructureSuggestion & {
+  name: string;
+};
+
+export type EcuTransferItem = {
+  object_type: Exclude<EngineeringObjectType, "HardwareNode">;
+  source_id: string;
+  source_name: string;
+  source_parent_id: string;
+  source_parent_name: string;
+  target_hardware_id: string;
+  target_parent_type: EngineeringObjectType;
+  target_parent_id: string | null;
+  target_parent_plan_key: string | null;
+  target_parent_name: string;
+  target_id: string | null;
+  target_name: string | null;
+  recommended_name: string;
+  action: "reuse" | "create";
+  suggested_action?: "reuse" | "create";
+  similarity: number;
+  confidence: number;
+  reason: string;
+  relation_type: string;
+  parent_field: string;
+  plan_key: string;
+  learning_key: string;
+  level: number;
+};
+
+export type EcuTransferDecision = {
+  plan_key: string;
+  action: "reuse" | "create" | "skip";
+  recommended_name?: string;
+  target_id?: string;
+};
+
+export type SystemDuplicateCandidate = {
+  candidate_key: string;
+  canonical_hardware: { id: string; name: string; child_count: number };
+  duplicate_hardware: { id: string; name: string; child_count: number };
+  name_similarity: number;
+  structure_similarity: number;
+  confidence: number;
+  reason: string;
+};
+
+export type SystemMergeResult = {
+  canonical_hardware: { id: string; name: string };
+  superseded_hardware: { id: string; name: string };
+  relation_id: string;
+  proposal_id: string;
+  confidence: number;
+  reversible: boolean;
+};
+
+export type EcuTransferReview = {
+  proposal_id: string;
+  source_hardware: { id: string; name: string };
+  target_hardware: { id: string; name: string };
+  confidence: number;
+  summary: {
+    total: number;
+    create: number;
+    reuse: number;
+    semantic_duplicates: number;
+  };
+  items: EcuTransferItem[];
+};
+
+export type EcuTransferAnalysis = {
+  model: string;
+  model_version: string;
+  source_hardware: { id: string; name: string };
+  targets: EcuTransferReview[];
+  learning: {
+    accepted: number;
+    rejected: number;
+    reviewed: number;
+  };
+};
+
 export type EngineeringImportPlan = {
   import_id: string;
   file_name: string;

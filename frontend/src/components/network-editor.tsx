@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   busProfiles,
   engineeringHardwareKind,
@@ -31,6 +31,8 @@ const EVA_CLUSTER_PADDING = 18;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.5;
 const ZOOM_STEP = 0.1;
+const LARGE_TOPOLOGY_NODE_THRESHOLD = 48;
+const LARGE_TOPOLOGY_EDGE_THRESHOLD = 48;
 
 const kindLabels: Record<NodeKind, string> = {
   ecu: "ECU",
@@ -101,9 +103,10 @@ function nodeContentHeight(node: TopologyNode) {
   const charactersPerLine = Math.max(10, Math.floor((nodeWidth(node) - 32) / 8));
   const nameLines = Math.max(1, Math.ceil(node.name.length / charactersPerLine));
   const contentHeight = node.ports.length === 0 ? 86 : 66;
+  const visiblePortRows = Math.ceil(Math.min(node.ports.length, 8) / 2);
   return Math.max(
     NODE_MIN_HEIGHT,
-    contentHeight + (nameLines - 1) * 18 + Math.ceil(node.ports.length / 2) * 12,
+    contentHeight + (nameLines - 1) * 18 + visiblePortRows * 12,
   );
 }
 
@@ -239,7 +242,40 @@ function roundedWirePath(points: WirePoint[]) {
   return commands.join(" ");
 }
 
+function largeTopologyEdgePath(
+  edge: TopologyEdge,
+  from: TopologyNode,
+  fromPort: TopologyPort,
+  to: TopologyNode,
+  toPort: TopologyPort,
+) {
+  const startSide = fromPort.side;
+  const endSide = toPort.side;
+  const start = {
+    x: startSide === "left" ? from.x : from.x + nodeWidth(from),
+    y: from.y + portTop(from, fromPort),
+  };
+  const end = {
+    x: endSide === "left" ? to.x : to.x + nodeWidth(to),
+    y: to.y + portTop(to, toPort),
+  };
+  const hash = [...edge.id].reduce((value, character) => ((value * 31) + character.charCodeAt(0)) >>> 0, 0);
+  const laneOffset = ((hash % 7) - 3) * 6;
+  const laneX = startSide === endSide
+    ? startSide === "right"
+      ? Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to)) + 34 + Math.abs(laneOffset)
+      : Math.min(from.x, to.x) - 34 - Math.abs(laneOffset)
+    : (start.x + end.x) / 2 + laneOffset;
+  return roundedWirePath([start, { x: laneX, y: start.y }, { x: laneX, y: end.y }, end]);
+}
+
 function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: TopologyNode, fromPort: TopologyPort, to: TopologyNode, toPort: TopologyPort) {
+  if (
+    topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD ||
+    topology.edges.length >= LARGE_TOPOLOGY_EDGE_THRESHOLD
+  ) {
+    return largeTopologyEdgePath(edge, from, fromPort, to, toPort);
+  }
   const start = portPosition(topology, from, fromPort);
   const end = portPosition(topology, to, toPort);
   const startDirection = start.side === "right" ? 1 : -1;
@@ -336,23 +372,28 @@ function primaryGatewayFor(topology: NetworkTopology) {
     )[0];
 }
 
-function connectedNodes(topology: NetworkTopology, nodeId: string) {
-  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
-  return topology.edges.flatMap((edge) => {
-    if (edge.source === nodeId) return nodesById.get(edge.target) ?? [];
-    if (edge.target === nodeId) return nodesById.get(edge.source) ?? [];
-    return [];
-  });
-}
-
 function stableTopologyOrder(topology: NetworkTopology, nodes: TopologyNode[]) {
-  const sortKey = (node: TopologyNode) => connectedNodes(topology, node.id)
-    .map((neighbor) => `${evaRole(neighbor)}:${neighbor.name}:${neighbor.id}`)
-    .sort()
-    .join("|");
+  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
+  const neighbors = new Map(topology.nodes.map((node) => [node.id, [] as TopologyNode[]]));
+  topology.edges.forEach((edge) => {
+    const source = nodesById.get(edge.source);
+    const target = nodesById.get(edge.target);
+    if (source && target) {
+      neighbors.get(source.id)?.push(target);
+      neighbors.get(target.id)?.push(source);
+    }
+  });
+  const sortKeys = new Map(nodes.map((node) => [
+    node.id,
+    (neighbors.get(node.id) ?? [])
+      .map((neighbor) => `${evaRole(neighbor)}:${neighbor.name}:${neighbor.id}`)
+      .sort()
+      .join("|"),
+  ]));
+  const degrees = new Map(nodes.map((node) => [node.id, neighbors.get(node.id)?.length ?? 0]));
   return [...nodes].sort((left, right) =>
-    sortKey(left).localeCompare(sortKey(right), "de") ||
-    nodeDegree(topology, right.id) - nodeDegree(topology, left.id) ||
+    (sortKeys.get(left.id) ?? "").localeCompare(sortKeys.get(right.id) ?? "", "de") ||
+    (degrees.get(right.id) ?? 0) - (degrees.get(left.id) ?? 0) ||
     left.name.localeCompare(right.name, "de") ||
     left.id.localeCompare(right.id),
   );
@@ -374,9 +415,9 @@ function topologyAdjacency(topology: NetworkTopology) {
   return adjacency;
 }
 
-function graphDistance(adjacency: Map<string, Set<string>>, sourceId: string, targetId: string) {
-  if (sourceId === targetId) return 0;
+function graphDistances(adjacency: Map<string, Set<string>>, sourceId: string) {
   const visited = new Set([sourceId]);
+  const distances = new Map([[sourceId, 0]]);
   let frontier = [sourceId];
   let distance = 0;
   while (frontier.length > 0) {
@@ -384,15 +425,15 @@ function graphDistance(adjacency: Map<string, Set<string>>, sourceId: string, ta
     const next: string[] = [];
     for (const nodeId of frontier) {
       for (const neighborId of adjacency.get(nodeId) ?? []) {
-        if (neighborId === targetId) return distance;
         if (visited.has(neighborId)) continue;
         visited.add(neighborId);
+        distances.set(neighborId, distance);
         next.push(neighborId);
       }
     }
     frontier = next;
   }
-  return Number.POSITIVE_INFINITY;
+  return distances;
 }
 
 const inactiveEvaRouteStatuses = new Set(["REJECTED", "OUTDATED", "SUPERSEDED", "DEPRECATED"]);
@@ -402,6 +443,12 @@ function routeAnchorForEndpoint(
   anchors: TopologyNode[],
   routingEntries: RoutingEntry[],
 ) {
+  if (endpoint.systemOwnerId) {
+    const explicitOwner = anchors.find(
+      (anchor) => anchor.id === endpoint.systemOwnerId || anchor.engineeringId === endpoint.systemOwnerId,
+    );
+    if (explicitOwner) return explicitOwner;
+  }
   if (!endpoint.engineeringId) return undefined;
   const anchorsByEngineeringId = new Map(
     anchors
@@ -409,7 +456,11 @@ function routeAnchorForEndpoint(
       .map((anchor) => [anchor.engineeringId as string, anchor]),
   );
   const candidates = routingEntries
-    .filter((route) => !inactiveEvaRouteStatuses.has(route.status))
+    .filter((route) =>
+      !inactiveEvaRouteStatuses.has(route.status.toUpperCase())
+      && route.approval_state.toUpperCase() === "APPROVED"
+      && route.validation?.valid === true
+    )
     .flatMap((route) => {
       const anchorIds: string[] = [];
       if (route.source.node_id === endpoint.engineeringId) {
@@ -450,13 +501,14 @@ function buildEvaGroups(topology: NetworkTopology, routingEntries: RoutingEntry[
 
   endpoints.forEach((endpoint) => {
     const routedAnchor = routeAnchorForEndpoint(endpoint, anchors, routingEntries);
+    const distances = graphDistances(adjacency, endpoint.id);
     const reachableEcus = ecuAnchors
-      .map((anchor) => ({ anchor, distance: graphDistance(adjacency, endpoint.id, anchor.id) }))
+      .map((anchor) => ({ anchor, distance: distances.get(anchor.id) ?? Number.POSITIVE_INFINITY }))
       .filter((candidate) => Number.isFinite(candidate.distance));
     const candidates = reachableEcus.length > 0
       ? reachableEcus
       : gatewayAnchors
-          .map((anchor) => ({ anchor, distance: graphDistance(adjacency, endpoint.id, anchor.id) }))
+          .map((anchor) => ({ anchor, distance: distances.get(anchor.id) ?? Number.POSITIVE_INFINITY }))
           .filter((candidate) => Number.isFinite(candidate.distance));
     const selected = routedAnchor ?? candidates.sort((left, right) =>
       left.distance - right.distance ||
@@ -489,8 +541,12 @@ function evaGroupHeight(group: EvaGroup) {
   return Math.max(nodeHeight(group.anchor), nodeStackHeight(group.inputs), nodeStackHeight(group.outputs));
 }
 
-function evaClusterLayouts(topology: NetworkTopology, routingEntries: RoutingEntry[]) {
-  return buildEvaGroups(topology, routingEntries).flatMap((group) => {
+function evaClusterLayouts(
+  topology: NetworkTopology,
+  routingEntries: RoutingEntry[],
+  groups = buildEvaGroups(topology, routingEntries),
+) {
+  return groups.flatMap((group) => {
     const members = [group.anchor, ...group.inputs, ...group.outputs];
     if (members.length < 2) return [];
     const left = Math.min(...members.map((node) => node.x));
@@ -553,7 +609,12 @@ function topologyLayoutSignature(topology: NetworkTopology) {
     .join("|");
 }
 
-function hasLayoutProblems(topology: NetworkTopology, surfaceWidth: number, routingEntries: RoutingEntry[]) {
+function hasLayoutProblems(
+  topology: NetworkTopology,
+  surfaceWidth: number,
+  routingEntries: RoutingEntry[],
+  evaGroups = buildEvaGroups(topology, routingEntries),
+) {
   const layoutWidth = Math.max(1180, surfaceWidth);
   const rightLimit = layoutWidth - CANVAS_MARGIN;
   if (topology.nodes.some((node) =>
@@ -572,7 +633,6 @@ function hasLayoutProblems(topology: NetworkTopology, surfaceWidth: number, rout
     const gatewayCenter = primaryGateway.x + nodeWidth(primaryGateway) / 2;
     if (Math.abs(gatewayCenter - layoutWidth / 2) > 72) return true;
   }
-  const evaGroups = buildEvaGroups(topology, routingEntries);
   if (evaGroups.some((group) => {
     const anchorCenter = group.anchor.y + nodeHeight(group.anchor) / 2;
     return [group.inputs, group.outputs].some((members) => {
@@ -1028,19 +1088,50 @@ export function NetworkEditor({
     });
   }
 
-  const portIsConnected = (portId: string) =>
-    topology.edges.some((edge) => edge.sourcePort === portId || edge.targetPort === portId);
+  const connectedPortIds = useMemo(() => new Set(
+    topology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
+  ), [topology.edges]);
+  const portIsConnected = (portId: string) => connectedPortIds.has(portId);
   const selectedRelationship = topology.edges.find((edge) => edge.id === selectedEdge);
   const selectedRelationshipRouteIds = new Set([
     ...(selectedRelationship?.routingEntryIds ?? []),
     ...(selectedRelationship?.routingEntryId ? [selectedRelationship.routingEntryId] : []),
   ]);
   const selectedRelationshipRoutes = routingEntries.filter((route) => selectedRelationshipRouteIds.has(route.id));
-  const routingNodeNames = new Map(modelHardware.map((node) => [node.id, node.name]));
-  const primaryGatewayId = primaryGatewayFor(topology)?.id;
-  const structureSignature = `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`;
-  const evaStable = topology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(topology, surfaceWidth, routingEntries);
-  const evaClusters = evaClusterLayouts(topology, routingEntries);
+  const routingNodeNames = useMemo(
+    () => new Map(modelHardware.map((node) => [node.id, node.name])),
+    [modelHardware],
+  );
+  const primaryGatewayId = useMemo(() => primaryGatewayFor(topology)?.id, [topology]);
+  const structureSignature = useMemo(
+    () => `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`,
+    [routingEntries, topology],
+  );
+  const evaGroups = useMemo(() => buildEvaGroups(topology, routingEntries), [routingEntries, topology]);
+  const evaStable = useMemo(
+    () => topology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
+      topology,
+      surfaceWidth,
+      routingEntries,
+      evaGroups,
+    ),
+    [evaGroups, routingEntries, surfaceWidth, topology],
+  );
+  const evaClusters = useMemo(
+    () => evaClusterLayouts(topology, routingEntries, evaGroups),
+    [evaGroups, routingEntries, topology],
+  );
+  const renderedEdges = useMemo(() => {
+    const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
+    return topology.edges.flatMap((edge) => {
+      const from = nodesById.get(edge.source);
+      const to = nodesById.get(edge.target);
+      const fromPort = from?.ports.find((port) => port.id === edge.sourcePort);
+      const toPort = to?.ports.find((port) => port.id === edge.targetPort);
+      if (!from || !to || !fromPort || !toPort) return [];
+      return [{ edge, path: routedEdgePath(topology, edge, from, fromPort, to, toPort) }];
+    });
+  }, [topology]);
   const arrangeCurrentTopology = useCallback((persist: boolean) => {
     const next = arrangeTopology(topology, surfaceWidth, routingEntries);
     arrangedStructureRef.current = `${topologyStructureSignature(next)}::${routingGroupSignature(routingEntries)}`;
@@ -1059,8 +1150,8 @@ export function NetworkEditor({
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
     if (arrangedStructureRef.current === structureSignature) return;
     arrangedStructureRef.current = structureSignature;
-    if (hasLayoutProblems(topology, surfaceWidth, routingEntries)) arrangeCurrentTopology(true);
-  }, [arrangeCurrentTopology, drag, routingEntries, structureSignature, surfaceWidth, topology]);
+    if (!evaStable) arrangeCurrentTopology(true);
+  }, [arrangeCurrentTopology, drag, evaStable, structureSignature, surfaceWidth, topology.nodes.length]);
 
   const surfaceHeight = Math.max(
     620,
@@ -1100,8 +1191,10 @@ export function NetworkEditor({
     requestAnimationFrame(() => surface.scrollTo({ left: 0, top: 0 }));
   }
 
+  const largeTopology = topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD;
+
   return (
-    <div className="net-editor">
+    <div className={`net-editor ${largeTopology ? "large-topology" : ""}`}>
       <div className="net-toolbar">
         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
           {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
@@ -1218,13 +1311,7 @@ export function NetworkEditor({
             ))}
           </div>
           <svg aria-hidden="true" className="net-wires">
-          {topology.edges.map((edge) => {
-            const from = topology.nodes.find((node) => node.id === edge.source);
-            const to = topology.nodes.find((node) => node.id === edge.target);
-            const fromPort = from?.ports.find((p) => p.id === edge.sourcePort);
-            const toPort = to?.ports.find((p) => p.id === edge.targetPort);
-            if (!from || !to || !fromPort || !toPort) return null;
-            const path = routedEdgePath(topology, edge, from, fromPort, to, toPort);
+          {renderedEdges.map(({ edge, path }) => {
             return (
               <g
                 key={edge.id}
@@ -1269,6 +1356,9 @@ export function NetworkEditor({
 
           {topology.nodes.map((node) => {
           const height = nodeHeight(node);
+          const visiblePorts = largeTopology && selectedNode !== node.id
+            ? node.ports.filter((port) => connectedPortIds.has(port.id))
+            : node.ports;
           return (
             <div
               className={`net-node ${node.kind} eva-${evaRole(node)} ${node.id === primaryGatewayId ? "eva-hub" : ""} ${selectedNode === node.id ? "selected" : ""}`}
@@ -1309,7 +1399,7 @@ export function NetworkEditor({
               )}
               <strong className="net-node-name">{node.name}</strong>
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
-              {node.ports.map((port) => {
+              {visiblePorts.map((port) => {
                 const portSide = connectedPortSide(topology, node, port);
                 const compatible =
                   drag?.mode === "wire" && drag.bus === port.bus && drag.nodeId !== node.id && !portIsConnected(port.id);

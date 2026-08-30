@@ -229,6 +229,66 @@ def test_approved_engineering_proposal_invalidates_workflow() -> None:
     assert after_repeat["versions"]["engineering_model"] == after["versions"]["engineering_model"]
 
 
+def test_new_project_proposal_reuses_semantic_hardware_synonym() -> None:
+    client = _client()
+    headers = {"X-Project-ID": "pytest-new-project-system-canonicalization"}
+    existing = client.post(
+        "/api/engineering/hardware-nodes",
+        headers=headers,
+        json={
+            "name": "ADAS",
+            "device_type": "ECU",
+            "domain": "automotive",
+            "actor": "pytest",
+        },
+    ).get_json()
+    workflow_before = client.get("/api/engineering/workflow", headers=headers).get_json()
+    proposal = client.post(
+        "/api/engineering/proposals",
+        headers=headers,
+        json={
+            "proposal_type": "OBJECT",
+            "target_object": {"resource": "hardware-nodes"},
+            "prompt": "Lege Fahrerassistenz aus dem Projektbrief an.",
+            "model": "pytest-new-project-agent",
+            "proposed_objects": [
+                {
+                    "object_type": "HardwareNode",
+                    "resource": "hardware-nodes",
+                    "name": "Fahrerassistenz-ECU",
+                    "device_type": "ECU",
+                    "domain": "automotive",
+                }
+            ],
+            "created_by": "engineering-chat-agent",
+        },
+    ).get_json()
+
+    response = client.post(
+        f"/api/engineering/proposals/{proposal['proposal_id']}/approve",
+        headers=headers,
+        json={"actor": "engineering-chat-agent"},
+    )
+
+    assert response.status_code == 200
+    approved = response.get_json()
+    approved_item = approved["proposed_objects"][0]
+    assert approved_item["canonical_id"] == existing["id"]
+    assert approved_item["canonical_resolution"]["strategy"] == "semantic_hardware_reuse"
+    hardware = client.get("/api/engineering/hardware-nodes?limit=20", headers=headers).get_json()["items"]
+    assert [item["id"] for item in hardware] == [existing["id"]]
+    workflow_after = client.get("/api/engineering/workflow", headers=headers).get_json()
+    assert workflow_after["versions"]["engineering_model"] == workflow_before["versions"]["engineering_model"]
+
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM engineering_ai_proposals WHERE proposal_id = %s",
+            (proposal["proposal_id"],),
+        )
+        conn.commit()
+    client.delete(f"/api/engineering/hardware-nodes/{existing['id']}", headers=headers)
+
+
 def test_network_topology_sync_is_idempotent() -> None:
     client = _client()
     topology_id = "pytest-network-sync"

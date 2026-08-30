@@ -1,10 +1,15 @@
 import type { Catalog, SimulationJob } from "./types";
 import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local-simulator";
+import { readActiveProjectId } from "./user-settings";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Project-ID": readActiveProjectId(),
+      ...init?.headers,
+    },
     cache: "no-store",
     signal: AbortSignal.timeout(2500),
   });

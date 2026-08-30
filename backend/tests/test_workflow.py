@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 from backend.engineering.capacity.calculators import (
     clock_drift_ms,
     classify_load,
@@ -9,6 +11,7 @@ from backend.engineering.capacity.calculators import (
 from backend.engineering.capacity import service as capacity_service_module
 from backend.engineering.capacity.service import CapacityTimingService, PreflightService
 from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
+from backend.engineering.workflow import service as workflow_service_module
 from backend.engineering.workflow.service import WorkflowStatusService, is_topology_layout_only_change
 
 
@@ -43,6 +46,48 @@ def test_parameter_change_only_invalidates_calculation_and_later_steps():
     assert changed["statuses"]["capacity_timing"] == "OUTDATED"
     assert changed["statuses"]["validation"] == "OUTDATED"
     assert changed["statuses"]["simulation"] == "OUTDATED"
+
+
+def test_parameters_are_approved_by_default_and_ignore_upstream_changes():
+    state = {
+        "versions": default_versions(),
+        "statuses": default_statuses(),
+        "stale_reasons": {},
+    }
+
+    changed = transition_state(state, "engineering_model", "Model changed")
+
+    assert default_statuses()["parameters"] == "APPROVED"
+    assert changed["statuses"]["parameters"] == "APPROVED"
+    assert "parameters" not in changed["stale_reasons"]
+
+
+def test_parameter_artifact_approves_defaults_and_complete_configuration():
+    defaults = WorkflowStatusService._parameter_artifact_check({})
+    complete = WorkflowStatusService._parameter_artifact_check({
+        "industry": "automotive",
+        "technology": "can_fd",
+        "formats": ["universal-jsonl"],
+        "bitrate": 2_000_000,
+        "cycle_ms": 10,
+        "payload_bytes": 64,
+        "queue_size": 256,
+        "warning_threshold": 45,
+        "critical_threshold": 60,
+        "overload_threshold": 75,
+        "target_bus_load_percent": 45,
+    })
+
+    assert defaults == {
+        "status": "APPROVED",
+        "complete": True,
+        "uses_defaults": True,
+        "required": {},
+        "invalid_numeric": [],
+    }
+    assert complete["status"] == "APPROVED"
+    assert complete["complete"] is True
+    assert complete["uses_defaults"] is False
 
 
 def test_empty_future_steps_stay_empty_until_a_result_exists():
@@ -167,6 +212,54 @@ def test_workflow_state_hides_stale_reason_after_step_is_complete():
 
     assert "simulation" not in state["stale_reasons"]
     assert state["stale_reasons"]["results_analysis"] == "Kein Ergebnisartefakt vorhanden."
+
+
+def test_workflow_summary_omits_heavy_simulation_and_model_payloads(monkeypatch):
+    row = {
+        "project_id": "project-summary",
+        "active_step": "data_science_intelligence",
+        "versions": {},
+        "statuses": {},
+        "stale_reasons": {},
+        "context": {},
+        "parameters": {"bitrate": 2_000_000},
+        "topology": {"nodes": [{"id": "node-1"}], "edges": []},
+        "updated_at": None,
+    }
+
+    class Result:
+        def __init__(self, value):
+            self.value = value
+
+        def fetchone(self):
+            return self.value
+
+        def fetchall(self):
+            return self.value
+
+    class Connection:
+        def execute(self, query, _params=None):
+            statement = str(query)
+            if "INSERT INTO engineering_workflow_projects" in statement:
+                return Result(None)
+            if "SELECT * FROM engineering_workflow_projects" in statement:
+                return Result(row)
+            if "FROM engineering_analysis_snapshots" in statement:
+                return Result([])
+            if "FROM engineering_simulation_snapshots" in statement:
+                raise AssertionError("Summary must not load simulation details.")
+            raise AssertionError(statement)
+
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(WorkflowStatusService, "_bootstrap_statuses", lambda *_args: {})
+
+    state = WorkflowStatusService("project-summary").get(summary=True)
+
+    assert state["project_id"] == "project-summary"
+    assert len(state["steps"]) == 9
+    assert state["parameters"] == {}
+    assert state["topology"] == {}
+    assert state["simulation_snapshots"] == []
 
 
 def test_topology_layout_change_ignores_only_visual_fields():

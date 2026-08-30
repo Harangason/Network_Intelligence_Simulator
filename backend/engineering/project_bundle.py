@@ -15,7 +15,7 @@ from .models import EngineeringValidationError
 from .workflow.models import default_statuses, default_versions
 from .workflow.service import WorkflowStatusService
 
-BUNDLE_VERSION = 1
+BUNDLE_VERSION = 2
 PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 SOURCE_TABLES = (
@@ -38,7 +38,32 @@ PROJECT_TABLES = (
     "engineering_simulation_snapshots",
     "engineering_workflow_events",
     "engineering_optimization_proposals",
+    "engineering_workloads",
+    "engineering_work_packages",
+    "engineering_workload_objects",
+    "engineering_workload_dependencies",
+    "engineering_workload_events",
+    "engineering_signal_behaviors",
+    "engineering_simulation_scenarios",
+    "engineering_fault_proposals",
+    "engineering_trace_metadata",
+    "engineering_simulation_campaigns",
+    "engineering_simulation_campaign_runs",
 )
+
+PROJECT_TABLES_WITH_PROJECT_ID = {
+    "engineering_analysis_snapshots",
+    "engineering_simulation_snapshots",
+    "engineering_workflow_events",
+    "engineering_optimization_proposals",
+    "engineering_workloads",
+    "engineering_workload_events",
+    "engineering_signal_behaviors",
+    "engineering_simulation_scenarios",
+    "engineering_fault_proposals",
+    "engineering_trace_metadata",
+    "engineering_simulation_campaigns",
+}
 
 WORKSPACE_RESET_TABLES = (
     "engineering_routing_audit",
@@ -72,6 +97,14 @@ PROJECT_UUID_KEYS = {
     "engineering_analysis_snapshots": "id",
     "engineering_simulation_snapshots": "id",
     "engineering_optimization_proposals": "proposal_id",
+    "engineering_workloads": "workload_id",
+    "engineering_work_packages": "work_package_id",
+    "engineering_workload_objects": "workload_object_id",
+    "engineering_signal_behaviors": "behavior_id",
+    "engineering_simulation_scenarios": "scenario_id",
+    "engineering_fault_proposals": "proposal_id",
+    "engineering_trace_metadata": "trace_id",
+    "engineering_simulation_campaigns": "campaign_id",
 }
 
 
@@ -108,6 +141,45 @@ def _replace_identifiers(value: Any, identifier_map: dict[str, str]) -> Any:
     if isinstance(value, tuple):
         return [_replace_identifiers(item, identifier_map) for item in value]
     return identifier_map.get(str(value), value) if value is not None else None
+
+
+def _project_rows(connection, table: str, project_id: str) -> list[dict[str, Any]]:
+    if table in PROJECT_TABLES_WITH_PROJECT_ID:
+        query = sql.SQL("SELECT * FROM {} WHERE project_id = %s ORDER BY 1").format(
+            sql.Identifier(table)
+        )
+    elif table in {"engineering_work_packages", "engineering_workload_objects", "engineering_workload_dependencies"}:
+        query = sql.SQL(
+            "SELECT child.* FROM {} child JOIN engineering_workloads root "
+            "ON root.workload_id = child.workload_id WHERE root.project_id = %s ORDER BY 1"
+        ).format(sql.Identifier(table))
+    elif table == "engineering_simulation_campaign_runs":
+        query = sql.SQL(
+            "SELECT child.* FROM engineering_simulation_campaign_runs child "
+            "JOIN engineering_simulation_campaigns root ON root.campaign_id = child.campaign_id "
+            "WHERE root.project_id = %s ORDER BY 1"
+        )
+    else:  # pragma: no cover - guarded by the static table registry
+        raise ValueError(f"Unbekannte Projekttabelle: {table}")
+    return [_json_safe(row) for row in connection.execute(query, (project_id,)).fetchall()]
+
+
+def _delete_project_rows(connection, table: str, project_id: str) -> None:
+    if table in PROJECT_TABLES_WITH_PROJECT_ID:
+        query = sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table))
+    elif table in {"engineering_work_packages", "engineering_workload_objects", "engineering_workload_dependencies"}:
+        query = sql.SQL(
+            "DELETE FROM {} WHERE workload_id IN "
+            "(SELECT workload_id FROM engineering_workloads WHERE project_id = %s)"
+        ).format(sql.Identifier(table))
+    elif table == "engineering_simulation_campaign_runs":
+        query = sql.SQL(
+            "DELETE FROM engineering_simulation_campaign_runs WHERE campaign_id IN "
+            "(SELECT campaign_id FROM engineering_simulation_campaigns WHERE project_id = %s)"
+        )
+    else:  # pragma: no cover - guarded by the static table registry
+        raise ValueError(f"Unbekannte Projekttabelle: {table}")
+    connection.execute(query, (project_id,))
 
 
 def _clone_source_data(
@@ -157,7 +229,10 @@ def _clone_project_data(
         rows: list[dict[str, Any]] = []
         for source_row in project_data.get(table) or []:
             row = _replace_identifiers(source_row, combined_map)
-            row["project_id"] = project_id
+            if table in PROJECT_TABLES_WITH_PROJECT_ID:
+                row["project_id"] = project_id
+            if table == "engineering_workload_events":
+                row.pop("event_id", None)
             rows.append(row)
         cloned[table] = rows
     return cloned, combined_map
@@ -169,10 +244,7 @@ class ProjectBundleService:
         with get_connection() as connection:
             with connection.transaction():
                 for table in reversed(PROJECT_TABLES):
-                    connection.execute(
-                        sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table)),
-                        (target,),
-                    )
+                    _delete_project_rows(connection, table, target)
                 for table in WORKSPACE_RESET_TABLES:
                     connection.execute(
                         sql.SQL("DELETE FROM {} WHERE project_id = %s").format(sql.Identifier(table)),
@@ -208,10 +280,7 @@ class ProjectBundleService:
                 for table in SOURCE_TABLES
             }
             project_data = {
-                table: [_json_safe(row) for row in connection.execute(
-                    sql.SQL("SELECT * FROM {} WHERE project_id = %s ORDER BY 1").format(sql.Identifier(table)),
-                    (source_project_id,),
-                ).fetchall()]
+                table: _project_rows(connection, table, source_project_id)
                 for table in PROJECT_TABLES
             }
         bundle_source_project_id = source_project_id
@@ -323,6 +392,26 @@ class ProjectBundleService:
                         for row in rows
                     ]
                 inserted, existing = self._insert_rows(connection, table, rows, preserve_ids=preserve_ids, project_id=target)
+                report["inserted"] += inserted
+                report["existing"] += existing
+                report["tables"][table] = {"inserted": inserted, "existing": existing}
+            handled_tables = {
+                "engineering_analysis_snapshots",
+                "engineering_simulation_snapshots",
+                "engineering_workflow_events",
+                "engineering_optimization_proposals",
+            }
+            for table in PROJECT_TABLES:
+                if table in handled_tables:
+                    continue
+                rows = project_data.get(table) or []
+                inserted, existing = self._insert_rows(
+                    connection,
+                    table,
+                    rows,
+                    preserve_ids=preserve_ids,
+                    project_id=target if table in PROJECT_TABLES_WITH_PROJECT_ID else None,
+                )
                 report["inserted"] += inserted
                 report["existing"] += existing
                 report["tables"][table] = {"inserted": inserted, "existing": existing}

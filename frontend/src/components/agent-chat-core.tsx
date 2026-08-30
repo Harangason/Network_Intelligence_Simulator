@@ -634,25 +634,6 @@ function takeLegacyWizardContext(projectId: string) {
   }
 }
 
-function recoverWizardContextFromWorkflow(workflow: WorkflowState, mode: "full" | "can") {
-  if (!workflow.steps.some((item) => item.status !== "EMPTY")) return null;
-  return {
-    attachments: [],
-    confirmed_at: new Date().toISOString(),
-    industry: "Aus vorhandenem Projektkontext",
-    mode,
-    notes: "",
-    parameters: "Aus vorhandenem Projektkontext",
-    process: ["Workflow am letzten belegten Status fortsetzen"],
-    project_id: workflow.project_id,
-    run_id: `recovered-${workflow.project_id}`,
-    scope: SCOPE_GROUP.options.map((option) => option.value),
-    scope_ids: SCOPE_GROUP.options.map((option) => option.id),
-    task: "Aktiver Engineering-Auftrag dieses Projekts",
-    technologies: [],
-  } satisfies AgentWizardContext;
-}
-
 type AgentPerformanceSample = {
   cpu_percent: number;
   frontend_rss_mb: number;
@@ -856,8 +837,7 @@ export function EngineeringAgentWizard({
       setWorkflow(nextWorkflow);
       const legacyContext = takeLegacyWizardContext(projectId);
       const restored = restoredWizardContext(nextWorkflow.context.agent_wizard_status, projectId)
-        ?? legacyContext
-        ?? recoverWizardContextFromWorkflow(nextWorkflow, mode);
+        ?? legacyContext;
       if (!restored) return;
       setSubmittedContext(restored);
       setRunId(restored.run_id);
@@ -1150,6 +1130,7 @@ export function EngineeringAgentWizard({
         `- Arbeitsweise: ${selectedProcessValues.length ? selectedProcessValues.join("; ") : "nicht vorgegeben, vorsichtig mit Review-Gate arbeiten"}${note}\n` +
         "\nKonkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:\n" +
         `${concreteTask}\n\n` +
+        "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
     setRunId(nextRunId);
@@ -1222,7 +1203,13 @@ export function EngineeringAgentWizard({
     setStep((current) => Math.min(current + 1, questionnaireSteps.length - 1));
   }
 
-  function finishWizard() {
+  async function finishWizard() {
+    try {
+      await setWorkflowContext({ agent_wizard_status: null });
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : "Der Agent-Auftrag konnte nicht abgeschlossen werden.");
+      return;
+    }
     finishEngineeringAgentWizardSession(projectId);
     void writeWizardDiagnostic("workflow", {
       projectId,
@@ -1420,19 +1407,25 @@ export function EngineeringAgentWizard({
   const activeStatusIndex = agentPending
     ? persistedStatusRows.findIndex((item) => item.selected && item.progress < 100)
     : -1;
-  const statusRows = persistedStatusRows.map((item, index) => ({
-    ...item,
-    active: index === activeStatusIndex,
-    progress: index === activeStatusIndex ? Math.max(15, item.progress) : item.progress,
-  }));
+  const statusRows = persistedStatusRows.map((item, index) => {
+    const active = index === activeStatusIndex;
+    const workflowProgress = active ? Math.max(15, item.progress) : item.progress;
+    return {
+      ...item,
+      active,
+      progress: item.id === "parameters" ? 0 : workflowProgress,
+    };
+  });
   const overallProgress = Math.round(statusRows.reduce((sum, item) => sum + item.progress, 0) / statusRows.length);
   const workflowHasProgress = persistedStatusRows.some((item) => item.progress > 0);
   const currentStatusStep = statusRows.find((item) => item.progress < 100)?.label ?? "Abgeschlossen";
   const activeModel = performance?.ollama[0]?.name ?? "Kein Modell geladen";
+  const hasResumablePrompt = currentRunMessages.some((message) => (
+    message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
+  )) || Boolean(submittedContext?.agent_prompt?.trim());
   const canRetryPopupRun = !agentPending
-    && currentRunMessages.some((message) => message.role === "assistant")
-    && persistedStatusRows.some((item) => item.selected)
-    && persistedStatusRows.filter((item) => item.selected).every((item) => item.progress === 0);
+    && hasResumablePrompt
+    && persistedStatusRows.some((item) => item.selected && item.progress < 100);
   const routingReviewPending = !agentPending
     && persistedStatusRows.find((item) => item.id === "routing")?.status === "IN_PROGRESS";
   const routingReview = routingApprovalProgress(routingEntries);
@@ -1440,11 +1433,12 @@ export function EngineeringAgentWizard({
     (route) => route.validation?.valid === true && String(route.approval_state).toUpperCase() !== "APPROVED",
   ).length;
   const engineeringCounts = workflow?.artifact_checks?.engineering_model?.counts ?? {};
+  const hardwareByType = workflow?.artifact_checks?.engineering_model?.hardware_by_type ?? {};
   const hardwareNodes = Array.isArray(workflow?.topology?.nodes) ? workflow.topology.nodes : [];
   const hardwareDetails = {
-    ecus: hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "ecu").length,
-    gateways: hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "gateway").length,
-    sensors: hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length,
+    ecus: Number(hardwareByType.ECU ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "ecu").length),
+    gateways: Number(hardwareByType.Gateway ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "gateway").length),
+    sensors: Number(hardwareByType.SensorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length),
   };
   const analysisCounts = [
     {
@@ -1737,7 +1731,7 @@ export function EngineeringAgentWizard({
           {statusError && <p className="notice error" role="alert">{statusError}</p>}
           <footer className="agent-wizard-status-footer">
             <small className="agent-wizard-log-status">TXT-Protokolle aktiv: Workflow · Rückfragen · Performance · Fehler</small>
-            <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy} onClick={finishWizard} type="button">
+            <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy} onClick={() => void finishWizard()} type="button">
               Fertig stellen
             </button>
           </footer>

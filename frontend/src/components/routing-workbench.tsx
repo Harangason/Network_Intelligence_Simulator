@@ -1270,9 +1270,9 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   const [sourceInterfaceId, setSourceInterfaceId] = useState(route.source.interface_id ?? "");
   const [sourceNetworkId, setSourceNetworkId] = useState(route.source.network_id ?? "");
   const [payloadMode, setPayloadMode] = useState<RoutingPayloadMode>(routingPayloadMode(route));
-  const [messageId, setMessageId] = useState(route.payload.message_id ?? "");
+  const [messageIds, setMessageIds] = useState<string[]>(routingMessageIds(route));
   const [signalIds, setSignalIds] = useState<string[]>(route.payload.signal_ids ?? []);
-  const [interfaceDefinitionId, setInterfaceDefinitionId] = useState(route.payload.interface_definition_id ?? messages.find((item) => item.id === route.payload.message_id)?.interface_id ?? "");
+  const [interfaceDefinitionId, setInterfaceDefinitionId] = useState(route.payload.interface_definition_id ?? messages.find((item) => routingMessageIds(route).includes(item.id))?.interface_id ?? "");
   const [topic, setTopic] = useState(route.payload.topic ?? "");
   const [dataObject, setDataObject] = useState(route.payload.data_object ?? "");
   const [destinationIds, setDestinationIds] = useState<string[]>(initialDestinationIds);
@@ -1293,8 +1293,15 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   const [jitter, setJitter] = useState(String(route.timing.jitter_limit_ms ?? ""));
   const [transformations, setTransformations] = useState(route.route.transformations.join(", "));
   const sourceInterfaces = interfaces.filter((item) => item.hardware_node_id === sourceId);
-  const selectedMessage = messages.find((item) => item.id === messageId);
-  const selectableSignals = messageId ? signals.filter((item) => item.message_id === messageId) : signals;
+  const selectedMessages = messageIds.map((id) => messages.find((item) => item.id === id)).filter((item): item is EngMessage => Boolean(item));
+  const selectedMessage = selectedMessages.length
+    ? {
+        ...selectedMessages[0],
+        name: selectedMessages.map((item) => item.name).join(", "),
+        message_id_hex: selectedMessages.map((item) => item.message_id_hex).filter(Boolean).join(", ") || null,
+      }
+    : undefined;
+  const selectableSignals = messageIds.length ? signals.filter((item) => item.message_id && messageIds.includes(item.message_id)) : signals;
   const gateways = hardware.filter((node) => node.device_type === "Gateway" && node.id !== sourceId && !destinationIds.includes(node.id));
   const destinationOptions = hardware.filter((node) => node.id !== sourceId);
   const fallbackRoutes = routes.filter((item) => item.id !== route.id);
@@ -1308,7 +1315,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     !sourceInterfaceId ? "Source Interface" : "",
     !destinationIds.length ? "Consumer" : "",
     ...destinationIds.flatMap((id) => destinationInterfaces[id] ? [] : [`Destination Interface: ${hardware.find((item) => item.id === id)?.name ?? id}`]),
-    payloadMode === "message" && !messageId && !signalIds.length ? "Message oder Signal" : "",
+    payloadMode === "message" && !messageIds.length && !signalIds.length ? "Message oder Signal" : "",
     payloadMode === "topic" && !topic.trim() ? "Topic" : "",
     payloadMode === "data_object" && !dataObject.trim() ? "Data Object" : "",
     !cycle ? "Cycle" : "",
@@ -1325,24 +1332,6 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   function messageSenderNode(item: EngMessage) {
     const iface = interfaces.find((candidate) => candidate.id === item.interface_id);
     return iface ? hardware.find((candidate) => candidate.id === iface.hardware_node_id) : undefined;
-  }
-
-  function messageSender(item: EngMessage) {
-    const node = messageSenderNode(item);
-    if (node?.name) return node.name;
-    const match = item.name.match(/^(?:DATA|RESP)[_-]?\d*[_-]?(.+?)(?:_TO_|$)/i);
-    return match?.[1]?.replaceAll("_", " ") ?? "";
-  }
-
-  function messageReceivers(item: EngMessage) {
-    const sender = messageSenderNode(item);
-    const receiverIds = sender?.id === sourceId ? destinationIds : sender && destinationIds.includes(sender.id) ? [sourceId] : destinationIds;
-    return receiverIds.map((id) => hardware.find((candidate) => candidate.id === id)?.name ?? id).join(", ") || "offen";
-  }
-
-  function messageLabel(item: EngMessage) {
-    const iface = interfaces.find((candidate) => candidate.id === item.interface_id);
-    return `Message: ${item.name} | Sender: ${messageSender(item) || "unbekannt"} | Empfänger: ${messageReceivers(item)} | Interface: ${iface?.name ?? "nicht gesetzt"} | ID: ${item.message_id_hex ?? "—"} | Zyklus: ${item.cycle_ms ?? "—"} ms | DLC: ${item.dlc ?? "—"} B`;
   }
 
   function normalizedName(value: string) {
@@ -1377,16 +1366,26 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     if (source?.name && normalizedName(item.name).includes(normalizedName(source.name))) { confidence += 12; reasons.push("Name passt zum Producer"); }
     if (sender?.id === sourceId && item.direction === "tx") { confidence += 3; reasons.push("Senderichtung TX"); }
     if (route.payload.message_id === item.id) { confidence += 2; reasons.push("bereits zugeordnet"); }
-    return { id: item.id, label: messageLabel(item), confidence: Math.max(5, Math.min(99, confidence)), reason: reasons.join(" · ") };
+    return { id: item.id, label: item.name, confidence: Math.max(5, Math.min(99, confidence)), reason: reasons.join(" · ") };
   }
 
   const sortedMessages = [...messages].sort((left, right) => (
     messageSuggestion(right).confidence - messageSuggestion(left).confidence
     || left.name.localeCompare(right.name, "de")
   ));
+  const senderMessages = sortedMessages.filter((item) => messageSenderNode(item)?.id === sourceId);
+
+  useEffect(() => {
+    const allowed = new Set(senderMessages.map((item) => item.id));
+    setMessageIds((current) => current.filter((id) => allowed.has(id)));
+    setSignalIds((current) => current.filter((id) => {
+      const signal = signals.find((item) => item.id === id);
+      return !signal?.message_id || allowed.has(signal.message_id);
+    }));
+  }, [sourceId]);
 
   function topMessageSuggestions() {
-    return sortedMessages
+    return senderMessages
       .map(messageSuggestion)
       .slice(0, 3);
   }
@@ -1401,15 +1400,24 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   }
 
   function applyMessage(id: string) {
+    if (!id) return;
     setPayloadMode("message");
-    setMessageId(id);
-    setSignalIds([]);
+    setMessageIds((current) => current.includes(id) ? current : [...current, id]);
     const msg = messages.find((item) => item.id === id);
-    setInterfaceDefinitionId(msg?.interface_id ?? "");
+    setInterfaceDefinitionId((current) => current || msg?.interface_id || "");
     if (msg?.cycle_ms && !cycle) setCycle(String(msg.cycle_ms));
     if (msg?.dlc && (!route.payload.signal_ids.length || !signalIds.length)) {
       setSignalIds(signals.filter((item) => item.message_id === id).slice(0, Math.max(1, Math.min(4, msg.dlc ?? 1))).map((item) => item.id));
     }
+  }
+
+  function toggleMessage(id: string) {
+    if (messageIds.includes(id)) {
+      setMessageIds((current) => current.filter((item) => item !== id));
+      setSignalIds((current) => current.filter((signalId) => signals.find((item) => item.id === signalId)?.message_id !== id));
+      return;
+    }
+    applyMessage(id);
   }
 
   function preferredInterfaceForNode(nodeId: string) {
@@ -1454,9 +1462,10 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   }
 
   function chooseDifferentPayload() {
-    const currentIndex = sortedMessages.findIndex((item) => item.id === messageId);
-    const next = sortedMessages.find((item, index) => item.id !== messageId && index > currentIndex)
-      ?? sortedMessages.find((item) => item.id !== messageId);
+    const currentId = messageIds[0] ?? "";
+    const currentIndex = senderMessages.findIndex((item) => item.id === currentId);
+    const next = senderMessages.find((item, index) => item.id !== currentId && index > currentIndex)
+      ?? senderMessages.find((item) => item.id !== currentId);
     if (next) applyMessage(next.id);
   }
 
@@ -1497,7 +1506,8 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
       ...selectedGateways.map((gateway) => ({ node_id: gateway.id, name: gateway.name })),
       ...destinationIds.map((id) => ({ node_id: id, name: hardware.find((item) => item.id === id)?.name })),
     ];
-    const payloadMessageId = payloadMode === "message" ? optionalText(messageId) : null;
+    const payloadMessageIds = payloadMode === "message" ? messageIds : [];
+    const payloadMessageId = payloadMessageIds[0] ?? null;
     const payloadSignalIds = payloadMode === "message" ? signalIds : [];
     const payloadTopic = payloadMode === "topic" ? optionalText(topic) : null;
     const payloadDataObject = payloadMode === "data_object" ? optionalText(dataObject) : null;
@@ -1505,7 +1515,15 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
       name: name.trim(),
       description: optionalText(description),
       source: { node_id: sourceId, port_id: optionalText(sourcePortId), interface_id: optionalText(sourceInterfaceId), network_id: optionalText(sourceNetworkId) ?? networkId(sourceInterface), protocol },
-      payload: { interface_definition_id: optionalText(interfaceDefinitionId), message_id: payloadMessageId, signal_ids: payloadSignalIds, topic: payloadTopic, data_object: payloadDataObject },
+      payload: {
+        interface_definition_id: optionalText(interfaceDefinitionId),
+        interface_definition_ids: [...new Set(selectedMessages.map((item) => item.interface_id).filter((id): id is string => Boolean(id)))],
+        message_id: payloadMessageId,
+        message_ids: payloadMessageIds,
+        signal_ids: payloadSignalIds,
+        topic: payloadTopic,
+        data_object: payloadDataObject,
+      },
       destinations,
       route: { hops, gateways: selectedGateways.map((gateway) => ({ node_id: gateway.id, name: gateway.name })), transformations: transformations.split(",").map((item) => item.trim()).filter(Boolean), priority },
       timing: { cycle_time_ms: optionalNumber(cycle), timeout_ms: optionalNumber(timeout), max_latency_ms: optionalNumber(latency), jitter_limit_ms: optionalNumber(jitter) },
@@ -1531,7 +1549,46 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
 
         {step === 1 && <div className="routing-wizard-grid"><label>Producer<select onChange={(event) => { const id = event.target.value; setSourceId(id); setSourceInterfaceId(""); setSourcePortId(""); setSourceNetworkId(""); setDestinationIds((current) => current.filter((item) => item !== id)); setGatewayIds((current) => current.filter((item) => item !== id)); }} value={sourceId}>{hardware.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.device_type}</option>)}</select></label><label>Source Interface<select onChange={(event) => applySourceInterface(event.target.value)} value={sourceInterfaceId}><option value="">Nicht gesetzt</option>{sourceInterfaceId && !sourceInterfaces.some((item) => item.id === sourceInterfaceId) && <option value={sourceInterfaceId}>Unbekannt · {sourceInterfaceId}</option>}{sourceInterfaces.map((item) => <option key={item.id} value={item.id}>{interfaceLabel(item)}</option>)}</select></label><AiSuggestionList onPick={applySourceInterface} suggestions={topInterfaceSuggestions(sourceInterfaces)} value={sourceInterfaceId} /><label>Source Port ID<input onChange={(event) => setSourcePortId(event.target.value)} value={sourcePortId} /></label><label>Source Network ID<input onChange={(event) => setSourceNetworkId(event.target.value)} value={sourceNetworkId} /></label><label>Protocol<select onChange={(event) => setProtocol(event.target.value)} value={protocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></div>}
 
-        {step === 2 && <div className="routing-wizard-grid"><div aria-label="Payload-Art" className="routing-payload-mode full-width" role="group"><button className={payloadMode === "message" ? "active" : ""} onClick={() => setPayloadMode("message")} type="button">Message</button><button className={payloadMode === "topic" ? "active" : ""} onClick={() => setPayloadMode("topic")} type="button">Topic</button><button className={payloadMode === "data_object" ? "active" : ""} onClick={() => setPayloadMode("data_object")} type="button">Data Object</button></div>{payloadMode === "message" && <><label className="full-width">Message<select onChange={(event) => applyMessage(event.target.value)} value={messageId}><option value="">Keine Message gewählt</option>{messageId && !sortedMessages.some((item) => item.id === messageId) && <option value={messageId}>Unbekannt · {messageId}</option>}{sortedMessages.map((item) => <option key={item.id} value={item.id}>{messageLabel(item)}</option>)}</select></label><AiSuggestionList onPick={applyMessage} suggestions={topMessageSuggestions()} value={messageId} />{selectedMessage && <dl className="routing-object-summary full-width"><dt>Message ID</dt><dd>{selectedMessage.message_id_hex ?? "—"}</dd><dt>Direction</dt><dd>{selectedMessage.direction ?? "—"}</dd><dt>Cycle</dt><dd>{selectedMessage.cycle_ms ?? "—"} ms</dd><dt>DLC</dt><dd>{selectedMessage.dlc ?? "—"} B</dd></dl>}<div className="routing-check-list full-width"><span>Signals</span>{selectableSignals.length ? selectableSignals.map((signal) => <label key={signal.id}><input checked={signalIds.includes(signal.id)} onChange={() => toggleSignal(signal.id)} type="checkbox" />{signal.display_name || signal.name}<small>{signal.start_bit ?? "?"} / {signal.length_bits ?? "?"} Bit</small></label>) : <small>Keine Signals verfügbar.</small>}</div></>}{payloadMode === "topic" && <label className="full-width">Topic<input onChange={(event) => setTopic(event.target.value)} placeholder="z. B. vehicle/thermal/status" value={topic} /></label>}{payloadMode === "data_object" && <label className="full-width">Data Object<input onChange={(event) => setDataObject(event.target.value)} placeholder="z. B. VehicleThermalStatus" value={dataObject} /></label>}<label className="full-width">Payload Interface ID<input onChange={(event) => setInterfaceDefinitionId(event.target.value)} placeholder={payloadMode === "message" ? "Wird aus der gewählten Message übernommen" : "Optional"} value={interfaceDefinitionId} /></label></div>}
+        {step === 2 && (
+          <div className="routing-wizard-grid">
+            <div aria-label="Payload-Art" className="routing-payload-mode full-width" role="group">
+              <button className={payloadMode === "message" ? "active" : ""} onClick={() => setPayloadMode("message")} type="button">Message</button>
+              <button className={payloadMode === "topic" ? "active" : ""} onClick={() => setPayloadMode("topic")} type="button">Topic</button>
+              <button className={payloadMode === "data_object" ? "active" : ""} onClick={() => setPayloadMode("data_object")} type="button">Data Object</button>
+            </div>
+            {payloadMode === "message" && (
+              <>
+                <div className="routing-check-list routing-message-check-list full-width">
+                  <span>Messages · {messageIds.length} gewählt</span>
+                  {senderMessages.length
+                    ? senderMessages.map((item) => (
+                        <label key={item.id}>
+                          <input checked={messageIds.includes(item.id)} onChange={() => toggleMessage(item.id)} type="checkbox" />
+                          {item.name}
+                        </label>
+                      ))
+                    : <small>Für den gewählten Producer sind keine Messages vorhanden.</small>}
+                </div>
+                <AiSuggestionList onPick={applyMessage} suggestions={topMessageSuggestions()} value={messageIds[0] ?? ""} />
+                <div className="routing-check-list full-width">
+                  <span>Signals</span>
+                  {selectableSignals.length
+                    ? selectableSignals.map((signal) => (
+                        <label key={signal.id}>
+                          <input checked={signalIds.includes(signal.id)} onChange={() => toggleSignal(signal.id)} type="checkbox" />
+                          {signal.display_name || signal.name}
+                          <small>{signal.start_bit ?? "?"} / {signal.length_bits ?? "?"} Bit</small>
+                        </label>
+                      ))
+                    : <small>Keine Signals verfügbar.</small>}
+                </div>
+              </>
+            )}
+            {payloadMode === "topic" && <label className="full-width">Topic<input onChange={(event) => setTopic(event.target.value)} placeholder="z. B. vehicle/thermal/status" value={topic} /></label>}
+            {payloadMode === "data_object" && <label className="full-width">Data Object<input onChange={(event) => setDataObject(event.target.value)} placeholder="z. B. VehicleThermalStatus" value={dataObject} /></label>}
+            <label className="full-width">Payload Interface ID<input onChange={(event) => setInterfaceDefinitionId(event.target.value)} placeholder={payloadMode === "message" ? "Wird aus den gewählten Messages übernommen" : "Optional"} value={interfaceDefinitionId} /></label>
+          </div>
+        )}
 
         {step === 3 && <div className="routing-wizard-grid"><div className="routing-check-list full-width"><span>Consumer</span>{destinationOptions.map((node) => <label key={node.id}><input checked={destinationIds.includes(node.id)} onChange={() => toggleDestination(node.id)} type="checkbox" />{node.name}<small>{node.device_type}</small></label>)}</div><div className="routing-endpoint-list full-width">{destinationIds.map((nodeId) => { const options = interfaces.filter((item) => item.hardware_node_id === nodeId); const selectedInterfaceId = destinationInterfaces[nodeId] ?? ""; return <section className="routing-endpoint-fields" key={nodeId}><strong>{nodeName(nodeId)}</strong><label>Interface<select onChange={(event) => { const item = interfaces.find((candidate) => candidate.id === event.target.value); setDestinationInterfaces((current) => ({ ...current, [nodeId]: event.target.value })); if (item) { setDestinationNetworks((current) => ({ ...current, [nodeId]: networkId(item) ?? "" })); setDestinationProtocols((current) => ({ ...current, [nodeId]: interfaceProtocol(item.interface_type) })); } }} value={selectedInterfaceId}><option value="">Nicht gesetzt</option>{selectedInterfaceId && !options.some((item) => item.id === selectedInterfaceId) && <option value={selectedInterfaceId}>Unbekannt · {selectedInterfaceId}</option>}{options.map((item) => <option key={item.id} value={item.id}>{interfaceLabel(item)}</option>)}</select></label><label>Port ID<input onChange={(event) => setDestinationPorts((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationPorts[nodeId] ?? ""} /></label><label>Network ID<input onChange={(event) => setDestinationNetworks((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationNetworks[nodeId] ?? ""} /></label><label>Protocol<select onChange={(event) => setDestinationProtocols((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationProtocols[nodeId] || protocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></section>; })}</div></div>}
 

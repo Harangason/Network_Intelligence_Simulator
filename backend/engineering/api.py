@@ -83,6 +83,9 @@ from .simulation import (
     save_scenario,
     trace_metadata,
 )
+from .structure import apply_structure, evaluate_structure, reject_structure_proposal
+from .structure_transfer import analyze_ecu_transfer, analyze_system_duplicates, apply_ecu_transfer, reject_ecu_transfer
+from .system_merge import merge_system_duplicate
 
 engineering_api = Blueprint("engineering_api", __name__)
 logger = logging.getLogger(__name__)
@@ -260,7 +263,7 @@ def _auto_recalculate_capacity(project_id: str) -> None:
         "engineering_model": "COMPLETE",
         "routing": "APPROVED",
         "network_editor": "COMPLETE",
-        "parameters": "COMPLETE",
+        "parameters": "APPROVED",
     }
     if all(state["statuses"].get(step) == status for step, status in required.items()):
         CapacityTimingService(project_id).calculate()
@@ -306,7 +309,14 @@ def _propagate_source_changes(response):
     ) and getattr(g, "engineering_proposal_changed", False):
         step = "engineering_model"
         reason = "Ein freigegebener Engineering-Vorschlag wurde in das kanonische Modell uebernommen."
-    elif relative_path.startswith(("/imports/commit", "/relations")) or any(
+    elif relative_path.startswith(("/imports/commit", "/relations", "/structure/apply")) or (
+        relative_path.startswith("/structure/transfer/")
+        and relative_path.endswith("/apply")
+        and getattr(g, "engineering_proposal_changed", False)
+    ) or (
+        relative_path == "/structure/system-duplicates/merge"
+        and getattr(g, "engineering_proposal_changed", False)
+    ) or any(
         relative_path.startswith(f"/{resource}") for resource in RESOURCES
     ):
         step = "engineering_model"
@@ -476,13 +486,22 @@ def commit_import_route():
 
 @engineering_api.route("/workflow", methods=["GET"])
 def workflow_status_route():
-    return jsonify(WorkflowStatusService(_project_id()).get())
+    return jsonify(
+        WorkflowStatusService(_project_id()).get(
+            summary=request.args.get("view", "").strip().lower() == "summary"
+        )
+    )
 
 
 @engineering_api.route("/workflow/context", methods=["PATCH"])
 def workflow_context_route():
     payload = _routing_payload()
-    return jsonify(WorkflowStatusService(_project_id()).set_context(payload))
+    return jsonify(
+        WorkflowStatusService(_project_id()).set_context(
+            payload,
+            summary=request.args.get("view", "").strip().lower() == "summary",
+        )
+    )
 
 
 @engineering_api.route("/workflow/changed", methods=["POST"])
@@ -1281,6 +1300,81 @@ def approve_all_valid_workload_route(workload_id: str):
     return jsonify(result)
 
 
+@engineering_api.route("/structure/evaluate", methods=["POST"])
+def evaluate_structure_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    return jsonify(evaluate_structure(payload)), 201
+
+
+@engineering_api.route("/structure/apply", methods=["POST"])
+def apply_structure_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    result = apply_structure(payload)
+    g.engineering_proposal_changed = bool(result.get("count"))
+    return jsonify(result)
+
+
+@engineering_api.route("/structure/proposals/<proposal_id>/reject", methods=["POST"])
+def reject_structure_proposal_route(proposal_id: str):
+    payload = request.get_json(silent=True) or {}
+    return jsonify(
+        reject_structure_proposal(
+            proposal_id,
+            actor=str(payload.get("actor") or "structure-tree-reviewer"),
+        )
+    )
+
+
+@engineering_api.route("/structure/transfer/analyze", methods=["POST"])
+def analyze_ecu_transfer_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    return jsonify(analyze_ecu_transfer(payload)), 201
+
+
+@engineering_api.route("/structure/system-duplicates", methods=["GET"])
+def analyze_system_duplicates_route():
+    return jsonify(analyze_system_duplicates())
+
+
+@engineering_api.route("/structure/system-duplicates/merge", methods=["POST"])
+def merge_system_duplicate_route():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    result = merge_system_duplicate(payload)
+    g.engineering_proposal_changed = True
+    return jsonify(result)
+
+
+@engineering_api.route("/structure/transfer/<proposal_id>/apply", methods=["POST"])
+def apply_ecu_transfer_route(proposal_id: str):
+    payload = request.get_json(silent=True) or {}
+    result = apply_ecu_transfer(
+        proposal_id,
+        actor=str(payload.get("actor") or "structure-transfer-reviewer"),
+        decisions=payload.get("decisions") if isinstance(payload.get("decisions"), list) else None,
+    )
+    g.engineering_proposal_changed = bool(result.get("created"))
+    return jsonify(result)
+
+
+@engineering_api.route("/structure/transfer/<proposal_id>/reject", methods=["POST"])
+def reject_ecu_transfer_route(proposal_id: str):
+    payload = request.get_json(silent=True) or {}
+    return jsonify(
+        reject_ecu_transfer(
+            proposal_id,
+            actor=str(payload.get("actor") or "structure-transfer-reviewer"),
+        )
+    )
+
+
 @engineering_api.route("/<resource>", methods=["GET"])
 def list_resource(resource: str):
     object_type = _resource_object_type(resource)
@@ -1418,8 +1512,21 @@ def approve_proposal_route(proposal_id: str):
     before = get_proposal(proposal_id)
     canonical_before = sum(bool(item.get("canonical_id")) for item in before.get("proposed_objects") or [])
     approved = approve_proposal(proposal_id, indexes=indexes, actor=payload.get("actor"))
-    canonical_after = sum(bool(item.get("canonical_id")) for item in approved.get("proposed_objects") or [])
-    g.engineering_proposal_changed = canonical_after > canonical_before
+    approved_items = approved.get("proposed_objects") or []
+    canonical_after = sum(bool(item.get("canonical_id")) for item in approved_items)
+    newly_registered = [
+        item
+        for index, item in enumerate(approved_items)
+        if item.get("canonical_id")
+        and not (
+            index < len(before.get("proposed_objects") or [])
+            and (before.get("proposed_objects") or [])[index].get("canonical_id")
+        )
+    ]
+    g.engineering_proposal_changed = canonical_after > canonical_before and any(
+        (item.get("canonical_resolution") or {}).get("strategy") != "semantic_hardware_reuse"
+        for item in newly_registered
+    )
     return jsonify(approved)
 
 

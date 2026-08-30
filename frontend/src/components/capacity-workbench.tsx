@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   calculateCapacity,
   calculateCapacityScenario,
@@ -17,6 +17,7 @@ import {
   type WorkflowStatus,
 } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
 
@@ -43,17 +44,20 @@ export function CapacityWorkbench() {
     void setWorkflowContext({ selected_network: selectedNetworkId }).catch(() => undefined);
   }, [selectedNetworkId]);
 
-  useEffect(() => {
-    getCapacity()
-      .then((snapshot) => {
-        setResults(snapshot.results as CapacityResults);
-        setFindings(snapshot.findings);
-        setStatus(snapshot.status);
-        setOutdated(snapshot.is_outdated);
-        setOutdatedReason(snapshot.outdated_reason ?? "");
-      })
-      .catch(() => undefined);
+  const load = useCallback(async () => {
+    try {
+      const snapshot = await getCapacity();
+      setResults(snapshot.results as CapacityResults);
+      setFindings(snapshot.findings);
+      setStatus(snapshot.status);
+      setOutdated(snapshot.is_outdated);
+      setOutdatedReason(snapshot.outdated_reason ?? "");
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Capacity-Daten nicht verfügbar.");
+    }
   }, []);
+  useWorkflowRefresh(load);
 
   async function calculate() {
     setBusy(true);

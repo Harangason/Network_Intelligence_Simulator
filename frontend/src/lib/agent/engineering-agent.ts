@@ -12,8 +12,8 @@ import { agentLearningContext } from "@/lib/agent/feedback-store";
 import {
   extractEngineeringSpecification,
   isStructuredEngineeringSpecification,
-  type ExtractedEngineeringChain,
 } from "@/lib/agent/engineering-specification";
+import { semanticRoutePlans, type SemanticRoutePlan } from "@/lib/agent/semantic-routing";
 import {
   acceptRoutingProposal,
   createProposal,
@@ -33,6 +33,7 @@ import {
   validateRoutingEntry,
   validateRoutingTable,
   inspectWorkflowState,
+  saveWorkflowContext,
   inspectWorkflowSnapshots,
   saveWorkflowTopology,
   saveWorkflowParameters,
@@ -516,11 +517,11 @@ function engineeringNameKey(value: unknown) {
 
 async function createEngineeringRegistrationIndex(): Promise<EngineeringRegistrationIndex> {
   const [hardware, functions, interfaces, messages, signals, proposals] = await Promise.all([
-    listObjects("hardware-nodes"),
-    listObjects("functions"),
-    listObjects("interfaces"),
-    listObjects("messages"),
-    listObjects("signals"),
+    listObjects("hardware-nodes", { limit: "500" }),
+    listObjects("functions", { limit: "500" }),
+    listObjects("interfaces", { limit: "500" }),
+    listObjects("messages", { limit: "500" }),
+    listObjects("signals", { limit: "500" }),
     listEngineeringProposals(),
   ]);
   const source: Record<EngineeringResourceName, Record<string, unknown>[]> = {
@@ -715,14 +716,23 @@ async function createAndApproveEngineeringObject(
   if (!canonicalObjects.length) {
     throw new Error(`${rest.name} konnte nicht in das kanonische Modell uebernommen werden.`);
   }
+  const semanticHardwareReuse = Array.isArray(approved.proposed_objects)
+    && approved.proposed_objects.some((item) => (
+      item
+      && typeof item === "object"
+      && ((item as Record<string, unknown>).canonical_resolution as Record<string, unknown> | undefined)?.strategy
+        === "semantic_hardware_reuse"
+    ));
   rememberCanonicalObjects(registrationIndex, canonicalObjects);
   return {
-    created: true,
-    reused: Boolean(existingProposal),
+    created: !semanticHardwareReuse,
+    reused: Boolean(existingProposal) || semanticHardwareReuse,
     resource,
     proposal: approved,
     canonical_objects: canonicalObjects,
-    note: "Objekt wurde als AIProposal auditiert, validiert und sofort kanonisch registriert.",
+    note: semanticHardwareReuse
+      ? "Das Fachsynonym wurde auditiert und auf das vorhandene kanonische Hardware-System aufgelöst."
+      : "Objekt wurde als AIProposal auditiert, validiert und sofort kanonisch registriert.",
   };
 }
 
@@ -910,6 +920,22 @@ const createEngineeringChain = tool({
 export async function registerEngineeringSpecification(specificationText: string) {
   return serializeProposalCreation(async () => {
     const extracted = extractEngineeringSpecification(specificationText);
+    const scopeRules = extracted.targetCounts.explicit
+      ? {
+        version: 1,
+        source: "engineering-specification",
+        enforcement: "exact",
+        hardware_counts: {
+          sensors: extracted.targetCounts.sensors,
+          ecus: extracted.targetCounts.ecus,
+          gateways: extracted.targetCounts.gateways,
+        },
+        communication_systems: extracted.communicationSystems,
+      }
+      : null;
+    if (scopeRules) {
+      await saveWorkflowContext({ engineering_scope_rules: scopeRules });
+    }
     if (!extracted.chains.length) {
       return {
         created: false,
@@ -952,12 +978,13 @@ export async function registerEngineeringSpecification(specificationText: string
       });
     }
 
-    const actualCounts = extracted.chains.reduce(
-      (counts, chain) => {
-        if (!registeredNames.has(engineeringNameKey(chain.hardware_name))) return counts;
-        if (chain.device_type === "SensorController") counts.sensors += 1;
-        else if (chain.device_type === "Gateway") counts.gateways += 1;
-        else if (chain.device_type === "ECU") counts.ecus += 1;
+    const finalHardware = await listObjects("hardware-nodes", { limit: "500" });
+    const actualCounts = finalHardware.items.reduce<{ sensors: number; ecus: number; gateways: number }>(
+      (counts, item) => {
+        const deviceType = canonicalDeviceType(String(item.device_type ?? ""));
+        if (deviceType === "SensorController") counts.sensors += 1;
+        else if (deviceType === "Gateway") counts.gateways += 1;
+        else if (deviceType === "ECU") counts.ecus += 1;
         return counts;
       },
       { sensors: 0, ecus: 0, gateways: 0 },
@@ -968,7 +995,15 @@ export async function registerEngineeringSpecification(specificationText: string
       ecus: Math.max(0, targetCounts.ecus - actualCounts.ecus),
       gateways: Math.max(0, targetCounts.gateways - actualCounts.gateways),
     };
-    const targetsSatisfied = Object.values(missingCounts).every((count) => count === 0);
+    const excessCounts = {
+      sensors: Math.max(0, actualCounts.sensors - targetCounts.sensors),
+      ecus: Math.max(0, actualCounts.ecus - targetCounts.ecus),
+      gateways: Math.max(0, actualCounts.gateways - targetCounts.gateways),
+    };
+    const targetsSatisfied = !targetCounts.explicit || (
+      Object.values(missingCounts).every((count) => count === 0)
+      && Object.values(excessCounts).every((count) => count === 0)
+    );
     const complete = failures.length === 0
       && registeredNames.size === extracted.chains.length
       && targetsSatisfied;
@@ -980,6 +1015,8 @@ export async function registerEngineeringSpecification(specificationText: string
       registered_chains: registeredNames.size,
       domain: extracted.domain,
       interface_type: extracted.interfaceType,
+      communication_systems: extracted.communicationSystems,
+      scope_rules: scopeRules,
       target_counts: {
         sensors: targetCounts.sensors,
         ecus: targetCounts.ecus,
@@ -987,14 +1024,15 @@ export async function registerEngineeringSpecification(specificationText: string
       },
       actual_counts: actualCounts,
       missing_counts: missingCounts,
+      excess_counts: excessCounts,
       work_packages: workPackages,
       failures,
       canonical_object_count: canonicalObjects.length,
       canonical_objects: canonicalObjects.slice(0, 20),
       canonical_objects_truncated: canonicalObjects.length > 20,
       note: complete
-        ? "Alle Zielmengen wurden in begrenzten Arbeitspaketen als vollstaendige Engineering-Ketten registriert."
-        : "Der Auftrag bleibt offen: Fehlgeschlagene Ketten oder fehlende Zielmengen sind einzeln ausgewiesen.",
+        ? "Alle exakten Projektregeln wurden in begrenzten Arbeitspaketen als vollstaendige Engineering-Ketten registriert."
+        : "Der Auftrag bleibt offen: Fehlgeschlagene Ketten sowie Unter- oder Ueberschreitungen der Projektregeln sind einzeln ausgewiesen.",
     };
   });
 }
@@ -1343,67 +1381,57 @@ async function createVerifiedRouteProposal(input: RouteProposalInput) {
     }
 }
 
-type SpecificationRoutePlan = {
-  source: ExtractedEngineeringChain;
-  destinations: ExtractedEngineeringChain[];
-};
-
-function routeKey(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function processorForSensor(
-  sensor: ExtractedEngineeringChain,
-  processors: ExtractedEngineeringChain[],
-) {
-  const sourceKey = routeKey(`${sensor.hardware_name} ${sensor.hardware_description}`);
-  return processors
-    .map((processor, index) => {
-      const processorName = routeKey(processor.hardware_name);
-      const processorTokens = processorName.split(" ").filter((token) => token.length > 2 && token !== "ecu");
-      let score = sourceKey.includes(processorName) ? 100 : 0;
-      score += processorTokens.filter((token) => sourceKey.includes(token)).length * 10;
-      if (/temperatur|thermal/.test(sourceKey) && /temperatur|thermal/.test(processorName)) score += 50;
-      if (/drehzahl|motorstrom|motor/.test(sourceKey) && /motion|motor/.test(processorName)) score += 50;
-      return { processor, score, index };
-    })
-    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.processor;
-}
-
-function specificationRoutePlans(chains: ExtractedEngineeringChain[]) {
-  const sensors = chains.filter((chain) => routeKey(chain.device_type).includes("sensor"));
-  const gateways = chains.filter((chain) => routeKey(chain.device_type).includes("gateway"));
-  const processors = chains.filter((chain) => !sensors.includes(chain) && !gateways.includes(chain));
-  const gateway = gateways[0];
-  const plans: SpecificationRoutePlan[] = [];
-
-  for (const sensor of sensors) {
-    const processor = processorForSensor(sensor, processors);
-    if (processor) plans.push({ source: sensor, destinations: [processor] });
+async function ensureSpecificationRoutingInterfaces(plans: SemanticRoutePlan[]) {
+  const [hardware, functions, interfaces] = await Promise.all([
+    listObjects("hardware-nodes"),
+    listObjects("functions"),
+    listObjects("interfaces"),
+  ]);
+  const hardwareByName = new Map(
+    hardware.items.map((item) => [engineeringNameKey(String(item.name ?? "")), item]),
+  );
+  const functionsByNode = new Map<string, Record<string, unknown>[]>();
+  for (const item of functions.items) {
+    const nodeId = String(item.hardware_node_id ?? "");
+    functionsByNode.set(nodeId, [...(functionsByNode.get(nodeId) ?? []), item]);
   }
-  if (gateway) {
-    for (const processor of processors) plans.push({ source: processor, destinations: [gateway] });
-    if (processors.length) plans.push({ source: gateway, destinations: processors });
-  }
-  if (!plans.length && chains.length >= 2) {
-    plans.push({ source: chains[0], destinations: chains.slice(1) });
+  const interfacesByNode = new Map<string, Record<string, unknown>[]>();
+  for (const item of interfaces.items) {
+    const nodeId = String(item.hardware_node_id ?? "");
+    interfacesByNode.set(nodeId, [...(interfacesByNode.get(nodeId) ?? []), item]);
   }
 
-  const unique = new Map<string, SpecificationRoutePlan>();
   for (const plan of plans) {
-    const key = [plan.source.hardware_name, ...plan.destinations.map((item) => item.hardware_name)]
-      .map(routeKey)
-      .join("->");
-    unique.set(key, plan);
+    const interfaceType = canonicalInterfaceType(plan.source.interface_type);
+    for (const destination of plan.destinations) {
+      const target = hardwareByName.get(engineeringNameKey(destination.hardware_name));
+      if (!target?.id) continue;
+      const targetId = String(target.id);
+      const compatible = (interfacesByNode.get(targetId) ?? [])
+        .some((item) => canonicalInterfaceType(String(item.interface_type ?? "")) === interfaceType);
+      if (compatible) continue;
+      const targetFunction = (functionsByNode.get(targetId) ?? [])[0];
+      if (!targetFunction?.id) {
+        throw new Error(`${destination.hardware_name} besitzt keine Funktion für ein ${interfaceType}-Interface.`);
+      }
+      const result = await createAndApproveEngineeringObject({
+        resource: "interfaces",
+        name: `${destination.hardware_name}_${interfaceType}`,
+        description: `${interfaceType}-Schnittstelle für einen kanonischen Kommunikationspfad.`,
+        domain: destination.domain,
+        interface_type: interfaceType,
+        hardware_node_id: targetId,
+        function_id: String(targetFunction.id),
+      });
+      const canonicalId = result.canonical_objects[0]?.id;
+      if (canonicalId) {
+        interfacesByNode.set(targetId, [
+          ...(interfacesByNode.get(targetId) ?? []),
+          { id: canonicalId, hardware_node_id: targetId, interface_type: interfaceType },
+        ]);
+      }
+    }
   }
-  return [...unique.values()];
 }
 
 export async function registerRoutingProposalForSpecification(specificationText: string) {
@@ -1422,7 +1450,10 @@ export async function registerRoutingProposalForSpecification(specificationText:
   let created = false;
   let acceptedRouteCount = 0;
 
-  for (const plan of specificationRoutePlans(extracted.chains)) {
+  const routePlans = semanticRoutePlans(extracted.chains);
+  await ensureSpecificationRoutingInterfaces(routePlans);
+
+  async function processRoutePlan(plan: SemanticRoutePlan) {
     const result = await createVerifiedRouteProposal({
       prompt: concreteRequestText(specificationText),
       source_node_id: plan.source.hardware_name,
@@ -1433,12 +1464,13 @@ export async function registerRoutingProposalForSpecification(specificationText:
     });
     const routeResult = result && typeof result === "object" ? result as Record<string, unknown> : {};
     if (routeResult.blocked === true) {
-      failures.push({
-        source: plan.source.hardware_name,
-        destinations: plan.destinations.map((item) => item.hardware_name),
-        reason: String(routeResult.reason ?? "Routing-Vorschlag konnte nicht erzeugt werden."),
-      });
-      continue;
+      return {
+        failure: {
+          source: plan.source.hardware_name,
+          destinations: plan.destinations.map((item) => item.hardware_name),
+          reason: String(routeResult.reason ?? "Routing-Vorschlag konnte nicht erzeugt werden."),
+        },
+      };
     }
 
     const existingProposal = routeResult.proposal && typeof routeResult.proposal === "object"
@@ -1482,15 +1514,34 @@ export async function registerRoutingProposalForSpecification(specificationText:
       && validIndexes.length > 0
       ? await acceptRoutingProposal(proposalId, validIndexes, "engineering-wizard")
       : { items: [], count: 0 };
-    acceptedRouteCount += Number(accepted.count ?? accepted.items.length);
-    created ||= routeResult.created !== false && routeResult.reused !== true;
-    proposals.push({
-      source: plan.source.hardware_name,
-      destinations: plan.destinations.map((item) => item.hardware_name),
-      ready_for_review: alreadyReady || valid,
-      proposal: reviewedProposal,
-      accepted_routes: accepted.items,
-    });
+
+    return {
+      created: routeResult.created !== false && routeResult.reused !== true,
+      acceptedCount: Number(accepted.count ?? accepted.items.length),
+      proposal: {
+        source: plan.source.hardware_name,
+        destinations: plan.destinations.map((item) => item.hardware_name),
+        ready_for_review: alreadyReady || valid,
+        proposal: reviewedProposal,
+        accepted_routes: accepted.items,
+      },
+    };
+  }
+
+  const routePackageSize = 2;
+  for (let offset = 0; offset < routePlans.length; offset += routePackageSize) {
+    const outcomes = await Promise.all(
+      routePlans.slice(offset, offset + routePackageSize).map(processRoutePlan),
+    );
+    for (const outcome of outcomes) {
+      if (outcome.failure) {
+        failures.push(outcome.failure);
+        continue;
+      }
+      acceptedRouteCount += outcome.acceptedCount ?? 0;
+      created ||= outcome.created === true;
+      if (outcome.proposal) proposals.push(outcome.proposal);
+    }
   }
 
   const readyForReview = proposals.length > 0
@@ -1918,6 +1969,10 @@ const configureWorkflowParameters = tool({
     const routes = approvalProgress.routes as unknown as Record<string, unknown>[];
     const firstRoute = routes[0];
     const protocol = String(objectRecord(firstRoute.source).protocol ?? "CAN_FD").toUpperCase();
+    const routeProtocols = new Set(
+      routes.map((route) => String(objectRecord(route.source).protocol ?? "").toUpperCase()),
+    );
+    const usesCanFd = routeProtocols.has("CAN_FD") || routeProtocols.has("CANFD");
     const technology = busForProtocol(protocol);
     const bitrate = technology === "lin" ? 19_200
       : technology === "flexray" ? 10_000_000
@@ -1939,6 +1994,7 @@ const configureWorkflowParameters = tool({
       industry: String(hardwareResult.items[0]?.domain ?? existing.industry ?? "automotive"),
       technology,
       bitrate,
+      ...(usesCanFd ? { arbitration_bitrate: 2_000_000, data_bitrate: 8_000_000 } : {}),
       payload_bytes: payloadBytes,
       cycle_ms: cycleMs,
       minimum_cycle_time_ms: Math.max(0.001, cycleMs / 10),
@@ -2472,6 +2528,31 @@ export async function runEngineeringWorkflowAutomation(
   for (let attempt = 0; attempt < requiredSteps.length + 3; attempt += 1) {
     const before = await inspectWorkflowState();
     const statuses = objectRecord(before.statuses);
+    const parametersAreOnlyImplicit = requiredSteps.includes("capacity_timing")
+      && Object.keys(objectRecord(before.parameters)).length === 0
+      && COMPLETE_WORKFLOW_STATUSES.has(String(statuses.routing ?? "EMPTY").toUpperCase())
+      && COMPLETE_WORKFLOW_STATUSES.has(String(statuses.network_editor ?? "EMPTY").toUpperCase());
+    if (parametersAreOnlyImplicit) {
+      const operation = automaticSteps.parameters;
+      onEvent?.({ phase: "start", step: "parameters", toolName: operation.toolName });
+      try {
+        const output = await operation.execute();
+        onEvent?.({ phase: "complete", step: "parameters", toolName: operation.toolName, output });
+        completedSteps.push("parameters");
+        continue;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        onEvent?.({ phase: "error", step: "parameters", toolName: operation.toolName, error: message });
+        return {
+          complete: false,
+          target,
+          completedSteps,
+          blockedStep: "parameters",
+          reason: message,
+          statuses,
+        };
+      }
+    }
     const blockedStep = requiredSteps.find((step) => String(statuses[step] ?? "EMPTY").toUpperCase() === "ERROR");
     if (blockedStep) {
       return {
@@ -3181,6 +3262,11 @@ Regeln:
 - Fuer ein neues Systemmodell erstelle zuerst HardwareNodes, dann Functions je
   Hardware, dann Interfaces an Functions, danach Messages und erst danach
   Signals. Messages duerfen nur auf Interfaces zeigen, Signals nur auf Messages.
+- Pruefe vor jeder neuen HardwareNode-Anlage das kanonische Modell und verwende
+  ein fachlich gleichwertiges System wieder. Kontrollierte Synonyme wie ADAS,
+  Fahrerassistenz und Driver Assistance bezeichnen dasselbe System; der reine
+  Namensbestandteil ECU reicht dagegen nie fuer eine Gleichsetzung. Fachlich
+  verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt.
 - Nutze createEngineeringChain, sobald ein vollstaendiges Modell oder die Kette
   bis zum Signal verlangt wird. Das Tool muss mindestens einmal erfolgreich
   laufen, bevor du einen solchen Auftrag als abgeschlossen meldest.

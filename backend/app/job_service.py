@@ -177,24 +177,24 @@ class JobService:
         try:
             result = future.result()
             if self._is_cancellation_requested(job_id):
-                self._update(job_id, status="canceled", result=result)
                 self._update_workflow_snapshot(payload, "CANCELED", job_id, result=result)
+                self._update(job_id, status="canceled", result=result)
                 return
             self._record_routing_results(payload, validate_only, job_id, result)
-            self._update(job_id, status="completed", result=result)
             self._update_workflow_snapshot(payload, "COMPLETED", job_id, result=result)
+            self._update(job_id, status="completed", result=result)
         except Exception as exc:
             logger.exception("Simulation worker failed")
-            self._update(job_id, status="failed", error=str(exc))
             self._update_workflow_snapshot(payload, "FAILED", job_id)
+            self._update(job_id, status="failed", error=str(exc))
         finally:
             with self._lock:
                 self._futures.pop(job_id, None)
 
     def _execute(self, job_id: str, payload: dict[str, Any], validate_only: bool) -> None:
         if self._is_cancellation_requested(job_id):
-            self._update(job_id, status="canceled")
             self._update_workflow_snapshot(payload, "CANCELED", job_id)
+            self._update(job_id, status="canceled")
             return
         self._update(job_id, status="running")
         self._update_workflow_snapshot(payload, "RUNNING", job_id)
@@ -207,15 +207,15 @@ class JobService:
                 validate_only=validate_only,
             )
             if self._is_cancellation_requested(job_id):
-                self._update(job_id, status="canceled", result=result)
                 self._update_workflow_snapshot(payload, "CANCELED", job_id, result=result)
+                self._update(job_id, status="canceled", result=result)
                 return
             self._record_routing_results(payload, validate_only, job_id, result)
-            self._update(job_id, status="completed", result=result)
             self._update_workflow_snapshot(payload, "COMPLETED", job_id, result=result)
+            self._update(job_id, status="completed", result=result)
         except Exception as exc:
-            self._update(job_id, status="failed", error=str(exc))
             self._update_workflow_snapshot(payload, "FAILED", job_id)
+            self._update(job_id, status="failed", error=str(exc))
 
     @staticmethod
     def _record_routing_results(
@@ -269,11 +269,11 @@ class JobService:
         with self._lock:
             return bool(self._jobs.get(job_id, {}).get("cancellation_requested"))
 
-    def cancel(self, job_id: str) -> dict[str, Any] | None:
+    def cancel(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:
         canceled_before_start = False
         with self._lock:
             job = self._jobs.get(job_id)
-            if job is None:
+            if job is None or (project_id is not None and job.get("project_id") != project_id):
                 return None
             if job["status"] in {"completed", "failed", "canceled"}:
                 return copy.deepcopy(job)
@@ -289,24 +289,29 @@ class JobService:
             self._update_workflow_snapshot(response, "CANCELED", job_id)
         return response
 
-    def get(self, job_id: str) -> dict[str, Any] | None:
+    def get(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:
         with self._lock:
             job = self._jobs.get(job_id)
-            return copy.deepcopy(job) if job else None
+            if not job or (project_id is not None and job.get("project_id") != project_id):
+                return None
+            return copy.deepcopy(job)
 
-    def list(self) -> list[dict[str, Any]]:
+    def list(self, project_id: str | None = None) -> list[dict[str, Any]]:
         with self._lock:
             return [
                 copy.deepcopy(job)
                 for job in sorted(
-                    self._jobs.values(),
+                    (
+                        job for job in self._jobs.values()
+                        if project_id is None or job.get("project_id") == project_id
+                    ),
                     key=lambda item: item["created_at"],
                     reverse=True,
                 )
             ]
 
-    def artifact(self, job_id: str, artifact_index: int) -> Path | None:
-        job = self.get(job_id)
+    def artifact(self, job_id: str, artifact_index: int, project_id: str | None = None) -> Path | None:
+        job = self.get(job_id, project_id)
         if not job or not job.get("result"):
             return None
         artifacts = job["result"].get("artifacts") or []

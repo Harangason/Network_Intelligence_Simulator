@@ -6,59 +6,17 @@ import type {
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
+  EcuTransferAnalysis,
+  EcuTransferDecision,
+  SystemDuplicateCandidate,
+  SystemMergeResult,
+  StructureAssignment,
+  StructureEvaluation,
 } from "./types";
 import type { NetworkTopology, TopologySyncResult } from "./topology";
 import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering";
-
-const DEV_ENGINEERING_SCHEMA: EngineeringSchema = {
-  resources: ["hardware-nodes", "functions", "interfaces", "messages", "signals"],
-  device_types: [
-    "ECU",
-    "PLC",
-    "RobotController",
-    "SensorController",
-    "ActuatorController",
-    "Gateway",
-    "EmbeddedController",
-    "IndustrialPC",
-    "FlightComputer",
-    "BatteryManagementSystem",
-    "EnergyController",
-    "BuildingController",
-    "GenericDevice",
-    "CustomDevice",
-  ],
-  interface_types: [
-    "CAN",
-    "CAN_FD",
-    "LIN",
-    "FlexRay",
-    "Ethernet",
-    "EtherCAT",
-    "ProfiNET",
-    "ModbusTCP",
-    "ModbusRTU",
-    "RS232",
-    "RS485",
-    "SPI",
-    "I2C",
-    "USB",
-    "MQTT",
-    "OPCUA",
-    "Other",
-  ],
-  message_directions: ["rx", "tx", "bidirectional"],
-};
-
-function canUseLocalEmptyState(error: unknown): boolean {
-  if (typeof window === "undefined" || !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
-    return false;
-  }
-  const message = error instanceof Error ? error.message : String(error);
-  return message === "API-Fehler 500" || message === "Die Engineering-API ist nicht erreichbar.";
-}
 
 function importBaseUrl(): string {
   if (typeof window !== "undefined" && window.location.port === "13500") {
@@ -113,10 +71,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function getEngineeringSchema(): Promise<EngineeringSchema> {
-  return request<EngineeringSchema>("/schema").catch((error) => {
-    if (canUseLocalEmptyState(error)) return DEV_ENGINEERING_SCHEMA;
-    throw error;
-  });
+  return request<EngineeringSchema>("/schema");
 }
 
 export function syncEngineeringTopology(
@@ -160,15 +115,10 @@ export async function listEngineeringObjects(
     if (value) params.set(key, value);
   }
   const query = params.toString();
-  try {
-    const { items } = await request<{ items: EngineeringObject[]; count: number }>(
-      `/${resource}${query ? `?${query}` : ""}`,
-    );
-    return items;
-  } catch (error) {
-    if (canUseLocalEmptyState(error)) return [];
-    throw error;
-  }
+  const { items } = await request<{ items: EngineeringObject[]; count: number }>(
+    `/${resource}${query ? `?${query}` : ""}`,
+  );
+  return items;
 }
 
 export async function listAllEngineeringObjects(
@@ -176,18 +126,13 @@ export async function listAllEngineeringObjects(
 ): Promise<EngineeringObject[]> {
   const items: EngineeringObject[] = [];
   const pageSize = 500;
-  try {
-    for (let offset = 0; ; offset += pageSize) {
-      const page = await listEngineeringObjects(resource, {
-        limit: String(pageSize),
-        offset: String(offset),
-      });
-      items.push(...page);
-      if (page.length < pageSize) return items;
-    }
-  } catch (error) {
-    if (canUseLocalEmptyState(error)) return [];
-    throw error;
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await listEngineeringObjects(resource, {
+      limit: String(pageSize),
+      offset: String(offset),
+    });
+    items.push(...page);
+    if (page.length < pageSize) return items;
   }
 }
 
@@ -264,6 +209,94 @@ export function createEngineeringRelation(payload: {
 
 export function deleteEngineeringRelation(id: string): Promise<void> {
   return request<void>(`/relations/${id}`, { method: "DELETE" });
+}
+
+export function evaluateEngineeringStructure(
+  selections: Record<string, string[]>,
+): Promise<StructureEvaluation> {
+  return request<StructureEvaluation>("/structure/evaluate", {
+    method: "POST",
+    body: JSON.stringify({ selections, actor: "structure-tree-reviewer" }),
+    signal: null,
+  });
+}
+
+export function applyEngineeringStructure(payload: {
+  proposal_id?: string;
+  assignments: StructureAssignment[];
+  object_updates?: Array<{
+    object_type: string;
+    id: string;
+    updates: Record<string, unknown>;
+  }>;
+}): Promise<{ count: number; applied: Array<Record<string, unknown>> }> {
+  return request("/structure/apply", {
+    method: "POST",
+    body: JSON.stringify({ ...payload, actor: "structure-tree-reviewer" }),
+    signal: null,
+  });
+}
+
+export function rejectEngineeringStructureProposal(id: string): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/structure/proposals/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "structure-tree-reviewer" }),
+  });
+}
+
+export function analyzeEcuStructureTransfer(
+  sourceHardwareId: string,
+  targetHardwareIds: string[],
+): Promise<EcuTransferAnalysis> {
+  return request<EcuTransferAnalysis>("/structure/transfer/analyze", {
+    method: "POST",
+    body: JSON.stringify({
+      source_hardware_id: sourceHardwareId,
+      target_hardware_ids: targetHardwareIds,
+      actor: "structure-transfer-reviewer",
+    }),
+    signal: null,
+  });
+}
+
+export function applyEcuStructureTransfer(id: string, decisions: EcuTransferDecision[]): Promise<{
+  created: number;
+  reused: number;
+  skipped: number;
+  already_applied: boolean;
+}> {
+  return request(`/structure/transfer/${id}/apply`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "structure-transfer-reviewer", decisions }),
+    signal: null,
+  });
+}
+
+export async function listSystemDuplicateCandidates(): Promise<SystemDuplicateCandidate[]> {
+  const result = await request<{ count: number; items: SystemDuplicateCandidate[] }>(
+    "/structure/system-duplicates",
+  );
+  return result.items;
+}
+
+export function mergeSystemDuplicate(candidate: SystemDuplicateCandidate): Promise<SystemMergeResult> {
+  return request<SystemMergeResult>("/structure/system-duplicates/merge", {
+    method: "POST",
+    body: JSON.stringify({
+      candidate_key: candidate.candidate_key,
+      canonical_hardware_id: candidate.canonical_hardware.id,
+      duplicate_hardware_id: candidate.duplicate_hardware.id,
+      actor: "structure-tree-reviewer",
+    }),
+    signal: null,
+  });
+}
+
+export function rejectEcuStructureTransfer(id: string): Promise<EngineeringProposal> {
+  return request<EngineeringProposal>(`/structure/transfer/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "structure-transfer-reviewer" }),
+  });
 }
 
 export async function listEngineeringProposals(): Promise<EngineeringProposal[]> {

@@ -33,6 +33,12 @@ from .models import (
     validate_choice,
     validate_uuid as _validate_uuid,
 )
+from .scope_rules import (
+    hardware_scope_category,
+    normalize_engineering_scope_rules,
+    scope_placeholder_sql,
+)
+from .structure_rules import equivalent_system_names, infer_device_type, normalize_hardware_name
 
 GOVERNANCE_COLUMNS = (
     "version",
@@ -210,10 +216,59 @@ def _governance_defaults(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _enforce_engineering_scope_rules(
+    connection,
+    object_type: str,
+    payload: dict[str, Any],
+    project_id: str,
+) -> None:
+    if object_type not in {"HardwareNode", "Interface"}:
+        return
+    row = connection.execute(
+        "SELECT context FROM engineering_workflow_projects WHERE project_id = %s FOR UPDATE",
+        (project_id,),
+    ).fetchone()
+    raw_rules = (row.get("context") or {}).get("engineering_scope_rules") if row else None
+    if not raw_rules:
+        return
+    rules = normalize_engineering_scope_rules(raw_rules)
+
+    if object_type == "Interface":
+        allowed = rules["communication_systems"]
+        interface_type = str(payload.get("interface_type") or "")
+        if allowed and interface_type not in allowed:
+            raise EngineeringValidationError(
+                f"Interface-Typ {interface_type!r} ist durch die Projektregel nicht erlaubt. "
+                f"Zulaessig: {', '.join(allowed)}."
+            )
+        return
+
+    category = hardware_scope_category(payload.get("device_type"))
+    if not category:
+        return
+    limit = rules["hardware_counts"][category]
+    current_row = connection.execute(
+        "SELECT count(*) AS count FROM engineering_hardware_nodes h "
+        f"WHERE project_id = %s AND device_type = %s AND NOT {scope_placeholder_sql('h')}",
+        (project_id, payload.get("device_type")),
+    ).fetchone()
+    current_count = int(current_row["count"] if current_row else 0)
+    if current_count >= limit:
+        raise EngineeringValidationError(
+            f"Projektregel verletzt: Fuer {category} gilt exakt {limit}; "
+            f"bereits vorhanden sind {current_count}."
+        )
+
+
 def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     spec = get_spec(object_type)
     if not data.get("name"):
         raise EngineeringValidationError("Pflichtfeld fehlt: 'name'")
+    if object_type == "HardwareNode" and not data.get("device_type"):
+        data = {**data, "device_type": infer_device_type(str(data["name"]))}
+    if object_type == "Interface" and data.get("function_id"):
+        parent_function = get_object("Function", str(data["function_id"]))
+        data = {**data, "hardware_node_id": parent_function["hardware_node_id"]}
     spec.validate(data)
 
     columns = list(BASE_COLUMNS) + list(spec.own_columns)
@@ -236,6 +291,7 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     )
 
     with get_connection() as conn:
+        _enforce_engineering_scope_rules(conn, object_type, payload, project_id)
         row = conn.execute(query, values).fetchone()
         row = _decorate_row(spec, row)
         _write_version_snapshot(conn, spec, row, changed_by=payload.get("created_by"), summary="created")
@@ -287,6 +343,36 @@ def list_objects(
     allowed_filter_columns = set(_all_columns(spec)) | {"id", "lifecycle_state", "review_state", "approval_state"}
     where_clauses: list[sql.Composable] = [sql.SQL("project_id = %s")]
     values: list[Any] = [current_project_id()]
+    placeholder = scope_placeholder_sql("h")
+    if object_type == "HardwareNode":
+        where_clauses.append(sql.SQL(f"NOT {scope_placeholder_sql('engineering_hardware_nodes')}"))
+    elif object_type in {"Function", "Interface"}:
+        where_clauses.append(
+            sql.SQL(
+                "hardware_node_id NOT IN (SELECT h.id FROM engineering_hardware_nodes h "
+                f"WHERE h.project_id = %s AND {placeholder})"
+            )
+        )
+        values.append(current_project_id())
+    elif object_type == "Message":
+        where_clauses.append(
+            sql.SQL(
+                "interface_id NOT IN (SELECT i.id FROM engineering_interfaces i "
+                "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
+                f"WHERE h.project_id = %s AND {placeholder})"
+            )
+        )
+        values.append(current_project_id())
+    elif object_type == "Signal":
+        where_clauses.append(
+            sql.SQL(
+                "message_id NOT IN (SELECT m.id FROM engineering_messages m "
+                "JOIN engineering_interfaces i ON i.id = m.interface_id AND i.project_id = m.project_id "
+                "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
+                f"WHERE h.project_id = %s AND {placeholder})"
+            )
+        )
+        values.append(current_project_id())
     for column, value in filters.items():
         if column not in allowed_filter_columns or value is None:
             continue
@@ -304,6 +390,69 @@ def list_objects(
     return [_decorate_row(spec, row) for row in rows]
 
 
+def find_equivalent_hardware_node(data: dict[str, Any]) -> dict[str, Any] | None:
+    """Resolve a proposed HardwareNode to an existing canonical system.
+
+    This intentionally uses controlled system-name aliases and compatible metadata,
+    not a broad fuzzy-name match. It therefore recognizes ADAS/Fahrerassistenz while
+    keeping unrelated systems such as Abgasnachbehandlung and Airbag separate.
+    """
+
+    proposed_name = str(data.get("name") or "").strip()
+    if not proposed_name:
+        return None
+    proposed_domain = str(data.get("domain") or "").strip().casefold()
+    proposed_device_type = str(
+        data.get("device_type") or infer_device_type(proposed_name)
+    ).strip()
+    generic_types = {"", "GenericDevice", "CustomDevice"}
+    matches: list[tuple[tuple[int, float, int, int, str], dict[str, Any]]] = []
+    for candidate in list_objects("HardwareNode", limit=5000):
+        equivalent, similarity = equivalent_system_names(
+            proposed_name,
+            candidate.get("name"),
+        )
+        if not equivalent:
+            continue
+        candidate_domain = str(candidate.get("domain") or "").strip().casefold()
+        if proposed_domain and candidate_domain and proposed_domain != candidate_domain:
+            continue
+        candidate_device_type = str(candidate.get("device_type") or "").strip()
+        if (
+            proposed_device_type not in generic_types
+            and candidate_device_type not in generic_types
+            and proposed_device_type != candidate_device_type
+        ):
+            continue
+        reason = (
+            "gleichnamiges kanonisches System"
+            if proposed_name.casefold() == str(candidate.get("name") or "").strip().casefold()
+            else "kontrolliertes Fachsynonym"
+        )
+        resolution = {
+            "hardware": candidate,
+            "similarity": similarity,
+            "reason": reason,
+        }
+        function_count = len(
+            list_objects(
+                "Function",
+                filters={"hardware_node_id": str(candidate.get("id") or "")},
+                limit=5000,
+            )
+        )
+        resolution["child_count"] = function_count
+        rank = (
+            function_count,
+            similarity,
+            int(candidate.get("approval_state") == "approved"),
+            int(candidate.get("review_state") == "reviewed"),
+            str(candidate.get("name") or "").casefold(),
+        )
+        matches.append((rank, resolution))
+    return max(matches, key=lambda item: item[0])[1] if matches else None
+
+
 def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dict[str, Any]:
     spec = get_spec(object_type)
     _validate_uuid(object_id)
@@ -318,8 +467,28 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
         "lifecycle_state",
     ]
     updates = {col: data[col] for col in editable_columns if col in data}
+    if object_type == "HardwareNode":
+        requested_name = str(updates.get("name", existing.get("name") or ""))
+        if "name" in updates and "device_type" not in updates:
+            updates["device_type"] = infer_device_type(
+                requested_name,
+                str(existing.get("device_type") or "GenericDevice"),
+            )
+        if "name" in updates or "device_type" in updates:
+            updates["name"] = normalize_hardware_name(requested_name)
+    parent_link = PARENT_LINKS.get(object_type)
+    parent = None
+    if parent_link and parent_link[0] in updates:
+        parent_field, parent_type, _ = parent_link
+        if not updates.get(parent_field):
+            raise EngineeringValidationError(f"Pflichtfeld fehlt: {parent_field!r}")
+        parent = get_object(parent_type, str(updates[parent_field]))
+        if object_type == "Interface" and parent.get("hardware_node_id"):
+            updates["hardware_node_id"] = parent["hardware_node_id"]
     if not updates:
         return existing
+
+    spec.validate({**existing, **updates})
 
     for field_name, allowed in {
         "lifecycle_state": LIFECYCLE_STATES,
@@ -351,6 +520,41 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     with get_connection() as conn:
         row = conn.execute(query, [*values, object_id, current_project_id()]).fetchone()
         row = _decorate_row(spec, row)
+        if parent_link and parent_link[0] in updates:
+            parent_field, parent_type, relation_type = parent_link
+            project_id = current_project_id()
+            conn.execute(
+                "DELETE FROM engineering_relations "
+                "WHERE project_id = %s AND relation_type = %s "
+                "AND target_type = %s AND target_id = %s",
+                (project_id, relation_type, object_type, object_id),
+            )
+            parent_changed = str(existing.get(parent_field) or "") != str(updates[parent_field])
+            relation_source = data.get("relation_source") or (
+                "manual" if parent_changed else existing.get("source") or "manual"
+            )
+            validate_choice(str(relation_source), SOURCES, "relation_source")
+            conn.execute(
+                "INSERT INTO engineering_relations "
+                "(project_id, relation_type, source_type, source_id, target_type, target_id, "
+                "attributes, source, provenance, confidence, review_state, approval_state, created_by) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    project_id,
+                    relation_type,
+                    parent_type,
+                    updates[parent_field],
+                    object_type,
+                    object_id,
+                    Jsonb(data.get("relation_attributes", {})),
+                    relation_source,
+                    Jsonb(data.get("relation_provenance", {})),
+                    data.get("relation_confidence"),
+                    data.get("relation_review_state", "reviewed"),
+                    data.get("relation_approval_state", "approved"),
+                    actor,
+                ),
+            )
         _write_version_snapshot(
             conn, spec, row, changed_by=actor, summary=data.get("change_summary", "updated")
         )

@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import {
+  engineeringObjectTypeClass,
+  engineeringObjectTypeLabel,
+} from "@/lib/engineering-object-style";
 import { listRoutes, updateRoute } from "@/lib/routing-api";
 import type { RoutingEntry } from "@/lib/types";
 import { getPreflight, getWorkflow, runPreflight, type AnalysisFinding, type PreflightCategory, type PreflightResults, type WorkflowState, type WorkflowStatus } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 export function PreflightWorkbench() {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
@@ -20,18 +25,27 @@ export function PreflightWorkbench() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    void getWorkflow().then(setWorkflow).catch(() => undefined);
-    void listRoutes().then(setRoutes).catch(() => undefined);
-    void getPreflight().then((snapshot) => {
+  const load = useCallback(async () => {
+    try {
+      const [nextWorkflow, nextRoutes, snapshot] = await Promise.all([
+        getWorkflow(),
+        listRoutes(),
+        getPreflight(),
+      ]);
+      setWorkflow(nextWorkflow);
+      setRoutes(nextRoutes);
       setFindings(snapshot.findings);
       setStatus(snapshot.status);
       setOutdated(snapshot.is_outdated);
       const results = snapshot.results as Partial<PreflightResults>;
       setCategoryStatuses(results.category_statuses ?? {});
       setCategoryChecks(results.category_checks ?? {});
-    }).catch(() => undefined);
+      setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Preflight-Daten nicht verfügbar.");
+    }
   }, []);
+  useWorkflowRefresh(load);
 
   async function validate() {
     setBusy(true);
@@ -188,7 +202,7 @@ function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadD
           <dl>
             <dt>Befund</dt><dd>{finding.message}</dd>
             <dt>Code</dt><dd><code>{finding.code}</code></dd>
-            <dt>Objekt</dt><dd>{finding.object_type ? `${finding.object_type} · ${route?.route_code ?? finding.object_id ?? "unbekannt"}` : "Workflow / Modell"}</dd>
+            <dt>Objekt</dt><dd>{finding.object_type ? <><span className={`eng-object-badge ${engineeringObjectTypeClass(finding.object_type)}`}>{engineeringObjectTypeLabel(finding.object_type)}</span> · {route?.route_code ?? finding.object_id ?? "unbekannt"}</> : "Workflow / Modell"}</dd>
             <dt>Empfehlung</dt><dd>{finding.recommendation ?? recommendationForFinding(finding)}</dd>
           </dl>
           {editablePayload ? (

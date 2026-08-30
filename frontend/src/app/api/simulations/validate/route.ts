@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
   const backend = await proxyBackend("/simulations/validate", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: { "X-Project-ID": request.headers.get("X-Project-ID") ?? "default" },
   });
   return backend ?? NextResponse.json(createDevJob(payload as Record<string, unknown>, true), { status: 202 });
 }

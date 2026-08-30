@@ -39,15 +39,32 @@ async function request<T>(path: string, init?: EngineeringRequestInit): Promise<
   return payload as T;
 }
 
-export function listObjects(resource: string, params: Record<string, string | undefined> = {}) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value) query.set(key, value);
+export async function listObjects(
+  resource: string,
+  params: Record<string, string | undefined> = {},
+) {
+  const pageSize = 500;
+  const items: Record<string, unknown>[] = [];
+  let offset = Number.parseInt(params.offset ?? "0", 10) || 0;
+
+  for (;;) {
+    const query = new URLSearchParams({
+      limit: String(pageSize),
+      offset: String(offset),
+    });
+    for (const [key, value] of Object.entries(params)) {
+      if (value && key !== "limit" && key !== "offset") query.set(key, value);
+    }
+    const page = await request<{ items: Record<string, unknown>[]; count: number }>(
+      `/${resource}?${query.toString()}`,
+    );
+    items.push(...page.items);
+
+    if (page.items.length < pageSize) break;
+    offset += pageSize;
   }
-  const suffix = query.toString();
-  return request<{ items: Record<string, unknown>[]; count: number }>(
-    `/${resource}${suffix ? `?${suffix}` : ""}`,
-  );
+
+  return { items, count: items.length };
 }
 
 export function getObject(resource: string, id: string) {
@@ -229,6 +246,13 @@ export function validateRoutingTable() {
 
 export function inspectWorkflowState() {
   return request<Record<string, unknown>>("/workflow");
+}
+
+export function saveWorkflowContext(context: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/workflow/context", {
+    method: "PATCH",
+    body: JSON.stringify(context),
+  });
 }
 
 export function saveWorkflowTopology(topology: Record<string, unknown>) {

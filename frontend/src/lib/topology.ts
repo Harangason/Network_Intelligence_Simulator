@@ -24,6 +24,20 @@ export type TopologyNode = {
   ports: TopologyPort[];
   engineeringId?: string;
   engineeringFunctionId?: string;
+  systemOwnerId?: string;
+};
+
+export type TopologyRouteMetadata = {
+  routeId: string;
+  routeCode: string;
+  name: string;
+  description?: string | null;
+  source: string;
+  target: string;
+  sourceInterfaceId?: string | null;
+  targetInterfaceId?: string | null;
+  protocol?: string | null;
+  approvalState: string;
 };
 
 export type TopologyEdge = {
@@ -42,6 +56,7 @@ export type TopologyEdge = {
   engineeringRelationId?: string;
   routingEntryId?: string;
   routingEntryIds?: string[];
+  routingMetadata?: Record<string, TopologyRouteMetadata>;
   origin?: "ROUTING_TABLE";
 };
 
@@ -50,6 +65,7 @@ export type TopologySyncResult = {
   nodes: Array<{
     topology_node_id: string;
     engineering_id: string;
+    engineering_name?: string;
     function_id: string;
     interfaces: Array<{ topology_port_id: string; engineering_id: string; engineering_name?: string }>;
   }>;
@@ -91,6 +107,7 @@ export function collapsePhysicalEdges(edges: TopologyEdge[]): TopologyEdge[] {
         engineeringRelationId: current.engineeringRelationId ?? edge.engineeringRelationId,
         routingEntryId: current.routingEntryId ?? edge.routingEntryId,
         routingEntryIds: routeIds,
+        routingMetadata: { ...(current.routingMetadata ?? {}), ...(edge.routingMetadata ?? {}) },
       });
       continue;
     }
@@ -199,19 +216,46 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
     })),
   };
 
-  const communications = topology.edges.map((edge, index) => ({
-    id: `route-${index + 1}-${slug(edge.source)}-${slug(edge.target)}`,
-    source: edge.source,
-    sender_interface: `${edge.sourcePort}-interface`,
-    target: edge.target,
-    receiver_interfaces: [`${edge.targetPort}-interface`],
-    network: `network-${edge.bus}`,
-    technology: edge.bus,
-    cycle_ms: busProfiles[edge.bus].cycleMs,
-    payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
-    routing_entry_id: edge.routingEntryId,
-    routing_entry_ids: edge.routingEntryIds ?? (edge.routingEntryId ? [edge.routingEntryId] : []),
-  }));
+  const nodeByEngineeringId = new Map(
+    topology.nodes.filter((node) => node.engineeringId).map((node) => [node.engineeringId as string, node]),
+  );
+  const communications = topology.edges.flatMap((edge, edgeIndex) => {
+    const metadata = Object.values(edge.routingMetadata ?? {});
+    if (metadata.length === 0) {
+      return [{
+        id: `route-${edgeIndex + 1}-${slug(edge.source)}-${slug(edge.target)}`,
+        source: edge.source,
+        sender_interface: `${edge.sourcePort}-interface`,
+        target: edge.target,
+        receiver_interfaces: [`${edge.targetPort}-interface`],
+        network: `network-${edge.bus}`,
+        technology: edge.bus,
+        cycle_ms: busProfiles[edge.bus].cycleMs,
+        payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
+        routing_entry_id: edge.routingEntryId,
+        routing_entry_ids: edge.routingEntryIds ?? (edge.routingEntryId ? [edge.routingEntryId] : []),
+      }];
+    }
+    return metadata.map((route) => {
+      const sourceNode = nodeByEngineeringId.get(route.source);
+      const targetNode = nodeByEngineeringId.get(route.target);
+      const reversed = sourceNode?.id === edge.target && targetNode?.id === edge.source;
+      return {
+        id: route.routeId,
+        name: route.name,
+        source: sourceNode?.id ?? (reversed ? edge.target : edge.source),
+        sender_interface: `${reversed ? edge.targetPort : edge.sourcePort}-interface`,
+        target: targetNode?.id ?? (reversed ? edge.source : edge.target),
+        receiver_interfaces: [`${reversed ? edge.sourcePort : edge.targetPort}-interface`],
+        network: `network-${edge.bus}`,
+        technology: edge.bus,
+        cycle_ms: busProfiles[edge.bus].cycleMs,
+        payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
+        routing_entry_id: route.routeId,
+        routing_entry_ids: [route.routeId],
+      };
+    });
+  });
 
   return {
     config: {

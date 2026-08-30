@@ -20,6 +20,21 @@ from .calculators import (
 )
 
 
+DEFAULT_PARAMETER_VALUES: dict[str, Any] = {
+    "industry": "automotive",
+    "technology": "can_fd",
+    "formats": ["universal-jsonl", "universal-csv"],
+    "bitrate": 2_000_000,
+    "cycle_ms": 100.0,
+    "payload_bytes": 8,
+    "queue_size": 256,
+    "warning_threshold": 60.0,
+    "critical_threshold": 75.0,
+    "overload_threshold": 90.0,
+    "target_bus_load_percent": 60.0,
+}
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -104,7 +119,11 @@ class CapacityTimingService:
 
     def calculate(self, overrides: dict[str, Any] | None = None, *, persist: bool = True) -> dict[str, Any]:
         state = self.workflow.get()
-        parameters = {**(state.get("parameters") or {}), **(overrides or {})}
+        parameters = {
+            **DEFAULT_PARAMETER_VALUES,
+            **(state.get("parameters") or {}),
+            **(overrides or {}),
+        }
         thresholds = {
             "warning": _number(parameters.get("warning_threshold"), 60.0),
             "critical": _number(parameters.get("critical_threshold"), 75.0),
@@ -354,7 +373,7 @@ class CapacityTimingService:
             ("engineering_model", {"COMPLETE"}),
             ("routing", {"APPROVED"}),
             ("network_editor", {"COMPLETE"}),
-            ("parameters", {"COMPLETE"}),
+            ("parameters", {"APPROVED", "COMPLETE"}),
         ):
             current_status = state["statuses"].get(step)
             if current_status not in accepted:
@@ -367,15 +386,6 @@ class CapacityTimingService:
                         "recommendation": f"Workflow-Schritt {WORKFLOW_LABELS[step]} vervollstaendigen.",
                     }
                 )
-        if not state.get("parameters"):
-            findings.append(
-                {
-                    "severity": "ERROR",
-                    "code": "CAPACITY_PARAMETERS_MISSING",
-                    "message": "Technologie- und Timing-Parameter wurden noch nicht projektweit gespeichert.",
-                    "recommendation": "Workflow-Schritt Parameter vervollstaendigen.",
-                }
-            )
         if not routes:
             findings.append(
                 {
@@ -907,7 +917,7 @@ class PreflightService:
             if node_id not in connected_ids:
                 add("network", "ERROR", "NETWORK_NODE_DISCONNECTED", f"Node {node.get('name') or node_id} ist nicht verbunden.")
 
-        parameters = state.get("parameters") or {}
+        parameters = {**DEFAULT_PARAMETER_VALUES, **(state.get("parameters") or {})}
         if _number(parameters.get("bitrate"), 0.0) <= 0:
             add("parameters", "ERROR", "PARAMETER_BITRATE_MISSING", "Eine positive Bitrate ist erforderlich.")
         if _number(parameters.get("cycle_ms"), 0.0) <= 0:

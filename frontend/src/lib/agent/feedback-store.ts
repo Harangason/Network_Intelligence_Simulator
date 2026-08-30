@@ -1,8 +1,7 @@
 import "server-only";
 
-import { appendFile, mkdir, readFile } from "node:fs/promises";
-import { basename, dirname, resolve } from "node:path";
 import { normalizeAgentProjectId } from "./request-context";
+import { readProgramCache, writeProgramCache } from "../server/program-cache";
 
 export type AgentFeedbackRating = "helpful" | "incorrect" | "failed";
 
@@ -21,19 +20,14 @@ export type AgentFeedbackRecord = {
 const MAX_FIELD_LENGTH = 6000;
 const MAX_CONTEXT_ITEMS = 4;
 const CACHE_TTL_MS = 5000;
+const CACHE_NAMESPACE = "agent-feedback";
+const CACHE_KEY = "history";
+const MAX_CACHE_BYTES = 8_000_000;
 let cachedRecords: AgentFeedbackRecord[] = [];
 let cacheLoadedAt = 0;
 
 function clean(value: unknown, maxLength = MAX_FIELD_LENGTH) {
   return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, maxLength);
-}
-
-function feedbackPath() {
-  const configured = process.env.AGENT_FEEDBACK_FILE?.trim();
-  if (configured) return resolve(configured);
-  const cwd = process.cwd();
-  const repositoryRoot = basename(cwd).toLowerCase() === "frontend" ? dirname(cwd) : cwd;
-  return resolve(repositoryRoot, "backend", "runtime", "agent-learning", "feedback.jsonl");
 }
 
 function isFeedbackRecord(value: unknown): value is AgentFeedbackRecord {
@@ -48,24 +42,10 @@ function isFeedbackRecord(value: unknown): value is AgentFeedbackRecord {
 
 async function readRecords() {
   if (Date.now() - cacheLoadedAt < CACHE_TTL_MS) return cachedRecords;
-  try {
-    const text = await readFile(feedbackPath(), "utf8");
-    cachedRecords = text
-      .split(/\r?\n/)
-      .filter(Boolean)
-      .flatMap((line) => {
-        try {
-          const record = JSON.parse(line) as unknown;
-          return isFeedbackRecord(record) ? [record] : [];
-        } catch {
-          return [];
-        }
-      })
-      .slice(-1000);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    cachedRecords = [];
-  }
+  const entry = await readProgramCache<unknown[]>(CACHE_NAMESPACE, CACHE_KEY);
+  cachedRecords = Array.isArray(entry?.value)
+    ? entry.value.filter(isFeedbackRecord).slice(-1000)
+    : [];
   cacheLoadedAt = Date.now();
   return cachedRecords;
 }
@@ -79,6 +59,7 @@ export async function recordAgentFeedback(input: {
   correction?: unknown;
   error?: unknown;
 }) {
+  await readRecords();
   const record: AgentFeedbackRecord = {
     id: crypto.randomUUID(),
     projectId: normalizeAgentProjectId(input.projectId),
@@ -90,10 +71,8 @@ export async function recordAgentFeedback(input: {
     error: clean(input.error, 1200),
     createdAt: new Date().toISOString(),
   };
-  const path = feedbackPath();
-  await mkdir(dirname(path), { recursive: true });
-  await appendFile(path, `${JSON.stringify(record)}\n`, "utf8");
   cachedRecords = [...cachedRecords, record].slice(-1000);
+  await writeProgramCache(CACHE_NAMESPACE, CACHE_KEY, cachedRecords, MAX_CACHE_BYTES);
   cacheLoadedAt = Date.now();
   return record;
 }

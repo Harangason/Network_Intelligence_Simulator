@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSimulation, listSimulations } from "@/lib/api";
 import type { RuntimeMetrics, SimulationJob } from "@/lib/types";
 import { getWorkflowSnapshots, setWorkflowContext, type AnalysisSnapshot, type SimulationSnapshot } from "@/lib/workflow-api";
+import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 export function ResultsWorkbench() {
   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
@@ -14,16 +15,21 @@ export function ResultsWorkbench() {
   const [compareId, setCompareId] = useState<string>("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    Promise.all([getWorkflowSnapshots(), listSimulations()])
-      .then(async ([workflowSnapshots, simulationJobs]) => {
+  const load = useCallback(async () => {
+    try {
+      const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(), listSimulations()]);
         setSnapshots(workflowSnapshots.simulations);
         setCapacity(workflowSnapshots.capacity);
         setJobs(Object.fromEntries(simulationJobs.map((job) => [job.id, job])));
-        setSelectedId(workflowSnapshots.simulations[0]?.id ?? null);
-      })
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar."));
+        setSelectedId((current) => workflowSnapshots.simulations.some((item) => item.id === current)
+          ? current
+          : workflowSnapshots.simulations[0]?.id ?? null);
+        setError("");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Ergebnisse nicht verfügbar.");
+    }
   }, []);
+  useWorkflowRefresh(load);
 
   const selected = useMemo(() => snapshots.find((item) => item.id === selectedId) ?? null, [selectedId, snapshots]);
 

@@ -5,6 +5,11 @@ import {
   createOptimizationProposal,
   type IntelligenceRecommendation,
 } from "@/lib/workflow-api";
+import {
+  engineeringObjectTypeClass,
+  engineeringObjectTypeLabel,
+  normalizeEngineeringObjectType,
+} from "@/lib/engineering-object-style";
 
 type DataRecord = Record<string, unknown>;
 
@@ -176,12 +181,14 @@ function RecordList({ items }: { items: DataRecord[] }) {
   return (
     <div className="eng-agent-result-list">
       {visible.map((record, index) => {
+        const objectType = normalizeEngineeringObjectType(record.object_type);
         const metadata = META_KEYS
-          .filter((key) => record[key] != null && record[key] !== "")
+          .filter((key) => key !== "object_type" && record[key] != null && record[key] !== "")
           .slice(0, 4)
           .map((key) => `${labelFor(key)}: ${formatScalar(record[key])}`);
         return (
-          <article key={String(record.id ?? record.proposal_id ?? record.route_code ?? index)}>
+          <article className={objectType ? `eng-object-surface ${engineeringObjectTypeClass(objectType)}` : undefined} key={String(record.id ?? record.proposal_id ?? record.route_code ?? index)}>
+            {objectType && <span className={`eng-object-badge ${engineeringObjectTypeClass(objectType)}`}>{engineeringObjectTypeLabel(objectType)}</span>}
             <strong>{recordTitle(record, index)}</strong>
             {recordDescription(record) && <p>{recordDescription(record)}</p>}
             {metadata.length > 0 && <span>{metadata.join(" · ")}</span>}
@@ -225,7 +232,7 @@ function ValueSection({ name, value, depth = 0 }: { name: string; value: unknown
       {scalarEntries.length > 0 && (
         <dl className="eng-agent-result-grid">
           {scalarEntries.slice(0, 14).map(([key, item]) => (
-            <div key={key}><dt>{labelFor(key)}</dt><dd>{formatScalar(item)}</dd></div>
+            <div key={key}><dt>{labelFor(key)}</dt><dd className={key === "object_type" ? `eng-object-badge ${engineeringObjectTypeClass(item)}` : undefined}>{key === "object_type" ? engineeringObjectTypeLabel(item) : formatScalar(item)}</dd></div>
           ))}
         </dl>
       )}

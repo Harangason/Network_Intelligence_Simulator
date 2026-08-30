@@ -522,7 +522,9 @@ def test_graph_publication_uses_project_scoped_relation_conflict_key():
         "test",
     )
 
-    assert "ON CONFLICT (project_id, relation_type" in connection.queries[0]
+    assert connection.queries[0].startswith("DELETE FROM engineering_relations")
+    assert "attributes ->> 'route_id'" in connection.queries[0]
+    assert any("ON CONFLICT (project_id, relation_type" in query for query in connection.queries)
 
 
 def test_generation_reuses_canonical_interfaces_protocol_and_message_cycle(monkeypatch):

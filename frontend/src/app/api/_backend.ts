@@ -8,9 +8,14 @@ export async function proxyBackend(path: string, init?: RequestInit): Promise<Re
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });
+    const headers = new Headers({
+      "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+    });
+    const disposition = response.headers.get("Content-Disposition");
+    if (disposition) headers.set("Content-Disposition", disposition);
     return new Response(await response.arrayBuffer(), {
       status: response.status,
-      headers: { "Content-Type": response.headers.get("Content-Type") ?? "application/json" },
+      headers,
     });
   } catch {
     return null;

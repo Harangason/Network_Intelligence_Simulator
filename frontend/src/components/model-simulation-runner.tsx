@@ -16,6 +16,7 @@ import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type Simulat
 import type { ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 type SimulationView = "network" | "signals" | "load" | "events";
 type ScenarioFault = {
@@ -61,9 +62,14 @@ export function ModelSimulationRunner() {
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
 
-  useEffect(() => {
-    void getWorkflow().then(setWorkflow).catch((caught) => setError(caught instanceof Error ? caught.message : "Workflow nicht verfügbar."));
+  const loadWorkflow = useCallback(async () => {
+    try {
+      setWorkflow(await getWorkflow());
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Workflow nicht verfügbar.");
+    }
   }, []);
+  useWorkflowRefresh(loadWorkflow);
 
   useEffect(() => {
     if (!workflow?.project_id) return;

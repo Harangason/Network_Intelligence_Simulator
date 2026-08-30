@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  getWorkflow,
+  getWorkflowSummary,
   type WorkflowState,
   type WorkflowStatus,
   type WorkflowStep,
@@ -99,7 +99,7 @@ export function WorkflowStatusOverview({ compact = false }: { compact?: boolean 
   const [error, setError] = useState("");
 
   const refresh = useCallback(() => {
-    getWorkflow()
+    getWorkflowSummary()
       .then((state) => {
         setWorkflow(state);
         setError("");
