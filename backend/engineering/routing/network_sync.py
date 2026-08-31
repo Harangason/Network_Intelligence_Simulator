@@ -12,6 +12,7 @@ from psycopg.types.json import Jsonb
 
 from ..db import get_connection
 from ..project_context import activate_project
+from ..physical_segments import physical_port_networks
 from .models import normalize_route
 from .repository import _audit, _insert_route, _route_code
 from .validation import RoutingValidator
@@ -61,12 +62,16 @@ def _edge_route_ids(edge: dict[str, Any]) -> set[str]:
 def enrich_route_from_linked_topology(
     route: dict[str, Any],
     topology: dict[str, Any],
+    port_networks: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Project physical bus and port assignments back into one logical route."""
     route_id = str(route.get("id") or "").strip()
     if not route_id:
         return deepcopy(route)
     nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
+    if port_networks is None:
+        port_networks = physical_port_networks(topology)
+    nodes_by_id = {str(node.get("id")): node for node in nodes if isinstance(node, dict)}
     edges = topology.get("edges") if isinstance(topology.get("edges"), list) else []
     topology_by_engineering_id = {
         _engineering_id(node): str(node.get("id"))
@@ -107,7 +112,8 @@ def enrich_route_from_linked_topology(
         return {
             **endpoint,
             "port_id": port_id or endpoint.get("port_id"),
-            "network_id": f"network-{bus}",
+            "interface_id": _port(nodes_by_id.get(topology_id, {}), port_id).get("engineeringId") or endpoint.get("interface_id"),
+            "network_id": port_networks.get(port_id, f"network-{bus}"),
         }
 
     enriched = deepcopy(route)
@@ -139,6 +145,7 @@ def reconcile_linked_routes(
         return []
 
     reconciled: list[dict[str, Any]] = []
+    port_networks = physical_port_networks(topology)
     validator = RoutingValidator(project_id)
     with get_connection() as connection:
         rows = connection.execute(
@@ -147,7 +154,7 @@ def reconcile_linked_routes(
             (route_ids, project_id),
         ).fetchall()
         for current in rows:
-            enriched = enrich_route_from_linked_topology(current, topology)
+            enriched = enrich_route_from_linked_topology(current, topology, port_networks)
             validation = validator.validate(enriched, exclude_route_id=str(current["id"]))
             current_validation = {
                 key: value
@@ -198,6 +205,7 @@ def build_network_route_candidates(
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     """Build one deterministic proposal per directed producer-to-consumer path."""
     raw_nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
+    port_networks = physical_port_networks(topology)
     raw_edges = topology.get("edges") if isinstance(topology.get("edges"), list) else []
     nodes = {
         str(node.get("id")): node
@@ -308,7 +316,7 @@ def build_network_route_candidates(
                     "node_id": _engineering_id(source_node),
                     "port_id": str(source_port.get("id") or "") or None,
                     "interface_id": str(source_port.get("engineeringId") or source_port.get("engineering_id") or "") or None,
-                    "network_id": f"network-{buses[0]}",
+                    "network_id": port_networks.get(str(source_port.get("id")), f"network-{buses[0]}"),
                     "protocol": protocol,
                 },
                 "payload": {
@@ -323,7 +331,7 @@ def build_network_route_candidates(
                         "node_id": _engineering_id(target_node),
                         "port_id": str(target_port.get("id") or "") or None,
                         "interface_id": str(target_port.get("engineeringId") or target_port.get("engineering_id") or "") or None,
-                        "network_id": f"network-{buses[-1]}",
+                        "network_id": port_networks.get(str(target_port.get("id")), f"network-{buses[-1]}"),
                         "protocol": target_protocol,
                     }
                 ],

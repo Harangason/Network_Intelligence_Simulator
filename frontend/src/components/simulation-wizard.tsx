@@ -21,12 +21,21 @@ import {
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters, saveWorkflowTopology } from "@/lib/workflow-api";
 import {
+  defaultSimulationFormats,
+  groupSimulationFormats,
+  mergeSimulationFormats,
+} from "@/lib/simulation-formats";
+import {
   notifyWorkflowChanged,
   notifyWorkflowDraftStatus,
   WORKFLOW_CHANGED_EVENT,
 } from "./workflow-header";
 
-const universalFormats = ["universal-jsonl", "universal-csv"];
+const parameterNavItems = [
+  ["parameter-technology", "Technologie"],
+  ["parameter-values", "Parameter"],
+  ["parameter-formats", "Ausgabeformate"],
+] as const;
 const busLoadRangeKeys = new Set([
   "target_bus_load_percent",
   "warning_threshold",
@@ -436,7 +445,7 @@ export function SimulationWizard({
   const [catalogError, setCatalogError] = useState("");
   const [domainId, setDomainId] = useState("automotive");
   const [technologyId, setTechnologyId] = useState("can_fd");
-  const [formats, setFormats] = useState<string[]>(universalFormats);
+  const [formats, setFormats] = useState<string[]>(defaultSimulationFormats);
   const [advanced, setAdvanced] = useState(false);
   const [advancedConfig, setAdvancedConfig] = useState(
     '{\n  "name": "custom_simulation",\n  "duration_s": 1,\n  "formats": ["universal-jsonl"]\n}',
@@ -663,11 +672,10 @@ export function SimulationWizard({
   );
   const availableFormats = useMemo(
     () =>
-      Array.from(
-        new Set([...universalFormats, ...(technology?.native_formats ?? [])]),
-      ),
-    [technology],
+      mergeSimulationFormats(catalog.formats, technology?.native_formats, defaultSimulationFormats),
+    [catalog.formats, technology],
   );
+  const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
   const parameterGroups = useMemo(() => {
     const groups = new Map<TechnologyParameterField["category"], TechnologyParameterField[]>();
     for (const field of technology?.parameter_schema ?? []) {
@@ -693,13 +701,13 @@ export function SimulationWizard({
     const nextTechnology = nextDomain?.technologies?.[0];
     if (nextTechnology) {
       setTechnologyId(nextTechnology.id);
-      setFormats(universalFormats);
+      setFormats(defaultSimulationFormats);
     }
   }
 
   function chooseTechnology(value: string) {
     setTechnologyId(value);
-    setFormats(universalFormats);
+    setFormats(defaultSimulationFormats);
   }
 
   function toggleFormat(format: string) {
@@ -962,7 +970,7 @@ export function SimulationWizard({
                 <strong>{topology.nodes.length} Geräte · {topology.edges.length} Verbindungen</strong>
               </div>
               <div className="format-inline">
-                {universalFormats.map((format) => (
+                {defaultSimulationFormats.map((format) => (
                   <label key={format}>
                     <input checked={formats.includes(format)} onChange={() => toggleFormat(format)} type="checkbox" />
                     {format.replace("universal-", "").toUpperCase()}
@@ -987,7 +995,13 @@ export function SimulationWizard({
           </div>
         ) : (
           <>
-            <div className="section-title">
+            <nav aria-label="Parameter-Abschnitte" className="parameter-section-nav">
+              {parameterNavItems.map(([id, label]) => (
+                <a href={`#${id}`} key={id}>{label}</a>
+              ))}
+            </nav>
+
+            <div className="section-title" id="parameter-technology">
               <span>01</span>
               Technologie
             </div>
@@ -1024,7 +1038,7 @@ export function SimulationWizard({
 
             <TechnologyCard technology={technology} />
 
-            <div className="section-title">
+            <div className="section-title" id="parameter-values">
               <span>02</span>
               Technologie- und Timing-Parameter
             </div>
@@ -1053,26 +1067,31 @@ export function SimulationWizard({
               ))}
             </div>
 
-            <div className="section-title">
+            <div className="section-title" id="parameter-formats">
               <span>03</span>
               Ausgabeformate
             </div>
-            <div className="format-grid">
-              {availableFormats.map((format) => (
-                <label
-                  className={`format-option ${formats.includes(format) ? "selected" : ""}`}
-                  key={format}
-                >
-                  <input
-                    checked={formats.includes(format)}
-                    onChange={() => toggleFormat(format)}
-                    type="checkbox"
-                  />
-                  <span>{format}</span>
-                  <small>
-                    {format.startsWith("universal") ? "Universell" : "Nativ"}
-                  </small>
-                </label>
+            <div className="format-groups">
+              {formatGroups.map((group) => (
+                <section className="format-group" key={group.id}>
+                  <h3>{group.label}</h3>
+                  <div className="format-grid">
+                    {group.formats.map((format) => (
+                      <label
+                        className={`format-option ${formats.includes(format.id) ? "selected" : ""}`}
+                        key={format.id}
+                      >
+                        <input
+                          checked={formats.includes(format.id)}
+                          onChange={() => toggleFormat(format.id)}
+                          type="checkbox"
+                        />
+                        <span>{format.id}</span>
+                        <small>{format.description}</small>
+                      </label>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           </>

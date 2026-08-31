@@ -99,6 +99,97 @@ def test_xlsx_preview_reads_first_worksheet() -> None:
     assert plan["signals"][0]["name"] == "DoorOpen"
 
 
+def test_arxml_preview_extracts_typical_engineering_objects() -> None:
+    content = b"""<?xml version="1.0" encoding="UTF-8"?>
+<AUTOSAR>
+  <AR-PACKAGES>
+    <AR-PACKAGE>
+      <SHORT-NAME>Vehicle</SHORT-NAME>
+      <ELEMENTS>
+        <ECU-INSTANCE><SHORT-NAME>BodyGateway</SHORT-NAME></ECU-INSTANCE>
+        <CAN-CLUSTER><SHORT-NAME>ComfortCAN</SHORT-NAME></CAN-CLUSTER>
+        <CAN-FRAME><SHORT-NAME>DoorStatusFrame</SHORT-NAME></CAN-FRAME>
+        <I-SIGNAL><SHORT-NAME>DoorOpen</SHORT-NAME></I-SIGNAL>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>
+"""
+
+    plan = preview_import("vehicle.arxml", content)
+
+    assert plan["format"] == "arxml"
+    assert plan["counts"]["hardware_nodes"] == 1
+    assert plan["counts"]["interfaces"] == 1
+    assert plan["counts"]["messages"] == 1
+    assert plan["counts"]["signals"] == 1
+    assert plan["hardware_nodes"][0]["device_type"] == "Gateway"
+    assert plan["interfaces"][0]["interface_type"] == "CAN"
+    assert plan["messages"][0]["name"] == "DoorStatusFrame"
+    assert plan["signals"][0]["name"] == "DoorOpen"
+
+
+def test_yaml_preview_detects_industry_device_collections() -> None:
+    content = b"""
+industry: industrial
+devices:
+  - name: ProfinetController
+    kind: ecu
+networks:
+  - name: ProfinetLine
+    technology: ethernet
+messages:
+  - name: ConveyorStatus
+signals:
+  - name: MotorCurrent
+    length_bits: 16
+"""
+
+    plan = preview_import("factory.yaml", content)
+
+    assert plan["format"] == "yaml"
+    assert plan["counts"]["hardware_nodes"] == 1
+    assert plan["counts"]["messages"] == 1
+    assert plan["counts"]["signals"] == 1
+    assert plan["interfaces"][0]["interface_type"] == "Ethernet"
+
+
+def test_json_preview_supports_generic_model_records() -> None:
+    content = b"""[
+  {
+    "domain": "rail",
+    "hardware": "DoorController",
+    "device_type": "ECU",
+    "interface": "TRDP",
+    "protocol": "Ethernet",
+    "message": "DoorCommand",
+    "signal": "OpenRequest"
+  }
+]"""
+
+    plan = preview_import("rail-model.json", content)
+
+    assert plan["format"] == "json"
+    assert plan["hardware_nodes"][0]["domain"] == "rail"
+    assert plan["interfaces"][0]["interface_type"] == "Ethernet"
+    assert plan["messages"][0]["name"] == "DoorCommand"
+    assert plan["signals"][0]["name"] == "OpenRequest"
+
+
+def test_text_trace_preview_imports_frame_messages() -> None:
+    content = b"""
+   0.000001 1 18FF50E5x Rx d 8 01 02 03 04 05 06 07 08
+   0.010000 CAN_ID=0x123 DLC=4 00 01 02 03
+"""
+
+    plan = preview_import("machine.asc", content)
+
+    assert plan["format"] == "asc"
+    assert plan["counts"]["hardware_nodes"] == 1
+    assert plan["counts"]["messages"] == 2
+    assert {message["message_id_hex"] for message in plan["messages"]} == {"0x18FF50E5", "0x123"}
+
+
 def test_preview_rejects_legacy_binary_excel() -> None:
     with pytest.raises(EngineeringValidationError, match="Unterstützt"):
         preview_import("legacy.xls", b"legacy")

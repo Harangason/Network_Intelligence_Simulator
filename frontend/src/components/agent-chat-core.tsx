@@ -23,11 +23,15 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
+import { agentBuildProgressPercent, agentRunIsActive, readAgentRunStatus } from "@/lib/agent-run-status";
+import { parameterProgressTarget, symbolicProgressAt } from "@/lib/wizard-progress";
+import { extractEngineeringSpecification, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { inspectAgentText } from "@/lib/agent/agent-output-safety";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
+import { listAllEngineeringObjects } from "@/lib/engineering-api";
 import { approveRoutes, listRoutes } from "@/lib/routing-api";
 import { routingApprovalProgress } from "@/lib/routing-approval";
-import type { EngineeringResource, RoutingEntry, TechnologyDomain } from "@/lib/types";
+import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
 import { readActiveProjectId } from "@/lib/user-settings";
 import {
   createOptimizationProposal,
@@ -43,6 +47,14 @@ import { AgentToolResult } from "./agent-tool-result";
 import { WorkloadProgress } from "./workload-progress";
 
 const MAX_AUTOMATIC_RUNS_WITHOUT_PROGRESS = 2;
+const EQUIPMENT_CATEGORIES = [
+  { key: "gateways", label: "Gateways", type: "Gateway" },
+  { key: "ecus", label: "ECUs", type: "ECU" },
+  { key: "sensors", label: "Sensoren", type: "SensorController" },
+  { key: "actuators", label: "Aktoren", type: "ActuatorController" },
+] as const;
+
+const WIZARD_STATUS_INDEX = 7;
 
 function agentHistoryRevision(messages: EngineeringAgentUIMessage[]) {
   const lastMessage = messages.at(-1);
@@ -127,6 +139,7 @@ export function AgentChatCore({
     try {
       if (task.workflowTarget) {
         const workflow = await getWorkflow();
+        if (workflow.context.agent_wizard_status) return;
         const progress = engineeringAgentWorkflowProgress(task, workflow.statuses, workflow.versions);
         if (progress.complete) {
           clearPendingEngineeringAgentTask(activeProjectId);
@@ -634,6 +647,7 @@ type AgentWizardContext = {
   scope_ids: string[];
   task: string;
   technologies: string[];
+  communication_system_counts?: Array<{ id: string; label: string; recognized: number; count: number }>;
 };
 
 function restoredWizardContext(value: unknown, projectId: string): AgentWizardContext | null {
@@ -681,6 +695,17 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     scope_ids: strings("scope_ids"),
     task: String(context.task ?? "Engineering-Auftrag"),
     technologies: strings("technologies"),
+    communication_system_counts: Array.isArray(context.communication_system_counts)
+      ? context.communication_system_counts
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          id: String(item.id ?? ""),
+          label: String(item.label ?? item.id ?? ""),
+          recognized: Number(item.recognized ?? 0),
+          count: Number(item.count ?? 0),
+        }))
+        .filter((item) => item.id && item.label && Number.isFinite(item.count))
+      : undefined,
   };
 }
 
@@ -734,6 +759,13 @@ const WORKFLOW_STATUS_LABEL: Record<WorkflowStatus, string> = {
   OUTDATED: "Veraltet",
 };
 
+type WorkflowDisplayStatus = WorkflowStatus | "BLOCKED";
+
+const WORKFLOW_DISPLAY_STATUS_LABEL: Record<WorkflowDisplayStatus, string> = {
+  ...WORKFLOW_STATUS_LABEL,
+  BLOCKED: "Angehalten",
+};
+
 const WORKFLOW_STEP_HREF: Record<WorkflowStepId, string> = {
   engineering_model: "/studio/engineering",
   routing: "/studio/routing",
@@ -748,6 +780,44 @@ const WORKFLOW_STEP_HREF: Record<WorkflowStepId, string> = {
 
 function wizardStepProgress(status: WorkflowStatus) {
   return WORKFLOW_PROGRESS_BY_STATUS[status];
+}
+
+function useSymbolicParameterProgress(runId: string, target: number) {
+  const [progress, setProgress] = useState(0);
+  const current = useRef({ runId, value: 0 });
+
+  useEffect(() => {
+    if (current.current.runId !== runId) current.current = { runId, value: 0 };
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const from = current.current.value;
+    const started = window.performance.now();
+    let frame = 0;
+    const update = (value: number) => {
+      current.current.value = value;
+      setProgress(value);
+    };
+    const tick = (now: number) => {
+      update(symbolicProgressAt(from, target, now - started));
+      if (now - started < 1600) frame = window.requestAnimationFrame(tick);
+    };
+    const finish = () => {
+      if (!motion.matches) return;
+      window.cancelAnimationFrame(frame);
+      update(target);
+    };
+    if (motion.matches || from === target) update(target);
+    else {
+      update(from);
+      frame = window.requestAnimationFrame(tick);
+    }
+    motion.addEventListener("change", finish);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      motion.removeEventListener("change", finish);
+    };
+  }, [runId, target]);
+
+  return progress;
 }
 
 async function writeWizardDiagnostic(
@@ -789,6 +859,7 @@ function latestWizardQuestion(messages: EngineeringAgentUIMessage[], runId: stri
     const blocked = text.match(/Automatische Fortsetzung bei\s+(.+?)\s+gestoppt:\s*(.+)/i);
     if (blocked) {
       const reason = blocked[2].replace(/\s+/g, " ").trim().slice(0, 420);
+      if (/timeout|zeitlimit|aborted|nicht erreichbar|fetch failed/i.test(reason)) return null;
       const question = `${reason} Welche technische Vorgabe soll für ${blocked[1].trim()} verwendet werden?`;
       return { key: `${message.id}:${question}`, text: question };
     }
@@ -823,7 +894,7 @@ export function EngineeringAgentWizard({
   const [step, setStep] = useState(0);
   const [selectedIndustry, setSelectedIndustry] = useState("automotive");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
-  const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("");
+  const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("gateway_direct");
   const [architectureApproved, setArchitectureApproved] = useState(false);
   const [architectureAiProposal, setArchitectureAiProposal] = useState("");
   const [scope, setScope] = useState<string[]>(SCOPE_GROUP.options.map((option) => option.id));
@@ -838,6 +909,17 @@ export function EngineeringAgentWizard({
   const [notes, setNotes] = useState("");
   const [taskText, setTaskText] = useState("");
   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
+  const [equipmentEdits, setEquipmentEdits] = useState<{ source: string; values: Partial<Record<keyof EngineeringHardwareCounts, string>> }>({ source: "", values: {} });
+  const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
+  const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+  const recognizedEquipment = useMemo(() => extractEngineeringSpecification(taskSource), [taskSource]);
+  const equipmentValues = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key,
+    equipmentEdits.source === taskSource && equipmentEdits.values[key] !== undefined
+      ? equipmentEdits.values[key] : String(recognizedEquipment.targetCounts[key]),
+  ])) as Record<keyof EngineeringHardwareCounts, string>;
+  const equipmentReady = Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
+    && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
+  const equipmentCounts = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key, Number(equipmentValues[key])])) as EngineeringHardwareCounts;
   const [projectId] = useState(() => readActiveProjectId());
   const wizardTransport = useMemo(
     () => new DefaultChatTransport({
@@ -862,12 +944,14 @@ export function EngineeringAgentWizard({
   const [submittedContext, setSubmittedContext] = useState<AgentWizardContext | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
+  const [hardwareItems, setHardwareItems] = useState<EngineeringObject[]>([]);
   const [routingReviewBusy, setRoutingReviewBusy] = useState(false);
   const [supplementOpen, setSupplementOpen] = useState(false);
   const [supplementText, setSupplementText] = useState("");
   const [supplementBusy, setSupplementBusy] = useState(false);
   const [performance, setPerformance] = useState<AgentPerformanceSample | null>(null);
   const [statusError, setStatusError] = useState("");
+  const [statusRefreshError, setStatusRefreshError] = useState("");
   const [inlineAnswer, setInlineAnswer] = useState("");
   const [answeredQuestionKey, setAnsweredQuestionKey] = useState("");
   const workflowSignatureRef = useRef("");
@@ -915,7 +999,7 @@ export function EngineeringAgentWizard({
       setTaskText(restored.task);
       setSubmittedAt(0);
       setPhase("status");
-      setStep(6);
+      setStep(WIZARD_STATUS_INDEX);
       void writeWizardDiagnostic("workflow", {
         projectId,
         runId: restored.run_id,
@@ -942,16 +1026,20 @@ export function EngineeringAgentWizard({
   useEffect(() => {
     if (phase !== "status" || !runId) return;
     let active = true;
+    let refreshing = false;
     const refreshStatus = async () => {
+      if (refreshing) return;
+      refreshing = true;
       try {
         const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflow(), listRoutes()]);
         if (!active) return;
         setWorkflow(nextWorkflow);
         setRoutingEntries(nextRoutes);
+        setStatusRefreshError("");
       } catch (error) {
         if (!active) return;
         const message = error instanceof Error ? error.message : "Status konnte nicht geladen werden.";
-        setStatusError(message);
+        setStatusRefreshError(message);
         void writeWizardDiagnostic("error", {
           projectId,
           runId,
@@ -959,6 +1047,8 @@ export function EngineeringAgentWizard({
           event: "status-refresh-failed",
           details: message,
         }).catch(() => undefined);
+      } finally {
+        refreshing = false;
       }
     };
     const handleWorkflowChanged = () => void refreshStatus();
@@ -1016,12 +1106,30 @@ export function EngineeringAgentWizard({
   );
   const currentRunMessages = useMemo(() => {
     if (!runId) return [];
-    const requestIndex = wizardMessages.findIndex((message) => (
+    const requestIndex = wizardMessages.findLastIndex((message) => (
       message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
     ));
     return requestIndex >= 0 ? wizardMessages.slice(requestIndex) : [];
   }, [runId, wizardMessages]);
-  const agentPending = wizardAgentStatus === "submitted" || wizardAgentStatus === "streaming";
+  const execution = readAgentRunStatus(workflow?.context?.agent_execution, runId);
+  const transportPending = wizardAgentStatus === "submitted" || wizardAgentStatus === "streaming";
+  const agentPending = transportPending || agentRunIsActive(execution);
+  const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
+  const displayedStatusError = statusError || statusRefreshError;
+  const parameterTool = currentRunMessages.flatMap((message) => message.parts).findLast((part) => (
+    part.type === "tool-configure_workflow_parameters"
+    || (part.type === "dynamic-tool" && part.toolName === "configure_workflow_parameters")
+  ));
+  const parameterToolState = parameterTool && "state" in parameterTool ? parameterTool.state : undefined;
+  const parametersConfigured = Object.keys(workflow?.parameters ?? {}).length > 0;
+  const parameterStatus = workflow?.steps.find((item) => item.id === "parameters")?.status ?? "EMPTY";
+  const parameterProgress = useSymbolicParameterProgress(runId, parameterProgressTarget(
+    parametersConfigured,
+    parameterToolState,
+    wizardStepProgress(parameterStatus),
+  ));
+  const parametersWorking = transportPending
+    && (parameterToolState === "input-streaming" || parameterToolState === "input-available");
 
   useEffect(() => {
     if (phase !== "status" || !workflow || !runId) return;
@@ -1114,6 +1222,25 @@ export function EngineeringAgentWizard({
       value: `${technologyLabel(technology.id, technology.family)} (${technology.id})`,
     })),
   }), [technologyChoices]);
+  const communicationSystemSource = [
+    taskSource,
+    selectedIndustry,
+    selectedTechnologies.join("|"),
+    recognizedEquipment.communicationSystems.join("|"),
+  ].join("\n");
+  const communicationSystemRows = useMemo(() => communicationSystemInputRows({
+    edits: communicationSystemEdits.source === communicationSystemSource ? communicationSystemEdits.values : {},
+    recognizedSystems: recognizedEquipment.communicationSystems,
+    selectedTechnologyIds: selectedTechnologies,
+    technologies: technologyChoices,
+  }), [communicationSystemEdits, communicationSystemSource, recognizedEquipment.communicationSystems, selectedTechnologies, technologyChoices]);
+  const communicationSystemReady = communicationSystemRows.every((row) => /^\d+$/.test(row.value) && Number(row.value) <= 1000);
+  const communicationSystemCounts = communicationSystemRows.map((row) => ({
+    id: row.id,
+    label: row.label,
+    recognized: row.recognized,
+    count: Number(row.value),
+  }));
 
   const questionnaireSteps = [
     ...(mode === "full" ? [{ id: "industry", label: "Industrie" }] : []),
@@ -1123,10 +1250,9 @@ export function EngineeringAgentWizard({
     { id: "scope", label: "Umfang" },
     { id: "process", label: "Arbeitsweise" },
     { id: "task", label: "Aufgabe" },
+    { id: "equipment", label: "Geräteumfang" },
   ];
-  const visibleSteps = phase === "status"
-    ? [...questionnaireSteps, { id: "status", label: "Statusübersicht" }]
-    : questionnaireSteps;
+  const visibleSteps = [...questionnaireSteps, { id: "status", label: "Statusübersicht" }];
   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
   const effectiveBusy = busy || submitting;
@@ -1183,7 +1309,7 @@ export function EngineeringAgentWizard({
   }
 
   async function submitQuestionnaire() {
-    if (!taskReady || !architectureReady || !selectedArchitecture || submitting) return;
+    if (!taskReady || !equipmentReady || !architectureReady || !selectedArchitecture || submitting) return;
     setSubmitting(true);
     setStatusError("");
     const selectedTechnologyValues = technologyGroup.options
@@ -1223,6 +1349,7 @@ export function EngineeringAgentWizard({
       scope_ids: scope,
       task: taskText.trim() || "Aufgabe wurde als Datei übergeben.",
       technologies: selectedTechnologyValues,
+      communication_system_counts: communicationSystemCounts,
     };
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
@@ -1231,10 +1358,12 @@ export function EngineeringAgentWizard({
         `- Abfrage-Modus: ${mode === "can" ? "reduziert fuer CAN/CAN-FD" : "vollstaendig"}\n` +
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
         `- Netzwerktechnologien: ${selectedTechnologyValues.length ? selectedTechnologyValues.join("; ") : "nicht vorgegeben, passende Technologien aus der gewaehlten Industrie verwenden"}\n` +
+        `- Kommunikationssystem-Sollwerte: ${JSON.stringify(communicationSystemCounts)}\n` +
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
         `- Netzarchitektur-Freigabe: explizit durch den Nutzer erteilt am ${confirmedAt}\n` +
+        `- Hardware-Sollwerte: ${JSON.stringify(equipmentCounts)}\n` +
         `${architectureAiProposal.trim() ? `- KI-Architekturvorgabe: ${architectureAiProposal.trim()}\n` : ""}` +
         `- Parameter: ${parameterSummary}\n` +
         `- Workflowumfang: ${selectedScopeValues.length ? selectedScopeValues.join("; ") : "nicht vorgegeben, Ziel aus Nutzeranfrage ableiten"}\n` +
@@ -1318,6 +1447,7 @@ export function EngineeringAgentWizard({
   }
 
   async function finishWizard() {
+    if (agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused) return;
     try {
       await setWorkflowContext({ agent_wizard_status: null });
     } catch (error) {
@@ -1393,18 +1523,31 @@ export function EngineeringAgentWizard({
     if (agentPending || !runId) return;
     const originalPrompt = currentRunMessages
       .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
-    const prompt = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
+    const originalText = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
+    const modelComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
+    const workflowTarget = modelComplete && routingReview.complete
+      ? [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
+      : undefined;
+    const prompt = workflowTarget
+      ? `Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`
+      : [
+        "Fortsetzung-Freigabe: Der Nutzer hat im Popup ausdrücklich Auftrag fortsetzen gewählt.",
+        `Lauf-ID: ${runId}.`,
+        "Wenn nach der Nachbearbeitung weiterhin reine Soll/Ist-Abweichungen im Geräteumfang bestehen, dokumentiere die fehlenden Teilnehmer im Wizard-Kontext und arbeite genau einmal weiter. Bei technischen Anlagefehlern stoppen. Keine automatische Endlosschleife.",
+        "",
+        originalText,
+      ].join("\n");
     if (!prompt) return;
     setStatusError("");
     await writeWizardDiagnostic("workflow", {
       projectId,
       runId,
       step: "agent-start",
-      event: "popup-agent-restarted",
-      details: "Der Auftrag wurde nach einem beendeten Lauf ohne Workflowfortschritt erneut gestartet.",
+      event: "popup-agent-resumed",
+      details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
     }).catch(() => undefined);
     try {
-      await sendWizardMessage({ text: prompt });
+      await sendWizardMessage({ text: prompt }, workflowTarget ? { body: { workflowTarget } } : undefined);
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Der Popup-Agent konnte nicht erneut gestartet werden.";
       setStatusError(agentErrorText(rawMessage));
@@ -1505,64 +1648,96 @@ export function EngineeringAgentWizard({
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
   const primaryDisabled = effectiveBusy
-    || (atLastStep && !taskReady)
+    || (atLastStep && (!taskReady || !equipmentReady || !communicationSystemReady))
+    || (activeStepId === "task" && !taskReady)
     || (activeStepId === "architecture" && !architectureReady);
   const visibleQuestion = currentQuestion?.key === answeredQuestionKey ? null : currentQuestion;
   const persistedStatusRows = SCOPE_GROUP.options.map((option, index) => {
     const workflowStepId = option.id as WorkflowStepId;
     const workflowStep = workflow?.steps.find((item) => item.id === workflowStepId);
-    const status = workflowStep?.status ?? "EMPTY";
+    const blocked = execution?.step === workflowStepId && execution.state === "BLOCKED";
+    const staleRunning = execution?.step === workflowStepId && execution.state === "RUNNING" && executionStopped;
+    const building = execution?.step === workflowStepId && (execution.state === "RUNNING" || blocked);
+    const awaitingReview = execution?.step === workflowStepId && execution.state === "REVIEW_REQUIRED"
+      && workflowStep?.status === "IN_PROGRESS";
+    const workflowStatus: WorkflowStatus = staleRunning
+      ? "ERROR"
+      : workflowStep?.status ?? "EMPTY";
+    const displayStatus: WorkflowDisplayStatus = blocked ? "BLOCKED" : workflowStatus;
     return {
+      displayStatus,
       id: workflowStepId,
       label: option.label.replace(/^\d+\s+/, ""),
       position: index + 1,
-      progress: wizardStepProgress(status),
+      progress: building ? Math.min(99, agentBuildProgressPercent(execution)) : awaitingReview ? 99 : wizardStepProgress(workflowStatus),
       selected: submittedContext?.scope_ids.includes(workflowStepId) ?? scope.includes(workflowStepId),
-      status,
+      status: workflowStatus,
     };
   });
   const activeStatusIndex = agentPending
-    ? persistedStatusRows.findIndex((item) => item.selected && item.progress < 100)
+    ? persistedStatusRows.findIndex((item) => parametersWorking ? item.id === "parameters"
+      : execution?.state === "RUNNING" ? item.id === execution.step : item.selected && item.progress < 100)
     : -1;
   const statusRows = persistedStatusRows.map((item, index) => {
     const active = index === activeStatusIndex;
-    const workflowProgress = active ? Math.max(15, item.progress) : item.progress;
+    const workflowProgress = active && execution?.state !== "RUNNING" ? Math.max(15, item.progress) : item.progress;
     return {
       ...item,
       active,
-      progress: item.id === "parameters" ? 0 : workflowProgress,
+      progress: item.id === "parameters" ? parameterProgress : workflowProgress,
     };
   });
   const overallProgress = Math.round(statusRows.reduce((sum, item) => sum + item.progress, 0) / statusRows.length);
   const workflowHasProgress = persistedStatusRows.some((item) => item.progress > 0);
-  const currentStatusStep = statusRows.find((item) => item.progress < 100)?.label ?? "Abgeschlossen";
+  const currentStatusStep = statusRows.find((item) => item.active || (executionStopped && item.id === execution?.step))?.label
+    ?? persistedStatusRows.find((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status))?.label ?? "Abgeschlossen";
   const activeModel = performance?.ollama[0]?.name ?? "Kein Modell geladen";
   const hasResumablePrompt = currentRunMessages.some((message) => (
     message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
   )) || Boolean(submittedContext?.agent_prompt?.trim());
-  const canRetryPopupRun = !agentPending
-    && hasResumablePrompt
-    && persistedStatusRows.some((item) => item.selected && item.progress < 100);
-  const routingReviewPending = !agentPending
-    && persistedStatusRows.find((item) => item.id === "routing")?.status === "IN_PROGRESS";
   const routingReview = routingApprovalProgress(routingEntries);
+  const routingReviewPending = !agentPending
+    && !executionStopped && !routingReview.complete
+    && (routingReview.total > 0 || execution?.state === "REVIEW_REQUIRED");
+  const runPaused = !agentPending && !routingReviewPending
+    && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
+  const canRetryPopupRun = runPaused && hasResumablePrompt;
+  const lastAssistantText = [...currentRunMessages].reverse()
+    .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
+  const runMessage = execution?.state === "RUNNING" && executionStopped
+    ? `Seit mehr als zwei Minuten liegt kein Laufstatus vor. Letzter Stand: ${execution.message}`
+    : execution?.message || (lastAssistantText ? textFromParts(lastAssistantText.parts) : "");
   const approvableRoutingCount = routingReview.routes.filter(
     (route) => route.validation?.valid === true && String(route.approval_state).toUpperCase() !== "APPROVED",
   ).length;
   const engineeringCounts = workflow?.artifact_checks?.engineering_model?.counts ?? {};
+  const hardwareRevision = workflow?.versions?.engineering_model;
+  useEffect(() => {
+    if (phase !== "status") return;
+    let active = true;
+    void listAllEngineeringObjects("hardware-nodes").then((items) => {
+      if (active) setHardwareItems(items);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [phase, hardwareRevision]);
   const hardwareByType = workflow?.artifact_checks?.engineering_model?.hardware_by_type ?? {};
   const hardwareNodes = Array.isArray(workflow?.topology?.nodes) ? workflow.topology.nodes : [];
   const hardwareDetails = {
     ecus: Number(hardwareByType.ECU ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "ecu").length),
     gateways: Number(hardwareByType.Gateway ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "gateway").length),
     sensors: Number(hardwareByType.SensorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length),
+    actuators: Number(hardwareByType.ActuatorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "actuator").length),
   };
+  const blockerDetails = workflow?.active_step === "engineering_model"
+    ? scopeMismatchSummaries(workflow.artifact_checks?.engineering_model?.scope_mismatches)
+    : [];
+  const blockerSummary = blockerDetails.join(" · ");
+  const documentedDeviationSummary = documentedScopeDeviationSummary(workflow?.context?.agent_wizard_status);
+  const blockedTitle = blockerSummary
+    ? `Auftrag angehalten: ${blockerSummary}`
+    : documentedDeviationSummary ? `Dokumentierte Abweichung: ${documentedDeviationSummary}` : "Auftrag angehalten";
   const analysisCounts = [
-    {
-      detail: `${hardwareDetails.sensors} Sensoren · ${hardwareDetails.ecus} ECUs · ${hardwareDetails.gateways} Gateway`,
-      label: "Hardware",
-      value: Number(engineeringCounts.hardware_nodes ?? hardwareNodes.length),
-    },
+    ...EQUIPMENT_CATEGORIES.map(({ key, label }) => ({ label, value: hardwareDetails[key] })),
     { label: "Funktionen", value: Number(engineeringCounts.functions ?? 0) },
     { label: "Interfaces", value: Number(engineeringCounts.interfaces ?? 0) },
     { label: "Nachrichten", value: Number(engineeringCounts.messages ?? 0) },
@@ -1573,7 +1748,7 @@ export function EngineeringAgentWizard({
     ? "Erste Analyse läuft"
     : routingReviewPending
       ? "Analyse bereit zur Freigabe"
-      : "Analyseübersicht";
+      : runPaused ? "Auftrag angehalten" : "Analyseübersicht";
 
   return (
     <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
@@ -1583,7 +1758,7 @@ export function EngineeringAgentWizard({
           <span>{visibleSteps[step]?.label}: Schritt {step + 1} von {visibleSteps.length}</span>
         </div>
         {phase === "status" ? (
-          <span className={`agent-wizard-live ${statusError ? "error" : ""}`}><i aria-hidden="true" /> {statusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : "Live"}</span>
+          <span className={`agent-wizard-live ${displayedStatusError || runPaused ? "error" : ""}`}><i aria-hidden="true" /> {displayedStatusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : runPaused ? "Angehalten" : routingReviewPending ? "Freigabe erforderlich" : "Live"}</span>
         ) : (
           <button className="button primary tiny" disabled={primaryDisabled} onClick={handlePrimary} type="button">
             {submitting ? "Wird übernommen ..." : atLastStep ? "Übernehmen" : "Weiter"}
@@ -1597,9 +1772,12 @@ export function EngineeringAgentWizard({
             disabled={
               effectiveBusy
               || phase === "status"
+              || item.id === "status"
+              || (item.id === "equipment" && !taskReady)
               || (index > architectureStepIndex && !architectureReady)
             }
             key={item.id}
+            title={item.label}
             onClick={() => setStep(index)}
             type="button"
           >
@@ -1788,6 +1966,57 @@ export function EngineeringAgentWizard({
           )}
         </fieldset>
       )}
+      {activeStepId === "equipment" && (
+        <fieldset className="agent-choice-group">
+          <legend>Geräteumfang prüfen</legend>
+          <table className="agent-equipment-table">
+            <thead><tr><th>Gerätetyp</th><th>Erkannt</th><th>Verbindliche Anzahl</th></tr></thead>
+            <tbody>{EQUIPMENT_CATEGORIES.map(({ key, label }) => (
+              <tr key={key}>
+                <th scope="row">{label}</th>
+                <td>{recognizedEquipment.targetCounts[key]}</td>
+                <td><input aria-label={`${label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
+                  value={equipmentValues[key]} disabled={effectiveBusy}
+                  onChange={(event) => setEquipmentEdits({ source: taskSource, values: { ...equipmentValues, [key]: event.target.value } })} /></td>
+              </tr>
+            ))}</tbody>
+          </table>
+          <table className="agent-equipment-table" aria-label="Kommunikationssysteme prüfen">
+            <thead><tr><th>Kommunikationssystem</th><th>Erkannt</th><th>Verbindliche Anzahl</th></tr></thead>
+            <tbody>{communicationSystemRows.map((row) => (
+              <tr key={row.id}>
+                <th scope="row">
+                  {row.label}
+                  <small>{row.detail}</small>
+                </th>
+                <td>{row.recognized}</td>
+                <td><input aria-label={`${row.label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
+                  value={row.value} disabled={effectiveBusy}
+                  onChange={(event) => setCommunicationSystemEdits({
+                    source: communicationSystemSource,
+                    values: { ...Object.fromEntries(communicationSystemRows.map((item) => [item.id, item.value])), [row.id]: event.target.value },
+                  })} /></td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
+          {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
+          <dl className="agent-equipment-facts">
+            <div><dt>Architektur</dt><dd>{selectedArchitecture?.label}</dd></div>
+            <div><dt>Kommunikationssysteme im Auftrag</dt><dd>{communicationSystemCounts.map((item) => `${item.label}: ${item.count}`).join(", ") || "Keine vorgegeben"}</dd></div>
+            <div><dt>Parameter</dt><dd>{parameterMode === "defaults" ? "Technologie-Defaults" : "Nutzerdefiniert"}</dd></div>
+          </dl>
+          <div className="agent-equipment-list">
+            {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
+              <details key={key}><summary>{label} · {recognizedEquipment.targetCounts[key]}</summary>
+                <ul>{recognizedEquipment.chains.filter((chain) => chain.device_type === type)
+                  .sort((a, b) => a.hardware_name.localeCompare(b.hardware_name, "de"))
+                  .map((chain, index) => <li key={`${chain.device_type}:${chain.hardware_name}:${index}`}>{chain.hardware_name}</li>)}</ul>
+              </details>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {activeStepId === "status" && submittedContext && (
         <section className="agent-wizard-status" aria-label="Statusübersicht des Engineering-Auftrags">
           <div className="agent-wizard-status-summary">
@@ -1799,8 +2028,16 @@ export function EngineeringAgentWizard({
                   <span key={item.label}>
                     <small>{item.label}</small>
                     <b>{item.value}</b>
-                    {item.detail && <em>{item.detail}</em>}
                   </span>
+                ))}
+              </div>
+              <div className="agent-equipment-list" aria-label="Angelegte Geräte">
+                {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
+                  <details key={key}><summary>{label} · {hardwareDetails[key]}</summary>
+                    <ul>{hardwareItems.filter((item) => "device_type" in item && item.device_type === type)
+                      .sort((a, b) => String(a.name).localeCompare(String(b.name), "de"))
+                      .map((item) => <li key={item.id}>{item.name}</li>)}</ul>
+                  </details>
                 ))}
               </div>
               <div className="agent-wizard-analysis-actions">
@@ -1849,12 +2086,12 @@ export function EngineeringAgentWizard({
           <div className="agent-wizard-progress-grid" aria-label="Fortschritt der neun Workflow-Ansichten">
             {statusRows.map((item) => (
               <a
-                aria-label={`${item.label} öffnen, Status ${WORKFLOW_STATUS_LABEL[item.status]}, ${item.progress} Prozent`}
-                className={`agent-wizard-progress-card ${item.selected ? "selected" : ""} status-${item.status.toLowerCase()}`}
+                aria-label={`${item.label} öffnen, Status ${WORKFLOW_DISPLAY_STATUS_LABEL[item.displayStatus]}, ${item.progress} Prozent`}
+                className={`agent-wizard-progress-card ${item.selected ? "selected" : ""} status-${item.displayStatus.toLowerCase()}`}
                 href={WORKFLOW_STEP_HREF[item.id]}
                 key={item.id}
                 onClick={() => activateEngineeringAgentWizardSession(projectId)}
-                title={`${item.label} öffnen`}
+                title={item.displayStatus === "BLOCKED" ? blockedTitle : `${item.label} öffnen`}
               >
                 <div>
                   <span className="agent-wizard-progress-number">{item.position}</span>
@@ -1862,7 +2099,7 @@ export function EngineeringAgentWizard({
                   <b>{item.progress} %</b>
                 </div>
                 <progress aria-label={`${item.label}: ${item.progress} Prozent`} max="100" value={item.progress} />
-                <small>{item.active ? "Agent arbeitet" : WORKFLOW_STATUS_LABEL[item.status]}{item.selected ? " · im Auftrag" : " · nicht gewählt"}</small>
+                <small>{item.active ? "Agent arbeitet" : WORKFLOW_DISPLAY_STATUS_LABEL[item.displayStatus]}{item.selected ? " · im Auftrag" : " · nicht gewählt"}</small>
               </a>
             ))}
           </div>
@@ -1890,17 +2127,22 @@ export function EngineeringAgentWizard({
             ) : (
               <div>
                 <span className="eyebrow">Rückfragen</span>
-                <strong>{routingReviewPending ? "Routing-Review ausstehend" : "Keine Rückfrage offen"}</strong>
+                <strong>{routingReviewPending ? "Routing-Review ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
                 <small>{routingReviewPending
                   ? `${routingReview.total} Routing-Einträge vorbereitet · ${routingReview.awaitingValidation} noch zu validieren · ${approvableRoutingCount} valide und freigabebereit.`
                   : agentPending
-                    ? "Der Agent verarbeitet den bestätigten Auftrag."
-                    : currentRunMessages.length || workflowHasProgress
-                      ? "Der letzte Agentenschritt ist abgeschlossen."
-                      : "Der Auftrag wird an den Agenten übergeben."}</small>
+                    ? execution?.state === "RUNNING" ? runMessage : "Der Agent verarbeitet den bestätigten Auftrag."
+                    : runPaused
+                      ? [
+                        runMessage || "Der Lauf wurde beendet, bevor alle ausgewählten Schritte abgeschlossen waren.",
+                        documentedDeviationSummary ? `Dokumentiert: ${documentedDeviationSummary}` : "",
+                      ].filter(Boolean).join(" ")
+                      : currentRunMessages.length || workflowHasProgress
+                        ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
+                        : "Der Auftrag wird an den Agenten übergeben."}</small>
                 {canRetryPopupRun && (
                   <button className="button primary tiny" onClick={() => void retryPopupRun()} type="button">
-                    Auftrag erneut starten
+                    Auftrag fortsetzen
                   </button>
                 )}
               </div>
@@ -1915,10 +2157,10 @@ export function EngineeringAgentWizard({
             <span><small>Modell</small><strong>{activeModel}</strong></span>
           </div>
 
-          {statusError && <p className="notice error" role="alert">{statusError}</p>}
+          {displayedStatusError && <p className="notice error" role="alert">{displayedStatusError}</p>}
           <footer className="agent-wizard-status-footer">
             <small className="agent-wizard-log-status">TXT-Protokolle aktiv: Workflow · Rückfragen · Performance · Fehler</small>
-            <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy} onClick={() => void finishWizard()} type="button">
+            <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused} onClick={() => void finishWizard()} type="button">
               Fertig stellen
             </button>
           </footer>
@@ -1931,6 +2173,8 @@ export function EngineeringAgentWizard({
           </button>
           <span>{activeStepId === "task"
             ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt"
+            : activeStepId === "equipment"
+              ? equipmentReady && communicationSystemReady ? "Sollzahlen bereit" : "Anzahlen prüfen"
             : activeStepId === "architecture"
               ? architectureReady ? "Verbindlich freigegeben" : selectedArchitecture ? "Freigabe fehlt" : "Auswahl erforderlich"
               : activeGroup
@@ -2004,6 +2248,139 @@ function technologyLabel(id: string, family: string) {
 function isCanTechnology(id: string, family: string) {
   const raw = `${id} ${family}`.toLowerCase();
   return /\bcan\b/.test(raw) || raw.includes("can_") || raw.includes("can-") || raw.includes("canfd");
+}
+
+type CommunicationSystemInputRow = {
+  detail: string;
+  id: string;
+  label: string;
+  recognized: number;
+  value: string;
+};
+
+function normalizedCommunicationSystem(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const compact = normalized.replace(/\s+/g, "");
+  if (compact === "canfd" || compact === "automotivecanfd") return "can fd";
+  if (compact === "automotiveethernet") return "ethernet";
+  if (compact === "modbustcp") return "modbus tcp";
+  if (compact === "opcua") return "opc ua";
+  if (compact === "ros2dds") return "ros2 dds";
+  return normalized;
+}
+
+function communicationSystemSlug(value: string) {
+  return normalizedCommunicationSystem(value).replace(/\s+/g, "-") || "system";
+}
+
+function communicationAliases(value: string) {
+  const base = normalizedCommunicationSystem(value);
+  const compact = base.replace(/\s+/g, "");
+  const aliases = new Set([base, compact]);
+  if (compact === "canfd") aliases.add("can fd");
+  if (compact === "can") aliases.add("automotive can");
+  if (compact === "lin") aliases.add("automotive lin");
+  if (compact === "ethernet") aliases.add("automotive ethernet");
+  if (compact === "someip") aliases.add("some ip");
+  if (compact === "opcua") aliases.add("opc ua");
+  if (compact === "ros2dds") aliases.add("ros2 dds");
+  return aliases;
+}
+
+function technologyMatchesRecognizedSystem(technology: Technology, recognized: string) {
+  const recognizedAliases = communicationAliases(recognized);
+  const candidates = [technology.id, technology.family, technologyLabel(technology.id, technology.family)];
+  return candidates.some((candidate) => (
+    [...communicationAliases(candidate)].some((alias) => recognizedAliases.has(alias))
+  ));
+}
+
+function communicationSystemInputRows(args: {
+  edits: Record<string, string>;
+  recognizedSystems: string[];
+  selectedTechnologyIds: string[];
+  technologies: Technology[];
+}): CommunicationSystemInputRow[] {
+  const selected = new Set(args.selectedTechnologyIds);
+  const selectedTechnologies = args.technologies.filter((technology) => selected.has(technology.id));
+  const technologies = selectedTechnologies.length ? selectedTechnologies : args.technologies.slice(0, 4);
+  const representedRecognized = new Set<string>();
+  const rows = technologies.map((technology) => {
+    const matches = args.recognizedSystems.filter((system) => technologyMatchesRecognizedSystem(technology, system));
+    matches.forEach((system) => representedRecognized.add(system));
+    const recognized = matches.length;
+    const label = technologyLabel(technology.id, technology.family);
+    return {
+      detail: `${technology.medium} · ${technology.topology}`,
+      id: technology.id,
+      label,
+      recognized,
+      value: args.edits[technology.id] ?? String(Math.max(1, recognized)),
+    };
+  });
+
+  args.recognizedSystems.forEach((system) => {
+    if (representedRecognized.has(system)) return;
+    const id = `detected:${communicationSystemSlug(system)}`;
+    const existing = rows.find((row) => row.id === id);
+    if (existing) {
+      existing.recognized += 1;
+      if (args.edits[id] === undefined) existing.value = String(existing.recognized);
+      return;
+    }
+    rows.push({
+      detail: "Aus Aufgaben-/Dateitext erkannt",
+      id,
+      label: system,
+      recognized: 1,
+      value: args.edits[id] ?? "1",
+    });
+  });
+
+  return rows;
+}
+
+function scopeMismatchSummaries(value: unknown) {
+  if (!value || typeof value !== "object") return [];
+  const labels: Record<string, string> = {
+    actuators: "Aktoren",
+    ecus: "ECUs",
+    gateways: "Gateways",
+    sensors: "Sensoren",
+  };
+  return Object.entries(value as Record<string, { actual?: number; target?: number }>).flatMap(([key, item]) => {
+    const actual = Number(item?.actual);
+    const target = Number(item?.target);
+    if (!Number.isFinite(actual) || !Number.isFinite(target) || actual === target) return [];
+    const missing = Math.max(0, target - actual);
+    const surplus = Math.max(0, actual - target);
+    const delta = missing > 0 ? `${missing} fehlen` : `${surplus} zu viel`;
+    return [`${labels[key] ?? key}: ${actual}/${target}, ${delta}`];
+  });
+}
+
+function documentedScopeDeviationSummary(value: unknown) {
+  if (!value || typeof value !== "object") return "";
+  const deviation = (value as Record<string, unknown>).scope_deviation;
+  if (!deviation || typeof deviation !== "object") return "";
+  const record = deviation as Record<string, unknown>;
+  const summary = typeof record.summary === "string" ? record.summary.trim() : "";
+  if (summary) return summary;
+  const deviations = Array.isArray(record.deviations) ? record.deviations : [];
+  return deviations.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const entry = item as Record<string, unknown>;
+    const label = String(entry.label ?? entry.key ?? "").trim();
+    const actual = Number(entry.actual);
+    const target = Number(entry.target);
+    if (!label || !Number.isFinite(actual) || !Number.isFinite(target)) return [];
+    return [`${label} ${actual}/${target}`];
+  }).join("; ");
 }
 
 function AgentActivityLog({ entries }: { entries: AgentActivityEntry[] }) {

@@ -246,6 +246,8 @@ def _enforce_engineering_scope_rules(
     category = hardware_scope_category(payload.get("device_type"))
     if not category:
         return
+    if category not in rules["hardware_counts"]:
+        return
     limit = rules["hardware_counts"][category]
     current_row = connection.execute(
         "SELECT count(*) AS count FROM engineering_hardware_nodes h "
@@ -264,8 +266,12 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     spec = get_spec(object_type)
     if not data.get("name"):
         raise EngineeringValidationError("Pflichtfeld fehlt: 'name'")
-    if object_type == "HardwareNode" and not data.get("device_type"):
-        data = {**data, "device_type": infer_device_type(str(data["name"]))}
+    if object_type == "HardwareNode":
+        data = {
+            **data,
+            "device_type": data.get("device_type") or infer_device_type(str(data["name"])),
+            "name": normalize_hardware_name(data["name"]),
+        }
     if object_type == "Interface" and data.get("function_id"):
         parent_function = get_object("Function", str(data["function_id"]))
         data = {**data, "hardware_node_id": parent_function["hardware_node_id"]}

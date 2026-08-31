@@ -23,3 +23,12 @@ class ToolRegistry:
             return self._tools[key]
         except KeyError as error:
             raise RegistryLookupError(f"No tool {key!r} is registered.") from error
+
+    def names(self) -> tuple[str, ...]:
+        return tuple(sorted(self._tools))
+
+    def list(self) -> tuple[Any, ...]:
+        return tuple(self._tools[key] for key in self.names())
+
+    def filter(self, predicate) -> tuple[Any, ...]:
+        return tuple(tool for tool in self.list() if predicate(tool))

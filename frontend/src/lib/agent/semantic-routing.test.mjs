@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { extractEngineeringSpecification } from "./engineering-specification.ts";
+import { normalizeHardwareName, extractEngineeringSpecification } from "./engineering-specification.ts";
 import { semanticProcessorForSensor, semanticRoutePlans } from "./semantic-routing.ts";
 
 const SAMPLE = `
@@ -24,21 +24,21 @@ function architecture() {
 
 function targetFor(sensorName) {
   const { sensors, processors } = architecture();
-  const sensor = sensors.find((candidate) => candidate.hardware_name === sensorName);
+  const sensor = sensors.find((candidate) => candidate.hardware_name === normalizeHardwareName(sensorName));
   assert.ok(sensor, `Sensor ${sensorName} fehlt im Muster`);
   return semanticProcessorForSensor(sensor, processors)?.hardware_name;
 }
 
 test("Bremsdruck wird fachlich der Bremsregelung und nicht der Klima-ECU zugeordnet", () => {
-  assert.equal(targetFor("RearLeftBrakePressureSensor"), "Bremsregelung-ECU");
+  assert.equal(targetFor("RearLeftBrakePressureSensor"), "Bremsregelung");
 });
 
 test("repräsentative Sensorfamilien werden ihren fachlichen ECUs zugeordnet", () => {
-  assert.equal(targetFor("CabinTemperatureSensor"), "Klimatisierung-ECU");
-  assert.equal(targetFor("FrontLeftTirePressureSensor"), "Reifendruckkontrolle-ECU");
-  assert.equal(targetFor("RearRightSuspensionTravelSensor"), "Fahrwerk-ECU");
-  assert.equal(targetFor("SteeringAngleSensor"), "Lenkung-ECU");
-  assert.equal(targetFor("FrontRadarDistanceSensor"), "Radarverarbeitung-ECU");
+  assert.equal(targetFor("CabinTemperatureSensor"), "Klimatisierung");
+  assert.equal(targetFor("FrontLeftTirePressureSensor"), "Reifendruckkontrolle");
+  assert.equal(targetFor("RearRightSuspensionTravelSensor"), "Fahrwerk");
+  assert.equal(targetFor("SteeringAngleSensor"), "Lenkung");
+  assert.equal(targetFor("FrontRadarDistanceSensor"), "Radarverarbeitung");
 });
 
 test("kein semantischer Treffer erzeugt keinen willkürlichen Erst-ECU-Fallback", () => {

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   calculateCapacity,
   calculateCapacityScenario,
   getCapacity,
+  getCapacityInspectionSources,
   getWorkflow,
   optimizeCapacity,
   saveWorkflowParameters,
@@ -18,6 +19,9 @@ import {
 } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
+import { paginateCapacityItems } from "@/lib/capacity-pagination";
+import { buildNetworkInspection, type NetworkInspection } from "@/lib/capacity-network-inspection";
+import { readActiveProjectId } from "@/lib/user-settings";
 
 type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
 
@@ -39,6 +43,7 @@ export function CapacityWorkbench() {
   const [proposals, setProposals] = useState<Array<Record<string, unknown>>>([]);
   const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null);
   const [networkSort, setNetworkSort] = useState<"burst" | "reserve" | "latency">("burst");
+  const [sourceVersions, setSourceVersions] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
     void setWorkflowContext({ selected_network: selectedNetworkId }).catch(() => undefined);
@@ -48,6 +53,7 @@ export function CapacityWorkbench() {
     try {
       const snapshot = await getCapacity();
       setResults(snapshot.results as CapacityResults);
+      setSourceVersions(snapshot.source_versions);
       setFindings(snapshot.findings);
       setStatus(snapshot.status);
       setOutdated(snapshot.is_outdated);
@@ -134,7 +140,6 @@ export function CapacityWorkbench() {
     if (networkSort === "latency") return right.worst_end_to_end_latency_ms - left.worst_end_to_end_latency_ms;
     return right.burst_load_percent - left.burst_load_percent;
   }), [networkSort, shown]);
-  const selectedNetwork = shown?.networks.find((item) => item.network_id === selectedNetworkId) ?? null;
 
   return (
     <section className="analysis-workbench">
@@ -191,37 +196,29 @@ export function CapacityWorkbench() {
 
           <div className="analysis-tabs" role="tablist" aria-label="Capacity-Ansichten">
             {(["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"] as View[]).map((item) => (
-              <button className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">
+              <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">
                 {({ overview: "Übersicht", networks: "Netze", messages: "Messages", routes: "Routen", timing: "Timing & Sync", gateways: "Gateways", critical: "Kritisch", recommendations: "Empfehlungen" } as Record<View, string>)[item]}
               </button>
             ))}
           </div>
 
           {(view === "overview" || view === "networks") && <>
-            <div className="analysis-sort-row"><span>Sortierung</span><select onChange={(event) => setNetworkSort(event.target.value as typeof networkSort)} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
-            <NetworkTable items={sortedNetworks} onSelect={setSelectedNetworkId} selectedId={selectedNetworkId} />
-            {selectedNetwork && <NetworkDetail network={selectedNetwork} routes={shown.routes.filter((route) => route.network_id === selectedNetwork.network_id)} />}
+            <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
+            <NetworkTable key={networkSort} items={sortedNetworks} routes={shown.routes} onSelect={setSelectedNetworkId} selectedId={selectedNetworkId} sourceVersions={sourceVersions} />
           </>}
           {view === "messages" && <MessageTable items={shown.messages} />}
           {view === "routes" && <RouteTable items={shown.routes} />}
           {view === "timing" && <TimingAnalysis results={shown} />}
           {view === "critical" && <RouteTable items={critical} />}
           {view === "gateways" && (
-            <div className="analysis-list">
-              {shown.gateways.length ? shown.gateways.map((gateway, index) => (
+            shown.gateways.length ? <PaginatedResults items={shown.gateways} label="Gateways">{(entries) => <div className="analysis-list">
+              {entries.map((gateway, index) => (
                 <div key={String(gateway.gateway_id ?? index)}><strong>{String(gateway.name ?? gateway.gateway_id)}</strong><span>{String(gateway.route_count ?? 0)} Routen · {String(gateway.processing_delay_ms ?? 0)} ms Verarbeitung</span></div>
-              )) : <EmptyAnalysis text="Keine Gateway-Hops in den aktuellen Routen." />}
-            </div>
+              ))}
+            </div>}</PaginatedResults> : <EmptyAnalysis text="Keine Gateway-Hops in den aktuellen Routen." />
           )}
           {view === "recommendations" && (
-            <div className="analysis-list findings-list">
-              {proposals.map((proposal) => <div className="finding finding-info" key={String(proposal.id)}><span>AI PROPOSAL</span><strong>{String(proposal.summary)}</strong><small>{String(proposal.kind)} · nicht angewendet</small></div>)}
-              {findings.length ? findings.map((finding, index) => (
-                <div className={`finding finding-${finding.severity.toLowerCase()}`} key={`${finding.code}-${index}`}>
-                  <span>{finding.severity}</span><strong>{finding.message}</strong><small>{finding.recommendation ?? "Keine Aktion erforderlich."}</small>
-                </div>
-              )) : <EmptyAnalysis text="Keine Kapazitätsauffälligkeiten gefunden." />}
-            </div>
+            <RecommendationList proposals={proposals} findings={findings} />
           )}
         </>
       ) : (
@@ -240,41 +237,148 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: s
   return <div className={tone ? `metric metric-${tone.toLowerCase()}` : "metric"}><span>{label}</span><strong>{value}</strong></div>;
 }
 
-function NetworkTable({ items, onSelect, selectedId }: { items: CapacityResults["networks"]; onSelect: (id: string) => void; selectedId: string | null }) {
+function PaginatedResults<T>({ items, label, children, onPageChange }: {
+  items: readonly T[];
+  label: string;
+  children(items: T[]): ReactNode;
+  onPageChange?(): void;
+}) {
+  const [requestedPage, setPage] = useState(0);
+  const container = useRef<HTMLDivElement>(null);
+  const current = paginateCapacityItems(items, requestedPage);
+  useEffect(() => { setPage(current.page); }, [current.page]);
+
+  function changePage(page: number) {
+    setPage(page);
+    onPageChange?.();
+    container.current?.scrollIntoView({ block: "start" });
+  }
+
+  return <div className="capacity-paginated-results" ref={container}>
+    {children(current.items)}
+    {current.pageCount > 1 && <nav aria-label={`${label}: Seitennavigation`} className="table-pagination capacity-pagination">
+      <span aria-live="polite">{current.first}-{current.last} von {current.total}</span>
+      <div>
+        <button aria-label="Vorherige Seite" className="button secondary tiny" disabled={current.page === 0} onClick={() => changePage(current.page - 1)} title="Vorherige Seite" type="button">←</button>
+        <span>Seite {current.page + 1} / {current.pageCount}</span>
+        <button aria-label="Nächste Seite" className="button secondary tiny" disabled={current.page + 1 >= current.pageCount} onClick={() => changePage(current.page + 1)} title="Nächste Seite" type="button">→</button>
+      </div>
+    </nav>}
+  </div>;
+}
+
+function RecommendationList({ proposals, findings }: { proposals: Array<Record<string, unknown>>; findings: AnalysisFinding[] }) {
+  const items = [
+    ...proposals.map((proposal) => ({ kind: "proposal" as const, proposal })),
+    ...findings.map((finding) => ({ kind: "finding" as const, finding })),
+  ];
+  if (!items.length) return <EmptyAnalysis text="Keine Kapazitätsauffälligkeiten gefunden." />;
+  return <PaginatedResults items={items} label="Empfehlungen">{(entries) => <div className="analysis-list findings-list">
+    {entries.map((item, index) => item.kind === "proposal"
+      ? <div className="finding finding-info" key={`proposal-${String(item.proposal.id ?? index)}`}><span>AI PROPOSAL</span><strong>{String(item.proposal.summary)}</strong><small>{String(item.proposal.kind)} · nicht angewendet</small></div>
+      : <div className={`finding finding-${item.finding.severity.toLowerCase()}`} key={`finding-${item.finding.code}-${index}`}><span>{item.finding.severity}</span><strong>{item.finding.message}</strong><small>{item.finding.recommendation ?? "Keine Aktion erforderlich."}</small></div>)}
+  </div>}</PaginatedResults>;
+}
+
+function NetworkTable({ items, routes, onSelect, selectedId, sourceVersions }: { items: CapacityResults["networks"]; routes: CapacityResults["routes"]; onSelect: (id: string | null) => void; selectedId: string | null; sourceVersions: Record<string, number> | null }) {
   if (!items.length) return <EmptyAnalysis text="Keine Netze mit zugeordneten Routen vorhanden." />;
   return (
-    <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Netz</th><th>Technologie</th><th>Ø Load</th><th>Peak</th><th>Reserve</th><th>Worst E2E</th><th>Status</th></tr></thead><tbody>
-      {items.map((item) => <tr className={selectedId === item.network_id ? "selected" : ""} key={item.network_id} onClick={() => onSelect(item.network_id)}><td><strong>{item.network_id}</strong></td><td>{item.protocol}</td><td>{item.average_load_percent.toFixed(2)} %</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.capacity_reserve_percent.toFixed(2)} %</td><td>{item.worst_end_to_end_latency_ms.toFixed(3)} ms</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td></tr>)}
-    </tbody></table></div>
+    <PaginatedResults items={items} label="Netze" onPageChange={() => onSelect(null)}>{(entries) => <div className="analysis-table-wrap"><table className="analysis-table capacity-network-table"><thead><tr><th>Netz</th><th>Technologie</th><th>Ø Load</th><th>Peak</th><th>Reserve</th><th>Worst E2E</th><th>Status</th></tr></thead><tbody>
+      {entries.map((item) => {
+        const expanded = selectedId === item.network_id;
+        const detailId = `capacity-network-${item.network_id}`;
+        const toggle = () => onSelect(expanded ? null : item.network_id);
+        return <Fragment key={item.network_id}>
+          <tr className={`capacity-network-row${expanded ? " selected" : ""}`} onClick={toggle}>
+            <td><button aria-controls={expanded ? detailId : undefined} aria-expanded={expanded} className="capacity-network-toggle" onClick={(event) => { event.stopPropagation(); toggle(); }} title={expanded ? "Netzdetails schließen" : "Netzdetails öffnen"} type="button"><span aria-hidden="true">{expanded ? "▾" : "▸"}</span><strong>{item.network_id}</strong></button></td>
+            <td>{item.protocol}</td><td>{item.average_load_percent.toFixed(2)} %</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.capacity_reserve_percent.toFixed(2)} %</td><td>{item.worst_end_to_end_latency_ms.toFixed(3)} ms</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td>
+          </tr>
+          {expanded && <tr className="capacity-network-detail-row"><td colSpan={7}><NetworkDetail id={detailId} network={item} routes={routes.filter((route) => route.network_id === item.network_id)} sourceVersions={sourceVersions} /></td></tr>}
+        </Fragment>;
+      })}
+    </tbody></table></div>}</PaginatedResults>
   );
 }
 
-function NetworkDetail({ network, routes }: { network: CapacityNetwork; routes: CapacityResults["routes"] }) {
+function NetworkDetail({ id, network, routes, sourceVersions }: { id: string; network: CapacityNetwork; routes: CapacityResults["routes"]; sourceVersions: Record<string, number> | null }) {
+  const contributors = network.top_contributors ?? routes.slice(0, 5).map((route) => ({ route_id: route.route_id, name: route.name, load_percent: route.average_load_percent }));
   return (
-    <section className="network-capacity-detail">
+    <section aria-label={`Netzdetails ${network.network_id}`} className="network-capacity-detail" id={id}>
       <div><p className="eyebrow">Network drilldown</p><h3>{network.network_id}</h3><span>{network.protocol} · {network.bitrate ? `${network.bitrate.toLocaleString("de-DE")} bit/s` : "historischer Snapshot"}</span></div>
       <dl className="overview-list"><div><dt>Burst</dt><dd>{network.burst_load_percent.toFixed(2)} %</dd></div><div><dt>Margin</dt><dd>{(network.capacity_margin_percent ?? 100 - network.burst_load_percent).toFixed(2)} %</dd></div><div><dt>Routen</dt><dd>{routes.length}</dd></div></dl>
-      <div className="capacity-contributors"><strong>Top Contributors</strong>{(network.top_contributors ?? routes.slice(0, 5).map((route) => ({ route_id: route.route_id, name: route.name, load_percent: route.average_load_percent }))).map((item) => <span key={item.route_id}>{item.name}<b>{item.load_percent.toFixed(2)} %</b></span>)}</div>
+      <NetworkSignalInspection networkId={network.network_id} sourceVersions={sourceVersions} />
+      <PaginatedResults items={contributors} label="Lastbeiträge">{(entries) => <div className="capacity-contributors"><strong>Top Contributors</strong>{entries.map((item) => <span key={item.route_id}>{item.name}<b>{item.load_percent.toFixed(2)} %</b></span>)}</div>}</PaginatedResults>
       <RouteTable items={routes} />
     </section>
   );
 }
 
+function NetworkSignalInspection({ networkId, sourceVersions }: { networkId: string; sourceVersions: Record<string, number> | null }) {
+  const [inspection, setInspection] = useState<NetworkInspection | null>(null);
+  const [error, setError] = useState("");
+  const requestId = useRef(0);
+  const lastSource = useRef<Awaited<ReturnType<typeof getCapacityInspectionSources>> | null>(null);
+  const lastNetwork = useRef("");
+  const inFlight = useRef<string | null>(null);
+  const mounted = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; ++requestId.current; inFlight.current = null; }; }, []);
+  const load = useCallback(async () => {
+    const projectId = readActiveProjectId();
+    if (inFlight.current === projectId) return;
+    const current = ++requestId.current;
+    inFlight.current = projectId;
+    try {
+      const data = await getCapacityInspectionSources(projectId);
+      if (!mounted.current || current !== requestId.current || projectId !== readActiveProjectId()) return;
+      if (lastSource.current !== data || lastNetwork.current !== networkId) {
+        lastSource.current = data;
+        lastNetwork.current = networkId;
+        setInspection(buildNetworkInspection(networkId, data));
+      }
+      setError("");
+    } catch (caught) {
+      if (mounted.current && current === requestId.current && projectId === readActiveProjectId()) setError(caught instanceof Error ? caught.message : "Signalprüfung nicht verfügbar.");
+    } finally {
+      if (current === requestId.current) inFlight.current = null;
+    }
+  }, [networkId]);
+  useWorkflowRefresh(load);
+  const value = (number: number | null) => number === null ? "Offen" : number.toLocaleString("de-DE", { maximumFractionDigits: 8 });
+  if (!inspection) return <div className="capacity-signal-inspection">{error ? <><p className="notice error">{error}</p><button className="button secondary tiny" type="button" onClick={() => void load()}>Erneut prüfen</button></> : <p role="status">Teilnehmer und Signalkonfiguration werden geprüft …</p>}</div>;
+  const differs = sourceVersions && ["engineering_model", "routing", "network_editor"].some((key) => sourceVersions[key] !== inspection.versions[key]);
+  return <div className="capacity-signal-inspection">
+    <h4>Teilnehmer und Systemrahmen</h4>
+    <p className="capacity-inspection-summary">{inspection.counts.senders} Sender · {inspection.counts.participants} Teilnehmer · {inspection.counts.systems} Systemrahmen · {inspection.counts.messages} Nachrichten · {inspection.counts.signals} Signale</p>
+    {error && <p className="notice error">{error} Letzter Prüfstand bleibt sichtbar.</p>}
+    {differs && <p className="notice warning">Die Signalprüfung verwendet einen neueren Modellstand als die Lastberechnung. Capacity & Timing erneut berechnen.</p>}
+    {inspection.notices.map((notice, index) => <p className="notice warning" key={index}>{notice}</p>)}
+    <PaginatedResults items={inspection.participants} label="Netzteilnehmer">{(items) => <div className="analysis-table-wrap"><table className="analysis-table capacity-participants-table"><thead><tr><th>Teilnehmer</th><th>Rolle im Netz</th><th>Interface</th><th>Systemrahmen</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong><small>{item.type}</small></td><td>{item.roles.filter((role) => role !== "Physisch verbunden" || item.roles.length === 1).join(", ")}</td><td>{item.interfaces.map((port) => <span className="capacity-interface-name" key={port.id}>{port.name}</span>)}</td><td>{item.system ? <>{item.system.name}<small>{item.system.basis === "inferred" ? "Zuordnung abgeleitet, fachlich prüfen" : "Zugeordnet"}</small></> : item.type === "Gateway" ? "Backbone / kein Systemrahmen" : "Zuordnung offen"}</td></tr>)}</tbody></table></div>}</PaginatedResults>
+
+    <h4>Signalprüfung</h4>
+    <p className="capacity-inspection-summary">{inspection.counts.passed} rechnerisch passend · {inspection.counts.warnings} Optimierungshinweise · {inspection.counts.errors} fehlerhaft · {inspection.counts.open + inspection.counts.missingSignals} offen</p>
+    <PaginatedResults items={inspection.signals} label="Signalprüfung">{(items) => <div className="analysis-table-wrap"><table className="analysis-table capacity-signals-table"><thead><tr><th>Signal / Nachricht</th><th>Konfiguration</th><th>Wertebereich / Skalierung</th><th>Bitbedarf</th><th>Prüfergebnis</th></tr></thead><tbody>{items.map((signal) => <tr key={signal.id}><td><strong>{signal.name}</strong><small>{signal.messageName}</small></td><td>{signal.dataType || "Datentyp offen"} · {value(signal.bits)} Bit<small>Startbit {value(signal.start)} · {signal.byteOrder === "little_endian" ? "Intel / Little Endian" : signal.byteOrder === "big_endian" ? "Motorola / Big Endian" : "Byte-Reihenfolge offen"}</small></td><td>{value(signal.min)} bis {value(signal.max)} {signal.unit}<small>Faktor {value(signal.factor)} · Offset {value(signal.offset)}</small></td><td>{signal.requiredBits === null ? "Nicht belegt" : `${signal.requiredBits} Bit rechnerisch`}<small>{signal.bits !== null && signal.requiredBits !== null ? `${signal.bits} Bit konfiguriert` : ""}</small></td><td><span className={`load-status capacity-check-${signal.status.toLowerCase()}`}>{({ PASS: "PASSEND", ERROR: "FEHLER", WARNING: "PRÜFEN", OPEN: "OFFEN" })[signal.status]}</span>{signal.checks.length ? <ul className="capacity-check-findings">{signal.checks.map((check, index) => <li key={`${check.code}-${index}`}>{check.text}</li>)}</ul> : <small>Wertebereich, Skalierung und Bitbelegung rechnerisch konsistent.</small>}</td></tr>)}</tbody></table></div>}</PaginatedResults>
+
+    <h4>Nachrichtenbelegung</h4>
+    <PaginatedResults items={inspection.messages} label="Nachrichtenbelegung">{(items) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Nachricht / Ursprung</th><th>Signale</th><th>Payload</th><th>Belegte Signalbits</th><th>Belegungsprüfung</th></tr></thead><tbody>{items.map((message) => <tr key={message.id}><td><strong>{message.name}</strong><small>{message.origin}</small></td><td>{message.signalCount}</td><td>{value(message.bytes)} Byte</td><td>{value(message.occupiedBits)} Bit</td><td>{message.minimumBytes !== null && message.bytes !== null ? <>{message.minimumBytes} Byte bis zum letzten belegten Bit{message.bytes > message.minimumBytes && <small>{message.bytes - message.minimumBytes} Byte am Ende ohne zugeordnete Signalbits. Padding, Prüfsumme und Protokollvorgaben vor einer DLC-Reduktion prüfen.</small>}</> : "Belegung nicht abschließend prüfbar"}</td></tr>)}</tbody></table></div>}</PaginatedResults>
+    <p className="analysis-footnote">Prüfgrundlage: aktuelles Engineering-Modell. Rechnerische Hinweise sind keine technische Freigabe; Signale und Nachrichten bleiben unverändert.</p>
+  </div>;
+}
+
 function RouteTable({ items }: { items: CapacityResults["routes"] }) {
   if (!items.length) return <EmptyAnalysis text="Keine passenden Routen vorhanden." />;
   return (
-    <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Payload / Cycle</th><th>Peak</th><th>E2E</th><th>Modell</th></tr></thead><tbody>
-      {items.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{item.network_id}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.end_to_end_latency_ms.toFixed(3)} ms</td><td><code>{item.calculation_model}</code></td></tr>)}
-    </tbody></table></div>
+    <PaginatedResults items={items} label="Routen">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Payload / Cycle</th><th>Peak</th><th>E2E</th><th>Modell</th></tr></thead><tbody>
+      {entries.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{item.network_id}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.end_to_end_latency_ms.toFixed(3)} ms</td><td><code>{item.calculation_model}</code></td></tr>)}
+    </tbody></table></div>}</PaginatedResults>
   );
 }
 
 function MessageTable({ items }: { items: CapacityResults["messages"] }) {
   if (!items.length) return <EmptyAnalysis text="Keine Messages mit Timingdaten vorhanden." />;
   return (
-    <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Message</th><th>Netz</th><th>Technologie</th><th>Payload / Cycle</th><th>Ø Load</th><th>Peak</th><th>Modell</th></tr></thead><tbody>
-      {items.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{String(item.network_id ?? "—")}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{Number(item.average_load_percent ?? 0).toFixed(2)} %</td><td>{Number(item.peak_load_percent ?? 0).toFixed(2)} %</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
-    </tbody></table></div>
+    <PaginatedResults items={items} label="Messages">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Message</th><th>Netz</th><th>Technologie</th><th>Payload / Cycle</th><th>Ø Load</th><th>Peak</th><th>Modell</th></tr></thead><tbody>
+      {entries.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{String(item.network_id ?? "—")}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{Number(item.average_load_percent ?? 0).toFixed(2)} %</td><td>{Number(item.peak_load_percent ?? 0).toFixed(2)} %</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
+    </tbody></table></div>}</PaginatedResults>
   );
 }
 
@@ -297,9 +401,9 @@ function TimingAnalysis({ results }: { results: CapacityResults }) {
         <Metric label="Clock Drift" value={`${synchronization?.clock_drift_ppm ?? 0} ppm`} />
         <Metric label="Sync Precision" value={`${synchronization?.sync_precision_ms ?? 0} ms`} />
       </div>
-      <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Transmission</th><th>Queueing</th><th>Gateway</th><th>E2E</th><th>Jitter / Budget</th><th>Deadline</th></tr></thead><tbody>
-        {results.routes.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{(route.transmission_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.queueing_latency_ms.toFixed(3)} ms</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.end_to_end_latency_ms.toFixed(3)} ms</td><td>{(route.estimated_jitter_ms ?? 0).toFixed(3)} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
-      </tbody></table></div>
+      <PaginatedResults items={results.routes} label="Timing">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Transmission</th><th>Queueing</th><th>Gateway</th><th>E2E</th><th>Jitter / Budget</th><th>Deadline</th></tr></thead><tbody>
+        {entries.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{(route.transmission_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.queueing_latency_ms.toFixed(3)} ms</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.end_to_end_latency_ms.toFixed(3)} ms</td><td>{(route.estimated_jitter_ms ?? 0).toFixed(3)} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
+      </tbody></table></div>}</PaginatedResults>
       {synchronization && (
         <p className="analysis-footnote">Maximale Drift im Beobachtungsfenster: <strong>{synchronization.max_drift_over_observation_ms.toFixed(3)} ms</strong> bei {synchronization.observation_s} s.</p>
       )}

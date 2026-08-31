@@ -86,6 +86,8 @@ from .simulation import (
 from .structure import apply_structure, evaluate_structure, reject_structure_proposal
 from .structure_transfer import analyze_ecu_transfer, analyze_system_duplicates, apply_ecu_transfer, reject_ecu_transfer
 from .system_merge import merge_system_duplicate
+from .system_clusters import system_owners
+from .tool_registry import get_engineering_tool, list_engineering_tools
 
 engineering_api = Blueprint("engineering_api", __name__)
 logger = logging.getLogger(__name__)
@@ -155,6 +157,7 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
             {
                 **raw_node,
                 "engineeringId": synced.get("engineering_id") or raw_node.get("engineeringId"),
+                "name": synced.get("engineering_name") or raw_node.get("name"),
                 "engineeringFunctionId": synced.get("function_id")
                 or raw_node.get("engineeringFunctionId"),
                 "ports": ports,
@@ -177,7 +180,24 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
                 or edge.get("engineeringRelationId"),
             }
         )
-    return {"nodes": nodes, "edges": edges}
+    topology = {"nodes": nodes, "edges": edges}
+    kinds = {"ecu": "ECU", "gateway": "Gateway", "sensor": "SensorController", "actuator": "ActuatorController"}
+    hardware = [{"id": node.get("engineeringId") or node["id"], "name": node.get("name"), "device_type": kinds.get(node.get("kind"))} for node in nodes]
+    owners = system_owners(hardware, topology)
+    for node in nodes:
+        hardware_id = str(node.get("engineeringId") or node["id"])
+        owner = owners.get(str(node.get("engineeringId") or node["id"]))
+        if (
+            owner
+            and owner["basis"] != "unassigned"
+            and (
+                node.get("kind") in {"sensor", "actuator"}
+                or (node.get("kind") == "ecu" and owner["id"] != hardware_id)
+            )
+        ):
+            node["systemOwnerId"] = owner["id"]
+            node["systemOwnerSource"] = owner["basis"]
+    return topology
 
 
 def _resource_object_type(resource: str) -> str:
@@ -266,7 +286,19 @@ def _auto_recalculate_capacity(project_id: str) -> None:
         "parameters": "APPROVED",
     }
     if all(state["statuses"].get(step) == status for step, status in required.items()):
-        CapacityTimingService(project_id).calculate()
+        result = CapacityTimingService(project_id).calculate()
+        _diagnose_capacity_failure(project_id, result)
+
+
+def _diagnose_capacity_failure(project_id: str, result: dict) -> None:
+    if result.get("status") != "ERROR":
+        return
+    try:
+        assessment = IntelligenceService(project_id).assess()
+        result["diagnostic_snapshot_id"] = str(assessment.get("id") or "")
+    except Exception as error:
+        logger.exception("Capacity diagnosis failed for %s", project_id)
+        result["diagnostic_error"] = str(error)
 
 
 @engineering_api.after_request
@@ -361,6 +393,27 @@ def schema():
             "message_directions": list(MESSAGE_DIRECTIONS),
         }
     )
+
+
+@engineering_api.route("/tools", methods=["GET"])
+def tool_registry_route():
+    approval = request.args.get("approval_required")
+    approval_required = None
+    if approval is not None:
+        approval_required = approval.strip().lower() in {"1", "true", "yes", "ja"}
+    tools = list_engineering_tools(
+        category=request.args.get("category"),
+        industry=request.args.get("industry"),
+        status=request.args.get("status"),
+        approval_required=approval_required,
+        workflow_step=request.args.get("workflow_step"),
+    )
+    return jsonify({"items": tools, "count": len(tools)})
+
+
+@engineering_api.route("/tools/<tool_id>", methods=["GET"])
+def tool_registry_item_route(tool_id: str):
+    return jsonify(get_engineering_tool(tool_id))
 
 
 @engineering_api.route("/simulation/catalog", methods=["GET"])
@@ -716,7 +769,9 @@ def capacity_latest_route():
 def calculate_capacity_route():
     payload = request.get_json(silent=True) or {}
     overrides = payload.get("overrides") if isinstance(payload.get("overrides"), dict) else None
-    return jsonify(CapacityTimingService(_project_id()).calculate(overrides))
+    result = CapacityTimingService(_project_id()).calculate(overrides)
+    _diagnose_capacity_failure(_project_id(), result)
+    return jsonify(result)
 
 
 @engineering_api.route("/capacity/scenario", methods=["POST"])

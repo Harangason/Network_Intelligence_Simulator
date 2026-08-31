@@ -7,7 +7,7 @@ from typing import Any
 
 from .models import EngineeringValidationError
 
-SCOPE_COUNT_KEYS = ("sensors", "ecus", "gateways")
+SCOPE_COUNT_KEYS = ("sensors", "ecus", "gateways", "actuators")
 SUPPORTED_COMMUNICATION_SYSTEMS = {
     "CAN",
     "CAN_FD",
@@ -39,6 +39,9 @@ def normalize_engineering_scope_rules(value: Any) -> dict[str, Any]:
 
     counts: dict[str, int] = {}
     for key in SCOPE_COUNT_KEYS:
+        # Legacy projects did not constrain actuators; do not silently impose zero.
+        if key == "actuators" and key not in raw_counts:
+            continue
         raw_count = raw_counts.get(key)
         if isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0:
             raise EngineeringValidationError(
@@ -72,9 +75,23 @@ def normalize_engineering_scope_rules(value: Any) -> dict[str, Any]:
 def hardware_scope_category(device_type: Any) -> str | None:
     return {
         "SensorController": "sensors",
+        "ActuatorController": "actuators",
         "ECU": "ecus",
         "Gateway": "gateways",
     }.get(str(device_type or ""))
+
+
+def scope_count_mismatches(hardware_by_type: dict[str, int], rules: Any) -> dict[str, Any]:
+    if not rules:
+        return {}
+    limits = normalize_engineering_scope_rules(rules)["hardware_counts"]
+    actual = dict.fromkeys(SCOPE_COUNT_KEYS, 0)
+    for device_type, count in hardware_by_type.items():
+        category = hardware_scope_category(device_type)
+        if category:
+            actual[category] += count
+    return {key: {"target": target, "actual": actual[key]}
+            for key, target in limits.items() if actual[key] != target}
 
 
 def is_scope_placeholder_hardware(name: Any, source: Any) -> bool:

@@ -54,6 +54,52 @@ def test_job_registry_survives_restart(tmp_path: Path) -> None:
     assert "Dienstneustart" in restored.get("interrupted")["error"]
 
 
+def test_job_registry_persists_compact_results(tmp_path: Path) -> None:
+    registry = tmp_path / "jobs" / "registry.json"
+    service = JobService(synchronous=True, registry_path=registry, persist=True)
+    service._jobs["large"] = {
+        "id": "large",
+        "status": "completed",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+        "result": {
+            "status": "completed",
+            "summary": "ok",
+            "artifacts": [str(tmp_path / "trace.asc")],
+            "events": [{"payload": "x" * 1000} for _ in range(100)],
+        },
+    }
+
+    with service._lock:
+        service._persist_locked()
+
+    text = registry.read_text(encoding="utf-8")
+    assert len(text) < 2000
+    assert "events" not in text
+    assert "registry_truncated" in text
+
+
+def test_job_list_returns_compact_results(tmp_path: Path) -> None:
+    service = JobService(synchronous=True, persist=False)
+    service._jobs["large"] = {
+        "id": "large",
+        "project_id": "project-a",
+        "status": "completed",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+        "result": {
+            "status": "completed",
+            "artifacts": [str(tmp_path / "trace.asc")],
+            "events": [{"payload": "x" * 1000} for _ in range(100)],
+        },
+    }
+
+    listed = service.list("project-a")
+
+    assert listed[0]["result"]["artifact_count"] == 1
+    assert "events" not in listed[0]["result"]
+
+
 def test_jobs_are_isolated_by_project() -> None:
     service = JobService(synchronous=True, persist=False)
     service._jobs = {

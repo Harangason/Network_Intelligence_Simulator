@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..db import get_connection
-from ..scope_rules import normalize_engineering_scope_rules, scope_placeholder_sql
+from ..scope_rules import normalize_engineering_scope_rules, scope_placeholder_sql, scope_count_mismatches
 from .models import (
     WORKFLOW_LABELS,
     WORKFLOW_STATUSES,
@@ -431,7 +431,15 @@ class WorkflowStatusService:
         state: dict[str, Any],
     ) -> dict[str, Any]:
         if step == "engineering_model":
-            return self._model_artifact_check(connection)
+            check = self._model_artifact_check(connection)
+            mismatches = scope_count_mismatches(check["hardware_by_type"],
+                                                (state.get("context") or {}).get("engineering_scope_rules"))
+            check["scope_mismatches"] = mismatches
+            if mismatches:
+                check["complete"] = False
+                if check["status"] == "COMPLETE":
+                    check["status"] = "IN_PROGRESS"
+            return check
         if step == "routing":
             return self._routing_artifact_check(connection)
         if step == "network_editor":
@@ -551,6 +559,7 @@ class WorkflowStatusService:
 
     def set_context(self, context: dict[str, Any], *, summary: bool = False) -> dict[str, Any]:
         allowed = {
+            "agent_execution",
             "agent_wizard_status",
             "active_workflow_step",
             "engineering_scope_rules",

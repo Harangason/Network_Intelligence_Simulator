@@ -11,6 +11,7 @@ export type SemanticRoutePlan = {
 };
 
 const ROUTE_RULES: RouteRule[] = [
+  { source: ["airbag", "crash", "impact", "seatbelt", "gurt"], targets: ["airbag", "rueckhalt"] },
   { source: ["brakepressure", "bremsdruck", "braketemperature", "bremstemperatur", "brakepedal", "bremspedal"], targets: ["bremsregelung", "stabilitaetsregelung"] },
   { source: ["tirepressure", "reifendruck", "tiretemperature", "reifentemperatur", "tirewear", "reifenverschleiss"], targets: ["reifendruckkontrolle"] },
   { source: ["damperposition", "daempferposition"], targets: ["daempferregelung", "fahrwerk"] },

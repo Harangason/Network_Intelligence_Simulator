@@ -25,6 +25,7 @@ export type TopologyNode = {
   engineeringId?: string;
   engineeringFunctionId?: string;
   systemOwnerId?: string;
+  systemOwnerSource?: string;
 };
 
 export type TopologyRouteMetadata = {

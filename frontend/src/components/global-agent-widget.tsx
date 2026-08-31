@@ -155,7 +155,10 @@ export function GlobalAgentWidget() {
     }
 
     let active = true;
+    let checking = false;
     const checkRoutingApprovals = async () => {
+      if (checking) return;
+      checking = true;
       try {
         const next = routingApprovalProgress(await listRoutes());
         if (!active) return;
@@ -163,6 +166,8 @@ export function GlobalAgentWidget() {
         if (!next.complete) return;
         const workflow = await getWorkflow();
         if (!active) return;
+        // The wizard owns its run and explicit review gates, including after reopening.
+        if (workflow.context.agent_wizard_status) return;
         const progress = engineeringAgentWorkflowProgress(
           { workflowTarget: "data_science_intelligence" },
           workflow.statuses,
@@ -173,6 +178,8 @@ export function GlobalAgentWidget() {
         }
       } catch {
         // A transient routing API failure must not discard the last known gate state.
+      } finally {
+        checking = false;
       }
     };
     const handleRoutingChange = () => void checkRoutingApprovals();

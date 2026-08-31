@@ -10,6 +10,8 @@ from backend.engineering.intelligence.services import (
 from backend.engineering.project_bundle import normalize_project_id
 from backend.engineering.workflow.models import default_statuses, default_versions, transition_state
 from backend.app import create_app
+from backend.engineering.intelligence.service import IntelligenceService
+from backend.engineering.intelligence.review_learning import enrich_with_review_history
 
 
 def _objects():
@@ -24,6 +26,62 @@ def _objects():
         "Message": [{"id": "message-a", "name": "Status", "interface_id": "interface-a", "direction": "tx", "cycle_ms": 10, "dlc": 8, "approval_state": "approved", "provenance": {"source": "test"}}],
         "Signal": [{"id": "signal-a", "name": "Speed", "message_id": "message-a", "data_type": "uint16", "unit": "km/h", "length_bits": 16, "approval_state": "approved", "provenance": {"source": "test"}}],
     }
+
+
+def test_device_type_is_not_part_of_the_name_but_distinguishes_duplicates():
+    objects = _objects()
+    objects["HardwareNode"] = [
+        {"id": "s", "name": "Airbag", "device_type": "SensorController"},
+        {"id": "e", "name": "Airbag", "device_type": "ECU"},
+    ]
+    assert DataQualityService().analyze(objects)["duplicate_candidates"] == 0
+    objects["HardwareNode"].append({"id": "s2", "name": "Airbag", "device_type": "SensorController"})
+    assert DataQualityService().analyze(objects)["duplicate_candidates"] == 1
+
+
+def test_review_experience_is_reused_without_auto_approval_or_hiding_errors():
+    recommendations = [{"category": "Network Segmentation", "problem": "90%", "affected_objects": ["airbag"], "priority": 95, "status": "CANDIDATE"}]
+    proposals = [
+        {"proposal_id": "old", "category": "Network Segmentation", "problem": "85%", "affected_objects": ["airbag"], "status": "REJECTED", "review_reason": "Timing must stay unchanged"},
+        {"proposal_id": "unrelated", "category": "Network Segmentation", "affected_objects": ["climate"], "status": "ACCEPTED"},
+        {"proposal_id": "pending", "category": "Network Segmentation", "affected_objects": ["airbag"], "status": "PROPOSED"},
+    ]
+    result = enrich_with_review_history(recommendations, proposals)
+    assert result == {"reviewed_proposals": 2, "matched_recommendations": 1}
+    assert recommendations[0]["review_history"][0]["proposal_id"] == "old"
+    assert len(recommendations[0]["review_history"]) == 1
+    assert recommendations[0]["requires_fresh_review"] is True
+    assert recommendations[0]["status"] == "CANDIDATE"
+    assert recommendations[0]["priority"] == 95
+
+
+def test_diagnosis_persists_capacity_errors_without_a_successful_simulation(monkeypatch):
+    service = IntelligenceService("diagnostic-test")
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *args, **kwargs: None)
+    collected = {
+        "objects": _objects(), "state": {"versions": default_versions(), "parameters": {}, "topology": {}},
+        "routes": [], "relations": [], "preflight": {}, "simulations": [], "history": [],
+        "capacity": {"id": "overload", "status": "ERROR", "results": {}, "findings": [
+            {"severity": "ERROR", "code": "CAPACITY_OVERLOAD", "object_id": "network-lin", "message": "LIN overload"},
+        ]},
+    }
+    monkeypatch.setattr(service, "_collect", lambda: collected)
+    monkeypatch.setattr(service, "_rag_insights", lambda issues: [])
+    persisted = []
+
+    def persist(kind, **data):
+        persisted.append((kind, data))
+        return {"id": "diagnosis", **data}
+
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", persist)
+    result = service.assess()
+    assert result["status"] == "ERROR"
+    assert result["results"]["assessment_mode"] == "DIAGNOSTIC"
+    assert result["results"]["missing_evidence"]
+    assert result["results"]["recommendations"]
+    assert any(issue["code"] == "CAPACITY_OVERLOAD" for issue in result["results"]["critical_issues"])
+    assert [kind for kind, _ in persisted] == ["intelligence"]
+    assert not result["provenance"]["ai_interpretation"]
 
 
 def test_step_nine_is_invalidated_by_earlier_changes():

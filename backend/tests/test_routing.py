@@ -432,6 +432,33 @@ def test_linked_agent_route_receives_physical_network_and_ports():
     assert enriched["destinations"][0]["port_id"] == "target-port"
 
 
+def test_validation_counts_shared_network_destinations_as_one_physical_segment():
+    validator = FakeValidator(signal_bits=16)
+    shared = route_payload(
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a"},
+        destinations=[
+            {"node_id": TARGET, "network_id": "net-a", "protocol": "CAN_FD"},
+            {"node_id": "00000000-0000-0000-0000-000000000003", "network_id": "net-a", "protocol": "CAN_FD"},
+        ],
+        routing_policy={"routing_type": "MULTICAST", "redundancy": "NONE", "conditions": []},
+    )
+    split = route_payload(
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a"},
+        destinations=[
+            {"node_id": TARGET, "network_id": "net-b", "protocol": "CAN_FD"},
+            {"node_id": "00000000-0000-0000-0000-000000000003", "network_id": "net-c", "protocol": "CAN_FD"},
+        ],
+        routing_policy={"routing_type": "MULTICAST", "redundancy": "NONE", "conditions": []},
+    )
+
+    shared_result = validator.validate(shared)
+    split_result = validator.validate(split)
+
+    assert shared_result["metrics"]["physical_segment_count"] == 1
+    assert split_result["metrics"]["physical_segment_count"] == 3
+    assert split_result["metrics"]["route_load_percent"] == shared_result["metrics"]["route_load_percent"] * 3
+
+
 def test_gateway_path_composed_from_accepted_routes_does_not_reopen_review():
     topology = {
         "nodes": [

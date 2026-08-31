@@ -4,16 +4,15 @@ import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react
 import {
   createEngineeringObject,
   createEngineeringRelation,
-  commitEngineeringImport,
   approveAllValidEngineeringProposals,
   approveEngineeringProposal,
   deleteEngineeringObject,
   deleteEngineeringRelation,
   getEngineeringSchema,
+  listEngineeringTools,
   listAllEngineeringObjects,
   listEngineeringProposals,
   listEngineeringRelations,
-  previewEngineeringImport,
   rejectEngineeringProposal,
   RESOURCE_LABELS,
   RESOURCE_TO_OBJECT_TYPE,
@@ -32,11 +31,10 @@ import {
 import type {
   EngineeringObject,
   EngineeringProposal,
-  EngineeringImportPlan,
-  EngineeringImportResult,
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
+  EngineeringToolDefinition,
   EngSignal,
 } from "@/lib/types";
 import { getWorkflow, setWorkflowContext } from "@/lib/workflow-api";
@@ -427,7 +425,6 @@ export function EngineeringWorkbench() {
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [hardwarePreset, setHardwarePreset] = useState<string | null>(null);
-  const [showImport, setShowImport] = useState(false);
   const [showAgentWizard, setShowAgentWizard] = useState(false);
   const [showStructureTree, setShowStructureTree] = useState(false);
   const [activeInterfaceIds, setActiveInterfaceIds] = useState<Set<string> | null>(null);
@@ -435,6 +432,8 @@ export function EngineeringWorkbench() {
   const [columnFilters, setColumnFilters] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [toolRegistry, setToolRegistry] = useState<EngineeringToolDefinition[]>([]);
+  const [toolRegistryError, setToolRegistryError] = useState("");
 
   useEffect(() => {
     const openRequestedWizard = () => {
@@ -449,6 +448,22 @@ export function EngineeringWorkbench() {
     getEngineeringSchema()
       .then(setSchema)
       .catch((err) => setError(err instanceof Error ? err.message : "Schema konnte nicht geladen werden."));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    listEngineeringTools()
+      .then((result) => {
+        if (cancelled) return;
+        setToolRegistry(result.items);
+        setToolRegistryError("");
+      })
+      .catch((err) => {
+        if (!cancelled) setToolRegistryError(err instanceof Error ? err.message : "Tool Registry nicht erreichbar.");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -617,9 +632,6 @@ export function EngineeringWorkbench() {
           <div className="panel-heading-actions">
             <button className="button secondary" onClick={() => setShowAgentWizard(true)} type="button">
               Agent-Auftrag
-            </button>
-            <button className="button secondary" onClick={() => setShowImport(true)} type="button">
-              Importieren
             </button>
           </div>
         </div>
@@ -850,17 +862,67 @@ export function EngineeringWorkbench() {
         )}
         </>}
       </div>
+      <ToolRegistryPanel error={toolRegistryError} tools={toolRegistry} />
     </div>
-    {showImport && (
-      <ImportWizard
-        onClose={() => setShowImport(false)}
-        onImported={() => {
-          refresh();
-        }}
-      />
-    )}
     {showAgentWizard && <EngineeringAgentWizardDialog onClose={() => setShowAgentWizard(false)} />}
     </>
+  );
+}
+
+function ToolRegistryPanel({ tools, error }: { tools: EngineeringToolDefinition[]; error: string }) {
+  const categories = Array.from(new Set(tools.map((tool) => tool.category))).sort((left, right) => left.localeCompare(right, "de"));
+  const approvalCount = tools.filter((tool) => tool.requires_approval).length;
+  const formatCount = new Set(tools.flatMap((tool) => tool.supported_formats)).size;
+  const featuredTools = [...tools]
+    .sort((left, right) => Number(right.requires_approval) - Number(left.requires_approval) || left.category.localeCompare(right.category, "de"))
+    .slice(0, 8);
+
+  return (
+    <section className="panel tool-registry-panel" aria-label="Engineering Tool Registry">
+      <div className="panel-heading">
+        <div>
+          <p className="eyebrow">Tool Registry</p>
+          <h2>Systemwerkzeuge</h2>
+        </div>
+        <div className="tool-registry-summary" aria-label="Tool-Registry-Zusammenfassung">
+          <span><b>{tools.length}</b> Tools</span>
+          <span><b>{approvalCount}</b> Review-Gates</span>
+          <span><b>{formatCount}</b> Formate</span>
+        </div>
+      </div>
+      {error ? (
+        <p className="muted">{error}</p>
+      ) : (
+        <>
+          <div className="tool-registry-categories" aria-label="Tool-Kategorien">
+            {categories.map((category) => (
+              <span key={category}>{category}</span>
+            ))}
+          </div>
+          <div className="tool-registry-list">
+            {featuredTools.map((tool) => (
+              <details key={tool.id}>
+                <summary>
+                  <span>
+                    <strong>{tool.name}</strong>
+                    <small>{tool.id} · {tool.workflow_step}</small>
+                  </span>
+                  <i>{tool.requires_approval ? "Freigabe" : tool.status}</i>
+                </summary>
+                <p>{tool.description}</p>
+                <dl>
+                  <div><dt>KI-Nutzung</dt><dd>{tool.ai_usage}</dd></div>
+                  <div><dt>Fähigkeiten</dt><dd>{tool.capabilities.join(", ")}</dd></div>
+                  {tool.supported_formats.length > 0 && (
+                    <div><dt>Formate</dt><dd>{tool.supported_formats.slice(0, 12).join(", ")}{tool.supported_formats.length > 12 ? " ..." : ""}</dd></div>
+                  )}
+                </dl>
+              </details>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -1518,156 +1580,6 @@ function referenceEmptyHint(label: string) {
   if (subject.includes("funktion")) return "Es gibt noch keine Functions im Modell. Lege zuerst eine Function auf einem Hardware-Knoten an.";
   if (subject.includes("hardware")) return "Es gibt noch keine Hardware-Knoten im Modell. Lege zuerst Hardware an.";
   return "Das benötigte Elternobjekt ist noch nicht im Modell angelegt.";
-}
-
-const IMPORT_COUNT_LABELS: Array<[keyof EngineeringImportPlan["counts"], string]> = [
-  ["hardware_nodes", "Hardware"],
-  ["functions", "Funktionen"],
-  ["interfaces", "Interfaces"],
-  ["messages", "Nachrichten"],
-  ["signals", "Signale"],
-];
-
-function ImportWizard({
-  onClose,
-  onImported,
-}: {
-  onClose: () => void;
-  onImported: () => void;
-}) {
-  const [plan, setPlan] = useState<EngineeringImportPlan | null>(null);
-  const [result, setResult] = useState<EngineeringImportResult | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [error, setError] = useState("");
-
-  async function chooseFile(file: File | undefined) {
-    if (!file) return;
-    setAnalyzing(true);
-    setError("");
-    setPlan(null);
-    setResult(null);
-    try {
-      setPlan(await previewEngineeringImport(file));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Datei konnte nicht analysiert werden.");
-    } finally {
-      setAnalyzing(false);
-    }
-  }
-
-  async function runImport() {
-    if (!plan) return;
-    setImporting(true);
-    setError("");
-    try {
-      const nextResult = await commitEngineeringImport(plan);
-      setResult(nextResult);
-      onImported();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Import fehlgeschlagen.");
-    } finally {
-      setImporting(false);
-    }
-  }
-
-  const step = result ? 3 : plan ? 2 : 1;
-
-  return (
-    <div className="eng-import-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section aria-labelledby="import-title" aria-modal="true" className="eng-import-dialog" role="dialog">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Engineering-Import</p>
-            <h2 id="import-title">Import-Wizard</h2>
-          </div>
-          <button aria-label="Import schließen" className="eng-dialog-close" onClick={onClose} type="button">×</button>
-        </div>
-
-        <div aria-label="Importschritte" className="eng-import-steps">
-          {["Datei", "Vorschau", "Import"].map((label, index) => (
-            <span className={step >= index + 1 ? "active" : ""} key={label}>
-              {index + 1} {label}
-            </span>
-          ))}
-        </div>
-
-        {!plan && !result && (
-          <label className="eng-import-dropzone">
-            <input
-              accept=".dbc,.csv,.xlsx"
-              disabled={analyzing}
-              onChange={(event) => void chooseFile(event.target.files?.[0])}
-              type="file"
-            />
-            <strong>{analyzing ? "Datei wird analysiert …" : "Datei auswählen"}</strong>
-            <span>DBC, CSV oder XLSX</span>
-          </label>
-        )}
-
-        {plan && !result && (
-          <>
-            <div className="eng-import-file">
-              <div>
-                <span>{plan.format.toUpperCase()}</span>
-                <strong>{plan.file_name}</strong>
-              </div>
-              <button className="button secondary tiny" onClick={() => setPlan(null)} type="button">
-                Andere Datei
-              </button>
-            </div>
-            <div className="eng-import-counts">
-              {IMPORT_COUNT_LABELS.map(([key, label]) => (
-                <div key={key}>
-                  <strong>{plan.counts[key]}</strong>
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
-            {Object.keys(plan.mapping).length > 0 && (
-              <div className="eng-import-mapping">
-                <p className="eyebrow">Erkannte Zuordnung</p>
-                <dl>
-                  {Object.entries(plan.mapping).map(([field, column]) => (
-                    <div key={field}>
-                      <dt>{column}</dt>
-                      <dd>{field}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            )}
-            {plan.warnings.length > 0 && (
-              <ul className="eng-import-warnings">
-                {plan.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-              </ul>
-            )}
-          </>
-        )}
-
-        {result && (
-          <div className="eng-import-result">
-            <span className="status-badge completed">Import abgeschlossen</span>
-            <strong>{result.created} Objekte angelegt</strong>
-            <p>{result.reused} bereits vorhandene Objekte wurden wiederverwendet.</p>
-          </div>
-        )}
-
-        {error && <div className="notice error">{error}</div>}
-
-        <div className="form-actions">
-          <button className="button secondary" onClick={onClose} type="button">
-            {result ? "Schließen" : "Abbrechen"}
-          </button>
-          {plan && !result && (
-            <button className="button primary" disabled={importing} onClick={() => void runImport()} type="button">
-              {importing ? "Wird importiert …" : "Import bestätigen"}
-            </button>
-          )}
-        </div>
-      </section>
-    </div>
-  );
 }
 
 function CreateForm({

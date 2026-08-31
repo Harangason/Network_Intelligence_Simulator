@@ -1,6 +1,7 @@
 import type { NetworkTopology } from "./topology";
 import type { SimulationResultPayload } from "./types";
 import { readActiveProjectId } from "./user-settings";
+import type { InspectionObject, InspectionSources } from "./capacity-network-inspection";
 
 const BASE = "/api/engineering";
 const LOCAL_FRONTEND_PORT = "13500";
@@ -58,6 +59,7 @@ export type WorkflowState = {
     complete?: boolean;
     counts?: Record<string, number>;
     hardware_by_type?: Record<string, number>;
+    scope_mismatches?: Record<string, { actual?: number; target?: number }>;
     status?: string;
   }>;
   routing_sync?: {
@@ -178,6 +180,9 @@ export type CapacityRoute = {
   route_code?: string;
   name: string;
   network_id: string;
+  physical_network_ids?: string[];
+  route_segment_index?: number;
+  route_segment_count?: number;
   protocol: string;
   payload_bytes: number;
   cycle_ms: number;
@@ -209,6 +214,7 @@ export type CapacityResults = {
   overview: {
     network_count: number;
     route_count: number;
+    route_segment_count?: number;
     gateway_count: number;
     signal_count: number;
     load_status_counts: Record<"NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD", number>;
@@ -320,7 +326,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error((payload as { error?: string }).error ?? `Workflow-Fehler ${response.status}`);
+    throw Object.assign(new Error((payload as { error?: string }).error ?? `Workflow-Fehler ${response.status}`), { status: response.status });
   }
   return payload as T;
 }
@@ -366,6 +372,47 @@ export const calculateCapacityScenario = (overrides: Record<string, unknown>) =>
   );
 
 export const getCapacity = () => request<AnalysisSnapshot>("/capacity");
+
+const inspectionSources = new Map<string, { key: string; data: InspectionSources }>();
+const inspectionRequests = new Map<string, Promise<InspectionSources>>();
+
+export function getCapacityInspectionSources(projectId: string): Promise<InspectionSources> {
+  const pending = inspectionRequests.get(projectId);
+  if (pending) return pending;
+  const headers = { "X-Project-ID": projectId };
+  const versionKey = (versions: Record<string, number>) => JSON.stringify([
+    versions.engineering_model, versions.routing, versions.network_editor, versions.parameters,
+  ]);
+  const load = async () => {
+    const before = await request<WorkflowState>("/workflow?view=summary", { headers });
+    const key = versionKey(before.versions);
+    const cached = inspectionSources.get(projectId);
+    if (cached?.key === key) return cached.data;
+    const all = async (resource: string) => {
+      const items: InspectionObject[] = [];
+      for (let offset = 0; ; offset += 500) {
+        const page = await request<{ items: InspectionObject[] }>(`/${resource}?limit=500&offset=${offset}`, { headers });
+        items.push(...page.items);
+        if (page.items.length < 500) return items;
+      }
+    };
+    const topology = await request<{ topology: Record<string, unknown> }>("/workflow/topology", { headers });
+    const data: InspectionSources = {
+      versions: before.versions, topology: topology.topology,
+      hardware: await all("hardware-nodes"), functions: await all("functions"),
+      interfaces: await all("interfaces"), messages: await all("messages"),
+      signals: await all("signals"), routes: await all("routing"),
+    };
+    const after = await request<WorkflowState>("/workflow?view=summary", { headers });
+    if (key !== versionKey(after.versions)) throw new Error("Modell wurde während der Signalprüfung geändert. Bitte erneut laden.");
+    inspectionSources.set(projectId, { key, data });
+    if (inspectionSources.size > 2) inspectionSources.delete(inspectionSources.keys().next().value!);
+    return data;
+  };
+  const promise = load().finally(() => { inspectionRequests.delete(projectId); });
+  inspectionRequests.set(projectId, promise);
+  return promise;
+}
 
 export const runPreflight = () =>
   request<{
@@ -415,6 +462,8 @@ export type IntelligenceIssue = {
 };
 
 export type IntelligenceRecommendation = {
+  review_history?: Array<{ proposal_id: string; status: string; reason?: string; previous_recommendation?: string }>;
+  requires_fresh_review?: boolean;
   candidate_id: string;
   category: string;
   problem: string;
@@ -433,6 +482,35 @@ export type IntelligenceRecommendation = {
 };
 
 export type IntelligenceResults = {
+  review_learning?: { reviewed_proposals: number; matched_recommendations: number };
+  assessment_mode?: "DIAGNOSTIC" | "VERIFIED";
+  missing_evidence?: string[];
+  interpretation?: { method: string; ai_used: boolean; learning: string };
+  network_distribution?: {
+    status: string;
+    target_load_percent: number;
+    validation_scope: string;
+    unresolved: string[];
+    networks: Array<{
+      network_id: string;
+      protocol: string;
+      current_load_percent: number;
+      proposed_segments: number;
+      additional_segments: number;
+      projected_max_load_percent: number;
+      segments: Array<{
+        name: string;
+        cluster_id: string;
+        cluster_name: string;
+        ownership_basis: string;
+        protocol: string;
+        route_ids: string[];
+        projected_load_percent: number;
+        load_check: string;
+        alternatives: string[];
+      }>;
+    }>;
+  };
   system_health: {
     score: number;
     counts: Record<string, number>;
@@ -483,14 +561,21 @@ export type OptimizationProposal = {
   status: "PROPOSED" | "UNDER_REVIEW" | "ACCEPTED" | "REJECTED" | "APPLIED_AS_DRAFT" | "SUPERSEDED";
 };
 
-export const getIntelligence = () =>
-  request<IntelligenceSnapshot>("/intelligence");
+export const getIntelligence = (projectId?: string) =>
+  request<IntelligenceSnapshot>("/intelligence", {
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
+  });
 
-export const assessIntelligence = () =>
-  request<IntelligenceSnapshot>("/intelligence/assess", { method: "POST", body: "{}", signal: AbortSignal.timeout(30000) });
+export const assessIntelligence = (projectId?: string) =>
+  request<IntelligenceSnapshot>("/intelligence/assess", {
+    method: "POST", body: "{}", signal: AbortSignal.timeout(30000),
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
+  });
 
-export const listOptimizationProposals = () =>
-  request<{ items: OptimizationProposal[]; count: number }>("/intelligence/proposals");
+export const listOptimizationProposals = (projectId?: string) =>
+  request<{ items: OptimizationProposal[]; count: number }>("/intelligence/proposals", {
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
+  });
 
 export const createOptimizationProposal = (proposal: IntelligenceRecommendation, projectId?: string) =>
   request<OptimizationProposal>("/intelligence/proposals", {

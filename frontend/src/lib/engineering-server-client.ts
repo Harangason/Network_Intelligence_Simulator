@@ -248,6 +248,17 @@ export function inspectWorkflowState() {
   return request<Record<string, unknown>>("/workflow");
 }
 
+export function listEngineeringToolRegistry(params: Record<string, string | boolean | undefined> = {}) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") query.set(key, String(value));
+  }
+  const suffix = query.toString();
+  return request<{ items: Record<string, unknown>[]; count: number }>(
+    `/tools${suffix ? `?${suffix}` : ""}`,
+  );
+}
+
 export function saveWorkflowContext(context: Record<string, unknown>) {
   return request<Record<string, unknown>>("/workflow/context", {
     method: "PATCH",
@@ -257,6 +268,7 @@ export function saveWorkflowContext(context: Record<string, unknown>) {
 
 export function saveWorkflowTopology(topology: Record<string, unknown>) {
   return request<Record<string, unknown>>("/workflow/topology", {
+    timeoutMs: 180_000,
     method: "PUT",
     body: JSON.stringify({ topology, actor: "engineering-chat-agent" }),
   });
@@ -264,6 +276,7 @@ export function saveWorkflowTopology(topology: Record<string, unknown>) {
 
 export function saveWorkflowParameters(parameters: Record<string, unknown>) {
   return request<Record<string, unknown>>("/workflow/parameters", {
+    timeoutMs: 180_000,
     method: "PATCH",
     body: JSON.stringify({ parameters, actor: "engineering-chat-agent" }),
   });
@@ -279,6 +292,7 @@ export function inspectCapacityAnalysis() {
 
 export function calculateCapacityAnalysis(overrides: Record<string, unknown> = {}) {
   return request<Record<string, unknown>>("/capacity/calculate", {
+    timeoutMs: 180_000,
     method: "POST",
     body: JSON.stringify({ overrides }),
   });
@@ -290,6 +304,7 @@ export function inspectPreflightAnalysis() {
 
 export function runPreflightAnalysis() {
   return request<Record<string, unknown>>("/preflight", {
+    timeoutMs: 180_000,
     method: "POST",
     body: "{}",
   });
@@ -297,6 +312,7 @@ export function runPreflightAnalysis() {
 
 export function createWorkflowSimulationSnapshot(configuration: Record<string, unknown> = {}) {
   return request<Record<string, unknown>>("/workflow/simulation-snapshots", {
+    timeoutMs: 180_000,
     method: "POST",
     body: JSON.stringify({ configuration }),
   });
@@ -408,6 +424,7 @@ export function inspectIntelligenceAssessment() {
 
 export function runIntelligenceAssessment() {
   return request<Record<string, unknown>>("/intelligence/assess", {
+    timeoutMs: 180_000,
     method: "POST",
     body: "{}",
   });

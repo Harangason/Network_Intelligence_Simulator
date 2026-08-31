@@ -12,7 +12,9 @@ from ..relations import list_relations
 from ..repository import list_objects
 from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
-from ..workflow.service import WorkflowConflictError, WorkflowStatusService
+from ..workflow.service import WorkflowStatusService
+from .network_planning import plan_network_distribution, distribution_recommendations
+from .review_learning import enrich_with_review_history
 from .repository import (
     create_optimization_proposal,
     list_optimization_proposals,
@@ -38,7 +40,7 @@ def _now() -> str:
 
 
 class IntelligenceService:
-    CALCULATION_VERSION = "1.0"
+    CALCULATION_VERSION = "1.1"
 
     def __init__(self, project_id: str = "default") -> None:
         self.project_id = str(project_id or "default")
@@ -59,6 +61,7 @@ class IntelligenceService:
             "preflight": self.workflow.latest_analysis("preflight", include_outdated=True) or {},
             "simulations": state.get("simulation_snapshots") or [],
             "history": self._history(),
+            "review_history": list_optimization_proposals(self.project_id),
         }
 
     def _history(self) -> list[dict[str, Any]]:
@@ -227,6 +230,7 @@ class IntelligenceService:
             "synchronization": results.get("synchronization") or {},
             "networks": results.get("networks") or [],
             "gateways": results.get("gateways") or [],
+            "signal_quality": results.get("signal_quality") or {},
             "requirements": rows,
             "source_snapshot_id": snapshot.get("id"),
             "source_outdated": bool(snapshot.get("is_outdated")),
@@ -290,12 +294,16 @@ class IntelligenceService:
 
     def assess(self, *, persist: bool = True) -> dict[str, Any]:
         results_analysis = self.workflow.latest_analysis("results_analysis")
-        if not results_analysis or results_analysis.get("status") not in {"COMPLETE", "APPROVED", "WARNING"}:
-            raise WorkflowConflictError(
-                "Eine aktuelle Results-/Analysis-Auswertung ist vor der Intelligence-Bewertung erforderlich."
-            )
+        verified = bool(results_analysis and not results_analysis.get("is_outdated") and results_analysis.get("status") in {"COMPLETE", "APPROVED", "WARNING"})
         data = self._collect()
         objects = data["objects"]
+        missing_evidence = []
+        if not verified:
+            missing_evidence.append("Aktuelle Simulation und Results-/Analysis-Auswertung fehlen.")
+        for key, label in (("capacity", "Capacity & Timing"), ("preflight", "Validation / Preflight")):
+            if not data[key] or data[key].get("is_outdated"):
+                missing_evidence.append(f"{label}: kein aktueller Nachweis.")
+                data[key] = {}  # Old findings are history, not evidence about the current model.
         data_quality = DataQualityService().analyze(objects)
         graph = GraphAnalyticsService().analyze(
             objects["HardwareNode"], objects["Interface"], objects["Signal"],
@@ -312,6 +320,7 @@ class IntelligenceService:
         )
         anomalies = AnomalyDetectionService().analyze(data["routes"], data["capacity"])
         issues = [
+            *[_issue("WARNING", "Evidence", "MISSING_EVIDENCE", item) for item in missing_evidence],
             *routing["issues"],
             *graph["issues"],
             *data_quality["issues"],
@@ -320,8 +329,19 @@ class IntelligenceService:
         ]
         issues.sort(key=lambda item: {"ERROR": 0, "WARNING": 1, "INFO": 2}.get(item["severity"], 3))
         rag = self._rag_insights(issues)
-        recommendations = RecommendationEngine().generate(issues, rag)
+        distribution = plan_network_distribution(
+            data["capacity"], objects["HardwareNode"], data["state"].get("topology") or {},
+            parameters=data["state"].get("parameters") or {},
+            allowed_protocols=((data["state"].get("context") or {}).get("engineering_scope_rules") or {}).get("communication_systems"),
+        )
+        recommendations = [*distribution_recommendations(distribution), *RecommendationEngine().generate(issues, rag)]
+        review_learning = enrich_with_review_history(recommendations, data.get("review_history") or [])
         results = {
+            "assessment_mode": "VERIFIED" if verified else "DIAGNOSTIC",
+            "missing_evidence": missing_evidence,
+            "network_distribution": distribution,
+            "review_learning": review_learning,
+            "interpretation": {"method": "deterministic", "ai_used": False, "learning": "Versionierte Befunde und Review-Feedback; kein Modelltraining."},
             "system_health": health,
             "maturity": maturity,
             "critical_issues": issues,
@@ -329,6 +349,7 @@ class IntelligenceService:
             "routing_analytics": {key: value for key, value in routing.items() if key != "issues"},
             "network_analytics": {key: value for key, value in graph.items() if key != "issues"},
             "capacity_timing_analytics": capacity_timing,
+            "signal_quality": capacity_timing.get("signal_quality") or {},
             "anomalies": anomalies,
             "trends": TrendAnalysisService().analyze(data["history"]),
             "root_causes": RootCauseAnalysisService().analyze(issues, data["capacity"]),

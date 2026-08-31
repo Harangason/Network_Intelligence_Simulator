@@ -13,6 +13,8 @@ from .models import EngineeringValidationError
 from .project_context import current_project_id
 from .relations import create_relation
 from .repository import NotFoundError, create_object, get_object, update_object
+from .physical_segments import physical_port_networks
+from .structure_rules import normalize_hardware_name
 
 NODE_KIND_TO_DEVICE_TYPE = {
     "ecu": "ECU",
@@ -197,6 +199,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
     claimed_interface_ports: dict[str, str] = {}
     synchronized_nodes: list[dict[str, Any]] = []
     requested_interface_names: dict[str, str] = {}
+    port_networks = physical_port_networks(data)
 
     for raw_edge in edges:
         if not isinstance(raw_edge, dict):
@@ -263,7 +266,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             # Existing canonical objects own their human-readable identity. The
             # network editor may link and enrich them, but opening an older
             # topology must never rename the Engineering model backwards.
-            hardware_updates = {"identity": identity}
+            hardware_updates = {"identity": identity, "name": normalize_hardware_name(hardware["name"])}
             if (hardware.get("provenance") or {}).get("origin") == ORIGIN:
                 hardware_updates["device_type"] = device_type
             hardware = _update_if_changed(
@@ -333,7 +336,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 "topology_node_id": node_id,
                 "topology_port_id": port_id,
                 "bus": bus,
-                "network_id": f"network-{bus}",
+                "network_id": port_networks.get(port_id, f"network-{bus}"),
             }
             requested_interface_id = str(raw_port.get("engineeringId") or raw_port.get("engineering_id") or "").strip()
             interface = None

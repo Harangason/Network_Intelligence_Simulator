@@ -95,9 +95,10 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     setMessage("");
     try {
       const current = readUserSettings().activeProject;
-      const reset = await resetProjectWorkspace(current);
+      const nextProjectId = createProjectId();
+      await resetProjectWorkspace(current);
       await clearEngineeringAgentHistory(current);
-      setActiveProject(reset.project_id);
+      setActiveProject(nextProjectId);
       setClearDialogOpen(false);
       window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
       window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_WIZARD_KEY);
@@ -105,7 +106,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
       window.sessionStorage.removeItem("networkis:agent-project-brief");
       window.sessionStorage.removeItem("networkis:pending-agent-new-project");
-      setMessage(`Geleert: ${reset.project_id}`);
+      setMessage(`Geleert: ${current} · Neuer Workspace: ${nextProjectId}`);
       window.location.reload();
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Workspace konnte nicht geleert werden.");

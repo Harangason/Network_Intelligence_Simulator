@@ -1,12 +1,10 @@
 import type { Catalog, SimulationJob } from "@/lib/types";
+import { simulationFormatDefinitions, simulationFormatExtension } from "@/lib/simulation-formats";
 
 // DEV-OPT: These Next.js-only fixtures keep the isolated v0 frontend preview
 // editable when the Python service is not started. Vercel Services routes /api
 // to Flask in deployed environments, so this module is not the production API.
-const formats = [
-  "universal-jsonl", "universal-csv", "jsonl", "csv", "json", "log", "txt",
-  "xml", "yaml", "arxml", "fibex", "pcap", "pcapng", "blf", "dbc", "asc", "trc", "mdf", "mf4",
-];
+const formats = simulationFormatDefinitions.map((format) => format.id);
 
 const technology = (
   id: string,
@@ -125,7 +123,7 @@ export function createDevJob(payload: Record<string, unknown>, validateOnly: boo
       ? []
       : selectedFormats.map((format, index) => ({
           index,
-          name: `dev-opt-trace.${format.replace("universal-", "")}`,
+          name: `dev-opt-trace.${simulationFormatExtension(format)}`,
           url: `/api/simulations/${id}/artifacts/${encodeURIComponent(format)}`,
         })),
   };

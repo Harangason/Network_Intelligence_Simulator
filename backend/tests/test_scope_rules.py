@@ -5,6 +5,7 @@ from backend.engineering.scope_rules import (
     hardware_scope_category,
     is_scope_placeholder_hardware,
     normalize_engineering_scope_rules,
+    scope_count_mismatches,
 )
 from backend.engineering.repository import _enforce_engineering_scope_rules
 
@@ -53,6 +54,7 @@ def test_scope_rules_normalize_exact_system_limits():
     ("device_type", "category"),
     [
         ("SensorController", "sensors"),
+        ("ActuatorController", "actuators"),
         ("ECU", "ecus"),
         ("Gateway", "gateways"),
         ("PLC", None),
@@ -102,6 +104,28 @@ def test_interface_creation_must_use_allowed_communication_system():
             {"interface_type": "FlexRay"},
             "project-a",
         )
+
+
+def test_actuator_limit_is_enforced_without_changing_legacy_projects():
+    counts = {"sensors": 100, "ecus": 50, "gateways": 1, "actuators": 100}
+    rules = {"hardware_counts": counts}
+    assert normalize_engineering_scope_rules(rules)["hardware_counts"] == counts
+    with pytest.raises(EngineeringValidationError, match="exakt 100"):
+        _enforce_engineering_scope_rules(ScopeRuleConnection(rules, 100), "HardwareNode",
+                                         {"device_type": "ActuatorController"}, "project-a")
+    _enforce_engineering_scope_rules(ScopeRuleConnection(rules, 99), "HardwareNode",
+                                     {"device_type": "ActuatorController"}, "project-a")
+    del counts["actuators"]
+    _enforce_engineering_scope_rules(ScopeRuleConnection(rules, 100), "HardwareNode",
+                                     {"device_type": "ActuatorController"}, "project-a")
+
+
+def test_model_cannot_be_complete_while_required_actuators_are_missing():
+    rules = {"hardware_counts": {"sensors": 100, "actuators": 100, "ecus": 50, "gateways": 1}}
+    hardware = {"SensorController": 100, "ECU": 50, "Gateway": 1}
+    assert scope_count_mismatches(hardware, rules) == {"actuators": {"target": 100, "actual": 0}}
+    hardware["ActuatorController"] = 100
+    assert scope_count_mismatches(hardware, rules) == {}
 
 
 @pytest.mark.parametrize(

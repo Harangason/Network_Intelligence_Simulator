@@ -7,6 +7,7 @@ from typing import Any
 
 from ..db import get_connection
 from ..project_context import current_project_id
+from .validation import PROTOCOL_CAPACITY
 
 PROTOCOL_TO_TECHNOLOGY = {
     "CAN": "can",
@@ -79,12 +80,13 @@ class CommunicationConfigBuilder:
                 }
             )
 
-        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
         communications = []
         for route in approved:
             protocol = str(route.get("source", {}).get("protocol") or "CUSTOM").upper()
             technology = PROTOCOL_TO_TECHNOLOGY.get(protocol, "generic")
-            grouped[technology].append(route)
+            network_id = str(route["source"].get("network_id") or f"network-{technology}")
+            grouped[(network_id, technology, protocol)].append(route)
             for destination in route.get("destinations", []):
                 communications.append(
                     {
@@ -104,9 +106,9 @@ class CommunicationConfigBuilder:
                 )
         networks = [
             {
-                "id": f"network-{technology}",
+                "id": network_id,
                 "technology": technology,
-                "bitrate": 2_000_000 if technology == "can_fd" else 100_000_000,
+                "bitrate": PROTOCOL_CAPACITY.get(protocol, (100_000_000, 1500))[0],
                 "cycle_ms": min(float(route.get("timing", {}).get("cycle_time_ms") or 100) for route in grouped_routes),
                 "nodes": sorted(
                     {
@@ -120,7 +122,7 @@ class CommunicationConfigBuilder:
                     }
                 ),
             }
-            for technology, grouped_routes in grouped.items()
+            for (network_id, technology, protocol), grouped_routes in grouped.items()
         ]
         return {
             "config": {

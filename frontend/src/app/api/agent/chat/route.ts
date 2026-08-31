@@ -2,7 +2,6 @@ import {
   createAgentUIStreamResponse,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  toUIMessageStream,
   UIMessage,
 } from "ai";
 import {
@@ -16,18 +15,22 @@ import {
   type EngineeringWorkflowAutomationEvent,
 } from "@/lib/agent/engineering-agent";
 import { AGENT_OUTPUT_RECOVERY_CONTEXT, inspectAgentText } from "@/lib/agent/agent-output-safety";
-import { isStructuredEngineeringSpecification } from "@/lib/agent/engineering-specification";
+import { isEngineeringReviewRequest, isStructuredEngineeringSpecification } from "@/lib/agent/engineering-specification";
 import {
   extractSignalBatchRequest,
   isBulkSignalCreationRequest,
   registerEngineeringSignalBatch,
 } from "@/lib/agent/engineering-workload-batch";
-import { runWithAgentProject } from "@/lib/agent/request-context";
+import { runWithAgentProject, currentAgentProjectId, currentAgentRequestText } from "@/lib/agent/request-context";
+import { runExclusiveProjectBuild } from "@/lib/agent/project-execution";
 import { recordAgentFeedback } from "@/lib/agent/feedback-store";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
+import type { AgentBuildProgress, AgentRunStatus } from "@/lib/agent-run-status";
+import { inspectWorkflowState, saveWorkflowContext } from "@/lib/engineering-server-client";
 
 export const maxDuration = 300;
 const MAX_AGENT_CONTEXT_MESSAGES = 16;
+const MAX_SCOPE_DEVIATION_CONTINUATIONS = 1;
 
 function audit(message: string, details: Record<string, unknown> = {}) {
   const suffix = Object.entries(details)
@@ -177,16 +180,76 @@ function specificationSummary(result: Awaited<ReturnType<typeof registerEngineer
   const actual = result.actual_counts;
   const excess = result.excess_counts;
   const targetSummary = targets && actual
-    ? `Soll/Ist: Sensoren ${targets.sensors}/${actual.sensors}, ECUs ${targets.ecus}/${actual.ecus}, Gateways ${targets.gateways}/${actual.gateways}.`
+    ? `Soll/Ist: Sensoren ${targets.sensors}/${actual.sensors}, Aktoren ${targets.actuators}/${actual.actuators}, ECUs ${targets.ecus}/${actual.ecus}, Gateways ${targets.gateways}/${actual.gateways}.`
     : "";
   const excessSummary = excess && Object.values(excess).some((count) => Number(count) > 0)
-    ? ` Ueberschritten: Sensoren +${excess.sensors}, ECUs +${excess.ecus}, Gateways +${excess.gateways}.`
+    ? ` Ueberschritten: Sensoren +${excess.sensors}, Aktoren +${excess.actuators}, ECUs +${excess.ecus}, Gateways +${excess.gateways}.`
     : "";
   if (result.complete !== true) {
     const failureSummary = failures ? ` ${failures} Teilnehmer konnten nicht vollstaendig angelegt werden.` : "";
     return `${registered} von ${recognized} geplanten Teilnehmern wurden registriert. ${targetSummary}${excessSummary}${failureSummary} Der Engineering-Auftrag bleibt offen; Folgeschritte werden nicht gestartet.`;
   }
   return `${recognized} Teilnehmer geplant. ${registered} vollstaendige Engineering-Ketten mit Hardware, Funktion, Interface, Nachricht und Signal wurden registriert. ${targetSummary}`;
+}
+
+type ScopeCountKey = "sensors" | "actuators" | "ecus" | "gateways";
+
+const SCOPE_COUNT_LABELS: Record<ScopeCountKey, string> = {
+  sensors: "Sensoren",
+  actuators: "Aktoren",
+  ecus: "ECUs",
+  gateways: "Gateways",
+};
+
+function countRecord(value: unknown): Partial<Record<ScopeCountKey, number>> {
+  if (!value || typeof value !== "object") return {};
+  const source = value as Record<string, unknown>;
+  return Object.fromEntries(
+    (Object.keys(SCOPE_COUNT_LABELS) as ScopeCountKey[]).map((key) => [
+      key,
+      Number.isFinite(Number(source[key])) ? Number(source[key]) : 0,
+    ]),
+  );
+}
+
+function scopeDeviationItems(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  const targets = countRecord(result.target_counts);
+  const actual = countRecord(result.actual_counts);
+  return (Object.keys(SCOPE_COUNT_LABELS) as ScopeCountKey[]).flatMap((key) => {
+    const target = targets[key] ?? 0;
+    const current = actual[key] ?? 0;
+    if (target === current) return [];
+    return [{
+      key,
+      label: SCOPE_COUNT_LABELS[key],
+      target,
+      actual: current,
+      missing: Math.max(0, target - current),
+      excess: Math.max(0, current - target),
+    }];
+  });
+}
+
+function scopeDeviationSummary(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  return scopeDeviationItems(result)
+    .map((item) => `${item.label} ${item.actual}/${item.target}${item.missing ? `, ${item.missing} fehlen` : item.excess ? `, ${item.excess} zu viel` : ""}`)
+    .join("; ");
+}
+
+function hasRegistrationFailures(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  return Array.isArray(result.failures) && result.failures.length > 0;
+}
+
+function isExplicitScopeContinuationApproval(text: string) {
+  return /\b(Fortsetzung-Freigabe|Auftrag fortsetzen|fehlende(?:n)? .*dokumentier|dokumentierte Abweichung|explizite Freigabe)\b/i.test(text);
+}
+
+function scopeContinuationAttempts(wizardStatus: Record<string, unknown>, runId: string) {
+  const deviation = wizardStatus.scope_deviation;
+  if (!deviation || typeof deviation !== "object") return 0;
+  const record = deviation as Record<string, unknown>;
+  if (String(record.run_id ?? "") !== runId) return 0;
+  return Math.max(0, Math.floor(Number(record.continuations ?? 0) || 0));
 }
 
 function requestedWorkflowTarget(text: string) {
@@ -205,6 +268,11 @@ function routingSummary(result: Awaited<ReturnType<typeof registerRoutingProposa
   if (routingResult.blocked === true) {
     return `Routing konnte nicht vorbereitet werden: ${String(routingResult.reason ?? "Voraussetzungen fehlen.")}`;
   }
+  const failures = Array.isArray(routingResult.failures) ? routingResult.failures : [];
+  if (failures.length) {
+    const first = failures[0] as { reason?: string };
+    return `Routing ist unvollständig: ${failures.length} Pfade fehlgeschlagen. ${first.reason ?? "Validierungsbefunde prüfen."}`;
+  }
   if (routingResult.routing_table_populated === true) {
     const draftCount = Number(
       routingResult.draft_route_count ?? routingResult.accepted_route_count ?? routingResult.route_count ?? 0,
@@ -218,16 +286,6 @@ function routingSummary(result: Awaited<ReturnType<typeof registerRoutingProposa
     return `${Number(routingResult.proposal_count ?? 1)} Routing-Vorschläge mit ${Number(routingResult.route_count ?? 0)} Pfaden sind technisch valide und warten am Human-Review-Gate.`;
   }
   return "Der Routing-Vorschlag wurde erzeugt; Validierungsbefunde bleiben für die Prüfung sichtbar.";
-}
-
-function continuationPrompt(text: string) {
-  const selectedSteps = text.match(/Workflow\s+[3-9][^;\n]*/gi) ?? [];
-  return [
-    "Setze den bereits begonnenen und bestaetigten Wizard-Auftrag jetzt fort.",
-    "Engineering-Modell und Routing-Vorschlag wurden deterministisch mit kanonischen IDs vorbereitet.",
-    `Führe die verbleibenden ausgewählten Workflow-Schritte selbstständig aus: ${selectedSteps.join("; ")}.`,
-    "Verwende ausschließlich die Simulator-Tools und stoppe nur an einem echten Human-Review-Gate oder bei einem klar benannten Blocker.",
-  ].join("\n");
 }
 
 const AUTOMATIC_WORKFLOW_TARGETS = [
@@ -483,9 +541,30 @@ function createWorkflowAutomationResponse(messages: UIMessage[], target: Automat
   const stream = createUIMessageStream({
     originalMessages: messages,
     onError: (error) => error instanceof Error ? error.message : "Der automatische Workflow konnte nicht ausgeführt werden.",
-    execute: async ({ writer }) => {
+    execute: async ({ writer }) => runExclusiveProjectBuild(currentAgentProjectId(), async () => {
+      const workflow = await inspectWorkflowState();
+      const context = (workflow.context ?? {}) as Record<string, unknown>;
+      const wizard = (context.agent_wizard_status ?? {}) as Record<string, unknown>;
+      const runId = currentAgentRequestText().match(/Lauf-ID:\s*([\w-]+)/)?.[1] ?? String(wizard.run_id ?? "");
+      let currentStep: AgentBuildProgress["step"] = "network_editor";
+      let state: AgentRunStatus["state"] = "RUNNING";
+      let statusMessage = "Der freigegebene Workflow wird fortgesetzt.";
+      let statusWrite: Promise<unknown> = Promise.resolve();
+      const persistRun = () => {
+        const next: AgentRunStatus = { run_id: runId, step: currentStep, state, message: statusMessage,
+          completed: state === "COMPLETED" ? 1 : 0, total: 1, updated_at: new Date().toISOString() };
+        statusWrite = statusWrite.catch(() => undefined).then(() => runId ? saveWorkflowContext({ agent_execution: next }) : undefined);
+        return statusWrite;
+      };
+      await persistRun();
+      const heartbeat = setInterval(() => { void persistRun().catch((error) => audit("workflow heartbeat failed", { runId, error: String(error) })); }, 30_000);
       let activeToolCallId = "";
       const writeEvent = (event: EngineeringWorkflowAutomationEvent) => {
+        audit("workflow step", { runId, ...event, output: undefined });
+        currentStep = event.step as AgentBuildProgress["step"];
+        statusMessage = event.phase === "error" ? event.error ?? "Workflow-Schritt fehlgeschlagen."
+          : `${event.step}: ${event.phase === "start" ? "wird ausgefuehrt" : "abgeschlossen"}.`;
+        void persistRun().catch((error) => audit("workflow status failed", { runId, error: String(error) }));
         if (event.phase === "start") {
           activeToolCallId = crypto.randomUUID();
           writer.write({ type: "start-step" });
@@ -514,27 +593,61 @@ function createWorkflowAutomationResponse(messages: UIMessage[], target: Automat
         activeToolCallId = "";
       };
 
-      const result = await runEngineeringWorkflowAutomation(target, writeEvent);
-      const textId = crypto.randomUUID();
-      const summary = result.complete
-        ? `Automatischer Build abgeschlossen: ${result.completedSteps.length} Folgeschritte wurden ausgeführt; der Zielstatus ${target} ist erreicht.`
-        : `Automatische Fortsetzung bei ${result.blockedStep ?? "Workflow"} gestoppt: ${result.reason ?? "Der nächste Schritt benötigt eine technische Entscheidung."}`;
-      writer.write({ type: "text-start", id: textId });
-      writer.write({ type: "text-delta", id: textId, delta: summary });
-      writer.write({ type: "text-end", id: textId });
-    },
+      try {
+        const result = await runEngineeringWorkflowAutomation(target, writeEvent);
+        const textId = crypto.randomUUID();
+        const summary = result.complete
+          ? `Automatischer Build abgeschlossen: ${result.completedSteps.length} Folgeschritte wurden ausgeführt; der Zielstatus ${target} ist erreicht.`
+          : `Automatische Fortsetzung bei ${result.blockedStep ?? "Workflow"} gestoppt: ${result.reason ?? "Der nächste Schritt benötigt eine technische Entscheidung."}`;
+        clearInterval(heartbeat);
+        state = result.complete ? "COMPLETED" : "BLOCKED";
+        if (result.blockedStep) currentStep = result.blockedStep as AgentBuildProgress["step"];
+        statusMessage = summary;
+        await persistRun();
+        writer.write({ type: "text-start", id: textId });
+        writer.write({ type: "text-delta", id: textId, delta: summary });
+        writer.write({ type: "text-end", id: textId });
+      } catch (error) {
+        clearInterval(heartbeat);
+        state = "BLOCKED";
+        statusMessage = error instanceof Error ? error.message : String(error);
+        await persistRun().catch(() => undefined);
+        throw error;
+      } finally { clearInterval(heartbeat); }
+    }),
   });
   return createUIMessageStreamResponse({ stream });
 }
 
 function createSpecificationResponse(messages: UIMessage[], specificationText: string) {
+  const runId = specificationText.match(/- Lauf-ID:\s*([^\s]+)/)?.[1] ?? "";
   const stream = createUIMessageStream({
     originalMessages: messages,
     onError: (error) => error instanceof Error ? error.message : "Die Spezifikation konnte nicht verarbeitet werden.",
-    execute: async ({ writer }) => {
+    execute: async ({ writer }) => runExclusiveProjectBuild(currentAgentProjectId(), async () => {
       let reviewGateReached = false;
       let engineeringModelComplete = false;
       const toolCallId = crypto.randomUUID();
+      let activeToolCallId = toolCallId;
+      let progress: AgentBuildProgress = { step: "engineering_model", completed: 0, total: 0 };
+      let statusWrite: Promise<unknown> = Promise.resolve();
+      let runningMessage = "Engineering-Modell wird geprüft und aufgebaut.";
+      let heartbeat: ReturnType<typeof setInterval> | undefined;
+      const persistRun = (state: AgentRunStatus["state"], message: string) => {
+        audit("specification build status", { runId, state, ...progress, message });
+        if (state === "RUNNING") runningMessage = message;
+        const next: AgentRunStatus = { ...progress, run_id: runId, state, message, updated_at: new Date().toISOString() };
+        // Serialize heartbeats and final results so a late heartbeat cannot replace the outcome.
+        statusWrite = statusWrite.catch(() => undefined).then(() => runId
+          ? saveWorkflowContext({ agent_execution: next }) : undefined);
+        return statusWrite;
+      };
+      const reportProgress = async (next: AgentBuildProgress) => {
+        progress = next;
+        await persistRun("RUNNING", next.step === "engineering_model"
+          ? `${next.completed} von ${next.total} Engineering-Ketten registriert.`
+          : `${next.completed} von ${next.total} Routing-Pfaden vorbereitet.`);
+      };
       writer.write({ type: "start-step" });
       writer.write({
         type: "tool-input-available",
@@ -543,21 +656,61 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
         input: {},
       });
       try {
-        const result = await registerEngineeringSpecification(specificationText);
+        const workflowBefore = await inspectWorkflowState().catch(() => null);
+        const wizardStatus = workflowBefore && typeof workflowBefore === "object"
+          ? ((workflowBefore.context as Record<string, unknown> | undefined)?.agent_wizard_status as Record<string, unknown> | undefined) ?? {}
+          : {};
+        const approvedScopeContinuation = isExplicitScopeContinuationApproval(specificationText);
+        const previousScopeContinuations = scopeContinuationAttempts(wizardStatus, runId);
+        await persistRun("RUNNING", runningMessage);
+        heartbeat = setInterval(() => {
+          void persistRun("RUNNING", runningMessage).catch((error) => audit("build heartbeat failed", { runId, error: String(error) }));
+        }, 30_000);
+        const result = await registerEngineeringSpecification(specificationText, reportProgress);
         engineeringModelComplete = result.complete === true;
-        writer.write({ type: "tool-output-available", toolCallId, output: result });
+        writer.write({ type: "tool-output-available", toolCallId, output: workflowStreamOutput(result) });
         let summary = specificationSummary(result);
+        const deviationItems = scopeDeviationItems(result);
+        const deviationSummary = scopeDeviationSummary(result);
+        const scopeContinuationAllowed = !engineeringModelComplete
+          && approvedScopeContinuation
+          && deviationItems.length > 0
+          && !hasRegistrationFailures(result)
+          && previousScopeContinuations < MAX_SCOPE_DEVIATION_CONTINUATIONS;
+        if (scopeContinuationAllowed) {
+          const nextContinuations = previousScopeContinuations + 1;
+          await saveWorkflowContext({
+            agent_wizard_status: {
+              ...wizardStatus,
+              scope_deviation: {
+                run_id: runId,
+                approved: true,
+                approved_at: new Date().toISOString(),
+                continuations: nextContinuations,
+                max_continuations: MAX_SCOPE_DEVIATION_CONTINUATIONS,
+                deviations: deviationItems,
+                summary: deviationSummary,
+                decision: "Fortsetzung mit dokumentierter Soll/Ist-Abweichung",
+              },
+            },
+          }).catch((error) => audit("scope deviation persistence failed", { runId, error: String(error) }));
+          summary += ` Fortsetzung nach Freigabe: Die Scope-Abweichung (${deviationSummary}) wurde dokumentiert; der Auftrag laeuft ohne weitere automatische Wiederholung weiter.`;
+        } else if (!engineeringModelComplete && approvedScopeContinuation && deviationItems.length > 0 && !hasRegistrationFailures(result)) {
+          summary += ` Keine weitere automatische Fortsetzung: Die dokumentierte Scope-Abweichung (${deviationSummary}) wurde fuer diese Lauf-ID bereits freigegeben. Damit wird eine Endlosschleife verhindert.`;
+        }
+        const engineeringModelUsable = engineeringModelComplete || scopeContinuationAllowed;
 
-        if (engineeringModelComplete && routingRequested(specificationText) && Number(result.registered_chains ?? 0) >= 2) {
+        if (engineeringModelUsable && routingRequested(specificationText) && Number(result.registered_chains ?? 0) >= 2) {
           const routingToolCallId = crypto.randomUUID();
+          activeToolCallId = routingToolCallId;
           writer.write({
             type: "tool-input-available",
             toolCallId: routingToolCallId,
             toolName: "create_route_proposal",
             input: {},
           });
-          const routing = await registerRoutingProposalForSpecification(specificationText);
-          writer.write({ type: "tool-output-available", toolCallId: routingToolCallId, output: routing });
+          const routing = await registerRoutingProposalForSpecification(specificationText, reportProgress);
+          writer.write({ type: "tool-output-available", toolCallId: routingToolCallId, output: workflowStreamOutput(routing) });
           summary += ` ${routingSummary(routing)}`;
           reviewGateReached = Boolean(
             routing
@@ -576,23 +729,29 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
           }
         }
 
+        clearInterval(heartbeat);
+        await persistRun(!engineeringModelUsable ? "BLOCKED"
+          : reviewGateReached ? "REVIEW_REQUIRED"
+            : routingRequested(specificationText) ? "BLOCKED" : "COMPLETED", summary);
+
         const textId = crypto.randomUUID();
         writer.write({ type: "text-start", id: textId });
         writer.write({ type: "text-delta", id: textId, delta: summary });
         writer.write({ type: "text-end", id: textId });
       } catch (error) {
+        clearInterval(heartbeat);
         const errorText = error instanceof Error ? error.message : String(error);
-        writer.write({ type: "tool-output-error", toolCallId, errorText });
+        await persistRun("BLOCKED", errorText).catch((statusError) => {
+          audit("build status persistence failed", { runId, error: String(statusError) });
+        });
+        writer.write({ type: "tool-output-error", toolCallId: activeToolCallId, errorText });
         throw error;
       } finally {
+        clearInterval(heartbeat);
         writer.write({ type: "finish-step" });
       }
 
-      if (requestedWorkflowTarget(specificationText) >= 3 && engineeringModelComplete && !reviewGateReached) {
-        const continuation = await engineeringAgent.stream({ prompt: continuationPrompt(specificationText) });
-        writer.merge(toUIMessageStream({ stream: continuation.stream }));
-      }
-    },
+    }),
   });
   return createUIMessageStreamResponse({ stream });
 }
@@ -615,8 +774,9 @@ export async function POST(request: Request) {
   const sanitizedHistory = sanitizeAgentHistory(payload.messages);
   const lastUserMessage = [...payload.messages].reverse().find((message) => message.role === "user");
   const requestText = uiMessageFullText(lastUserMessage);
+  const reviewRequested = isEngineeringReviewRequest(requestText);
   const structuredSpecification = isStructuredEngineeringSpecification(requestText);
-  const automaticTarget = !structuredSpecification
+  const automaticTarget = !reviewRequested && !structuredSpecification
     ? isAutomaticWorkflowTarget(payload.workflowTarget)
       ? payload.workflowTarget
       : automaticWorkflowTargetFromRequest(requestText)
@@ -644,12 +804,12 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!structuredSpecification && isCanComparisonQuestion(requestText)) {
+  if (!reviewRequested && !structuredSpecification && isCanComparisonQuestion(requestText)) {
     audit("deterministic protocol answer", { requestId, projectId, topic: "CAN-vs-CAN-FD" });
     return createDeterministicTextResponse(sanitizedHistory.messages, canComparisonAnswer());
   }
 
-  if (!structuredSpecification && isBulkSignalCreationRequest(requestText)) {
+  if (!reviewRequested && !structuredSpecification && isBulkSignalCreationRequest(requestText)) {
     const batch = extractSignalBatchRequest(requestText);
     audit("deterministic signal batch started", {
       requestId,

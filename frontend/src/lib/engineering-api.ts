@@ -6,6 +6,7 @@ import type {
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
+  EngineeringToolRegistryResponse,
   EcuTransferAnalysis,
   EcuTransferDecision,
   SystemDuplicateCandidate,
@@ -72,6 +73,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getEngineeringSchema(): Promise<EngineeringSchema> {
   return request<EngineeringSchema>("/schema");
+}
+
+export async function listEngineeringTools(filters: {
+  category?: string;
+  industry?: string;
+  status?: string;
+  approval_required?: boolean;
+  workflow_step?: string;
+} = {}): Promise<EngineeringToolRegistryResponse> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === "") continue;
+    params.set(key, String(value));
+  }
+  const query = params.toString();
+  return request<EngineeringToolRegistryResponse>(`/tools${query ? `?${query}` : ""}`);
 }
 
 export function syncEngineeringTopology(

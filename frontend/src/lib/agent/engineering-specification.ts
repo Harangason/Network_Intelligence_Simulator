@@ -1,3 +1,10 @@
+/** Device roles belong to device_type; technical identifiers remain unchanged. */
+export function normalizeHardwareName(value: string): string {
+  const original = value.trim();
+  return original.replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller))+([-_ ]\d+)?$/i, "$1")
+    .replace(/^[-_ ]+|[-_ ]+$/g, "") || original;
+}
+
 export type ExtractedEngineeringChain = {
   hardware_name: string;
   hardware_description: string;
@@ -36,16 +43,20 @@ export type ExtractedEngineeringSpecification = {
 
 export type NetworkArchitectureMode = "eva" | "ecu_gateway" | "gateway_direct" | "hybrid_ai";
 
-export type EngineeringTargetCounts = {
+export type EngineeringHardwareCounts = {
   sensors: number;
+  actuators: number;
   ecus: number;
   gateways: number;
+};
+
+export type EngineeringTargetCounts = EngineeringHardwareCounts & {
   explicit: boolean;
 };
 
 type ArchitectureTemplate = {
   hardwareName: string;
-  deviceType: "SensorController" | "ECU" | "Gateway";
+  deviceType: "SensorController" | "ActuatorController" | "ECU" | "Gateway";
   signalName: string;
   interfaceType: string;
   cycleMs: number;
@@ -60,9 +71,39 @@ type HardwareOccurrence = {
   name: string;
 };
 
-const INLINE_HARDWARE_PATTERN = /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/giu;
+function generatedSignalBitLength(input: {
+  minValue?: number;
+  maxValue?: number;
+  factor?: number;
+  offsetValue?: number;
+  dataType?: "signed" | "unsigned";
+}) {
+  const min = typeof input.minValue === "number" && Number.isFinite(input.minValue) ? input.minValue : 0;
+  const max = typeof input.maxValue === "number" && Number.isFinite(input.maxValue) ? input.maxValue : 255;
+  const factor = typeof input.factor === "number" && Number.isFinite(input.factor) && input.factor !== 0 ? input.factor : 1;
+  const offset = typeof input.offsetValue === "number" && Number.isFinite(input.offsetValue) ? input.offsetValue : 0;
+  const rawValues = [min, max].map((value) => Math.round((value - offset) / factor));
+  const rawMin = Math.min(...rawValues);
+  const rawMax = Math.max(...rawValues);
+  const signed = input.dataType === "signed" || rawMin < 0;
+  for (let width = 1; width <= 64; width += 1) {
+    if (signed) {
+      if (rawMin >= -(2 ** (width - 1)) && rawMax < 2 ** (width - 1)) return width;
+    } else if (rawMax < 2 ** width) {
+      return width;
+    }
+  }
+  return 64;
+}
+
+function generatedMessageDlc(lengthBits: number) {
+  return Math.max(1, Math.ceil(Math.max(1, lengthBits) / 8));
+}
+
+const INLINE_HARDWARE_PATTERN = /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|actuator|aktuator|aktor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/giu;
 const GENERIC_INLINE_HARDWARE_LABELS = new Set([
   "sensor",
+  "actuator", "aktuator", "aktor",
   "ecu",
   "gateway",
   "plc",
@@ -77,6 +118,7 @@ const GENERIC_HARDWARE_LABELS = new Set([
   "sensor",
   "sensors",
   "sensoren",
+  "actuator", "actuators", "aktuator", "aktuatoren", "aktor", "aktoren",
   "ecu",
   "ecus",
   "gateway",
@@ -121,7 +163,7 @@ export function extractNetworkArchitectureMode(text: string): NetworkArchitectur
   if (/Variante\s*3|Gateway-direkt/i.test(text)) return "gateway_direct";
   if (/Variante\s*2|ECU-vermittelt/i.test(text)) return "ecu_gateway";
   if (/Variante\s*1|einfaches?\s+EVA/i.test(text)) return "eva";
-  return "ecu_gateway";
+  return "gateway_direct";
 }
 
 const ECU_NAMES = [
@@ -271,27 +313,39 @@ function countValue(value: string) {
   return Number.isFinite(numericValue) ? numericValue : COUNT_WORDS[value] ?? 0;
 }
 
+function specificationBody(text: string) {
+  const marker = /Konkrete Aufgabe des Nutzers[^\r\n]*:/i.exec(text);
+  if (!marker) return text;
+  const body = text.slice(marker.index + marker[0].length);
+  const end = body.search(/\r?\n\r?\n(?:Verbindliche Kanonisierung bei der Projektanlage:|Starte jetzt)/i);
+  return end >= 0 ? body.slice(0, end) : body;
+}
+
 function requestedCount(text: string, nounPattern: string, modifierPattern = "") {
-  const source = normalized(
-    text
-      .split(/\r?\n/)
-      .map((line) => line.replace(/^\s*#{1,6}\s+(?:\d+[.)]\s+)?/, ""))
-      .join("\n"),
-  );
   const modifiers = modifierPattern ? `(?:(?:${modifierPattern})\\s+){0,2}` : "";
   const pattern = new RegExp(`\\b${COUNT_TOKEN}\\s+${modifiers}${nounPattern}\\b`, "g");
-  return [...source.matchAll(pattern)].reduce((maximum, match) => Math.max(maximum, countValue(match[1] ?? "")), 0);
+  // Numbered UI choices and adjacent lines are not hardware quantity statements.
+  return text.split(/\r?\n/).reduce((maximum, line) => {
+    const source = normalized(line
+      .replace(/^\s*#{1,6}\s+/, "")
+      .replace(/^\s*\d+[.)]\s+/, "")
+      .replace(/\bVariante\s+\d+(?:\s*(?:\+|und)\s*\d+)?/gi, "Variante"));
+    return [...source.matchAll(pattern)].reduce((count, match) => Math.max(count, countValue(match[1] ?? "")), maximum);
+  }, 0);
 }
 
 export function extractEngineeringTargetCounts(text: string): EngineeringTargetCounts {
-  const sensors = requestedCount(text, "sensor(?:en|s)?", "technische|physikalische|logische|fahrzeugrelevante");
-  const ecus = requestedCount(text, "ecu(?:s)?", "funktions|zentrale|typische|weitere");
-  const gateways = requestedCount(text, "gateway(?:s)?", "zentralen|zentrales|zentraler|zentrale|einziges|einzigen");
+  const body = specificationBody(text);
+  const sensors = requestedCount(body, "sensor(?:en|s)?", "technische|physikalische|logische|fahrzeugrelevante");
+  const actuators = requestedCount(body, "(?:actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?)", "technische|physikalische|logische|einfache");
+  const ecus = requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere");
+  const gateways = requestedCount(body, "gateway(?:s)?", "zentralen|zentrales|zentraler|zentrale|einziges|einzigen");
   return {
     sensors,
+    actuators,
     ecus,
     gateways,
-    explicit: sensors > 0 || ecus > 0 || gateways > 0,
+    explicit: sensors > 0 || actuators > 0 || ecus > 0 || gateways > 0,
   };
 }
 
@@ -299,11 +353,12 @@ function chainCounts(chains: ExtractedEngineeringChain[]) {
   return chains.reduce(
     (counts, chain) => {
       if (chain.device_type === "SensorController") counts.sensors += 1;
+      else if (chain.device_type === "ActuatorController") counts.actuators += 1;
       else if (chain.device_type === "Gateway") counts.gateways += 1;
       else if (chain.device_type === "ECU") counts.ecus += 1;
       return counts;
     },
-    { sensors: 0, ecus: 0, gateways: 0 },
+    { sensors: 0, actuators: 0, ecus: 0, gateways: 0 },
   );
 }
 
@@ -335,11 +390,11 @@ function architectureTemplates(): ArchitectureTemplate[] {
     maxValue: family.max,
     factor: family.factor,
   })));
-  const centralSensors = CENTRAL_SENSOR_DEFINITIONS.map(([name, signal, unit, min, max, factor, cycle], index) => ({
+  const centralSensors = CENTRAL_SENSOR_DEFINITIONS.map(([name, signal, unit, min, max, factor, cycle]) => ({
     hardwareName: `${name}Sensor`,
     deviceType: "SensorController" as const,
     signalName: signal,
-    interfaceType: /Radar/.test(name) ? "Ethernet" : cycle >= 200 || index % 7 === 0 ? "LIN" : "CAN_FD",
+    interfaceType: /Radar/.test(name) ? "Ethernet" : cycle >= 200 ? "LIN" : "CAN_FD",
     cycleMs: cycle,
     unit,
     minValue: min,
@@ -351,15 +406,27 @@ function architectureTemplates(): ArchitectureTemplate[] {
     deviceType: "ECU" as const,
     signalName: `${identifier(baseName(name))}Status`,
     interfaceType: ecuInterfaceType(name),
-    cycleMs: ecuInterfaceType(name) === "Ethernet" ? 20 : 10,
+    cycleMs: ecuInterfaceType(name) === "LIN" ? 100 : ecuInterfaceType(name) === "Ethernet" ? 20 : 10,
     unit: "code",
     minValue: 0,
     maxValue: 255,
     factor: 1,
   }));
+  const actuators = ECU_NAMES.flatMap((name) => ["Stellglied", "Schaltausgang"].map((kind) => ({
+    hardwareName: `${baseName(name)}${kind}Actuator`,
+    deviceType: "ActuatorController" as const,
+    signalName: `${identifier(baseName(name))}${kind}Status`,
+    interfaceType: ecuInterfaceType(name),
+    cycleMs: ecuInterfaceType(name) === "LIN" ? 100 : 20,
+    unit: kind === "Stellglied" ? "%" : "code",
+    minValue: 0,
+    maxValue: kind === "Stellglied" ? 100 : 1,
+    factor: kind === "Stellglied" ? 0.1 : 1,
+  })));
   return [
     ...positionalSensors,
     ...centralSensors,
+    ...actuators,
     ...ecus,
     {
       hardwareName: "System-Gateway",
@@ -377,6 +444,13 @@ function architectureTemplates(): ArchitectureTemplate[] {
 
 function chainFromTemplate(template: ArchitectureTemplate, index: number, domain: string): ExtractedEngineeringChain {
   const hardwareId = identifier(template.hardwareName);
+  const dataType = (template.minValue ?? 0) < 0 ? "signed" : "unsigned";
+  const lengthBits = generatedSignalBitLength({
+    minValue: template.minValue,
+    maxValue: template.maxValue,
+    factor: template.factor,
+    dataType,
+  });
   const functionSuffix = template.deviceType === "SensorController"
     ? "Erfassung"
     : template.deviceType === "Gateway"
@@ -394,13 +468,13 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
     message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
     direction: "tx",
     cycle_ms: template.cycleMs,
-    dlc: template.interfaceType === "Ethernet" ? 64 : 8,
+    dlc: generatedMessageDlc(lengthBits),
     signal_name: template.signalName,
     signal_display_name: template.signalName,
     start_bit: 0,
-    length_bits: 16,
+    length_bits: lengthBits,
     byte_order: "little_endian",
-    data_type: (template.minValue ?? 0) < 0 ? "signed" : "unsigned",
+    data_type: dataType,
     factor: template.factor ?? 1,
     offset_value: 0,
     unit: template.unit,
@@ -415,19 +489,23 @@ function expandArchitectureChains(
   requested: EngineeringTargetCounts,
   domain: string,
   communicationSystems: string[],
+  overrides: Partial<EngineeringHardwareCounts> = {},
 ) {
   const recognizedCounts = chainCounts(recognizedChains);
   const targets: EngineeringTargetCounts = {
     sensors: requested.sensors || recognizedCounts.sensors,
+    actuators: requested.actuators || recognizedCounts.actuators,
     ecus: requested.ecus || recognizedCounts.ecus,
     gateways: requested.gateways || recognizedCounts.gateways,
-    explicit: requested.explicit,
+    ...overrides,
+    explicit: requested.explicit || Object.keys(overrides).length > 0,
   };
-  const retainedCounts = { sensors: 0, ecus: 0, gateways: 0 };
-  const chains = requested.explicit
+  const retainedCounts = { sensors: 0, actuators: 0, ecus: 0, gateways: 0 };
+  const chains = targets.explicit
     ? recognizedChains.filter((chain) => {
       const category = chain.device_type === "SensorController"
         ? "sensors"
+        : chain.device_type === "ActuatorController" ? "actuators"
         : chain.device_type === "Gateway"
           ? "gateways"
           : chain.device_type === "ECU"
@@ -440,16 +518,17 @@ function expandArchitectureChains(
     })
     : [...recognizedChains];
   const names = new Set(chains.map((chain) => normalized(chain.hardware_name)));
-  if (!requested.explicit) return { chains, targets };
+  if (!targets.explicit) return { chains, targets };
 
   const templates = architectureTemplates();
   const targetFor = (deviceType: ArchitectureTemplate["deviceType"]) => (
-    deviceType === "SensorController" ? targets.sensors : deviceType === "Gateway" ? targets.gateways : targets.ecus
+    deviceType === "SensorController" ? targets.sensors : deviceType === "ActuatorController" ? targets.actuators : deviceType === "Gateway" ? targets.gateways : targets.ecus
   );
   for (const template of templates) {
     const current = chainCounts(chains);
     const currentCount = template.deviceType === "SensorController"
       ? current.sensors
+      : template.deviceType === "ActuatorController" ? current.actuators
       : template.deviceType === "Gateway"
         ? current.gateways
         : current.ecus;
@@ -468,6 +547,21 @@ function expandArchitectureChains(
     ));
     names.add(key);
   }
+  // Additional instances keep the same technical template and a stable unique name.
+  for (const deviceType of ["SensorController", "ActuatorController", "ECU", "Gateway"] as const) {
+    const candidates = templates.filter((template) => template.deviceType === deviceType);
+    let current = chains.filter((chain) => chain.device_type === deviceType).length;
+    for (let instance = 0; current < targetFor(deviceType); instance += 1) {
+      const template = candidates[instance % candidates.length];
+      const hardwareName = `${template.hardwareName}-${2 + Math.floor(instance / candidates.length)}`;
+      if (names.has(normalized(hardwareName))) continue;
+      const interfaceType = communicationSystems.includes(template.interfaceType) || !communicationSystems.length
+        ? template.interfaceType : communicationSystems[instance % communicationSystems.length];
+      chains.push(chainFromTemplate({ ...template, hardwareName, interfaceType }, chains.length, domain));
+      names.add(normalized(hardwareName));
+      current += 1;
+    }
+  }
   return { chains, targets };
 }
 
@@ -484,7 +578,7 @@ function headingLabel(line: string) {
 function isCountedHardwareGroup(value: string) {
   const key = normalized(value);
   return new RegExp(
-    `^${COUNT_TOKEN}\\s+(?:(?:technische|physikalische|logische|fahrzeugrelevante|funktions|zentrale|zentralen|zentrales|zentraler|typische|weitere|einziges|einzigen)\\s+){0,2}(?:sensor(?:en|s)?|ecu(?:s)?|gateway(?:s)?)$`,
+    `^${COUNT_TOKEN}\\s+(?:(?:technische|physikalische|logische|fahrzeugrelevante|funktions|zentrale|zentralen|zentrales|zentraler|typische|weitere|einziges|einzigen)\\s+){0,2}(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|gateway(?:s)?)$`,
   ).test(key);
 }
 
@@ -493,10 +587,10 @@ function hardwareName(label: string) {
   const key = normalized(name);
   if (!key || GENERIC_HARDWARE_LABELS.has(key)) return "";
   if (PROSE_HARDWARE_LABEL_PATTERN.test(key)) return "";
-  const typeMentions = key.match(/\b(?:sensor(?:en|s)?|ecu(?:s)?|gateway(?:s)?|plc(?:s)?|controller(?:s)?|steuergeraet(?:e)?)\b/g) ?? [];
+  const typeMentions = key.match(/\b(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|gateway(?:s)?|plc(?:s)?|controller(?:s)?|steuergeraet(?:e)?)\b/g) ?? [];
   const countedGroup = isCountedHardwareGroup(name);
   if (typeMentions.length > 1 || countedGroup) return "";
-  return /(?:sensor|ecu|gateway|plc|controller|steuergeraet)$/i.test(key.replace(/\s+/g, ""))
+  return /(?:sensor|actuator|aktuator|aktor|ecu|gateway|plc|controller|steuergeraet)$/i.test(key.replace(/\s+/g, ""))
     ? name
     : "";
 }
@@ -526,6 +620,7 @@ function deviceType(name: string) {
   const key = normalized(name);
   if (key.includes("gateway")) return "Gateway";
   if (key.includes("sensor")) return "SensorController";
+  if (/actuator|aktuator|aktor/.test(key)) return "ActuatorController";
   if (key.includes("plc")) return "PLC";
   if (key.includes("controller")) return "GenericDevice";
   return "ECU";
@@ -626,8 +721,8 @@ function signalName(name: string, context: string) {
   return `${identifier(baseName(name))}Status`;
 }
 
-export function extractEngineeringSpecification(text: string): ExtractedEngineeringSpecification {
-  const lines = text.split(/\r?\n/);
+export function extractEngineeringSpecification(text: string, overrides: Partial<EngineeringHardwareCounts> = {}): ExtractedEngineeringSpecification {
+  const lines = specificationBody(text).split(/\r?\n/);
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
     const names = [headingName, ...inlineHardwareNames(line), ...impliedHardwareNames(line)].filter(Boolean);
@@ -653,6 +748,13 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
     const factor = factorFrom(context, unit);
     const signal = signalName(entry.name, context);
     const hardwareId = identifier(entry.name);
+    const dataType = (range.min ?? 0) < 0 ? "signed" : "unsigned";
+    const lengthBits = generatedSignalBitLength({
+      minValue: range.min,
+      maxValue: range.max,
+      factor,
+      dataType,
+    });
     return {
       hardware_name: entry.name,
       hardware_description: context.slice(0, 1000),
@@ -665,13 +767,13 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
       message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
       direction: "tx",
       cycle_ms: 10,
-      dlc: 8,
+      dlc: generatedMessageDlc(lengthBits),
       signal_name: signal,
       signal_display_name: signal,
       start_bit: 0,
-      length_bits: 16,
+      length_bits: lengthBits,
       byte_order: "little_endian",
-      data_type: (range.min ?? 0) < 0 ? "signed" : "unsigned",
+      data_type: dataType,
       factor,
       offset_value: 0,
       unit,
@@ -687,10 +789,11 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
     requestedTargets,
     domain,
     communicationSystems,
+    { ...confirmedHardwareCounts(text), ...overrides },
   );
 
   return {
-    chains: expanded.chains,
+    chains: expanded.chains.map((chain) => ({ ...chain, hardware_name: normalizeHardwareName(chain.hardware_name) })),
     domain,
     interfaceType,
     communicationSystems,
@@ -699,7 +802,26 @@ export function extractEngineeringSpecification(text: string): ExtractedEngineer
   };
 }
 
+export function confirmedHardwareCounts(text: string): Partial<EngineeringHardwareCounts> {
+  const header = text.split(/Konkrete Aufgabe des Nutzers/i, 1)[0];
+  const raw = header.match(/^- Hardware-Sollwerte:\s*(\{[^\r\n]+\})\s*$/m)?.[1];
+  if (!raw) return {};
+  const counts = JSON.parse(raw) as EngineeringHardwareCounts;
+  for (const key of ["sensors", "actuators", "ecus", "gateways"] as const) {
+    if (!Number.isSafeInteger(counts[key]) || counts[key] < 0 || counts[key] > 1000) {
+      throw new Error(`Ungueltiger Hardware-Sollwert: ${key}`);
+    }
+  }
+  return counts;
+}
+
+export function isEngineeringReviewRequest(text: string) {
+  const task = text.split(/Konkrete Aufgabe des Nutzers\s*:/i).at(-1)?.trim() ?? text.trim();
+  return /^(?:bewerte|pr[uü]fe|pruefe|analysiere|review|evaluate|analyze)\b/i.test(task);
+}
+
 export function isStructuredEngineeringSpecification(text: string) {
+  if (isEngineeringReviewRequest(text)) return false;
   const extracted = extractEngineeringSpecification(text);
   const parameterEvidence = /(messbereich|auflösung|aufloesung|schrittweite|sollwert|grenzwert|kommunikationsprotokoll|funktions.parameter)/i.test(text);
   return extracted.chains.length >= 2 || (extracted.chains.length === 1 && parameterEvidence);

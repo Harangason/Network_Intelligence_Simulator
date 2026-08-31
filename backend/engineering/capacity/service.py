@@ -8,7 +8,8 @@ from typing import Any
 
 from ..repository import list_objects
 from ..routing.repository import list_routes
-from ..routing.validation import RoutingValidator
+from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
+from ..signal_audit import build_generation_signal_audit
 from ..workflow.models import WORKFLOW_LABELS, WORKFLOW_STEPS
 from ..workflow.service import WorkflowStatusService
 from .calculators import (
@@ -46,6 +47,31 @@ def _number(value: Any, default: float) -> float:
         return default
 
 
+def parameters_for_protocol(
+    protocol: str, parameters: dict[str, Any], configuration: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    aliases = {"AUTOMOTIVE_ETHERNET": "ETHERNET", "CANFD": "CAN_FD", "CAN_CLASSIC": "CAN", "SOMEIP": "SOME_IP"}
+
+    def canonical(value: Any) -> str:
+        name = str(value or "").upper().replace("-", "_").replace(" ", "_")
+        return aliases.get(name, name)
+
+    resolved = dict(parameters)
+    configured = canonical(parameters.get("technology") or parameters.get("protocol"))
+    target = canonical(protocol)
+    # A global speed applies to the selected technology, not every bus in a mixed network.
+    if configured and configured != target:
+        for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
+            resolved.pop(key, None)
+        resolved["bitrate"] = PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0]
+    resolved.setdefault("bitrate", PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0])
+    for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
+        value = (configuration or {}).get(key)
+        if _number(value, 0) > 0:
+            resolved[key] = value
+    return resolved
+
+
 def _payload_bytes(route: dict[str, Any], messages: dict[str, dict[str, Any]], default: int) -> int:
     payload = route.get("payload") or {}
     direct = payload.get("payload_bytes") or payload.get("length_bytes") or payload.get("dlc")
@@ -59,6 +85,33 @@ def _payload_bytes(route: dict[str, Any], messages: dict[str, dict[str, Any]], d
     if selected:
         return sum(max(0, int(_number(message.get("dlc"), default))) for message in selected)
     return default
+
+
+def _route_segment_network_ids(
+    source: dict[str, Any],
+    route_path: dict[str, Any],
+    destinations: list[dict[str, Any]],
+    fallback_network_id: str,
+) -> list[str]:
+    values: list[Any] = [
+        source.get("network_id"),
+        route_path.get("network_id"),
+    ]
+    for hop in route_path.get("hops") or []:
+        if isinstance(hop, dict):
+            values.append(hop.get("network_id"))
+    for destination in destinations:
+        values.append(destination.get("network_id"))
+
+    segment_ids: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        network_id = str(value or "").strip()
+        if not network_id or network_id in seen:
+            continue
+        seen.add(network_id)
+        segment_ids.append(network_id)
+    return segment_ids or [fallback_network_id]
 
 
 def _requirement_value(
@@ -112,7 +165,7 @@ def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: lis
 
 
 class CapacityTimingService:
-    CALCULATION_VERSION = "2.0"
+    CALCULATION_VERSION = "2.1"
 
     def __init__(self, project_id: str = "default") -> None:
         self.workflow = WorkflowStatusService(project_id)
@@ -141,6 +194,7 @@ class CapacityTimingService:
         interfaces = {str(item["id"]): item for item in list_objects("Interface", limit=500)}
         hardware = {str(item["id"]): item for item in list_objects("HardwareNode", limit=500)}
         route_metrics: list[dict[str, Any]] = []
+        logical_route_metrics: list[dict[str, Any]] = []
         network_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
         generic_models: set[str] = set()
 
@@ -170,6 +224,7 @@ class CapacityTimingService:
             source = route.get("source") or {}
             route_path = route.get("route") or {}
             timing = route.get("timing") or {}
+            destinations = [item for item in route.get("destinations") or [] if isinstance(item, dict)]
             protocol = str(source.get("protocol") or route_path.get("protocol") or default_protocol)
             network_id = str(
                 source.get("network_id")
@@ -177,6 +232,8 @@ class CapacityTimingService:
                 or route_path.get("network_id")
                 or protocol.upper()
             )
+            segment_network_ids = _route_segment_network_ids(source, route_path, destinations, network_id)
+            segment_count = max(1, len(segment_network_ids))
             payload_bytes = _payload_bytes(route, messages, default_payload)
             payload = route.get("payload") or {}
             message_id = str(payload.get("message_id") or "")
@@ -190,7 +247,9 @@ class CapacityTimingService:
                 "cycle_time",
             )
             cycle_ms = cycle_requirement or _number(message.get("cycle_ms"), default_cycle)
-            estimate = estimate_frame(protocol, payload_bytes, parameters)
+            interface = interfaces.get(str(source.get("interface_id") or ""), {})
+            route_parameters = parameters_for_protocol(protocol, parameters, interface.get("configuration"))
+            estimate = estimate_frame(protocol, payload_bytes, route_parameters)
             average = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
             peak = average * peak_factor
             burst = average * burst_factor
@@ -206,11 +265,14 @@ class CapacityTimingService:
             gateway_processing_ms = len(gateways) * gateway_delay
             gateway_queue_ms = len(gateways) * gateway_queue_delay
             conversion_ms = len(gateways) * protocol_conversion_delay
+            route_queue_ms = queue_ms * segment_count
+            route_transmission_ms = transmission_ms * segment_count
+            route_propagation_ms = propagation_delay * segment_count
             end_to_end = (
                 source_processing_delay
-                + queue_ms
-                + transmission_ms
-                + propagation_delay
+                + route_queue_ms
+                + route_transmission_ms
+                + route_propagation_ms
                 + gateway_processing_ms
                 + gateway_queue_ms
                 + conversion_ms
@@ -242,15 +304,15 @@ class CapacityTimingService:
                 "freshness_ms",
                 "data_freshness_limit",
             )
-            estimated_jitter = queue_ms * 0.25 + gateway_queue_ms * 0.25 + sync_precision_ms
+            estimated_jitter = route_queue_ms * 0.25 + gateway_queue_ms * 0.25 + sync_precision_ms
             load_status = classify_load(max(average, peak, burst), thresholds)
             latency_status = "FAIL" if max_latency and end_to_end > max_latency else "PASS"
             jitter_status = "FAIL" if jitter_limit and estimated_jitter > jitter_limit else "PASS"
             breakdown = {
                 "source_processing_ms": round(source_processing_delay, 6),
-                "source_queue_ms": round(queue_ms, 6),
-                "network_transmission_ms": round(transmission_ms, 6),
-                "propagation_ms": round(propagation_delay, 6),
+                "source_queue_ms": round(route_queue_ms, 6),
+                "network_transmission_ms": round(route_transmission_ms, 6),
+                "propagation_ms": round(route_propagation_ms, 6),
                 "gateway_processing_ms": round(gateway_processing_ms, 6),
                 "gateway_queue_ms": round(gateway_queue_ms, 6),
                 "protocol_conversion_ms": round(conversion_ms, 6),
@@ -262,7 +324,10 @@ class CapacityTimingService:
                 "route_code": route.get("route_code"),
                 "name": route.get("name"),
                 "network_id": network_id,
+                "physical_network_ids": segment_network_ids,
+                "route_segment_count": segment_count,
                 "protocol": estimate.protocol,
+                "bitrate": _number(route_parameters.get("bitrate"), 1_000_000.0),
                 "payload_bytes": payload_bytes,
                 "cycle_ms": cycle_ms,
                 "frame_bits": estimate.frame_bits,
@@ -270,8 +335,8 @@ class CapacityTimingService:
                 "peak_load_percent": round(peak, 4),
                 "burst_load_percent": round(burst, 4),
                 "burst_window_ms": burst_window_ms,
-                "transmission_latency_ms": round(transmission_ms, 6),
-                "queueing_latency_ms": round(queue_ms, 6),
+                "transmission_latency_ms": round(route_transmission_ms, 6),
+                "queueing_latency_ms": round(route_queue_ms, 6),
                 "gateway_latency_ms": round(gateway_processing_ms + gateway_queue_ms + conversion_ms, 6),
                 "end_to_end_latency_ms": round(end_to_end, 6),
                 "estimated_jitter_ms": round(estimated_jitter, 6),
@@ -285,7 +350,7 @@ class CapacityTimingService:
                 "calculation_model": estimate.calculation_model,
                 "calculation_version": estimate.calculation_version,
                 "producer": source.get("node_id"),
-                "consumers": [item.get("node_id") for item in route.get("destinations") or []],
+                "consumers": [item.get("node_id") for item in destinations],
                 "gateways": gateways,
                 "priority": priority,
                 "queue_policy": queue_policy,
@@ -295,8 +360,16 @@ class CapacityTimingService:
             }
             if estimate.is_generic_estimate:
                 generic_models.add(protocol.upper())
-            route_metrics.append(metric)
-            network_groups[network_id].append(metric)
+            logical_route_metrics.append(metric)
+            for index, segment_network_id in enumerate(segment_network_ids):
+                segment_metric = {
+                    **metric,
+                    "network_id": segment_network_id,
+                    "route_segment_index": index + 1,
+                    "route_segment_count": segment_count,
+                }
+                route_metrics.append(segment_metric)
+                network_groups[segment_network_id].append(segment_metric)
 
         network_metrics: list[dict[str, Any]] = []
         for network_id, items in network_groups.items():
@@ -309,7 +382,7 @@ class CapacityTimingService:
                     "network_id": network_id,
                     "protocol": items[0]["protocol"],
                     "route_count": len(items),
-                    "bitrate": _number(parameters.get("bitrate"), 1_000_000.0),
+                    "bitrate": items[0]["bitrate"],
                     "average_load_percent": round(average, 4),
                     "peak_load_percent": round(peak, 4),
                     "burst_load_percent": round(burst, 4),
@@ -334,7 +407,7 @@ class CapacityTimingService:
 
         gateway_metrics = []
         by_gateway: dict[str, list[dict[str, Any]]] = defaultdict(list)
-        for metric in route_metrics:
+        for metric in logical_route_metrics:
             for gateway in metric["gateways"]:
                 gateway_id = str(gateway.get("node_id") if isinstance(gateway, dict) else gateway)
                 by_gateway[gateway_id].append(metric)
@@ -430,7 +503,7 @@ class CapacityTimingService:
                         "recommendation": "Zyklen, Payload, Bitrate, Segmentierung oder Routingpfad pruefen.",
                     }
                 )
-        for route in route_metrics:
+        for route in logical_route_metrics:
             max_latency = _number(route.get("max_latency_ms"), 0.0)
             if max_latency > 0 and route["end_to_end_latency_ms"] > max_latency:
                 findings.append(
@@ -530,7 +603,7 @@ class CapacityTimingService:
             protocol = str(interface.get("interface_type") or default_protocol)
             payload_bytes = max(0, int(_number(message.get("dlc"), default_payload)))
             cycle_ms = _number(message.get("cycle_ms"), default_cycle)
-            estimate = estimate_frame(protocol, payload_bytes, parameters)
+            estimate = estimate_frame(protocol, payload_bytes, parameters_for_protocol(protocol, parameters, configuration))
             load = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
             requirements = message.get("configuration") or {}
             message_metrics.append(
@@ -580,6 +653,45 @@ class CapacityTimingService:
             )
         signal_metrics.sort(key=lambda item: (not item["critical"], -item["load_contribution_percent"]))
 
+        signal_quality = build_generation_signal_audit(
+            hardware=list(hardware.values()),
+            interfaces=list(interfaces.values()),
+            messages=list(messages.values()),
+            signals=list(signals.values()),
+            routes=routes,
+            topology=state.get("topology") or {},
+        )
+        for issue in signal_quality["issues"][:50]:
+            findings.append(
+                {
+                    "severity": "ERROR" if issue["status"] == "ERROR" else "WARNING",
+                    "code": next((check["code"] for check in issue.get("checks") or [] if check.get("severity") in {"ERROR", "WARNING"}), "SIGNAL_CONFIGURATION_OPEN"),
+                    "object_type": "Signal",
+                    "object_id": issue["signal_id"],
+                    "message": f"{issue['name']}: " + "; ".join(check["text"] for check in issue.get("checks") or []),
+                    "recommendation": (
+                        "Signalbreite, Wertebereich, Skalierung und Nachrichtenbelegung pruefen. "
+                        "KI-Vorschlaege duerfen daraus Optimierungen ableiten, aber nicht automatisch freigeben."
+                    ),
+                    "evidence": [{
+                        "message_id": issue.get("message_id"),
+                        "message_name": issue.get("message_name"),
+                        "length_bits": issue.get("length_bits"),
+                        "required_bits": issue.get("required_bits"),
+                    }],
+                }
+            )
+        remaining_signal_issues = len(signal_quality["issues"]) - 50
+        if remaining_signal_issues > 0:
+            findings.append(
+                {
+                    "severity": "WARNING",
+                    "code": "SIGNAL_CONFIGURATION_ISSUES_TRUNCATED",
+                    "message": f"{remaining_signal_issues} weitere Signal-Konfigurationsbefunde sind im Signal-Audit enthalten.",
+                    "recommendation": "Signal-Audit im Capacity-Snapshot oeffnen und nach Fehlerstatus sortieren.",
+                }
+            )
+
         worst_status = "ERROR" if any(item["severity"] == "ERROR" for item in findings) else (
             "WARNING" if any(item["severity"] == "WARNING" for item in findings) else "COMPLETE"
         )
@@ -588,7 +700,7 @@ class CapacityTimingService:
             for status in ("NORMAL", "WARNING", "CRITICAL", "OVERLOAD")
         }
         critical_paths = sorted(
-            route_metrics,
+            logical_route_metrics,
             key=lambda item: (item["requirement_status"] == "FAIL", item["end_to_end_latency_ms"]),
             reverse=True,
         )[:10]
@@ -618,7 +730,8 @@ class CapacityTimingService:
         results = {
             "overview": {
                 "network_count": len(network_metrics),
-                "route_count": len(route_metrics),
+                "route_count": len(logical_route_metrics),
+                "route_segment_count": len(route_metrics),
                 "gateway_count": len(gateway_metrics),
                 "signal_count": len(signal_metrics),
                 "load_status_counts": load_counts,
@@ -636,7 +749,7 @@ class CapacityTimingService:
                     (item["capacity_margin_percent"] for item in network_metrics), default=100.0
                 ),
                 "worst_end_to_end_latency_ms": max(
-                    (item["end_to_end_latency_ms"] for item in route_metrics), default=0.0
+                    (item["end_to_end_latency_ms"] for item in logical_route_metrics), default=0.0
                 ),
                 "highest_load_network": network_metrics[0]["network_id"] if network_metrics else None,
                 "status": worst_status,
@@ -644,18 +757,19 @@ class CapacityTimingService:
             "networks": network_metrics,
             "messages": message_metrics,
             "signals": signal_metrics,
+            "signal_quality": signal_quality,
             "routes": route_metrics,
             "gateways": gateway_metrics,
             "critical_paths": critical_paths,
             "bottlenecks": bottlenecks,
             "thresholds": thresholds,
             "timing": {
-                "worst_end_to_end_latency_ms": max((item["end_to_end_latency_ms"] for item in route_metrics), default=0.0),
-                "worst_queueing_latency_ms": max((item["queueing_latency_ms"] for item in route_metrics), default=0.0),
-                "worst_estimated_jitter_ms": max((item["estimated_jitter_ms"] for item in route_metrics), default=0.0),
+                "worst_end_to_end_latency_ms": max((item["end_to_end_latency_ms"] for item in logical_route_metrics), default=0.0),
+                "worst_queueing_latency_ms": max((item["queueing_latency_ms"] for item in logical_route_metrics), default=0.0),
+                "worst_estimated_jitter_ms": max((item["estimated_jitter_ms"] for item in logical_route_metrics), default=0.0),
                 "queue_policy": queue_policy,
-                "deadline_violations": sum(item["latency_status"] == "FAIL" for item in route_metrics),
-                "jitter_violations": sum(item["jitter_status"] == "FAIL" for item in route_metrics),
+                "deadline_violations": sum(item["latency_status"] == "FAIL" for item in logical_route_metrics),
+                "jitter_violations": sum(item["jitter_status"] == "FAIL" for item in logical_route_metrics),
             },
             "reliability": {
                 "configured_retransmission_rate": retry_rate,
@@ -756,7 +870,8 @@ class CapacityTimingService:
                         "networks": len(network_metrics),
                         "messages": len(message_metrics),
                         "signals": len(signal_metrics),
-                        "routes": len(route_metrics),
+                        "routes": len(logical_route_metrics),
+                        "route_segments": len(route_metrics),
                         "gateways": len(gateway_metrics),
                     },
                 }

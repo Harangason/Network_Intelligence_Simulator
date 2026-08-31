@@ -16,7 +16,7 @@ from agent_core.orchestration import (
 )
 from agent_core.persistence import AuditEvent, InMemoryAuditRepository
 from agent_core.proposals import ApprovalBoundary, InMemoryProposalStore, Proposal, ProposalStatus
-from agent_core.registry import GeneratorRegistry, HandlerRegistry, ValidatorRegistry
+from agent_core.registry import GeneratorRegistry, HandlerRegistry, ToolRegistry, ValidatorRegistry
 from agent_core.repair import MissingWorkService, RegenerationService, RepairService
 from agent_core.validation import CompletionValidator, DuplicateValidator, QualityValidator, WorkloadValidator
 
@@ -127,6 +127,16 @@ def test_dispatcher_selects_registered_handler_generator_and_validator():
     assert selection.validators == (validator,)
     with pytest.raises(RegistryLookupError):
         generators.get("CUSTOM", "motion")
+
+
+def test_tool_registry_lists_names_and_filters_registered_tools():
+    registry = ToolRegistry()
+    registry.register("analyze.capacity", {"category": "analysis"})
+    registry.register("import.intelligent", {"category": "import"})
+
+    assert registry.names() == ("analyze.capacity", "import.intelligent")
+    assert registry.list()[0]["category"] == "analysis"
+    assert registry.filter(lambda tool: tool["category"] == "import") == ({"category": "import"},)
 
 
 def test_generator_contract_validates_counts_and_is_not_completion():

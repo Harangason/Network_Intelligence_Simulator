@@ -202,6 +202,31 @@ export type EngineeringResource =
   | "messages"
   | "signals";
 
+export type EngineeringToolDefinition = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  workflow_step: string;
+  capabilities: string[];
+  input_schema: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
+  supported_industries: string[];
+  supported_formats: string[];
+  requires_approval: boolean;
+  approval_scope: string;
+  status: string;
+  risk_level: string;
+  execution_endpoint: string | null;
+  ai_usage: string;
+  safeguards: string[];
+};
+
+export type EngineeringToolRegistryResponse = {
+  items: EngineeringToolDefinition[];
+  count: number;
+};
+
 export interface EngineeringProposalValidation {
   index: number;
   object_type: string;
@@ -444,7 +469,7 @@ export type EcuTransferAnalysis = {
 export type EngineeringImportPlan = {
   import_id: string;
   file_name: string;
-  format: "dbc" | "csv" | "xlsx";
+  format: "dbc" | "csv" | "xlsx" | "json" | "jsonl" | "yaml" | "yml" | "axml" | "arxml" | "fibex" | "xml" | "asc" | "trc" | "log" | "txt";
   counts: {
     hardware_nodes: number;
     functions: number;

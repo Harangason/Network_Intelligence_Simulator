@@ -13,6 +13,8 @@ from backend.engineering.structure_rules import (
 def test_hardware_name_keeps_type_in_separate_field():
     assert normalize_hardware_name("Ultraschallverarbeitung-ECU") == "Ultraschallverarbeitung"
     assert normalize_hardware_name("RobotController") == "Robot"
+    assert normalize_hardware_name("Airbagsteuergerät") == "Airbag"
+    assert normalize_hardware_name("Airbag-Steuergeraet-2") == "Airbag-2"
     assert normalize_hardware_name("System-Gateway") == "System"
     assert normalize_hardware_name("ECU") == "ECU"
 
@@ -23,6 +25,9 @@ def test_infer_device_type_from_engineering_name():
     assert infer_device_type("Temperatursensor") == "SensorController"
     assert infer_device_type("Ventil-Aktor") == "ActuatorController"
     assert infer_device_type("Unbekannt", "IndustrialPC") == "IndustrialPC"
+    assert infer_device_type("EGRValvePositionSensor") == "SensorController"
+    assert infer_device_type("EGRValvePosition", "SensorController") == "SensorController"
+    assert infer_device_type("Sensor processing", "ECU") == "ECU"
 
 
 def test_recommended_names_follow_the_selected_parent():

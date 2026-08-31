@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { EngineeringImportWizard } from "@/components/engineering-import-wizard";
 import { ProjectActions } from "@/components/project-actions";
 import { RuntimeStatus } from "@/components/runtime-status";
 import {
@@ -17,6 +18,7 @@ export function StudioTopbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [wizardSession, setWizardSession] = useState<EngineeringAgentWizardSession | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const syncWizardSession = useCallback(() => {
     setWizardSession(readEngineeringAgentWizardSession(readActiveProjectId()));
   }, []);
@@ -40,27 +42,33 @@ export function StudioTopbar() {
   }
 
   return (
-    <header className="topbar">
-      <Link className="brand" href="/">
-        <span className="brand-mark" aria-hidden="true">CS</span>
-        <div>
-          <strong>Communication Simulator</strong>
-          <span>Network trace studio</span>
+    <>
+      <header className="topbar">
+        <Link className="brand" href="/">
+          <span className="brand-mark" aria-hidden="true">CS</span>
+          <div>
+            <strong>Communication Simulator</strong>
+            <span>Network trace studio</span>
+          </div>
+        </Link>
+        <div className="topbar-wizard-slot">
+          {wizardSession && (
+            <button className="topbar-command engineering-wizard-return" onClick={returnToWizard} type="button">
+              <span aria-hidden="true">←</span>
+              Zurück zum Auftrag
+            </button>
+          )}
         </div>
-      </Link>
-      <div className="topbar-wizard-slot">
-        {wizardSession && (
-          <button className="topbar-command engineering-wizard-return" onClick={returnToWizard} type="button">
-            <span aria-hidden="true">←</span>
-            Zurück zum Auftrag
+        <div className="topbar-actions">
+          <ProjectActions />
+          <button className="topbar-command" onClick={() => setImportOpen(true)} type="button">
+            Importieren
           </button>
-        )}
-      </div>
-      <div className="topbar-actions">
-        <ProjectActions />
-        <Link className="topbar-link" href="/studio/settings">Einstellungen</Link>
-        <RuntimeStatus />
-      </div>
-    </header>
+          <Link className="topbar-link" href="/studio/settings">Einstellungen</Link>
+          <RuntimeStatus />
+        </div>
+      </header>
+      {importOpen && <EngineeringImportWizard onClose={() => setImportOpen(false)} />}
+    </>
   );
 }

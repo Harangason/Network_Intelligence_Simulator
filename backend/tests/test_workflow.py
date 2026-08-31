@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+import json
 
 from backend.engineering.capacity.calculators import (
     clock_drift_ms,
@@ -9,7 +10,7 @@ from backend.engineering.capacity.calculators import (
     utilization_percent,
 )
 from backend.engineering.capacity import service as capacity_service_module
-from backend.engineering.capacity.service import CapacityTimingService, PreflightService
+from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol
 from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
 from backend.engineering.workflow import service as workflow_service_module
 from backend.engineering.workflow.service import WorkflowStatusService, is_topology_layout_only_change
@@ -144,6 +145,20 @@ def test_unknown_protocol_is_explicitly_generic():
     assert estimate.calculation_model == "GENERIC_ESTIMATE"
 
 
+def test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed():
+    parameters = {"technology": "can_fd", "bitrate": 2_000_000, "arbitration_bitrate": 500_000, "data_bitrate": 8_000_000}
+    assert parameters_for_protocol("CAN_FD", parameters) == parameters
+    ethernet = parameters_for_protocol("Ethernet", parameters)
+    lin = parameters_for_protocol("LIN", parameters)
+    assert ethernet["bitrate"] == 100_000_000
+    assert lin["bitrate"] == 19_200
+    assert "data_bitrate" not in ethernet
+    assert estimate_frame("LIN", 8, lin).transmission_time_s == 114 / 19_200
+    assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+    assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
+    assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600
+
+
 def test_utilization_queueing_and_thresholds_are_monotonic():
     load = utilization_percent(0.001, 10)
 
@@ -190,6 +205,33 @@ def test_workflow_state_always_exposes_complete_agent_context():
         "selected_signal": None,
         "selected_simulation": None,
     }
+
+
+def test_workflow_context_persists_agent_execution_without_losing_wizard(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_wizard_status": {"run_id": "run-a", "network_architecture": {"approved": True}},
+        "engineering_scope_rules": {"hardware_counts": {"gateways": 1}},
+    }}
+    run = {"run_id": "run-a", "state": "BLOCKED", "step": "routing",
+           "completed": 36, "total": 150, "message": "Routing validation failed.",
+           "updated_at": "2026-08-30T19:00:00Z"}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+            assert parameters[2] == "project-a"
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+    saved = service.set_context({"agent_execution": run, "unknown_context_key": "ignored"})
+
+    assert saved["context"]["agent_execution"] == run
+    assert saved["context"]["agent_wizard_status"]["network_architecture"]["approved"] is True
+    assert saved["context"]["engineering_scope_rules"]["hardware_counts"]["gateways"] == 1
+    assert saved["context"]["active_project"] == "project-a"
+    assert "unknown_context_key" not in saved["context"]
 
 
 def test_workflow_state_hides_stale_reason_after_step_is_complete():
@@ -409,3 +451,67 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
     assert results["bottlenecks"]
     assert {"CAPACITY_TARGET_LOAD_EXCEEDED", "TIMING_DEADLINE_MISS", "TIMING_JITTER_EXCEEDED", "TIMING_TIMEOUT_RISK", "TIMING_FRESHNESS_RISK", "GATEWAY_OVERLOAD", "RELIABILITY_REQUIREMENT_MISS", "SYNCHRONIZATION_REQUIREMENT_MISS"} <= codes
     assert response["provenance"]["calculation_model"] == "TECHNOLOGY_AWARE_CAPACITY_TIMING"
+
+
+def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch):
+    state = {
+        "project_id": "analysis-project",
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {
+            "technology": "lin",
+            "bitrate": 19_200,
+            "cycle_ms": 10,
+            "payload_bytes": 8,
+            "peak_factor": 1.15,
+            "burst_factor": 1.5,
+            "target_bus_load_percent": 90,
+        },
+        "topology": {"nodes": [], "edges": []},
+    }
+    shared_route = {
+        "id": "route-shared",
+        "route_code": "RT-SHARED",
+        "name": "Shared LIN route",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "source": {"node_id": "producer", "protocol": "LIN", "network_id": "lin-shared"},
+        "payload": {"payload_bytes": 8},
+        "destinations": [
+            {"node_id": "consumer-a", "network_id": "lin-shared"},
+            {"node_id": "consumer-b", "network_id": "lin-shared"},
+        ],
+        "route": {"gateways": []},
+        "timing": {"cycle_time_ms": 10},
+        "routing_policy": {"priority": "NORMAL"},
+    }
+    split_route = {
+        **shared_route,
+        "id": "route-split",
+        "route_code": "RT-SPLIT",
+        "name": "Gateway split route",
+        "source": {"node_id": "producer", "protocol": "LIN", "network_id": "lin-a"},
+        "destinations": [{"node_id": "gateway", "network_id": "lin-b"}],
+    }
+    service = CapacityTimingService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service, "latest", lambda: None)
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500: [shared_route, split_route])
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500: [])
+
+    response = service.calculate(persist=False)
+    results = response["results"]
+    networks = {item["network_id"]: item for item in results["networks"]}
+    route_segments = {(item["route_id"], item["network_id"]) for item in results["routes"]}
+
+    assert networks["lin-shared"]["average_load_percent"] == 59.375
+    assert networks["lin-a"]["average_load_percent"] == 59.375
+    assert networks["lin-b"]["average_load_percent"] == 59.375
+    assert networks["lin-shared"]["route_count"] == 1
+    assert route_segments == {
+        ("route-shared", "lin-shared"),
+        ("route-split", "lin-a"),
+        ("route-split", "lin-b"),
+    }
+    assert results["overview"]["route_count"] == 2
+    assert results["overview"]["route_segment_count"] == 3

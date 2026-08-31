@@ -64,7 +64,7 @@ class DataQualityService:
         duplicate_candidates = 0
         conflicting_signals = 0
         broken_relations = 0
-        names: dict[tuple[str, str], list[str]] = defaultdict(list)
+        names: dict[tuple[str, str, str], list[str]] = defaultdict(list)
 
         for object_type, rows in objects.items():
             required = self.REQUIRED_FIELDS[object_type]
@@ -113,9 +113,10 @@ class DataQualityService:
                                     recommendation="Min-/Max-Werte des Signals korrigieren.",
                                 )
                             )
-                names[(object_type, str(row.get("name") or "").strip().lower())].append(object_id)
+                role = str(row.get("device_type") or "") if object_type == "HardwareNode" else ""
+                names[(object_type, role, str(row.get("name") or "").strip().lower())].append(object_id)
 
-        for (object_type, name), ids in names.items():
+        for (object_type, _role, name), ids in names.items():
             if name and len(ids) > 1:
                 duplicate_candidates += len(ids) - 1
                 issues.append(

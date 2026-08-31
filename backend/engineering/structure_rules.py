@@ -55,7 +55,7 @@ SEMANTIC_NOISE = {
 
 SYSTEM_NAME_DUPLICATE_THRESHOLD = 0.86
 HARDWARE_NAME_SUFFIX = re.compile(
-    r"(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Actuator|Controller))+$",
+    r"(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller))+(?P<instance>[-_ ]\d+)?$",
     flags=re.IGNORECASE,
 )
 
@@ -64,7 +64,7 @@ def normalize_hardware_name(value: Any) -> str:
     """Keep the hardware role in ``device_type`` instead of duplicating it in the name."""
 
     original = str(value or "").strip()
-    normalized = HARDWARE_NAME_SUFFIX.sub("", original).strip("-_ ")
+    normalized = HARDWARE_NAME_SUFFIX.sub(lambda match: match.group("instance") or "", original).strip("-_ ")
     return normalized or original
 
 
@@ -161,10 +161,14 @@ def adapt_structure_name(source_name: str, source_parent_name: str, target_paren
 def infer_device_type(name: str, current: str | None = None) -> str:
     """Infer a canonical device type without replacing a stronger known type."""
 
+    if current and current not in {"GenericDevice", "CustomDevice"}:
+        return current
     value = name.lower()
     if "gateway" in value:
         return "Gateway"
-    if any(token in value for token in ("aktor", "actuator", "ventil", "valve")):
+    if "sensor" in value:
+        return "SensorController"
+    if any(token in value for token in ("aktor", "aktuator", "actuator", "ventil", "valve")):
         return "ActuatorController"
     if any(token in value for token in ("sensor", "geber", "mess")):
         return "SensorController"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   assessIntelligence,
   createOptimizationProposal,
@@ -24,6 +24,8 @@ import {
 } from "@/lib/engineering-object-style";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
+import { createIntelligenceLoader } from "@/lib/intelligence-loader";
+import { readActiveProjectId } from "@/lib/user-settings";
 
 type View = "overview" | "analytics" | "insights" | "knowledge";
 
@@ -48,38 +50,32 @@ export function IntelligenceWorkbench() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const loader = useRef<ReturnType<typeof createIntelligenceLoader> | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      let next: IntelligenceSnapshot;
-      try {
-        next = await getIntelligence();
-      } catch {
-        next = await assessIntelligence();
-        notifyWorkflowChanged();
-      }
-      const governed = await listOptimizationProposals();
-      setSnapshot(next);
-      setProposals(governed.items);
-      setError("");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Intelligence-Bewertung nicht verfügbar.");
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const current = createIntelligenceLoader({
+      readProjectId: readActiveProjectId,
+      getSnapshot: getIntelligence,
+      assessSnapshot: assessIntelligence,
+      getProposals: listOptimizationProposals,
+      onProjectChange: () => { setSnapshot(null); setProposals([]); setError(""); },
+      onSnapshot: setSnapshot,
+      onProposals: setProposals,
+      onLoading: setLoading,
+      onError: (caught) => setError(caught == null ? "" : caught instanceof Error ? caught.message : "Intelligence-Bewertung nicht verfügbar."),
+      onAssessed: notifyWorkflowChanged,
+    });
+    loader.current = current;
+    return () => { current.dispose(); loader.current = null; };
   }, []);
 
+  const load = useCallback(() => loader.current?.refresh(), []);
   useWorkflowRefresh(load);
 
   async function recalculate() {
     setBusy(true);
     try {
-      setSnapshot(await assessIntelligence());
-      notifyWorkflowChanged();
-      setError("");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Bewertung fehlgeschlagen.");
+      await loader.current?.refresh(true);
     } finally {
       setBusy(false);
     }
@@ -106,7 +102,7 @@ export function IntelligenceWorkbench() {
     }
   }
 
-  if (loading) return <section className="intelligence-workbench"><div className="analysis-empty"><span className="spinner" /><strong>Systemdaten werden korreliert</strong><p>Engineering-, Routing-, Graph- und Simulationsquellen werden versioniert ausgewertet.</p></div></section>;
+  if (loading && !snapshot) return <section className="intelligence-workbench"><div className="analysis-empty"><span className="spinner" /><strong>Systemdaten werden korreliert</strong><p>Engineering-, Routing-, Graph- und Simulationsquellen werden versioniert ausgewertet.</p></div></section>;
   if (!snapshot) return <section className="intelligence-workbench"><div className="notice error">{error || "Keine Intelligence-Daten verfügbar."}</div><button className="button primary" onClick={() => void load()} type="button">Erneut laden</button></section>;
 
   const results = snapshot.results;
@@ -121,12 +117,15 @@ export function IntelligenceWorkbench() {
         <div className="analysis-actions">
           <a className="button secondary" download href={intelligenceExportUrl("csv")}>CSV</a>
           <a className="button secondary" download href={intelligenceExportUrl("json")}>JSON</a>
-          <button className="button primary" disabled={busy} onClick={() => void recalculate()} type="button">Neu bewerten</button>
+          <button className="button primary" disabled={busy || loading} onClick={() => void recalculate()} type="button">Neu bewerten</button>
         </div>
       </header>
 
-      {snapshot.is_outdated && <div className="workflow-blocker warning"><strong>OUTDATED</strong><span>{snapshot.outdated_reason}</span><button className="button secondary tiny" onClick={() => void recalculate()} type="button">Aktualisieren</button></div>}
+      {snapshot.is_outdated && <div className="workflow-blocker warning"><strong>OUTDATED</strong><span>{snapshot.outdated_reason}</span><button className="button secondary tiny" disabled={busy || loading} onClick={() => void recalculate()} type="button">Aktualisieren</button></div>}
       {error && <div className="notice error">{error}</div>}
+      {results.assessment_mode === "DIAGNOSTIC" && <div className="notice warning"><strong>Diagnose mit offenen Nachweisen</strong><ul>{results.missing_evidence?.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+      {results.interpretation && <p className="governance-note">{results.interpretation.ai_used ? "Snapshot mit KI-Interpretation" : "Rechnerischer Snapshot; KI-Reviews separat im Assistenten"} · {results.interpretation.learning}</p>}
+      {results.review_learning && <p className="governance-note">Review-Erfahrung: {results.review_learning.reviewed_proposals} bewertete Vorschläge · {results.review_learning.matched_recommendations} aktuelle Empfehlungen mit früherem Review-Kontext</p>}
 
       <nav aria-label="Intelligence-Bereiche" className="intelligence-tabs" role="tablist">
         {(["overview", "analytics", "insights", "knowledge"] as View[]).map((item) => (
@@ -163,9 +162,33 @@ function Overview({ snapshot, proposals, onCreate }: { snapshot: IntelligenceSna
         </section>
       </div>
 
+      <NetworkDistribution snapshot={snapshot} onCreate={onCreate} proposals={proposals} />
       <IssueTable issues={issues} onCreate={onCreate} proposals={proposals} />
     </div>
   );
+}
+
+function NetworkDistribution({ snapshot, proposals, onCreate }: { snapshot: IntelligenceSnapshot; proposals: OptimizationProposal[]; onCreate(item: IntelligenceRecommendation): Promise<void> }) {
+  const plan = snapshot.results.network_distribution;
+  if (!plan) return null;
+  return <section className="intelligence-section full" aria-label="Netzverteilung">
+    <div className="section-heading"><div><p className="eyebrow">Netzverteilung</p><h3>Systemcluster und Buslast</h3></div><strong>Ziel {plan.target_load_percent.toFixed(1)} %</strong></div>
+    <p>{plan.validation_scope}</p>
+    {!plan.networks.length && <div className="notice">{plan.status === "WITHIN_TARGET" ? "Alle berechneten Netzsegmente liegen innerhalb der Ziel-Buslast." : "Für eine Verteilung werden aktuelle Kapazitätsdaten benötigt."}</div>}
+    {plan.networks.map((network) => {
+      const recommendation = snapshot.results.recommendations.find((item) => item.candidate_id === `SEGMENT-${network.network_id}`);
+      return <div className="intelligence-distribution-network" key={network.network_id}>
+        <div className="section-heading"><div><h4>{network.network_id}</h4><p>{network.current_load_percent.toFixed(2)} % aktuell · {network.projected_max_load_percent > plan.target_load_percent ? "Busaufteilung allein nicht ausreichend" : `Vorschlag: ${network.proposed_segments} ${network.protocol}-Segmente (${network.additional_segments} zusätzlich)`} · Maximum {network.projected_max_load_percent.toFixed(2)} %</p></div>
+          {recommendation && <div className="analysis-actions"><button className="button secondary tiny" type="button" onClick={() => askAgent(buildRecommendationAgentPrompt(recommendation))}>KI prüfen lassen</button><button className="button primary tiny" type="button" disabled={proposals.some((item) => item.problem === recommendation.problem)} onClick={() => void onCreate(recommendation)}>Vorschlag vormerken</button></div>}
+        </div>
+        {!!recommendation?.review_history?.length && <p>Frühere Reviews: {recommendation.review_history.map((item) => `${item.status}${item.reason ? `: ${item.reason}` : ""}`).join(" · ")}. Erneute Prüfung erforderlich.</p>}
+        <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Systemcluster</th><th>Vorgeschlagenes Segment</th><th>Routen</th><th>Lastprognose</th><th>Lastprüfung</th></tr></thead><tbody>{network.segments.map((segment) => <Fragment key={segment.name}>
+          <tr><td>{segment.cluster_name}<small>{segment.ownership_basis === "inferred" ? " · Zuordnung abgeleitet" : segment.ownership_basis === "unassigned" ? " · Zuordnung offen" : ""}</small></td><td>{segment.name}</td><td>{segment.route_ids.length}</td><td>{segment.projected_load_percent.toFixed(2)} %</td><td><Status value={segment.load_check === "PASS" ? "PASS" : "ERROR"} /></td></tr>
+          {!!segment.alternatives.length && <tr><td colSpan={5}><ul>{segment.alternatives.map((item) => <li key={item}>{item}</li>)}</ul></td></tr>}
+        </Fragment>)}</tbody></table></div>
+      </div>;
+    })}
+  </section>;
 }
 
 function Analytics({ snapshot }: { snapshot: IntelligenceSnapshot }) {
@@ -327,7 +350,7 @@ function buildIssueAgentPrompt(issue: IntelligenceIssue) {
 function buildRecommendationAgentPrompt(item: IntelligenceRecommendation) {
   return [
     "Bewerte diese Intelligence-Empfehlung als Engineering-Agent.",
-    "Prüfe Evidence, Graph-Kontext und Umsetzungsrisiko. Erkläre, ob der Vorschlag technisch sinnvoll ist, und lege bei belastbarer Evidence einen OptimizationProposal-Kandidaten zur Human-Review an.",
+    "Prüfe Evidence, Graph-Kontext und Umsetzungsrisiko. Erkläre, ob der Vorschlag technisch sinnvoll ist, welche Alternative tragfähig ist und welche Nachweise fehlen. Nur bewerten, nichts ändern oder freigeben; das Vormerken erfolgt separat.",
     "",
     `Kategorie: ${item.category}`,
     `Problem: ${item.problem}`,
@@ -338,6 +361,7 @@ function buildRecommendationAgentPrompt(item: IntelligenceRecommendation) {
     `Betroffene Objekte: ${item.affected_objects.join(", ")}`,
     `Evidence: ${JSON.stringify(item.evidence).slice(0, 1800)}`,
     `Graph-Kontext: ${JSON.stringify(item.graph_context).slice(0, 1200)}`,
+    `Frühere Review-Entscheidungen (Kontext, keine aktuelle Freigabe): ${JSON.stringify(item.review_history ?? []).slice(0, 2000)}`,
   ].join("\n");
 }
 

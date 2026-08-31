@@ -23,6 +23,7 @@ import type {
   EngineeringObject,
   EngineeringObjectType,
   EngineeringResource,
+  HardwareNode,
   StructureAssignment,
   StructureEvaluation,
   SystemDuplicateCandidate,
@@ -49,6 +50,40 @@ const LEVELS: Level[] = [
 const LEVEL_BY_TYPE = Object.fromEntries(LEVELS.map((level) => [level.type, level])) as Record<EngineeringObjectType, Level>;
 const WIZARD_STEPS = [...LEVELS.map((level) => level.label), "KI-Prüfung"];
 const STRUCTURE_NAME_COLLATOR = new Intl.Collator("de-DE", { numeric: true, sensitivity: "base" });
+const SYSTEM_FRAME_FAMILIES: Array<{ sources: string[]; owners: string[] }> = [
+  { sources: ["airbag", "crash", "impact", "seatbelt", "gurt"], owners: ["airbag", "rueckhalt"] },
+  { sources: ["brake", "brems", "wheelspeed"], owners: ["bremsregelung"] },
+  { sources: ["damper", "daempfer"], owners: ["daempferregelung"] },
+  { sources: ["suspension", "wheelload", "verticalacceleration"], owners: ["fahrwerk"] },
+  { sources: ["steering", "wheelangle", "lenk"], owners: ["lenkung"] },
+  { sources: ["yaw", "pitch", "rollrate", "lateralacceleration", "longitudinalacceleration"], owners: ["stabilitaetsregelung"] },
+  { sources: ["cabintemperature", "ambienttemperature", "refrigerant", "innenraum", "klima"], owners: ["klima", "klimatisierung"] },
+  { sources: ["battery", "batterie", "cellvoltage"], owners: ["batteriemanagement"] },
+  { sources: ["transmission", "clutch", "gearselector"], owners: ["getriebesteuerung"] },
+  { sources: ["exhaust", "egrvalve", "urea", "abgas"], owners: ["abgasnachbehandlung"] },
+  { sources: ["motorspeed", "motorcurrent"], owners: ["elektromotorsteuerung"] },
+  { sources: ["engine", "boostpressure", "accelerator", "throttle", "turbo"], owners: ["motorsteuerung"] },
+  { sources: ["radar"], owners: ["radarverarbeitung"] },
+  { sources: ["camera", "kamera"], owners: ["kameraverarbeitung"] },
+  { sources: ["fuel", "kraftstoff"], owners: ["kraftstoffsystem"] },
+  { sources: ["tire", "reifen"], owners: ["reifendruckkontrolle"] },
+  { sources: ["wheelacceleration", "wheeltorque"], owners: ["stabilitaetsregelung", "fahrdynamik"] },
+  { sources: ["inverter", "dclink"], owners: ["invertersteuerung"] },
+  { sources: ["alternator", "accessorycurrent", "lowvoltage"], owners: ["energieversorgung"] },
+  { sources: ["rain", "washerfluid"], owners: ["wischersteuerung", "bodycontrol"] },
+  { sources: ["ambientlight"], owners: ["aussenlicht", "bodycontrol"] },
+  { sources: ["coolant", "oiltemperature", "intakeairtemperature", "oillevel", "temperature", "temperatur"], owners: ["thermal", "thermomanagement", "klimatisierung"] },
+];
+
+type StructureViewMode = "canonical" | "system-frames";
+
+type SystemFrameGroup = {
+  id: string;
+  name: string;
+  owner: HardwareNode | null;
+  members: HardwareNode[];
+  basis: "explicit" | "inferred" | "unassigned";
+};
 
 function objectParentId(item: EngineeringObject, level: Level) {
   if (!level.parentField || !(level.parentField in item)) return null;
@@ -88,6 +123,82 @@ function compareStructureObjects(left: EngineeringObject, right: EngineeringObje
     || left.id.localeCompare(right.id);
 }
 
+function systemFrameKey(value: unknown) {
+  let normalized = engineeringHardwareName(String(value || "")).toLowerCase();
+  for (const [source, target] of [["ä", "ae"], ["ö", "oe"], ["ü", "ue"], ["ß", "ss"]] as const) {
+    normalized = normalized.replaceAll(source, target);
+  }
+  return normalized.replace(/[^a-z0-9]/g, "");
+}
+
+function explicitSystemOwnerId(item: HardwareNode) {
+  const value = item.identity?.system_owner_id ?? item.identity?.systemOwnerId;
+  return typeof value === "string" && value ? value : null;
+}
+
+function inferredSystemOwner(item: HardwareNode, processors: HardwareNode[]) {
+  if (item.device_type === "Gateway") return null;
+  if (item.device_type === "ECU") return item;
+  const itemKey = systemFrameKey(item.name);
+  const scored = processors
+    .map((processor) => {
+      const ownerKey = systemFrameKey(processor.name);
+      let score = ownerKey.length > 3 && itemKey.startsWith(ownerKey) ? ownerKey.length + 2000 : 0;
+      for (const family of SYSTEM_FRAME_FAMILIES) {
+        const specificity = Math.max(...family.sources.map((token) => itemKey.includes(token) ? token.length : 0));
+        if (!specificity) continue;
+        for (const [index, owner] of family.owners.entries()) {
+          if (ownerKey.includes(owner)) score = Math.max(score, (owner === ownerKey ? 1200 : 800) + specificity * 20 - index * 80);
+        }
+      }
+      return { processor, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score);
+  return scored.length && (scored.length === 1 || scored[0].score > scored[1].score) ? scored[0].processor : null;
+}
+
+function buildSystemFrameGroups(hardware: HardwareNode[]) {
+  const processors = hardware.filter((item) => item.device_type === "ECU");
+  const byId = new Map(hardware.map((item) => [item.id, item]));
+  const groups = new Map<string, SystemFrameGroup>();
+  const ensureGroup = (owner: HardwareNode | null, basis: SystemFrameGroup["basis"]) => {
+    const id = owner?.id ?? "unassigned";
+    const current = groups.get(id);
+    if (current) {
+      if (current.basis !== "explicit" && basis === "explicit") current.basis = "explicit";
+      return current;
+    }
+    const group = {
+      id,
+      name: owner ? `Systemrahmen ${structureDisplayName(owner)}` : "Ohne Systemrahmen",
+      owner,
+      members: [],
+      basis,
+    };
+    groups.set(id, group);
+    return group;
+  };
+  for (const item of hardware) {
+    if (item.device_type === "Gateway") continue;
+    const explicitOwner = explicitSystemOwnerId(item);
+    const owner = explicitOwner && byId.get(explicitOwner)?.device_type === "ECU"
+      ? byId.get(explicitOwner) as HardwareNode
+      : inferredSystemOwner(item, processors);
+    const basis = explicitOwner && owner ? "explicit" : owner ? "inferred" : "unassigned";
+    ensureGroup(owner, basis).members.push(item);
+  }
+  for (const processor of processors) ensureGroup(processor, "inferred");
+  return [...groups.values()].map((group) => ({
+    ...group,
+    members: [...new Map(group.members.map((member) => [member.id, member])).values()].sort(compareStructureObjects),
+  })).sort((left, right) => {
+    if (left.id === "unassigned") return 1;
+    if (right.id === "unassigned") return -1;
+    return STRUCTURE_NAME_COLLATOR.compare(left.name, right.name);
+  });
+}
+
 function emptySelection(): Record<EngineeringObjectType, string[]> {
   return { HardwareNode: [], Function: [], Interface: [], Message: [], Signal: [] };
 }
@@ -96,6 +207,10 @@ function includesText(item: EngineeringObject, query: string) {
   if (!query) return true;
   return [item.name, item.description, item.domain, objectDetail(item)]
     .some((value) => String(value ?? "").toLocaleLowerCase("de-DE").includes(query));
+}
+
+function isHardwareNode(item: EngineeringObject): item is HardwareNode {
+  return item.object_type === "HardwareNode" && "device_type" in item;
 }
 
 export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void }) {
@@ -108,6 +223,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const [notice, setNotice] = useState("");
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<EngineeringObjectType | "all">("all");
+  const [viewMode, setViewMode] = useState<StructureViewMode>("canonical");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [hardwareOrder, setHardwareOrder] = useState<string[]>([]);
@@ -119,7 +235,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const [systemDuplicates, setSystemDuplicates] = useState<SystemDuplicateCandidate[]>([]);
   const [mergeCandidate, setMergeCandidate] = useState<SystemDuplicateCandidate | null>(null);
   const activeHardware = useMemo(
-    () => objects.HardwareNode.filter((item) => !isMergedHardwareAlias(item)),
+    () => objects.HardwareNode.filter(isHardwareNode).filter((item) => !isMergedHardwareAlias(item)),
     [objects.HardwareNode],
   );
   const activeObjects = useMemo(
@@ -223,6 +339,14 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     });
   }, [activeHardware, hardwareOrder]);
 
+  const systemFrameGroups = useMemo(() => buildSystemFrameGroups(activeHardware), [activeHardware]);
+
+  const visibleSystemFrameGroups = useMemo(() => systemFrameGroups.filter((group) => {
+    if (!normalizedQuery) return true;
+    return group.name.toLocaleLowerCase("de-DE").includes(normalizedQuery)
+      || group.members.some((member) => treeVisible(member));
+  }), [normalizedQuery, systemFrameGroups, treeVisible, typeFilter]);
+
   function toggleExpanded(id: string) {
     setExpanded((current) => {
       const next = new Set(current);
@@ -268,6 +392,35 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     }
   }
 
+  async function assignHardwareToSystemFrame(childId: string, owner: HardwareNode | null) {
+    if (!owner || childId === owner.id) return;
+    const child = activeHardware.find((item) => item.id === childId);
+    if (!child || child.device_type === "Gateway") return;
+    setBusy(true);
+    setError("");
+    try {
+      await updateEngineeringObject("hardware-nodes", child.id, {
+        identity: {
+          ...(child.identity ?? {}),
+          system_owner_id: owner.id,
+          system_owner_source: "structure_tree",
+        },
+        actor: "structure-tree-reviewer",
+        change_summary: `Systemrahmen ${owner.name} zugeordnet`,
+      });
+      setNotice(`${structureDisplayName(child)} wurde ${structureDisplayName(owner)} als Systemrahmen zugeordnet.`);
+      setExpanded((current) => new Set(current).add(`system-frame:${owner.id}`));
+      publishEngineeringModelChanged({ resource: "hardware-nodes", id: child.id, name: child.name });
+      await load();
+      onChanged();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Systemrahmen-Zuordnung konnte nicht gespeichert werden.");
+    } finally {
+      setBusy(false);
+      setDropTarget(null);
+    }
+  }
+
   function reorderHardware(sourceId: string, targetId: string) {
     if (sourceId === targetId) return;
     const current = orderedHardware.map((item) => item.id);
@@ -295,6 +448,13 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
       return target.object_type === "HardwareNode" && draggedIdRef.current !== target.id;
     }
     return LEVEL_BY_TYPE[draggedType].parentType === target.object_type;
+  }
+
+  function canDropOnSystemFrame(group: SystemFrameGroup) {
+    return viewMode === "system-frames"
+      && draggedTypeRef.current === "HardwareNode"
+      && Boolean(group.owner)
+      && draggedIdRef.current !== group.owner?.id;
   }
 
   async function saveName() {
@@ -436,13 +596,70 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     );
   }
 
+  function renderSystemFrame(group: SystemFrameGroup) {
+    const isExpanded = expanded.has(`system-frame:${group.id}`) || Boolean(normalizedQuery);
+    const members = group.members.filter(treeVisible);
+    const counts = {
+      ecu: members.filter((item) => item.device_type === "ECU").length,
+      sensors: members.filter((item) => item.device_type === "SensorController").length,
+      actors: members.filter((item) => item.device_type === "ActuatorController").length,
+    };
+    return (
+      <li className="structure-tree-node structure-system-frame-node" key={group.id}>
+        <div
+          className={`structure-tree-row structure-system-frame-row ${dropTarget === `system-frame:${group.id}` ? "drop-target" : ""}`}
+          draggable={false}
+          onDragEnter={() => canDropOnSystemFrame(group) && setDropTarget(`system-frame:${group.id}`)}
+          onDragLeave={(event) => !event.currentTarget.contains(event.relatedTarget as Node) && setDropTarget(null)}
+          onDragOver={(event) => {
+            if (canDropOnSystemFrame(group)) {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDropTarget(null);
+            const raw = event.dataTransfer.getData("application/x-engineering-structure");
+            if (!raw) return;
+            try {
+              const dragged = JSON.parse(raw) as { type: EngineeringObjectType; id: string };
+              if (dragged.type === "HardwareNode") void assignHardwareToSystemFrame(dragged.id, group.owner);
+            } catch {
+              setError("Das verschobene Objekt konnte nicht gelesen werden.");
+            }
+          }}
+        >
+          <span aria-hidden="true" className="structure-frame-mark" />
+          <button
+            aria-label={isExpanded ? `${group.name} einklappen` : `${group.name} ausklappen`}
+            className="structure-expand"
+            disabled={!members.length}
+            onClick={() => toggleExpanded(`system-frame:${group.id}`)}
+            type="button"
+          >
+            {members.length ? (isExpanded ? "−" : "+") : "·"}
+          </button>
+          <span className="structure-type eng-object-badge hardware">System</span>
+          <span className="structure-object-copy"><strong>{group.name}</strong></span>
+          <span className="structure-object-meta">
+            <span>{counts.ecu} ECU · {counts.sensors} Sensoren · {counts.actors} Aktoren</span>
+            <span>{group.basis === "explicit" ? "explizit zugeordnet" : group.basis === "inferred" ? "fachlich abgeleitet" : "Zuordnung offen"}</span>
+          </span>
+          <span className="structure-frame-drop-hint">{group.owner ? "Hardware hierher ziehen" : "Keine Ziel-ECU"}</span>
+        </div>
+        {isExpanded && members.length > 0 && <ul>{members.map((member) => renderNode(member, 1))}</ul>}
+      </li>
+    );
+  }
+
   return (
     <section className="structure-tree-workbench">
       <header className="structure-tree-toolbar">
         <div>
           <p className="eyebrow">Kanonische Abhängigkeiten</p>
           <h3>Structure Tree</h3>
-          <span>{LEVELS.map((level) => `${level.label}: ${activeObjects[level.type].length}`).join(" · ")}</span>
+          <span>{viewMode === "system-frames" ? `Systemrahmen: ${systemFrameGroups.length} · Hardware: ${activeHardware.length}` : LEVELS.map((level) => `${level.label}: ${activeObjects[level.type].length}`).join(" · ")}</span>
         </div>
         <div className="structure-tree-actions">
           <button className="button secondary" disabled={loading || busy} onClick={() => void load()} type="button">Aktualisieren</button>
@@ -454,6 +671,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
       <div className="structure-tree-filters">
         <label><span>Baum filtern</span><input onChange={(event) => setQuery(event.target.value)} placeholder="Name, Typ oder Wert" type="search" value={query} /></label>
         <label><span>Objekttyp</span><select onChange={(event) => setTypeFilter(event.target.value as EngineeringObjectType | "all")} value={typeFilter}><option value="all">Alle Stufen</option>{LEVELS.map((level) => <option key={level.type} value={level.type}>{level.label}</option>)}</select></label>
+        <div className="structure-view-toggle" aria-label="Structure-Tree-Ansicht" role="group"><button className={viewMode === "canonical" ? "active" : ""} onClick={() => setViewMode("canonical")} type="button">Kanonisch</button><button className={viewMode === "system-frames" ? "active" : ""} onClick={() => setViewMode("system-frames")} type="button">Systemrahmen</button></div>
         <div className="structure-tree-legend"><span><i className="good" />zugeordnet</span><span><i className="warning" />nicht zugeordnet</span></div>
       </div>
 
@@ -490,8 +708,8 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
       {loading ? <div className="loading-panel">Struktur wird geladen …</div> : (
         <div className="structure-tree-canvas">
           <div aria-hidden="true" className="structure-tree-column-head"><span /><span /><span>Typ</span><span>Name</span><span>Details</span><span /></div>
-          <ul className="structure-tree-root">{orderedHardware.map((item) => renderNode(item, 0))}</ul>
-          {orphans.length > 0 && (
+          <ul className="structure-tree-root">{viewMode === "system-frames" ? visibleSystemFrameGroups.map(renderSystemFrame) : orderedHardware.map((item) => renderNode(item, 0))}</ul>
+          {viewMode === "canonical" && orphans.length > 0 && (
             <section className="structure-orphans">
               <header><strong>Nicht zugeordnet</strong><span>{orphans.length}</span></header>
               <ul>{orphans.filter(treeVisible).map((item) => renderNode(item, 0))}</ul>

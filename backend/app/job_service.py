@@ -19,10 +19,41 @@ from .simulation_service import SimulationService
 
 
 logger = logging.getLogger(__name__)
+MAX_PERSISTED_JOBS = 100
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _job_sort_key(job: dict[str, Any]) -> tuple[str, str]:
+    return (
+        str(job.get("updated_at") or ""),
+        str(job.get("created_at") or ""),
+    )
+
+
+def _compact_result_for_registry(result: Any) -> Any:
+    if not isinstance(result, dict):
+        return result
+    artifacts = result.get("artifacts") if isinstance(result.get("artifacts"), list) else []
+    compact: dict[str, Any] = {
+        key: result[key]
+        for key in ("status", "summary", "duration_s", "started_at", "finished_at")
+        if key in result
+    }
+    compact["artifacts"] = artifacts
+    compact["artifact_count"] = len(artifacts)
+    if set(result) - set(compact):
+        compact["registry_truncated"] = True
+    return compact
+
+
+def _compact_job_for_registry(job: dict[str, Any]) -> dict[str, Any]:
+    compact = copy.deepcopy(job)
+    if "result" in compact:
+        compact["result"] = _compact_result_for_registry(compact.get("result"))
+    return compact
 
 
 def _run_simulation_process(
@@ -95,18 +126,39 @@ class JobService:
                         updated_at=_now(),
                     )
                 self._jobs[str(job["id"])] = job
+            self._prune_locked()
             self._persist_locked()
         except (OSError, ValueError, TypeError):
             logger.exception("Could not load persisted simulation jobs")
+
+    def _prune_locked(self) -> None:
+        if len(self._jobs) <= MAX_PERSISTED_JOBS:
+            return
+        keep = {
+            job_id
+            for job_id, _job in sorted(
+                self._jobs.items(),
+                key=lambda item: _job_sort_key(item[1]),
+                reverse=True,
+            )[:MAX_PERSISTED_JOBS]
+        }
+        for job_id in list(self._jobs):
+            if job_id not in keep and job_id not in self._futures:
+                self._jobs.pop(job_id, None)
 
     def _persist_locked(self) -> None:
         if not self.persist:
             return
         try:
+            self._prune_locked()
             self.registry_path.parent.mkdir(parents=True, exist_ok=True)
             temporary = self.registry_path.with_suffix(".tmp")
             temporary.write_text(
-                json.dumps({"jobs": list(self._jobs.values())}, ensure_ascii=True, indent=2),
+                json.dumps(
+                    {"jobs": [_compact_job_for_registry(job) for job in self._jobs.values()]},
+                    ensure_ascii=True,
+                    indent=2,
+                ),
                 encoding="utf-8",
             )
             temporary.replace(self.registry_path)
@@ -299,7 +351,7 @@ class JobService:
     def list(self, project_id: str | None = None) -> list[dict[str, Any]]:
         with self._lock:
             return [
-                copy.deepcopy(job)
+                _compact_job_for_registry(job)
                 for job in sorted(
                     (
                         job for job in self._jobs.values()

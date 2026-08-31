@@ -487,6 +487,7 @@ function edgeLaneOffset(topology: NetworkTopology, edge: TopologyEdge, _from: To
 
 type WirePoint = { x: number; y: number };
 type WireObstacle = { left: number; right: number; top: number; bottom: number };
+type WireBounds = { left: number; right: number; top: number; bottom: number };
 
 function compactWirePoints(points: WirePoint[]) {
   const unique = points.filter((point, index) => index === 0 || point.x !== points[index - 1].x || point.y !== points[index - 1].y);
@@ -510,6 +511,25 @@ function segmentHitsObstacle(start: WirePoint, end: WirePoint, obstacle: WireObs
       && Math.min(start.x, end.x) < obstacle.right;
   }
   return true;
+}
+
+function obstacleOverlapsBounds(obstacle: WireObstacle, bounds: WireBounds) {
+  return obstacle.right >= bounds.left
+    && obstacle.left <= bounds.right
+    && obstacle.bottom >= bounds.top
+    && obstacle.top <= bounds.bottom;
+}
+
+function nodeWireObstacles(topology: NetworkTopology, excludedNodeIds: Set<string>, margin = 18, bounds?: WireBounds) {
+  return topology.nodes
+    .filter((node) => !excludedNodeIds.has(node.id))
+    .map((node) => ({
+      left: node.x - margin,
+      right: node.x + nodeWidth(node) + margin,
+      top: node.y - margin,
+      bottom: node.y + nodeHeight(node) + margin,
+    }))
+    .filter((obstacle) => !bounds || obstacleOverlapsBounds(obstacle, bounds));
 }
 
 function wireRouteScore(points: WirePoint[], obstacles: WireObstacle[]) {
@@ -564,8 +584,33 @@ function largeTopologyEdgePath(
   const endSide = end.side;
   const usesHorizontalEdges = [startSide, endSide].every((side) => side === "top" || side === "bottom");
   if (usesHorizontalEdges) {
-    const laneY = (start.y + end.y) / 2;
-    return roundedWirePath([start, { x: start.x, y: laneY }, { x: end.x, y: laneY }, end]);
+    const laneOffset = edgeLaneOffset(topology, edge, from, to);
+    const clearance = 34;
+    const startDirection = startSide === "bottom" ? 1 : -1;
+    const endDirection = endSide === "bottom" ? 1 : -1;
+    const startStub = { x: start.x, y: start.y + startDirection * clearance };
+    const endStub = { x: end.x, y: end.y + endDirection * clearance };
+    const obstacles = nodeWireObstacles(topology, new Set([from.id, to.id]), 18, {
+      left: Math.min(start.x, end.x) - clearance * 2,
+      right: Math.max(start.x, end.x) + clearance * 2,
+      top: Math.min(start.y, end.y) - clearance * 3,
+      bottom: Math.max(start.y, end.y) + clearance * 3,
+    });
+    const allTops = topology.nodes.map((node) => node.y);
+    const allBottoms = topology.nodes.map((node) => node.y + nodeHeight(node));
+    const laneYs = new Set<number>([
+      (startStub.y + endStub.y) / 2 + laneOffset,
+      Math.max(CANVAS_MARGIN / 2, Math.min(...allTops) - clearance + laneOffset),
+      Math.max(...allBottoms) + clearance + laneOffset,
+    ]);
+    obstacles.forEach((obstacle) => {
+      laneYs.add(Math.max(CANVAS_MARGIN / 2, obstacle.top - clearance + laneOffset));
+      laneYs.add(obstacle.bottom + clearance + laneOffset);
+    });
+    const best = [...laneYs]
+      .map((laneY) => [start, startStub, { x: start.x, y: laneY }, { x: end.x, y: laneY }, endStub, end])
+      .sort((left, right) => wireRouteScore(left, obstacles) - wireRouteScore(right, obstacles))[0];
+    return roundedWirePath(best);
   }
   const laneOffset = edgeLaneOffset(topology, edge, from, to);
   const laneX = startSide === endSide
@@ -601,14 +646,7 @@ function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: Top
       ? Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to)) + clearance + Math.abs(laneOffset)
       : Math.min(from.x, to.x) - clearance - Math.abs(laneOffset)
     : (start.x + end.x) / 2 + laneOffset;
-  const obstacles = topology.nodes
-    .filter((node) => node.id !== from.id && node.id !== to.id)
-    .map((node) => ({
-      left: node.x - obstacleMargin,
-      right: node.x + nodeWidth(node) + obstacleMargin,
-      top: node.y - obstacleMargin,
-      bottom: node.y + nodeHeight(node) + obstacleMargin,
-    }));
+  const obstacles = nodeWireObstacles(topology, new Set([from.id, to.id]), obstacleMargin);
   const candidates: WirePoint[][] = [];
   const laneXs = new Set<number>([defaultLaneX]);
   obstacles.forEach((obstacle) => {
@@ -725,9 +763,61 @@ function stableTopologyOrder(topology: NetworkTopology, nodes: TopologyNode[]) {
 
 type EvaGroup = {
   anchor: TopologyNode;
+  processors: TopologyNode[];
   inputs: TopologyNode[];
   outputs: TopologyNode[];
 };
+
+function evaSystemKey(node: TopologyNode) {
+  const cleaned = node.name
+    .trim()
+    .replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuergeraet|Steuergerät))+([-_ ]\d+)?$/i, "$1")
+    .replace(/^[-_ ]+|[-_ ]+$/g, "") || node.name;
+  return cleaned
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function canonicalEvaProcessors(topology: NetworkTopology, anchors: TopologyNode[]) {
+  const byId = new Map(anchors.map((anchor) => [anchor.id, anchor]));
+  const byEngineeringId = new Map(anchors.flatMap((anchor) => anchor.engineeringId ? [[anchor.engineeringId, anchor]] : []));
+  const processorGroups = new Map<string, TopologyNode[]>();
+  anchors
+    .filter((anchor) => anchor.kind === "ecu")
+    .forEach((anchor) => {
+      const key = evaSystemKey(anchor);
+      if (!key) return;
+      processorGroups.set(key, [...(processorGroups.get(key) ?? []), anchor]);
+    });
+  const ownerById = new Map<string, TopologyNode>();
+  processorGroups.forEach((processors) => {
+    const canonical = [...processors].sort((left, right) =>
+      evaSystemKey(left).length - evaSystemKey(right).length ||
+      left.name.length - right.name.length ||
+      nodeDegree(topology, right.id) - nodeDegree(topology, left.id) ||
+      left.name.localeCompare(right.name, "de") ||
+      left.id.localeCompare(right.id),
+    )[0];
+    processors.forEach((processor) => ownerById.set(processor.id, canonical));
+  });
+  anchors.forEach((anchor) => {
+    if (anchor.kind === "gateway") {
+      ownerById.set(anchor.id, anchor);
+      return;
+    }
+    const explicitOwner = anchor.systemOwnerId
+      ? byId.get(anchor.systemOwnerId) ?? byEngineeringId.get(anchor.systemOwnerId)
+      : undefined;
+    if (explicitOwner?.kind === "ecu") ownerById.set(anchor.id, ownerById.get(explicitOwner.id) ?? explicitOwner);
+  });
+  return ownerById;
+}
 
 function topologyAdjacency(topology: NetworkTopology) {
   const adjacency = new Map<string, Set<string>>();
@@ -814,9 +904,17 @@ function buildEvaGroups(topology: NetworkTopology, routingEntries: RoutingEntry[
     topology,
     topology.nodes.filter((node) => node.kind === "ecu" || node.kind === "gateway"),
   );
-  const ecuAnchors = anchors.filter((node) => node.kind === "ecu");
+  const ownerByAnchorId = canonicalEvaProcessors(topology, anchors);
+  const canonicalAnchorIds = new Set(anchors.map((anchor) => ownerByAnchorId.get(anchor.id)?.id ?? anchor.id));
+  const canonicalAnchors = anchors.filter((anchor) => anchor.kind === "gateway" || canonicalAnchorIds.has(anchor.id));
+  const ecuAnchors = canonicalAnchors.filter((node) => node.kind === "ecu");
   const gatewayAnchors = anchors.filter((node) => node.kind === "gateway");
-  const groups = new Map(anchors.map((anchor) => [anchor.id, { anchor, inputs: [], outputs: [] } as EvaGroup]));
+  const groups = new Map(canonicalAnchors.map((anchor) => [anchor.id, { anchor, processors: [], inputs: [], outputs: [] } as EvaGroup]));
+  anchors.forEach((anchor) => {
+    const owner = ownerByAnchorId.get(anchor.id);
+    if (!owner || owner.id === anchor.id || anchor.kind !== "ecu") return;
+    groups.get(owner.id)?.processors.push(anchor);
+  });
   const adjacency = topologyAdjacency(topology);
   const endpoints = stableTopologyOrder(
     topology,
@@ -841,16 +939,18 @@ function buildEvaGroups(topology: NetworkTopology, routingEntries: RoutingEntry[
       left.anchor.id.localeCompare(right.anchor.id),
     )[0]?.anchor;
     if (!selected) return;
-    const group = groups.get(selected.id);
+    const canonicalSelected = selected.kind === "ecu" ? ownerByAnchorId.get(selected.id) ?? selected : selected;
+    const group = groups.get(canonicalSelected.id);
     if (!group) return;
     if (endpoint.kind === "sensor") group.inputs.push(endpoint);
     else group.outputs.push(endpoint);
   });
 
-  return anchors.map((anchor) => {
+  return canonicalAnchors.map((anchor) => {
     const group = groups.get(anchor.id)!;
     return {
       ...group,
+      processors: stableTopologyOrder(topology, group.processors),
       inputs: stableTopologyOrder(topology, group.inputs),
       outputs: stableTopologyOrder(topology, group.outputs),
     };
@@ -862,7 +962,10 @@ function nodeRowWidth(nodes: TopologyNode[]) {
 }
 
 function evaGroupWidth(group: EvaGroup) {
-  return Math.max(nodeWidth(group.anchor), nodeRowWidth([...group.inputs, ...group.outputs]));
+  return Math.max(
+    nodeRowWidth([group.anchor, ...group.processors]),
+    nodeRowWidth([...group.inputs, ...group.outputs]),
+  );
 }
 
 function evaClusterLayouts(
@@ -871,7 +974,7 @@ function evaClusterLayouts(
   groups = buildEvaGroups(topology, routingEntries),
 ) {
   return groups.flatMap((group) => {
-    const members = [group.anchor, ...group.inputs, ...group.outputs];
+    const members = [group.anchor, ...group.processors, ...group.inputs, ...group.outputs];
     if (members.length < 2) return [];
     const left = Math.min(...members.map((node) => node.x));
     const top = Math.min(...members.map((node) => node.y));
@@ -883,6 +986,7 @@ function evaClusterLayouts(
       label: `System ${group.anchor.name}`,
       count: members.length,
       inputs: group.inputs.length,
+      processors: 1 + group.processors.length,
       outputs: group.outputs.length,
       kind: group.anchor.kind,
       left: Math.max(8, left - EVA_CLUSTER_PADDING),
@@ -966,14 +1070,16 @@ function hasLayoutProblems(
     if (nodeWidth(primaryGateway) < nodeHeight(primaryGateway) * 2) return true;
   }
   if (evaGroups.some((group) => {
-    const members = [...group.inputs, ...group.outputs];
-    if (members.length === 0) return false;
-    const expectedHeight = endpointRowHeight(members);
-    return members.some((node) =>
+    const endpoints = [...group.inputs, ...group.outputs];
+    const processors = [group.anchor, ...group.processors];
+    const expectedHeight = endpointRowHeight(endpoints);
+    return group.processors.some((node) =>
+      Math.abs(node.y - group.anchor.y) > 0.1
+    ) || (endpoints.length > 0 && endpoints.some((node) =>
       node.y < group.anchor.y + nodeHeight(group.anchor) + 48 ||
       Math.abs(nodeWidth(node) - ENDPOINT_NODE_WIDTH) > 0.1 ||
       Math.abs(nodeHeight(node) - expectedHeight) > 0.1,
-    );
+    )) || nodeRowWidth(processors) > evaGroupWidth(group) + 0.1;
   })) return true;
   const expectedGatewayNames = gatewayInterfaceNames(topology);
   if (topology.nodes.some((node) => node.kind === "gateway" && node.ports.some((port) => {
@@ -1020,6 +1126,7 @@ function arrangeTopology(
   const arranged = new Map<string, TopologyNode>();
   const groupedIds = new Set(groups.flatMap((group) => [
     group.anchor.id,
+    ...group.processors.map((node) => node.id),
     ...group.inputs.map((node) => node.id),
     ...group.outputs.map((node) => node.id),
   ]));
@@ -1044,7 +1151,7 @@ function arrangeTopology(
   const layoutSpan = Math.max(totalUnitWidth, minimumSpan);
   const processingHeight = Math.max(
     NODE_MIN_HEIGHT,
-    ...branchGroups.map((group) => nodeHeight(group.anchor)),
+    ...branchGroups.flatMap((group) => [group.anchor, ...group.processors].map((node) => nodeHeight(node))),
     ...directNodes.map(() => directEndpointHeight),
   );
   const endpointTop = processingTop + processingHeight + 112;
@@ -1053,11 +1160,16 @@ function arrangeTopology(
   units.forEach((unit) => {
     const centerX = cursorX + unit.width / 2;
     if (unit.group) {
-      const anchor = { ...unit.group.anchor, width: unit.width };
-      arranged.set(anchor.id, {
-        ...anchor,
-        x: Math.round(centerX - unit.width / 2),
-        y: processingTop,
+      const processors = stableTopologyOrder(sizedTopology, [unit.group.anchor, ...unit.group.processors]);
+      const processorRowWidth = nodeRowWidth(processors);
+      let processorX = centerX - processorRowWidth / 2;
+      processors.forEach((processor) => {
+        arranged.set(processor.id, {
+          ...processor,
+          x: Math.round(processorX),
+          y: processingTop,
+        });
+        processorX += nodeWidth(processor) + EVA_ROW_GAP;
       });
       const endpoints = stableTopologyOrder(sizedTopology, [...unit.group.inputs, ...unit.group.outputs]);
       const groupEndpointHeight = endpointRowHeight(endpoints);
@@ -1691,7 +1803,7 @@ export function NetworkEditor({
                   title="Systemrahmen verschieben"
                   type="button"
                 >
-                  {cluster.label} · {cluster.inputs} Eingang · 1 Verarbeitung · {cluster.outputs} Ausgang
+                  {cluster.label} · {cluster.inputs} Eingang · {cluster.processors} Verarbeitung · {cluster.outputs} Ausgang
                 </button>
               </div>
             ))}

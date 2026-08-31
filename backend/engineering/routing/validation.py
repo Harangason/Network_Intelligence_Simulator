@@ -314,7 +314,13 @@ class RoutingValidator:
         cycle_ms = float(timing.get("cycle_time_ms") or message_cycle_ms or 100.0)
         cycle_ms = cycle_ms or 100.0
         route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits else 0.0
-        expected_load = min(100.0, route_load * max(1, len(destinations)))
+        segment_ids = {
+            str(item.get("network_id") or "").strip()
+            for item in [source, path, *[destination for destination in destinations if isinstance(destination, dict)]]
+            if str(item.get("network_id") or "").strip()
+        }
+        segment_count = len(segment_ids) or 1
+        expected_load = min(100.0, route_load * segment_count)
         if expected_load > 90:
             error("BUS_LOAD_CRITICAL", f"Erwartete zusätzliche Buslast {expected_load:.1f} % ist kritisch.")
         elif expected_load > 75:
@@ -332,7 +338,12 @@ class RoutingValidator:
                 {"type": "TOPOLOGY", "source_node": source_node_id, "destinations": destination_node_ids},
                 {"type": "PROTOCOL", "protocol": protocol, "compatible": not any(item["code"] == "PROTOCOL_INCOMPATIBLE" for item in errors)},
                 {"type": "TIMING", "estimated_latency_ms": estimated_latency_ms, "max_latency_ms": max_latency},
-                {"type": "LOAD", "payload_bytes": payload_bytes, "route_load_percent": round(expected_load, 3)},
+                {
+                    "type": "LOAD",
+                    "payload_bytes": payload_bytes,
+                    "route_load_percent": round(expected_load, 3),
+                    "physical_segment_count": segment_count,
+                },
                 {
                     "type": "PHYSICAL_NETWORK",
                     "mapped": physical_path_mapped,
@@ -349,6 +360,7 @@ class RoutingValidator:
                 "payload_bytes": payload_bytes,
                 "estimated_latency_ms": estimated_latency_ms,
                 "route_load_percent": round(expected_load, 3),
+                "physical_segment_count": segment_count,
                 "hop_count": hop_count,
                 "gateway_count": gateway_count,
                 "physical_path_mapped": physical_path_mapped,
