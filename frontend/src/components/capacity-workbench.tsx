@@ -24,6 +24,20 @@ import { buildNetworkInspection, type NetworkInspection } from "@/lib/capacity-n
 import { readActiveProjectId } from "@/lib/user-settings";
 
 type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
+type ViewWarningInfo = Record<View, { count: number; reasons: string[] }>;
+
+const CAPACITY_VIEW_LABELS: Record<View, string> = {
+  overview: "Übersicht",
+  networks: "Netze",
+  messages: "Messages",
+  routes: "Routen",
+  timing: "Timing & Sync",
+  gateways: "Gateways",
+  critical: "Kritisch",
+  recommendations: "Empfehlungen",
+};
+
+const CAPACITY_VIEWS: View[] = ["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
 
 export function CapacityWorkbench() {
   const [results, setResults] = useState<CapacityResults | null>(null);
@@ -140,6 +154,14 @@ export function CapacityWorkbench() {
     if (networkSort === "latency") return right.worst_end_to_end_latency_ms - left.worst_end_to_end_latency_ms;
     return right.burst_load_percent - left.burst_load_percent;
   }), [networkSort, shown]);
+  const warningInfo = useMemo(
+    () => buildCapacityWarningInfo(shown, findings, proposals, status, outdatedReason),
+    [findings, outdatedReason, proposals, shown, status],
+  );
+  const statusDetails = useMemo(
+    () => buildStatusDetails(status ?? shown?.overview.status ?? null, warningInfo),
+    [shown?.overview.status, status, warningInfo],
+  );
 
   return (
     <section className="analysis-workbench">
@@ -191,16 +213,28 @@ export function CapacityWorkbench() {
             <Metric label="Kapazitätsreserve" value={`${shown.overview.minimum_capacity_reserve_percent.toFixed(2)} %`} />
             <Metric label="Worst E2E" value={`${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms`} />
             <Metric label="Netze / Routen" value={`${shown.overview.network_count} / ${shown.overview.route_count}`} />
-            <Metric label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
+            <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
           </div>
 
           <div className="analysis-tabs" role="tablist" aria-label="Capacity-Ansichten">
-            {(["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"] as View[]).map((item) => (
-              <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">
-                {({ overview: "Übersicht", networks: "Netze", messages: "Messages", routes: "Routen", timing: "Timing & Sync", gateways: "Gateways", critical: "Kritisch", recommendations: "Empfehlungen" } as Record<View, string>)[item]}
+            {CAPACITY_VIEWS.map((item) => {
+              const warning = warningInfo[item];
+              return (
+              <button
+                aria-selected={view === item}
+                className={`${view === item ? "active" : ""}${warning.count ? " has-warning" : ""}`}
+                key={item}
+                onClick={() => setView(item)}
+                role="tab"
+                title={warning.reasons.join("\n")}
+                type="button"
+              >
+                {CAPACITY_VIEW_LABELS[item]}
+                {warning.count > 0 && <span aria-label={`${warning.count} Warnungen`} className="tab-warning-indicator">!</span>}
               </button>
-            ))}
+            );})}
           </div>
+          <CapacityViewWarnings label={CAPACITY_VIEW_LABELS[view]} warning={warningInfo[view]} />
 
           {(view === "overview" || view === "networks") && <>
             <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
@@ -233,8 +267,127 @@ export function CapacityWorkbench() {
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return <div className={tone ? `metric metric-${tone.toLowerCase()}` : "metric"}><span>{label}</span><strong>{value}</strong></div>;
+function emptyWarningInfo(): ViewWarningInfo {
+  return CAPACITY_VIEWS.reduce((acc, view) => ({ ...acc, [view]: { count: 0, reasons: [] } }), {} as ViewWarningInfo);
+}
+
+function addWarning(info: ViewWarningInfo, view: View, reason: string) {
+  info[view].count += 1;
+  if (!info[view].reasons.includes(reason)) info[view].reasons.push(reason);
+}
+
+function buildCapacityWarningInfo(
+  results: CapacityResults | null,
+  findings: AnalysisFinding[],
+  proposals: Array<Record<string, unknown>>,
+  workflowStatus: WorkflowStatus | null,
+  outdatedReason: string,
+): ViewWarningInfo {
+  const info = emptyWarningInfo();
+  if (!results) return info;
+
+  const effectiveStatus = workflowStatus ?? results.overview.status;
+  if (effectiveStatus === "WARNING" || effectiveStatus === "ERROR") {
+    addWarning(info, "overview", outdatedReason || `Workflowstatus ${effectiveStatus}: Detailansichten prüfen.`);
+  }
+  const loadCounts = results.overview.load_status_counts;
+  if ((loadCounts.WARNING ?? 0) > 0) addWarning(info, "networks", `${loadCounts.WARNING} Netze im Status WARNING.`);
+  if ((loadCounts.CRITICAL ?? 0) > 0) addWarning(info, "critical", `${loadCounts.CRITICAL} Netze im Status CRITICAL.`);
+  if ((loadCounts.OVERLOAD ?? 0) > 0) addWarning(info, "critical", `${loadCounts.OVERLOAD} Netze im Status OVERLOAD.`);
+
+  const issueFindings = findings.filter((finding) => finding.severity === "ERROR" || finding.severity === "WARNING");
+  for (const finding of issueFindings) {
+    addWarning(info, "overview", finding.message);
+    addWarning(info, "recommendations", finding.recommendation ?? finding.message);
+  }
+  if (proposals.length > 0) addWarning(info, "recommendations", `${proposals.length} KI-Vorschläge zur Kapazitätsoptimierung offen.`);
+
+  for (const network of results.networks) {
+    if (network.status !== "NORMAL" || network.target_status === "EXCEEDED") {
+      const target = network.target_bus_load_percent == null ? "" : ` Ziel ${network.target_bus_load_percent.toFixed(2)} %`;
+      addWarning(info, "networks", `${network.network_id}: ${network.status}, Burst ${network.burst_load_percent.toFixed(2)} %.${target}`);
+      addWarning(info, "overview", `${network.network_id} verursacht Netz-Warnung.`);
+    }
+  }
+
+  for (const route of results.routes) {
+    if (route.status !== "NORMAL" || route.latency_status === "FAIL" || route.jitter_status === "FAIL" || route.requirement_status === "FAIL") {
+      addWarning(info, "routes", `${route.name}: ${route.status}, Peak ${route.peak_load_percent.toFixed(2)} %, E2E ${route.end_to_end_latency_ms.toFixed(3)} ms.`);
+    }
+    if (route.latency_status === "FAIL" || route.jitter_status === "FAIL" || route.requirement_status === "FAIL") {
+      addWarning(info, "timing", `${route.name}: Timing-Anforderung verletzt.`);
+    }
+  }
+
+  for (const message of results.messages) {
+    const status = String(message.status ?? message.requirement_status ?? message.validation_status ?? "").toUpperCase();
+    const load = Number(message.burst_load_percent ?? message.peak_load_percent ?? message.average_load_percent ?? 0);
+    if (["WARNING", "CRITICAL", "OVERLOAD", "ERROR", "FAIL"].includes(status) || load > 60) {
+      addWarning(info, "messages", `${String(message.name ?? message.message_id ?? "Message")}: ${status || "Last auffällig"}${load ? `, ${load.toFixed(2)} %` : ""}.`);
+    }
+  }
+
+  if ((results.timing?.deadline_violations ?? 0) > 0) addWarning(info, "timing", `${results.timing?.deadline_violations} Deadline-Verletzungen.`);
+  if ((results.timing?.jitter_violations ?? 0) > 0) addWarning(info, "timing", `${results.timing?.jitter_violations} Jitter-Verletzungen.`);
+  if (results.reliability?.status === "FAIL") addWarning(info, "timing", "Reliability-Anforderung nicht erfüllt.");
+  if (results.synchronization?.status === "FAIL") addWarning(info, "timing", "Synchronisations-Anforderung nicht erfüllt.");
+
+  for (const gateway of results.gateways) {
+    const status = String(gateway.status ?? "").toUpperCase();
+    if (["WARNING", "CRITICAL", "OVERLOAD", "ERROR", "FAIL"].includes(status)) {
+      addWarning(info, "gateways", `${String(gateway.name ?? gateway.gateway_id ?? "Gateway")}: ${status}.`);
+    }
+  }
+  for (const bottleneck of results.bottlenecks) {
+    const component = String(bottleneck.component ?? bottleneck.name ?? "Bottleneck");
+    const reason = `${component}: ${String(bottleneck.reason ?? "Engpass erkannt")}.`;
+    addWarning(info, /gateway|bcm/i.test(component) ? "gateways" : "critical", reason);
+    addWarning(info, "recommendations", reason);
+  }
+
+  for (const route of results.critical_paths) {
+    addWarning(info, "critical", `${route.name}: ${route.status}, Burst ${route.burst_load_percent.toFixed(2)} %.`);
+  }
+  return info;
+}
+
+function buildStatusDetails(status: WorkflowStatus | null, info: ViewWarningInfo) {
+  if (!status || (status !== "WARNING" && status !== "ERROR")) return [];
+  const details = CAPACITY_VIEWS.flatMap((view) =>
+    info[view].reasons.slice(0, 3).map((reason) => `${CAPACITY_VIEW_LABELS[view]}: ${reason}`),
+  );
+  return details.length ? details.slice(0, 6) : [`Status ${status}: Bitte betroffene Capacity-Ansichten prüfen.`];
+}
+
+function CapacityViewWarnings({ label, warning }: { label: string; warning: { count: number; reasons: string[] } }) {
+  if (warning.count === 0) return null;
+  return (
+    <section className="capacity-warning-origin" aria-label={`Warnursprung ${label}`}>
+      <div>
+        <strong>Warnursprung: {label}</strong>
+        <span>{warning.count} Hinweis{warning.count === 1 ? "" : "e"} in dieser Ansicht</span>
+      </div>
+      <ul>
+        {warning.reasons.slice(0, 8).map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
+      </ul>
+      {warning.reasons.length > 8 && <small>{warning.reasons.length - 8} weitere Hinweise in den Detailtabellen.</small>}
+    </section>
+  );
+}
+
+function Metric({ label, value, tone, details = [] }: { label: string; value: string; tone?: string; details?: string[] }) {
+  return (
+    <div className={tone ? `metric metric-${tone.toLowerCase()}` : "metric"} tabIndex={details.length ? 0 : undefined}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      {details.length > 0 && (
+        <div className="metric-hint" role="tooltip">
+          <b>Ursprung</b>
+          {details.map((detail, index) => <small key={`${detail}-${index}`}>{detail}</small>)}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function PaginatedResults<T>({ items, label, children, onPageChange }: {

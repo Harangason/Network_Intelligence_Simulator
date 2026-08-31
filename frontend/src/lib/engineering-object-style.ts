@@ -64,7 +64,7 @@ export function engineeringDeviceTypeLabel(value: unknown): string {
 export function engineeringHardwareName(value: unknown): string {
   const original = String(value ?? "").trim();
   const normalized = original
-    .replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Actuator|Controller))+$/i, "")
+    .replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuerger(?:ä|ae|a|�)t))+$/i, "")
     .replace(/^[-_ ]+|[-_ ]+$/g, "")
     .trim();
   return normalized || original;

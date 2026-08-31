@@ -1,7 +1,7 @@
 /** Device roles belong to device_type; technical identifiers remain unchanged. */
 export function normalizeHardwareName(value: string): string {
   const original = value.trim();
-  return original.replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller))+([-_ ]\d+)?$/i, "$1")
+  return original.replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuerger(?:ä|ae|a|�)t))+([-_ ]\d+)?$/i, "$1")
     .replace(/^[-_ ]+|[-_ ]+$/g, "") || original;
 }
 
@@ -517,7 +517,7 @@ function expandArchitectureChains(
       return true;
     })
     : [...recognizedChains];
-  const names = new Set(chains.map((chain) => normalized(chain.hardware_name)));
+  const names = new Set(chains.map((chain) => normalized(normalizeHardwareName(chain.hardware_name))));
   if (!targets.explicit) return { chains, targets };
 
   const templates = architectureTemplates();
@@ -533,7 +533,7 @@ function expandArchitectureChains(
         ? current.gateways
         : current.ecus;
     if (currentCount >= targetFor(template.deviceType)) continue;
-    const key = normalized(template.hardwareName);
+    const key = normalized(normalizeHardwareName(template.hardwareName));
     if (names.has(key)) continue;
     const allowedInterfaceType = communicationSystems.includes(template.interfaceType)
       ? template.interfaceType
@@ -554,11 +554,11 @@ function expandArchitectureChains(
     for (let instance = 0; current < targetFor(deviceType); instance += 1) {
       const template = candidates[instance % candidates.length];
       const hardwareName = `${template.hardwareName}-${2 + Math.floor(instance / candidates.length)}`;
-      if (names.has(normalized(hardwareName))) continue;
+      if (names.has(normalized(normalizeHardwareName(hardwareName)))) continue;
       const interfaceType = communicationSystems.includes(template.interfaceType) || !communicationSystems.length
         ? template.interfaceType : communicationSystems[instance % communicationSystems.length];
       chains.push(chainFromTemplate({ ...template, hardwareName, interfaceType }, chains.length, domain));
-      names.add(normalized(hardwareName));
+      names.add(normalized(normalizeHardwareName(hardwareName)));
       current += 1;
     }
   }
@@ -726,12 +726,12 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
     const names = [headingName, ...inlineHardwareNames(line), ...impliedHardwareNames(line)].filter(Boolean);
-    return [...new Map(names.map((name) => [normalized(name), name])).values()].map((name) => ({ index, name }));
+    return [...new Map(names.map((name) => [normalized(normalizeHardwareName(name)), name])).values()].map((name) => ({ index, name }));
   });
   const contexts = new Map<string, { name: string; lines: string[] }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
-    const key = normalized(occurrence.name);
+    const key = normalized(normalizeHardwareName(occurrence.name));
     const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, nextIndex)));
     contexts.set(key, existing);

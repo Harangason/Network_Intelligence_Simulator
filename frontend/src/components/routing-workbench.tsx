@@ -121,6 +121,7 @@ export function RoutingWorkbench({ initialView = "Table" }: { initialView?: Rout
   }, [selected]);
 
   const nodeNames = useMemo(() => new Map(hardware.map((node) => [node.id, node.name])), [hardware]);
+  const nodeTypes = useMemo(() => new Map(hardware.map((node) => [node.id, node.device_type])), [hardware]);
   const messageNames = useMemo(() => new Map(messages.map((message) => [message.id, message.name])), [messages]);
   const signalNames = useMemo(() => new Map(signals.map((signal) => [signal.id, signal.display_name || signal.name])), [signals]);
   const interfaceNetworks = useMemo(() => new Map(interfaces.map((item) => [
@@ -269,7 +270,16 @@ export function RoutingWorkbench({ initialView = "Table" }: { initialView?: Rout
             />
           )}
           {view === "Graph" && <RoutingGraph nodeNames={nodeNames} onSelect={setSelected} routes={routes} signalNames={signalNames} />}
-          {view === "Matrix" && <RoutingMatrix nodeNames={nodeNames} onSelect={setSelected} routes={routes} />}
+          {view === "Matrix" && (
+            <RoutingMatrix
+              interfaceNames={interfaceNames}
+              interfaceNetworks={interfaceNetworks}
+              nodeNames={nodeNames}
+              nodeTypes={nodeTypes}
+              onSelect={setSelected}
+              routes={routes}
+            />
+          )}
           {view === "AI Proposals" && (
             <RoutingProposals
               nodeNames={nodeNames}
@@ -631,11 +641,215 @@ function RoutingGraph({ routes, nodeNames, signalNames, onSelect }: { routes: Ro
   })}</div>;
 }
 
-function RoutingMatrix({ routes, nodeNames, onSelect }: { routes: RoutingEntry[]; nodeNames: Map<string, string>; onSelect: (route: RoutingEntry) => void }) {
-  const sources = [...new Set(routes.map((route) => route.source.node_id))];
-  const destinations = [...new Set(routes.flatMap((route) => route.destinations.map((item) => item.node_id)))];
-  if (!sources.length) return <EmptyRouting text="Kommunikationsmatrix ist noch leer." />;
-  return <div className="routing-table-wrap"><table className="routing-matrix"><thead><tr><th>Source</th>{destinations.map((id) => <th key={id}>{nodeNames.get(id) ?? id}</th>)}</tr></thead><tbody>{sources.map((source) => <tr key={source}><th>{nodeNames.get(source) ?? source}</th>{destinations.map((destination) => { const matches = routes.filter((route) => route.source.node_id === source && route.destinations.some((item) => item.node_id === destination)); return <td key={destination}>{matches.length ? <button onClick={() => onSelect(matches[0])} type="button">✓ <span>{matches.length}</span></button> : "—"}</td>; })}</tr>)}</tbody></table></div>;
+type RoutingMatrixMode = "participants" | "system-function";
+
+function compareGerman(a: string, b: string) {
+  return a.localeCompare(b, "de-DE", { numeric: true, sensitivity: "base" });
+}
+
+function routeNetworkLabel(route: RoutingEntry, interfaceNetworks: Map<string, string>) {
+  const networks = [
+    route.source.network_id ?? interfaceNetworks.get(route.source.interface_id ?? ""),
+    ...route.destinations.map((destination) => destination.network_id ?? interfaceNetworks.get(destination.interface_id ?? "")),
+  ].filter((value): value is string => Boolean(value && value !== "—"));
+  const uniqueNetworks = [...new Set(networks)];
+  return uniqueNetworks.length ? uniqueNetworks.join(" → ") : route.source.protocol ?? "Direkt";
+}
+
+function routeInterfaceLabel(route: RoutingEntry, interfaceNames: Map<string, string>) {
+  const source = interfaceNames.get(route.source.interface_id ?? "") ?? route.source.interface_id ?? "Quelle";
+  const destinations = route.destinations
+    .map((destination) => interfaceNames.get(destination.interface_id ?? "") ?? destination.interface_id)
+    .filter(Boolean)
+    .join(", ") || "Ziel";
+  return `${source} → ${destinations}`;
+}
+
+function matrixCellTitle(route: RoutingEntry, interfaceNames: Map<string, string>, interfaceNetworks: Map<string, string>) {
+  const network = routeNetworkLabel(route, interfaceNetworks);
+  const iface = routeInterfaceLabel(route, interfaceNames);
+  const protocol = route.source.protocol ? ` · ${route.source.protocol}` : "";
+  return `${network}${protocol}\n${iface}`;
+}
+
+function systemNameForRoute(route: RoutingEntry, nodeNames: Map<string, string>) {
+  return nodeNames.get(route.source.node_id) ?? route.source.node_id;
+}
+
+function functionNameForRoute(route: RoutingEntry) {
+  const value = route.payload.topic ?? route.payload.data_object ?? route.name;
+  return value.split(/\s*(?:→|->)\s*/)[0]?.trim() || value;
+}
+
+function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interfaceNetworks, onSelect }: {
+  routes: RoutingEntry[];
+  nodeNames: Map<string, string>;
+  nodeTypes: Map<string, string>;
+  interfaceNames: Map<string, string>;
+  interfaceNetworks: Map<string, string>;
+  onSelect: (route: RoutingEntry) => void;
+}) {
+  const [mode, setMode] = useState<RoutingMatrixMode>("participants");
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLocaleLowerCase("de-DE");
+  const labelForNode = useCallback((id: string) => nodeNames.get(id) ?? id, [nodeNames]);
+
+  const visibleRoutes = useMemo(() => {
+    if (!normalizedQuery) return routes;
+    return routes.filter((route) => {
+      const labels = [
+        canonicalRouteLabel(route, nodeNames),
+        route.name,
+        route.route_code,
+        route.source.network_id ?? "",
+        route.source.protocol ?? "",
+        routeNetworkLabel(route, interfaceNetworks),
+        routeInterfaceLabel(route, interfaceNames),
+        systemNameForRoute(route, nodeNames),
+        functionNameForRoute(route),
+        ...route.destinations.map((destination) => labelForNode(destination.node_id)),
+      ];
+      return labels.some((label) => label.toLocaleLowerCase("de-DE").includes(normalizedQuery));
+    });
+  }, [interfaceNames, interfaceNetworks, labelForNode, nodeNames, normalizedQuery, routes]);
+
+  if (!routes.length) return <EmptyRouting text="Kommunikationsmatrix ist noch leer." />;
+
+  if (mode === "system-function") {
+    const systems = [...new Map(visibleRoutes.map((route) => [
+      route.source.node_id,
+      { id: route.source.node_id, label: systemNameForRoute(route, nodeNames), type: nodeTypes.get(route.source.node_id) ?? "" },
+    ])).values()].sort((a, b) => compareGerman(a.label, b.label));
+    const functions = [...new Map(visibleRoutes.map((route) => [
+      functionNameForRoute(route),
+      { label: functionNameForRoute(route), type: nodeTypes.get(route.source.node_id) ?? "" },
+    ])).values()].sort((a, b) => compareGerman(a.label, b.label));
+    return (
+      <div className="routing-matrix-panel">
+        <MatrixToolbar mode={mode} query={query} resultCount={visibleRoutes.length} setMode={setMode} setQuery={setQuery} />
+        <div className="routing-table-wrap">
+          <table className="routing-matrix">
+            <thead>
+              <tr><th>System</th>{functions.map((item) => <th key={item.label}><MatrixAxisLabel label={item.label} type={item.type} /></th>)}</tr>
+            </thead>
+            <tbody>
+              {systems.map((system) => (
+                <tr key={system.id}>
+                  <th><MatrixAxisLabel label={system.label} type={system.type} /></th>
+                  {functions.map((fn) => {
+                    const matches = visibleRoutes.filter((route) => route.source.node_id === system.id && functionNameForRoute(route) === fn.label);
+                    return <MatrixCell direction="axis" key={fn.label} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onSelect={onSelect} />;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {visibleRoutes.length === 0 && <div className="routing-filter-empty">Keine Routen passen zur Suche.</div>}
+      </div>
+    );
+  }
+
+  const sources = [...new Set(visibleRoutes.map((route) => route.source.node_id))]
+    .sort((a, b) => compareGerman(labelForNode(a), labelForNode(b)));
+  const destinations = [...new Set(visibleRoutes.flatMap((route) => route.destinations.map((item) => item.node_id)))]
+    .sort((a, b) => compareGerman(labelForNode(a), labelForNode(b)));
+  return (
+    <div className="routing-matrix-panel">
+      <MatrixToolbar mode={mode} query={query} resultCount={visibleRoutes.length} setMode={setMode} setQuery={setQuery} />
+      <div className="routing-table-wrap">
+        <table className="routing-matrix">
+          <thead>
+            <tr><th>Source</th>{destinations.map((id) => <th key={id}><MatrixAxisLabel label={labelForNode(id)} type={nodeTypes.get(id) ?? ""} /></th>)}</tr>
+          </thead>
+          <tbody>
+            {sources.map((source) => (
+              <tr key={source}>
+                <th><MatrixAxisLabel label={labelForNode(source)} type={nodeTypes.get(source) ?? ""} /></th>
+                {destinations.map((destination) => {
+                  const matches = visibleRoutes.filter((route) =>
+                    route.source.node_id === source && route.destinations.some((item) => item.node_id === destination),
+                  );
+                  return <MatrixCell key={destination} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onSelect={onSelect} />;
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {visibleRoutes.length === 0 && <div className="routing-filter-empty">Keine Routen passen zur Suche.</div>}
+    </div>
+  );
+}
+
+function MatrixAxisLabel({ label, type }: { label: string; type: string }) {
+  const role = type === "SensorController" ? "Sensor" : type === "ActuatorController" ? "Aktor" : type === "ECU" ? "ECU" : type === "Gateway" ? "Gateway" : "";
+  return (
+    <span className="routing-matrix-axis-label">
+      {role && <i aria-label={role} className={`routing-matrix-role routing-matrix-role-${role.toLowerCase()}`} title={role}>{role === "Sensor" ? "✓" : role.slice(0, 1)}</i>}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function MatrixToolbar({ mode, query, resultCount, setMode, setQuery }: {
+  mode: RoutingMatrixMode;
+  query: string;
+  resultCount: number;
+  setMode: (mode: RoutingMatrixMode) => void;
+  setQuery: (query: string) => void;
+}) {
+  return (
+    <div className="routing-matrix-toolbar">
+      <div className="routing-matrix-mode" role="tablist" aria-label="Matrix-Darstellung">
+        <button aria-selected={mode === "participants"} className={mode === "participants" ? "active" : ""} onClick={() => setMode("participants")} role="tab" type="button">
+          Teilnehmer
+        </button>
+        <button aria-selected={mode === "system-function"} className={mode === "system-function" ? "active" : ""} onClick={() => setMode("system-function")} role="tab" type="button">
+          System · Funktion
+        </button>
+      </div>
+      <label>
+        <span>Suche</span>
+        <input
+          aria-label="Matrix durchsuchen"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="z.B. Wegfahrsperre, Keyless, LIN"
+          type="search"
+          value={query}
+        />
+      </label>
+      <strong>{resultCount} Routen</strong>
+    </div>
+  );
+}
+
+function MatrixCell({ matches, interfaceNames, interfaceNetworks, onSelect, direction = "count" }: {
+  matches: RoutingEntry[];
+  interfaceNames: Map<string, string>;
+  interfaceNetworks: Map<string, string>;
+  onSelect: (route: RoutingEntry) => void;
+  direction?: "count" | "axis";
+}) {
+  if (!matches.length) return <td className="routing-matrix-empty">—</td>;
+  const first = matches[0];
+  const network = routeNetworkLabel(first, interfaceNetworks);
+  const label = direction === "axis"
+    ? <span className="routing-matrix-axis-arrows" aria-label={`${matches.length} Route nach links und oben`}><i>←</i><i>↑</i>{matches.length > 1 && <b>{matches.length}</b>}</span>
+    : <span>{matches.length}</span>;
+  return (
+    <td>
+      <button
+        className="routing-matrix-cell-button"
+        onClick={() => onSelect(first)}
+        title={matches.map((route) => `${route.route_code}: ${matrixCellTitle(route, interfaceNames, interfaceNetworks)}`).join("\n\n")}
+        type="button"
+      >
+        {label}
+        <small>{network}</small>
+      </button>
+    </td>
+  );
 }
 
 function RoutingProposals({ proposals, nodeNames, onAccept }: { proposals: RoutingProposal[]; nodeNames: Map<string, string>; onAccept: (proposal: RoutingProposal, index: number) => void }) {

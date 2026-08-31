@@ -164,11 +164,12 @@ test("corrected quantities can exceed the initial template catalog", () => {
 });
 
 test("hardware roles are properties, not name suffixes; instance numbers stay stable", () => {
-  for (const [raw, clean] of [["Airbag-ECU", "Airbag"], ["Airbagsteuergerät", "Airbagsteuergerät"], ["AcceleratorPositionSensor", "AcceleratorPosition"], ["BrakeActuator", "Brake"], ["BremsAktuator", "Brems"], ["Airbag-ECU-2", "Airbag-2"], ["Sensor", "Sensor"]]) {
+  for (const [raw, clean] of [["Airbag-ECU", "Airbag"], ["Airbagsteuergerät", "Airbag"], ["Airbag-Steuergeraet-2", "Airbag-2"], ["AcceleratorPositionSensor", "AcceleratorPosition"], ["BrakeActuator", "Brake"], ["BremsAktuator", "Brems"], ["Airbag-ECU-2", "Airbag-2"], ["Sensor", "Sensor"]]) {
     assert.equal(normalizeHardwareName(raw), clean);
   }
   const result = extractEngineeringSpecification(SAMPLE, { actuators: 100 });
   assert.equal(result.chains.some((chain) => /(?:-ECU|Sensor|Actuator|Aktuator)$/.test(chain.hardware_name)), false);
+  assert.equal(new Set(result.chains.map((chain) => chain.hardware_name)).size, result.chains.length);
   assert.equal(result.chains.filter((chain) => chain.device_type === "ActuatorController").length, 100);
   assert.equal(result.chains.filter((chain) => chain.device_type === "ECU").length, 50);
   assert.equal(new Set(result.chains.filter((chain) => chain.device_type === "ECU").map((chain) => chain.hardware_name)).size, 50);

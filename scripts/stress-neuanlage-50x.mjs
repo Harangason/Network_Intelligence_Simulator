@@ -79,7 +79,57 @@ function percentDeviation(actual, expected) {
 }
 
 function ensureNoRoleSuffix(name) {
-  return !/(?:[-_\s]?(?:ECU|Sensor|Actuator|Aktuator|Aktor))$/i.test(name);
+  return !/(?:[-_\s]?(?:ECU|Gateway|Sensor|Actuator|Aktuator|Aktor|Controller|Steuerger(?:ä|ae|a|�)t))$/i.test(name);
+}
+
+function wizardChecks(spec, variant, index) {
+  const extractedCounts = { gateways: 0, ecus: 0, sensors: 0, actuators: 0 };
+  for (const chain of spec.chains) {
+    const role = normalizeRole(chain.device_type);
+    if (role in extractedCounts) extractedCounts[role] += 1;
+  }
+  const hardwareNames = spec.chains.map((chain) => chain.hardware_name);
+  const duplicateNames = hardwareNames.filter((name, position) => hardwareNames.indexOf(name) !== position);
+  const suffixViolations = hardwareNames.filter((name) => !ensureNoRoleSuffix(name));
+  const countDeviation = percentDeviation(extractedCounts, EXPECTED);
+  const requiredSystems = ["LIN", "CAN_FD", "Ethernet"];
+  const missingCommunicationSystems = requiredSystems.filter((system) => !spec.communicationSystems.includes(system));
+  const incompleteChains = spec.chains.filter((chain) => !(
+    chain.hardware_name
+    && chain.function_name
+    && chain.interface_name
+    && chain.message_name
+    && chain.signal_name
+    && Number.isFinite(chain.length_bits)
+    && chain.length_bits >= 1
+    && chain.length_bits <= 64
+    && Number.isFinite(chain.dlc)
+    && chain.dlc >= Math.ceil(chain.length_bits / 8)
+  ));
+  const pass =
+    countDeviation <= 2.5
+    && duplicateNames.length === 0
+    && suffixViolations.length === 0
+    && missingCommunicationSystems.length === 0
+    && incompleteChains.length === 0
+    && Boolean(spec.networkArchitecture);
+  return {
+    pass,
+    run: index + 1,
+    target_counts: spec.targetCounts,
+    extracted_counts: extractedCounts,
+    count_deviation_percent: countDeviation,
+    communication_systems: spec.communicationSystems,
+    network_architecture: spec.networkArchitecture,
+    variant_chars: variant.length,
+    issues: [
+      ...duplicateNames.map((name) => ({ type: "wizard_duplicate_hardware_name", name })),
+      ...suffixViolations.map((name) => ({ type: "wizard_role_suffix_in_hardware_name", name })),
+      ...missingCommunicationSystems.map((system) => ({ type: "wizard_missing_communication_system", system })),
+      ...incompleteChains.slice(0, 10).map((chain) => ({ type: "wizard_incomplete_chain_or_signal_size", hardware_name: chain.hardware_name })),
+      ...(countDeviation > 2.5 ? [{ type: "wizard_count_deviation", deviation: countDeviation }] : []),
+    ],
+  };
 }
 
 async function api(projectId, method, endpoint, body) {
@@ -205,6 +255,7 @@ async function runOne(sample, index) {
   const projectId = `qa-neuanlage-${BATCH_ID}-${String(index + 1).padStart(2, "0")}`;
   const variant = createVariant(sample, index);
   const spec = extractEngineeringSpecification(variant);
+  const wizard = wizardChecks(spec, variant, index);
   const scopeRules = {
     hardware_counts: {
       sensors: spec.targetCounts.sensors,
@@ -252,6 +303,7 @@ async function runOne(sample, index) {
       signals: signals.length === chainCount,
     };
     const pass =
+      wizard.pass &&
       deviation <= 2.5 &&
       suffixViolations.length === 0 &&
       duplicates.length === 0 &&
@@ -261,6 +313,7 @@ async function runOne(sample, index) {
       run: index + 1,
       projectId,
       pass,
+      wizard,
       deviation,
       extracted: {
         chains: chainCount,
@@ -277,6 +330,7 @@ async function runOne(sample, index) {
         signals: signals.length,
       },
       issues: [
+        ...wizard.issues,
         ...duplicates.map((name) => ({ type: "duplicate_hardware_name", name })),
         ...suffixViolations.map((name) => ({ type: "role_suffix_in_hardware_name", name })),
         ...Object.entries(countChecks)
@@ -312,7 +366,9 @@ async function main() {
   }
 
   const failed = results.filter((result) => !result.pass);
+  const wizardFailed = results.filter((result) => !result.wizard?.pass);
   const maxDeviation = Math.max(...results.map((result) => result.deviation ?? 100));
+  const maxWizardDeviation = Math.max(...results.map((result) => result.wizard?.count_deviation_percent ?? 100));
   const report = {
     generated_at: new Date().toISOString(),
     sample_path: SAMPLE_PATH,
@@ -322,8 +378,12 @@ async function main() {
     summary: {
       passed: RUNS - failed.length,
       failed: failed.length,
+      wizard_passed: RUNS - wizardFailed.length,
+      wizard_failed: wizardFailed.length,
       max_deviation_percent: maxDeviation,
+      max_wizard_deviation_percent: maxWizardDeviation,
       threshold_met: failed.length === 0 && maxDeviation <= 2.5,
+      wizard_threshold_met: wizardFailed.length === 0 && maxWizardDeviation <= 2.5,
     },
     results,
   };

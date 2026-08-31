@@ -55,7 +55,7 @@ SEMANTIC_NOISE = {
 
 SYSTEM_NAME_DUPLICATE_THRESHOLD = 0.86
 HARDWARE_NAME_SUFFIX = re.compile(
-    r"(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller))+(?P<instance>[-_ ]\d+)?$",
+    r"(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuerger(?:ä|ae|a|�)t))+(?P<instance>[-_ ]\d+)?$",
     flags=re.IGNORECASE,
 )
 
