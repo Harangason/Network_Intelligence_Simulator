@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearEngineeringAgentHistory } from "@/lib/agent-chat-history";
 import { openProjectBundleFromFile, saveProjectBundleToFile } from "@/lib/project-file";
-import { exportProjectBundle, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
+import { clearWorkflowApiCaches, exportProjectBundle, getWorkflowSummary, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
 import { normalizeProjectId, readUserSettings, writeUserSettings } from "@/lib/user-settings";
 import {
   ENGINEERING_AGENT_PENDING_TASK_KEY,
   ENGINEERING_AGENT_PENDING_WIZARD_KEY,
+  ENGINEERING_AGENT_WIZARD_SESSION_KEY,
   requestEngineeringAgentWizard,
 } from "@/lib/agent-task-events";
 import { notifyWorkflowChanged } from "./workflow-header";
@@ -38,7 +39,22 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
 
   function notifyAgentAboutNewProject(nextProjectId: string) {
     window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
+    window.sessionStorage.removeItem(ENGINEERING_AGENT_WIZARD_SESSION_KEY);
     requestEngineeringAgentWizard(nextProjectId, { dispatch: false });
+  }
+
+  function clearBrowserProjectState(projectIds: string[]) {
+    clearWorkflowApiCaches();
+    window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
+    window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_WIZARD_KEY);
+    window.sessionStorage.removeItem(ENGINEERING_AGENT_WIZARD_SESSION_KEY);
+    window.sessionStorage.removeItem("networkis:forced-agent-questionnaire");
+    window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
+    window.sessionStorage.removeItem("networkis:agent-project-brief");
+    window.sessionStorage.removeItem("networkis:pending-agent-new-project");
+    for (const id of projectIds) {
+      window.localStorage.removeItem(`networkis:engineering-agent-wizard:${id}`);
+    }
   }
 
   async function handleNew() {
@@ -98,14 +114,11 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       const nextProjectId = createProjectId();
       await resetProjectWorkspace(current);
       await clearEngineeringAgentHistory(current);
+      await clearEngineeringAgentHistory(nextProjectId);
+      clearBrowserProjectState([current, nextProjectId]);
       setActiveProject(nextProjectId);
+      await getWorkflowSummary();
       setClearDialogOpen(false);
-      window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
-      window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_WIZARD_KEY);
-      window.sessionStorage.removeItem("networkis:forced-agent-questionnaire");
-      window.sessionStorage.removeItem("networkis:handled-agent-questionnaires");
-      window.sessionStorage.removeItem("networkis:agent-project-brief");
-      window.sessionStorage.removeItem("networkis:pending-agent-new-project");
       setMessage(`Geleert: ${current} · Neuer Workspace: ${nextProjectId}`);
       window.location.reload();
     } catch (caught) {

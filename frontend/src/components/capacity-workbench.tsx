@@ -287,9 +287,6 @@ function buildCapacityWarningInfo(
   if (!results) return info;
 
   const effectiveStatus = workflowStatus ?? results.overview.status;
-  if (effectiveStatus === "WARNING" || effectiveStatus === "ERROR") {
-    addWarning(info, "overview", outdatedReason || `Workflowstatus ${effectiveStatus}: Detailansichten prüfen.`);
-  }
   const loadCounts = results.overview.load_status_counts;
   if ((loadCounts.WARNING ?? 0) > 0) addWarning(info, "networks", `${loadCounts.WARNING} Netze im Status WARNING.`);
   if ((loadCounts.CRITICAL ?? 0) > 0) addWarning(info, "critical", `${loadCounts.CRITICAL} Netze im Status CRITICAL.`);
@@ -347,6 +344,17 @@ function buildCapacityWarningInfo(
 
   for (const route of results.critical_paths) {
     addWarning(info, "critical", `${route.name}: ${route.status}, Burst ${route.burst_load_percent.toFixed(2)} %.`);
+  }
+  if (effectiveStatus === "WARNING" || effectiveStatus === "ERROR") {
+    if (outdatedReason) {
+      addWarning(info, "overview", outdatedReason);
+    } else if (info.overview.reasons.length === 0) {
+      const affectedViews = CAPACITY_VIEWS.filter((view) => view !== "overview" && info[view].count > 0);
+      const affectedLabels = affectedViews.map((view) => CAPACITY_VIEW_LABELS[view]).join(", ");
+      addWarning(info, "overview", affectedLabels
+        ? `Workflowstatus ${effectiveStatus}: Ursache in ${affectedLabels} sichtbar.`
+        : `Workflowstatus ${effectiveStatus}: Kein konkreter Capacity-Befund im Ergebnis enthalten; Berechnung und Workflow-Quelle synchronisieren.`);
+    }
   }
   return info;
 }
@@ -509,7 +517,7 @@ function NetworkSignalInspection({ networkId, sourceVersions }: { networkId: str
 
     <h4>Signalprüfung</h4>
     <p className="capacity-inspection-summary">{inspection.counts.passed} rechnerisch passend · {inspection.counts.warnings} Optimierungshinweise · {inspection.counts.errors} fehlerhaft · {inspection.counts.open + inspection.counts.missingSignals} offen</p>
-    <PaginatedResults items={inspection.signals} label="Signalprüfung">{(items) => <div className="analysis-table-wrap"><table className="analysis-table capacity-signals-table"><thead><tr><th>Signal / Nachricht</th><th>Konfiguration</th><th>Wertebereich / Skalierung</th><th>Bitbedarf</th><th>Prüfergebnis</th></tr></thead><tbody>{items.map((signal) => <tr key={signal.id}><td><strong>{signal.name}</strong><small>{signal.messageName}</small></td><td>{signal.dataType || "Datentyp offen"} · {value(signal.bits)} Bit<small>Startbit {value(signal.start)} · {signal.byteOrder === "little_endian" ? "Intel / Little Endian" : signal.byteOrder === "big_endian" ? "Motorola / Big Endian" : "Byte-Reihenfolge offen"}</small></td><td>{value(signal.min)} bis {value(signal.max)} {signal.unit}<small>Faktor {value(signal.factor)} · Offset {value(signal.offset)}</small></td><td>{signal.requiredBits === null ? "Nicht belegt" : `${signal.requiredBits} Bit rechnerisch`}<small>{signal.bits !== null && signal.requiredBits !== null ? `${signal.bits} Bit konfiguriert` : ""}</small></td><td><span className={`load-status capacity-check-${signal.status.toLowerCase()}`}>{({ PASS: "PASSEND", ERROR: "FEHLER", WARNING: "PRÜFEN", OPEN: "OFFEN" })[signal.status]}</span>{signal.checks.length ? <ul className="capacity-check-findings">{signal.checks.map((check, index) => <li key={`${check.code}-${index}`}>{check.text}</li>)}</ul> : <small>Wertebereich, Skalierung und Bitbelegung rechnerisch konsistent.</small>}</td></tr>)}</tbody></table></div>}</PaginatedResults>
+    <PaginatedResults items={inspection.signals} label="Signalprüfung">{(items) => <div className="analysis-table-wrap"><table className="analysis-table capacity-signals-table"><thead><tr><th>Signal / Nachricht</th><th>Konfiguration</th><th>Wertebereich / Skalierung</th><th>Bitbedarf</th><th>Prüfergebnis</th></tr></thead><tbody>{items.map((signal) => <tr key={signal.id}><td><strong>{signal.name}</strong><small>{signal.messageName}</small></td><td>{signal.semanticType} · {signal.dataType || "Datentyp offen"} · {value(signal.bits)} Bit<small>Startbit {value(signal.start)} · {signal.byteOrder === "little_endian" ? "Intel / Little Endian" : signal.byteOrder === "big_endian" ? "Motorola / Big Endian" : "Byte-Reihenfolge offen"}</small></td><td>{value(signal.min)} bis {value(signal.max)} {signal.unit}<small>Faktor {value(signal.factor)} · Offset {value(signal.offset)}</small></td><td>{signal.requiredBits === null ? "Nicht belegt" : `${signal.requiredBits} Bit rechnerisch`}<small>{signal.bits !== null && signal.requiredBits !== null ? `${signal.bits} Bit konfiguriert` : ""}</small></td><td><span className={`load-status capacity-check-${signal.status.toLowerCase()}`}>{({ PASS: "PASSEND", ERROR: "FEHLER", WARNING: "PRÜFEN", OPEN: "OFFEN" })[signal.status]}</span>{signal.checks.length ? <ul className="capacity-check-findings">{signal.checks.map((check, index) => <li key={`${check.code}-${index}`}>{check.text}</li>)}</ul> : <small>Wertebereich, Skalierung und Bitbelegung rechnerisch konsistent.</small>}</td></tr>)}</tbody></table></div>}</PaginatedResults>
 
     <h4>Nachrichtenbelegung</h4>
     <PaginatedResults items={inspection.messages} label="Nachrichtenbelegung">{(items) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Nachricht / Ursprung</th><th>Signale</th><th>Payload</th><th>Belegte Signalbits</th><th>Belegungsprüfung</th></tr></thead><tbody>{items.map((message) => <tr key={message.id}><td><strong>{message.name}</strong><small>{message.origin}</small></td><td>{message.signalCount}</td><td>{value(message.bytes)} Byte</td><td>{value(message.occupiedBits)} Bit</td><td>{message.minimumBytes !== null && message.bytes !== null ? <>{message.minimumBytes} Byte bis zum letzten belegten Bit{message.bytes > message.minimumBytes && <small>{message.bytes - message.minimumBytes} Byte am Ende ohne zugeordnete Signalbits. Padding, Prüfsumme und Protokollvorgaben vor einer DLC-Reduktion prüfen.</small>}</> : "Belegung nicht abschließend prüfbar"}</td></tr>)}</tbody></table></div>}</PaginatedResults>

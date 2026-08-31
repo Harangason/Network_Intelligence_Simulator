@@ -29,6 +29,12 @@ export type ExtractedEngineeringChain = {
   unit?: string;
   min_value?: number;
   max_value?: number;
+  configuration?: Record<string, unknown>;
+  semantic?: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  communication?: Record<string, unknown>;
+  quality?: Record<string, unknown>;
+  protocol_bindings?: Array<Record<string, unknown>>;
   domain: string;
 };
 
@@ -98,6 +104,116 @@ function generatedSignalBitLength(input: {
 
 function generatedMessageDlc(lengthBits: number) {
   return Math.max(1, Math.ceil(Math.max(1, lengthBits) / 8));
+}
+
+type SignalArchitectureInput = {
+  signalName: string;
+  hardwareName: string;
+  interfaceType: string;
+  cycleMs: number;
+  dataType: "signed" | "unsigned";
+  lengthBits: number;
+  startBit: number;
+  byteOrder: "little_endian";
+  factor: number;
+  offset: number;
+  unit?: string;
+  minValue?: number;
+  maxValue?: number;
+};
+
+function generatedSignalSemanticType(input: SignalArchitectureInput) {
+  const key = normalized(`${input.signalName} ${input.unit ?? ""}`);
+  if ((input.lengthBits === 1 || (input.minValue === 0 && input.maxValue === 1)) && /status|flag|schaltausgang|stellglied|aktiv|enable|boolean/.test(key)) {
+    return "BOOLEAN";
+  }
+  if (/status|state|mode|zustand|diagnose|fehler|code/.test(key) || input.unit === "code") return "STATE";
+  return "NUMERIC";
+}
+
+function stateDomain(input: SignalArchitectureInput) {
+  const gateway = /gateway/.test(normalized(input.signalName));
+  const enumValues = gateway
+    ? { OK: 0, DEGRADED: 1, ROUTING_LIMITED: 2, ERROR: 3 }
+    : { OK: 0, WARNING: 1, ERROR: 2, NOT_AVAILABLE: 3 };
+  return {
+    enum_values: enumValues,
+    allowed_values: Object.keys(enumValues),
+    reserved_values: [4, 5, 6, 7],
+    invalid_values: [15],
+    default_value: "OK",
+    resolution: 1,
+  };
+}
+
+function signalArchitectureMetadata(input: SignalArchitectureInput) {
+  const semanticType = generatedSignalSemanticType(input);
+  const isNumeric = semanticType === "NUMERIC";
+  const valueDomain = semanticType === "BOOLEAN"
+    ? {
+        minimum: 0,
+        maximum: 1,
+        resolution: 1,
+        allowed_values: [false, true],
+        enum_values: { FALSE: 0, TRUE: 1 },
+        invalid_values: [],
+        reserved_values: [],
+        default_value: false,
+      }
+    : semanticType === "STATE"
+      ? stateDomain(input)
+      : {
+          minimum: input.minValue ?? null,
+          maximum: input.maxValue ?? null,
+          resolution: input.factor,
+          allowed_values: [],
+          enum_values: {},
+          invalid_values: input.maxValue == null ? [] : [input.maxValue + input.factor],
+          reserved_values: [],
+          default_value: input.minValue != null && input.maxValue != null && input.minValue <= 0 && input.maxValue >= 0 ? 0 : input.minValue ?? null,
+        };
+  return {
+    semantic: {
+      semantic_type: semanticType,
+      quantity: input.signalName,
+      category: normalized(input.hardwareName),
+      meaning: `${input.signalName} beschreibt ${input.hardwareName}.`,
+      unit: input.unit ?? (isNumeric ? "" : "not_applicable"),
+      generated_by: "engineering-specification-parser-v2",
+      assumptions: isNumeric ? [] : ["Diskretes Signal wurde als explizite Value-Domain modelliert."],
+    },
+    data: valueDomain,
+    configuration: {
+      raw_datatype: input.dataType,
+      bit_length: input.lengthBits,
+      signed: input.dataType === "signed",
+      factor: input.factor,
+      offset: input.offset,
+      endianness: input.byteOrder,
+      start_bit: input.startBit,
+      encoding_type: isNumeric ? "linear" : "coded",
+      coding_rule: "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+    },
+    communication: {
+      producer: input.hardwareName,
+      consumers: [],
+      cycle_time_ms: input.cycleMs,
+      update_type: input.cycleMs <= 20 ? "cyclic_fast" : "cyclic",
+    },
+    quality: {
+      confidence: isNumeric ? 0.92 : 0.86,
+      semantic_complete: true,
+      value_domain_complete: semanticType !== "NUMERIC" || (input.minValue != null && input.maxValue != null),
+      encoding_complete: true,
+      packing_complete: true,
+      validation_status: "proposal",
+    },
+    protocol_bindings: [{
+      protocol: input.interfaceType,
+      binding_state: "proposal",
+      signal_id: input.signalName,
+    }],
+  };
 }
 
 const INLINE_HARDWARE_PATTERN = /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|actuator|aktuator|aktor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/giu;
@@ -480,6 +596,21 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
     unit: template.unit,
     min_value: template.minValue,
     max_value: template.maxValue,
+    ...signalArchitectureMetadata({
+      signalName: template.signalName,
+      hardwareName: template.hardwareName,
+      interfaceType: template.interfaceType,
+      cycleMs: template.cycleMs,
+      dataType,
+      lengthBits,
+      startBit: 0,
+      byteOrder: "little_endian",
+      factor: template.factor ?? 1,
+      offset: 0,
+      unit: template.unit,
+      minValue: template.minValue,
+      maxValue: template.maxValue,
+    }),
     domain,
   };
 }
@@ -628,6 +759,7 @@ function deviceType(name: string) {
 
 function protocolFrom(text: string) {
   const key = normalized(text);
+  if (/\blin\b/.test(key)) return "LIN";
   if (key.includes("can fd") || key.includes("canfd")) return "CAN_FD";
   if (key.includes("ethercat")) return "EtherCAT";
   if (key.includes("profinet")) return "ProfiNET";
@@ -687,7 +819,7 @@ function unitFrom(text: string) {
 }
 
 function baseName(name: string) {
-  return name
+  return normalizeHardwareName(name)
     .replace(/[-_\s]*(sensor|ecu|gateway|plc|controller|steuergeraet)$/i, "")
     .replace(/[^a-zA-Z0-9äöüÄÖÜß]+/g, " ")
     .trim() || name;
@@ -698,12 +830,12 @@ function identifier(value: string) {
   return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join("");
 }
 
-function functionName(name: string, contexts: string[]) {
+function functionName(name: string, contexts: string[], roleHint = name) {
   for (const line of contexts) {
     const explicit = cleanLabel(line).match(/^\s*(?:[-*]\s*)?funktion(?:sname)?\s*:\s*(.+?)\s*$/i)?.[1];
     if (explicit) return `${identifier(name)}_${identifier(explicit)}`;
   }
-  const key = normalized(name);
+  const key = normalized(`${name} ${roleHint}`);
   if (key.includes("sensor")) return `${identifier(name)}_Erfassung`;
   if (key.includes("gateway")) return `${identifier(name)}_Kommunikation`;
   return `${identifier(name)}_Steuerung`;
@@ -743,11 +875,12 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
   const networkArchitecture = extractNetworkArchitectureMode(text);
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
+    const hardwareName = normalizeHardwareName(entry.name);
     const range = rangeFrom(context);
     const unit = unitFrom(context);
     const factor = factorFrom(context, unit);
-    const signal = signalName(entry.name, context);
-    const hardwareId = identifier(entry.name);
+    const signal = signalName(hardwareName, context);
+    const hardwareId = identifier(hardwareName);
     const dataType = (range.min ?? 0) < 0 ? "signed" : "unsigned";
     const lengthBits = generatedSignalBitLength({
       minValue: range.min,
@@ -756,10 +889,10 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
       dataType,
     });
     return {
-      hardware_name: entry.name,
+      hardware_name: hardwareName,
       hardware_description: context.slice(0, 1000),
       device_type: deviceType(entry.name),
-      function_name: functionName(entry.name, entry.lines),
+      function_name: functionName(hardwareName, entry.lines, entry.name),
       function_description: `Aus Nutzerspezifikation abgeleitete Funktion. ${context}`.slice(0, 1000),
       interface_name: `${hardwareId}_${interfaceType}`,
       interface_type: interfaceType,
@@ -779,6 +912,21 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
       unit,
       min_value: range.min,
       max_value: range.max,
+      ...signalArchitectureMetadata({
+        signalName: signal,
+        hardwareName,
+        interfaceType,
+        cycleMs: 10,
+        dataType,
+        lengthBits,
+        startBit: 0,
+        byteOrder: "little_endian",
+        factor,
+        offset: 0,
+        unit,
+        minValue: range.min,
+        maxValue: range.max,
+      }),
       domain,
     };
   });

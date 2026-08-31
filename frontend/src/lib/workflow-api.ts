@@ -376,6 +376,16 @@ export const getCapacity = () => request<AnalysisSnapshot>("/capacity");
 const inspectionSources = new Map<string, { key: string; data: InspectionSources }>();
 const inspectionRequests = new Map<string, Promise<InspectionSources>>();
 
+export function clearWorkflowApiCaches(projectId?: string) {
+  if (!projectId) {
+    inspectionSources.clear();
+    inspectionRequests.clear();
+    return;
+  }
+  inspectionSources.delete(projectId);
+  inspectionRequests.delete(projectId);
+}
+
 export function getCapacityInspectionSources(projectId: string): Promise<InspectionSources> {
   const pending = inspectionRequests.get(projectId);
   if (pending) return pending;
@@ -619,4 +629,7 @@ export const resetProjectWorkspace = (projectId: string) =>
   request<{ project_id: string; cleared_tables: string[]; workflow: WorkflowState }>("/projects/reset", {
     method: "POST",
     body: JSON.stringify({ project_id: projectId }),
-  }).then((result) => ({ ...result, workflow: normalizeWorkflowState(result.workflow) }));
+  }).then((result) => {
+    clearWorkflowApiCaches(projectId);
+    return { ...result, workflow: normalizeWorkflowState(result.workflow) };
+  });

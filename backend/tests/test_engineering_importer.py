@@ -33,6 +33,27 @@ BO_ 256 VehicleStatus: 8 Gateway
     ) == "Gateway"
 
 
+def test_dbc_preview_preserves_value_table_as_signal_semantics() -> None:
+    content = b'''VERSION "1.0"
+BU_: Gateway Body
+BO_ 512 BodyStatus: 8 Gateway
+ SG_ DoorState : 0|4@1+ (1,0) [0|15] "" Body
+VAL_ 512 DoorState 0 "Closed" 1 "Open" 2 "Moving" 15 "Invalid";
+'''
+
+    plan = preview_import("body.dbc", content)
+    signal = plan["signals"][0]
+
+    assert signal["semantic"]["semantic_type"] == "STATE"
+    assert signal["data"]["enum_values"] == {
+        "Closed": 0,
+        "Open": 1,
+        "Moving": 2,
+        "Invalid": 15,
+    }
+    assert signal["quality"]["mapping_quality"] == "value_table"
+
+
 def test_preview_accepts_files_larger_than_previous_limit() -> None:
     content = b'''VERSION "1.0"
 BU_: Gateway Display

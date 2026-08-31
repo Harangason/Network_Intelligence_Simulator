@@ -26,6 +26,11 @@ import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { agentBuildProgressPercent, agentRunIsActive, readAgentRunStatus } from "@/lib/agent-run-status";
 import { parameterProgressTarget, symbolicProgressAt } from "@/lib/wizard-progress";
 import { extractEngineeringSpecification, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import {
+  buildEquipmentClusters,
+  equipmentClusterSummary,
+  type EquipmentClusterAssignment,
+} from "@/lib/agent/equipment-clustering";
 import { inspectAgentText } from "@/lib/agent/agent-output-safety";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
 import { listAllEngineeringObjects } from "@/lib/engineering-api";
@@ -648,6 +653,7 @@ type AgentWizardContext = {
   task: string;
   technologies: string[];
   communication_system_counts?: Array<{ id: string; label: string; recognized: number; count: number }>;
+  system_cluster_assignments?: EquipmentClusterAssignment[];
 };
 
 function restoredWizardContext(value: unknown, projectId: string): AgentWizardContext | null {
@@ -705,6 +711,21 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
           count: Number(item.count ?? 0),
         }))
         .filter((item) => item.id && item.label && Number.isFinite(item.count))
+      : undefined,
+    system_cluster_assignments: Array.isArray(context.system_cluster_assignments)
+      ? context.system_cluster_assignments
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        .map((item) => ({
+          cluster_id: String(item.cluster_id ?? ""),
+          label: String(item.label ?? ""),
+          selected: item.selected !== false,
+          network_id: String(item.network_id ?? ""),
+          network_label: String(item.network_label ?? item.network_id ?? ""),
+          devices: Number(item.devices ?? 0),
+          counts: item.counts && typeof item.counts === "object" ? item.counts as Record<string, number> : {},
+          evidence: Array.isArray(item.evidence) ? item.evidence.filter((value): value is string => typeof value === "string") : [],
+        }))
+        .filter((item) => item.cluster_id && item.label)
       : undefined,
   };
 }
@@ -911,6 +932,10 @@ export function EngineeringAgentWizard({
   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
   const [equipmentEdits, setEquipmentEdits] = useState<{ source: string; values: Partial<Record<keyof EngineeringHardwareCounts, string>> }>({ source: "", values: {} });
   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
+  const [equipmentClusterEdits, setEquipmentClusterEdits] = useState<{
+    source: string;
+    values: Record<string, { selected?: boolean; networkId?: string }>;
+  }>({ source: "", values: {} });
   const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
   const recognizedEquipment = useMemo(() => extractEngineeringSpecification(taskSource), [taskSource]);
   const equipmentValues = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key,
@@ -1241,6 +1266,37 @@ export function EngineeringAgentWizard({
     recognized: row.recognized,
     count: Number(row.value),
   }));
+  const equipmentClusterSource = [
+    taskSource,
+    selectedIndustry,
+    selectedTechnologies.join("|"),
+    communicationSystemCounts.map((item) => `${item.id}:${item.label}:${item.count}`).join("|"),
+    recognizedEquipment.chains.map((chain) => `${chain.device_type}:${chain.hardware_name}:${chain.interface_type}`).join("|"),
+  ].join("\n");
+  const equipmentClusters = useMemo(() => buildEquipmentClusters(
+    recognizedEquipment.chains,
+    communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
+  ), [communicationSystemCounts, recognizedEquipment.chains]);
+  const clusterEditValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+  const equipmentClusterAssignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster) => {
+    const edit = clusterEditValues[cluster.id];
+    const selected = edit?.selected ?? true;
+    const requestedNetworkId = edit?.networkId || cluster.recommendedNetworkId;
+    const network = communicationSystemCounts.find((item) => item.id === requestedNetworkId)
+      ?? communicationSystemCounts.find((item) => item.id === cluster.recommendedNetworkId)
+      ?? communicationSystemCounts[0]
+      ?? { id: "", label: "Noch kein Netz" };
+    return {
+      cluster_id: cluster.id,
+      counts: cluster.counts,
+      devices: cluster.devices.length,
+      evidence: cluster.evidence,
+      label: cluster.label,
+      network_id: network.id,
+      network_label: network.label,
+      selected,
+    };
+  });
 
   const questionnaireSteps = [
     ...(mode === "full" ? [{ id: "industry", label: "Industrie" }] : []),
@@ -1350,7 +1406,9 @@ export function EngineeringAgentWizard({
       task: taskText.trim() || "Aufgabe wurde als Datei übergeben.",
       technologies: selectedTechnologyValues,
       communication_system_counts: communicationSystemCounts,
+      system_cluster_assignments: equipmentClusterAssignments,
     };
+    const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
         `- Lauf-ID: ${nextRunId}\n` +
@@ -1359,6 +1417,8 @@ export function EngineeringAgentWizard({
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
         `- Netzwerktechnologien: ${selectedTechnologyValues.length ? selectedTechnologyValues.join("; ") : "nicht vorgegeben, passende Technologien aus der gewaehlten Industrie verwenden"}\n` +
         `- Kommunikationssystem-Sollwerte: ${JSON.stringify(communicationSystemCounts)}\n` +
+        `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
+        `- Systemcluster-Details: ${JSON.stringify(equipmentClusterAssignments)}\n` +
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
@@ -1371,6 +1431,7 @@ export function EngineeringAgentWizard({
         "\nKonkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:\n" +
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
+        "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
     setRunId(nextRunId);
@@ -2006,6 +2067,87 @@ export function EngineeringAgentWizard({
             <div><dt>Kommunikationssysteme im Auftrag</dt><dd>{communicationSystemCounts.map((item) => `${item.label}: ${item.count}`).join(", ") || "Keine vorgegeben"}</dd></div>
             <div><dt>Parameter</dt><dd>{parameterMode === "defaults" ? "Technologie-Defaults" : "Nutzerdefiniert"}</dd></div>
           </dl>
+          {equipmentClusters.length > 0 && (
+            <section className="agent-equipment-clusters" aria-label="Intelligente Systemcluster">
+              <div className="agent-equipment-clusters-head">
+                <div>
+                  <strong>Systemcluster</strong>
+                  <span>Fachlich zusammenhaengende Teilnehmer als Vorgabe fuer Netz und Systemrahmen.</span>
+                </div>
+                <small>{equipmentClusterAssignments.filter((item) => item.selected).length}/{equipmentClusterAssignments.length} aktiv</small>
+              </div>
+              <div className="agent-equipment-cluster-grid">
+                {equipmentClusters.map((cluster) => {
+                  const assignment = equipmentClusterAssignments.find((item) => item.cluster_id === cluster.id);
+                  const selected = assignment?.selected ?? true;
+                  const networkId = assignment?.network_id ?? cluster.recommendedNetworkId;
+                  const countText = EQUIPMENT_CATEGORIES
+                    .map(({ label, type }) => {
+                      const count = cluster.counts[type] ?? 0;
+                      return count ? `${label}: ${count}` : "";
+                    })
+                    .filter(Boolean)
+                    .join(" · ");
+                  return (
+                    <article className={`agent-equipment-cluster ${selected ? "selected" : ""}`} key={cluster.id}>
+                      <label>
+                        <input
+                          checked={selected}
+                          disabled={effectiveBusy}
+                          onChange={(event) => {
+                            const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+                            setEquipmentClusterEdits({
+                              source: equipmentClusterSource,
+                              values: {
+                                ...currentValues,
+                                [cluster.id]: {
+                                  ...currentValues[cluster.id],
+                                  selected: event.target.checked,
+                                  networkId,
+                                },
+                              },
+                            });
+                          }}
+                          type="checkbox"
+                        />
+                        <span>
+                          <strong>{cluster.label}</strong>
+                          <small>{countText || `${cluster.devices.length} Teilnehmer`}</small>
+                        </span>
+                      </label>
+                      <select
+                        aria-label={`${cluster.label}: Zielnetz`}
+                        disabled={effectiveBusy || !communicationSystemCounts.length}
+                        onChange={(event) => {
+                          const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+                          setEquipmentClusterEdits({
+                            source: equipmentClusterSource,
+                            values: {
+                              ...currentValues,
+                              [cluster.id]: {
+                                ...currentValues[cluster.id],
+                                networkId: event.target.value,
+                                selected,
+                              },
+                            },
+                          });
+                        }}
+                        value={networkId}
+                      >
+                        {communicationSystemCounts.length
+                          ? communicationSystemCounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)
+                          : <option value="">Noch kein Netz</option>}
+                      </select>
+                      <p>{cluster.recommendation}</p>
+                      <ul aria-label={`${cluster.label}: erkannte Teilnehmer`}>
+                        {cluster.evidence.map((name) => <li key={`${cluster.id}:${name}`}>{name}</li>)}
+                      </ul>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
           <div className="agent-equipment-list">
             {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
               <details key={key}><summary>{label} · {recognizedEquipment.targetCounts[key]}</summary>

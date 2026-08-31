@@ -4,7 +4,7 @@ import { inspectSignal, inspectMessageSignals, buildNetworkInspection } from "./
 
 const message = { id: "message", name: "Status", dlc: 8, interface_id: "sensor-port" };
 const signal = { id: "signal", name: "Value", message_id: "message", start_bit: 0, length_bits: 8,
-  data_type: "unsigned", min_value: 0, max_value: 255, factor: 1, offset_value: 0, byte_order: "little_endian", data: {} };
+  data_type: "unsigned", min_value: 0, max_value: 255, factor: 1, offset_value: 0, byte_order: "little_endian", semantic: { semantic_type: "NUMERIC" }, data: { resolution: 1 } };
 const codes = (value) => value.checks.map((check) => check.code);
 
 test("64-bit value with an unsigned 0..255 range suggests 8 bits without changing the source", () => {
@@ -35,13 +35,57 @@ test("signed boundaries and physical offsets use raw values", () => {
   assert.equal(inspectSignal({ ...signal, min_value: -255, max_value: 0, factor: -1 }, message).requiredBits, 8);
 });
 
-test("incomplete and constant ranges never assert a smaller encoding", () => {
-  for (const values of [{ min_value: null }, { max_value: null }, { factor: null }, { offset_value: null }, { min_value: 0, max_value: 0 }]) {
+test("incomplete value domains never assert a smaller encoding", () => {
+  for (const values of [{ min_value: null }, { max_value: null }]) {
     const result = inspectSignal({ ...signal, length_bits: 64, ...values }, message);
     assert.equal(result.status, "OPEN");
     assert.equal(result.requiredBits, null);
     assert.ok(!codes(result).includes("OVERSIZED"));
   }
+});
+
+test("incomplete numeric encoding remains open while value-domain bit need stays visible", () => {
+  for (const values of [{ factor: null }, { offset_value: null }, { min_value: 0, max_value: 0 }]) {
+    const result = inspectSignal({ ...signal, length_bits: 64, ...values }, message);
+    assert.equal(result.status, "OPEN");
+    assert.ok(result.requiredBits !== null);
+    assert.ok(!codes(result).includes("OVERSIZED"));
+  }
+});
+
+test("incomplete parser inputs explain what AI must recover before bit optimization", () => {
+  const result = inspectSignal({ ...signal, min_value: null, factor: null, data_type: "" }, message);
+  const text = result.checks.map((check) => check.text).join(" ");
+
+  assert.match(text, /Parser\/KI/);
+  assert.match(text, /Min\/Max|Wertebereich/);
+  assert.match(text, /Skalierung|Datentyp/);
+});
+
+test("inspection display names hide technical hardware role suffixes from existing data", () => {
+  assert.equal(inspectSignal({ ...signal, name: "MainControllerStatus" }, message).name, "MainStatus");
+  assert.equal(inspectSignal({ ...signal, name: "ProcessSensorStatus" }, message).name, "ProcessStatus");
+  assert.equal(inspectSignal({ ...signal, name: "ValveActuatorStatus" }, message).name, "ValveStatus");
+});
+
+test("legacy uint8 min/max signals need semantic classification before optimization", () => {
+  const { semantic, ...legacy } = signal;
+  const result = inspectSignal(legacy, message);
+
+  assert.equal(result.requiredBits, null);
+  assert.equal(result.status, "OPEN");
+  assert.ok(codes(result).includes("SEMANTIC_MISSING"));
+});
+
+test("legacy status signals use a conservative state domain instead of open numeric optimization", () => {
+  const { semantic, ...legacy } = signal;
+  const result = inspectSignal({ ...legacy, name: "ProcessStatus" }, message);
+  const text = result.checks.map((check) => check.text).join(" ");
+
+  assert.equal(result.semanticType, "STATE");
+  assert.equal(result.requiredBits, 3);
+  assert.ok(!codes(result).includes("SEMANTIC_MISSING"));
+  assert.doesNotMatch(text, /Wertebereich|Skalierung|Datentyp/);
 });
 
 test("zero scale, reversed bounds and unrepresentable endpoints are errors", () => {
@@ -62,11 +106,11 @@ test("sentinels participate in bit width and reserved codes block premature opti
   assert.ok(!codes(reserved).includes("OVERSIZED"));
 });
 
-test("float precision, enums and unsafe integer ranges remain explicitly open", () => {
+test("float precision, wrong numeric datatypes and unsafe integer ranges remain explicitly open", () => {
   for (const values of [{ data_type: "float64", length_bits: 64 }, { data_type: "enum" }, { max_value: 2 ** 64, length_bits: 64 }]) {
     const result = inspectSignal({ ...signal, ...values }, message);
     assert.equal(result.status, "OPEN");
-    assert.equal(result.requiredBits, null);
+    assert.ok(result.requiredBits === null || result.requiredBits > 0);
   }
   assert.ok(codes(inspectSignal({ ...signal, data_type: "float32", length_bits: 16 }, message)).includes("FLOAT_WIDTH"));
 });

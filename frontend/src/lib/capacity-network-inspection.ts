@@ -1,3 +1,5 @@
+import { buildCanonicalSignalDefinition, calculateSignalBitRequirement } from "./signal-architecture.ts";
+
 export type InspectionObject = { id: string; name?: string; [key: string]: unknown };
 export type InspectionSources = {
   versions: Record<string, number>;
@@ -13,6 +15,7 @@ export type SignalCheck = { code: string; severity: "ERROR" | "WARNING" | "OPEN"
 export type SignalInspection = {
   id: string; name: string; messageId: string; messageName: string;
   bits: number | null; requiredBits: number | null; start: number | null;
+  semanticType: string;
   dataType: string; byteOrder: string; min: number | null; max: number | null;
   factor: number | null; offset: number | null; unit: string;
   occupiedBits: number[] | null; checks: SignalCheck[];
@@ -26,6 +29,11 @@ function objects(value: unknown): InspectionObject[] { return Array.isArray(valu
 function strings(value: unknown): string[] { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && !!item) : []; }
 function numeric(value: unknown): number | null { return typeof value === "number" && Number.isFinite(value) ? value : null; }
 function text(value: unknown): string { return typeof value === "string" ? value : ""; }
+function displaySignalName(value: string): string {
+  const clean = value.replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuerger(?:ä|ae|a|�)t))+(?=(?:Status|Warnung|Data)$)/i, "")
+    .replace(/^[-_ ]+|[-_ ]+$/g, "");
+  return clean || value;
+}
 function checkStatus(checks: SignalCheck[]): SignalInspection["status"] {
   return checks.some((item) => item.severity === "ERROR") ? "ERROR"
     : checks.some((item) => item.severity === "OPEN") ? "OPEN"
@@ -39,11 +47,14 @@ function hasMultiplexing(signal: InspectionObject): boolean {
 export function inspectSignal(signal: InspectionObject, message?: InspectionObject): SignalInspection {
   const checks: SignalCheck[] = [];
   const add = (code: string, severity: SignalCheck["severity"], text: string) => checks.push({ code, severity, text });
-  const bits = numeric(signal.length_bits), start = numeric(signal.start_bit);
-  const min = numeric(signal.min_value), max = numeric(signal.max_value);
-  const factor = numeric(signal.factor), offset = numeric(signal.offset_value);
-  const dataType = text(signal.data_type).toLowerCase();
-  const byteOrder = text(signal.byte_order);
+  const canonical = buildCanonicalSignalDefinition(signal);
+  const bitRequirement = calculateSignalBitRequirement(canonical);
+  const semanticType = bitRequirement.semanticType;
+  const bits = canonical.encoding.bitLength, start = canonical.encoding.startBit;
+  const min = canonical.valueDomain.minimum, max = canonical.valueDomain.maximum;
+  const factor = canonical.encoding.factor, offset = canonical.encoding.offset;
+  const dataType = canonical.encoding.rawDatatype.toLowerCase();
+  const byteOrder = canonical.encoding.endianness;
   const dlc = numeric(message?.dlc);
   const validBits = bits !== null && Number.isInteger(bits) && bits > 0 && bits <= 65536;
   const validStart = start !== null && Number.isInteger(start) && start >= 0 && start <= 65536;
@@ -65,21 +76,25 @@ export function inspectSignal(signal: InspectionObject, message?: InspectionObje
     if (dlc !== null && occupiedBits.some((bit) => bit >= dlc * 8)) add("PAYLOAD_OVERFLOW", "ERROR", `Signal liegt außerhalb der ${dlc} Byte großen Nachricht.`);
   }
 
-  let requiredBits: number | null = null;
+  let requiredBits: number | null = bitRequirement.requiredBits;
   const isFloat = /^(float|double|float32|float64)$/.test(dataType);
   const isSigned = /^(signed|int|int8|int16|int32|int64|sint8|sint16|sint32|sint64)$/.test(dataType);
   const isUnsigned = /^(unsigned|uint|uint8|uint16|uint32|uint64|boolean|bool)$/.test(dataType);
-  if (factor === 0) add("SCALE_ZERO", "ERROR", "Skalierungsfaktor darf nicht 0 sein.");
-  if (factor === null || offset === null) add("SCALING_MISSING", "OPEN", "Faktor oder Offset fehlt; keine belastbare Bitoptimierung.");
-  if (min === null || max === null) add("RANGE_MISSING", "OPEN", "Wertebereich fehlt; notwendige Bitbreite bleibt offen.");
-  else if (min > max) add("RANGE_REVERSED", "ERROR", "Minimum ist größer als Maximum.");
-  else if (min === max) add("RANGE_CONSTANT", "OPEN", "Konstanter oder unspezifizierter Wertebereich; Bitoptimierung erfordert eine fachliche Vorgabe.");
-  if (isFloat) {
-    if (validBits && (dataType === "double" || dataType === "float64" ? bits !== 64 : dataType === "float32" ? bits !== 32 : ![32, 64].includes(bits))) add("FLOAT_WIDTH", "ERROR", "Gleitkommaformat und Bitbreite passen nicht zusammen.");
-    add("FLOAT_PRECISION", "OPEN", "Gleitkomma-Präzision muss vor einer Verkleinerung nachgewiesen werden; ein kleiner Wertebereich genügt nicht.");
-  } else if (!isSigned && !isUnsigned) {
-    add("DATA_TYPE", "OPEN", dataType === "enum" ? "Vollständige Enum- und Fehlercodetabelle für die Bitprüfung erforderlich." : "Datentyp für die Bitprüfung fehlt oder wird nicht unterstützt.");
-  } else if (min !== null && max !== null && min < max && factor !== null && factor !== 0 && offset !== null) {
+  if (semanticType === "UNKNOWN") {
+    add("SEMANTIC_MISSING", "OPEN", "Semantik fehlt; Parser/KI muss semantic_type als NUMERIC, ENUM, BOOLEAN, STATE, BITFIELD, COUNTER, FLAG, RAW oder CUSTOM vorschlagen.");
+  }
+  if (semanticType === "NUMERIC" || semanticType === "UNKNOWN") {
+    if (factor === 0) add("SCALE_ZERO", "ERROR", "Skalierungsfaktor darf nicht 0 sein.");
+    if (semanticType === "NUMERIC" && (factor === null || offset === null)) add("SCALING_MISSING", "OPEN", "Faktor oder Offset fehlt; Parser/KI muss Skalierung aus Quelle, Einheit oder Signaltyp ableiten oder zur Freigabe markieren.");
+    if (semanticType === "NUMERIC" && (min === null || max === null)) add("RANGE_MISSING", "OPEN", "Wertebereich fehlt; Parser/KI muss Min/Max, Enum-Liste oder Boolean-Regel ergänzen, bevor die Bitbreite optimiert werden kann.");
+    else if (min !== null && max !== null && min > max) add("RANGE_REVERSED", "ERROR", "Minimum ist größer als Maximum.");
+    else if (semanticType === "NUMERIC" && min !== null && max !== null && min === max) add("RANGE_CONSTANT", "OPEN", "Konstanter oder unspezifizierter Wertebereich; Bitoptimierung erfordert eine fachliche Vorgabe.");
+    if (isFloat) {
+      if (validBits && (dataType === "double" || dataType === "float64" ? bits !== 64 : dataType === "float32" ? bits !== 32 : ![32, 64].includes(bits))) add("FLOAT_WIDTH", "ERROR", "Gleitkommaformat und Bitbreite passen nicht zusammen.");
+      add("FLOAT_PRECISION", "OPEN", "Gleitkomma-Präzision muss vor einer Verkleinerung nachgewiesen werden; ein kleiner Wertebereich genügt nicht.");
+    } else if (semanticType === "NUMERIC" && !isSigned && !isUnsigned) {
+      add("DATA_TYPE", "OPEN", dataType === "enum" ? "Vollständige Enum- und Fehlercodetabelle für die Bitprüfung erforderlich; Parser/KI soll gültige Codes, Reservewerte und Fehlerwerte dokumentieren." : "Datentyp für die Bitprüfung fehlt oder wird nicht unterstützt; Parser/KI soll unsigned, signed, boolean, enum oder float aus Quelle und Wertebereich ableiten.");
+    } else if (semanticType === "NUMERIC" && min !== null && max !== null && min < max && factor !== null && factor !== 0 && offset !== null) {
     const values = [min, max];
     const data = record(signal.data);
     for (const key of ["default_value", "invalid_value"]) {
@@ -109,13 +124,19 @@ export function inspectSignal(signal: InspectionObject, message?: InspectionObje
     }
     const resolution = numeric(data.resolution);
     if (resolution !== null && (resolution <= 0 || Math.abs(factor) > resolution * (1 + Number.EPSILON * 4))) add("RESOLUTION", "ERROR", "Skalierung erfüllt die angeforderte Auflösung nicht.");
+    }
   }
-  if (validBits && requiredBits !== null && requiredBits < bits && !checks.some((check) => check.severity !== "WARNING")) {
-    add("OVERSIZED", "WARNING", `Rechnerisch ${requiredBits} statt ${bits} Bit ausreichend, bei unverändertem Wertebereich, Faktor und Offset. Protokollbindung, Reserven und Freigabe prüfen; nicht automatisch ändern.`);
+  if (bitRequirement.status === "UNKNOWN" && bitRequirement.reason && !checks.some((check) => check.code === "BIT_REQUIREMENT_UNKNOWN")) {
+    add("BIT_REQUIREMENT_UNKNOWN", "OPEN", bitRequirement.reason);
   }
-  return { id: signal.id, name: text(signal.display_name) || text(signal.name) || signal.id,
+  if (validBits && requiredBits !== null && bits !== null && requiredBits > bits) {
+    add("TOO_NARROW", "ERROR", `${bits} Bit reichen nicht; mindestens ${requiredBits} Bit sind erforderlich.`);
+  } else if (validBits && requiredBits !== null && bits !== null && requiredBits < bits && !checks.some((check) => check.severity !== "WARNING")) {
+    add("OVERSIZED", "WARNING", `Rechnerisch ${requiredBits} statt ${bits} Bit ausreichend (${semanticType}). ${bitRequirement.reason} Freigegebene Objekte nur per Proposal ändern.`);
+  }
+  return { id: signal.id, name: displaySignalName(text(signal.display_name) || text(signal.name) || signal.id),
     messageId: text(signal.message_id), messageName: text(message?.name) || text(signal.message_id), bits, requiredBits, start,
-    dataType, byteOrder, min, max, factor, offset, unit: text(signal.unit), occupiedBits, checks, status: checkStatus(checks) };
+    semanticType, dataType, byteOrder, min, max, factor, offset, unit: text(signal.unit), occupiedBits, checks, status: checkStatus(checks) };
 }
 
 export function inspectMessageSignals(signals: InspectionObject[], message?: InspectionObject): SignalInspection[] {

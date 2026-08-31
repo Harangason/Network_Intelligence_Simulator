@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import ceil, log2
 from typing import Any
 
 
@@ -22,6 +23,18 @@ def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _looks_like_state_signal(value: str) -> bool:
+    normalized = value.lower().replace("_", " ").replace("-", " ")
+    tokens = normalized.split()
+    return any(token in {"status", "state", "mode", "zustand"} for token in tokens) or normalized.endswith(
+        ("status", "state", "mode", "zustand", "diagnose", "fehler", "error", "warning", "warnung")
+    )
+
+
 def _severity(checks: list[dict[str, Any]]) -> str:
     if any(item["severity"] == "ERROR" for item in checks):
         return "ERROR"
@@ -32,7 +45,85 @@ def _severity(checks: list[dict[str, Any]]) -> str:
     return "PASS"
 
 
+def _semantic_type(signal: dict[str, Any]) -> str:
+    semantic = _as_dict(signal.get("semantic"))
+    data = _as_dict(signal.get("data"))
+    configuration = _as_dict(signal.get("configuration"))
+    explicit = _text(
+        semantic.get("semantic_type")
+        or semantic.get("semanticType")
+        or data.get("semantic_type")
+        or configuration.get("semantic_type")
+    ).upper().replace("-", "_").replace(" ", "_")
+    if explicit:
+        return explicit
+    datatype = _text(signal.get("data_type")).lower()
+    if datatype in {"bool", "boolean"}:
+        return "BOOLEAN"
+    if datatype in {"string", "text"}:
+        return "STRING"
+    if datatype in {"bytes", "byte_array", "bytearray"}:
+        return "BYTE_ARRAY"
+    if _as_list(data.get("bit_members") or configuration.get("bit_members")):
+        return "BITFIELD"
+    if _as_dict(data.get("enum_values") or configuration.get("enum_values")) or _as_list(data.get("allowed_values") or configuration.get("allowed_values")):
+        name = _text(signal.get("display_name") or signal.get("name"))
+        return "STATE" if any(token in name.lower() for token in ("state", "status", "mode", "zustand")) else "ENUM"
+    if _looks_like_state_signal(_text(signal.get("display_name") or signal.get("name"))):
+        return "STATE"
+    return "UNKNOWN"
+
+
+def _domain(signal: dict[str, Any]) -> dict[str, Any]:
+    data = _as_dict(signal.get("data"))
+    configuration = _as_dict(signal.get("configuration"))
+    return {
+        "minimum": _number(signal.get("min_value") if signal.get("min_value") is not None else signal.get("minimum")),
+        "maximum": _number(signal.get("max_value") if signal.get("max_value") is not None else signal.get("maximum")),
+        "resolution": _number(data.get("resolution") if data.get("resolution") is not None else signal.get("resolution") if signal.get("resolution") is not None else signal.get("factor")),
+        "allowed_values": _as_list(data.get("allowed_values") or configuration.get("allowed_values")),
+        "enum_values": _as_dict(data.get("enum_values") or configuration.get("enum_values")),
+        "reserved_values": _as_list(data.get("reserved_values") or configuration.get("reserved_values")),
+    }
+
+
+def _ceil_log2(count: int | float) -> int | None:
+    if count <= 0:
+        return None
+    return max(1, ceil(log2(count)))
+
+
 def required_signal_bits(signal: dict[str, Any]) -> int | None:
+    semantic_type = _semantic_type(signal)
+    domain = _domain(signal)
+    if semantic_type in {"BOOLEAN", "FLAG"}:
+        return 1
+    if semantic_type in {"ENUM", "STATE"}:
+        count = max(len(domain["enum_values"]), len(domain["allowed_values"])) + len(domain["reserved_values"])
+        if not count and semantic_type == "STATE" and _looks_like_state_signal(_text(signal.get("display_name") or signal.get("name"))):
+            count = 8
+        return _ceil_log2(count) if count else None
+    if semantic_type == "BITFIELD":
+        members = _as_list((_as_dict(signal.get("quality")).get("bit_members") or _as_dict(signal.get("configuration")).get("bit_members") or _as_dict(signal.get("data")).get("bit_members")))
+        bits = []
+        for index, member in enumerate(members):
+            item = _as_dict(member)
+            bits.append(int(_number(item.get("bit") if item.get("bit") is not None else item.get("bit_position") if item.get("bit_position") is not None else item.get("start_bit")) or index))
+        return max(bits) + 1 if bits else None
+    if semantic_type == "COUNTER":
+        modulus = _number(_as_dict(signal.get("configuration")).get("modulus") or _as_dict(signal.get("communication")).get("modulus"))
+        if modulus and modulus > 1:
+            return _ceil_log2(modulus)
+        minimum = domain["minimum"]
+        maximum = domain["maximum"]
+        if minimum is not None and maximum is not None and minimum <= maximum:
+            return _ceil_log2(int(maximum - minimum) + 1)
+        return None
+    if semantic_type in {"RAW", "STRING", "BYTE_ARRAY"}:
+        length = _number(signal.get("length_bits"))
+        return int(length) if length is not None and int(length) == length and length > 0 else None
+    if semantic_type != "NUMERIC":
+        return None
     data_type = _text(signal.get("data_type")).lower()
     factor = _number(signal.get("factor"))
     offset = _number(signal.get("offset_value"))
@@ -82,13 +173,16 @@ def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None
     start = _number(signal.get("start_bit"))
     byte_order = _text(signal.get("byte_order"))
     data_type = _text(signal.get("data_type")).lower()
+    semantic_type = _semantic_type(signal)
     if length is None or int(length) != length or length <= 0:
         add("SIGNAL_BIT_LENGTH_MISSING", "OPEN", "Signalbitlaenge fehlt oder ist ungueltig.")
     if start is None or int(start) != start or start < 0:
         add("SIGNAL_START_BIT_MISSING", "OPEN", "Startbit fehlt oder ist ungueltig.")
     if byte_order not in {"little_endian", "big_endian"}:
         add("SIGNAL_BYTE_ORDER_MISSING", "OPEN", "Byte-Reihenfolge fehlt.")
-    if not data_type:
+    if semantic_type == "UNKNOWN":
+        add("SIGNAL_SEMANTIC_MISSING", "OPEN", "Semantik fehlt; Parser/KI muss semantic_type vor Bitoptimierung klassifizieren.")
+    if semantic_type == "NUMERIC" and not data_type:
         add("SIGNAL_DATA_TYPE_MISSING", "OPEN", "Datentyp fehlt.")
 
     occupied = occupied_signal_bits(signal)
@@ -102,7 +196,7 @@ def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None
 
     required = required_signal_bits(signal)
     if required is None and not any(item["code"].startswith("SIGNAL_") for item in checks):
-        add("SIGNAL_BIT_NEED_OPEN", "OPEN", "Wertebereich, Skalierung oder Datentyp reichen fuer eine Bitoptimierung nicht aus.")
+        add("SIGNAL_BIT_NEED_OPEN", "OPEN", "Semantik, Value-Domain oder Encoding reichen fuer eine Bitoptimierung nicht aus.")
     if length is not None and required is not None:
         if required > int(length):
             add("SIGNAL_TOO_NARROW", "ERROR", f"{int(length)} Bit reichen nicht; mindestens {required} Bit sind erforderlich.")
@@ -118,6 +212,7 @@ def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None
         "required_bits": required,
         "start_bit": int(start) if start is not None and int(start) == start else None,
         "byte_order": byte_order,
+        "semantic_type": semantic_type,
         "data_type": data_type,
         "min_value": _number(signal.get("min_value")),
         "max_value": _number(signal.get("max_value")),

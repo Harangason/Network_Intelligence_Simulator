@@ -67,6 +67,95 @@ def _number(value: Any, *, integer: bool = False) -> int | float | None:
         return None
 
 
+def _signal_semantic_type(name: str, data_type: str | None, unit: str | None, enum_values: dict[str, int] | None) -> str:
+    key = f"{name} {unit or ''}".lower()
+    if enum_values:
+        return "STATE" if any(token in key for token in ("status", "state", "mode", "zustand")) else "ENUM"
+    if str(data_type or "").lower() in {"bool", "boolean"}:
+        return "BOOLEAN"
+    if any(token in key for token in ("status", "state", "mode", "zustand", "diagnose", "fehler")) or unit == "code":
+        return "STATE"
+    return "NUMERIC"
+
+
+def _signal_layers(
+    *,
+    name: str,
+    source_format: str,
+    start_bit: int | float | None,
+    length_bits: int | float | None,
+    byte_order: str | None,
+    data_type: str | None,
+    factor: int | float | None,
+    offset_value: int | float | None,
+    unit: str | None,
+    min_value: int | float | None,
+    max_value: int | float | None,
+    enum_values: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    semantic_type = _signal_semantic_type(name, data_type, unit, enum_values)
+    if semantic_type in {"ENUM", "STATE"} and enum_values:
+        value_domain = {
+            "enum_values": enum_values,
+            "allowed_values": list(enum_values),
+            "reserved_values": [],
+            "invalid_values": [],
+            "default_value": next(iter(enum_values), None),
+        }
+    elif semantic_type == "BOOLEAN":
+        value_domain = {
+            "minimum": 0,
+            "maximum": 1,
+            "resolution": 1,
+            "allowed_values": [False, True],
+            "enum_values": {"FALSE": 0, "TRUE": 1},
+            "reserved_values": [],
+            "invalid_values": [],
+            "default_value": False,
+        }
+    else:
+        upper_bound = max_value if max_value is not None else min_value
+        value_domain = {
+            "minimum": min_value,
+            "maximum": max_value,
+            "resolution": factor,
+            "allowed_values": [],
+            "enum_values": {},
+            "reserved_values": [],
+            "invalid_values": [],
+            "default_value": min_value if min_value is not None and upper_bound is not None and not (min_value <= 0 <= upper_bound) else 0,
+        }
+    return {
+        "semantic": {
+            "semantic_type": semantic_type,
+            "quantity": name,
+            "category": "imported_signal",
+            "meaning": name,
+            "unit": unit or ("not_applicable" if semantic_type != "NUMERIC" else ""),
+        },
+        "data": value_domain,
+        "configuration": {
+            "raw_datatype": data_type,
+            "bit_length": length_bits,
+            "signed": data_type == "signed",
+            "factor": factor,
+            "offset": offset_value,
+            "endianness": byte_order,
+            "start_bit": start_bit,
+            "encoding_type": "linear" if semantic_type == "NUMERIC" else "coded",
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+        },
+        "quality": {
+            "confidence": 0.9 if source_format == "DBC" else 0.78,
+            "semantic_complete": semantic_type in {"ENUM", "STATE", "BOOLEAN"} or min_value is not None and max_value is not None,
+            "value_domain_complete": bool(enum_values) or min_value is not None and max_value is not None,
+            "encoding_complete": length_bits is not None and byte_order is not None,
+            "mapping_quality": "value_table" if enum_values else "physical_range",
+        },
+        "protocol_bindings": [{"source_format": source_format, "binding_state": "imported"}],
+    }
+
+
 def _normalized_header(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", "_", str(value or "").strip().lower()).strip("_")
 
@@ -391,7 +480,21 @@ def _tabular_plan(records: list[dict[str, str]], headers: list[str]) -> dict[str
             messages.setdefault(message_key, {"key": message_key, "name": message_name, "domain": domain, "interface_key": interface_key, "message_id_hex": _value(row, "message_id_hex") or None, "direction": _direction(_value(row, "direction")), "cycle_ms": _number(_value(row, "cycle_ms")), "dlc": _number(_value(row, "dlc"), integer=True)})
             if signal_name:
                 signal_key = f"{message_key}/signal:{_slug(signal_name)}"
-                signals.setdefault(signal_key, {"key": signal_key, "name": signal_name, "domain": domain, "message_key": message_key, "display_name": signal_name, "start_bit": _number(_value(row, "start_bit"), integer=True), "length_bits": _number(_value(row, "length_bits"), integer=True), "byte_order": _byte_order(_value(row, "byte_order")), "data_type": _value(row, "data_type") or None, "factor": _number(_value(row, "factor")), "offset_value": _number(_value(row, "offset_value")), "unit": _value(row, "unit") or None, "min_value": _number(_value(row, "min_value")), "max_value": _number(_value(row, "max_value"))})
+                start_bit = _number(_value(row, "start_bit"), integer=True)
+                length_bits = _number(_value(row, "length_bits"), integer=True)
+                byte_order = _byte_order(_value(row, "byte_order"))
+                data_type = _value(row, "data_type") or None
+                factor = _number(_value(row, "factor"))
+                offset_value = _number(_value(row, "offset_value"))
+                unit = _value(row, "unit") or None
+                min_value = _number(_value(row, "min_value"))
+                max_value = _number(_value(row, "max_value"))
+                signals.setdefault(signal_key, {
+                    "key": signal_key, "name": signal_name, "domain": domain, "message_key": message_key, "display_name": signal_name,
+                    "start_bit": start_bit, "length_bits": length_bits, "byte_order": byte_order, "data_type": data_type,
+                    "factor": factor, "offset_value": offset_value, "unit": unit, "min_value": min_value, "max_value": max_value,
+                    **_signal_layers(name=signal_name, source_format="TABULAR", start_bit=start_bit, length_bits=length_bits, byte_order=byte_order, data_type=data_type, factor=factor, offset_value=offset_value, unit=unit, min_value=min_value, max_value=max_value),
+                })
     normalized_headers = {_normalized_header(header): header for header in headers}
     mapping = {
         field: normalized_headers[alias]
@@ -407,6 +510,12 @@ def _dbc_plan(content: bytes) -> dict[str, Any]:
     nodes = set(re.findall(r"^BU_:\s*(.*)$", text, flags=re.MULTILINE)[0].split()) if re.search(r"^BU_:", text, flags=re.MULTILINE) else set()
     message_pattern = re.compile(r"^BO_\s+(\d+)\s+([^:]+):\s+(\d+)\s+(\S+)", re.MULTILINE)
     signal_pattern = re.compile(r"^\s*SG_\s+(\w+)(?:\s+\w+)?\s*:\s*(\d+)\|(\d+)@(\d)([+-])\s+\(([-+\d.eE]+),([-+\d.eE]+)\)\s+\[([-+\d.eE]+)\|([-+\d.eE]+)\]\s+\"([^\"]*)\"\s*(.*)$", re.MULTILINE)
+    value_tables: dict[tuple[str, str], dict[str, int]] = {}
+    for value_match in re.finditer(r"^VAL_\s+(\d+)\s+(\w+)\s+(.+?);", text, re.MULTILINE):
+        frame_id, signal_name, values = value_match.groups()
+        enum_values = {label: int(raw) for raw, label in re.findall(r"(-?\d+)\s+\"([^\"]+)\"", values)}
+        if enum_values:
+            value_tables[(frame_id, signal_name)] = enum_values
     messages_raw = list(message_pattern.finditer(text))
     if not messages_raw:
         raise EngineeringValidationError("Die DBC-Datei enthält keine BO_-Nachrichten.")
@@ -440,7 +549,21 @@ def _dbc_plan(content: bytes) -> dict[str, Any]:
         block_end = messages_raw[index + 1].start() if index + 1 < len(messages_raw) else len(text)
         for signal in signal_pattern.finditer(text[match.end():block_end]):
             signal_name, start, length, byte_order, sign, factor, offset, minimum, maximum, unit, _receivers = signal.groups()
-            plan["signals"].append({"key": f"{message_key}/signal:{_slug(signal_name)}", "name": signal_name, "domain": "generic", "message_key": message_key, "display_name": signal_name, "start_bit": int(start), "length_bits": int(length), "byte_order": "little_endian" if byte_order == "1" else "big_endian", "data_type": "signed" if sign == "-" else "unsigned", "factor": float(factor), "offset_value": float(offset), "unit": unit or None, "min_value": float(minimum), "max_value": float(maximum)})
+            start_bit = int(start)
+            length_bits = int(length)
+            resolved_byte_order = "little_endian" if byte_order == "1" else "big_endian"
+            data_type = "signed" if sign == "-" else "unsigned"
+            factor_value = float(factor)
+            offset_value = float(offset)
+            min_value = float(minimum)
+            max_value = float(maximum)
+            enum_values = value_tables.get((frame_id, signal_name))
+            plan["signals"].append({
+                "key": f"{message_key}/signal:{_slug(signal_name)}", "name": signal_name, "domain": "generic", "message_key": message_key, "display_name": signal_name,
+                "start_bit": start_bit, "length_bits": length_bits, "byte_order": resolved_byte_order, "data_type": data_type,
+                "factor": factor_value, "offset_value": offset_value, "unit": unit or None, "min_value": min_value, "max_value": max_value,
+                **_signal_layers(name=signal_name, source_format="DBC", start_bit=start_bit, length_bits=length_bits, byte_order=resolved_byte_order, data_type=data_type, factor=factor_value, offset_value=offset_value, unit=unit or None, min_value=min_value, max_value=max_value, enum_values=enum_values),
+            })
     return plan
 
 

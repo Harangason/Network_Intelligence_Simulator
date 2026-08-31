@@ -127,6 +127,111 @@ def _default_value(minimum: float, maximum: float) -> float:
     return minimum
 
 
+def _semantic_type_for_signal(name: str, unit: str, minimum: float, maximum: float) -> str:
+    key = f"{name} {unit}".lower()
+    if minimum == 0 and maximum == 1 and any(token in key for token in ("status", "flag", "aktiv", "enable", "boolean")):
+        return "BOOLEAN"
+    if any(token in key for token in ("status", "state", "mode", "zustand", "diagnose", "fehler", "code")) or unit == "code":
+        return "STATE"
+    return "NUMERIC"
+
+
+def _state_value_domain(name: str) -> dict[str, Any]:
+    if "gateway" in name.lower():
+        enum_values = {"OK": 0, "DEGRADED": 1, "ROUTING_LIMITED": 2, "ERROR": 3}
+    else:
+        enum_values = {"OK": 0, "WARNING": 1, "ERROR": 2, "NOT_AVAILABLE": 3}
+    return {
+        "enum_values": enum_values,
+        "allowed_values": list(enum_values),
+        "reserved_values": [4, 5, 6, 7],
+        "invalid_values": [15],
+        "default_value": "OK",
+        "resolution": 1,
+    }
+
+
+def _canonical_signal_layers(
+    *,
+    name: str,
+    description: str,
+    category: str,
+    datatype: str,
+    unit: str,
+    minimum: float,
+    maximum: float,
+    resolution: float,
+    producer: str,
+    consumers: list[str],
+    cycle_time: float,
+    length_bits: int,
+    start_bit: int,
+) -> dict[str, Any]:
+    semantic_type = _semantic_type_for_signal(name, unit, minimum, maximum)
+    if semantic_type == "BOOLEAN":
+        value_domain = {
+            "minimum": 0,
+            "maximum": 1,
+            "resolution": 1,
+            "allowed_values": [False, True],
+            "enum_values": {"FALSE": 0, "TRUE": 1},
+            "invalid_values": [],
+            "reserved_values": [],
+            "default_value": False,
+        }
+    elif semantic_type == "STATE":
+        value_domain = _state_value_domain(name)
+    else:
+        value_domain = {
+            "minimum": minimum,
+            "maximum": maximum,
+            "resolution": resolution,
+            "allowed_values": [],
+            "enum_values": {},
+            "invalid_values": [maximum + resolution],
+            "reserved_values": [],
+            "default_value": _default_value(minimum, maximum),
+        }
+    return {
+        "semantic": {
+            "semantic_type": semantic_type,
+            "quantity": name,
+            "category": category,
+            "meaning": description,
+            "unit": unit if semantic_type == "NUMERIC" else "not_applicable",
+            "generated_by": "engineering-workload-signal-generator-v2",
+            "assumptions": [] if semantic_type == "NUMERIC" else ["Diskretes Signal wurde als explizite Value-Domain modelliert."],
+        },
+        "data": value_domain,
+        "configuration": {
+            "raw_datatype": datatype,
+            "bit_length": length_bits,
+            "signed": datatype == "signed",
+            "factor": resolution,
+            "offset": 0,
+            "endianness": "little_endian",
+            "start_bit": start_bit,
+            "encoding_type": "linear" if semantic_type == "NUMERIC" else "coded",
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+        },
+        "communication": {
+            "cycle_time_ms": cycle_time,
+            "producer": producer,
+            "consumers": consumers,
+            "update_type": "cyclic_fast" if cycle_time <= 20 else "cyclic",
+        },
+        "quality": {
+            "confidence": 0.95 if semantic_type == "NUMERIC" else 0.88,
+            "semantic_complete": True,
+            "value_domain_complete": True,
+            "encoding_complete": True,
+            "packing_complete": True,
+            "validation_status": "proposal",
+        },
+        "protocol_bindings": [],
+    }
+
+
 def _signal_definition(
     workload: dict[str, Any],
     package: dict[str, Any],
@@ -141,6 +246,22 @@ def _signal_definition(
     producer = str(context["node"].get("name") or package["category"])
     cycle_time = float(message.get("cycle_ms") or 10)
     identifier = f"{workload['workload_id']}:{normalized_name(candidate['name'])}"
+    start_bit = index * 16
+    layers = _canonical_signal_layers(
+        name=str(candidate["name"]),
+        description=str(candidate["description"]),
+        category=str(package["category"]),
+        datatype=str(candidate["datatype"]),
+        unit=str(candidate["unit"]),
+        minimum=minimum,
+        maximum=maximum,
+        resolution=resolution,
+        producer=producer,
+        consumers=list(context.get("consumers") or []),
+        cycle_time=cycle_time,
+        length_bits=16,
+        start_bit=start_bit,
+    )
     return {
         "id": identifier,
         "object_type": "Signal",
@@ -165,33 +286,16 @@ def _signal_definition(
         "producer": producer,
         "consumers": list(context.get("consumers") or []),
         "source": "ai_generated",
-        "generated_by": "engineering-workload-signal-generator-v1",
+        "generated_by": "engineering-workload-signal-generator-v2",
         "confidence": 0.95,
         "review_state": "unreviewed",
         "approval_state": "pending",
         "domain": str(workload.get("domain") or "automotive"),
         "message_id": str(message["id"]),
-        "start_bit": index * 16,
+        "start_bit": start_bit,
         "length_bits": 16,
         "byte_order": "little_endian",
-        "semantic": {
-            "category": package["category"],
-            "concept": normalized_name(candidate["name"]),
-            "owner": producer,
-            "generated_by": "engineering-workload-signal-generator-v1",
-        },
-        "data": {
-            "default_value": _default_value(minimum, maximum),
-            "invalid_value": maximum + resolution,
-            "resolution": resolution,
-        },
-        "communication": {
-            "cycle_time_ms": cycle_time,
-            "producer": producer,
-            "consumers": list(context.get("consumers") or []),
-        },
-        "quality": {"confidence": 0.95, "validation_status": "pending"},
-        "protocol_bindings": [],
+        **layers,
     }
 
 

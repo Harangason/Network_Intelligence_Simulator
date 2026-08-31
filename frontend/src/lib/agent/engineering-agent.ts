@@ -497,6 +497,12 @@ type EngineeringObjectInput = {
   unit?: string;
   min_value?: number;
   max_value?: number;
+  configuration?: Record<string, unknown>;
+  semantic?: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  communication?: Record<string, unknown>;
+  quality?: Record<string, unknown>;
+  protocol_bindings?: Array<Record<string, unknown>>;
 };
 
 type CanonicalEngineeringObject = {
@@ -707,6 +713,12 @@ async function createAndApproveEngineeringObject(
       payload.unit = rest.unit ?? null;
       payload.min_value = rest.min_value ?? null;
       payload.max_value = rest.max_value ?? null;
+      payload.configuration = rest.configuration ?? {};
+      payload.semantic = rest.semantic ?? {};
+      payload.data = rest.data ?? {};
+      payload.communication = rest.communication ?? {};
+      payload.quality = rest.quality ?? {};
+      payload.protocol_bindings = rest.protocol_bindings ?? [];
     }
 
     proposal = await createProposal({
@@ -808,6 +820,12 @@ const proposeEngineeringObject = tool({
     unit: z.string().optional().describe("Nur für 'signals'."),
     min_value: z.number().optional().describe("Nur für 'signals'."),
     max_value: z.number().optional().describe("Nur für 'signals'."),
+    configuration: z.record(z.string(), z.unknown()).optional().describe("Nur für 'signals': Encoding/Packing-Konfiguration."),
+    semantic: z.record(z.string(), z.unknown()).optional().describe("Nur für 'signals': semantische Ebene mit semantic_type, meaning, quantity."),
+    data: z.record(z.string(), z.unknown()).optional().describe("Nur für 'signals': Value-Domain mit allowed_values, enum_values, invalid/reserved values."),
+    communication: z.record(z.string(), z.unknown()).optional().describe("Nur für 'signals': Producer, Consumer, Zyklus, Timeout, Priorität."),
+    quality: z.record(z.string(), z.unknown()).optional().describe("Nur für 'signals': Confidence und Vollständigkeitsstatus."),
+    protocol_bindings: z.array(z.record(z.string(), z.unknown())).optional().describe("Nur für 'signals': technologiebezogene Bindungen."),
   }),
   execute: async (input) => serializeProposalCreation(() => createAndApproveEngineeringObject(input)),
 });
@@ -836,6 +854,12 @@ const engineeringChainInputSchema = z.object({
     unit: z.string().optional(),
     min_value: z.number().optional(),
     max_value: z.number().optional(),
+    configuration: z.record(z.string(), z.unknown()).optional(),
+    semantic: z.record(z.string(), z.unknown()).optional(),
+    data: z.record(z.string(), z.unknown()).optional(),
+    communication: z.record(z.string(), z.unknown()).optional(),
+    quality: z.record(z.string(), z.unknown()).optional(),
+    protocol_bindings: z.array(z.record(z.string(), z.unknown())).optional(),
     domain: z.string().optional(),
   });
 
@@ -911,6 +935,12 @@ async function registerEngineeringChain(
       unit: input.unit,
       min_value: input.min_value,
       max_value: input.max_value,
+      configuration: input.configuration,
+      semantic: input.semantic,
+      data: input.data,
+      communication: input.communication,
+      quality: input.quality,
+      protocol_bindings: input.protocol_bindings,
     }, registrationIndex);
     canonicalObjects.push(...signal.canonical_objects);
     steps.push(signal);

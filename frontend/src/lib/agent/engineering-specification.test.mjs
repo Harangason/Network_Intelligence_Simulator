@@ -75,7 +75,7 @@ test("numbered headings and prose do not create extra hardware", () => {
   assert.equal(summary.hardwareNames.includes("Verwendung durch eine Thermal-/Klima-ECU"), false);
   assert.equal(summary.hardwareNames.filter((name) => name === "System").length, 1);
   assert.deepEqual(summary.temperature, {
-    functionName: "Temperatursensor_Erfassung",
+    functionName: "Temperatur_Erfassung",
     minValue: -20,
     maxValue: 120,
     dataType: "signed",
@@ -173,6 +173,24 @@ test("hardware roles are properties, not name suffixes; instance numbers stay st
   assert.equal(result.chains.filter((chain) => chain.device_type === "ActuatorController").length, 100);
   assert.equal(result.chains.filter((chain) => chain.device_type === "ECU").length, 50);
   assert.equal(new Set(result.chains.filter((chain) => chain.device_type === "ECU").map((chain) => chain.hardware_name)).size, 50);
+});
+
+test("derived user-facing names use the normalized hardware name", () => {
+  const result = extractEngineeringSpecification(`
+    Airbagsteuergerät
+    - Kommunikationsprotokoll: LIN
+    - Wertebereich: 0..1
+  `);
+  const chain = result.chains.find((item) => item.hardware_name === "Airbag");
+
+  assert.ok(chain);
+  assert.equal(chain.device_type, "ECU");
+  assert.equal(chain.function_name, "Airbag_Steuerung");
+  assert.equal(chain.interface_name, "Airbag_LIN");
+  assert.equal(chain.message_name, "AirbagData");
+  assert.equal(chain.signal_name, "AirbagStatus");
+  assert.equal(chain.signal_display_name, "AirbagStatus");
+  assert.equal([chain.hardware_name, chain.function_name, chain.interface_name, chain.message_name, chain.signal_name].some((value) => /steuerger(?:ä|ae|a|�)t/i.test(value)), false);
 });
 
 test("new-project generator sizes signal bits and message DLC from physical range", () => {
