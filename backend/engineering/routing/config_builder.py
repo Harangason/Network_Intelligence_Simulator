@@ -27,6 +27,7 @@ PROTOCOL_TO_TECHNOLOGY = {
     "MODBUS": "modbus_tcp",
     "ARINC": "arinc429",
     "MIL_STD_1553": "mil_std_1553",
+    "PCIE": "pcie",
     "CUSTOM": "generic",
 }
 

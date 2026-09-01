@@ -3,19 +3,35 @@ import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local
 import { readActiveProjectId } from "./user-settings";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Project-ID": readActiveProjectId(),
-      ...init?.headers,
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(2500),
-  });
+  const signal = init?.signal ?? AbortSignal.timeout(10000);
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Project-ID": readActiveProjectId(),
+        ...init?.headers,
+      },
+      cache: "no-store",
+      signal,
+    });
+  } catch (error) {
+    if (isRequestTimeout(error)) {
+      throw new Error("API-Zeitlimit: Der lokale Simulationsdienst hat innerhalb von 10 s nicht geantwortet. Das passiert meist bei einem nicht gestarteten Backend, einem hängenden Simulationslauf oder einem noch initialisierenden Dienst.");
+    }
+    throw error;
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
   return payload as T;
+}
+
+function isRequestTimeout(error: unknown) {
+  if (typeof DOMException !== "undefined" && error instanceof DOMException) {
+    return error.name === "TimeoutError" || error.name === "AbortError";
+  }
+  return error instanceof Error && /timed out|timeout|aborted/i.test(error.message);
 }
 
 function projectPath(path: string, projectId: string) {

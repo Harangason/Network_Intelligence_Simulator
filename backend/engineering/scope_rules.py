@@ -14,6 +14,7 @@ SUPPORTED_COMMUNICATION_SYSTEMS = {
     "LIN",
     "FlexRay",
     "Ethernet",
+    "SOME_IP",
     "EtherCAT",
     "ProfiNET",
     "ModbusTCP",
@@ -23,10 +24,73 @@ SUPPORTED_COMMUNICATION_SYSTEMS = {
     "SPI",
     "I2C",
     "USB",
+    "PCIe",
     "MQTT",
     "OPCUA",
+    "ARINC",
+    "MIL_STD_1553",
     "Other",
 }
+
+COMMUNICATION_SYSTEM_ALIASES = {
+    "AUTOMOTIVE_ETHERNET": "Ethernet",
+    "ETHERNET": "Ethernet",
+    "ETH": "Ethernet",
+    "CANFD": "CAN_FD",
+    "CAN_FD": "CAN_FD",
+    "CAN_CLASSIC": "CAN",
+    "CAN": "CAN",
+    "LIN": "LIN",
+    "SOMEIP": "SOME_IP",
+    "SOME_IP": "SOME_IP",
+    "SOME/IP": "SOME_IP",
+    "SOME-IP": "SOME_IP",
+    "FLEXRAY": "FlexRay",
+    "ETHERCAT": "EtherCAT",
+    "PROFINET": "ProfiNET",
+    "MODBUSTCP": "ModbusTCP",
+    "MODBUS_TCP": "ModbusTCP",
+    "MODBUSRTU": "ModbusRTU",
+    "MODBUS_RTU": "ModbusRTU",
+    "OPCUA": "OPCUA",
+    "OPC_UA": "OPCUA",
+    "MQTT": "MQTT",
+    "RS232": "RS232",
+    "RS485": "RS485",
+    "SPI": "SPI",
+    "I2C": "I2C",
+    "USB": "USB",
+    "PCIE": "PCIe",
+    "ARINC": "ARINC",
+    "ARINC429": "ARINC",
+    "ARINC_429": "ARINC",
+    "MIL_STD_1553": "MIL_STD_1553",
+    "MILSTD1553": "MIL_STD_1553",
+    "OTHER": "Other",
+}
+
+
+def canonical_communication_system(value: Any) -> str:
+    raw = str(value or "").strip()
+    key = re.sub(r"[^A-Z0-9]+", "_", raw.upper()).strip("_")
+    if raw.upper() == "SOME/IP":
+        key = "SOME/IP"
+    return COMMUNICATION_SYSTEM_ALIASES.get(key) or COMMUNICATION_SYSTEM_ALIASES.get(raw.upper(), raw)
+
+
+def communication_system_allows_interface(allowed_systems: list[str], interface_type: Any) -> bool:
+    if not allowed_systems:
+        return True
+    actual = canonical_communication_system(interface_type)
+    allowed = {canonical_communication_system(item) for item in allowed_systems}
+    if actual in allowed:
+        return True
+    # SOME/IP is modeled as a protocol carried by an Ethernet engineering interface.
+    if actual == "Ethernet" and "SOME_IP" in allowed:
+        return True
+    if actual == "SOME_IP" and "Ethernet" in allowed:
+        return True
+    return False
 
 
 def normalize_engineering_scope_rules(value: Any) -> dict[str, Any]:
@@ -52,7 +116,7 @@ def normalize_engineering_scope_rules(value: Any) -> dict[str, Any]:
     raw_systems = value.get("communication_systems") or []
     if not isinstance(raw_systems, list) or not all(isinstance(item, str) for item in raw_systems):
         raise EngineeringValidationError("engineering_scope_rules.communication_systems muss eine Liste sein.")
-    systems = list(dict.fromkeys(item.strip() for item in raw_systems if item.strip()))
+    systems = list(dict.fromkeys(canonical_communication_system(item) for item in raw_systems if item.strip()))
     unsupported = [item for item in systems if item not in SUPPORTED_COMMUNICATION_SYSTEMS]
     if unsupported:
         raise EngineeringValidationError(

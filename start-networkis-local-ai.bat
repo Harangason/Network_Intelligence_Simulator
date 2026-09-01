@@ -15,6 +15,7 @@ if not defined WAITRESS_THREADS set "WAITRESS_THREADS=16"
 if not defined SIMULATION_EXECUTOR set "SIMULATION_EXECUTOR=process"
 if not defined SIMULATION_WORKERS set "SIMULATION_WORKERS=12"
 if not defined NETWORKIS_SERVICE_RESTARTS set "NETWORKIS_SERVICE_RESTARTS=5"
+if not defined UV_CACHE_DIR set "UV_CACHE_DIR=%ROOT%.uv-cache"
 set "OMP_NUM_THREADS=1"
 set "OPENBLAS_NUM_THREADS=1"
 set "MKL_NUM_THREADS=1"
@@ -22,7 +23,9 @@ set "NUMEXPR_NUM_THREADS=1"
 
 cd /d "%ROOT%"
 if exist "%ROOT%backend\.venv\Scripts\python.exe" (
+  "%ROOT%backend\.venv\Scripts\python.exe" generate_realistic_communication_tool.py doctor
   "%ROOT%backend\.venv\Scripts\python.exe" generate_realistic_communication_tool.py web
 ) else (
+  uv run --project backend python generate_realistic_communication_tool.py doctor
   uv run --project backend python generate_realistic_communication_tool.py web
 )

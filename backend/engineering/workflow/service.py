@@ -147,16 +147,7 @@ class WorkflowStatusService:
             ).fetchall()
             simulations = []
             if not summary:
-                simulations = connection.execute(
-                    """
-                    SELECT id, source_versions, validation_snapshot_id, calculated_metrics,
-                           status, job_id, result,
-                           is_outdated, outdated_reason, created_at
-                    FROM engineering_simulation_snapshots
-                    WHERE project_id = %s ORDER BY created_at DESC LIMIT 20
-                    """,
-                    (self.project_id,),
-                ).fetchall()
+                simulations = self._list_simulation_snapshot_rows(connection, include_details=False)
         latest_by_type: dict[str, dict[str, Any]] = {}
         for item in latest:
             latest_by_type.setdefault(item["analysis_type"], self._serialize_row(item))
@@ -184,6 +175,24 @@ class WorkflowStatusService:
             state["parameters"] = {}
             state["topology"] = {}
         return state
+
+    def _list_simulation_snapshot_rows(self, connection, *, include_details: bool) -> list[dict[str, Any]]:
+        detail_columns = ", configuration, calculated_metrics, result" if include_details else ""
+        return connection.execute(
+            f"""
+            SELECT id, source_versions, validation_snapshot_id,
+                   status, job_id, is_outdated, outdated_reason, created_at{detail_columns}
+            FROM engineering_simulation_snapshots
+            WHERE project_id = %s ORDER BY created_at DESC LIMIT 20
+            """,
+            (self.project_id,),
+        ).fetchall()
+
+    def list_simulation_snapshots(self, *, include_details: bool = False) -> list[dict[str, Any]]:
+        with get_connection() as connection:
+            self._ensure(connection)
+            rows = self._list_simulation_snapshot_rows(connection, include_details=include_details)
+        return [self._serialize_row(item) for item in rows]
 
     @staticmethod
     def _serialize_row(row: dict[str, Any]) -> dict[str, Any]:

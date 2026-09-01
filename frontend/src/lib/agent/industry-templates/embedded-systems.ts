@@ -1,0 +1,52 @@
+import type { IndustrySensorTemplate, IndustryTemplateProfile } from "./types.ts";
+
+const sensors: IndustrySensorTemplate[] = [
+  ["BoardTemperatureSensor", "Boardtemperatur", "I2C", "degC", -40, 125, 0.1, 100],
+  ["SupplyVoltageSensor", "Versorgungsspannung", "I2C", "V", 0, 60, 0.001, 20],
+  ["SupplyCurrentSensor", "Versorgungsstrom", "I2C", "A", -20, 20, 0.001, 20],
+  ["ImuAccelerationSensor", "Beschleunigung", "SPI", "m/s2", -160, 160, 0.01, 5],
+  ["ImuGyroSensor", "Drehrate", "SPI", "deg/s", -2000, 2000, 0.1, 5],
+  ["ProximitySensor", "Naeherung", "I2C", "mm", 0, 2000, 1, 20],
+  ["TouchSensor", "TouchStatus", "I2C", "code", 0, 1, 1, 10],
+  ["StorageHealthSensor", "Speicherzustand", "PCIe", "%", 0, 100, 0.1, 1000],
+  ["UsbLinkStateSensor", "UsbLinkStatus", "USB", "code", 0, 15, 1, 100],
+  ["UartPacketCounterSensor", "UartPakete", "UART", "count", 0, 1000000, 1, 100],
+].map(([hardwareName, signalName, interfaceType, unit, minValue, maxValue, factor, cycleMs]) => ({
+  cycleMs: Number(cycleMs),
+  factor: Number(factor),
+  hardwareName: String(hardwareName),
+  interfaceType: String(interfaceType),
+  maxValue: Number(maxValue),
+  minValue: Number(minValue),
+  signalName: String(signalName),
+  unit: String(unit),
+}));
+
+export const embeddedSystemsTemplateProfile: IndustryTemplateProfile = {
+  gatewayName: "SystemBridge",
+  id: "embedded_systems",
+  label: "Embedded Systems",
+  sensorTemplates: sensors,
+  systemVariants: [
+    "MainControl",
+    "PowerManagement",
+    "SensorHub",
+    "MotorDriver",
+    "DisplayBridge",
+    "StorageController",
+    "WirelessModule",
+    "IOExpander",
+    "SafetyMonitor",
+    "BootManager",
+    "ClockDistribution",
+    "ThermalSupervisor",
+    "BatteryCharger",
+    "UsbBridge",
+    "PcieEndpoint",
+    "SpiPeripheral",
+    "I2cPeripheral",
+    "UartBridge",
+    "EdgeInference",
+    "SecureElement",
+  ],
+};

@@ -84,8 +84,10 @@ test("legacy status signals use a conservative state domain instead of open nume
 
   assert.equal(result.semanticType, "STATE");
   assert.equal(result.requiredBits, 3);
+  assert.equal(result.status, "PASS");
   assert.ok(!codes(result).includes("SEMANTIC_MISSING"));
   assert.doesNotMatch(text, /Wertebereich|Skalierung|Datentyp/);
+  assert.match(text, /Reservehinweis/);
 });
 
 test("zero scale, reversed bounds and unrepresentable endpoints are errors", () => {

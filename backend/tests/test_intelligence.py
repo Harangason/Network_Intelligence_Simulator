@@ -111,6 +111,27 @@ def test_data_quality_is_deterministic_and_reports_missing_signal_metadata():
     assert {item["code"] for item in result["issues"]} >= {"MISSING_REQUIRED_DATA"}
 
 
+def test_data_quality_accepts_unitless_status_signals():
+    objects = _objects()
+    objects["Signal"][0].update(
+        {
+            "id": "status-signal",
+            "name": "ProcessStatus",
+            "data_type": "unsigned",
+            "unit": None,
+            "length_bits": 8,
+        }
+    )
+
+    result = DataQualityService().analyze(objects)
+
+    assert result["missing_units"] == 0
+    assert not any(
+        item["code"] == "MISSING_REQUIRED_DATA" and item["object_id"] == "status-signal"
+        for item in result["issues"]
+    )
+
+
 def test_graph_analytics_finds_articulation_point_and_isolated_node():
     objects = _objects()
     result = GraphAnalyticsService().analyze(

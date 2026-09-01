@@ -12,6 +12,7 @@ export type EquipmentClusterAssignment = {
   selected: boolean;
   network_id: string;
   network_label: string;
+  bus_name: string;
   devices: number;
   counts: Record<string, number>;
   evidence: string[];
@@ -32,7 +33,7 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "climate",
     label: "Klima",
-    terms: ["klima", "climate", "hvac", "heizung", "heater", "ventilation", "blower", "temperature", "temperatur", "thermo", "compressor", "kompressor"],
+    terms: ["klima", "climate", "hvac", "heizung", "heater", "ventilation", "blower", "temperature", "temperatur", "thermo", "thermal", "compressor", "kompressor", "refrigerant", "kaeltemittel"],
     preferredNetworks: ["canfd", "can"],
     recommendation: "Thermik, Regelung und Komfortsignale gemeinsam bewerten.",
   },
@@ -44,11 +45,31 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
     recommendation: "Lokale Lichtsignale zusammenhalten und bei Lastspitzen auf mehrere Segmente verteilen.",
   },
   {
+    id: "access_security",
+    label: "Zugang und Diebstahlschutz",
+    terms: ["wegfahrsperre", "immobilizer", "keyless", "access", "zugang", "key", "schluessel", "theft", "diebstahl"],
+    preferredNetworks: ["canfd", "can", "lin"],
+    recommendation: "Zugangs- und Freigabepfade getrennt pruefen, auch wenn sie technisch am Gateway haengen.",
+  },
+  {
     id: "safety",
     label: "Sicherheit",
     terms: ["safety", "restraint", "airbag", "brake", "bremse", "stability", "stabilitaet", "stabilitat"],
     preferredNetworks: ["canfd", "can", "ethernet"],
     recommendation: "Safety-nahe Teilnehmer gemeinsam pruefen und nicht blind auf langsame Busse legen.",
+  },
+  {
+    id: "driver_assistance",
+    label: "Fahrerassistenz",
+    terms: [
+      "adas", "fahrerassistenz", "driverassist", "driver assistance", "parkassistenz", "parkassist", "parking",
+      "ultraschall", "ultrasonic", "radar", "lidar", "kamera", "camera", "frontkamera", "heckkamera",
+      "lane", "spur", "acceleration", "beschleunigung", "verticalacceleration", "lateralacceleration",
+      "longitudinalacceleration", "pitchrate", "yawrate", "rollrate", "damper", "daempfer", "suspension",
+      "fahrwerk", "reifendruck", "tirepressure",
+    ],
+    preferredNetworks: ["ethernet", "canfd", "can"],
+    recommendation: "Umfeld-, Park- und Fahrdynamiksignale gemeinsam auf Latenz, Bandbreite und Sensorfusion pruefen.",
   },
   {
     id: "energy",
@@ -59,10 +80,24 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   },
   {
     id: "motion",
-    label: "Antrieb und Bewegung",
-    terms: ["drive", "motion", "antrieb", "engine", "motor", "gear", "getriebe", "traction", "fahrwerk", "steering", "lenkung"],
+    label: "Antrieb",
+    terms: ["drive", "motion", "antrieb", "engine", "motor", "gear", "getriebe", "traction", "steering", "lenkung", "throttle", "turbo", "oil", "oel", "kraftstoff", "fuel", "exhaust", "abgas"],
     preferredNetworks: ["canfd", "ethernet", "can"],
-    recommendation: "Regelungs- und Bewegungsdaten mit Latenz- und Lastreserve behandeln.",
+    recommendation: "Antriebsnahe Regelungsdaten mit Latenz- und Lastreserve behandeln.",
+  },
+  {
+    id: "body_comfort",
+    label: "Karosserie und Komfort",
+    terms: ["karosserie", "body", "comfort", "komfort", "schiebedach", "sunroof", "heckklappe", "tailgate", "wischer", "washer", "wasch", "seat", "sitz", "window", "fenster", "door", "tuer"],
+    preferredNetworks: ["lin", "canfd", "can"],
+    recommendation: "Lokale Komfortfunktionen zusammenhalten und langsame Segmente bewusst abgrenzen.",
+  },
+  {
+    id: "infotainment",
+    label: "Infotainment und Anzeige",
+    terms: ["infotainment", "headup", "display", "sound", "audio", "telematik", "connectivity", "konnektivitaet", "navigation"],
+    preferredNetworks: ["ethernet", "lin", "canfd"],
+    recommendation: "Anzeige-, Audio- und Telematikpfade fachlich pruefen; unklare Stellglieder nicht automatisch als physische Aktoren freigeben.",
   },
   {
     id: "diagnostics",
@@ -228,6 +263,6 @@ export function buildEquipmentClusters(
 export function equipmentClusterSummary(assignments: EquipmentClusterAssignment[]) {
   return assignments
     .filter((assignment) => assignment.selected)
-    .map((assignment) => `${assignment.label} -> ${assignment.network_label} (${assignment.devices} Teilnehmer)`)
+    .map((assignment) => `${assignment.label} -> ${assignment.network_label} / ${assignment.bus_name} (${assignment.devices} Teilnehmer)`)
     .join("; ");
 }

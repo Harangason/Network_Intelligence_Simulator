@@ -9,7 +9,6 @@ import {
   deleteEngineeringObject,
   deleteEngineeringRelation,
   getEngineeringSchema,
-  listEngineeringTools,
   listAllEngineeringObjects,
   listEngineeringProposals,
   listEngineeringRelations,
@@ -34,7 +33,6 @@ import type {
   EngineeringRelation,
   EngineeringResource,
   EngineeringSchema,
-  EngineeringToolDefinition,
   EngSignal,
 } from "@/lib/types";
 import { getWorkflow, setWorkflowContext } from "@/lib/workflow-api";
@@ -53,6 +51,9 @@ const RESOURCES: EngineeringResource[] = [
   "messages",
   "signals",
 ];
+const OBJECT_TYPE_RESOURCE: Partial<Record<string, EngineeringResource>> = Object.fromEntries(
+  RESOURCES.map((item) => [RESOURCE_TO_OBJECT_TYPE[item], item]),
+) as Partial<Record<string, EngineeringResource>>;
 const ENGINEERING_PAGE_SIZE = 50;
 
 const HARDWARE_PRESETS = [
@@ -432,8 +433,7 @@ export function EngineeringWorkbench() {
   const [columnFilters, setColumnFilters] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [toolRegistry, setToolRegistry] = useState<EngineeringToolDefinition[]>([]);
-  const [toolRegistryError, setToolRegistryError] = useState("");
+  const [deepLinkTarget, setDeepLinkTarget] = useState<{ id: string; edit: boolean } | null>(null);
 
   useEffect(() => {
     const openRequestedWizard = () => {
@@ -451,19 +451,17 @@ export function EngineeringWorkbench() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    listEngineeringTools()
-      .then((result) => {
-        if (cancelled) return;
-        setToolRegistry(result.items);
-        setToolRegistryError("");
-      })
-      .catch((err) => {
-        if (!cancelled) setToolRegistryError(err instanceof Error ? err.message : "Tool Registry nicht erreichbar.");
-      });
-    return () => {
-      cancelled = true;
-    };
+    const params = new URLSearchParams(window.location.search);
+    const requestedResource = params.get("resource");
+    const requestedType = params.get("type");
+    const nextResource = requestedResource && RESOURCES.includes(requestedResource as EngineeringResource)
+      ? requestedResource as EngineeringResource
+      : requestedType
+        ? OBJECT_TYPE_RESOURCE[requestedType]
+        : undefined;
+    if (nextResource) setResource(nextResource);
+    const objectId = params.get("object");
+    if (objectId) setDeepLinkTarget({ id: objectId, edit: params.get("edit") === "1" });
   }, []);
 
   useEffect(() => {
@@ -573,6 +571,14 @@ export function EngineeringWorkbench() {
     () => paginatedItems.find((item) => item.id === selectedId) ?? null,
     [paginatedItems, selectedId],
   );
+
+  useEffect(() => {
+    if (!deepLinkTarget) return;
+    const index = visibleItems.findIndex((item) => item.id === deepLinkTarget.id);
+    if (index < 0) return;
+    setPage(Math.floor(index / ENGINEERING_PAGE_SIZE) + 1);
+    setSelectedId(deepLinkTarget.id);
+  }, [deepLinkTarget, visibleItems]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -819,6 +825,7 @@ export function EngineeringWorkbench() {
                             resource={resource}
                             relations={relations}
                             schema={schema}
+                            initialEdit={deepLinkTarget?.id === item.id && deepLinkTarget.edit}
                             onChanged={refresh}
                             onDeleted={() => {
                               setSelectedId(null);
@@ -862,67 +869,9 @@ export function EngineeringWorkbench() {
         )}
         </>}
       </div>
-      <ToolRegistryPanel error={toolRegistryError} tools={toolRegistry} />
     </div>
     {showAgentWizard && <EngineeringAgentWizardDialog onClose={() => setShowAgentWizard(false)} />}
     </>
-  );
-}
-
-function ToolRegistryPanel({ tools, error }: { tools: EngineeringToolDefinition[]; error: string }) {
-  const categories = Array.from(new Set(tools.map((tool) => tool.category))).sort((left, right) => left.localeCompare(right, "de"));
-  const approvalCount = tools.filter((tool) => tool.requires_approval).length;
-  const formatCount = new Set(tools.flatMap((tool) => tool.supported_formats)).size;
-  const featuredTools = [...tools]
-    .sort((left, right) => Number(right.requires_approval) - Number(left.requires_approval) || left.category.localeCompare(right.category, "de"))
-    .slice(0, 8);
-
-  return (
-    <section className="panel tool-registry-panel" aria-label="Engineering Tool Registry">
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">Tool Registry</p>
-          <h2>Systemwerkzeuge</h2>
-        </div>
-        <div className="tool-registry-summary" aria-label="Tool-Registry-Zusammenfassung">
-          <span><b>{tools.length}</b> Tools</span>
-          <span><b>{approvalCount}</b> Review-Gates</span>
-          <span><b>{formatCount}</b> Formate</span>
-        </div>
-      </div>
-      {error ? (
-        <p className="muted">{error}</p>
-      ) : (
-        <>
-          <div className="tool-registry-categories" aria-label="Tool-Kategorien">
-            {categories.map((category) => (
-              <span key={category}>{category}</span>
-            ))}
-          </div>
-          <div className="tool-registry-list">
-            {featuredTools.map((tool) => (
-              <details key={tool.id}>
-                <summary>
-                  <span>
-                    <strong>{tool.name}</strong>
-                    <small>{tool.id} · {tool.workflow_step}</small>
-                  </span>
-                  <i>{tool.requires_approval ? "Freigabe" : tool.status}</i>
-                </summary>
-                <p>{tool.description}</p>
-                <dl>
-                  <div><dt>KI-Nutzung</dt><dd>{tool.ai_usage}</dd></div>
-                  <div><dt>Fähigkeiten</dt><dd>{tool.capabilities.join(", ")}</dd></div>
-                  {tool.supported_formats.length > 0 && (
-                    <div><dt>Formate</dt><dd>{tool.supported_formats.slice(0, 12).join(", ")}{tool.supported_formats.length > 12 ? " ..." : ""}</dd></div>
-                  )}
-                </dl>
-              </details>
-            ))}
-          </div>
-        </>
-      )}
-    </section>
   );
 }
 
@@ -1900,6 +1849,7 @@ function CreateForm({
 
 function DetailPanel({
   item,
+  initialEdit = false,
   referenceNames,
   resource,
   relations,
@@ -1908,6 +1858,7 @@ function DetailPanel({
   onDeleted,
 }: {
   item: EngineeringObject;
+  initialEdit?: boolean;
   referenceNames: Record<string, string>;
   resource: EngineeringResource;
   relations: EngineeringRelation[];
@@ -1921,9 +1872,9 @@ function DetailPanel({
   const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
-    setShowEdit(false);
+    setShowEdit(initialEdit);
     setNotice("");
-  }, [item.id]);
+  }, [initialEdit, item.id]);
 
   async function setLifecycle(next: string) {
     setBusy(true);
@@ -2137,6 +2088,13 @@ function signalParameterValue(value: unknown, unit?: string | null) {
   return `${String(value)}${suffix}`;
 }
 
+function signalRangeValue(minimum: unknown, maximum: unknown, unit?: string | null) {
+  if ((minimum === null || minimum === undefined || minimum === "") && (maximum === null || maximum === undefined || maximum === "")) {
+    return "—";
+  }
+  return `${signalParameterValue(minimum, unit)} bis ${signalParameterValue(maximum, unit)}`;
+}
+
 function SignalParameterOverview({
   item,
   referenceNames,
@@ -2161,8 +2119,7 @@ function SignalParameterOverview({
         <div><dt>Faktor</dt><dd>{signalParameterValue(item.factor)}</dd></div>
         <div><dt>Offset</dt><dd>{signalParameterValue(item.offset_value)}</dd></div>
         <div><dt>Einheit</dt><dd>{signalParameterValue(item.unit)}</dd></div>
-        <div><dt>Minimum</dt><dd>{signalParameterValue(item.min_value, item.unit)}</dd></div>
-        <div><dt>Maximum</dt><dd>{signalParameterValue(item.max_value, item.unit)}</dd></div>
+        <div><dt>Wertebereich</dt><dd>{signalRangeValue(item.min_value, item.max_value, item.unit)}</dd></div>
       </dl>
 
       <div className="section-title signal-parameter-heading">

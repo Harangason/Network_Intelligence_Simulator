@@ -14,6 +14,7 @@ export const runtime = "nodejs";
 const CACHE_NAMESPACE = "simulation-jobs";
 const MAX_JOB_BYTES = 1_000_000;
 const MAX_JOBS = 30;
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 
 function isSimulationJob(value: unknown): value is SimulationJob {
   if (!value || typeof value !== "object") return false;
@@ -43,7 +44,7 @@ export async function PUT(request: Request) {
   if (!isSimulationJob(payload) || !payload.id.startsWith("local-")) {
     return noStore({ error: "Ungueltiger lokaler Simulationslauf." }, { status: 400 });
   }
-  await writeProgramCache(CACHE_NAMESPACE, payload.id, payload, MAX_JOB_BYTES);
+  await writeProgramCache(CACHE_NAMESPACE, payload.id, payload, MAX_JOB_BYTES, CACHE_TTL_MS);
   await pruneProgramCache(CACHE_NAMESPACE, MAX_JOBS);
   return noStore({ ok: true, id: payload.id });
 }

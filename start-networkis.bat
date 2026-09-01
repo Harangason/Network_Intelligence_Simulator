@@ -6,6 +6,7 @@ set "COMPOSE_FILE=%ROOT%docker-compose.networkis.yml"
 set "DOCKER_DESKTOP=C:\Program Files\Docker\Docker\Docker Desktop.exe"
 set "FRONTEND_PORT=13500"
 set "BACKEND_PORT=15050"
+set "DOCKER_DIAG=%TEMP%\networkis-docker-info.log"
 
 where docker >nul 2>nul
 if errorlevel 1 (
@@ -13,7 +14,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-docker info >nul 2>nul
+docker info > "%DOCKER_DIAG%" 2>&1
 if errorlevel 1 (
   if exist "%DOCKER_DESKTOP%" (
     echo Docker Desktop wird gestartet...
@@ -25,12 +26,21 @@ if errorlevel 1 (
 
   echo Warte auf Docker Engine...
   for /l %%I in (1,1,60) do (
-    docker info >nul 2>nul
+    docker info > "%DOCKER_DIAG%" 2>&1
     if not errorlevel 1 goto docker_ready
     powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul
   )
 
   echo Docker Engine wurde nicht rechtzeitig bereit.
+  echo Letzte Docker-Diagnose:
+  type "%DOCKER_DIAG%"
+  findstr /i "dockerInference Inference" "%DOCKER_DIAG%" >nul 2>nul
+  if not errorlevel 1 (
+    echo.
+    echo Hinweis: Docker Desktop haengt wahrscheinlich am dockerInference-Listener.
+    echo Docker Desktop vollstaendig beenden, neu starten und die Inference-/AI-Komponente
+    echo in Docker Desktop reparieren oder deaktivieren.
+  )
   echo Bitte Docker Desktop einmal manuell starten und diesen Batch erneut ausfuehren.
   exit /b 1
 )

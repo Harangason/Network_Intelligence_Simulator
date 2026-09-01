@@ -6,6 +6,10 @@ from collections import defaultdict
 from math import ceil, log2
 from typing import Any
 
+from .semantic_intelligence import SemanticClassificationService
+
+_SEMANTIC_SERVICE: SemanticClassificationService | None = None
+
 
 def _number(value: Any) -> float | None:
     try:
@@ -27,6 +31,24 @@ def _as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
+def _semantic_service() -> SemanticClassificationService:
+    global _SEMANTIC_SERVICE
+    if _SEMANTIC_SERVICE is None:
+        _SEMANTIC_SERVICE = SemanticClassificationService()
+    return _SEMANTIC_SERVICE
+
+
+def _classified_semantic_type(signal: dict[str, Any]) -> str:
+    try:
+        proposal = _semantic_service().classify({**signal, "object_type": "Signal"})
+    except Exception:
+        return "UNKNOWN"
+    if proposal.get("decision_state") not in {"CONFIRMED", "HIGH_CONFIDENCE"}:
+        return "UNKNOWN"
+    semantic_type = _text(proposal.get("semantic_type")).upper().replace("-", "_").replace(" ", "_")
+    return semantic_type or "UNKNOWN"
+
+
 def _looks_like_state_signal(value: str) -> bool:
     normalized = value.lower().replace("_", " ").replace("-", " ")
     tokens = normalized.split()
@@ -40,7 +62,7 @@ def _severity(checks: list[dict[str, Any]]) -> str:
         return "ERROR"
     if any(item["severity"] == "OPEN" for item in checks):
         return "OPEN"
-    if checks:
+    if any(item["severity"] == "WARNING" for item in checks):
         return "WARNING"
     return "PASS"
 
@@ -71,7 +93,7 @@ def _semantic_type(signal: dict[str, Any]) -> str:
         return "STATE" if any(token in name.lower() for token in ("state", "status", "mode", "zustand")) else "ENUM"
     if _looks_like_state_signal(_text(signal.get("display_name") or signal.get("name"))):
         return "STATE"
-    return "UNKNOWN"
+    return _classified_semantic_type(signal)
 
 
 def _domain(signal: dict[str, Any]) -> dict[str, Any]:
@@ -201,7 +223,12 @@ def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None
         if required > int(length):
             add("SIGNAL_TOO_NARROW", "ERROR", f"{int(length)} Bit reichen nicht; mindestens {required} Bit sind erforderlich.")
         elif required < int(length):
-            add("SIGNAL_OVERSIZED", "WARNING", f"Rechnerisch {required} statt {int(length)} Bit ausreichend; fachliche Reserven pruefen.")
+            severity = "INFO" if semantic_type in {"ENUM", "STATE", "BOOLEAN", "FLAG"} else "WARNING"
+            text = (
+                f"Reservehinweis: {int(length)} Bit belegt, rechnerisch {required} Bit ausreichend. "
+                "Nur per Proposal verkleinern, wenn Reserven fachlich bestaetigt sind."
+            )
+            add("SIGNAL_OVERSIZED", severity, text)
 
     return {
         "signal_id": _text(signal.get("id")),

@@ -96,6 +96,19 @@ vollständige Engineering-Pfad über `SIMULATOR_ENGINEERING_API_URL` gesetzt
 werden. Eine generische `ENGINEERING_API_URL` wird aus Kollisionsschutz nur
 übernommen, wenn sie bereits `/api/engineering` enthält.
 
+Vor dem Webstart kann der lokale Start-Doctor ohne Nebenwirkungen ausgeführt
+werden:
+
+```powershell
+backend\.venv\Scripts\python.exe generate_realistic_communication_tool.py doctor
+```
+
+Der Doctor prüft Projektpfad, feste Ports, lokale Next.js-Abhängigkeiten,
+Docker Engine und den Engineering-Datenbank-Port. Erkennt er den bekannten
+Docker-Desktop-Fehler rund um den `dockerInference`-Listener, meldet er diesen
+gezielt, statt die Anwendung nur teilweise zu starten. Die Oberfläche sollte
+erst geöffnet werden, wenn `/api/engineering/health` bereit ist.
+
 Beide Ports werden exklusiv verwendet. Ist `13500` oder `15050` bereits durch
 ein anderes Werkzeug belegt, bricht der Launcher mit einer eindeutigen Meldung
 ab, statt unbemerkt einen fremden Dienst zu verwenden oder auf einen anderen

@@ -22,6 +22,7 @@ from model_based_simulation import (
     ModelBasedSimulationEngine,
     SignalBehaviorEngine,
     SignalDefinition,
+    build_model_trace,
     demo_scenarios,
 )
 from universal_trace import generate_universal_events
@@ -298,6 +299,26 @@ def test_live_event_rows_have_required_analysis_context(tmp_path: Path) -> None:
     assert required <= events[0].keys()
     assert any(event["event_type"] == "FAULT_START" for event in events)
     assert any(event["event_type"] == "FAULT_END" for event in events)
+
+
+def test_model_trace_limits_stored_samples_without_losing_totals(tmp_path: Path) -> None:
+    config = simulation_config(tmp_path)
+    config["duration_s"] = 0.2
+    config["model_trace_frame_limit"] = 3
+    config["model_trace_signal_point_limit"] = 2
+    profile = normalize_hardware_config(config)
+    _, events = generate_universal_events(config, profile, start_utc=1_700_000_000)
+
+    trace = build_model_trace(events, config)
+
+    assert len(events) > 3
+    assert trace["timing_summary"]["frame_count"] == len(events)
+    assert trace["timing_summary"]["stored_frame_count"] == 3
+    assert len(trace["frames"]) == 3
+    assert trace["signal_summary"]["sample_count"] == len(events)
+    assert trace["signal_summary"]["stored_sample_count"] == 2
+    assert sum(len(series["points"]) for series in trace["signals"]) == 2
+    assert trace["storage"]["truncated"] is True
 
 
 def test_fault_catalog_describes_handlers_constraints_and_targets() -> None:

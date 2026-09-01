@@ -79,6 +79,33 @@ def test_job_registry_persists_compact_results(tmp_path: Path) -> None:
     assert "registry_truncated" in text
 
 
+def test_job_registry_falls_back_when_primary_registry_is_locked(monkeypatch, tmp_path: Path) -> None:
+    primary = tmp_path / "primary" / "registry.json"
+    fallback = tmp_path / "fallback" / "registry.json"
+    original_write_text = Path.write_text
+
+    def write_text_with_locked_primary(self: Path, *args, **kwargs):
+        if self == primary.with_suffix(".tmp"):
+            raise PermissionError("locked")
+        return original_write_text(self, *args, **kwargs)
+
+    monkeypatch.setattr("backend.app.job_service._fallback_registry_path", lambda: fallback)
+    monkeypatch.setattr(Path, "write_text", write_text_with_locked_primary)
+    service = JobService(synchronous=True, registry_path=primary, persist=True)
+    service._jobs["job"] = {
+        "id": "job",
+        "status": "completed",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+    }
+
+    with service._lock:
+        service._persist_locked()
+
+    assert service.registry_path == fallback
+    assert fallback.is_file()
+
+
 def test_job_list_returns_compact_results(tmp_path: Path) -> None:
     service = JobService(synchronous=True, persist=False)
     service._jobs["large"] = {

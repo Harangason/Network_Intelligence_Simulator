@@ -18,6 +18,7 @@ const MAX_MESSAGES = 60;
 const MAX_CACHE_BYTES = 1_500_000;
 const MAX_REQUEST_BYTES = 5_000_000;
 const MAX_PROJECTS = 100;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CachedHistory = {
   messages: UIMessage[];
@@ -108,6 +109,7 @@ export async function PUT(request: Request) {
     projectId,
     { messages },
     MAX_CACHE_BYTES + 2048,
+    CACHE_TTL_MS,
   );
   await pruneProgramCache(CACHE_NAMESPACE, MAX_PROJECTS);
   return noStore({ ok: true, messageCount: messages.length, updatedAt: entry.updatedAt });

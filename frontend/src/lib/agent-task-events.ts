@@ -262,11 +262,14 @@ export function engineeringAgentWorkflowProgress(
   const signature = requiredSteps
     .map((step) => `${step}:${statuses[step] ?? "EMPTY"}:${Number(versions[step] ?? 0)}`)
     .join("|");
-  const blockedStep = requiredSteps.find((step) => statuses[step] === "ERROR");
+  const erroredStep = requiredSteps.find((step) => statuses[step] === "ERROR");
   const currentStep = requiredSteps.find((step) => !COMPLETE_WORKFLOW_STATUSES.has(statuses[step] ?? "EMPTY"));
+  const reviewBlockedStep = currentStep === "engineering_model" || currentStep === "routing"
+    ? currentStep
+    : undefined;
   return {
     complete: requiredSteps.length > 0 && !currentStep,
-    blockedStep,
+    blockedStep: erroredStep ?? reviewBlockedStep,
     currentStep,
     signature,
   };

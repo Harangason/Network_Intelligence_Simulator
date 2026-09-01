@@ -25,6 +25,7 @@ ETHERNET_TECHNOLOGIES = {
     "modbus_tcp", "arinc664_afdx", "etb", "bacnet_ip", "iec61850",
     "someip", "doip", "dds_rtps", "ipv4", "ipv6", "udp", "tcp",
 }
+DEFAULT_GOLDEN_TRACE_EVENT_LIMIT = 10_000
 
 
 def _timestamp_slug() -> str:
@@ -211,6 +212,34 @@ def _write_config_template(path: Path) -> Path:
     return path
 
 
+def _int_option(config: dict[str, Any], key: str, default: int) -> int:
+    try:
+        return max(0, int(config.get(key) if config.get(key) is not None else default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _model_trace_manifest_reference(model_trace: dict[str, Any], path: Path) -> dict[str, Any]:
+    return {
+        "schema": model_trace.get("schema"),
+        "scenario": model_trace.get("scenario"),
+        "trace_file": str(path),
+        "comparison": model_trace.get("comparison"),
+        "signal_summary": model_trace.get("signal_summary"),
+        "fault_summary": model_trace.get("fault_summary"),
+        "timing_summary": model_trace.get("timing_summary"),
+        "network_load_summary": model_trace.get("network_load_summary"),
+        "first_anomaly": model_trace.get("first_anomaly"),
+        "affected_routes": model_trace.get("affected_routes"),
+        "affected_signals": model_trace.get("affected_signals"),
+        "warnings": model_trace.get("warnings"),
+        "errors": model_trace.get("errors"),
+        "storage": model_trace.get("storage"),
+        "model_labels": model_trace.get("model_labels"),
+        "clock": model_trace.get("clock"),
+    }
+
+
 def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
     if not isinstance(config, dict):
         raise TypeError("Simulation configuration must be a JSON object.")
@@ -226,6 +255,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     routes: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
     model_trace: dict[str, Any] = {}
+    model_trace_reference: dict[str, Any] = {}
 
     if not validate_only and validation["valid"]:
         routes, events = generate_universal_events(config, profile)
@@ -243,7 +273,9 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         written.append(model_trace_path)
         if any(event.get("signals") for event in events):
             golden_events = []
-            for event in events:
+            golden_limit = _int_option(config, "golden_trace_event_limit", DEFAULT_GOLDEN_TRACE_EVENT_LIMIT)
+            golden_source = events if golden_limit == 0 else events[:golden_limit]
+            for event in golden_source:
                 golden_signals = [
                     {**signal, "value": signal.get("golden_value"), "faults": []}
                     for signal in event.get("signals") or []
@@ -256,9 +288,12 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
                     "signal_value": golden_signals[0].get("value") if golden_signals else None,
                     "value": golden_signals[0].get("value") if golden_signals else None,
                 })
+            if golden_limit and len(events) > golden_limit:
+                warnings.append(f"Golden Trace wurde fuer interaktive Laufzeit auf {golden_limit} von {len(events)} Events begrenzt.")
             written.append(write_jsonl(out_dir / "traces" / "golden_trace.jsonl", golden_events))
             if model_trace.get("scenario", {}).get("mode") != "NORMAL":
                 written.append(write_jsonl(out_dir / "traces" / "fault_trace.jsonl", events))
+        model_trace_reference = _model_trace_manifest_reference(model_trace, model_trace_path)
 
         native_config = _native_configuration(config, profile, out_dir, formats)
         if native_config is not None:
@@ -287,7 +322,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "hardware_validation": validation,
         "technology_catalog": catalog_summary(registry),
         "trace": trace_summary(routes, events),
-        "model_simulation": model_trace,
+        "model_simulation": model_trace_reference,
     }
     manifest_path = out_dir / "generation_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, default=str), encoding="utf-8")

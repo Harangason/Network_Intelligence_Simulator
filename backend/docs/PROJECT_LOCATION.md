@@ -2,20 +2,15 @@
 
 ## Umzug
 
-Der Communication Simulator wurde am 27. August 2026 von
-
-```text
-%USERPROFILE%\PycharmProjects\My_first_Network_Simulator
-```
-
-nach
+Der Communication Simulator wurde am 27. August 2026 auf den kanonischen
+Arbeits- und Startpfad
 
 ```text
 I:\PycharmProjects\My_first_Network_Simulator
 ```
 
-verschoben. Der Pfad auf `I:` ist ab diesem Zeitpunkt der kanonische
-Arbeits- und Startpfad.
+verschoben. Frühere Benutzerprofil-Kopien sind nur noch Altstand und dürfen
+nicht als Start- oder Projektwurzel verwendet werden.
 
 ## Externe Laufzeitdaten
 

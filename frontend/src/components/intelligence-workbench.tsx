@@ -256,7 +256,7 @@ function IssueTable({ issues, proposals, onCreate }: { issues: IntelligenceIssue
   const [sort, setSort] = useState("severity");
   const [group, setGroup] = useState("none");
   const [page, setPage] = useState(0);
-  const [expanded, setExpanded] = useState("");
+  const [selectedIssue, setSelectedIssue] = useState<IntelligenceIssue | null>(null);
   const categories = useMemo(() => [...new Set(issues.map((item) => item.category))].sort(), [issues]);
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -277,9 +277,52 @@ function IssueTable({ issues, proposals, onCreate }: { issues: IntelligenceIssue
     <section className="intelligence-section full issue-table-section">
       <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><span>{filtered.length} von {issues.length}</span></div>
       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; return <Fragment key={rowKey}><tr><td><Status value={item.severity} /></td><td>{item.category}</td><td><strong>{item.object_id}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small></td><td>{item.problem}<small>{item.code}</small></td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><Link className="button secondary tiny" href={objectLink(item)}>{item.object_type === "RoutingEntry" ? "Open Route" : "Open Object"}</Link><Link className="button secondary tiny" href="/studio?mode=network">Open Network</Link><button className="button secondary tiny" onClick={() => setExpanded((current) => current === rowKey ? "" : rowKey)} type="button">Evidence</button><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>{expanded === rowKey && <tr className="issue-evidence-row"><td colSpan={8}><strong>Evidence & Provenance</strong><pre>{JSON.stringify({ evidence: item.evidence, affected_objects: item.affected_objects, cause: item.detected_cause }, null, 2)}</pre></td></tr>}</Fragment>; })}</tbody></table></div>
+      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; return <tr key={rowKey}><td><Status value={item.severity} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small></td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button><Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href="/studio?mode=network">Netz öffnen</Link><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
+      {selectedIssue && <IssueDetailDialog issue={selectedIssue} onClose={() => setSelectedIssue(null)} onCreate={onCreate} proposalExists={proposals.some((proposal) => proposal.problem === selectedIssue.problem)} />}
       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
     </section>
+  );
+}
+
+function IssueDetailDialog({ issue, onClose, onCreate, proposalExists }: { issue: IntelligenceIssue; onClose(): void; onCreate(item: IntelligenceRecommendation): Promise<void>; proposalExists: boolean }) {
+  const affected = issue.affected_objects.length ? issue.affected_objects : [issue.object_id];
+  return (
+    <div className="issue-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section aria-label={`Fehlerdetails ${issueObjectLabel(issue)}`} aria-modal="true" className="issue-detail-dialog" role="dialog">
+        <header>
+          <div>
+            <p className="eyebrow">Fehlerdetails</p>
+            <h2>{issue.problem}</h2>
+          </div>
+          <button aria-label="Dialog schließen" onClick={onClose} type="button">×</button>
+        </header>
+        <div className="issue-detail-body">
+          <div className="issue-detail-summary">
+            <Status value={issue.severity} />
+            <span>{issue.category}</span>
+            <code>{issue.code}</code>
+          </div>
+          <dl className="issue-detail-grid">
+            <div><dt>Objekt</dt><dd><strong>{issueObjectLabel(issue)}</strong><small>{engineeringObjectTypeLabel(issue.object_type)} · {issue.object_id}</small></dd></div>
+            <div><dt>Was bedeutet das?</dt><dd>{issue.problem}</dd></div>
+            <div><dt>Bewertungsquelle</dt><dd>Deterministische Intelligence-Regel <code>{issue.code}</code> auf Basis des aktuellen Engineering-Modells, Graph-Kontexts und der gespeicherten Evidence.</dd></div>
+            <div><dt>Erkannte Ursache</dt><dd>{issue.detected_cause}</dd></div>
+            <div><dt>Betroffen</dt><dd>{affected.slice(0, 12).join(", ")}{affected.length > 12 ? ` und ${affected.length - 12} weitere` : ""}</dd></div>
+            <div><dt>Empfehlung</dt><dd>{issue.recommendation}</dd></div>
+          </dl>
+          <section className="issue-detail-evidence">
+            <div><strong>Evidence & Provenance</strong><small>{issue.evidence.length} Eintrag{issue.evidence.length === 1 ? "" : "e"}</small></div>
+            <pre>{JSON.stringify({ evidence: issue.evidence, affected_objects: affected, cause: issue.detected_cause }, null, 2)}</pre>
+          </section>
+        </div>
+        <footer>
+          <Link className="button secondary" href={objectLink(issue)}>Zum Editor</Link>
+          <Link className="button secondary" href="/studio?mode=network">Netz öffnen</Link>
+          <button className="button secondary" onClick={() => askAgent(buildIssueAgentPrompt(issue))} type="button">Ask AI</button>
+          <button className="button primary" disabled={proposalExists} onClick={() => void onCreate(recommendationFromIssue(issue))} type="button">Create Proposal</button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
@@ -301,11 +344,32 @@ function Status({ value }: { value: string }) {
   return <span className={`intelligence-status status-${normalized}`}>{value}</span>;
 }
 
+const ISSUE_RESOURCE_BY_TYPE: Record<string, string> = {
+  HardwareNode: "hardware-nodes",
+  Function: "functions",
+  Interface: "interfaces",
+  Message: "messages",
+  Signal: "signals",
+};
+
+function issueObjectLabel(issue: IntelligenceIssue) {
+  const evidenceName = issue.evidence
+    .map((entry) => entry.name ?? entry.display_name ?? entry.object_name ?? entry.label)
+    .find((value) => typeof value === "string" && value.trim());
+  if (evidenceName) return String(evidenceName);
+  const problemName = issue.problem.match(/^([^:]{2,80}):/);
+  if (problemName) return problemName[1].trim();
+  if (issue.object_id === "project") return "Workflow / Modell";
+  return engineeringObjectTypeLabel(issue.object_type || "System");
+}
+
 function objectLink(issue: IntelligenceIssue) {
-  if (issue.object_type === "RoutingEntry" || issue.category === "Routing") return `/studio/routing?route=${encodeURIComponent(issue.object_id)}`;
+  if (issue.object_type === "RoutingEntry" || issue.category === "Routing") return `/studio/routing?route=${encodeURIComponent(issue.object_id)}&edit=1`;
   if (issue.object_type === "Network" || issue.category === "Network" || issue.category === "Graph") return "/studio?mode=network";
   if (issue.category.includes("Capacity") || issue.category === "Timing") return "/studio/capacity";
-  return `/studio/engineering?object=${encodeURIComponent(issue.object_id)}`;
+  const resource = ISSUE_RESOURCE_BY_TYPE[issue.object_type];
+  const resourceParam = resource ? `resource=${encodeURIComponent(resource)}&type=${encodeURIComponent(issue.object_type)}&` : "";
+  return `/studio/engineering?${resourceParam}object=${encodeURIComponent(issue.object_id)}&edit=1`;
 }
 
 function recommendationFromIssue(issue: IntelligenceIssue): IntelligenceRecommendation {
@@ -338,7 +402,7 @@ function buildIssueAgentPrompt(issue: IntelligenceIssue) {
     `Befund-Code: ${issue.code}`,
     `Severity: ${issue.severity}`,
     `Kategorie: ${issue.category}`,
-    `Objekt: ${issue.object_type} ${issue.object_id}`,
+    `Objekt: ${issue.object_type} ${issueObjectLabel(issue)} (${issue.object_id})`,
     `Problem: ${issue.problem}`,
     `Erkannte Ursache: ${issue.detected_cause}`,
     `Empfehlung der deterministischen Analyse: ${issue.recommendation}`,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import socket
+import sys
 from io import BytesIO
 from pathlib import Path
 
@@ -99,6 +100,16 @@ def test_readiness_check_accepts_its_own_backend(
     )
 
 
+def test_launcher_command_timeout_kills_hung_child_process() -> None:
+    result = LAUNCHER._run_command(
+        [sys.executable, "-c", "import time; time.sleep(10)"],
+        timeout_s=0.2,
+    )
+
+    assert result.returncode == 124
+    assert "Prozessbaum wurde beendet" in result.stdout
+
+
 def test_backend_server_owns_its_port_exclusively() -> None:
     server = ExclusiveThreadedWSGIServer("127.0.0.1", 0, create_app(testing=True))
     competing_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,6 +139,46 @@ def test_frontend_dev_command_uses_local_next_cli(
         "-p",
         str(LAUNCHER.FRONTEND_PORT),
     ]
+
+
+def test_frontend_dev_server_uses_isolated_next_dist_dir(tmp_path: Path) -> None:
+    frontend = tmp_path / "frontend"
+    environment: dict[str, str] = {}
+
+    dist_dir = LAUNCHER._prepare_frontend_dist_dir(frontend, environment, "abcdef123456")
+
+    assert dist_dir == ".next-networkis"
+    assert environment["NETWORKIS_NEXT_DIST_DIR"] == ".next-networkis"
+
+
+def test_frontend_dev_server_reports_unwritable_project_dist_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    frontend = tmp_path / "frontend"
+    environment: dict[str, str] = {}
+
+    monkeypatch.setattr(LAUNCHER, "_can_write_file", lambda _path: False)
+
+    with pytest.raises(RuntimeError, match="relativen beschreibbaren Build-Ordner"):
+        LAUNCHER._prepare_frontend_dist_dir(frontend, environment, "abcdef123456")
+
+    assert "NETWORKIS_NEXT_DIST_DIR" not in environment
+
+
+def test_backend_runtime_root_falls_back_when_project_runtime_is_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "_can_write_file", lambda _path: False)
+    monkeypatch.setattr(LAUNCHER.tempfile, "gettempdir", lambda: str(tmp_path / "temp"))
+    environment: dict[str, str] = {}
+
+    fallback = LAUNCHER._prepare_backend_runtime_root(environment, "abcdef123456")
+
+    assert fallback == tmp_path / "temp" / "networkis-runtime" / "abcdef12"
+    assert environment["SIMULATOR_RUNTIME_ROOT"] == str(fallback)
 
 
 def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
@@ -327,6 +378,80 @@ def test_service_restart_limit_rejects_invalid_values() -> None:
         LAUNCHER._service_restart_limit({"NETWORKIS_SERVICE_RESTARTS": "many"})
     with pytest.raises(RuntimeError, match="nicht negativ"):
         LAUNCHER._service_restart_limit({"NETWORKIS_SERVICE_RESTARTS": "-1"})
+
+
+def test_docker_inference_failure_is_actionable() -> None:
+    probe = LAUNCHER.DockerProbe(
+        False,
+        "docker",
+        "starting services: initializing Inference manager: listening on dockerInference: remove dockerInference: file is locked",
+    )
+
+    message = LAUNCHER._docker_unavailable_message(probe)
+
+    assert "Engineering-Datenbank" in message
+    assert "dockerInference" in message
+    assert "Inference-Manager" in message
+    assert "repariert oder deaktiviert" in message
+
+
+def test_engineering_database_start_reports_docker_inference_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    compose_file = tmp_path / "docker-compose.engineering-db.yml"
+    compose_file.write_text("services: {}\n", encoding="utf-8")
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(
+        LAUNCHER,
+        "_docker_probe",
+        lambda *_args, **_kwargs: LAUNCHER.DockerProbe(
+            False,
+            "docker",
+            "starting services: initializing Inference manager: listening on dockerInference: remove dockerInference: file is locked",
+        ),
+    )
+    monkeypatch.setattr(
+        LAUNCHER,
+        "_try_start_docker_desktop",
+        lambda: pytest.fail("Known actionable Docker failures must not enter auto-start."),
+    )
+    monkeypatch.setattr(
+        LAUNCHER,
+        "_wait_for_docker",
+        lambda *_args, **_kwargs: LAUNCHER.DockerProbe(
+            False,
+            "docker",
+            "failed to connect to dockerDesktopLinuxEngine",
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="dockerInference"):
+        LAUNCHER._ensure_engineering_database({"DATABASE_URL": LAUNCHER.DEFAULT_DATABASE_URL})
+
+
+def test_dependency_doctor_surfaces_docker_failure_without_starting_services(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    frontend_next = tmp_path / "frontend" / "node_modules" / "next" / "dist" / "bin" / "next"
+    frontend_next.parent.mkdir(parents=True)
+    frontend_next.write_text("", encoding="utf-8")
+    monkeypatch.setattr(LAUNCHER, "ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "CANONICAL_ROOT", tmp_path)
+    monkeypatch.setattr(LAUNCHER, "_tcp_endpoint_available", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(
+        LAUNCHER,
+        "_docker_probe",
+        lambda *_args, **_kwargs: LAUNCHER.DockerProbe(False, "docker", "permission denied while trying to connect to docker_engine"),
+    )
+
+    checks = LAUNCHER._run_dependency_doctor({"DATABASE_URL": LAUNCHER.DEFAULT_DATABASE_URL})
+
+    docker = next(check for check in checks if check.name == "Docker Engine")
+    assert not docker.ok
+    assert "Docker Engine" in docker.hint
 
 
 def test_engineering_database_url_accepts_sqlalchemy_psycopg_scheme(

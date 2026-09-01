@@ -11,7 +11,7 @@ export type InspectionSources = {
   signals: InspectionObject[];
   routes: InspectionObject[];
 };
-export type SignalCheck = { code: string; severity: "ERROR" | "WARNING" | "OPEN"; text: string };
+export type SignalCheck = { code: string; severity: "ERROR" | "WARNING" | "OPEN" | "INFO"; text: string };
 export type SignalInspection = {
   id: string; name: string; messageId: string; messageName: string;
   bits: number | null; requiredBits: number | null; start: number | null;
@@ -37,7 +37,7 @@ function displaySignalName(value: string): string {
 function checkStatus(checks: SignalCheck[]): SignalInspection["status"] {
   return checks.some((item) => item.severity === "ERROR") ? "ERROR"
     : checks.some((item) => item.severity === "OPEN") ? "OPEN"
-    : checks.length ? "WARNING" : "PASS";
+    : checks.some((item) => item.severity === "WARNING") ? "WARNING" : "PASS";
 }
 function hasMultiplexing(signal: InspectionObject): boolean {
   return [signal, record(signal.configuration), record(signal.protocol_bindings)].some((source) =>
@@ -132,7 +132,8 @@ export function inspectSignal(signal: InspectionObject, message?: InspectionObje
   if (validBits && requiredBits !== null && bits !== null && requiredBits > bits) {
     add("TOO_NARROW", "ERROR", `${bits} Bit reichen nicht; mindestens ${requiredBits} Bit sind erforderlich.`);
   } else if (validBits && requiredBits !== null && bits !== null && requiredBits < bits && !checks.some((check) => check.severity !== "WARNING")) {
-    add("OVERSIZED", "WARNING", `Rechnerisch ${requiredBits} statt ${bits} Bit ausreichend (${semanticType}). ${bitRequirement.reason} Freigegebene Objekte nur per Proposal ändern.`);
+    const severity = ["ENUM", "STATE", "BOOLEAN", "FLAG"].includes(semanticType) ? "INFO" : "WARNING";
+    add("OVERSIZED", severity, `Reservehinweis: ${bits} Bit belegt, rechnerisch ${requiredBits} Bit ausreichend (${semanticType}). Nur per Proposal verkleinern, wenn Reserven fachlich bestätigt sind.`);
   }
   return { id: signal.id, name: displaySignalName(text(signal.display_name) || text(signal.name) || signal.id),
     messageId: text(signal.message_id), messageName: text(message?.name) || text(signal.message_id), bits, requiredBits, start,

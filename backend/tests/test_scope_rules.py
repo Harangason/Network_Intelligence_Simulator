@@ -2,6 +2,7 @@ import pytest
 
 from backend.engineering.models import EngineeringValidationError
 from backend.engineering.scope_rules import (
+    communication_system_allows_interface,
     hardware_scope_category,
     is_scope_placeholder_hardware,
     normalize_engineering_scope_rules,
@@ -48,6 +49,20 @@ def test_scope_rules_normalize_exact_system_limits():
         "hardware_counts": {"sensors": 100, "ecus": 50, "gateways": 1},
         "communication_systems": ["LIN", "CAN_FD", "Ethernet"],
     }
+
+
+def test_scope_rules_accept_someip_as_ethernet_carried_protocol():
+    rules = normalize_engineering_scope_rules(
+        {
+            "hardware_counts": {"sensors": 1, "ecus": 1, "gateways": 1},
+            "communication_systems": ["SOMEIP", "SOME/IP", "Ethernet"],
+        }
+    )
+
+    assert rules["communication_systems"] == ["SOME_IP", "Ethernet"]
+    assert communication_system_allows_interface(rules["communication_systems"], "Ethernet")
+    assert communication_system_allows_interface(["SOME_IP"], "Ethernet")
+    assert not communication_system_allows_interface(["SOME_IP"], "CAN_FD")
 
 
 @pytest.mark.parametrize(
@@ -104,6 +119,21 @@ def test_interface_creation_must_use_allowed_communication_system():
             {"interface_type": "FlexRay"},
             "project-a",
         )
+
+
+def test_someip_scope_allows_ethernet_interface_creation():
+    rules = {
+        "hardware_counts": {"sensors": 100, "ecus": 50, "gateways": 1},
+        "communication_systems": ["SOMEIP"],
+    }
+    connection = ScopeRuleConnection(rules)
+
+    _enforce_engineering_scope_rules(
+        connection,
+        "Interface",
+        {"interface_type": "Ethernet"},
+        "project-a",
+    )
 
 
 def test_actuator_limit_is_enforced_without_changing_legacy_projects():

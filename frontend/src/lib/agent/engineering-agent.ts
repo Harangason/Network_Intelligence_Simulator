@@ -8,9 +8,11 @@ import {
   currentAgentRequestText,
   setCurrentAgentRequestText,
 } from "@/lib/agent/request-context";
+import { appendAgentDiagnostic } from "@/lib/agent/agent-diagnostics-log";
 import { agentLearningContext } from "@/lib/agent/feedback-store";
 import {
   extractEngineeringSpecification,
+  isEngineeringAnalysisWorkRequest,
   isEngineeringReviewRequest,
   isStructuredEngineeringSpecification,
 } from "@/lib/agent/engineering-specification";
@@ -224,6 +226,10 @@ const WORKFLOW_TARGET_ALIASES: Record<string, string> = {
   simulation: "simulation",
   simulieren: "simulation",
   analyse: "results_analysis",
+  analysiere: "results_analysis",
+  analysieren: "results_analysis",
+  untersuche: "data_science_intelligence",
+  diagnose: "data_science_intelligence",
   results: "results_analysis",
   ende: "data_science_intelligence",
   endzustand: "data_science_intelligence",
@@ -405,6 +411,18 @@ function auditAgent(message: string, details: Record<string, unknown> = {}) {
     .map(([key, value]) => `${key}=${String(value)}`)
     .join(" ");
   console.info(`[NetworkIS Agent] ${message}${suffix ? ` ${suffix}` : ""}`);
+  void appendAgentDiagnostic("agent", {
+    projectId: currentAgentProjectId(),
+    runId: details.runId ?? details.callId,
+    step: details.step ?? details.tool,
+    event: message,
+    details: {
+      ...details,
+      request: currentAgentRequestText().replace(/\s+/g, " ").trim().slice(0, 1200),
+    },
+  }).catch((error) => {
+    console.warn("[NetworkIS Agent] diagnostic log failed", error);
+  });
 }
 
 const proposalQueues = new Map<string, Promise<void>>();
@@ -579,7 +597,8 @@ const CANONICAL_DEVICE_TYPES = new Set([
 
 const CANONICAL_INTERFACE_TYPES = new Set([
   "CAN", "CAN_FD", "LIN", "FlexRay", "Ethernet", "EtherCAT", "ProfiNET", "ModbusTCP",
-  "ModbusRTU", "RS232", "RS485", "SPI", "I2C", "USB", "MQTT", "OPCUA", "Other",
+  "ModbusRTU", "RS232", "RS485", "SPI", "I2C", "USB", "PCIe", "MQTT", "OPCUA", "ARINC",
+  "MIL_STD_1553", "Other",
 ]);
 
 function canonicalDeviceType(value: string | undefined) {
@@ -601,12 +620,16 @@ function canonicalInterfaceType(value: string | undefined) {
   const normalized = candidate.toLowerCase().replace(/[^a-z0-9]+/g, "");
   if (normalized.includes("canfd") || normalized.includes("canxl")) return "CAN_FD";
   if (normalized === "can" || normalized.includes("controllerareanetwork")) return "CAN";
+  if (normalized.includes("someip")) return "Ethernet";
   if (normalized.includes("automotiveethernet") || normalized === "ethernet") return "Ethernet";
   if (normalized.includes("ethercat")) return "EtherCAT";
   if (normalized.includes("profinet")) return "ProfiNET";
   if (normalized.includes("modbustcp")) return "ModbusTCP";
   if (normalized.includes("modbusrtu")) return "ModbusRTU";
   if (normalized.includes("flexray")) return "FlexRay";
+  if (normalized.includes("arinc")) return "ARINC";
+  if (normalized.includes("milstd1553")) return "MIL_STD_1553";
+  if (normalized.includes("pcie")) return "PCIe";
   if (normalized === "lin") return "LIN";
   if (normalized.includes("opcua")) return "OPCUA";
   if (normalized.includes("mqtt")) return "MQTT";
@@ -2974,13 +2997,13 @@ const CONFIRMATION_PATTERN = /\b(allow|bestaetigt|bestätigt|freigeben|uebernehm
 const RECOVERY_PATTERN =
   /\b(warum[\s\S]{0,40}(gestoppt|abgebrochen|aufgehoert|aufgehört)|gestoppt|abgebrochen|mach weiter|weiterarbeiten|fortsetzen|setze[\s\S]{0,50}fort|wieder aufnehmen|erneut ausfuehren|erneut ausführen)\b/i;
 const MUTATION_PATTERN =
-  /\b(erzeuge|generiere|erstelle|anlegen|aufbauen|ausfuehren|ausführen|starte|berechne|validiere|simuliere|optimier|reparier|korrigier|ergaenz\w*|ergänz\w*|verbinde|verknuepfe|verknüpfe|ordne|zuordnen|registriere)\b/i;
+  /\b(erzeuge|generiere|erstelle|erstell\w*|lege|leg|anlegen|aufbauen|ausfuehren|ausführen|starte|berechne|validiere|simuliere|analysiere|analysieren|untersuche|diagnose|optimier|reparier|korrigier|ergaenz\w*|ergänz\w*|verbinde|verknuepfe|verknüpfe|ordne|zuordnen|registriere)\b/i;
 const FULL_ENGINEERING_CHAIN_PATTERN =
   /(hardwarenodes?[\s\S]*functions?[\s\S]*interfaces?[\s\S]*messages?[\s\S]*signals?)|(hardware[\s\S]*funktion[\s\S]*interface[\s\S]*(nachricht|message)[\s\S]*(signal))|(vollstaendige|vollständige|komplette)[\s\S]*?(kette|modell)|(bis einschliesslich signale|bis einschließlich signale)/i;
 const RELATION_REQUEST_PATTERN =
   /\b(relation|has_interface|has_function|contains_signal|connected_to|communicates_with|verbinde|verknuepfe|verknüpfe|zuordnen)\b/i;
 const PROJECT_CONTEXT_PATTERN =
-  /\b(aktuell|dies(?:e|er|es|em|en)|hier|mein(?:e|er|es|em|en)?|unser(?:e|er|es|em|en)?|projekt|workflow|befund|issue|proposal|graph|evidence)\b/i;
+  /\b(aktuell|dies(?:e|er|es|em|en)|hier|mein(?:e|er|es|em|en)?|unser(?:e|er|es|em|en)?|projekt|workflow|befund|issue|proposal|graph|evidence|hardware|knoten|konten|ecu|gateway|sensor|aktor|kamera|funktion|schnittstelle|interface|message|nachricht|signal)\b/i;
 const PROJECT_QUERY_PATTERN =
   /\b(zeige|liste|öffne|oeffne|finde|suche|welche|wie\s+(?:viele|hoch))\b[\s\S]{0,100}\b(modell|hardware|knoten|ecu|gateway|interface|schnittstelle|message|nachricht|signal|route|routing|netzwerk|buslast|capacity|timing|validation|simulation|ergebnis)\b/i;
 
@@ -3125,6 +3148,7 @@ export const engineeringAgent = new ToolLoopAgent({
     const requestBasis = continuation ? request.previousTask : request.latest;
     setCurrentAgentRequestText(requestBasis);
     const reviewRequested = isEngineeringReviewRequest(requestBasis);
+    const analysisWorkRequested = isEngineeringAnalysisWorkRequest(requestBasis);
     if (reviewRequested) {
       const model = demandModelForRequest(requestBasis, false, false);
       const snapshot = await inspectIntelligenceAssessment().catch(() => null);
@@ -3145,7 +3169,7 @@ export const engineeringAgent = new ToolLoopAgent({
       };
     }
     const structuredSpecification = isStructuredEngineeringSpecification(requestBasis);
-    const projectContextNeeded = structuredSpecification || needsProjectContext(requestBasis);
+    const projectContextNeeded = structuredSpecification || analysisWorkRequested || needsProjectContext(requestBasis);
     const target = inferWorkflowTarget(requestBasis);
     const workflowSteps = workflowStepIdsUntil(target);
     const targetNeedsRouting = projectContextNeeded && target !== "engineering_model" && workflowSteps.includes("engineering_model");
@@ -3176,8 +3200,8 @@ export const engineeringAgent = new ToolLoopAgent({
     const relationLookupCalls = calledTools.filter((toolName) => toolName === "listEngineeringObjects").length;
     const relationProposalCalls = calledTools.filter((toolName) => toolName === "proposeEngineeringRelation").length;
     const specificationCalls = calledTools.filter((toolName) => toolName === "createEngineeringModelFromSpecification").length;
-    const resumedMutation = isActionableRequest(requestBasis) || fullEngineeringChainRequested || structuredSpecification;
-    const actionable = isActionableRequest(request.latest) || fullEngineeringChainRequested || structuredSpecification || recovery;
+    const resumedMutation = isActionableRequest(requestBasis) || fullEngineeringChainRequested || structuredSpecification || analysisWorkRequested;
+    const actionable = isActionableRequest(request.latest) || fullEngineeringChainRequested || structuredSpecification || analysisWorkRequested || recovery;
     const routingPackageCalls = calledTools.filter((toolName) => toolName === "createRoutableEngineeringPair").length;
     const routingPackageCompleted = routingPackageCalls > 0;
     const routingProposalInspected = calledTools.includes("inspect_routing_proposals");
@@ -3274,6 +3298,7 @@ export const engineeringAgent = new ToolLoopAgent({
       projectContext: projectContextNeeded,
       learnedExamples: Boolean(learningContext),
       hierarchy: hierarchy ? JSON.stringify(hierarchy.counts) : undefined,
+      analysisWorkRequested,
     });
 
     return {
@@ -3331,10 +3356,17 @@ selected_signal und selected_simulation. Veraltete Snapshots duerfen analysiert,
 aber nicht als aktuell oder simulationsbereit bezeichnet werden.
 
 Regeln:
-- Bei Review-, Bewertungs- und Diagnoseauftraegen sind genannte Geraete und
-  Evidence keine Erzeugungsauftraege. Bewerte den vorhandenen Zustand, lies
-  aktuelle Intelligence-Daten und erstelle hoechstens einen getrennten
-  OptimizationProposal. Veraendere weder Modell, Routing noch Freigaben.
+- Bei reinen Review- oder Bewertungsfragen wie "bewerte" oder "pruefe" sind
+  genannte Geraete und Evidence keine Erzeugungsauftraege. Bewerte den
+  vorhandenen Zustand, lies aktuelle Intelligence-Daten und erstelle hoechstens
+  einen getrennten OptimizationProposal. Veraendere weder Modell, Routing noch
+  Freigaben.
+- Bei Analyseauftraegen wie "analysiere", "diagnose" oder "untersuche" liest du
+  zuerst den aktuellen Simulatorzustand, arbeitest dann aber an der Loesung:
+  nutze die passenden Tools, erzeuge umsetzbare Vorschlaege oder registriere
+  valide Engineering-Ergebnisse. Eine Analyse endet nicht bei einer plausiblen
+  Antwort, wenn ein konkreter Modell-, Routing-, Parameter- oder Workflow-Fix
+  ableitbar ist.
 - Arbeite zielorientiert: Wenn der Nutzer einen Zielzustand nennt, fuehre alle
   dafuer noetigen Tool-Schritte selbststaendig aus, bis dieser Zielzustand
   erreicht ist, ein Tool-Fehler blockiert oder eine fachliche Entscheidung fehlt.
@@ -3376,6 +3408,12 @@ Regeln:
 - Wenn der Nutzer ein neues Objekt oder eine neue Relation möchte, nutze die
   Engineering-Tools. Sie speichern zuerst ein AIProposal als Auditspur,
   validieren es und registrieren valide Ergebnisse sofort im kanonischen Modell.
+- Wenn der Nutzer nach einem Vorschlag mit "passt", "das passt",
+  "jetzt uebernehmen", "übernehmen", "anwenden" oder aehnlich bestaetigt, gilt
+  dies als Auftrag zur Umsetzung im aktuellen Projekt. Lies den letzten
+  Vorschlag und den aktuellen Modellzustand, nutze echte Simulator-Tools fuer
+  die Uebernahme und pruefe danach erneut. Starte keinen neuen Task und gib
+  keine reine Zustimmung aus.
 - Gib niemals erfundene externe URLs, API-Tokens, Authentifizierungsdaten oder
   Python-/requests-/curl-Beispielcode als Ersatz fuer einen Simulator-Toolaufruf
   aus. example.com, YOUR_API_TOKEN und vergleichbare Platzhalter sind in einem
@@ -3429,6 +3467,11 @@ Regeln:
 - Halte die sichtbare Antwort kompakt. Pro Objekt genuegt eine Statuszeile:
   "Objektname · gefunden · modelliert · registriert". Wiederhole weder
   Tool-Parameter noch lange Objektbeschreibungen oder interne Statusdaten.
+- Gib Rohdatenfelder wie configuration, data, quality, protocol_bindings,
+  config, Daten, Kommunikation, Qualitaet oder Protokoll-Bindungen nicht als
+  normale Antwort aus. Wenn solche Details wirklich relevant sind, fasse sie in
+  Klartext zusammen und verweise knapp darauf, dass technische Details im
+  Tool-/Detailbereich einsehbar bleiben.
 - Human Review bleibt fuer OptimizationProposals verbindlich. Engineering-
   Objekt-Proposals sind dagegen Auditspuren und werden bei valider Struktur
   automatisch registriert.

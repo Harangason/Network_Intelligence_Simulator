@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   cancelSimulation,
   createSimulation,
   createSimulationFaultProposals,
+  getCatalog,
   listSimulationFaultProposals,
   reviewSimulationFaultProposal,
   saveSimulationScenario,
   type FaultProposal,
 } from "@/lib/api";
+import {
+  defaultSimulationFormats,
+  describeSimulationFormat,
+  groupSimulationFormats,
+  mergeSimulationFormats,
+  simulationFormatDefinitions,
+} from "@/lib/simulation-formats";
 import { topologyToConfig, type NetworkTopology } from "@/lib/topology";
 import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/lib/workflow-api";
-import type { ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
+import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
@@ -39,6 +47,7 @@ const FAULT_TYPES = {
 } as const;
 
 export function ModelSimulationRunner() {
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
   const [job, setJob] = useState<SimulationJob | null>(null);
@@ -48,7 +57,8 @@ export function ModelSimulationRunner() {
   const [duration, setDuration] = useState(2);
   const [speed, setSpeed] = useState(1);
   const [seed, setSeed] = useState(42);
-  const [formats, setFormats] = useState(["universal-jsonl", "universal-csv"]);
+  const [formats, setFormats] = useState(defaultSimulationFormats);
+  const [formatPickerOpen, setFormatPickerOpen] = useState(false);
   const [faults, setFaults] = useState<ScenarioFault[]>([]);
   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
   const [faultType, setFaultType] = useState<string>(FAULT_TYPES.SIGNAL[0]);
@@ -70,6 +80,10 @@ export function ModelSimulationRunner() {
     }
   }, []);
   useWorkflowRefresh(loadWorkflow);
+
+  useEffect(() => {
+    void getCatalog().then(setCatalog).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!workflow?.project_id) return;
@@ -105,6 +119,28 @@ export function ModelSimulationRunner() {
   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
   const simulationOutdated = workflow?.statuses.simulation === "OUTDATED";
   const running = Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
+  const selectedTechnology = useMemo(() => {
+    const industry = String(workflow?.parameters.industry ?? "");
+    const technology = String(workflow?.parameters.technology ?? "");
+    const domain = catalog?.domains.find((item) => item.id === industry)
+      ?? catalog?.domains.find((item) => item.technologies.some((candidate) => candidate.id === technology));
+    return domain?.technologies.find((item) => item.id === technology);
+  }, [catalog, workflow?.parameters.industry, workflow?.parameters.technology]);
+  const availableFormats = useMemo(
+    () => mergeSimulationFormats(
+      simulationFormatDefinitions.map((format) => format.id),
+      catalog?.formats,
+      selectedTechnology?.native_formats,
+      defaultSimulationFormats,
+      formats,
+    ),
+    [catalog?.formats, formats, selectedTechnology?.native_formats],
+  );
+  const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
+  const selectedFormatLabels = useMemo(
+    () => formats.map((format) => describeSimulationFormat(format).label),
+    [formats],
+  );
 
   const handleJobChange = useCallback((nextJob: SimulationJob) => {
     setJob(nextJob);
@@ -138,7 +174,19 @@ export function ModelSimulationRunner() {
         faults,
       };
       const storedScenario = await saveSimulationScenario(workflow.project_id, scenario);
-      config = { ...config, ...workflow.parameters, duration_s: duration, seed, formats, max_events: 250_000, scenario: { ...scenario, scenario_id: storedScenario.scenario_id } };
+      config = {
+        ...config,
+        ...workflow.parameters,
+        duration_s: duration,
+        seed,
+        formats,
+        max_events: 25_000,
+        model_trace_frame_limit: 8_000,
+        model_trace_signal_point_limit: 12_000,
+        model_trace_event_limit: 3_000,
+        golden_trace_event_limit: 8_000,
+        scenario: { ...scenario, scenario_id: storedScenario.scenario_id },
+      };
       const nextSnapshot = await createSimulationSnapshot(config);
       setSnapshot(nextSnapshot);
       const nextJob = await createSimulation({
@@ -180,6 +228,12 @@ export function ModelSimulationRunner() {
     setJob(null);
     setSnapshot(null);
     setError("");
+  }
+
+  function toggleFormat(format: string, checked: boolean) {
+    setFormats((current) => checked
+      ? mergeSimulationFormats(current, [format])
+      : current.filter((item) => item !== format));
   }
 
   function addFault() {
@@ -240,9 +294,47 @@ export function ModelSimulationRunner() {
         <NumberInput label="Dauer" unit="s" value={duration} min={0.1} step={0.1} onChange={setDuration} />
         <NumberInput label="Geschwindigkeit" unit="x" value={speed} min={0.1} step={0.1} onChange={setSpeed} />
         <NumberInput label="Seed" value={seed} min={0} step={1} onChange={setSeed} />
-        <fieldset className="trace-format-control"><legend>Trace-Formate</legend>{["universal-jsonl", "universal-csv"].map((format) => <label key={format}><input checked={formats.includes(format)} type="checkbox" onChange={(event) => setFormats((current) => event.target.checked ? [...new Set([...current, format])] : current.filter((item) => item !== format))} />{format.replace("universal-", "").toUpperCase()}</label>)}</fieldset>
+        <div className="trace-format-control">
+          <span>Trace-Formate</span>
+          <button
+            aria-expanded={formatPickerOpen}
+            aria-haspopup="dialog"
+            className="trace-format-trigger"
+            onClick={() => setFormatPickerOpen((current) => !current)}
+            type="button"
+          >
+            <strong>{formats.length}</strong>
+            <small>{selectedFormatLabels.slice(0, 3).join(", ")}{formats.length > 3 ? ` +${formats.length - 3}` : ""}</small>
+          </button>
+          {formatPickerOpen && (
+            <div className="trace-format-popover" role="dialog" aria-label="Trace-Formate auswählen">
+              {formatGroups.map((group) => (
+                <section key={group.id}>
+                  <h3>{group.label}</h3>
+                  <div>
+                    {group.formats.map((format) => (
+                      <label className={formats.includes(format.id) ? "selected" : ""} key={format.id}>
+                        <input
+                          checked={formats.includes(format.id)}
+                          onChange={(event) => toggleFormat(format.id, event.target.checked)}
+                          type="checkbox"
+                        />
+                        <span>{format.label}</span>
+                        <small>{format.description}</small>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              ))}
+              <footer>
+                <span>{formats.length ? `${formats.length} Formate ausgewählt` : "Mindestens ein Format wählen"}</span>
+                <button className="button secondary tiny" onClick={() => setFormatPickerOpen(false)} type="button">Schließen</button>
+              </footer>
+            </div>
+          )}
+        </div>
         <div className="simulation-transport-controls">
-          <button className="button primary" disabled={!valid || busy || Boolean(job)} type="submit">Start</button>
+          <button className="button primary" disabled={!valid || busy || Boolean(job) || formats.length === 0} type="submit">Start</button>
           <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
           <button className="button secondary" disabled={!job} onClick={reset} type="button">Reset</button>

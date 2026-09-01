@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { EngineeringAgentUIMessage } from "@/lib/agent/engineering-agent";
 import { getCatalog } from "@/lib/api";
 import {
@@ -61,6 +61,16 @@ const EQUIPMENT_CATEGORIES = [
 
 const WIZARD_STATUS_INDEX = 7;
 
+function suggestedClusterBusName(label: string, index: number, needsNumber: boolean) {
+  const cluster = label
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_") || "System";
+  return needsNumber ? `${cluster}_${String(index).padStart(2, "0")}` : cluster;
+}
+
 function agentHistoryRevision(messages: EngineeringAgentUIMessage[]) {
   const lastMessage = messages.at(-1);
   if (!lastMessage) return "empty";
@@ -109,7 +119,17 @@ export function AgentChatCore({
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!historyReady || !input.trim() || status !== "ready") return;
-    sendMessage({ text: input.trim() });
+    const text = input.trim();
+    if (isInlineConfirmation(text)) {
+      if (confirmationRequest) {
+        allowRequestedAction(text);
+      } else {
+        void sendMessage({ text: buildInlineConfirmationPrompt(text, stableMessages) });
+      }
+      setInput("");
+      return;
+    }
+    sendMessage({ text });
     setInput("");
   }
 
@@ -343,7 +363,7 @@ export function AgentChatCore({
     }
   }
 
-  function allowRequestedAction() {
+  function allowRequestedAction(confirmationText = "Bestätigt") {
     if (!historyReady || !confirmationRequest || status !== "ready") return;
     if (confirmationRequest.routingReview) {
       const originalRequest = latestUserRequestBefore(stableMessages, confirmationRequest.messageId);
@@ -362,10 +382,16 @@ export function AgentChatCore({
       window.location.assign("/studio/routing");
       return;
     }
+    const originalRequest = latestUserRequestBefore(stableMessages, confirmationRequest.messageId);
     void sendMessage({
       text: confirmationRequest.recovery
         ? "Setze den zuletzt begonnenen Auftrag jetzt fort. Verwende ausschließlich die bereitgestellten Simulator-Tools und arbeite bis zu einem echten Ergebnis oder einem klar sichtbaren Review-Gate."
-        : "Bestätigt. Bitte fahre mit dem vorgeschlagenen nächsten Schritt fort.",
+        : [
+            `Bestaetigt durch Nutzereingabe: ${confirmationText}`,
+            originalRequest ? `Urspruenglicher Auftrag: ${originalRequest}` : "Der urspruengliche Auftrag steht im bisherigen Agentenverlauf.",
+            "Uebernimm den zuletzt vorgeschlagenen fachlichen Stand jetzt im aktuellen Projekt. Nutze echte Simulator-Tools fuer Engineering-Modell, Routing, Parameter oder Workflow, lies danach den aktuellen Zustand erneut und melde nur tatsaechlich registrierte oder klar am Review-Gate wartende Ergebnisse.",
+            "Starte keinen neuen Task und gib keine reine Zustimmung aus.",
+          ].join("\n\n"),
     });
   }
 
@@ -399,6 +425,7 @@ export function AgentChatCore({
                     key={`${message.id}-${index}`}
                     part={part}
                     projectId={activeProjectId}
+                    richText={message.role === "assistant"}
                   />
                 ))}
               </div>
@@ -454,7 +481,7 @@ export function AgentChatCore({
                 : "Der Agent wartet auf deine Freigabe für den vorgeschlagenen nächsten Schritt."}
             </span>
           </div>
-          <button className="button primary" disabled={!historyReady || busy} onClick={allowRequestedAction} type="button">
+          <button className="button primary" disabled={!historyReady || busy} onClick={() => allowRequestedAction()} type="button">
             {confirmationRequest.routingReview ? "Routing öffnen" : confirmationRequest.recovery ? "Fortsetzen" : "Allow"}
           </button>
         </div>
@@ -721,6 +748,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
           selected: item.selected !== false,
           network_id: String(item.network_id ?? ""),
           network_label: String(item.network_label ?? item.network_id ?? ""),
+          bus_name: String(item.bus_name ?? ""),
           devices: Number(item.devices ?? 0),
           counts: item.counts && typeof item.counts === "object" ? item.counts as Record<string, number> : {},
           evidence: Array.isArray(item.evidence) ? item.evidence.filter((value): value is string => typeof value === "string") : [],
@@ -934,7 +962,7 @@ export function EngineeringAgentWizard({
   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
   const [equipmentClusterEdits, setEquipmentClusterEdits] = useState<{
     source: string;
-    values: Record<string, { selected?: boolean; networkId?: string }>;
+    values: Record<string, { selected?: boolean; networkId?: string; busName?: string }>;
   }>({ source: "", values: {} });
   const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
   const recognizedEquipment = useMemo(() => extractEngineeringSpecification(taskSource), [taskSource]);
@@ -1252,13 +1280,15 @@ export function EngineeringAgentWizard({
     selectedIndustry,
     selectedTechnologies.join("|"),
     recognizedEquipment.communicationSystems.join("|"),
+    Object.entries(recognizedEquipment.communicationSystemCounts).map(([key, value]) => `${key}:${value}`).join("|"),
   ].join("\n");
   const communicationSystemRows = useMemo(() => communicationSystemInputRows({
     edits: communicationSystemEdits.source === communicationSystemSource ? communicationSystemEdits.values : {},
+    recognizedSystemCounts: recognizedEquipment.communicationSystemCounts,
     recognizedSystems: recognizedEquipment.communicationSystems,
     selectedTechnologyIds: selectedTechnologies,
     technologies: technologyChoices,
-  }), [communicationSystemEdits, communicationSystemSource, recognizedEquipment.communicationSystems, selectedTechnologies, technologyChoices]);
+  }), [communicationSystemEdits, communicationSystemSource, recognizedEquipment.communicationSystemCounts, recognizedEquipment.communicationSystems, selectedTechnologies, technologyChoices]);
   const communicationSystemReady = communicationSystemRows.every((row) => /^\d+$/.test(row.value) && Number(row.value) <= 1000);
   const communicationSystemCounts = communicationSystemRows.map((row) => ({
     id: row.id,
@@ -1278,16 +1308,19 @@ export function EngineeringAgentWizard({
     communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
   ), [communicationSystemCounts, recognizedEquipment.chains]);
   const clusterEditValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-  const equipmentClusterAssignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster) => {
+  const equipmentClusterAssignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster, index) => {
     const edit = clusterEditValues[cluster.id];
     const selected = edit?.selected ?? true;
     const requestedNetworkId = edit?.networkId || cluster.recommendedNetworkId;
     const network = communicationSystemCounts.find((item) => item.id === requestedNetworkId)
       ?? communicationSystemCounts.find((item) => item.id === cluster.recommendedNetworkId)
       ?? communicationSystemCounts[0]
-      ?? { id: "", label: "Noch kein Netz" };
+      ?? { id: "", label: "Noch kein Netz", count: 0 };
+    const busName = edit?.busName?.trim()
+      || suggestedClusterBusName(cluster.label, index + 1, network.count > 1);
     return {
       cluster_id: cluster.id,
+      bus_name: busName,
       counts: cluster.counts,
       devices: cluster.devices.length,
       evidence: cluster.evidence,
@@ -2031,32 +2064,46 @@ export function EngineeringAgentWizard({
         <fieldset className="agent-choice-group">
           <legend>Geräteumfang prüfen</legend>
           <table className="agent-equipment-table">
-            <thead><tr><th>Gerätetyp</th><th>Erkannt</th><th>Verbindliche Anzahl</th></tr></thead>
+            <thead><tr><th>Gerätetyp</th><th>Anzahl</th></tr></thead>
             <tbody>{EQUIPMENT_CATEGORIES.map(({ key, label }) => (
               <tr key={key}>
                 <th scope="row">{label}</th>
-                <td>{recognizedEquipment.targetCounts[key]}</td>
-                <td><input aria-label={`${label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
-                  value={equipmentValues[key]} disabled={effectiveBusy}
-                  onChange={(event) => setEquipmentEdits({ source: taskSource, values: { ...equipmentValues, [key]: event.target.value } })} /></td>
+                <td>
+                  <div className="agent-count-stack">
+                    <span><small>Erkannt</small><b>{recognizedEquipment.targetCounts[key]}</b></span>
+                    <label>
+                      <small>Verbindlich</small>
+                      <input aria-label={`${label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
+                        value={equipmentValues[key]} disabled={effectiveBusy}
+                        onChange={(event) => setEquipmentEdits({ source: taskSource, values: { ...equipmentValues, [key]: event.target.value } })} />
+                    </label>
+                  </div>
+                </td>
               </tr>
             ))}</tbody>
           </table>
           <table className="agent-equipment-table" aria-label="Kommunikationssysteme prüfen">
-            <thead><tr><th>Kommunikationssystem</th><th>Erkannt</th><th>Verbindliche Anzahl</th></tr></thead>
+            <thead><tr><th>Kommunikationssystem</th><th>Anzahl</th></tr></thead>
             <tbody>{communicationSystemRows.map((row) => (
               <tr key={row.id}>
                 <th scope="row">
                   {row.label}
                   <small>{row.detail}</small>
                 </th>
-                <td>{row.recognized}</td>
-                <td><input aria-label={`${row.label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
-                  value={row.value} disabled={effectiveBusy}
-                  onChange={(event) => setCommunicationSystemEdits({
-                    source: communicationSystemSource,
-                    values: { ...Object.fromEntries(communicationSystemRows.map((item) => [item.id, item.value])), [row.id]: event.target.value },
-                  })} /></td>
+                <td>
+                  <div className="agent-count-stack">
+                    <span><small>Erkannt</small><b>{row.recognized}</b></span>
+                    <label>
+                      <small>Verbindlich</small>
+                      <input aria-label={`${row.label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
+                        value={row.value} disabled={effectiveBusy}
+                        onChange={(event) => setCommunicationSystemEdits({
+                          source: communicationSystemSource,
+                          values: { ...Object.fromEntries(communicationSystemRows.map((item) => [item.id, item.value])), [row.id]: event.target.value },
+                        })} />
+                    </label>
+                  </div>
+                </td>
               </tr>
             ))}</tbody>
           </table>
@@ -2076,11 +2123,21 @@ export function EngineeringAgentWizard({
                 </div>
                 <small>{equipmentClusterAssignments.filter((item) => item.selected).length}/{equipmentClusterAssignments.length} aktiv</small>
               </div>
-              <div className="agent-equipment-cluster-grid">
+              <table className="agent-equipment-cluster-table">
+                <thead>
+                  <tr>
+                    <th>Cluster</th>
+                    <th>Bustechnik</th>
+                    <th>Busname</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {equipmentClusters.map((cluster) => {
                   const assignment = equipmentClusterAssignments.find((item) => item.cluster_id === cluster.id);
                   const selected = assignment?.selected ?? true;
                   const networkId = assignment?.network_id ?? cluster.recommendedNetworkId;
+                  const assignedNetwork = communicationSystemCounts.find((item) => item.id === networkId);
+                  const busName = assignment?.bus_name ?? suggestedClusterBusName(cluster.label, 1, (assignedNetwork?.count ?? 0) > 1);
                   const countText = EQUIPMENT_CATEGORIES
                     .map(({ label, type }) => {
                       const count = cluster.counts[type] ?? 0;
@@ -2089,10 +2146,67 @@ export function EngineeringAgentWizard({
                     .filter(Boolean)
                     .join(" · ");
                   return (
-                    <article className={`agent-equipment-cluster ${selected ? "selected" : ""}`} key={cluster.id}>
-                      <label>
+                    <tr className={selected ? "selected" : ""} key={cluster.id}>
+                      <th scope="row">
+                        <label>
+                          <input
+                            checked={selected}
+                            disabled={effectiveBusy}
+                            onChange={(event) => {
+                              const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+                              setEquipmentClusterEdits({
+                                source: equipmentClusterSource,
+                                values: {
+                                  ...currentValues,
+                                  [cluster.id]: {
+                                    ...currentValues[cluster.id],
+                                    busName,
+                                    selected: event.target.checked,
+                                    networkId,
+                                  },
+                                },
+                              });
+                            }}
+                            type="checkbox"
+                          />
+                          <span>
+                            <strong>{cluster.label}</strong>
+                            <small>{countText || `${cluster.devices.length} Teilnehmer`}</small>
+                          </span>
+                        </label>
+                        <p>{cluster.recommendation}</p>
+                        <ul aria-label={`${cluster.label}: erkannte Teilnehmer`}>
+                          {cluster.evidence.map((name) => <li key={`${cluster.id}:${name}`}>{name}</li>)}
+                        </ul>
+                      </th>
+                      <td>
+                        <select
+                          aria-label={`${cluster.label}: Bustechnik`}
+                          disabled={effectiveBusy || !communicationSystemCounts.length}
+                          onChange={(event) => {
+                            const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+                            setEquipmentClusterEdits({
+                              source: equipmentClusterSource,
+                              values: {
+                                ...currentValues,
+                                [cluster.id]: {
+                                  ...currentValues[cluster.id],
+                                  networkId: event.target.value,
+                                  selected,
+                                },
+                              },
+                            });
+                          }}
+                          value={networkId}
+                        >
+                          {communicationSystemCounts.length
+                            ? communicationSystemCounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)
+                            : <option value="">Noch kein Netz</option>}
+                        </select>
+                      </td>
+                      <td>
                         <input
-                          checked={selected}
+                          aria-label={`${cluster.label}: vorgeschlagener Busname`}
                           disabled={effectiveBusy}
                           onChange={(event) => {
                             const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
@@ -2102,50 +2216,21 @@ export function EngineeringAgentWizard({
                                 ...currentValues,
                                 [cluster.id]: {
                                   ...currentValues[cluster.id],
-                                  selected: event.target.checked,
+                                  busName: event.target.value,
                                   networkId,
+                                  selected,
                                 },
                               },
                             });
                           }}
-                          type="checkbox"
+                          value={busName}
                         />
-                        <span>
-                          <strong>{cluster.label}</strong>
-                          <small>{countText || `${cluster.devices.length} Teilnehmer`}</small>
-                        </span>
-                      </label>
-                      <select
-                        aria-label={`${cluster.label}: Zielnetz`}
-                        disabled={effectiveBusy || !communicationSystemCounts.length}
-                        onChange={(event) => {
-                          const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-                          setEquipmentClusterEdits({
-                            source: equipmentClusterSource,
-                            values: {
-                              ...currentValues,
-                              [cluster.id]: {
-                                ...currentValues[cluster.id],
-                                networkId: event.target.value,
-                                selected,
-                              },
-                            },
-                          });
-                        }}
-                        value={networkId}
-                      >
-                        {communicationSystemCounts.length
-                          ? communicationSystemCounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)
-                          : <option value="">Noch kein Netz</option>}
-                      </select>
-                      <p>{cluster.recommendation}</p>
-                      <ul aria-label={`${cluster.label}: erkannte Teilnehmer`}>
-                        {cluster.evidence.map((name) => <li key={`${cluster.id}:${name}`}>{name}</li>)}
-                      </ul>
-                    </article>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
+                </tbody>
+              </table>
             </section>
           )}
           <div className="agent-equipment-list">
@@ -2444,6 +2529,7 @@ function technologyMatchesRecognizedSystem(technology: Technology, recognized: s
 
 function communicationSystemInputRows(args: {
   edits: Record<string, string>;
+  recognizedSystemCounts: Record<string, number>;
   recognizedSystems: string[];
   selectedTechnologyIds: string[];
   technologies: Technology[];
@@ -2455,7 +2541,7 @@ function communicationSystemInputRows(args: {
   const rows = technologies.map((technology) => {
     const matches = args.recognizedSystems.filter((system) => technologyMatchesRecognizedSystem(technology, system));
     matches.forEach((system) => representedRecognized.add(system));
-    const recognized = matches.length;
+    const recognized = matches.reduce((sum, system) => sum + (args.recognizedSystemCounts[system] ?? 1), 0);
     const label = technologyLabel(technology.id, technology.family);
     return {
       detail: `${technology.medium} · ${technology.topology}`,
@@ -2469,9 +2555,10 @@ function communicationSystemInputRows(args: {
   args.recognizedSystems.forEach((system) => {
     if (representedRecognized.has(system)) return;
     const id = `detected:${communicationSystemSlug(system)}`;
+    const recognized = args.recognizedSystemCounts[system] ?? 1;
     const existing = rows.find((row) => row.id === id);
     if (existing) {
-      existing.recognized += 1;
+      existing.recognized += recognized;
       if (args.edits[id] === undefined) existing.value = String(existing.recognized);
       return;
     }
@@ -2479,8 +2566,8 @@ function communicationSystemInputRows(args: {
       detail: "Aus Aufgaben-/Dateitext erkannt",
       id,
       label: system,
-      recognized: 1,
-      value: args.edits[id] ?? "1",
+      recognized,
+      value: args.edits[id] ?? String(recognized),
     });
   });
 
@@ -2768,6 +2855,21 @@ function latestUserRequestBefore(messages: EngineeringAgentUIMessage[], messageI
   return "";
 }
 
+function isInlineConfirmation(text: string) {
+  return /^(?:ok|okay|passt|das passt|so passt|passt so|ja|jawohl|bitte|mach das|mach es|erstelle dies|erstelle das|leg das an|lege das an|lege dies an|umsetzen|anwenden|freigeben|uebernehmen|übernehmen|jetzt uebernehmen|jetzt übernehmen|so uebernehmen|so übernehmen)(?:[.! ]*)$/i.test(text.trim());
+}
+
+function buildInlineConfirmationPrompt(text: string, messages: EngineeringAgentUIMessage[]) {
+  const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant");
+  const originalRequest = latestAssistant ? latestUserRequestBefore(messages, latestAssistant.id) : "";
+  return [
+    `Der Nutzer bestaetigt die vorherige Analyse mit: ${text}`,
+    originalRequest ? `Vorheriger Auftrag: ${originalRequest}` : "Der vorherige Auftrag steht im Agentenverlauf.",
+    "Arbeite jetzt an der Loesung im aktuellen Simulatorprojekt. Lies den aktuellen Workflow- und Engineering-Kontext, uebernimm ableitbare Modell-, Routing-, Parameter- oder Workflow-Aenderungen mit den bereitgestellten Simulator-Tools, validiere danach erneut und melde registrierte Ergebnisse. Wenn aus dem Verlauf keine belastbare umsetzbare Aenderung ableitbar ist, benenne genau diesen Blocker knapp.",
+    "Starte keinen neuen Task.",
+  ].join("\n\n");
+}
+
 function hasCompactEngineeringResult(parts: EngineeringAgentUIMessage["parts"]) {
   return parts.some((part) => (
     part.type === "tool-createEngineeringChain"
@@ -2942,10 +3044,12 @@ function MessagePart({
   hideText = false,
   part,
   projectId,
+  richText = false,
 }: {
   hideText?: boolean;
   part: EngineeringAgentUIMessage["parts"][number];
   projectId: string;
+  richText?: boolean;
 }) {
   const runtimePart = part as unknown as {
     errorText?: string;
@@ -2957,7 +3061,8 @@ function MessagePart({
   };
   if (part.type === "text") {
     const text = inspectAgentText(part.text).displayText;
-    return hideText || !text ? null : <p className="eng-agent-text">{text}</p>;
+    if (hideText || !text) return null;
+    return richText ? <AgentMessageText text={text} /> : <p className="eng-agent-text">{text}</p>;
   }
 
   if (part.type === "tool-listEngineeringObjects" || part.type === "tool-listEngineeringRelations") {
@@ -3008,6 +3113,132 @@ function MessagePart({
   }
 
   return null;
+}
+
+function AgentMessageText({ text }: { text: string }) {
+  const lines = text.split(/\r?\n/);
+  const blocks: ReactNode[] = [];
+  let bulletItems: { key: string; text: string }[] = [];
+
+  function flushBullets() {
+    if (!bulletItems.length) return;
+    blocks.push(
+      <ul className="eng-agent-list" key={`list-${blocks.length}`}>
+        {bulletItems.map((item) => <li key={item.key}>{renderInlineMarkup(item.text)}</li>)}
+      </ul>,
+    );
+    bulletItems = [];
+  }
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushBullets();
+      return;
+    }
+
+    const structuredLine = parseAgentStructuredLine(trimmed);
+    if (structuredLine) {
+      flushBullets();
+      blocks.push(
+        <AgentStructuredLine
+          key={`structured-${index}`}
+          label={structuredLine.label}
+          raw={structuredLine.raw}
+          value={structuredLine.value}
+        />,
+      );
+      return;
+    }
+
+    const factLine = parseAgentFactLine(trimmed);
+    if (factLine) {
+      flushBullets();
+      blocks.push(
+        <div className="eng-agent-fact-line" key={`fact-${index}`}>
+          <span>{factLine.label}</span>
+          <strong>{renderInlineMarkup(factLine.value)}</strong>
+        </div>,
+      );
+      return;
+    }
+
+    const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      bulletItems.push({ key: `bullet-${index}`, text: bullet[1] });
+      return;
+    }
+
+    flushBullets();
+    blocks.push(<p key={`paragraph-${index}`}>{renderInlineMarkup(trimmed)}</p>);
+  });
+
+  flushBullets();
+  return <div className="eng-agent-text">{blocks}</div>;
+}
+
+function parseAgentStructuredLine(line: string) {
+  const normalized = normalizeAgentLinePrefix(line);
+  const match = normalized.match(/^([^:]{2,44}):\s*([\[{].*[\]}])$/);
+  if (!match) return null;
+  try {
+    return {
+      label: cleanAgentLabel(match[1]),
+      raw: match[2],
+      value: JSON.parse(match[2]) as unknown,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseAgentFactLine(line: string) {
+  const normalized = normalizeAgentLinePrefix(line);
+  const match = normalized.match(/^([^:]{2,34}):\s*(.+)$/);
+  if (!match) return null;
+  const label = cleanAgentLabel(match[1]);
+  const value = match[2].replace(/^\*\*|\*\*$/g, "").trim();
+  if (!label || !value || value.startsWith("{") || value.startsWith("[")) return null;
+  return { label, value };
+}
+
+function normalizeAgentLinePrefix(line: string) {
+  return line.replace(/^[-*]\s+/, "").replace(/^\*\*|\*\*$/g, "").trim();
+}
+
+function cleanAgentLabel(value: string) {
+  return value.replace(/\*\*/g, "").trim();
+}
+
+function AgentStructuredLine({ label, raw, value }: { label: string; raw: string; value: unknown }) {
+  const summary = summarizeStructuredAgentValue(value);
+  return (
+    <details className="eng-agent-structured-line">
+      <summary>
+        <span>{label}</span>
+        <code>{summary}</code>
+      </summary>
+      <pre>{raw}</pre>
+    </details>
+  );
+}
+
+function summarizeStructuredAgentValue(value: unknown) {
+  if (Array.isArray(value)) return `${value.length} ${value.length === 1 ? "Eintrag" : "Einträge"}`;
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>);
+    return `${keys.length} ${keys.length === 1 ? "Feld" : "Felder"}`;
+  }
+  return "Details";
+}
+
+function renderInlineMarkup(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={index}>{part}</span>;
+  });
 }
 
 function ToolCallCard({

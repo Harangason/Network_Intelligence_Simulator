@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSimulation, listSimulations } from "@/lib/api";
 import type { RuntimeMetrics, SimulationJob } from "@/lib/types";
-import { getWorkflowSnapshots, setWorkflowContext, type AnalysisSnapshot, type SimulationSnapshot } from "@/lib/workflow-api";
+import {
+  getWorkflowSimulationSnapshot,
+  getWorkflowSnapshots,
+  setWorkflowContext,
+  type AnalysisSnapshot,
+  type SimulationSnapshot,
+} from "@/lib/workflow-api";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 export function ResultsWorkbench() {
@@ -14,11 +20,15 @@ export function ResultsWorkbench() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [compareId, setCompareId] = useState<string>("");
   const [error, setError] = useState("");
+  const [loadedSnapshotDetails, setLoadedSnapshotDetails] = useState<Set<string>>(() => new Set());
 
   const load = useCallback(async () => {
     try {
       const [workflowSnapshots, simulationJobs] = await Promise.all([getWorkflowSnapshots(), listSimulations()]);
-        setSnapshots(workflowSnapshots.simulations);
+        setSnapshots((current) => workflowSnapshots.simulations.map((item) => {
+          const existing = current.find((snapshot) => snapshot.id === item.id);
+          return existing?.result !== undefined ? { ...item, result: existing.result } : item;
+        }));
         setCapacity(workflowSnapshots.capacity);
         setJobs(Object.fromEntries(simulationJobs.map((job) => [job.id, job])));
         setSelectedId((current) => workflowSnapshots.simulations.some((item) => item.id === current)
@@ -32,12 +42,31 @@ export function ResultsWorkbench() {
   useWorkflowRefresh(load);
 
   const selected = useMemo(() => snapshots.find((item) => item.id === selectedId) ?? null, [selectedId, snapshots]);
+  const compareSnapshot = snapshots.find((item) => item.id === compareId);
 
   useEffect(() => {
     void setWorkflowContext({
       selected_simulation: selected ? { snapshot_id: selected.id, job_id: selected.job_id ?? null } : null,
     }).catch(() => undefined);
   }, [selected]);
+
+  useEffect(() => {
+    const ids = [selectedId, compareId].filter((value): value is string => Boolean(value));
+    const missing = ids.filter((id) => {
+      const snapshot = snapshots.find((item) => item.id === id);
+      return snapshot && snapshot.result === undefined && !loadedSnapshotDetails.has(id);
+    });
+    if (!missing.length) return;
+    setLoadedSnapshotDetails((current) => new Set([...current, ...missing]));
+    missing.forEach((id) => {
+      void getWorkflowSimulationSnapshot(id)
+        .then((fullSnapshot) => {
+          setSnapshots((current) => current.map((item) => item.id === fullSnapshot.id ? { ...item, ...fullSnapshot } : item));
+        })
+        .catch((caught) => setError(caught instanceof Error ? caught.message : "Simulationsergebnis nicht verfügbar."));
+    });
+  }, [compareId, loadedSnapshotDetails, selectedId, snapshots]);
+
   const job = selected?.job_id ? jobs[selected.job_id] : undefined;
   const observed = job?.result ?? selected?.result;
   const predictionSource = selected?.calculated_metrics ?? capacity?.results;
@@ -51,7 +80,6 @@ export function ResultsWorkbench() {
     : null;
   const traceEvents = observed?.trace?.events;
   const runtime = observed?.runtime_metrics;
-  const compareSnapshot = snapshots.find((item) => item.id === compareId);
   const compareJob = compareSnapshot?.job_id ? jobs[compareSnapshot.job_id] : undefined;
   const compareRuntime = (compareJob?.result ?? compareSnapshot?.result)?.runtime_metrics;
   const runtimePeak = Math.max(0, ...(runtime?.networks ?? []).map((item) => item.peak_load_percent));

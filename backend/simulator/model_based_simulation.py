@@ -20,6 +20,9 @@ BEHAVIOR_TYPES = (
 MODEL_LABELS = (
     "PHYSICS_BASED", "RULE_BASED", "EMPIRICAL", "SYNTHETIC", "GENERIC_ESTIMATE",
 )
+DEFAULT_MODEL_TRACE_FRAME_LIMIT = 10_000
+DEFAULT_MODEL_TRACE_SIGNAL_POINT_LIMIT = 20_000
+DEFAULT_MODEL_TRACE_EVENT_LIMIT = 5_000
 SIGNAL_FAULTS = (
     "SIGNAL_STUCK", "SIGNAL_OFFSET", "SIGNAL_DRIFT", "SIGNAL_SPIKE", "SIGNAL_DROPOUT", "SIGNAL_NOISE",
     "SIGNAL_OUT_OF_RANGE", "SIGNAL_FROZEN", "SIGNAL_DELAYED", "SIGNAL_WRONG_SCALE", "SIGNAL_INVALID_VALUE",
@@ -65,6 +68,14 @@ def _mapping(value: Any) -> dict[str, Any]:
 
 def _sequence(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _trace_limit(config: dict[str, Any], key: str, default: int) -> int:
+    try:
+        value = int(config.get(key) if config.get(key) is not None else default)
+    except (TypeError, ValueError):
+        return default
+    return max(0, value)
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
@@ -500,47 +511,71 @@ class ModelBasedSimulationEngine:
 def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, Any]:
     signal_series: dict[str, dict[str, Any]] = {}
     synchronized_events: list[dict[str, Any]] = []
+    frame_limit = _trace_limit(config, "model_trace_frame_limit", DEFAULT_MODEL_TRACE_FRAME_LIMIT)
+    signal_point_limit = _trace_limit(config, "model_trace_signal_point_limit", DEFAULT_MODEL_TRACE_SIGNAL_POINT_LIMIT)
+    synchronized_event_limit = _trace_limit(config, "model_trace_event_limit", DEFAULT_MODEL_TRACE_EVENT_LIMIT)
+    total_signal_samples = 0
+    stored_signal_samples = 0
+    total_synchronized_events = 0
+    synchronized_warning_count = 0
+    synchronized_error_count = 0
     deltas: list[float] = []
     load_buckets: dict[tuple[str, int], float] = defaultdict(float)
     load_window_s = 0.05
     frame_timeline: list[dict[str, Any]] = []
+
+    def add_synchronized_event(item: dict[str, Any]) -> None:
+        nonlocal synchronized_error_count, synchronized_warning_count, total_synchronized_events
+        total_synchronized_events += 1
+        if item.get("severity") == "ERROR":
+            synchronized_error_count += 1
+        elif item.get("severity") == "WARNING":
+            synchronized_warning_count += 1
+        if synchronized_event_limit == 0 or len(synchronized_events) < synchronized_event_limit:
+            synchronized_events.append(item)
+
     for event in events:
         time_s = float(event.get("time_s") or 0.0)
         network_id = str(event.get("network") or "unknown")
         if event.get("status") != "dropped":
             load_buckets[(network_id, int(time_s / load_window_s))] += float(event.get("transmission_latency_ms") or 0.0) / 1000.0
-        frame_timeline.append({
-            "time_s": time_s,
-            "route_id": event.get("route_id"),
-            "route_name": event.get("route_name"),
-            "network": network_id,
-            "technology": event.get("technology"),
-            "status": event.get("status"),
-            "sender": event.get("sender_hardware"),
-            "receivers": event.get("receiver_hardware") or [],
-            "payload_bytes": event.get("payload_bytes"),
-            "transmission_latency_ms": event.get("transmission_latency_ms"),
-            "end_to_end_latency_ms": event.get("end_to_end_latency_ms"),
-            "queue_depth_estimate": event.get("queue_depth_estimate"),
-            "queue_delay_ms": event.get("queue_delay_ms"),
-            "configured_cycle_ms": event.get("configured_cycle_ms"),
-            "gateway_ids": event.get("gateway_ids") or [],
-            "faults": event.get("faults") or [],
-            "drop_reason": event.get("drop_reason"),
-            "retransmission_count": event.get("retransmission_count"),
-            "duplicate_injected": event.get("duplicate_injected"),
-            "reordered": event.get("reordered"),
-        })
+        if frame_limit == 0 or len(frame_timeline) < frame_limit:
+            frame_timeline.append({
+                "time_s": time_s,
+                "route_id": event.get("route_id"),
+                "route_name": event.get("route_name"),
+                "network": network_id,
+                "technology": event.get("technology"),
+                "status": event.get("status"),
+                "sender": event.get("sender_hardware"),
+                "receivers": event.get("receiver_hardware") or [],
+                "payload_bytes": event.get("payload_bytes"),
+                "transmission_latency_ms": event.get("transmission_latency_ms"),
+                "end_to_end_latency_ms": event.get("end_to_end_latency_ms"),
+                "queue_depth_estimate": event.get("queue_depth_estimate"),
+                "queue_delay_ms": event.get("queue_delay_ms"),
+                "configured_cycle_ms": event.get("configured_cycle_ms"),
+                "gateway_ids": event.get("gateway_ids") or [],
+                "faults": event.get("faults") or [],
+                "drop_reason": event.get("drop_reason"),
+                "retransmission_count": event.get("retransmission_count"),
+                "duplicate_injected": event.get("duplicate_injected"),
+                "reordered": event.get("reordered"),
+            })
         for sample in _sequence(event.get("signals")):
             if not isinstance(sample, dict):
                 continue
             signal_id = str(sample.get("signal_id"))
             series = signal_series.setdefault(signal_id, {key: sample.get(key) for key in ("signal_id", "signal", "unit", "minimum", "maximum", "resolution", "cycle_ms", "behavior_type", "model_label")})
-            series.setdefault("points", []).append({"time_s": event.get("time_s"), "value": sample.get("value"), "golden_value": sample.get("golden_value"), "faults": sample.get("faults") or []})
+            series.setdefault("points", [])
+            total_signal_samples += 1
+            if signal_point_limit == 0 or stored_signal_samples < signal_point_limit:
+                series["points"].append({"time_s": event.get("time_s"), "value": sample.get("value"), "golden_value": sample.get("golden_value"), "faults": sample.get("faults") or []})
+                stored_signal_samples += 1
             if isinstance(sample.get("value"), (int, float)) and isinstance(sample.get("golden_value"), (int, float)):
                 deltas.append(float(sample["value"]) - float(sample["golden_value"]))
             if sample.get("faults"):
-                synchronized_events.append({
+                add_synchronized_event({
                     "time_s": event.get("time_s"), "severity": "WARNING", "event_type": "SIGNAL_FAULT_ACTIVE",
                     "scope": "SIGNAL", "target": sample.get("signal"), "node": event.get("sender_hardware"),
                     "message": event.get("route_name"), "signal": sample.get("signal"), "network": event.get("network"),
@@ -548,7 +583,7 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
                     "faults": sample.get("faults"),
                 })
         if event.get("faults") or event.get("status") != "transmitted":
-            synchronized_events.append({
+            add_synchronized_event({
                 "time_s": event.get("time_s"), "severity": "ERROR" if event.get("status") in {"dropped", "corrupted"} else "WARNING",
                 "event_type": "TRANSPORT_FAULT", "scope": "FRAME", "target": event.get("route_name"),
                 "node": event.get("sender_hardware"), "message": event.get("route_name"),
@@ -564,7 +599,7 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         for phase, timestamp in (("FAULT_START", fault.get("start_s")), ("FAULT_END", fault.get("end_s"))):
             if timestamp is None:
                 continue
-            synchronized_events.append({
+            add_synchronized_event({
                 "time_s": float(timestamp), "severity": "WARNING", "event_type": phase,
                 "scope": str(fault.get("scope") or "UNKNOWN"), "target": target.get("name") or target.get("id") or "all",
                 "node": target.get("node_id"), "message": target.get("message_id"), "signal": target.get("signal_id"),
@@ -586,8 +621,8 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
     transmitted_frames = sum(1 for event in events if event.get("status") == "transmitted")
     dropped_frames = sum(1 for event in events if event.get("status") == "dropped")
     configured_faults = [item for item in _sequence(scenario.get("faults")) if isinstance(item, dict)]
-    warning_count = sum(1 for item in ordered_events if item.get("severity") == "WARNING")
-    error_count = sum(1 for item in ordered_events if item.get("severity") == "ERROR")
+    warning_count = synchronized_warning_count
+    error_count = synchronized_error_count
     bus_load = [
         {
             "network_id": network_id,
@@ -625,7 +660,8 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         },
         "signal_summary": {
             "signal_count": len(signal_series),
-            "sample_count": sum(len(_sequence(series.get("points"))) for series in signal_series.values()),
+            "sample_count": total_signal_samples,
+            "stored_sample_count": stored_signal_samples,
             "changed_samples": changed_samples,
             "affected_signals": affected_signals,
         },
@@ -638,6 +674,7 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         },
         "timing_summary": {
             "frame_count": len(events),
+            "stored_frame_count": len(frame_timeline),
             "transmitted_frames": transmitted_frames,
             "dropped_frames": dropped_frames,
             "duration_s": config.get("duration_s"),
@@ -663,6 +700,18 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         "affected_signals": affected_signals,
         "warnings": warning_count,
         "errors": error_count,
+        "storage": {
+            "truncated": len(frame_timeline) < len(events) or stored_signal_samples < total_signal_samples or len(ordered_events) < total_synchronized_events,
+            "frame_limit": frame_limit,
+            "signal_point_limit": signal_point_limit,
+            "event_limit": synchronized_event_limit,
+            "stored_frames": len(frame_timeline),
+            "total_frames": len(events),
+            "stored_signal_points": stored_signal_samples,
+            "total_signal_points": total_signal_samples,
+            "stored_events": len(ordered_events),
+            "total_events": total_synchronized_events,
+        },
         "model_labels": sorted({str(series.get("model_label")) for series in signal_series.values()}),
         "clock": "simulation_time_s",
     }

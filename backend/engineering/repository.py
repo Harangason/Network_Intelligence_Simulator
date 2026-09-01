@@ -34,6 +34,7 @@ from .models import (
     validate_uuid as _validate_uuid,
 )
 from .scope_rules import (
+    communication_system_allows_interface,
     hardware_scope_category,
     normalize_engineering_scope_rules,
     scope_placeholder_sql,
@@ -236,7 +237,7 @@ def _enforce_engineering_scope_rules(
     if object_type == "Interface":
         allowed = rules["communication_systems"]
         interface_type = str(payload.get("interface_type") or "")
-        if allowed and interface_type not in allowed:
+        if not communication_system_allows_interface(allowed, interface_type):
             raise EngineeringValidationError(
                 f"Interface-Typ {interface_type!r} ist durch die Projektregel nicht erlaubt. "
                 f"Zulaessig: {', '.join(allowed)}."

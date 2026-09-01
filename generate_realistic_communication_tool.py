@@ -9,10 +9,12 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 import webbrowser
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import urlparse
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -36,6 +38,26 @@ DEFAULT_DATABASE_URL = (
 ENGINEERING_DB_CONTAINER = "network-simulator-engineering-db"
 DEPENDENCY_HEALTH_INTERVAL_SECONDS = 5.0
 DEFAULT_SERVICE_RESTART_LIMIT = 5
+
+
+class DependencyCheck(NamedTuple):
+    name: str
+    ok: bool
+    detail: str
+    hint: str = ""
+
+
+class DockerProbe(NamedTuple):
+    available: bool
+    executable: str | None
+    output: str
+    timed_out: bool = False
+
+
+DOCKER_INFERENCE_MARKERS = (
+    "dockerinference",
+    "inference manager",
+)
 
 
 def _wait_for_url(
@@ -161,49 +183,219 @@ def _run_command(arguments: list[str], *, timeout_s: float | None = None) -> sub
             return value.decode("utf-8", errors="replace")
         return value
 
+    def _kill_process_tree(process: subprocess.Popen[str]) -> None:
+        if process.poll() is not None:
+            return
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                return
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+
+    popen_options: dict[str, object] = {}
+    if os.name == "nt":
+        popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        popen_options["start_new_session"] = True
+    process: subprocess.Popen[str] | None = None
     try:
-        return subprocess.run(
+        process = subprocess.Popen(
             arguments,
             cwd=ROOT,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            timeout=timeout_s,
-            check=False,
+            **popen_options,
         )
+        output, _ = process.communicate(timeout=timeout_s)
+        return subprocess.CompletedProcess(arguments, process.returncode or 0, output or "")
     except subprocess.TimeoutExpired as error:
+        if process is not None:
+            _kill_process_tree(process)
+            try:
+                output, _ = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired:
+                output = _timeout_text(error.stdout) + _timeout_text(error.stderr)
+        else:
+            output = _timeout_text(error.stdout) + _timeout_text(error.stderr)
         return subprocess.CompletedProcess(
             arguments,
             124,
-            _timeout_text(error.stdout)
-            + _timeout_text(error.stderr)
-            + "\nBefehl wurde wegen Timeout beendet.",
+            (output or "")
+            + "\nBefehl wurde wegen Timeout beendet und der Prozessbaum wurde beendet.",
         )
 
 
-def _docker_available() -> bool:
+def _docker_probe(timeout_s: float = 5.0) -> DockerProbe:
     docker = shutil.which("docker")
     if docker is None:
-        return False
-    return _run_command([docker, "info"], timeout_s=5).returncode == 0
+        return DockerProbe(False, None, "Docker CLI wurde nicht gefunden.")
+    result = _run_command([docker, "info"], timeout_s=timeout_s)
+    return DockerProbe(
+        result.returncode == 0,
+        docker,
+        result.stdout.strip(),
+        result.returncode == 124,
+    )
 
 
-def _try_start_docker_desktop() -> None:
+def _docker_available() -> bool:
+    return _docker_probe().available
+
+
+def _docker_failure_hint(output: str) -> str:
+    key = output.lower()
+    if any(marker in key for marker in DOCKER_INFERENCE_MARKERS):
+        return (
+            "Docker Desktop startet nicht sauber: Der Inference-Manager blockiert den "
+            "`dockerInference`-Listener. Beende Docker Desktop vollstaendig, starte es "
+            "mit Windows-Rechten neu und pruefe in Docker Desktop, ob die Inference-/AI-"
+            "Komponente repariert oder deaktiviert werden muss."
+        )
+    if "permission denied" in key and ("docker_engine" in key or "dockerdesktoplinuxengine" in key):
+        return (
+            "Docker Engine ist fuer diesen Prozess nicht erreichbar. Starte Docker Desktop "
+            "vollstaendig und pruefe, ob der aktuelle Windows-Nutzer Zugriff auf die Docker-"
+            "Engine hat."
+        )
+    if "dockerdesktoplinuxengine" in key and (
+        "nicht finden" in key or "cannot find" in key or "does not exist" in key
+    ):
+        return (
+            "Der Docker-Kontext zeigt auf `desktop-linux`, aber die Linux-Engine-Pipe ist "
+            "nicht vorhanden. Docker Desktop ist nicht fertig gestartet oder der Kontext ist defekt."
+        )
+    if "timeout" in key or "timeout" in output:
+        return (
+            "Docker antwortet nicht innerhalb des Startfensters. Docker Desktop haengt "
+            "wahrscheinlich im Initialisieren; die App wird deshalb nicht teilgestartet."
+        )
+    return (
+        "Docker Desktop ist nicht bereit. Starte Docker Desktop manuell und wiederhole den "
+        "Start, sobald `docker info` erfolgreich ist."
+    )
+
+
+def _docker_failure_is_actionable(output: str) -> bool:
+    key = output.lower()
+    return (
+        any(marker in key for marker in DOCKER_INFERENCE_MARKERS)
+        or ("permission denied" in key and ("docker_engine" in key or "dockerdesktoplinuxengine" in key))
+        or (
+            "dockerdesktoplinuxengine" in key
+            and ("nicht finden" in key or "cannot find" in key or "does not exist" in key)
+        )
+    )
+
+
+def _docker_unavailable_message(probe: DockerProbe) -> str:
+    detail = probe.output or "keine Docker-Ausgabe"
+    return (
+        "Docker Desktop wurde nicht bereit. Die Engineering-Datenbank kann deshalb nicht "
+        "automatisch gestartet werden.\n\n"
+        f"Docker-Diagnose: {detail}\n\n"
+        f"Naechster Schritt: {_docker_failure_hint(detail)}"
+    )
+
+
+def _docker_doctor_detail(probe: DockerProbe) -> str:
+    if probe.available:
+        return f"{probe.executable or 'docker'} info erfolgreich"
+    return probe.output or probe.executable or "nicht verfuegbar"
+
+
+def _try_start_docker_desktop() -> str:
+    outputs: list[str] = []
     docker = shutil.which("docker")
-    if docker is not None:
-        _run_command([docker, "desktop", "start"], timeout_s=8)
+    use_desktop_cli = os.environ.get("NETWORKIS_USE_DOCKER_DESKTOP_CLI_START", "").strip().lower() in {"1", "true", "yes"}
+    if docker is not None and use_desktop_cli:
+        result = _run_command([docker, "desktop", "start"], timeout_s=8)
+        if result.stdout.strip():
+            outputs.append(result.stdout.strip())
+    elif docker is not None:
+        outputs.append("Docker Desktop CLI-Start wurde uebersprungen, weil dieser Befehl auf Windows haengen kann.")
     docker_desktop = Path(r"C:\Program Files\Docker\Docker\Docker Desktop.exe")
     if docker_desktop.is_file():
         subprocess.Popen([str(docker_desktop)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return "\n".join(outputs)
 
 
-def _wait_for_docker(timeout_s: float = 35.0) -> bool:
+def _wait_for_docker(timeout_s: float = 35.0) -> DockerProbe:
     deadline = time.monotonic() + timeout_s
+    last_probe = _docker_probe(timeout_s=2)
+    if last_probe.available:
+        return last_probe
     while time.monotonic() < deadline:
-        if _docker_available():
-            return True
+        last_probe = _docker_probe(timeout_s=2)
+        if last_probe.available:
+            return last_probe
         time.sleep(2.0)
-    return False
+    return last_probe
+
+
+def _run_dependency_doctor(environment: dict[str, str]) -> list[DependencyCheck]:
+    frontend = ROOT / "frontend"
+    database_host, database_port = _database_endpoint(environment.get("DATABASE_URL", DEFAULT_DATABASE_URL))
+    docker = _docker_probe(timeout_s=5)
+    checks = [
+        DependencyCheck(
+            "Projektpfad",
+            ROOT.resolve() == CANONICAL_ROOT.resolve() or os.environ.get("NETWORKIS_ALLOW_NON_CANONICAL_ROOT", "").strip().lower() in {"1", "true", "yes"},
+            str(ROOT),
+            "Launcher aus dem kanonischen Projektpfad starten.",
+        ),
+        DependencyCheck(
+            "Frontend-Abhaengigkeiten",
+            (frontend / "node_modules" / "next" / "dist" / "bin" / "next").is_file(),
+            str(frontend / "node_modules"),
+            "Im Ordner frontend `npm install` ausfuehren.",
+        ),
+        DependencyCheck(
+            "Backend-Port",
+            not _tcp_endpoint_available(BACKEND_HOST, _port_from_environment("FLASK_PORT", BACKEND_PORT), timeout_s=0.3),
+            f"{BACKEND_HOST}:{_port_from_environment('FLASK_PORT', BACKEND_PORT)}",
+            "Fremden Prozess auf dem Backend-Port beenden.",
+        ),
+        DependencyCheck(
+            "Frontend-Port",
+            not _tcp_endpoint_available(FRONTEND_HOST, _port_from_environment("FRONTEND_PORT", FRONTEND_PORT), timeout_s=0.3),
+            f"{FRONTEND_HOST}:{_port_from_environment('FRONTEND_PORT', FRONTEND_PORT)}",
+            "Fremden Prozess auf dem Frontend-Port beenden.",
+        ),
+        DependencyCheck(
+            "Docker Engine",
+            docker.available,
+            _docker_doctor_detail(docker),
+            _docker_failure_hint(docker.output),
+        ),
+        DependencyCheck(
+            "Engineering-Datenbank-Port",
+            _tcp_endpoint_available(database_host, database_port, timeout_s=0.5),
+            f"{database_host}:{database_port}",
+            "Wird vom Launcher via Docker Compose gestartet, sobald Docker bereit ist.",
+        ),
+    ]
+    return checks
+
+
+def _print_dependency_doctor(checks: list[DependencyCheck]) -> None:
+    print("NetworkIS Start-Doctor")
+    for check in checks:
+        marker = "OK" if check.ok else "FEHLT"
+        print(f"- {marker}: {check.name} - {check.detail}")
+        if not check.ok and check.hint:
+            print(f"  Hinweis: {check.hint}")
 
 
 def _ensure_engineering_database(environment: dict[str, str]) -> None:
@@ -215,16 +407,23 @@ def _ensure_engineering_database(environment: dict[str, str]) -> None:
     if not compose_file.is_file():
         raise RuntimeError(f"Engineering-Datenbank ist nicht erreichbar und {compose_file.name} fehlt.")
 
-    if not _docker_available():
+    docker_probe = _docker_probe(timeout_s=2)
+    if not docker_probe.available:
         if endpoint_available:
             return
-        _try_start_docker_desktop()
-        if not _wait_for_docker():
-            raise RuntimeError(
-                "Docker Desktop wurde nicht bereit. Die Engineering-Datenbank kann deshalb nicht "
-                "automatisch gestartet werden. Starte Docker Desktop einmal mit den nötigen "
-                "Windows-Rechten; danach startet NetworkIS die Datenbank selbst."
-            )
+        if _docker_failure_is_actionable(docker_probe.output):
+            raise RuntimeError(_docker_unavailable_message(docker_probe))
+        docker_start_output = _try_start_docker_desktop()
+        docker_probe = _wait_for_docker()
+        if not docker_probe.available:
+            if docker_start_output:
+                docker_probe = DockerProbe(
+                    docker_probe.available,
+                    docker_probe.executable,
+                    f"{docker_start_output}\n{docker_probe.output}".strip(),
+                    docker_probe.timed_out,
+                )
+            raise RuntimeError(_docker_unavailable_message(docker_probe))
 
     docker = shutil.which("docker")
     if docker is None:
@@ -466,6 +665,65 @@ def _runtime_environment() -> dict[str, str]:
     return environment
 
 
+def _can_write_file(path: Path) -> bool:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("ok", encoding="ascii")
+        path.unlink(missing_ok=True)
+        return True
+    except OSError:
+        return False
+
+
+def _prepare_backend_runtime_root(environment: dict[str, str], instance_id: str) -> Path | None:
+    if environment.get("SIMULATOR_RUNTIME_ROOT"):
+        return None
+    runtime_root = ROOT / "backend" / "runtime"
+    probes = [
+        runtime_root / "jobs" / f"launcher-probe-{instance_id[:8]}.tmp",
+        runtime_root / "traces" / f"launcher-probe-{instance_id[:8]}.tmp",
+    ]
+    if all(_can_write_file(path) for path in probes):
+        return None
+    fallback = Path(tempfile.gettempdir()) / "networkis-runtime" / instance_id[:8]
+    environment["SIMULATOR_RUNTIME_ROOT"] = str(fallback)
+    return fallback
+
+
+def _prepare_frontend_dist_dir(frontend: Path, environment: dict[str, str], instance_id: str) -> str | None:
+    if environment.get("NETWORKIS_NEXT_DIST_DIR"):
+        return None
+    isolated_name = ".next-networkis"
+    probe = frontend / isolated_name / f"launcher-probe-{instance_id[:8]}.tmp"
+    if not _can_write_file(probe):
+        raise RuntimeError(
+            "Next.js braucht einen relativen beschreibbaren Build-Ordner im Frontend. "
+            "Starte den Simulator ausserhalb der Codex-Dateisandbox oder pruefe die "
+            "Windows-Dateirechte im Projektordner."
+        )
+    environment["NETWORKIS_NEXT_DIST_DIR"] = isolated_name
+    return isolated_name
+
+
+def _open_service_log(name: str, instance_id: str):
+    candidates = [
+        SERVICE_LOG_ROOT / f"{name}.log",
+        SERVICE_LOG_ROOT / f"{name}-{instance_id[:8]}.log",
+        Path(tempfile.gettempdir()) / "networkis-service-logs" / f"{name}-{instance_id[:8]}.log",
+    ]
+    last_error: PermissionError | None = None
+    for path in candidates:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            return path.open("w", encoding="utf-8", buffering=1)
+        except PermissionError as error:
+            last_error = error
+            continue
+    if last_error:
+        raise last_error
+    raise PermissionError(f"Logdatei fuer {name!r} konnte nicht geoeffnet werden.")
+
+
 def _run_web() -> int:
     _assert_canonical_project_root()
     frontend = ROOT / "frontend"
@@ -483,16 +741,18 @@ def _run_web() -> int:
 
     instance_id = uuid.uuid4().hex
     service_environment = _runtime_environment()
+    runtime_fallback = _prepare_backend_runtime_root(service_environment, instance_id)
+    frontend_dist_dir = _prepare_frontend_dist_dir(frontend, service_environment, instance_id)
     backend_environment = service_environment.copy()
     backend_environment["SIMULATOR_INSTANCE_ID"] = instance_id
 
-    SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
-    backend_log_path = SERVICE_LOG_ROOT / "backend.log"
-    frontend_log_path = SERVICE_LOG_ROOT / "frontend.log"
-    ollama_log_path = SERVICE_LOG_ROOT / "ollama.log"
-    backend_log = backend_log_path.open("w", encoding="utf-8", buffering=1)
-    frontend_log = frontend_log_path.open("w", encoding="utf-8", buffering=1)
-    ollama_log = ollama_log_path.open("w", encoding="utf-8", buffering=1)
+    try:
+        SERVICE_LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        pass
+    backend_log = _open_service_log("backend", instance_id)
+    frontend_log = _open_service_log("frontend", instance_id)
+    ollama_log = _open_service_log("ollama", instance_id)
 
     backend_process: subprocess.Popen[object] | None = None
     frontend_process: subprocess.Popen[object] | None = None
@@ -555,6 +815,10 @@ def _run_web() -> int:
         print(f"Backend: {backend_url} (exklusiv)")
         print(f"Frontend: {frontend_url} (exklusiv)")
         print(f"Dienstlogs: {SERVICE_LOG_ROOT}")
+        if runtime_fallback is not None:
+            print(f"Runtime-Fallback: {runtime_fallback}")
+        if frontend_dist_dir is not None:
+            print(f"Next.js Dev-Ordner: frontend/{frontend_dist_dir}")
         print("Beenden mit Strg+C")
         if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
             "0",
@@ -670,6 +934,10 @@ def main() -> int:
         return _run_web()
     if command == "backend":
         return _run_backend()
+    if command == "doctor":
+        checks = _run_dependency_doctor(_runtime_environment())
+        _print_dependency_doctor(checks)
+        return 0 if all(check.ok for check in checks if check.name != "Engineering-Datenbank-Port") else 1
     if command == "cli":
         arguments = arguments[1:]
     return _run_cli(arguments)

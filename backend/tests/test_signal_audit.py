@@ -143,5 +143,29 @@ def test_legacy_status_signal_uses_conservative_state_domain():
 
     assert result["semantic_type"] == "STATE"
     assert result["required_bits"] == 3
-    assert result["status"] == "WARNING"
+    assert result["status"] == "PASS"
+    assert not any(check["code"] in {"SIGNAL_SEMANTIC_MISSING", "SIGNAL_BIT_NEED_OPEN"} for check in result["checks"])
+
+
+def test_unit_based_semantic_classification_unblocks_numeric_bit_optimization():
+    result = inspect_signal(
+        {
+            "id": "pressure",
+            "name": "LinePressure",
+            "message_id": "process",
+            "start_bit": 0,
+            "length_bits": 16,
+            "byte_order": "little_endian",
+            "data_type": "unsigned",
+            "factor": 0.1,
+            "offset_value": 0,
+            "min_value": 0,
+            "max_value": 250,
+            "unit": "bar",
+        },
+        {"id": "process", "name": "Process", "dlc": 8},
+    )
+
+    assert result["semantic_type"] == "NUMERIC"
+    assert result["required_bits"] == 12
     assert not any(check["code"] in {"SIGNAL_SEMANTIC_MISSING", "SIGNAL_BIT_NEED_OPEN"} for check in result["checks"])

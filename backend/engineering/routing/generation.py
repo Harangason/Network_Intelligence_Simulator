@@ -23,6 +23,9 @@ INTERFACE_TO_PROTOCOL = {
     "ModbusTCP": "MODBUS",
     "ModbusRTU": "MODBUS",
     "OPCUA": "OPC_UA",
+    "ARINC": "ARINC",
+    "MIL_STD_1553": "MIL_STD_1553",
+    "PCIe": "PCIE",
 }
 
 

@@ -14,8 +14,13 @@ import {
   runEngineeringWorkflowAutomation,
   type EngineeringWorkflowAutomationEvent,
 } from "@/lib/agent/engineering-agent";
+import { appendAgentDiagnostic } from "@/lib/agent/agent-diagnostics-log";
 import { AGENT_OUTPUT_RECOVERY_CONTEXT, inspectAgentText } from "@/lib/agent/agent-output-safety";
-import { isEngineeringReviewRequest, isStructuredEngineeringSpecification } from "@/lib/agent/engineering-specification";
+import {
+  extractEngineeringSpecification,
+  isEngineeringReviewRequest,
+  isStructuredEngineeringSpecification,
+} from "@/lib/agent/engineering-specification";
 import {
   extractSignalBatchRequest,
   isBulkSignalCreationRequest,
@@ -38,6 +43,15 @@ function audit(message: string, details: Record<string, unknown> = {}) {
     .map(([key, value]) => `${key}=${String(value)}`)
     .join(" ");
   console.info(`[NetworkIS Agent] ${message}${suffix ? ` ${suffix}` : ""}`);
+  void appendAgentDiagnostic("agent", {
+    projectId: details.projectId ?? currentAgentProjectId(),
+    runId: details.runId ?? details.requestId,
+    step: details.step,
+    event: message,
+    details,
+  }).catch((error) => {
+    console.warn("[NetworkIS Agent] diagnostic log failed", error);
+  });
 }
 
 function publicAgentError(error: unknown) {
@@ -242,6 +256,30 @@ function hasRegistrationFailures(result: Awaited<ReturnType<typeof registerEngin
 
 function isExplicitScopeContinuationApproval(text: string) {
   return /\b(Fortsetzung-Freigabe|Auftrag fortsetzen|fehlende(?:n)? .*dokumentier|dokumentierte Abweichung|explizite Freigabe)\b/i.test(text);
+}
+
+const INLINE_IMPLEMENTATION_CONFIRMATION_PATTERN =
+  /\b(?:passt|das passt|jetzt\s+(?:uebernehmen|übernehmen)|(?:uebernehmen|übernehmen)|anwenden|umsetzen|erstelle\s+(?:dies|das)|erzeuge\s+(?:dies|das)|lege\s+(?:dies|das)\s+an|leg\s+(?:dies|das)\s+an|mach\s+das)\b/i;
+
+const DIRECT_ENGINEERING_MODEL_MUTATION_PATTERN =
+  /(?:\b(?:lege|leg|erstelle|erstell\w*|erzeuge|generiere|registriere|anlegen|aufbauen)\b[\s\S]{0,160}(?:\b(?:hardware|knoten|konten|ecu|gateway|sensor|aktor|aktuator|funktion|schnittstelle|interface|signal)\b|[\p{L}\d_-]*(?:kamera|camera|radar|lidar)[\p{L}\d_-]*)|(?:\b(?:hardware|knoten|konten|ecu|gateway|sensor|aktor|aktuator|funktion|schnittstelle|interface|signal)\b|[\p{L}\d_-]*(?:kamera|camera|radar|lidar)[\p{L}\d_-]*)[\s\S]{0,120}\b(?:anlegen|erstellen|erzeugen|registrieren|aufbauen)\b)/iu;
+
+function previousConcreteUserText(messages: UIMessage[]) {
+  return [...messages]
+    .reverse()
+    .filter((message) => message.role === "user")
+    .map((message) => uiMessageFullText(message).trim())
+    .find((text) => text && !INLINE_IMPLEMENTATION_CONFIRMATION_PATTERN.test(text))
+    ?? "";
+}
+
+function engineeringModelMutationText(requestText: string, messages: UIMessage[]) {
+  const basis = INLINE_IMPLEMENTATION_CONFIRMATION_PATTERN.test(requestText)
+    ? previousConcreteUserText(messages)
+    : requestText;
+  if (!DIRECT_ENGINEERING_MODEL_MUTATION_PATTERN.test(basis)) return null;
+  const extracted = extractEngineeringSpecification(basis);
+  return extracted.chains.length > 0 ? { text: basis, recognized: extracted.chains.length } : null;
 }
 
 function scopeContinuationAttempts(wizardStatus: Record<string, unknown>, runId: string) {
@@ -776,6 +814,9 @@ export async function POST(request: Request) {
   const requestText = uiMessageFullText(lastUserMessage);
   const reviewRequested = isEngineeringReviewRequest(requestText);
   const structuredSpecification = isStructuredEngineeringSpecification(requestText);
+  const deterministicEngineeringMutation = !reviewRequested && !structuredSpecification
+    ? engineeringModelMutationText(requestText, payload.messages)
+    : null;
   const automaticTarget = !reviewRequested && !structuredSpecification
     ? isAutomaticWorkflowTarget(payload.workflowTarget)
       ? payload.workflowTarget
@@ -821,6 +862,20 @@ export async function POST(request: Request) {
       request.headers.get("X-Project-ID"),
       () => createSignalBatchResponse(sanitizedHistory.messages, requestText),
       requestText,
+    );
+  }
+
+  if (deterministicEngineeringMutation) {
+    audit("deterministic engineering mutation started", {
+      requestId,
+      projectId,
+      recognized: deterministicEngineeringMutation.recognized,
+      confirmation: deterministicEngineeringMutation.text !== requestText,
+    });
+    return runWithAgentProject(
+      request.headers.get("X-Project-ID"),
+      () => createSpecificationResponse(sanitizedHistory.messages, deterministicEngineeringMutation.text),
+      deterministicEngineeringMutation.text,
     );
   }
 

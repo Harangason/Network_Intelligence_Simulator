@@ -12,6 +12,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
 
 const STORAGE_KEY = "communication-simulator:settings:v1";
 export const SETTINGS_EVENT = "communication-simulator:settings-changed";
+const PROJECT_QUERY_KEYS = ["project_id", "projectId"];
 
 export function normalizeProjectId(value: unknown): string {
   const normalized = String(value ?? "")
@@ -22,7 +23,18 @@ export function normalizeProjectId(value: unknown): string {
   return normalized || DEFAULT_USER_SETTINGS.activeProject;
 }
 
-export function readUserSettings(): UserSettings {
+function readUrlProjectId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const searchParams = new URLSearchParams(window.location.search);
+    const raw = PROJECT_QUERY_KEYS.map((key) => searchParams.get(key)).find((value) => value?.trim());
+    return raw ? normalizeProjectId(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredUserSettings(): UserSettings {
   if (typeof window === "undefined") return DEFAULT_USER_SETTINGS;
   try {
     const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") as Partial<UserSettings>;
@@ -36,6 +48,14 @@ export function readUserSettings(): UserSettings {
   }
 }
 
+export function readUserSettings(): UserSettings {
+  const stored = readStoredUserSettings();
+  return {
+    ...stored,
+    activeProject: readUrlProjectId() ?? stored.activeProject,
+  };
+}
+
 export function readActiveProjectId(): string {
   return readUserSettings().activeProject;
 }
@@ -43,4 +63,14 @@ export function readActiveProjectId(): string {
 export function writeUserSettings(settings: UserSettings) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   window.dispatchEvent(new CustomEvent<UserSettings>(SETTINGS_EVENT, { detail: settings }));
+}
+
+export function adoptActiveProjectFromUrl(): string | null {
+  const activeProject = readUrlProjectId();
+  if (!activeProject || typeof window === "undefined") return activeProject;
+  const stored = readStoredUserSettings();
+  if (stored.activeProject !== activeProject) {
+    writeUserSettings({ ...stored, activeProject });
+  }
+  return activeProject;
 }

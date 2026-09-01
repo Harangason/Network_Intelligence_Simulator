@@ -32,12 +32,15 @@ BUS_TO_INTERFACE_TYPE = {
 }
 
 ORIGIN = "network-editor"
+MAX_SYNC_LOCKS = 256
 _sync_locks: dict[str, threading.Lock] = {}
 _sync_locks_guard = threading.Lock()
 
 
 def _sync_lock(topology_id: str) -> threading.Lock:
     with _sync_locks_guard:
+        if topology_id not in _sync_locks and len(_sync_locks) >= MAX_SYNC_LOCKS:
+            _sync_locks.pop(next(iter(_sync_locks)))
         return _sync_locks.setdefault(topology_id, threading.Lock())
 
 

@@ -4,6 +4,7 @@ setlocal
 set "ROOT=%~dp0"
 set "COMPOSE_FILE=%ROOT%docker-compose.engineering-db.yml"
 set "DOCKER_DESKTOP=C:\Program Files\Docker\Docker\Docker Desktop.exe"
+set "DOCKER_DIAG=%TEMP%\networkis-docker-info.log"
 
 where docker >nul 2>nul
 if errorlevel 1 (
@@ -11,7 +12,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-docker info >nul 2>nul
+docker info > "%DOCKER_DIAG%" 2>&1
 if errorlevel 1 (
   powershell -NoProfile -Command "$svc = Get-Service com.docker.service -ErrorAction SilentlyContinue; if ($svc -and $svc.Status -ne 'Running') { exit 2 }; exit 0" >nul
   if errorlevel 2 (
@@ -30,12 +31,21 @@ if errorlevel 1 (
 
   echo Warte auf Docker Engine...
   for /l %%I in (1,1,60) do (
-    docker info >nul 2>nul
+    docker info > "%DOCKER_DIAG%" 2>&1
     if not errorlevel 1 goto docker_ready
     powershell -NoProfile -Command "Start-Sleep -Seconds 2" >nul
   )
 
   echo Docker Engine wurde nicht rechtzeitig bereit.
+  echo Letzte Docker-Diagnose:
+  type "%DOCKER_DIAG%"
+  findstr /i "dockerInference Inference" "%DOCKER_DIAG%" >nul 2>nul
+  if not errorlevel 1 (
+    echo.
+    echo Hinweis: Docker Desktop haengt wahrscheinlich am dockerInference-Listener.
+    echo Docker Desktop vollstaendig beenden, neu starten und die Inference-/AI-Komponente
+    echo in Docker Desktop reparieren oder deaktivieren.
+  )
   echo Falls Docker Desktop sichtbar ist, oeffne es einmal manuell und pruefe, ob der Dienst
   echo "Docker Desktop Service" gestartet werden darf. Danach diesen Batch erneut ausfuehren.
   exit /b 1

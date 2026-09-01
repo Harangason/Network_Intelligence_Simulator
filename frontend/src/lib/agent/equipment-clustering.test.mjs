@@ -55,6 +55,7 @@ test("cluster summaries keep the user network choice visible for the agent promp
     selected: true,
     network_id: "industrial-can_fd",
     network_label: "Industrial CAN-FD",
+    bus_name: "Klima",
     devices: 3,
     counts: { ECU: 1, SensorController: 1, ActuatorController: 1 },
     evidence: ["ClimateController"],
@@ -64,10 +65,38 @@ test("cluster summaries keep the user network choice visible for the agent promp
     selected: false,
     network_id: "industrial-lin",
     network_label: "Industrial LIN",
+    bus_name: "Lighting",
     devices: 1,
     counts: { SensorController: 1 },
     evidence: ["LightingSwitch"],
   }]);
 
-  assert.equal(summary, "Klima -> Industrial CAN-FD (3 Teilnehmer)");
+  assert.equal(summary, "Klima -> Industrial CAN-FD / Klima (3 Teilnehmer)");
+});
+
+test("automotive equipment is grouped by domain families instead of singleton fallback names", () => {
+  const clusters = buildEquipmentClusters([
+    chain("Parkassistenz", "ECU", "CAN_FD"),
+    chain("ParkassistenzSchaltausgang", "ActuatorController", "CAN_FD"),
+    chain("Ultraschallverarbeitung", "ECU", "CAN_FD"),
+    chain("VerticalAcceleration", "SensorController", "CAN_FD"),
+    chain("OilLevel", "SensorController", "LIN"),
+    chain("Wegfahrsperre", "ECU", "CAN_FD"),
+    chain("SchiebedachSchaltausgang", "ActuatorController", "LIN"),
+    chain("InfotainmentStellglied", "ActuatorController", "Ethernet"),
+  ], [
+    { id: "automotive-can_fd", label: "Automotive CAN-FD", count: 1 },
+    { id: "automotive-lin", label: "Automotive LIN", count: 1 },
+    { id: "automotive-ethernet", label: "Automotive Ethernet", count: 1 },
+  ]);
+
+  const labels = new Set(clusters.map((cluster) => cluster.label));
+  assert.ok(labels.has("Fahrerassistenz"));
+  assert.ok(labels.has("Antrieb"));
+  assert.ok(labels.has("Zugang und Diebstahlschutz"));
+  assert.ok(labels.has("Karosserie und Komfort"));
+  assert.ok(labels.has("Infotainment und Anzeige"));
+  assert.equal(clusters.find((cluster) => cluster.label === "Fahrerassistenz")?.devices.length, 4);
+  assert.equal(clusters.find((cluster) => cluster.label === "Antrieb")?.devices[0]?.hardware_name, "OilLevel");
+  assert.equal(clusters.some((cluster) => /^Oil|ParkassistenzSchalt|Vertical/.test(cluster.label)), false);
 });

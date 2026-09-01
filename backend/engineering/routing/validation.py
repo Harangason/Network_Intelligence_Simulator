@@ -29,6 +29,7 @@ PROTOCOL_CAPACITY = {
     "MODBUS": (100_000, 253),
     "ARINC": (100_000, 4),
     "MIL_STD_1553": (1_000_000, 4),
+    "PCIE": (8_000_000_000, 4096),
     "CUSTOM": (1_000_000, 65_535),
 }
 
@@ -43,6 +44,9 @@ INTERFACE_PROTOCOLS = {
     "ModbusTCP": {"MODBUS", "TCP"},
     "ModbusRTU": {"MODBUS"},
     "OPCUA": {"OPC_UA"},
+    "ARINC": {"ARINC"},
+    "MIL_STD_1553": {"MIL_STD_1553"},
+    "PCIe": {"PCIE"},
     "Other": set(PROTOCOL_CAPACITY),
 }
 

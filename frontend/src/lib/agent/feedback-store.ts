@@ -23,6 +23,7 @@ const CACHE_TTL_MS = 5000;
 const CACHE_NAMESPACE = "agent-feedback";
 const CACHE_KEY = "history";
 const MAX_CACHE_BYTES = 8_000_000;
+const PERSISTED_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 let cachedRecords: AgentFeedbackRecord[] = [];
 let cacheLoadedAt = 0;
 
@@ -72,7 +73,7 @@ export async function recordAgentFeedback(input: {
     createdAt: new Date().toISOString(),
   };
   cachedRecords = [...cachedRecords, record].slice(-1000);
-  await writeProgramCache(CACHE_NAMESPACE, CACHE_KEY, cachedRecords, MAX_CACHE_BYTES);
+  await writeProgramCache(CACHE_NAMESPACE, CACHE_KEY, cachedRecords, MAX_CACHE_BYTES, PERSISTED_CACHE_TTL_MS);
   cacheLoadedAt = Date.now();
   return record;
 }

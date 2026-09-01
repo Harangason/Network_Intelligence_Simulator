@@ -9,6 +9,7 @@ Agent bleiben getrennt; Retrieval liest ausschließlich die Source of Truth.
 from __future__ import annotations
 
 import logging
+import json
 
 import psycopg
 from flask import Blueprint, Response, g, jsonify, request
@@ -16,6 +17,7 @@ from psycopg_pool import PoolTimeout
 
 from .models import DEVICE_TYPES, EngineeringValidationError, INTERFACE_TYPES, MESSAGE_DIRECTIONS
 from .db import get_connection
+from .performance_governance import assert_within_budget, performance_governance_summary
 from .proposals import (
     approve_all_valid_proposals,
     approve_proposal,
@@ -40,6 +42,7 @@ from .repository import (
 from .topology_sync import sync_topology
 from .importer import commit_import, preview_import
 from .knowledge import CanonicalKnowledgeService
+from .semantic_intelligence import SemanticClassificationService
 from .routing.config_builder import CommunicationConfigBuilder
 from .routing.generation import RoutingGenerationService
 from .routing.network_sync import synchronize_network_routes
@@ -216,6 +219,14 @@ def _pagination_args() -> tuple[int, int]:
     return limit, offset
 
 
+def _budgeted_json(name: str, payload: dict):
+    try:
+        assert_within_budget(name, len(json.dumps(payload, default=str).encode("utf-8")))
+    except ValueError as error:
+        return jsonify({"error": str(error), "budget": name}), 413
+    return jsonify(payload)
+
+
 @engineering_api.errorhandler(EngineeringValidationError)
 def _handle_validation_error(error: EngineeringValidationError):
     return jsonify({"error": str(error)}), 400
@@ -382,6 +393,11 @@ def health():
     )
 
 
+@engineering_api.route("/performance/governance", methods=["GET"])
+def performance_governance():
+    return jsonify(performance_governance_summary())
+
+
 @engineering_api.route("/schema", methods=["GET"])
 def schema():
     """Metadaten für Frontend-Formulare: Vokabulare und Ressourcen-Layout."""
@@ -539,11 +555,10 @@ def commit_import_route():
 
 @engineering_api.route("/workflow", methods=["GET"])
 def workflow_status_route():
-    return jsonify(
-        WorkflowStatusService(_project_id()).get(
-            summary=request.args.get("view", "").strip().lower() == "summary"
-        )
+    state = WorkflowStatusService(_project_id()).get(
+        summary=request.args.get("view", "").strip().lower() == "summary"
     )
+    return _budgeted_json("workflow_state_response", state)
 
 
 @engineering_api.route("/workflow/context", methods=["PATCH"])
@@ -619,21 +634,42 @@ def update_workflow_topology_route():
     return jsonify(state)
 
 
+def _workflow_snapshot_summary(snapshot: dict | None, *, keep_overview: bool = False) -> dict | None:
+    if not snapshot:
+        return None
+    summary = {
+        key: snapshot.get(key)
+        for key in (
+            "id",
+            "source_versions",
+            "status",
+            "is_outdated",
+            "outdated_reason",
+            "created_at",
+        )
+        if key in snapshot
+    }
+    if keep_overview:
+        results = snapshot.get("results") if isinstance(snapshot.get("results"), dict) else {}
+        overview = results.get("overview") if isinstance(results.get("overview"), dict) else None
+        if overview is not None:
+            summary["results"] = {"overview": overview}
+    return summary
+
+
 @engineering_api.route("/workflow/snapshots", methods=["GET"])
 def workflow_snapshots_route():
     service = WorkflowStatusService(_project_id())
     capacity = service.latest_analysis("capacity_timing", include_outdated=True)
     preflight = service.latest_analysis("preflight", include_outdated=True)
     results_analysis = service.latest_analysis("results_analysis", include_outdated=True)
-    state = service.get()
-    return jsonify(
-        {
-            "capacity": capacity,
-            "preflight": preflight,
-            "results_analysis": results_analysis,
-            "simulations": state["simulation_snapshots"],
-        }
-    )
+    payload = {
+        "capacity": _workflow_snapshot_summary(capacity, keep_overview=True),
+        "preflight": _workflow_snapshot_summary(preflight),
+        "results_analysis": _workflow_snapshot_summary(results_analysis),
+        "simulations": service.list_simulation_snapshots(),
+    }
+    return _budgeted_json("simulation_snapshot_list", payload)
 
 
 @engineering_api.route("/workflow/simulation-snapshots", methods=["POST"])
@@ -702,6 +738,27 @@ def intelligence_create_proposal_route():
 @engineering_api.route("/intelligence/proposals/<proposal_id>", methods=["PATCH"])
 def intelligence_review_proposal_route(proposal_id: str):
     return jsonify(IntelligenceService(_project_id()).review_proposal(proposal_id, _routing_payload()))
+
+
+@engineering_api.route("/semantics/concepts", methods=["GET"])
+def semantic_concepts_route():
+    return jsonify(SemanticClassificationService().concepts())
+
+
+@engineering_api.route("/semantics/concepts/<concept_id>", methods=["GET"])
+def semantic_concept_route(concept_id: str):
+    concept = SemanticClassificationService().concept(concept_id)
+    if concept is None:
+        return jsonify({"error": "Semantisches Konzept nicht gefunden."}), 404
+    return jsonify(concept)
+
+
+@engineering_api.route("/semantics/classify", methods=["POST"])
+def semantic_classification_route():
+    payload = _routing_payload()
+    if not str(payload.get("name") or payload.get("display_name") or payload.get("id") or "").strip():
+        raise EngineeringValidationError("name oder display_name ist fuer die Semantikklassifikation erforderlich.")
+    return jsonify(SemanticClassificationService().classify(payload))
 
 
 @engineering_api.route("/projects", methods=["GET"])

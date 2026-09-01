@@ -7,6 +7,7 @@ import path from "node:path";
 export type ProgramCacheEntry<T> = {
   key: string;
   updatedAt: number;
+  expiresAt?: number;
   value: T;
 };
 
@@ -44,9 +45,16 @@ function isMissingFile(error: unknown) {
 
 export async function readProgramCache<T>(namespace: string, key: string): Promise<ProgramCacheEntry<T> | null> {
   try {
-    const serialized = await readFile(cachePath(namespace, key), "utf8");
+    const target = cachePath(namespace, key);
+    const serialized = await readFile(target, "utf8");
     const entry = JSON.parse(serialized) as Partial<ProgramCacheEntry<T>>;
     if (entry.key !== key || typeof entry.updatedAt !== "number" || !("value" in entry)) return null;
+    if (typeof entry.expiresAt === "number" && entry.expiresAt <= Date.now()) {
+      await unlink(target).catch((error) => {
+        if (!isMissingFile(error)) throw error;
+      });
+      return null;
+    }
     return entry as ProgramCacheEntry<T>;
   } catch (error) {
     if (isMissingFile(error) || error instanceof SyntaxError) return null;
@@ -59,10 +67,17 @@ export async function writeProgramCache<T>(
   key: string,
   value: T,
   maximumBytes: number,
+  ttlMs?: number,
 ): Promise<ProgramCacheEntry<T>> {
   const directory = cacheDirectory(namespace);
   const target = cachePath(namespace, key);
-  const entry: ProgramCacheEntry<T> = { key, updatedAt: Date.now(), value };
+  const updatedAt = Date.now();
+  const entry: ProgramCacheEntry<T> = {
+    key,
+    updatedAt,
+    ...(ttlMs && ttlMs > 0 ? { expiresAt: updatedAt + ttlMs } : {}),
+    value,
+  };
   const serialized = JSON.stringify(entry);
   const bytes = Buffer.byteLength(serialized, "utf8");
   if (bytes > maximumBytes) {
@@ -95,6 +110,19 @@ export async function deleteProgramCache(namespace: string, key: string): Promis
   });
 }
 
+async function cacheFileInfo(directory: string, file: string) {
+  const target = path.join(directory, file);
+  const stats = await stat(target);
+  let expiresAt: number | null = null;
+  try {
+    const parsed = JSON.parse(await readFile(target, "utf8")) as Partial<ProgramCacheEntry<unknown>>;
+    expiresAt = typeof parsed.expiresAt === "number" ? parsed.expiresAt : null;
+  } catch {
+    expiresAt = stats.mtimeMs;
+  }
+  return { file, modifiedAt: stats.mtimeMs, expiresAt };
+}
+
 export async function pruneProgramCache(namespace: string, maximumEntries: number): Promise<void> {
   const directory = cacheDirectory(namespace);
   let files: string[];
@@ -104,12 +132,12 @@ export async function pruneProgramCache(namespace: string, maximumEntries: numbe
     if (isMissingFile(error)) return;
     throw error;
   }
-  if (files.length <= maximumEntries) return;
-
-  const candidates = await Promise.all(files.map(async (file) => ({
-    file,
-    modifiedAt: (await stat(path.join(directory, file))).mtimeMs,
-  })));
-  candidates.sort((left, right) => right.modifiedAt - left.modifiedAt);
-  await Promise.all(candidates.slice(maximumEntries).map(({ file }) => unlink(path.join(directory, file))));
+  const candidates = await Promise.all(files.map((file) => cacheFileInfo(directory, file)));
+  const now = Date.now();
+  const expired = candidates.filter((item) => item.expiresAt !== null && item.expiresAt <= now);
+  await Promise.all(expired.map(({ file }) => unlink(path.join(directory, file))));
+  const active = candidates.filter((item) => !(item.expiresAt !== null && item.expiresAt <= now));
+  if (active.length <= maximumEntries) return;
+  active.sort((left, right) => right.modifiedAt - left.modifiedAt);
+  await Promise.all(active.slice(maximumEntries).map(({ file }) => unlink(path.join(directory, file))));
 }

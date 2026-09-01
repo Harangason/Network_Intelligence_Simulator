@@ -6,6 +6,7 @@ import copy
 import json
 import logging
 import os
+import tempfile
 import threading
 import uuid
 from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor
@@ -56,6 +57,12 @@ def _compact_job_for_registry(job: dict[str, Any]) -> dict[str, Any]:
     return compact
 
 
+def _fallback_registry_path() -> Path:
+    instance = os.environ.get("SIMULATOR_INSTANCE_ID", "local").strip() or "local"
+    safe_instance = "".join(character for character in instance if character.isalnum())[:8] or "local"
+    return Path(tempfile.gettempdir()) / "networkis-runtime" / "jobs" / f"registry-{safe_instance}.json"
+
+
 def _run_simulation_process(
     job_id: str,
     payload: dict[str, Any],
@@ -96,6 +103,7 @@ class JobService:
             not bool(os.environ.get("PYTEST_CURRENT_TEST")) if persist is None else persist
         )
         self.registry_path = registry_path or RUNTIME_ROOT / "jobs" / "registry.json"
+        self._uses_fallback_registry = False
         self._load_registry()
 
     def _get_executor(self) -> ProcessPoolExecutor | ThreadPoolExecutor:
@@ -128,8 +136,24 @@ class JobService:
                 self._jobs[str(job["id"])] = job
             self._prune_locked()
             self._persist_locked()
+        except PermissionError:
+            if self._switch_to_fallback_registry():
+                self._load_registry()
+            else:
+                logger.exception("Could not load persisted simulation jobs")
         except (OSError, ValueError, TypeError):
             logger.exception("Could not load persisted simulation jobs")
+
+    def _switch_to_fallback_registry(self) -> bool:
+        if self._uses_fallback_registry:
+            return False
+        fallback = _fallback_registry_path()
+        if fallback == self.registry_path:
+            return False
+        logger.warning("Simulation job registry is not writable, using fallback %s", fallback)
+        self.registry_path = fallback
+        self._uses_fallback_registry = True
+        return True
 
     def _prune_locked(self) -> None:
         if len(self._jobs) <= MAX_PERSISTED_JOBS:
@@ -162,6 +186,11 @@ class JobService:
                 encoding="utf-8",
             )
             temporary.replace(self.registry_path)
+        except PermissionError:
+            if self._switch_to_fallback_registry():
+                self._persist_locked()
+            else:
+                logger.exception("Could not persist simulation jobs")
         except (OSError, TypeError, ValueError):
             logger.exception("Could not persist simulation jobs")
 

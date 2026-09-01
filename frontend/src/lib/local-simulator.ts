@@ -1,4 +1,5 @@
 import type { ArtifactDownload, Catalog, SimulationJob, Technology } from "./types";
+import { BoundedMemoryCache } from "./bounded-memory-cache";
 import { defaultSimulationFormats, simulationFormatDefinitions, simulationFormatExtension } from "./simulation-formats";
 
 const technology = (id: string, family: string, medium: string, topology: string, bitrate: number, payload: number, native: string[] = []): Technology => ({
@@ -21,7 +22,11 @@ export const localCatalog: Catalog = {
 };
 
 const LEGACY_STORAGE_KEY = "communication-simulator-jobs-v1";
-const runtimeJobs = new Map<string, SimulationJob>();
+const runtimeJobs = new BoundedMemoryCache<string, SimulationJob>({
+  maxEntries: 30,
+  ttlMs: 60 * 60 * 1000,
+  maxValueBytes: 1_000_000,
+});
 let legacyMigration: Promise<void> | null = null;
 
 function isSimulationJob(value: unknown): value is SimulationJob {

@@ -234,7 +234,7 @@ export function CapacityWorkbench() {
               </button>
             );})}
           </div>
-          <CapacityViewWarnings label={CAPACITY_VIEW_LABELS[view]} warning={warningInfo[view]} />
+          <CapacityViewWarnings label={CAPACITY_VIEW_LABELS[view]} scenarioActive={Boolean(scenario)} sourceVersions={sourceVersions} warning={warningInfo[view]} />
 
           {(view === "overview" || view === "networks") && <>
             <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
@@ -276,6 +276,16 @@ function addWarning(info: ViewWarningInfo, view: View, reason: string) {
   if (!info[view].reasons.includes(reason)) info[view].reasons.push(reason);
 }
 
+function readableCapacityFinding(message: string) {
+  return message
+    .replace(/^network_transmission_ms:\s*/i, "Übertragungszeit im Netz: ")
+    .replace(/\bnetwork_transmission_ms\b/gi, "Übertragungszeit im Netz")
+    .replace(/\bend_to_end_latency_ms\b/gi, "End-to-End-Latenz")
+    .replace(/\bburst_load_percent\b/gi, "Burst-Last")
+    .replace(/\baverage_load_percent\b/gi, "Durchschnittslast")
+    .replace(/\bcapacity_reserve_percent\b/gi, "Kapazitätsreserve");
+}
+
 function buildCapacityWarningInfo(
   results: CapacityResults | null,
   findings: AnalysisFinding[],
@@ -294,8 +304,9 @@ function buildCapacityWarningInfo(
 
   const issueFindings = findings.filter((finding) => finding.severity === "ERROR" || finding.severity === "WARNING");
   for (const finding of issueFindings) {
-    addWarning(info, "overview", finding.message);
-    addWarning(info, "recommendations", finding.recommendation ?? finding.message);
+    const readableMessage = readableCapacityFinding(finding.message);
+    addWarning(info, "overview", readableMessage);
+    addWarning(info, "recommendations", finding.recommendation ? readableCapacityFinding(finding.recommendation) : readableMessage);
   }
   if (proposals.length > 0) addWarning(info, "recommendations", `${proposals.length} KI-Vorschläge zur Kapazitätsoptimierung offen.`);
 
@@ -367,20 +378,48 @@ function buildStatusDetails(status: WorkflowStatus | null, info: ViewWarningInfo
   return details.length ? details.slice(0, 6) : [`Status ${status}: Bitte betroffene Capacity-Ansichten prüfen.`];
 }
 
-function CapacityViewWarnings({ label, warning }: { label: string; warning: { count: number; reasons: string[] } }) {
+function CapacityViewWarnings({ label, scenarioActive, sourceVersions, warning }: { label: string; scenarioActive: boolean; sourceVersions: Record<string, number> | null; warning: { count: number; reasons: string[] } }) {
   if (warning.count === 0) return null;
+  const sourceText = capacitySourceText(sourceVersions, scenarioActive);
+  const meaningText = capacityMeaningText(label, warning.reasons);
   return (
     <section className="capacity-warning-origin" aria-label={`Warnursprung ${label}`}>
       <div>
         <strong>Warnursprung: {label}</strong>
         <span>{warning.count} Hinweis{warning.count === 1 ? "" : "e"} in dieser Ansicht</span>
       </div>
+      <dl className="capacity-warning-explanation">
+        <div><dt>Quelle der Bewertung</dt><dd>{sourceText}</dd></div>
+        <div><dt>Gemeint ist</dt><dd>{meaningText}</dd></div>
+      </dl>
       <ul>
         {warning.reasons.slice(0, 8).map((reason, index) => <li key={`${reason}-${index}`}>{reason}</li>)}
       </ul>
       {warning.reasons.length > 8 && <small>{warning.reasons.length - 8} weitere Hinweise in den Detailtabellen.</small>}
     </section>
   );
+}
+
+function capacitySourceText(sourceVersions: Record<string, number> | null, scenarioActive: boolean) {
+  const versions = sourceVersions
+    ? ["engineering_model", "routing", "network_editor", "parameters"].map((key) => `${key.replaceAll("_", " ")} v${sourceVersions[key] ?? 0}`).join(", ")
+    : "aktuelle Workflow-Quellen";
+  const mode = scenarioActive ? "What-if-Szenario, nicht im Draft gespeichert" : "gespeicherter Capacity-Snapshot";
+  return `${mode}; berechnet aus Nachrichtenlaenge/DLC, Zykluszeiten, Routen, Bustechnik, Bitrate, Burst-Faktor und Queue-Policy (${versions}).`;
+}
+
+function capacityMeaningText(label: string, reasons: string[]) {
+  const joined = reasons.join(" ").toLowerCase();
+  if (joined.includes("network_transmission_ms") || joined.includes("engpass")) {
+    return "Mindestens eine Uebertragung belegt im aktuellen Netz rechnerisch zu viel Zeit oder Reserve. Die Detailtabellen zeigen, welche Route, Message oder welches Netz den Engpass erzeugt.";
+  }
+  if (label === "Kritisch") {
+    return "Diese Ansicht sammelt Befunde, die vor Simulation oder Freigabe geprueft werden sollen: Engpaesse, Timingverletzungen, zu geringe Reserve oder auffaellige Burst-Last.";
+  }
+  if (label === "Empfehlungen") {
+    return "Hier landen technische Optimierungshinweise aus der gleichen Rechnung; sie sind Vorschlaege und muessen fachlich freigegeben werden.";
+  }
+  return "Die Hinweise sind aus der deterministischen Capacity-&-Timing-Berechnung abgeleitet und markieren Werte ausserhalb der Ziel- oder Plausibilitaetsgrenzen.";
 }
 
 function Metric({ label, value, tone, details = [] }: { label: string; value: string; tone?: string; details?: string[] }) {

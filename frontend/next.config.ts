@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
+const configuredDistDir = process.env.NETWORKIS_NEXT_DIST_DIR;
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  distDir: configuredDistDir ?? ".next-networkis",
   turbopack: {
     root: process.cwd(),
   },

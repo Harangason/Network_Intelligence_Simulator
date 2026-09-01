@@ -1,4 +1,5 @@
 import type { Catalog, SimulationJob } from "@/lib/types";
+import { BoundedMemoryCache } from "@/lib/bounded-memory-cache";
 import { simulationFormatDefinitions, simulationFormatExtension } from "@/lib/simulation-formats";
 
 // DEV-OPT: These Next.js-only fixtures keep the isolated v0 frontend preview
@@ -84,7 +85,11 @@ export const devCatalog: Catalog = {
 
 type DevJob = SimulationJob & { request: Record<string, unknown> };
 
-const jobs = new Map<string, DevJob>();
+const jobs = new BoundedMemoryCache<string, DevJob>({
+  maxEntries: 30,
+  ttlMs: 60 * 60 * 1000,
+  maxValueBytes: 1_000_000,
+});
 
 function requestedFormats(payload: Record<string, unknown>): string[] {
   const config = payload.config;
@@ -136,7 +141,7 @@ export function getDevJob(id: string): SimulationJob | undefined {
 }
 
 export function listDevJobs(): SimulationJob[] {
-  return [...jobs.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return jobs.values().sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
 export function getDevArtifact(id: string, format: string): { body: string; type: string; name: string } | undefined {

@@ -1,62 +1,22 @@
 import "server-only";
 
 import { execFile } from "node:child_process";
-import { appendFile, mkdir } from "node:fs/promises";
 import os from "node:os";
-import path from "node:path";
 import { promisify } from "node:util";
+import {
+  appendAgentDiagnostic,
+  AGENT_DIAGNOSTIC_LOG_FILES,
+  agentDiagnosticsFilePath,
+  agentEventLoggingEnabled,
+  setAgentEventLoggingEnabled,
+  type AgentDiagnosticCategory,
+} from "@/lib/agent/agent-diagnostics-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const execFileAsync = promisify(execFile);
-const LOG_FILES = {
-  error: "agent-errors.txt",
-  performance: "agent-performance.txt",
-  question: "agent-questions.txt",
-  workflow: "workflow-status.txt",
-} as const;
-
-type DiagnosticCategory = keyof typeof LOG_FILES;
 type CpuTimes = { idle: number; total: number };
-
-function projectRoot() {
-  return path.basename(process.cwd()).toLowerCase() === "frontend"
-    ? path.dirname(process.cwd())
-    : process.cwd();
-}
-
-function diagnosticsDirectory() {
-  return path.join(projectRoot(), "backend", "runtime", "agent-diagnostics");
-}
-
-function oneLine(value: unknown, maximum = 4000) {
-  const serialized = typeof value === "string" ? value : JSON.stringify(value ?? {});
-  return serialized.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, maximum);
-}
-
-function safeToken(value: unknown, fallback: string) {
-  const normalized = String(value ?? "").trim().replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 120);
-  return normalized || fallback;
-}
-
-async function appendDiagnostic(
-  category: DiagnosticCategory,
-  input: { projectId?: unknown; runId?: unknown; step?: unknown; event?: unknown; details?: unknown },
-) {
-  const directory = diagnosticsDirectory();
-  await mkdir(directory, { recursive: true });
-  await Promise.all(Object.values(LOG_FILES).map((file) => appendFile(path.join(directory, file), "", "utf8")));
-  const line = [
-    new Date().toISOString(),
-    `project=${safeToken(input.projectId, "default")}`,
-    `run=${safeToken(input.runId, "none")}`,
-    `step=${safeToken(input.step, "unknown")}`,
-    `event=${safeToken(input.event, category)}`,
-    `details=${oneLine(input.details)}`,
-  ].join("\t");
-  await appendFile(path.join(directory, LOG_FILES[category]), `${line}\n`, "utf8");
-}
 
 function cpuTimes(): CpuTimes {
   return os.cpus().reduce(
@@ -131,8 +91,14 @@ async function performanceSample() {
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  if (url.searchParams.get("agentLog") === "status") {
+    return Response.json({
+      enabled: await agentEventLoggingEnabled(),
+      file: agentDiagnosticsFilePath("agent"),
+    }, { headers: { "Cache-Control": "no-store" } });
+  }
   const sample = await performanceSample();
-  await appendDiagnostic("performance", {
+  await appendAgentDiagnostic("performance", {
     projectId: url.searchParams.get("projectId"),
     runId: url.searchParams.get("runId"),
     step: url.searchParams.get("step"),
@@ -144,16 +110,39 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => null) as Record<string, unknown> | null;
-  const category = String(payload?.category ?? "") as DiagnosticCategory;
-  if (!payload || !Object.hasOwn(LOG_FILES, category)) {
+  if (payload?.action === "agent-log") {
+    const enabled = payload.enabled === true;
+    if (!enabled) {
+      await appendAgentDiagnostic("agent", {
+        projectId: payload.projectId,
+        runId: payload.runId,
+        step: "agent-log",
+        event: "agent-event-log-disabled",
+        details: { source: "topbar" },
+      });
+    }
+    const state = await setAgentEventLoggingEnabled(enabled);
+    if (enabled) {
+      await appendAgentDiagnostic("agent", {
+        projectId: payload.projectId,
+        runId: payload.runId,
+        step: "agent-log",
+        event: "agent-event-log-enabled",
+        details: { source: "topbar" },
+      });
+    }
+    return Response.json({ ok: true, ...state }, { headers: { "Cache-Control": "no-store" } });
+  }
+  const category = String(payload?.category ?? "") as AgentDiagnosticCategory;
+  if (!payload || !Object.hasOwn(AGENT_DIAGNOSTIC_LOG_FILES, category)) {
     return Response.json({ error: "Unbekannte Diagnosekategorie." }, { status: 400 });
   }
-  await appendDiagnostic(category, {
+  await appendAgentDiagnostic(category, {
     projectId: payload.projectId,
     runId: payload.runId,
     step: payload.step,
     event: payload.event,
     details: payload.details,
   });
-  return Response.json({ ok: true, file: LOG_FILES[category] });
+  return Response.json({ ok: true, file: AGENT_DIAGNOSTIC_LOG_FILES[category] });
 }

@@ -61,8 +61,11 @@ INTERFACE_TYPES = (
     "SPI",
     "I2C",
     "USB",
+    "PCIe",
     "MQTT",
     "OPCUA",
+    "ARINC",
+    "MIL_STD_1553",
     "Other",
 )
 

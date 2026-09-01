@@ -47,6 +47,43 @@ def _issue(
     }
 
 
+def _text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _normalized_semantic_type(row: dict[str, Any]) -> str:
+    semantic = row.get("semantic") if isinstance(row.get("semantic"), dict) else {}
+    data = row.get("data") if isinstance(row.get("data"), dict) else {}
+    configuration = row.get("configuration") if isinstance(row.get("configuration"), dict) else {}
+    explicit = _text(
+        semantic.get("semantic_type")
+        or semantic.get("semanticType")
+        or data.get("semantic_type")
+        or configuration.get("semantic_type")
+    ).upper().replace("-", "_").replace(" ", "_")
+    if explicit:
+        return explicit
+    data_type = _text(row.get("data_type")).lower()
+    if data_type in {"bool", "boolean"}:
+        return "BOOLEAN"
+    if isinstance(data.get("enum_values") or configuration.get("enum_values"), dict):
+        return "ENUM"
+    name = _text(row.get("display_name") or row.get("name")).lower().replace("_", " ").replace("-", " ")
+    tokens = name.split()
+    if any(token in {"status", "state", "mode", "zustand"} for token in tokens) or name.endswith(
+        ("status", "state", "mode", "zustand", "diagnose", "fehler", "error", "warning", "warnung")
+    ):
+        return "STATE"
+    return "UNKNOWN"
+
+
+def _signal_unit_required(row: dict[str, Any]) -> bool:
+    semantic_type = _normalized_semantic_type(row)
+    if semantic_type in {"STATE", "ENUM", "BOOLEAN", "FLAG", "BITFIELD", "RAW", "STRING", "BYTE_ARRAY"}:
+        return False
+    return True
+
+
 class DataQualityService:
     CALCULATION_VERSION = "1.0"
     REQUIRED_FIELDS = {
@@ -54,7 +91,7 @@ class DataQualityService:
         "Function": ("name", "hardware_node_id"),
         "Interface": ("name", "function_id", "interface_type"),
         "Message": ("name", "interface_id", "direction", "cycle_ms", "dlc"),
-        "Signal": ("name", "message_id", "data_type", "unit", "length_bits"),
+        "Signal": ("name", "message_id", "data_type", "length_bits"),
     }
 
     def analyze(self, objects: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
@@ -78,6 +115,12 @@ class DataQualityService:
                         missing.append(field)
                     else:
                         complete_fields += 1
+                if object_type == "Signal" and _signal_unit_required(row):
+                    total_fields += 1
+                    if row.get("unit"):
+                        complete_fields += 1
+                    else:
+                        missing.append("unit")
                 if missing:
                     issues.append(
                         _issue(
@@ -96,7 +139,7 @@ class DataQualityService:
                 if str(row.get("approval_state") or "pending").lower() != "approved":
                     unapproved += 1
                 if object_type == "Signal":
-                    missing_units += int(not row.get("unit"))
+                    missing_units += int(_signal_unit_required(row) and not row.get("unit"))
                     missing_types += int(not row.get("data_type"))
                     if row.get("min_value") is not None and row.get("max_value") is not None:
                         if _number(row.get("min_value")) > _number(row.get("max_value")):
