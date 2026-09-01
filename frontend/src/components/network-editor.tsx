@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   busProfiles,
   engineeringHardwareKind,
@@ -23,7 +24,7 @@ const PORT_OFFSET = PORT_DIAMETER / 2 + 1;
 const PORT_SAFE_INSET = 18;
 const PORT_VISUAL_GAP = 7.5;
 const PORT_CENTER_GAP = PORT_DIAMETER + PORT_VISUAL_GAP;
-const EDGE_LANE_GAP = 7.5;
+const EDGE_LANE_GAP = PORT_CENTER_GAP;
 const ENDPOINT_NODE_WIDTH = 62;
 const ENDPOINT_NAME_PADDING = 54;
 const ENDPOINT_CHARACTER_WIDTH = 7.25;
@@ -33,13 +34,20 @@ const CANVAS_MARGIN = 36;
 const CANVAS_EXTRA_SPACE = 320;
 const EVA_LABEL_HEIGHT = 72;
 const EVA_ROW_GAP = 38;
+const EVA_GATEWAY_TO_PROCESSING_GAP = 156;
+const EVA_PROCESSING_TO_ENDPOINT_GAP = 148;
+const EVA_GROUP_STAGGER_Y = 46;
+const EVA_ENDPOINT_STAGGER_Y = 34;
 const EVA_CLUSTER_GAP = 48;
 const EVA_CLUSTER_PADDING = 18;
+const EVA_GATEWAY_MIN_WIDTH = 280;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.5;
 const ZOOM_STEP = 0.1;
 const LARGE_TOPOLOGY_NODE_THRESHOLD = 48;
 const LARGE_TOPOLOGY_EDGE_THRESHOLD = 48;
+const LARGE_TOPOLOGY_RENDER_BATCH = 48;
+const NETWORK_LAYOUT_CACHE_PREFIX = "networkis:network-layout:v6:";
 
 const kindLabels: Record<NodeKind, string> = {
   ecu: "ECU",
@@ -74,6 +82,26 @@ type RelationshipDraft = {
   description: string;
   direction: NonNullable<TopologyEdge["direction"]>;
 };
+type CachedNetworkLayout = {
+  createdAt: string;
+  nodes: Record<string, {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+    ports: Record<string, { side: PortSide; offset: number }>;
+  }>;
+  edges: Record<string, { path: string }>;
+};
+type NetworkContextOverlay = {
+  x: number;
+  y: number;
+  accent: string;
+  title: string;
+  subtitle: string;
+  rows: Array<{ label: string; value: string }>;
+  chips: string[];
+};
 
 let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(counter++).toString(36)}`;
@@ -107,6 +135,10 @@ function relationshipInterfaceName(
     .map((name) => name.toLowerCase().replace(/[^a-z0-9]+/g, ""));
   if (portName && normalizedPortName && !genericNames.includes(normalizedPortName)) return portName;
   return automaticInterfaceName(node?.name ?? "Interface", bus);
+}
+
+function uniqueLabels(values: Array<string | null | undefined>) {
+  return [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])];
 }
 
 function nodeWidth(node: TopologyNode) {
@@ -348,6 +380,21 @@ function sizeNodesForPorts(topology: NetworkTopology): NetworkTopology {
   };
 }
 
+function primaryGatewayLayoutWidth(topology: NetworkTopology, node: TopologyNode, layoutSpan: number) {
+  return Math.max(EVA_GATEWAY_MIN_WIDTH, layoutSpan);
+}
+
+function primaryGatewayManualSpan(topology: NetworkTopology, surfaceWidth: number, primaryGatewayId: string) {
+  const visibleRightEdge = Math.max(
+    1180,
+    surfaceWidth || 0,
+    ...topology.nodes
+      .filter((node) => node.id !== primaryGatewayId)
+      .map((node) => node.x + nodeWidth(node) + CANVAS_MARGIN),
+  );
+  return Math.max(EVA_GATEWAY_MIN_WIDTH, Math.ceil(visibleRightEdge - CANVAS_MARGIN * 2));
+}
+
 function orderPortsByConnectedNodes(topology: NetworkTopology): NetworkTopology {
   const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
   return {
@@ -465,10 +512,16 @@ function edgeLaneOffset(topology: NetworkTopology, edge: TopologyEdge, _from: To
     if (!candidateFrom || !candidateTo || !candidateFromPort || !candidateToPort) return "";
     const start = portPosition(topology, candidateFrom, candidateFromPort);
     const end = portPosition(topology, candidateTo, candidateToPort);
-    const midX = Math.round(((start.x + end.x) / 2) / 80);
-    const minColumn = Math.round(Math.min(candidateFrom.x, candidateTo.x) / 120);
-    const maxColumn = Math.round(Math.max(candidateFrom.x, candidateTo.x) / 120);
-    return `${candidate.bus}:${start.side}-${end.side}:${midX}:${minColumn}-${maxColumn}`;
+    const minRow = Math.round(Math.min(start.y, end.y) / 96);
+    const maxRow = Math.round(Math.max(start.y, end.y) / 96);
+    const minColumn = Math.round(Math.min(candidateFrom.x, candidateTo.x, start.x, end.x) / 560);
+    const maxColumn = Math.round(Math.max(
+      candidateFrom.x + nodeWidth(candidateFrom),
+      candidateTo.x + nodeWidth(candidateTo),
+      start.x,
+      end.x,
+    ) / 560);
+    return `${candidate.bus}:${start.side}-${end.side}:${minRow}-${maxRow}:${minColumn}-${maxColumn}`;
   };
   const key = corridorKey(edge);
   const peers = topology.edges
@@ -544,6 +597,22 @@ function wireRouteScore(points: WirePoint[], obstacles: WireObstacle[]) {
   return score;
 }
 
+function pointStub(point: WirePoint & { side?: PortSide }, distance: number) {
+  if (point.side === "left") return { x: point.x - distance, y: point.y };
+  if (point.side === "right") return { x: point.x + distance, y: point.y };
+  if (point.side === "top") return { x: point.x, y: point.y - distance };
+  return { x: point.x, y: point.y + distance };
+}
+
+function localWireBounds(from: TopologyNode, to: TopologyNode, start: WirePoint, end: WirePoint, padding: number): WireBounds {
+  return {
+    left: Math.min(from.x, to.x, start.x, end.x) - padding,
+    right: Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to), start.x, end.x) + padding,
+    top: Math.min(from.y, to.y, start.y, end.y) - padding,
+    bottom: Math.max(from.y + nodeHeight(from), to.y + nodeHeight(to), start.y, end.y) + padding,
+  };
+}
+
 function roundedWirePath(points: WirePoint[]) {
   const compact = compactWirePoints(points);
   if (compact.length < 2) return "";
@@ -582,43 +651,83 @@ function largeTopologyEdgePath(
   const end = portPosition(topology, to, toPort);
   const startSide = start.side;
   const endSide = end.side;
-  const usesHorizontalEdges = [startSide, endSide].every((side) => side === "top" || side === "bottom");
-  if (usesHorizontalEdges) {
-    const laneOffset = edgeLaneOffset(topology, edge, from, to);
-    const clearance = 34;
-    const startDirection = startSide === "bottom" ? 1 : -1;
-    const endDirection = endSide === "bottom" ? 1 : -1;
-    const startStub = { x: start.x, y: start.y + startDirection * clearance };
-    const endStub = { x: end.x, y: end.y + endDirection * clearance };
-    const obstacles = nodeWireObstacles(topology, new Set([from.id, to.id]), 18, {
-      left: Math.min(start.x, end.x) - clearance * 2,
-      right: Math.max(start.x, end.x) + clearance * 2,
-      top: Math.min(start.y, end.y) - clearance * 3,
-      bottom: Math.max(start.y, end.y) + clearance * 3,
-    });
-    const allTops = topology.nodes.map((node) => node.y);
-    const allBottoms = topology.nodes.map((node) => node.y + nodeHeight(node));
-    const laneYs = new Set<number>([
-      (startStub.y + endStub.y) / 2 + laneOffset,
-      Math.max(CANVAS_MARGIN / 2, Math.min(...allTops) - clearance + laneOffset),
-      Math.max(...allBottoms) + clearance + laneOffset,
-    ]);
-    obstacles.forEach((obstacle) => {
-      laneYs.add(Math.max(CANVAS_MARGIN / 2, obstacle.top - clearance + laneOffset));
-      laneYs.add(obstacle.bottom + clearance + laneOffset);
-    });
-    const best = [...laneYs]
-      .map((laneY) => [start, startStub, { x: start.x, y: laneY }, { x: end.x, y: laneY }, endStub, end])
-      .sort((left, right) => wireRouteScore(left, obstacles) - wireRouteScore(right, obstacles))[0];
-    return roundedWirePath(best);
-  }
   const laneOffset = edgeLaneOffset(topology, edge, from, to);
-  const laneX = startSide === endSide
-    ? startSide === "right"
-      ? Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to)) + 34 + Math.abs(laneOffset)
-      : Math.min(from.x, to.x) - 34 - Math.abs(laneOffset)
-    : (start.x + end.x) / 2 + laneOffset;
-  return roundedWirePath([start, { x: laneX, y: start.y }, { x: laneX, y: end.y }, end]);
+  const outwardLaneOffset = Math.abs(laneOffset) + (laneOffset > 0 ? EDGE_LANE_GAP / 2 : 0);
+  const clearance = 42 + Math.min(180, outwardLaneOffset);
+  const startStub = pointStub(start, clearance);
+  const endStub = pointStub(end, clearance);
+  const bounds = localWireBounds(from, to, start, end, 190);
+  const obstacles = nodeWireObstacles(topology, new Set([from.id, to.id]), 28, bounds);
+  const fromBottom = from.y + nodeHeight(from);
+  const toBottom = to.y + nodeHeight(to);
+  const laneYs = new Set<number>([
+    (startStub.y + endStub.y) / 2 + laneOffset,
+    Math.min(from.y, to.y, start.y, end.y) - clearance + laneOffset,
+    Math.max(fromBottom, toBottom, start.y, end.y) + clearance + laneOffset,
+  ]);
+  const laneXs = new Set<number>([
+    (startStub.x + endStub.x) / 2 + laneOffset,
+    Math.min(from.x, to.x, start.x, end.x) - clearance + laneOffset,
+    Math.max(from.x + nodeWidth(from), to.x + nodeWidth(to), start.x, end.x) + clearance + laneOffset,
+  ]);
+  obstacles.forEach((obstacle) => {
+    laneYs.add(obstacle.top - clearance + laneOffset);
+    laneYs.add(obstacle.bottom + clearance + laneOffset);
+    laneXs.add(obstacle.left - clearance + laneOffset);
+    laneXs.add(obstacle.right + clearance + laneOffset);
+  });
+  const candidates: WirePoint[][] = [
+    [start, startStub, { x: endStub.x, y: startStub.y }, endStub, end],
+    [start, startStub, { x: startStub.x, y: endStub.y }, endStub, end],
+  ];
+  laneYs.forEach((laneY) => {
+    candidates.push([start, startStub, { x: startStub.x, y: laneY }, { x: endStub.x, y: laneY }, endStub, end]);
+  });
+  laneXs.forEach((laneX) => {
+    candidates.push([start, startStub, { x: laneX, y: startStub.y }, { x: laneX, y: endStub.y }, endStub, end]);
+  });
+  const best = candidates.sort((left, right) => wireRouteScore(left, obstacles) - wireRouteScore(right, obstacles))[0];
+  return roundedWirePath(best);
+}
+
+function fastLargeTopologyEdgePath(
+  topology: NetworkTopology,
+  _edge: TopologyEdge,
+  from: TopologyNode,
+  fromPort: TopologyPort,
+  to: TopologyNode,
+  toPort: TopologyPort,
+) {
+  const start = portPosition(topology, from, fromPort);
+  const end = portPosition(topology, to, toPort);
+  const clearance = 34;
+  const startStub = pointStub(start, clearance);
+  const endStub = pointStub(end, clearance);
+  const startHorizontal = start.side === "top" || start.side === "bottom";
+  const endHorizontal = end.side === "top" || end.side === "bottom";
+
+  if (startHorizontal && endHorizontal) {
+    const laneY = start.side === "top" && end.side === "top"
+      ? Math.min(start.y, end.y) - clearance
+      : start.side === "bottom" && end.side === "bottom"
+        ? Math.max(start.y, end.y) + clearance
+        : (startStub.y + endStub.y) / 2;
+    return roundedWirePath([start, startStub, { x: startStub.x, y: laneY }, { x: endStub.x, y: laneY }, endStub, end]);
+  }
+
+  if (!startHorizontal && !endHorizontal) {
+    const laneX = start.side === "left" && end.side === "left"
+      ? Math.min(start.x, end.x) - clearance
+      : start.side === "right" && end.side === "right"
+        ? Math.max(start.x, end.x) + clearance
+        : (startStub.x + endStub.x) / 2;
+    return roundedWirePath([start, startStub, { x: laneX, y: startStub.y }, { x: laneX, y: endStub.y }, endStub, end]);
+  }
+
+  const corner = startHorizontal
+    ? { x: endStub.x, y: startStub.y }
+    : { x: startStub.x, y: endStub.y };
+  return roundedWirePath([start, startStub, corner, endStub, end]);
 }
 
 function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: TopologyNode, fromPort: TopologyPort, to: TopologyNode, toPort: TopologyPort) {
@@ -626,14 +735,13 @@ function routedEdgePath(topology: NetworkTopology, edge: TopologyEdge, from: Top
     topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD ||
     topology.edges.length >= LARGE_TOPOLOGY_EDGE_THRESHOLD
   ) {
-    return largeTopologyEdgePath(topology, edge, from, fromPort, to, toPort);
+    return fastLargeTopologyEdgePath(topology, edge, from, fromPort, to, toPort);
   }
   const start = portPosition(topology, from, fromPort);
   const end = portPosition(topology, to, toPort);
   const usesHorizontalEdges = [start.side, end.side].every((side) => side === "top" || side === "bottom");
   if (usesHorizontalEdges) {
-    const laneY = (start.y + end.y) / 2;
-    return roundedWirePath([start, { x: start.x, y: laneY }, { x: end.x, y: laneY }, end]);
+    return largeTopologyEdgePath(topology, edge, from, fromPort, to, toPort);
   }
   const startDirection = start.side === "right" ? 1 : -1;
   const endDirection = end.side === "right" ? 1 : -1;
@@ -974,6 +1082,9 @@ function evaClusterLayouts(
   groups = buildEvaGroups(topology, routingEntries),
 ) {
   return groups.flatMap((group) => {
+    if (group.anchor.kind === "gateway" && evaSystemKey(group.anchor) === "system") {
+      return [];
+    }
     const members = [group.anchor, ...group.processors, ...group.inputs, ...group.outputs];
     if (members.length < 2) return [];
     const left = Math.min(...members.map((node) => node.x));
@@ -983,7 +1094,7 @@ function evaClusterLayouts(
     return [{
       id: group.anchor.id,
       memberIds: members.map((node) => node.id),
-      label: `System ${group.anchor.name}`,
+      label: group.anchor.name,
       count: members.length,
       inputs: group.inputs.length,
       processors: 1 + group.processors.length,
@@ -1043,6 +1154,114 @@ function topologyLayoutSignature(topology: NetworkTopology) {
   return `${nodes}::${interfaces}`;
 }
 
+function topologyCacheSignature(topology: NetworkTopology, routingEntries: RoutingEntry[]) {
+  const nodes = topology.nodes
+    .map((node) => [
+      node.id,
+      node.kind,
+      node.name,
+      node.engineeringId ?? "",
+      node.systemOwnerId ?? "",
+      ...node.ports.map((port) => `${port.id}:${port.name}:${port.bus}:${port.engineeringId ?? ""}`).sort(),
+    ].join(":"))
+    .sort()
+    .join("|");
+  const edges = topology.edges
+    .map((edge) => [
+      edge.id,
+      edge.bus,
+      edge.source,
+      edge.sourcePort,
+      edge.target,
+      edge.targetPort,
+      edge.direction ?? "",
+      edge.relationType ?? "",
+      edge.routingEntryId ?? "",
+      ...(edge.routingEntryIds ?? []),
+    ].join(":"))
+    .sort()
+    .join("|");
+  return `${nodes}::${edges}::${routingGroupSignature(routingEntries)}`;
+}
+
+function activeLayoutProjectId() {
+  if (typeof window === "undefined") return "default";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("project_id") || params.get("projectId") || "default";
+}
+
+function networkLayoutCacheKey(signature: string) {
+  return `${NETWORK_LAYOUT_CACHE_PREFIX}${activeLayoutProjectId()}:${signature}`;
+}
+
+function readNetworkLayoutCache(signature: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(networkLayoutCacheKey(signature));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedNetworkLayout;
+    return parsed && typeof parsed === "object" && parsed.nodes ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeNetworkLayoutCache(
+  signature: string,
+  topology: NetworkTopology,
+  renderedEdges: Array<{ edge: TopologyEdge; path: string }>,
+) {
+  if (typeof window === "undefined") return;
+  const payload: CachedNetworkLayout = {
+    createdAt: new Date().toISOString(),
+    nodes: Object.fromEntries(topology.nodes.map((node) => [
+      node.id,
+      {
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        ports: Object.fromEntries(node.ports.map((port) => [
+          port.id,
+          { side: port.side, offset: port.offset ?? 0.5 },
+        ])),
+      },
+    ])),
+    edges: Object.fromEntries(renderedEdges.map(({ edge, path }) => [edge.id, { path }])),
+  };
+  try {
+    window.localStorage.setItem(networkLayoutCacheKey(signature), JSON.stringify(payload));
+  } catch {
+    // Layout persistence is an optimization; the editor must remain usable without it.
+  }
+}
+
+function applyNetworkLayoutCache(topology: NetworkTopology, cache: CachedNetworkLayout): NetworkTopology {
+  return {
+    ...topology,
+    nodes: topology.nodes.map((node) => {
+      const cached = cache.nodes[node.id];
+      if (!cached || !Number.isFinite(cached.x) || !Number.isFinite(cached.y)) return node;
+      return {
+        ...node,
+        x: cached.x,
+        y: cached.y,
+        width: Number.isFinite(cached.width) ? cached.width : node.width,
+        height: Number.isFinite(cached.height) ? cached.height : node.height,
+        ports: node.ports.map((port) => {
+          const cachedPort = cached.ports?.[port.id];
+          if (!cachedPort || !["left", "right", "top", "bottom"].includes(cachedPort.side)) return port;
+          return {
+            ...port,
+            side: cachedPort.side,
+            offset: Math.max(0, Math.min(1, Number(cachedPort.offset) || 0.5)),
+          };
+        }),
+      };
+    }),
+  };
+}
+
 function horizontalLayoutWidth(topology: NetworkTopology, surfaceWidth: number) {
   return Math.ceil(Math.max(
     1180,
@@ -1066,8 +1285,17 @@ function hasLayoutProblems(
   const primaryGateway = primaryGatewayFor(topology);
   if (primaryGateway) {
     const expectedTop = EVA_LABEL_HEIGHT + 24;
+    const expectedWidth = primaryGatewayLayoutWidth(topology, primaryGateway, layoutWidth - CANVAS_MARGIN * 2);
+    const expectedLeft = CANVAS_MARGIN;
     if (Math.abs(primaryGateway.y - expectedTop) > 28) return true;
+    if (Math.abs(primaryGateway.x - expectedLeft) > 28) return true;
+    if (Math.abs(nodeWidth(primaryGateway) - expectedWidth) > 4) return true;
     if (nodeWidth(primaryGateway) < nodeHeight(primaryGateway) * 2) return true;
+    if (topology.nodes.some((node) =>
+      node.id !== primaryGateway.id &&
+      (node.kind === "ecu" || node.kind === "gateway") &&
+      node.y < primaryGateway.y + nodeHeight(primaryGateway) + EVA_GATEWAY_TO_PROCESSING_GAP - 18
+    )) return true;
   }
   if (evaGroups.some((group) => {
     const endpoints = [...group.inputs, ...group.outputs];
@@ -1079,6 +1307,8 @@ function hasLayoutProblems(
       node.y < group.anchor.y + nodeHeight(group.anchor) + 48 ||
       Math.abs(nodeWidth(node) - ENDPOINT_NODE_WIDTH) > 0.1 ||
       Math.abs(nodeHeight(node) - expectedHeight) > 0.1,
+    )) || (endpoints.length > 0 && endpoints.some((node) =>
+      node.y < group.anchor.y + nodeHeight(group.anchor) + EVA_PROCESSING_TO_ENDPOINT_GAP - 36
     )) || nodeRowWidth(processors) > evaGroupWidth(group) + 0.1;
   })) return true;
   const expectedGatewayNames = gatewayInterfaceNames(topology);
@@ -1122,7 +1352,7 @@ function arrangeTopology(
   const branchGroups = groups.filter((group) => group.anchor.id !== primaryGateway?.id);
   const contentTop = EVA_LABEL_HEIGHT + 24;
   const gatewayHeight = primaryGateway ? nodeHeight(primaryGateway) : 0;
-  const processingTop = primaryGateway ? contentTop + gatewayHeight + 112 : contentTop;
+  const processingTop = primaryGateway ? contentTop + gatewayHeight + EVA_GATEWAY_TO_PROCESSING_GAP : contentTop;
   const arranged = new Map<string, TopologyNode>();
   const groupedIds = new Set(groups.flatMap((group) => [
     group.anchor.id,
@@ -1154,11 +1384,12 @@ function arrangeTopology(
     ...branchGroups.flatMap((group) => [group.anchor, ...group.processors].map((node) => nodeHeight(node))),
     ...directNodes.map(() => directEndpointHeight),
   );
-  const endpointTop = processingTop + processingHeight + 112;
+  const endpointTop = processingTop + processingHeight + EVA_PROCESSING_TO_ENDPOINT_GAP;
   let cursorX = CANVAS_MARGIN + Math.max(0, (layoutSpan - totalUnitWidth) / 2);
 
-  units.forEach((unit) => {
+  units.forEach((unit, unitIndex) => {
     const centerX = cursorX + unit.width / 2;
+    const groupStaggerY = unit.group ? (unitIndex % 3) * EVA_GROUP_STAGGER_Y : (unitIndex % 2) * EVA_GROUP_STAGGER_Y;
     if (unit.group) {
       const processors = stableTopologyOrder(sizedTopology, [unit.group.anchor, ...unit.group.processors]);
       const processorRowWidth = nodeRowWidth(processors);
@@ -1167,7 +1398,7 @@ function arrangeTopology(
         arranged.set(processor.id, {
           ...processor,
           x: Math.round(processorX),
-          y: processingTop,
+          y: processingTop + groupStaggerY,
         });
         processorX += nodeWidth(processor) + EVA_ROW_GAP;
       });
@@ -1175,11 +1406,11 @@ function arrangeTopology(
       const groupEndpointHeight = endpointRowHeight(endpoints);
       const rowWidth = nodeRowWidth(endpoints);
       let endpointX = centerX - rowWidth / 2;
-      endpoints.forEach((node) => {
+      endpoints.forEach((node, endpointIndex) => {
         arranged.set(node.id, {
           ...node,
           x: Math.round(endpointX),
-          y: endpointTop,
+          y: endpointTop + groupStaggerY + (endpointIndex % 2) * EVA_ENDPOINT_STAGGER_Y,
           width: ENDPOINT_NODE_WIDTH,
           height: groupEndpointHeight,
         });
@@ -1189,7 +1420,7 @@ function arrangeTopology(
       arranged.set(unit.node.id, {
         ...unit.node,
         x: Math.round(centerX - nodeWidth(unit.node) / 2),
-        y: processingTop,
+        y: processingTop + groupStaggerY,
         width: ENDPOINT_NODE_WIDTH,
         height: directEndpointHeight,
       });
@@ -1198,11 +1429,12 @@ function arrangeTopology(
   });
 
   if (primaryGateway) {
+    const gatewayWidth = primaryGatewayLayoutWidth(sizedTopology, primaryGateway, layoutSpan);
     arranged.set(primaryGateway.id, {
       ...primaryGateway,
       x: CANVAS_MARGIN,
       y: contentTop,
-      width: layoutSpan,
+      width: gatewayWidth,
     });
   }
 
@@ -1237,11 +1469,63 @@ export function NetworkEditor({
   const [relationshipError, setRelationshipError] = useState("");
   const [surfaceWidth, setSurfaceWidth] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [contextOverlay, setContextOverlay] = useState<NetworkContextOverlay | null>(null);
+  const [renderLimit, setRenderLimit] = useState(LARGE_TOPOLOGY_RENDER_BATCH);
   const arrangedStructureRef = useRef("");
+  const activeDragRef = useRef<DragState | null>(null);
+  const pendingDragTopologyRef = useRef<NetworkTopology | null>(null);
+  const dragFrameRef = useRef(0);
+  const topologyRef = useRef(topology);
+  const centralGatewayArchitectureRef = useRef(false);
+  const workflowSelectionSignatureRef = useRef("");
+
+  useEffect(() => {
+    topologyRef.current = topology;
+  }, [topology]);
+
+  const flushDragTopology = useCallback(() => {
+    if (dragFrameRef.current) {
+      window.cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = 0;
+    }
+    const pending = pendingDragTopologyRef.current;
+    pendingDragTopologyRef.current = null;
+    if (pending) {
+      topologyRef.current = pending;
+      onChange(pending);
+    }
+  }, [onChange]);
+
+  const scheduleDragTopology = useCallback((next: NetworkTopology) => {
+    pendingDragTopologyRef.current = next;
+    if (dragFrameRef.current) return;
+    dragFrameRef.current = window.requestAnimationFrame(() => {
+      dragFrameRef.current = 0;
+      const pending = pendingDragTopologyRef.current;
+      pendingDragTopologyRef.current = null;
+      if (pending) {
+        topologyRef.current = pending;
+        onChange(pending);
+      }
+    });
+  }, [onChange]);
+
+  useEffect(() => {
+    return () => {
+      if (dragFrameRef.current) window.cancelAnimationFrame(dragFrameRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const node = topology.nodes.find((item) => item.id === selectedNode);
     const edge = topology.edges.find((item) => item.id === selectedEdge);
+    const signature = JSON.stringify({
+      edge: edge ? { id: edge.id, bus: edge.bus } : null,
+      node: node ? { id: node.id, name: node.name, network: node.ports[0]?.bus ?? null } : null,
+    });
+    if (workflowSelectionSignatureRef.current === signature) return;
+    workflowSelectionSignatureRef.current = signature;
     void setWorkflowContext({
       selected_object: node ? { id: node.id, type: "NetworkNode", name: node.name } : null,
       selected_network: edge?.bus ?? node?.ports[0]?.bus ?? null,
@@ -1265,7 +1549,21 @@ export function NetworkEditor({
     const observer = new ResizeObserver(update);
     observer.observe(surface);
     return () => observer.disconnect();
-  }, []);
+  }, [fullscreen]);
+
+  useEffect(() => {
+    if (!fullscreen || typeof document === "undefined") return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFullscreen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [fullscreen]);
 
   const findPort = useCallback(
     (nodeId: string, portId: string) => {
@@ -1284,10 +1582,12 @@ export function NetworkEditor({
   );
 
   useEffect(() => {
-    if (!drag) return;
-    const activeDrag = drag;
     function move(event: PointerEvent) {
+      const activeDrag = activeDragRef.current;
+      if (!activeDrag) return;
+      event.preventDefault();
       const point = pointFromEvent(event);
+      const currentTopology = topologyRef.current;
       if (activeDrag.mode === "move-cluster") {
         const minimumX = Math.min(...activeDrag.members.map((member) => member.x));
         const minimumY = Math.min(...activeDrag.members.map((member) => member.y));
@@ -1300,26 +1600,33 @@ export function NetworkEditor({
           EVA_LABEL_HEIGHT + EVA_CLUSTER_PADDING - minimumY,
         );
         const startPositions = new Map(activeDrag.members.map((member) => [member.id, member]));
-        onChange({
-          ...topology,
-          nodes: topology.nodes.map((node) => {
+        scheduleDragTopology({
+          ...currentTopology,
+          nodes: currentTopology.nodes.map((node) => {
             const start = startPositions.get(node.id);
             return start ? { ...node, x: start.x + deltaX, y: start.y + deltaY } : node;
           }),
         });
       } else if (activeDrag.mode === "move") {
-        const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
+        const node = currentTopology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
-        onChange(normalizePortSides({
-          ...topology,
-          nodes: topology.nodes.map((node) =>
+        const isPrimaryGateway = centralGatewayArchitectureRef.current && primaryGatewayFor(currentTopology)?.id === activeDrag.nodeId;
+        const nextX = isPrimaryGateway
+          ? CANVAS_MARGIN
+          : Math.max(CANVAS_MARGIN, point.x - activeDrag.offsetX);
+        const nextWidth = isPrimaryGateway
+          ? primaryGatewayLayoutWidth(currentTopology, node, horizontalLayoutWidth(currentTopology, surfaceWidth) - CANVAS_MARGIN * 2)
+          : node.width;
+        scheduleDragTopology({
+          ...currentTopology,
+          nodes: currentTopology.nodes.map((node) =>
             node.id === activeDrag.nodeId
-              ? { ...node, x: Math.max(CANVAS_MARGIN, point.x - activeDrag.offsetX), y: Math.max(CANVAS_MARGIN, point.y - activeDrag.offsetY) }
+              ? { ...node, x: nextX, y: Math.max(CANVAS_MARGIN, point.y - activeDrag.offsetY), width: nextWidth }
               : node,
           ),
-        }));
+        });
       } else if (activeDrag.mode === "resize") {
-        const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
+        const node = currentTopology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
         const width = Math.max(NODE_MIN_WIDTH, activeDrag.startWidth + point.x - activeDrag.startX);
         const minimumHeight = nodeContentHeight({ ...node, width, height: undefined });
@@ -1327,30 +1634,37 @@ export function NetworkEditor({
           minimumHeight,
           activeDrag.startHeight + point.y - activeDrag.startY,
         );
-        onChange(normalizePortSides({
-          ...topology,
-          nodes: topology.nodes.map((item) =>
+        scheduleDragTopology({
+          ...currentTopology,
+          nodes: currentTopology.nodes.map((item) =>
             item.id === node.id ? { ...item, width, height } : item,
           ),
-        }));
+        });
       } else if (activeDrag.mode === "move-port") {
-        const node = topology.nodes.find((item) => item.id === activeDrag.nodeId);
+        const node = currentTopology.nodes.find((item) => item.id === activeDrag.nodeId);
         if (!node) return;
         const { side, offset } = nearestPortPlacement(node, point);
-        onChange({
-          ...topology,
-          nodes: topology.nodes.map((item) =>
+        scheduleDragTopology({
+          ...currentTopology,
+          nodes: currentTopology.nodes.map((item) =>
             item.id === node.id
               ? { ...item, ports: item.ports.map((port) => port.id === activeDrag.portId ? { ...port, side, offset } : port) }
               : item,
           ),
         });
       } else {
-        setDrag({ ...activeDrag, x: point.x, y: point.y });
+        const nextDrag = { ...activeDrag, x: point.x, y: point.y };
+        activeDragRef.current = nextDrag;
+        setDrag(nextDrag);
       }
     }
     function up(event: PointerEvent) {
+      const activeDrag = activeDragRef.current;
+      if (!activeDrag) return;
+      event.preventDefault();
+      flushDragTopology();
       if (activeDrag.mode === "wire") {
+        const currentTopology = topologyRef.current;
         const target = document
           .elementFromPoint(event.clientX, event.clientY)
           ?.closest<HTMLElement>("[data-port-id]");
@@ -1363,12 +1677,12 @@ export function NetworkEditor({
           targetNodeId !== activeDrag.nodeId &&
           targetBus === activeDrag.bus;
         if (validTarget) {
-          const alreadyUsed = topology.edges.some(
+          const alreadyUsed = currentTopology.edges.some(
             (edge) => edge.sourcePort === targetPortId || edge.targetPort === targetPortId || edge.sourcePort === activeDrag.portId || edge.targetPort === activeDrag.portId,
           );
           if (!alreadyUsed) {
-            const sourceNode = topology.nodes.find((node) => node.id === activeDrag.nodeId);
-            const targetNode = topology.nodes.find((node) => node.id === targetNodeId);
+            const sourceNode = currentTopology.nodes.find((node) => node.id === activeDrag.nodeId);
+            const targetNode = currentTopology.nodes.find((node) => node.id === targetNodeId);
             setRelationshipError("");
             setRelationship({
               edge: {
@@ -1389,7 +1703,14 @@ export function NetworkEditor({
             });
           }
         }
+      } else if (activeDrag.mode === "move" || activeDrag.mode === "resize" || activeDrag.mode === "move-port") {
+        setSelectedNode(activeDrag.nodeId);
+        setSelectedEdge(null);
+      } else if (activeDrag.mode === "move-cluster") {
+        setSelectedNode(null);
+        setSelectedEdge(null);
       }
+      activeDragRef.current = null;
       setDrag(null);
     }
     window.addEventListener("pointermove", move);
@@ -1398,7 +1719,7 @@ export function NetworkEditor({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [commitRelationships, drag, topology, onChange, pointFromEvent]);
+  }, [commitRelationships, drag, flushDragTopology, scheduleDragTopology, onChange, pointFromEvent, surfaceWidth]);
 
   useEffect(() => {
     if (!menu && !addMenu) return;
@@ -1571,35 +1892,151 @@ export function NetworkEditor({
     [modelHardware],
   );
   const primaryGatewayId = useMemo(() => primaryGatewayFor(topology)?.id, [topology]);
+  const centralGatewayArchitecture = topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD && Boolean(primaryGatewayId);
+  useEffect(() => {
+    centralGatewayArchitectureRef.current = centralGatewayArchitecture;
+  }, [centralGatewayArchitecture]);
+  const effectiveTopology = useMemo(() => {
+    if (!centralGatewayArchitecture || !primaryGatewayId) return topology;
+    const primaryGateway = topology.nodes.find((node) => node.id === primaryGatewayId);
+    if (!primaryGateway) return topology;
+    const nextWidth = primaryGatewayManualSpan(topology, surfaceWidth, primaryGatewayId);
+    if (Math.abs(primaryGateway.x - CANVAS_MARGIN) <= 0.1 && Math.abs(nodeWidth(primaryGateway) - nextWidth) <= 0.1) {
+      return topology;
+    }
+    return {
+      ...topology,
+      nodes: topology.nodes.map((node) =>
+        node.id === primaryGatewayId
+          ? { ...node, x: CANVAS_MARGIN, width: nextWidth }
+          : node,
+      ),
+    };
+  }, [centralGatewayArchitecture, primaryGatewayId, surfaceWidth, topology]);
   const structureSignature = useMemo(
-    () => `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`,
-    [routingEntries, topology],
+    () => centralGatewayArchitecture ? "" : `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`,
+    [centralGatewayArchitecture, routingEntries, topology],
   );
-  const evaGroups = useMemo(() => buildEvaGroups(topology, routingEntries), [routingEntries, topology]);
+  const cacheSignature = useMemo(
+    () => centralGatewayArchitecture ? "" : topologyCacheSignature(topology, routingEntries),
+    [centralGatewayArchitecture, routingEntries, topology],
+  );
+  const layoutSignature = useMemo(() => topologyLayoutSignature(effectiveTopology), [effectiveTopology]);
+  const evaGroups = useMemo(
+    () => centralGatewayArchitecture ? [] : buildEvaGroups(effectiveTopology, routingEntries),
+    [centralGatewayArchitecture, effectiveTopology, routingEntries],
+  );
   const evaStable = useMemo(
-    () => topology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
-      topology,
+    () => centralGatewayArchitecture || (effectiveTopology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
+      effectiveTopology,
       surfaceWidth,
       routingEntries,
       evaGroups,
-    ),
-    [evaGroups, routingEntries, surfaceWidth, topology],
+    )),
+    [centralGatewayArchitecture, effectiveTopology, evaGroups, routingEntries, surfaceWidth],
   );
   const evaClusters = useMemo(
-    () => evaClusterLayouts(topology, routingEntries, evaGroups),
-    [evaGroups, routingEntries, topology],
+    () => evaClusterLayouts(effectiveTopology, routingEntries, evaGroups),
+    [effectiveTopology, evaGroups, routingEntries],
   );
-  const renderedEdges = useMemo(() => {
-    const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
-    return topology.edges.flatMap((edge) => {
+  const nodesById = useMemo(() => new Map(effectiveTopology.nodes.map((node) => [node.id, node])), [effectiveTopology.nodes]);
+  const systemFrameByNodeId = useMemo(() => {
+    const frames = new Map<string, string>();
+    evaGroups.forEach((group) => {
+      [group.anchor, ...group.processors, ...group.inputs, ...group.outputs].forEach((node) => {
+        frames.set(node.id, group.anchor.name);
+      });
+    });
+    return frames;
+  }, [evaGroups]);
+  const edgesByPortId = useMemo(() => {
+    const ports = new Map<string, TopologyEdge[]>();
+    effectiveTopology.edges.forEach((edge) => {
+      ports.set(edge.sourcePort, [...(ports.get(edge.sourcePort) ?? []), edge]);
+      ports.set(edge.targetPort, [...(ports.get(edge.targetPort) ?? []), edge]);
+    });
+    return ports;
+  }, [effectiveTopology.edges]);
+  const cachedRenderedEdges = useMemo(() => {
+    if (centralGatewayArchitecture) return [];
+    return effectiveTopology.edges.flatMap((edge) => {
       const from = nodesById.get(edge.source);
       const to = nodesById.get(edge.target);
       const fromPort = from?.ports.find((port) => port.id === edge.sourcePort);
       const toPort = to?.ports.find((port) => port.id === edge.targetPort);
       if (!from || !to || !fromPort || !toPort) return [];
-      return [{ edge, path: routedEdgePath(topology, edge, from, fromPort, to, toPort) }];
+      return [{ edge, path: routedEdgePath(effectiveTopology, edge, from, fromPort, to, toPort) }];
     });
-  }, [topology]);
+  }, [centralGatewayArchitecture, effectiveTopology, nodesById]);
+  function overlayPosition(clientX: number, clientY: number) {
+    if (typeof window === "undefined") return { x: clientX + 14, y: clientY + 14 };
+    return {
+      x: Math.max(12, Math.min(clientX + 14, window.innerWidth - 360)),
+      y: Math.max(12, Math.min(clientY + 14, window.innerHeight - 260)),
+    };
+  }
+
+  function showPortOverlay(node: TopologyNode, port: TopologyPort, clientX: number, clientY: number) {
+    const connectedEdges = edgesByPortId.get(port.id) ?? [];
+    const interfaces = uniqueLabels([
+      port.name,
+      ...connectedEdges.map((edge) =>
+        edge.sourcePort === port.id
+          ? relationshipInterfaceName(edge.sourceInterfaceName, node, edge.sourcePort, edge.bus)
+          : relationshipInterfaceName(edge.targetInterfaceName, node, edge.targetPort, edge.bus),
+      ),
+    ]);
+    const routes = uniqueLabels(connectedEdges.flatMap((edge) => [
+      ...(edge.routingEntryIds ?? []),
+      edge.routingEntryId,
+      ...Object.values(edge.routingMetadata ?? {}).map((metadata) => metadata.name || metadata.routeCode),
+    ]));
+    const position = overlayPosition(clientX, clientY);
+    setContextOverlay({
+      ...position,
+      accent: busProfiles[port.bus].color,
+      title: `${port.name} Port`,
+      subtitle: node.name,
+      rows: [
+        { label: "Bus", value: busProfiles[port.bus].label },
+        { label: "Systemrahmen", value: systemFrameByNodeId.get(node.id) ?? node.name },
+        { label: "Interface", value: interfaces.join(" / ") || "Nicht benannt" },
+        { label: "Verbindungen", value: connectedEdges.length ? `${connectedEdges.length}` : "Keine" },
+      ],
+      chips: routes.slice(0, 4),
+    });
+  }
+
+  function showEdgeOverlay(edge: TopologyEdge, clientX: number, clientY: number) {
+    const from = nodesById.get(edge.source);
+    const to = nodesById.get(edge.target);
+    const sourceInterface = relationshipInterfaceName(edge.sourceInterfaceName, from, edge.sourcePort, edge.bus);
+    const targetInterface = relationshipInterfaceName(edge.targetInterfaceName, to, edge.targetPort, edge.bus);
+    const frames = uniqueLabels([
+      from ? systemFrameByNodeId.get(from.id) ?? from.name : undefined,
+      to ? systemFrameByNodeId.get(to.id) ?? to.name : undefined,
+    ]);
+    const routeLabels = uniqueLabels([
+      ...(edge.routingEntryIds ?? []),
+      edge.routingEntryId,
+      ...Object.values(edge.routingMetadata ?? {}).map((metadata) => metadata.name || metadata.routeCode),
+    ]);
+    const position = overlayPosition(clientX, clientY);
+    setContextOverlay({
+      ...position,
+      accent: busProfiles[edge.bus].color,
+      title: edge.name || `${from?.name ?? edge.source} ↔ ${to?.name ?? edge.target}`,
+      subtitle: "Verbindung",
+      rows: [
+        { label: "Bus", value: busProfiles[edge.bus].label },
+        { label: "Systemrahmen", value: frames.join(" → ") || "Nicht zugeordnet" },
+        { label: "Interfaces", value: `${sourceInterface} → ${targetInterface}` },
+        { label: "Relation", value: `${edge.relationType ?? "CONNECTED_TO"} · ${edge.direction ?? "BIDIRECTIONAL"}` },
+      ],
+      chips: routeLabels.slice(0, 4),
+    });
+  }
+
   const arrangeCurrentTopology = useCallback((persist: boolean) => {
     const next = arrangeTopology(topology, surfaceWidth, routingEntries);
     arrangedStructureRef.current = `${topologyStructureSignature(next)}::${routingGroupSignature(routingEntries)}`;
@@ -1611,25 +2048,46 @@ export function NetworkEditor({
   }, [commitRelationships, onChange, routingEntries, surfaceWidth, topology]);
 
   const applyAutoLayout = useCallback(() => {
+    if (centralGatewayArchitecture) return;
     arrangeCurrentTopology(true);
-  }, [arrangeCurrentTopology]);
+  }, [arrangeCurrentTopology, centralGatewayArchitecture]);
 
   useEffect(() => {
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
+    if (centralGatewayArchitecture) return;
     if (arrangedStructureRef.current === structureSignature) return;
+    const cached = readNetworkLayoutCache(cacheSignature);
+    if (cached) {
+      const restored = applyNetworkLayoutCache(topology, cached);
+      arrangedStructureRef.current = structureSignature;
+      if (topologyLayoutSignature(restored) !== layoutSignature) {
+        onChange(restored);
+      }
+      return;
+    }
     arrangedStructureRef.current = structureSignature;
     if (!evaStable) arrangeCurrentTopology(true);
-  }, [arrangeCurrentTopology, drag, evaStable, structureSignature, surfaceWidth, topology.nodes.length]);
+  }, [arrangeCurrentTopology, cacheSignature, centralGatewayArchitecture, drag, evaStable, layoutSignature, onChange, structureSignature, surfaceWidth, topology]);
+
+  useEffect(() => {
+    if (drag) return undefined;
+    if (centralGatewayArchitecture) return undefined;
+    if (surfaceWidth <= 0 || topology.nodes.length === 0) return undefined;
+    const timeout = window.setTimeout(() => {
+      writeNetworkLayoutCache(cacheSignature, effectiveTopology, cachedRenderedEdges);
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [cacheSignature, cachedRenderedEdges, centralGatewayArchitecture, drag, effectiveTopology, layoutSignature, surfaceWidth, topology.nodes.length]);
 
   const surfaceHeight = Math.max(
     620,
-    ...topology.nodes.map((node) => node.y + nodeHeight(node) + CANVAS_EXTRA_SPACE),
+    ...effectiveTopology.nodes.map((node) => node.y + nodeHeight(node) + CANVAS_EXTRA_SPACE),
   );
-  const layoutGuideWidth = horizontalLayoutWidth(topology, surfaceWidth);
+  const layoutGuideWidth = horizontalLayoutWidth(effectiveTopology, surfaceWidth);
   const canvasWidth = Math.max(
     surfaceWidth + CANVAS_EXTRA_SPACE,
     layoutGuideWidth + CANVAS_EXTRA_SPACE,
-    ...topology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
+    ...effectiveTopology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
 
   function changeZoom(value: number) {
@@ -1661,10 +2119,70 @@ export function NetworkEditor({
     requestAnimationFrame(() => surface.scrollTo({ left: 0, top: 0 }));
   }
 
-  const largeTopology = topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD;
+  function toggleFullscreen() {
+    setFullscreen((current) => {
+      const next = !current;
+      if (next) {
+        requestAnimationFrame(() => requestAnimationFrame(fitCanvas));
+      }
+      return next;
+    });
+  }
 
-  return (
-    <div className={`net-editor ${largeTopology ? "large-topology" : ""}`}>
+  const largeTopology = effectiveTopology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD;
+  const renderedNodes = useMemo(() => {
+    if (!largeTopology || renderLimit >= effectiveTopology.nodes.length) return effectiveTopology.nodes;
+    const primary = primaryGatewayId
+      ? effectiveTopology.nodes.find((node) => node.id === primaryGatewayId)
+      : undefined;
+    const ordered = primary
+      ? [primary, ...effectiveTopology.nodes.filter((node) => node.id !== primary.id)]
+      : effectiveTopology.nodes;
+    return ordered.slice(0, renderLimit);
+  }, [effectiveTopology.nodes, largeTopology, primaryGatewayId, renderLimit]);
+  const renderedNodeIds = useMemo(() => new Set(renderedNodes.map((node) => node.id)), [renderedNodes]);
+  const visibleRenderedEdges = useMemo(() => {
+    const limitEdges = largeTopology && renderLimit < effectiveTopology.nodes.length;
+    return effectiveTopology.edges.flatMap((edge) => {
+      if (limitEdges && (!renderedNodeIds.has(edge.source) || !renderedNodeIds.has(edge.target))) return [];
+      const from = nodesById.get(edge.source);
+      const to = nodesById.get(edge.target);
+      const fromPort = from?.ports.find((port) => port.id === edge.sourcePort);
+      const toPort = to?.ports.find((port) => port.id === edge.targetPort);
+      if (!from || !to || !fromPort || !toPort) return [];
+      return [{ edge, path: routedEdgePath(effectiveTopology, edge, from, fromPort, to, toPort) }];
+    });
+  }, [effectiveTopology, largeTopology, nodesById, renderedNodeIds, renderLimit]);
+
+  useEffect(() => {
+    if (!largeTopology) {
+      setRenderLimit(Number.MAX_SAFE_INTEGER);
+      return undefined;
+    }
+    let cancelled = false;
+    let frame = 0;
+    const total = effectiveTopology.nodes.length;
+    const firstBatch = Math.min(total, LARGE_TOPOLOGY_RENDER_BATCH);
+    let current = firstBatch;
+    setRenderLimit(firstBatch);
+
+    const advance = () => {
+      if (cancelled || current >= total) return;
+      frame = window.requestAnimationFrame(() => {
+        current = Math.min(total, current + LARGE_TOPOLOGY_RENDER_BATCH);
+        setRenderLimit(current);
+        advance();
+      });
+    };
+    advance();
+    return () => {
+      cancelled = true;
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [largeTopology, layoutSignature, effectiveTopology.nodes.length]);
+
+  const editor = (
+    <div className={`net-editor ${largeTopology ? "large-topology" : ""} ${fullscreen ? "fullscreen" : ""}`}>
       <div className="net-toolbar">
         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
           {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
@@ -1715,9 +2233,21 @@ export function NetworkEditor({
             <button aria-label="Vergrößern" disabled={zoom >= MAX_ZOOM} onClick={() => changeZoom(zoom + ZOOM_STEP)} title="Vergrößern" type="button">+</button>
             <button className="net-zoom-fit" onClick={fitCanvas} title="Gesamtes Netzwerk einpassen" type="button">Einpassen</button>
           </div>
-          <span className={`net-eva-status ${evaStable ? "stable" : "pending"}`} title="KI-gestützte EVA-Anordnung mit Verbindungsgruppen">
+          <button
+            aria-pressed={fullscreen}
+            className="net-add net-fullscreen-toggle"
+            onClick={toggleFullscreen}
+            title={fullscreen ? "Vollbild schließen (Esc)" : "Netzwerk-Editor im Vollbild öffnen"}
+            type="button"
+          >
+            {fullscreen ? "Vollbild schließen" : "Vollbild"}
+          </button>
+          <span
+            className={`net-eva-status ${centralGatewayArchitecture ? "manual" : evaStable ? "stable" : "pending"}`}
+            title={centralGatewayArchitecture ? "Manuelles Layout: Kacheln werden nicht automatisch umgruppiert" : "KI-gestützte EVA-Anordnung mit Verbindungsgruppen"}
+          >
             <i aria-hidden="true" />
-            KI-Layout · EVA
+            {centralGatewayArchitecture ? "Layout · Manuell" : "KI-Layout · EVA"}
           </span>
           <button
             className="net-add danger"
@@ -1727,15 +2257,17 @@ export function NetworkEditor({
           >
             Auswahl löschen
           </button>
-          <button
-            className="net-add net-eva-action"
-            disabled={topology.nodes.length < 2}
-            onClick={applyAutoLayout}
-            title="Zusammenhängende Geräte nach EVA sortieren und gruppieren"
-            type="button"
-          >
-            EVA gruppieren
-          </button>
+          {!centralGatewayArchitecture && (
+            <button
+              className="net-add net-eva-action"
+              disabled={effectiveTopology.nodes.length < 2}
+              onClick={applyAutoLayout}
+              title="Zusammenhängende Geräte nach EVA sortieren und gruppieren"
+              type="button"
+            >
+              EVA gruppieren
+            </button>
+          )}
         </div>
       </div>
 
@@ -1747,6 +2279,7 @@ export function NetworkEditor({
           setSelectedEdge(null);
           setMenu(null);
           setAddMenu(null);
+          setContextOverlay(null);
         }}
         ref={surfaceRef}
       >
@@ -1755,15 +2288,7 @@ export function NetworkEditor({
           style={{ height: Math.max(960, surfaceHeight * zoom), width: Math.max(surfaceWidth, canvasWidth * zoom) }}
         >
           <div className="net-canvas" style={{ height: surfaceHeight, transform: `scale(${zoom})`, width: canvasWidth }}>
-          <div
-            aria-hidden="true"
-            className="net-eva-zones"
-            style={{ width: layoutGuideWidth }}
-          >
-            <span>Gateway / BCM</span>
-            <span>ECU</span>
-            <span>Sensor / Aktor</span>
-          </div>
+          {!centralGatewayArchitecture && (
           <div className="net-eva-clusters">
             {evaClusters.map((cluster) => (
               <div
@@ -1783,6 +2308,7 @@ export function NetworkEditor({
                     if (event.button !== 0) return;
                     event.preventDefault();
                     event.stopPropagation();
+                    event.currentTarget.setPointerCapture(event.pointerId);
                     const members = topology.nodes
                       .filter((node) => cluster.memberIds.includes(node.id))
                       .map((node) => ({ id: node.id, x: node.x, y: node.y }));
@@ -1792,24 +2318,28 @@ export function NetworkEditor({
                     setSelectedEdge(null);
                     setMenu(null);
                     setAddMenu(null);
-                    setDrag({
+                    activeDragRef.current = {
                       mode: "move-cluster",
                       clusterId: cluster.id,
                       startX: point.x,
                       startY: point.y,
                       members,
-                    });
+                    };
                   }}
-                  title="Systemrahmen verschieben"
+                  title="Gruppe verschieben"
                   type="button"
                 >
-                  {cluster.label} · {cluster.inputs} Eingang · {cluster.processors} Verarbeitung · {cluster.outputs} Ausgang
+                  <strong>{cluster.label}</strong>
+                  <span>{cluster.inputs} E</span>
+                  <span>{cluster.processors} V</span>
+                  <span>{cluster.outputs} A</span>
                 </button>
               </div>
             ))}
           </div>
+          )}
           <svg aria-hidden="true" className="net-wires">
-          {renderedEdges.map(({ edge, path }) => {
+          {visibleRenderedEdges.map(({ edge, path }) => {
             return (
               <g
                 key={edge.id}
@@ -1817,8 +2347,11 @@ export function NetworkEditor({
                   event.stopPropagation();
                   editRelationship(edge);
                 }}
+                onPointerEnter={(event) => showEdgeOverlay(edge, event.clientX, event.clientY)}
+                onPointerLeave={() => setContextOverlay(null)}
                 onPointerDown={(event) => {
                   event.stopPropagation();
+                  setContextOverlay(null);
                   if (selectedEdge === edge.id) {
                     editRelationship(edge);
                     return;
@@ -1828,7 +2361,7 @@ export function NetworkEditor({
                   setMenu(null);
                 }}
               >
-                <path className="net-wire-hit" d={path} />
+                {!largeTopology && <path className="net-wire-hit" d={path} />}
                 <path
                   className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
                   d={path}
@@ -1839,20 +2372,20 @@ export function NetworkEditor({
           })}
           {drag?.mode === "wire" &&
             (() => {
-              const from = topology.nodes.find((node) => node.id === drag.nodeId);
+              const from = effectiveTopology.nodes.find((node) => node.id === drag.nodeId);
               const fromPort = from?.ports.find((p) => p.id === drag.portId);
               if (!from || !fromPort) return null;
               return (
                 <path
                   className="net-wire pending"
-                  d={pendingEdgePath(topology, from, fromPort, { x: drag.x, y: drag.y })}
+                  d={pendingEdgePath(effectiveTopology, from, fromPort, { x: drag.x, y: drag.y })}
                   stroke={busProfiles[drag.bus].color}
                 />
               );
             })()}
           </svg>
 
-          {topology.nodes.map((node) => {
+          {renderedNodes.map((node) => {
           const height = nodeHeight(node);
           const visiblePorts = largeTopology && selectedNode !== node.id
             ? node.ports.filter((port) => connectedPortIds.has(port.id))
@@ -1874,14 +2407,20 @@ export function NetworkEditor({
               onDoubleClick={() => openRenameNode(node.id)}
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
+                event.preventDefault();
                 event.stopPropagation();
-                setSelectedNode(node.id);
-                setSelectedEdge(null);
+                event.currentTarget.setPointerCapture(event.pointerId);
                 setMenu(null);
                 const point = pointFromEvent(event);
-                setDrag({ mode: "move", nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y });
+                activeDragRef.current = { mode: "move", nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y };
               }}
-              style={{ left: node.x, top: node.y, width: nodeWidth(node), height }}
+              style={{
+                left: node.x,
+                top: node.y,
+                width: nodeWidth(node),
+                height,
+                ["--node-height" as string]: `${height}px`,
+              }}
             >
               <span className="net-node-kind">
                 {kindLabels[node.kind]}{node.id === primaryGatewayId ? " · EVA-Zentrum" : ""}
@@ -1916,21 +2455,31 @@ export function NetworkEditor({
                     data-port-bus={port.bus}
                     data-port-id={port.id}
                     key={port.id}
+                    onBlur={() => setContextOverlay(null)}
                     onContextMenu={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
                       removePort(node.id, port.id);
                     }}
+                    onFocus={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      showPortOverlay(node, port, rect.right, rect.top);
+                    }}
+                    onPointerEnter={(event) => showPortOverlay(node, port, event.clientX, event.clientY)}
+                    onPointerLeave={() => setContextOverlay(null)}
                     onPointerDown={(event) => {
                       if (event.button !== 0) return;
+                      event.preventDefault();
                       event.stopPropagation();
+                      event.currentTarget.setPointerCapture(event.pointerId);
                       setMenu(null);
+                      setContextOverlay(null);
                       const point = pointFromEvent(event);
-                      setDrag(
-                        event.shiftKey || portIsConnected(port.id)
-                          ? { mode: "move-port", nodeId: node.id, portId: port.id }
-                          : { mode: "wire", nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y },
-                      );
+                      const nextDrag = event.shiftKey || portIsConnected(port.id)
+                        ? { mode: "move-port" as const, nodeId: node.id, portId: port.id }
+                        : { mode: "wire" as const, nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y };
+                      activeDragRef.current = nextDrag;
+                      if (nextDrag.mode === "wire") setDrag(nextDrag);
                     }}
                     style={{
                       ...portStyle,
@@ -1953,17 +2502,15 @@ export function NetworkEditor({
                   event.preventDefault();
                   event.stopPropagation();
                   const point = pointFromEvent(event);
-                  setSelectedNode(node.id);
-                  setSelectedEdge(null);
                   setMenu(null);
-                  setDrag({
+                  activeDragRef.current = {
                     mode: "resize",
                     nodeId: node.id,
                     startX: point.x,
                     startY: point.y,
                     startWidth: nodeWidth(node),
                     startHeight: nodeHeight(node),
-                  });
+                  };
                 }}
                 title="Boxgröße ändern"
                 type="button"
@@ -2013,6 +2560,35 @@ export function NetworkEditor({
           </div>
         </div>
       </div>
+
+      {contextOverlay && (
+        <aside
+          className="net-context-overlay"
+          style={{
+            left: contextOverlay.x,
+            top: contextOverlay.y,
+            ["--bus" as string]: contextOverlay.accent,
+          }}
+        >
+          <header>
+            <span>{contextOverlay.subtitle}</span>
+            <strong>{contextOverlay.title}</strong>
+          </header>
+          <dl>
+            {contextOverlay.rows.map((row) => (
+              <div key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {contextOverlay.chips.length > 0 && (
+            <div className="net-context-chips">
+              {contextOverlay.chips.map((chip) => <span key={chip}>{chip}</span>)}
+            </div>
+          )}
+        </aside>
+      )}
 
       <p className="net-hint">
         Karte ziehen zum Verschieben · Doppelklick auf Gerät zum Umbenennen · Doppelklick auf Verbindung zum Bearbeiten · <strong>Port zu einem gleichfarbigen Port ziehen</strong> zum Verdrahten · Shift + Port ziehen zum Versetzen · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Rechtsklick auf einen Port entfernt ihn.
@@ -2120,4 +2696,8 @@ export function NetworkEditor({
       )}
     </div>
   );
+
+  return fullscreen && typeof document !== "undefined"
+    ? createPortal(editor, document.body)
+    : editor;
 }

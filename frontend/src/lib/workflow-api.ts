@@ -8,7 +8,12 @@ const LOCAL_FRONTEND_PORT = "13500";
 const LOCAL_BACKEND_BASE = "http://127.0.0.1:15050/api/engineering";
 
 function workflowBaseUrl(): string {
-  if (typeof window !== "undefined" && window.location.port === LOCAL_FRONTEND_PORT) {
+  if (
+    typeof window !== "undefined" &&
+    (window.location.port === LOCAL_FRONTEND_PORT ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname === "localhost")
+  ) {
     return LOCAL_BACKEND_BASE;
   }
   return BASE;
@@ -456,6 +461,9 @@ export const getWorkflowSnapshots = () =>
     preflight: AnalysisSnapshot | null;
     simulations: SimulationSnapshot[];
   }>("/workflow/snapshots");
+
+export const getWorkflowSimulationSnapshot = (snapshotId: string) =>
+  request<SimulationSnapshot>(`/workflow/simulation-snapshots/${encodeURIComponent(snapshotId)}`);
 
 export type IntelligenceIssue = {
   severity: "ERROR" | "WARNING" | "INFO";

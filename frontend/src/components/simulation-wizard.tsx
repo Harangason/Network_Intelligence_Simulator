@@ -18,7 +18,6 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
-import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters, saveWorkflowTopology } from "@/lib/workflow-api";
 import {
   defaultSimulationFormats,
@@ -69,6 +68,7 @@ type RoutingNetworkSuggestion = {
 };
 
 const inactiveRouteStatuses = new Set(["REJECTED", "OUTDATED", "SUPERSEDED", "DEPRECATED"]);
+const ROUTING_SUGGESTION_CHECK_DELAY_MS = 80;
 
 function routingBus(protocol?: string | null, networkId?: string | null): BusType {
   const value = `${protocol ?? ""} ${networkId ?? ""}`.toUpperCase();
@@ -96,137 +96,217 @@ function routePath(route: RoutingEntry, destinationId: string) {
   );
 }
 
-function routingSegmentIsLinked(
-  topology: NetworkTopology,
+function routeCanSuggestNetworkChange(route: RoutingEntry) {
+  return route.origin !== "NETWORK_EDITOR" &&
+    !inactiveRouteStatuses.has(route.status.toUpperCase()) &&
+    route.approval_state.toUpperCase() === "APPROVED" &&
+    route.validation.valid === true;
+}
+
+function routingSegmentKey(
   sourceId: string,
   targetId: string,
   bus: BusType,
   routeId: string,
 ) {
-  const nodeIds = new Map(
-    topology.nodes
-      .filter((node) => node.engineeringId)
-      .map((node) => [node.engineeringId as string, node.id]),
-  );
-  const sourceTopologyId = nodeIds.get(sourceId);
-  const targetTopologyId = nodeIds.get(targetId);
-  if (!sourceTopologyId || !targetTopologyId) return false;
-  return topology.edges.some((edge) => {
-    const connectsSegment = edge.bus === bus && (
-      (edge.source === sourceTopologyId && edge.target === targetTopologyId)
-      || (edge.source === targetTopologyId && edge.target === sourceTopologyId)
-    );
+  const [left, right] = [sourceId, targetId].sort();
+  return `${routeId}\u0000${bus}\u0000${left}\u0000${right}`;
+}
+
+function buildLinkedRoutingSegmentIndex(topology: NetworkTopology) {
+  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
+  const linkedSegments = new Set<string>();
+  for (const edge of topology.edges) {
+    const sourceEngineeringId = nodesById.get(edge.source)?.engineeringId;
+    const targetEngineeringId = nodesById.get(edge.target)?.engineeringId;
+    if (!sourceEngineeringId || !targetEngineeringId) continue;
     const routeIds = new Set([
       ...(edge.routingEntryIds ?? []),
       ...(edge.routingEntryId ? [edge.routingEntryId] : []),
       ...Object.keys(edge.routingMetadata ?? {}),
     ]);
-    return connectsSegment && routeIds.has(routeId);
+    for (const routeId of routeIds) {
+      linkedSegments.add(routingSegmentKey(sourceEngineeringId, targetEngineeringId, edge.bus, routeId));
+    }
+  }
+  return linkedSegments;
+}
+
+function routingRouteSignature(route: RoutingEntry) {
+  return JSON.stringify({
+    id: route.id,
+    routeCode: route.route_code,
+    revision: route.revision,
+    modifiedAt: route.modified_at,
+    status: route.status,
+    approval: route.approval_state,
+    valid: route.validation.valid,
+    source: route.source,
+    destinations: route.destinations,
+    hops: route.route.hops,
+    gateways: route.route.gateways,
   });
 }
 
-function buildRoutingNetworkSuggestions(
-  routes: RoutingEntry[],
-  topology: NetworkTopology,
-  hardware: HardwareNode[],
-): RoutingNetworkSuggestion[] {
-  const names = new Map([
-    ...hardware.map((node) => [node.id, node.name] as const),
-    ...topology.nodes
-      .filter((node) => node.engineeringId)
-      .map((node) => [node.engineeringId as string, node.name] as const),
-  ]);
-  return routes
-    .filter(
-      (route) =>
-        route.origin !== "NETWORK_EDITOR" &&
-        !inactiveRouteStatuses.has(route.status.toUpperCase()) &&
-        route.approval_state.toUpperCase() === "APPROVED" &&
-        route.validation.valid === true,
-    )
-    .flatMap((route) => {
-      const segments = new Map<string, RoutingNetworkSegment>();
-      for (const destination of route.destinations) {
-        const path = routePath(route, destination.node_id);
-        for (let index = 0; index < path.length - 1; index += 1) {
-          const sourceId = path[index];
-          const targetId = path[index + 1];
-          const lastSegment = index === path.length - 2;
-          const bus = routingBus(
-            lastSegment ? destination.protocol ?? route.source.protocol : route.source.protocol,
-            lastSegment ? destination.network_id ?? route.source.network_id : route.source.network_id,
-          );
-          if (routingSegmentIsLinked(topology, sourceId, targetId, bus, route.id)) continue;
-          segments.set(`${sourceId}:${targetId}:${bus}`, {
-            sourceId,
-            targetId,
-            bus,
-            sourceInterfaceId: index === 0 ? route.source.interface_id : null,
-            targetInterfaceId: lastSegment ? destination.interface_id : null,
-          });
-        }
-      }
-      if (segments.size === 0) return [];
-      const pathNames = routePath(route, route.destinations[0]?.node_id ?? "")
-        .map((id) => names.get(id) ?? id)
-        .join(" → ");
-      return [{
-        route,
-        path: pathNames || route.name,
-        protocol: route.source.protocol ?? "CUSTOM",
-        segments: [...segments.values()],
-      }];
-    });
+function routingHardwareSignature(hardware: HardwareNode[]) {
+  return JSON.stringify(hardware.map((node) => ({ id: node.id, name: node.name })));
 }
 
-function routingSuggestionRevision(
-  routes: RoutingEntry[],
-  topology: NetworkTopology,
-  hardware: HardwareNode[],
-) {
+function routeLinkedSegmentSignature(route: RoutingEntry, linkedSegments: Set<string>) {
+  const keys = new Set<string>();
+  for (const destination of route.destinations) {
+    const path = routePath(route, destination.node_id);
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const sourceId = path[index];
+      const targetId = path[index + 1];
+      const lastSegment = index === path.length - 2;
+      const bus = routingBus(
+        lastSegment ? destination.protocol ?? route.source.protocol : route.source.protocol,
+        lastSegment ? destination.network_id ?? route.source.network_id : route.source.network_id,
+      );
+      const key = routingSegmentKey(sourceId, targetId, bus, route.id);
+      keys.add(`${key}:${linkedSegments.has(key) ? "1" : "0"}`);
+    }
+  }
+  return [...keys].sort().join("\u0001");
+}
+
+function topologyRoutingLinkRevision(topology: NetworkTopology) {
   return JSON.stringify({
-    routes: routes.map((route) => ({
-      id: route.id,
-      status: route.status,
-      approval: route.approval_state,
-      valid: route.validation.valid,
-      source: route.source,
-      destinations: route.destinations,
-      hops: route.route.hops,
-      gateways: route.route.gateways,
-    })),
     nodes: topology.nodes.map((node) => ({ id: node.id, engineeringId: node.engineeringId, name: node.name })),
     edges: topology.edges.map((edge) => ({
-      id: edge.id,
       source: edge.source,
       target: edge.target,
       bus: edge.bus,
       routingEntryId: edge.routingEntryId,
       routingEntryIds: edge.routingEntryIds,
-      routingMetadata: edge.routingMetadata,
-      sourceInterfaceName: edge.sourceInterfaceName,
-      targetInterfaceName: edge.targetInterfaceName,
-      relationType: edge.relationType,
-      direction: edge.direction,
+      routingMetadataIds: Object.keys(edge.routingMetadata ?? {}).sort(),
     })),
-    hardware: hardware.map((node) => ({ id: node.id, name: node.name })),
   });
 }
+
+function buildRoutingNetworkSuggestion(
+  route: RoutingEntry,
+  names: Map<string, string>,
+  linkedSegments: Set<string>,
+): RoutingNetworkSuggestion[] {
+  if (!routeCanSuggestNetworkChange(route)) return [];
+  const segments = new Map<string, RoutingNetworkSegment>();
+  for (const destination of route.destinations) {
+    const path = routePath(route, destination.node_id);
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const sourceId = path[index];
+      const targetId = path[index + 1];
+      const lastSegment = index === path.length - 2;
+      const bus = routingBus(
+        lastSegment ? destination.protocol ?? route.source.protocol : route.source.protocol,
+        lastSegment ? destination.network_id ?? route.source.network_id : route.source.network_id,
+      );
+      if (linkedSegments.has(routingSegmentKey(sourceId, targetId, bus, route.id))) continue;
+      segments.set(`${sourceId}:${targetId}:${bus}`, {
+        sourceId,
+        targetId,
+        bus,
+        sourceInterfaceId: index === 0 ? route.source.interface_id : null,
+        targetInterfaceId: lastSegment ? destination.interface_id : null,
+      });
+    }
+  }
+  if (segments.size === 0) return [];
+  const pathNames = routePath(route, route.destinations[0]?.node_id ?? "")
+    .map((id) => names.get(id) ?? id)
+    .join(" → ");
+  return [{
+    route,
+    path: pathNames || route.name,
+    protocol: route.source.protocol ?? "CUSTOM",
+    segments: [...segments.values()],
+  }];
+}
+
+type RoutingSuggestionCacheEntry = {
+  signature: string;
+  items: RoutingNetworkSuggestion[];
+};
 
 function useRoutingNetworkSuggestions(
   routes: RoutingEntry[],
   topology: NetworkTopology,
   hardware: HardwareNode[],
+  linkRevision: string,
 ) {
-  const cache = useRef<{ revision: string; items: RoutingNetworkSuggestion[] }>({ revision: "", items: [] });
-  const revision = routingSuggestionRevision(routes, topology, hardware);
-  if (cache.current.revision !== revision) {
-    cache.current = {
-      revision,
-      items: buildRoutingNetworkSuggestions(routes, topology, hardware),
+  const [suggestions, setSuggestions] = useState<RoutingNetworkSuggestion[]>([]);
+  const [checking, setChecking] = useState(false);
+  const cache = useRef<Map<string, RoutingSuggestionCacheEntry>>(new Map());
+  const routeRevision = useMemo(
+    () => routes.map((route) => routingRouteSignature(route)).join("\u0002"),
+    [routes],
+  );
+  const hardwareRevision = useMemo(() => routingHardwareSignature(hardware), [hardware]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let batchTimeout = 0;
+    setChecking(true);
+    const timeout = window.setTimeout(() => {
+      const names = new Map([
+        ...hardware.map((node) => [node.id, node.name] as const),
+        ...topology.nodes
+          .filter((node) => node.engineeringId)
+          .map((node) => [node.engineeringId as string, node.name] as const),
+      ]);
+      const linkedSegments = buildLinkedRoutingSegmentIndex(topology);
+      const nextCache = new Map<string, RoutingSuggestionCacheEntry>();
+      const nextSuggestions: RoutingNetworkSuggestion[] = [];
+      const candidateRoutes = routes.filter(routeCanSuggestNetworkChange);
+      let index = 0;
+
+      const processBatch = () => {
+        const batchStarted = performance.now();
+        let processed = 0;
+        while (
+          index < candidateRoutes.length &&
+          processed < 16 &&
+          performance.now() - batchStarted < 8
+        ) {
+          const route = candidateRoutes[index];
+          index += 1;
+          processed += 1;
+          if (!route) continue;
+        if (!routeCanSuggestNetworkChange(route)) continue;
+        const signature = [
+          routingRouteSignature(route),
+          routeLinkedSegmentSignature(route, linkedSegments),
+          hardwareRevision,
+        ].join("\u0003");
+        const cached = cache.current.get(route.id);
+        const items = cached?.signature === signature
+          ? cached.items
+          : buildRoutingNetworkSuggestion(route, names, linkedSegments);
+        nextCache.set(route.id, { signature, items });
+        nextSuggestions.push(...items);
+      }
+
+        if (cancelled) return;
+        if (index < candidateRoutes.length) {
+          batchTimeout = window.setTimeout(processBatch, 0);
+          return;
+        }
+        cache.current = nextCache;
+        setSuggestions(nextSuggestions);
+        setChecking(false);
+      };
+
+      processBatch();
+    }, ROUTING_SUGGESTION_CHECK_DELAY_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      if (batchTimeout) window.clearTimeout(batchTimeout);
     };
-  }
-  return cache.current.items;
+  }, [hardwareRevision, linkRevision, routeRevision]);
+
+  return { checking, suggestions };
 }
 
 function engineeringTopologySignature(topology: NetworkTopology) {
@@ -265,6 +345,10 @@ function engineeringTopologySignature(topology: NetworkTopology) {
       routingMetadata: edge.routingMetadata,
     })),
   });
+}
+
+function topologyHasChanged(current: NetworkTopology, next: NetworkTopology) {
+  return engineeringTopologySignature(current) !== engineeringTopologySignature(next);
 }
 
 function mergeRoutingSuggestionsIntoTopology(
@@ -463,26 +547,41 @@ export function SimulationWizard({
   const [applyingRoute, setApplyingRoute] = useState("");
   const [applyingAllRoutes, setApplyingAllRoutes] = useState(false);
   const [syncRequest, setSyncRequest] = useState(0);
-  const [automaticModelSync, setAutomaticModelSync] = useState(true);
+  const [routeRefreshRequest, setRouteRefreshRequest] = useState(0);
+  const [modelRefreshPending, setModelRefreshPending] = useState(false);
   const [engineeringSync, setEngineeringSync] = useState<{
-    status: "idle" | "syncing" | "synced" | "error";
+    status: "idle" | "syncing" | "synced" | "warning" | "error";
     linked: number;
     error: string;
   }>({ status: "idle", linked: 0, error: "" });
   const [routingSyncMessage, setRoutingSyncMessage] = useState("");
-  const pendingPersistSignatureRef = useRef("");
+  const [routingLinkRevision, setRoutingLinkRevision] = useState("");
+  const localWorkflowChangeRef = useRef(false);
+  const topologyRef = useRef(topology);
 
-  const topologySignature = useMemo(() => engineeringTopologySignature(topology), [topology]);
+  useEffect(() => {
+    topologyRef.current = topology;
+  }, [topology]);
+
+  const clearLocalWorkflowChangeSoon = useCallback(() => {
+    window.setTimeout(() => {
+      localWorkflowChangeRef.current = false;
+    }, 0);
+  }, []);
+
+  const requestNetworkRefresh = useCallback(() => {
+    setRouteRefreshRequest((request) => request + 1);
+    setSyncRequest((request) => request + 1);
+  }, []);
 
   const persistNetworkRelationships = useCallback(async (next: NetworkTopology) => {
-    pendingPersistSignatureRef.current = engineeringTopologySignature(next);
     setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));
     setRoutingSyncMessage("Routing-Vorschläge werden abgeglichen …");
     try {
       const state = await saveWorkflowTopology(normalizePhysicalTopology(next));
       if (Array.isArray(state.topology.nodes) && Array.isArray(state.topology.edges)) {
         const savedTopology = normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
-        pendingPersistSignatureRef.current = engineeringTopologySignature(savedTopology);
+        setRoutingLinkRevision(topologyRoutingLinkRevision(savedTopology));
         setTopology(savedTopology);
         setEngineeringSync({
           status: "synced",
@@ -502,10 +601,11 @@ export function SimulationWizard({
       } else {
         setRoutingSyncMessage("Routing und Netzwerk sind synchron.");
       }
+      localWorkflowChangeRef.current = true;
+      setModelRefreshPending(false);
       notifyWorkflowChanged();
       return true;
     } catch (error) {
-      pendingPersistSignatureRef.current = "";
       setEngineeringSync({
         status: "error",
         linked: 0,
@@ -536,8 +636,11 @@ export function SimulationWizard({
         setStoredParameters(state.parameters ?? {});
         const storedTopology = state.topology;
         if (Array.isArray(storedTopology.nodes) && Array.isArray(storedTopology.edges)) {
-          setTopology(normalizePhysicalTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges }));
+          const nextTopology = normalizePhysicalTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges });
+          setRoutingLinkRevision(topologyRoutingLinkRevision(nextTopology));
+          setTopology(nextTopology);
         } else {
+          setRoutingLinkRevision("");
           setTopology({ nodes: [], edges: [] });
         }
         if (typeof state.parameters.industry === "string") setDomainId(state.parameters.industry);
@@ -560,7 +663,20 @@ export function SimulationWizard({
   useEffect(() => {
     if (mode !== "network") return;
     let active = true;
-    const refreshRoutes = () => {
+    const refreshRoutes = (event?: Event) => {
+      if (event && workflowLoaded) {
+        if (localWorkflowChangeRef.current) {
+          clearLocalWorkflowChangeSoon();
+        } else {
+          setModelRefreshPending(true);
+          setEngineeringSync((current) => ({
+            ...current,
+            status: current.status === "syncing" ? current.status : "warning",
+            error: "Das Engineering-Modell wurde außerhalb des Netzwerk-Editors geändert. Bitte aktualisiere bewusst.",
+          }));
+          return;
+        }
+      }
       setRoutingLoadError("");
       void listRoutes()
         .then((items) => {
@@ -579,42 +695,54 @@ export function SimulationWizard({
       active = false;
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, refreshRoutes);
     };
-  }, [mode]);
+  }, [clearLocalWorkflowChangeSoon, mode, routeRefreshRequest, workflowLoaded]);
 
   useEffect(() => {
-    setAutomaticModelSync(readUserSettings().automaticModelSync);
-    const update = (event: Event) => {
-      setAutomaticModelSync((event as CustomEvent<UserSettings>).detail.automaticModelSync);
+    if (mode !== "network") return;
+    let active = true;
+    const loadHardware = (event?: Event) => {
+      if (event && workflowLoaded && !localWorkflowChangeRef.current) return;
+      if (event && localWorkflowChangeRef.current) clearLocalWorkflowChangeSoon();
+      void listAllEngineeringObjects("hardware-nodes")
+        .then((items) => {
+          if (active) setModelHardware(items.filter((item): item is HardwareNode => "device_type" in item));
+        })
+        .catch(() => {
+          if (active) setModelHardware([]);
+        });
     };
-    window.addEventListener(SETTINGS_EVENT, update);
-    return () => window.removeEventListener(SETTINGS_EVENT, update);
-  }, []);
+    loadHardware();
+    window.addEventListener(WORKFLOW_CHANGED_EVENT, loadHardware);
+    return () => {
+      active = false;
+      window.removeEventListener(WORKFLOW_CHANGED_EVENT, loadHardware);
+    };
+  }, [clearLocalWorkflowChangeSoon, mode, routeRefreshRequest, workflowLoaded]);
 
   useEffect(() => {
     if (mode !== "network" || !workflowLoaded) return;
-    if (topology.nodes.length === 0) {
+    const topologyForSync = topologyRef.current;
+    if (topologyForSync.nodes.length === 0) {
       setEngineeringSync({ status: "idle", linked: 0, error: "" });
       setModelHardware([]);
       return;
     }
-    if (!automaticModelSync && syncRequest === 0) {
-      return;
-    }
-    if (syncRequest === 0 && pendingPersistSignatureRef.current === topologySignature) return;
+    if (syncRequest === 0) return;
     let cancelled = false;
     const timeout = window.setTimeout(() => {
       setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));
       Promise.all([
         listAllEngineeringObjects("hardware-nodes"),
-        syncEngineeringTopology(topology),
+        syncEngineeringTopology(topologyForSync),
       ])
         .then(([items, result]) => {
           if (cancelled) return;
           setModelHardware(items.filter((item): item is HardwareNode => "device_type" in item));
           const nodesById = new Map(result.nodes.map((node) => [node.topology_node_id, node]));
           const edgesById = new Map(result.edges.map((edge) => [edge.topology_edge_id, edge]));
-          setTopology((current) => ({
-            nodes: current.nodes.map((node) => {
+          const currentTopology = topologyRef.current;
+          const nextTopology = {
+            nodes: currentTopology.nodes.map((node) => {
               const linked = nodesById.get(node.id);
               const interfacesById = new Map(
                 (linked?.interfaces ?? []).map((item) => [item.topology_port_id, item] as const),
@@ -634,17 +762,20 @@ export function SimulationWizard({
                 }),
               };
             }),
-            edges: current.edges.map((edge) => ({
+            edges: currentTopology.edges.map((edge) => ({
               ...edge,
               engineeringRelationId: edgesById.get(edge.id)?.engineering_relation_id,
             })),
-          }));
+          };
+          setRoutingLinkRevision(topologyRoutingLinkRevision(nextTopology));
+          setTopology(nextTopology);
           setEngineeringSync({
             status: "synced",
             linked: result.counts.hardware_nodes,
             error: "",
           });
-          if (!automaticModelSync) setSyncRequest(0);
+          setModelRefreshPending(false);
+          setSyncRequest(0);
         })
         .catch((error) => {
           if (!cancelled) {
@@ -653,6 +784,7 @@ export function SimulationWizard({
               linked: 0,
               error: error instanceof Error ? error.message : "Modellabgleich fehlgeschlagen.",
             });
+            setSyncRequest(0);
           }
         });
     }, 500);
@@ -660,7 +792,7 @@ export function SimulationWizard({
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [automaticModelSync, mode, syncRequest, topology.nodes.length, topologySignature, workflowLoaded]);
+  }, [mode, syncRequest, topology.nodes.length, workflowLoaded]);
 
   const domain = useMemo(
     () => (catalog?.domains ?? []).find((item) => item.id === domainId),
@@ -689,10 +821,14 @@ export function SimulationWizard({
     () => technology?.parameter_schema?.find((field) => field.key === "target_bus_load_percent"),
     [technology],
   );
-  const routingNetworkSuggestions = useRoutingNetworkSuggestions(
+  const {
+    checking: routingSuggestionsChecking,
+    suggestions: routingNetworkSuggestions,
+  } = useRoutingNetworkSuggestions(
     routingEntries,
     topology,
     modelHardware,
+    routingLinkRevision,
   );
 
   function chooseDomain(value: string) {
@@ -723,6 +859,10 @@ export function SimulationWizard({
     setFormError("");
     try {
       const next = mergeRoutingSuggestionsIntoTopology(topology, [suggestion], modelHardware);
+      if (!topologyHasChanged(topology, next)) {
+        setRoutingSyncMessage("Keine geänderten Routing-Parameter vorhanden. Es muss nichts übernommen werden.");
+        return;
+      }
       const saved = await persistNetworkRelationships(next);
       if (saved) {
         setRoutingSyncMessage(`${suggestion.route.route_code} wurde als physischer Netzwerkpfad übernommen.`);
@@ -740,6 +880,10 @@ export function SimulationWizard({
     setFormError("");
     try {
       const next = mergeRoutingSuggestionsIntoTopology(topology, routingNetworkSuggestions, modelHardware);
+      if (!topologyHasChanged(topology, next)) {
+        setRoutingSyncMessage("Keine geänderten Routing-Parameter vorhanden. Es muss nichts übernommen werden.");
+        return;
+      }
       const saved = await persistNetworkRelationships(next);
       if (saved) {
         setRoutingSyncMessage(
@@ -804,6 +948,7 @@ export function SimulationWizard({
         setStoredParameters(parameters);
         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
       }
+      if (mode === "network") localWorkflowChangeRef.current = true;
       if (mode === "parameters") notifyWorkflowDraftStatus("parameters", null);
       notifyWorkflowChanged();
     } catch (error) {
@@ -876,13 +1021,15 @@ export function SimulationWizard({
 
         {mode === "network" ? (
           <>
-            <div className={`net-model-sync ${engineeringSync.status}`}>
+            <div className={`net-model-sync ${modelRefreshPending ? "warning" : engineeringSync.status}`}>
               <div className="net-model-sync-status">
                 <span aria-hidden="true" className="net-model-sync-dot" />
                 <div>
                   <span>Engineering-Modell</span>
                   <strong>
-                    {engineeringSync.status === "syncing"
+                    {modelRefreshPending
+                      ? "Modelländerung wartet auf Aktualisierung"
+                      : engineeringSync.status === "syncing"
                       ? "Wird synchronisiert …"
                       : engineeringSync.status === "synced"
                         ? `${engineeringSync.linked}/${topology.nodes.length} Geräte verknüpft`
@@ -897,12 +1044,13 @@ export function SimulationWizard({
               <div className="net-model-sync-actions">
                 <Link href="/studio/engineering">Modell öffnen ↗</Link>
                 <button
-                  className="net-add"
+                  className={`net-add net-sync-button ${modelRefreshPending ? "warning" : ""}`}
                   disabled={!workflowLoaded || topology.nodes.length === 0 || engineeringSync.status === "syncing"}
-                  onClick={() => setSyncRequest((request) => request + 1)}
+                  onClick={requestNetworkRefresh}
                   type="button"
                 >
-                  Synchronisieren
+                  {modelRefreshPending && <span aria-hidden="true" className="net-sync-warning">⚠</span>}
+                  {modelRefreshPending ? "Aktualisieren" : "Synchronisieren"}
                 </button>
               </div>
               {engineeringSync.error && <p>{engineeringSync.error}</p>}
@@ -915,11 +1063,17 @@ export function SimulationWizard({
               topology={topology}
             />
             {routingSyncMessage && <p className="net-routing-sync">{routingSyncMessage}</p>}
-            <section className="net-route-suggestions" aria-label="Vorschläge aus der Routing-Tabelle">
+            <section className="net-route-suggestions" aria-label="Geänderte Routing-Parameter">
               <div className="net-route-suggestions-heading">
                 <div>
                   <span>Routing-Tabelle</span>
-                  <strong>Vorgeschlagene physische Verbindungen</strong>
+                  <strong>
+                    {routingSuggestionsChecking
+                      ? "Änderungen werden geprüft …"
+                      : routingNetworkSuggestions.length > 0
+                      ? "Geänderte Parameter bestätigen"
+                      : "Keine Änderungen zu übernehmen"}
+                  </strong>
                 </div>
                 <div className="net-route-suggestions-actions">
                   <Link href="/studio/routing?view=graph">Routing-Graph öffnen ↗</Link>
@@ -937,6 +1091,8 @@ export function SimulationWizard({
               </div>
               {routingLoadError ? (
                 <p className="net-route-suggestions-error">{routingLoadError}</p>
+              ) : routingSuggestionsChecking ? (
+                <p className="net-route-suggestions-complete">Nur geänderte Routing-Parameter werden geprüft.</p>
               ) : routingNetworkSuggestions.length > 0 ? (
                 <div className="net-route-suggestion-list">
                   {routingNetworkSuggestions.map((suggestion) => (
@@ -947,7 +1103,7 @@ export function SimulationWizard({
                       </div>
                       <div className="net-route-suggestion-path">
                         <strong>{suggestion.path}</strong>
-                        <span>{suggestion.protocol} · {suggestion.segments.length} fehlende Routing-Beziehung(en)</span>
+                        <span>{suggestion.protocol} · {suggestion.segments.length} zu bestätigende Änderung(en)</span>
                       </div>
                       <button
                         className="net-add"
@@ -961,21 +1117,13 @@ export function SimulationWizard({
                   ))}
                 </div>
               ) : (
-                <p className="net-route-suggestions-complete">Alle aktiven Routing-Pfade sind in der Topologie abgebildet.</p>
+                <p className="net-route-suggestions-complete">Keine geänderten Routing-Parameter. Es muss nichts übernommen werden.</p>
               )}
             </section>
             <div className="network-output-row">
               <div>
                 <span>Topologie</span>
                 <strong>{topology.nodes.length} Geräte · {topology.edges.length} Verbindungen</strong>
-              </div>
-              <div className="format-inline">
-                {defaultSimulationFormats.map((format) => (
-                  <label key={format}>
-                    <input checked={formats.includes(format)} onChange={() => toggleFormat(format)} type="checkbox" />
-                    {format.replace("universal-", "").toUpperCase()}
-                  </label>
-                ))}
               </div>
             </div>
           </>
