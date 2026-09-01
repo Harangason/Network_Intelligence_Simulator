@@ -19,8 +19,8 @@ import { setWorkflowContext } from "@/lib/workflow-api";
 const NODE_DEFAULT_WIDTH = 168;
 const NODE_MIN_WIDTH = 140;
 const NODE_MIN_HEIGHT = 84;
-const PORT_DIAMETER = 14;
-const PORT_OFFSET = PORT_DIAMETER / 2 + 1;
+const PORT_DIAMETER = 16;
+const PORT_OFFSET = PORT_DIAMETER / 2;
 const PORT_SAFE_INSET = 18;
 const PORT_VISUAL_GAP = 7.5;
 const PORT_CENTER_GAP = PORT_DIAMETER + PORT_VISUAL_GAP;
@@ -141,18 +141,24 @@ function uniqueLabels(values: Array<string | null | undefined>) {
   return [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])];
 }
 
+function usesVerticalCardFormat(node: TopologyNode) {
+  return node.kind === "sensor"
+    || node.kind === "actuator"
+    || (node.kind === "ecu" && (node.width ?? NODE_DEFAULT_WIDTH) <= ENDPOINT_NODE_WIDTH);
+}
+
 function nodeWidth(node: TopologyNode) {
-  const minimumWidth = node.kind === "sensor" || node.kind === "actuator"
+  const minimumWidth = usesVerticalCardFormat(node)
     ? ENDPOINT_NODE_WIDTH
     : NODE_MIN_WIDTH;
-  const defaultWidth = node.kind === "sensor" || node.kind === "actuator"
+  const defaultWidth = usesVerticalCardFormat(node)
     ? ENDPOINT_NODE_WIDTH
     : NODE_DEFAULT_WIDTH;
   return Math.max(minimumWidth, node.width ?? defaultWidth);
 }
 
 function nodeContentHeight(node: TopologyNode) {
-  if (node.kind === "sensor" || node.kind === "actuator") return NODE_MIN_HEIGHT;
+  if (usesVerticalCardFormat(node)) return endpointNameHeight(node.name);
   const charactersPerLine = Math.max(10, Math.floor((nodeWidth(node) - 32) / 8));
   const nameLines = Math.max(1, Math.ceil(node.name.length / charactersPerLine));
   const contentHeight = node.ports.length === 0 ? 86 : 66;
@@ -1901,16 +1907,19 @@ export function NetworkEditor({
     const primaryGateway = topology.nodes.find((node) => node.id === primaryGatewayId);
     if (!primaryGateway) return topology;
     const nextWidth = primaryGatewayManualSpan(topology, surfaceWidth, primaryGatewayId);
-    if (Math.abs(primaryGateway.x - CANVAS_MARGIN) <= 0.1 && Math.abs(nodeWidth(primaryGateway) - nextWidth) <= 0.1) {
-      return topology;
-    }
     return {
       ...topology,
-      nodes: topology.nodes.map((node) =>
-        node.id === primaryGatewayId
-          ? { ...node, x: CANVAS_MARGIN, width: nextWidth }
-          : node,
-      ),
+      nodes: topology.nodes.map((node) => {
+        if (node.id === primaryGatewayId) return { ...node, x: CANVAS_MARGIN, width: nextWidth };
+        if (node.kind === "ecu") {
+          return {
+            ...node,
+            width: ENDPOINT_NODE_WIDTH,
+            height: endpointNameHeight(node.name),
+          };
+        }
+        return node;
+      }),
     };
   }, [centralGatewayArchitecture, primaryGatewayId, surfaceWidth, topology]);
   const structureSignature = useMemo(
