@@ -36,14 +36,16 @@ const EVA_LABEL_HEIGHT = 72;
 const EVA_ROW_GAP = 38;
 const EVA_GATEWAY_TO_PROCESSING_GAP = 156;
 const EVA_PROCESSING_TO_ENDPOINT_GAP = 148;
-const EVA_GROUP_STAGGER_Y = 46;
-const EVA_ENDPOINT_STAGGER_Y = 34;
 const EVA_CLUSTER_GAP = 48;
 const EVA_CLUSTER_PADDING = 18;
 const EVA_GATEWAY_MIN_WIDTH = 280;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.5;
 const ZOOM_STEP = 0.1;
+const WIRE_ALIGNMENT_DEFAULT_OFFSET = 0.5;
+const WIRE_ALIGNMENT_STEP = 0.5;
+const WIRE_ALIGNMENT_LIMIT = 12;
+const WIRE_ALIGNMENT_OFFSET_STORAGE_KEY = "networkis:wire-alignment-offset-x";
 const LARGE_TOPOLOGY_NODE_THRESHOLD = 48;
 const LARGE_TOPOLOGY_EDGE_THRESHOLD = 48;
 const LARGE_TOPOLOGY_RENDER_BATCH = 48;
@@ -55,6 +57,13 @@ const kindLabels: Record<NodeKind, string> = {
   sensor: "Sensor",
   actuator: "Aktor",
 };
+
+function normalizeWireAlignmentOffset(value: number) {
+  return Math.max(
+    -WIRE_ALIGNMENT_LIMIT,
+    Math.min(WIRE_ALIGNMENT_LIMIT, Math.round(value / WIRE_ALIGNMENT_STEP) * WIRE_ALIGNMENT_STEP),
+  );
+}
 
 const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
 
@@ -711,13 +720,22 @@ function fastLargeTopologyEdgePath(
   const endStub = pointStub(end, clearance);
   const startHorizontal = start.side === "top" || start.side === "bottom";
   const endHorizontal = end.side === "top" || end.side === "bottom";
+  const primaryGateway = primaryGatewayFor(topology);
+  const sharedGatewayLaneY =
+    primaryGateway &&
+    (
+      (from.id === primaryGateway.id && start.side === "bottom" && end.side === "top") ||
+      (to.id === primaryGateway.id && end.side === "bottom" && start.side === "top")
+    )
+      ? primaryGateway.y + nodeHeight(primaryGateway) + clearance
+      : null;
 
   if (startHorizontal && endHorizontal) {
-    const laneY = start.side === "top" && end.side === "top"
+    const laneY = sharedGatewayLaneY ?? (start.side === "top" && end.side === "top"
       ? Math.min(start.y, end.y) - clearance
       : start.side === "bottom" && end.side === "bottom"
         ? Math.max(start.y, end.y) + clearance
-        : (startStub.y + endStub.y) / 2;
+        : (startStub.y + endStub.y) / 2);
     return roundedWirePath([start, startStub, { x: startStub.x, y: laneY }, { x: endStub.x, y: laneY }, endStub, end]);
   }
 
@@ -1088,7 +1106,7 @@ function evaClusterLayouts(
   groups = buildEvaGroups(topology, routingEntries),
 ) {
   return groups.flatMap((group) => {
-    if (group.anchor.kind === "gateway" && evaSystemKey(group.anchor) === "system") {
+    if (group.anchor.kind === "gateway") {
       return [];
     }
     const members = [group.anchor, ...group.processors, ...group.inputs, ...group.outputs];
@@ -1393,9 +1411,8 @@ function arrangeTopology(
   const endpointTop = processingTop + processingHeight + EVA_PROCESSING_TO_ENDPOINT_GAP;
   let cursorX = CANVAS_MARGIN + Math.max(0, (layoutSpan - totalUnitWidth) / 2);
 
-  units.forEach((unit, unitIndex) => {
+  units.forEach((unit) => {
     const centerX = cursorX + unit.width / 2;
-    const groupStaggerY = unit.group ? (unitIndex % 3) * EVA_GROUP_STAGGER_Y : (unitIndex % 2) * EVA_GROUP_STAGGER_Y;
     if (unit.group) {
       const processors = stableTopologyOrder(sizedTopology, [unit.group.anchor, ...unit.group.processors]);
       const processorRowWidth = nodeRowWidth(processors);
@@ -1404,7 +1421,7 @@ function arrangeTopology(
         arranged.set(processor.id, {
           ...processor,
           x: Math.round(processorX),
-          y: processingTop + groupStaggerY,
+          y: processingTop,
         });
         processorX += nodeWidth(processor) + EVA_ROW_GAP;
       });
@@ -1416,7 +1433,7 @@ function arrangeTopology(
         arranged.set(node.id, {
           ...node,
           x: Math.round(endpointX),
-          y: endpointTop + groupStaggerY + (endpointIndex % 2) * EVA_ENDPOINT_STAGGER_Y,
+          y: endpointTop,
           width: ENDPOINT_NODE_WIDTH,
           height: groupEndpointHeight,
         });
@@ -1426,7 +1443,7 @@ function arrangeTopology(
       arranged.set(unit.node.id, {
         ...unit.node,
         x: Math.round(centerX - nodeWidth(unit.node) / 2),
-        y: processingTop + groupStaggerY,
+        y: processingTop,
         width: ENDPOINT_NODE_WIDTH,
         height: directEndpointHeight,
       });
@@ -1465,6 +1482,7 @@ export function NetworkEditor({
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [dragTopology, setDragTopology] = useState<NetworkTopology | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -1475,28 +1493,40 @@ export function NetworkEditor({
   const [relationshipError, setRelationshipError] = useState("");
   const [surfaceWidth, setSurfaceWidth] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [wireAlignmentOffsetX, setWireAlignmentOffsetX] = useState(WIRE_ALIGNMENT_DEFAULT_OFFSET);
   const [fullscreen, setFullscreen] = useState(false);
   const [contextOverlay, setContextOverlay] = useState<NetworkContextOverlay | null>(null);
   const [renderLimit, setRenderLimit] = useState(LARGE_TOPOLOGY_RENDER_BATCH);
   const arrangedStructureRef = useRef("");
   const activeDragRef = useRef<DragState | null>(null);
   const pendingDragTopologyRef = useRef<NetworkTopology | null>(null);
+  const dragTopologyRef = useRef<NetworkTopology | null>(null);
   const dragFrameRef = useRef(0);
   const topologyRef = useRef(topology);
   const centralGatewayArchitectureRef = useRef(false);
   const workflowSelectionSignatureRef = useRef("");
 
   useEffect(() => {
-    topologyRef.current = topology;
+    if (!activeDragRef.current) topologyRef.current = topology;
   }, [topology]);
+
+  useEffect(() => {
+    const saved = Number(window.localStorage.getItem(WIRE_ALIGNMENT_OFFSET_STORAGE_KEY));
+    if (!Number.isFinite(saved)) return;
+    const next = normalizeWireAlignmentOffset(saved);
+    setWireAlignmentOffsetX((current) => (current === next ? current : next));
+  }, []);
+
+  const displayTopology = dragTopology ?? topology;
 
   const flushDragTopology = useCallback(() => {
     if (dragFrameRef.current) {
       window.cancelAnimationFrame(dragFrameRef.current);
       dragFrameRef.current = 0;
     }
-    const pending = pendingDragTopologyRef.current;
+    const pending = pendingDragTopologyRef.current ?? dragTopologyRef.current;
     pendingDragTopologyRef.current = null;
+    dragTopologyRef.current = null;
     if (pending) {
       topologyRef.current = pending;
       onChange(pending);
@@ -1505,6 +1535,7 @@ export function NetworkEditor({
 
   const scheduleDragTopology = useCallback((next: NetworkTopology) => {
     pendingDragTopologyRef.current = next;
+    topologyRef.current = next;
     if (dragFrameRef.current) return;
     dragFrameRef.current = window.requestAnimationFrame(() => {
       dragFrameRef.current = 0;
@@ -1512,10 +1543,11 @@ export function NetworkEditor({
       pendingDragTopologyRef.current = null;
       if (pending) {
         topologyRef.current = pending;
-        onChange(pending);
+        dragTopologyRef.current = pending;
+        setDragTopology(pending);
       }
     });
-  }, [onChange]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -1524,8 +1556,8 @@ export function NetworkEditor({
   }, []);
 
   useEffect(() => {
-    const node = topology.nodes.find((item) => item.id === selectedNode);
-    const edge = topology.edges.find((item) => item.id === selectedEdge);
+    const node = displayTopology.nodes.find((item) => item.id === selectedNode);
+    const edge = displayTopology.edges.find((item) => item.id === selectedEdge);
     const signature = JSON.stringify({
       edge: edge ? { id: edge.id, bus: edge.bus } : null,
       node: node ? { id: node.id, name: node.name, network: node.ports[0]?.bus ?? null } : null,
@@ -1536,7 +1568,7 @@ export function NetworkEditor({
       selected_object: node ? { id: node.id, type: "NetworkNode", name: node.name } : null,
       selected_network: edge?.bus ?? node?.ports[0]?.bus ?? null,
     }).catch(() => undefined);
-  }, [selectedEdge, selectedNode, topology.edges, topology.nodes]);
+  }, [displayTopology.edges, displayTopology.nodes, selectedEdge, selectedNode]);
 
   const pointFromEvent = useCallback((event: { clientX: number; clientY: number }) => {
     const rect = surfaceRef.current?.getBoundingClientRect();
@@ -1573,10 +1605,10 @@ export function NetworkEditor({
 
   const findPort = useCallback(
     (nodeId: string, portId: string) => {
-      const node = topology.nodes.find((n) => n.id === nodeId);
+      const node = displayTopology.nodes.find((n) => n.id === nodeId);
       return node?.ports.find((p) => p.id === portId);
     },
-    [topology.nodes],
+    [displayTopology.nodes],
   );
 
   const commitRelationships = useCallback(
@@ -1718,6 +1750,7 @@ export function NetworkEditor({
       }
       activeDragRef.current = null;
       setDrag(null);
+      setDragTopology(null);
     }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -1884,10 +1917,10 @@ export function NetworkEditor({
   }
 
   const connectedPortIds = useMemo(() => new Set(
-    topology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
-  ), [topology.edges]);
+    displayTopology.edges.flatMap((edge) => [edge.sourcePort, edge.targetPort]),
+  ), [displayTopology.edges]);
   const portIsConnected = (portId: string) => connectedPortIds.has(portId);
-  const selectedRelationship = topology.edges.find((edge) => edge.id === selectedEdge);
+  const selectedRelationship = displayTopology.edges.find((edge) => edge.id === selectedEdge);
   const selectedRelationshipRouteIds = new Set([
     ...(selectedRelationship?.routingEntryIds ?? []),
     ...(selectedRelationship?.routingEntryId ? [selectedRelationship.routingEntryId] : []),
@@ -1897,21 +1930,21 @@ export function NetworkEditor({
     () => new Map(modelHardware.map((node) => [node.id, node.name])),
     [modelHardware],
   );
-  const primaryGatewayId = useMemo(() => primaryGatewayFor(topology)?.id, [topology]);
-  const centralGatewayArchitecture = topology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD && Boolean(primaryGatewayId);
+  const primaryGatewayId = useMemo(() => primaryGatewayFor(displayTopology)?.id, [displayTopology]);
+  const centralGatewayArchitecture = displayTopology.nodes.length >= LARGE_TOPOLOGY_NODE_THRESHOLD && Boolean(primaryGatewayId);
   useEffect(() => {
     centralGatewayArchitectureRef.current = centralGatewayArchitecture;
   }, [centralGatewayArchitecture]);
   const effectiveTopology = useMemo(() => {
-    if (!centralGatewayArchitecture || !primaryGatewayId) return topology;
-    const primaryGateway = topology.nodes.find((node) => node.id === primaryGatewayId);
-    if (!primaryGateway) return topology;
-    const nextWidth = primaryGatewayManualSpan(topology, surfaceWidth, primaryGatewayId);
-    return {
-      ...topology,
-      nodes: topology.nodes.map((node) => {
+    if (!centralGatewayArchitecture || !primaryGatewayId) return displayTopology;
+    const primaryGateway = displayTopology.nodes.find((node) => node.id === primaryGatewayId);
+    if (!primaryGateway) return displayTopology;
+    const nextWidth = primaryGatewayManualSpan(displayTopology, surfaceWidth, primaryGatewayId);
+    return nameGatewayInterfaces(orderPortsByConnectedNodes({
+      ...displayTopology,
+      nodes: displayTopology.nodes.map((node) => {
         if (node.id === primaryGatewayId) return { ...node, x: CANVAS_MARGIN, width: nextWidth };
-        if (node.kind === "ecu") {
+        if (node.kind === "ecu" || node.kind === "sensor" || node.kind === "actuator") {
           return {
             ...node,
             width: ENDPOINT_NODE_WIDTH,
@@ -1920,20 +1953,20 @@ export function NetworkEditor({
         }
         return node;
       }),
-    };
-  }, [centralGatewayArchitecture, primaryGatewayId, surfaceWidth, topology]);
+    }));
+  }, [centralGatewayArchitecture, displayTopology, primaryGatewayId, surfaceWidth]);
   const structureSignature = useMemo(
-    () => centralGatewayArchitecture ? "" : `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`,
-    [centralGatewayArchitecture, routingEntries, topology],
+    () => `${topologyStructureSignature(topology)}::${routingGroupSignature(routingEntries)}`,
+    [routingEntries, topology],
   );
   const cacheSignature = useMemo(
-    () => centralGatewayArchitecture ? "" : topologyCacheSignature(topology, routingEntries),
-    [centralGatewayArchitecture, routingEntries, topology],
+    () => topologyCacheSignature(topology, routingEntries),
+    [routingEntries, topology],
   );
   const layoutSignature = useMemo(() => topologyLayoutSignature(effectiveTopology), [effectiveTopology]);
   const evaGroups = useMemo(
-    () => centralGatewayArchitecture ? [] : buildEvaGroups(effectiveTopology, routingEntries),
-    [centralGatewayArchitecture, effectiveTopology, routingEntries],
+    () => buildEvaGroups(effectiveTopology, routingEntries),
+    [effectiveTopology, routingEntries],
   );
   const evaStable = useMemo(
     () => centralGatewayArchitecture || (effectiveTopology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
@@ -2063,7 +2096,6 @@ export function NetworkEditor({
 
   useEffect(() => {
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
-    if (centralGatewayArchitecture) return;
     if (arrangedStructureRef.current === structureSignature) return;
     const cached = readNetworkLayoutCache(cacheSignature);
     if (cached) {
@@ -2075,12 +2107,12 @@ export function NetworkEditor({
       return;
     }
     arrangedStructureRef.current = structureSignature;
+    if (centralGatewayArchitecture) return;
     if (!evaStable) arrangeCurrentTopology(true);
   }, [arrangeCurrentTopology, cacheSignature, centralGatewayArchitecture, drag, evaStable, layoutSignature, onChange, structureSignature, surfaceWidth, topology]);
 
   useEffect(() => {
     if (drag) return undefined;
-    if (centralGatewayArchitecture) return undefined;
     if (surfaceWidth <= 0 || topology.nodes.length === 0) return undefined;
     const timeout = window.setTimeout(() => {
       writeNetworkLayoutCache(cacheSignature, effectiveTopology, cachedRenderedEdges);
@@ -2098,6 +2130,26 @@ export function NetworkEditor({
     layoutGuideWidth + CANVAS_EXTRA_SPACE,
     ...effectiveTopology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
+  const layoutStatus = centralGatewayArchitecture
+    ? {
+        className: "target",
+        label: "Zielbild · Fixiert",
+        semantics: "displayed-target-state",
+        title: "Dargestellter Zielzustand: Positionen, Gruppierung und Gateway-Bus dienen als Referenz fuer weitere Arbeit.",
+      }
+    : evaStable
+      ? {
+          className: "stable",
+          label: "KI-Layout · EVA",
+          semantics: "auto-eva-layout",
+          title: "KI-gestuetzte EVA-Anordnung mit Verbindungsgruppen",
+        }
+      : {
+          className: "pending",
+          label: "KI-Layout · EVA",
+          semantics: "layout-updating",
+          title: "KI-gestuetzte EVA-Anordnung wird aktualisiert",
+        };
 
   function changeZoom(value: number) {
     const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(value * 10) / 10));
@@ -2116,6 +2168,45 @@ export function NetworkEditor({
       });
     });
   }
+
+  const commitWireAlignmentOffset = useCallback((value: number) => {
+    const next = normalizeWireAlignmentOffset(value);
+    setWireAlignmentOffsetX(next);
+    window.localStorage.setItem(WIRE_ALIGNMENT_OFFSET_STORAGE_KEY, String(next));
+  }, []);
+
+  const changeWireAlignmentOffset = useCallback((delta: number) => {
+    setWireAlignmentOffsetX((current) => {
+      const next = normalizeWireAlignmentOffset(current + delta);
+      window.localStorage.setItem(WIRE_ALIGNMENT_OFFSET_STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
+
+  const resetWireAlignmentOffset = useCallback(() => {
+    commitWireAlignmentOffset(0);
+  }, [commitWireAlignmentOffset]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const editingText =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable;
+      if (editingText || !event.altKey) return;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        changeWireAlignmentOffset(WIRE_ALIGNMENT_STEP);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        changeWireAlignmentOffset(-WIRE_ALIGNMENT_STEP);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [changeWireAlignmentOffset]);
 
   function fitCanvas() {
     const surface = surfaceRef.current;
@@ -2242,6 +2333,65 @@ export function NetworkEditor({
             <button aria-label="Vergrößern" disabled={zoom >= MAX_ZOOM} onClick={() => changeZoom(zoom + ZOOM_STEP)} title="Vergrößern" type="button">+</button>
             <button className="net-zoom-fit" onClick={fitCanvas} title="Gesamtes Netzwerk einpassen" type="button">Einpassen</button>
           </div>
+          <div
+            aria-label="Linienausrichtung"
+            className={`net-wire-align-controls ${wireAlignmentOffsetX !== 0 ? "active" : ""}`}
+            data-wire-step={WIRE_ALIGNMENT_STEP.toFixed(1)}
+            data-wire-offset-x={wireAlignmentOffsetX.toFixed(1)}
+            role="group"
+            title={`Linienversatz: ${wireAlignmentOffsetX.toFixed(1)} px`}
+          >
+            <button
+              aria-label="Linien um 0,5 Pixel nach links verschieben"
+              aria-keyshortcuts="Alt+ArrowLeft"
+              disabled={wireAlignmentOffsetX <= -WIRE_ALIGNMENT_LIMIT}
+              onClick={() => changeWireAlignmentOffset(-WIRE_ALIGNMENT_STEP)}
+              title="Linien 0,5 px nach links (Alt + Pfeil links)"
+              type="button"
+            >
+              −
+            </button>
+            <button
+              aria-label="Linienversatz zurücksetzen"
+              aria-live="polite"
+              className="net-wire-align-value"
+              onClick={resetWireAlignmentOffset}
+              title="Linienversatz zurücksetzen"
+              type="button"
+            >
+              {wireAlignmentOffsetX.toFixed(1)} px
+            </button>
+            <button
+              aria-label="Linien um 0,5 Pixel nach rechts verschieben"
+              aria-keyshortcuts="Alt+ArrowRight"
+              disabled={wireAlignmentOffsetX >= WIRE_ALIGNMENT_LIMIT}
+              onClick={() => changeWireAlignmentOffset(WIRE_ALIGNMENT_STEP)}
+              title="Linien 0,5 px nach rechts (Alt + Pfeil rechts)"
+              type="button"
+            >
+              +
+            </button>
+            <button
+              aria-label="Linienversatz auf 0 Pixel zurücksetzen"
+              className="net-wire-align-reset"
+              onClick={resetWireAlignmentOffset}
+              title="Linienversatz auf 0 px zurücksetzen"
+              type="button"
+            >
+              0
+            </button>
+            <input
+              aria-label="Linienversatz als Slider einstellen"
+              className="net-wire-align-slider"
+              max={WIRE_ALIGNMENT_LIMIT}
+              min={-WIRE_ALIGNMENT_LIMIT}
+              onChange={(event) => commitWireAlignmentOffset(Number(event.target.value))}
+              step={WIRE_ALIGNMENT_STEP}
+              title="Linienversatz ziehen"
+              type="range"
+              value={wireAlignmentOffsetX}
+            />
+          </div>
           <button
             aria-pressed={fullscreen}
             className="net-add net-fullscreen-toggle"
@@ -2252,11 +2402,12 @@ export function NetworkEditor({
             {fullscreen ? "Vollbild schließen" : "Vollbild"}
           </button>
           <span
-            className={`net-eva-status ${centralGatewayArchitecture ? "manual" : evaStable ? "stable" : "pending"}`}
-            title={centralGatewayArchitecture ? "Manuelles Layout: Kacheln werden nicht automatisch umgruppiert" : "KI-gestützte EVA-Anordnung mit Verbindungsgruppen"}
+            className={`net-eva-status ${layoutStatus.className}`}
+            data-layout-semantics={layoutStatus.semantics}
+            title={layoutStatus.title}
           >
             <i aria-hidden="true" />
-            {centralGatewayArchitecture ? "Layout · Manuell" : "KI-Layout · EVA"}
+            {layoutStatus.label}
           </span>
           <button
             className="net-add danger"
@@ -2297,7 +2448,6 @@ export function NetworkEditor({
           style={{ height: Math.max(960, surfaceHeight * zoom), width: Math.max(surfaceWidth, canvasWidth * zoom) }}
         >
           <div className="net-canvas" style={{ height: surfaceHeight, transform: `scale(${zoom})`, width: canvasWidth }}>
-          {!centralGatewayArchitecture && (
           <div className="net-eva-clusters">
             {evaClusters.map((cluster) => (
               <div
@@ -2318,7 +2468,7 @@ export function NetworkEditor({
                     event.preventDefault();
                     event.stopPropagation();
                     event.currentTarget.setPointerCapture(event.pointerId);
-                    const members = topology.nodes
+                    const members = displayTopology.nodes
                       .filter((node) => cluster.memberIds.includes(node.id))
                       .map((node) => ({ id: node.id, x: node.x, y: node.y }));
                     if (members.length === 0) return;
@@ -2327,13 +2477,15 @@ export function NetworkEditor({
                     setSelectedEdge(null);
                     setMenu(null);
                     setAddMenu(null);
-                    activeDragRef.current = {
-                      mode: "move-cluster",
+                    const nextDrag = {
+                      mode: "move-cluster" as const,
                       clusterId: cluster.id,
                       startX: point.x,
                       startY: point.y,
                       members,
                     };
+                    activeDragRef.current = nextDrag;
+                    setDrag(nextDrag);
                   }}
                   title="Gruppe verschieben"
                   type="button"
@@ -2346,52 +2498,63 @@ export function NetworkEditor({
               </div>
             ))}
           </div>
-          )}
-          <svg aria-hidden="true" className="net-wires">
-          {visibleRenderedEdges.map(({ edge, path }) => {
-            return (
-              <g
-                key={edge.id}
-                onDoubleClick={(event) => {
-                  event.stopPropagation();
-                  editRelationship(edge);
-                }}
-                onPointerEnter={(event) => showEdgeOverlay(edge, event.clientX, event.clientY)}
-                onPointerLeave={() => setContextOverlay(null)}
-                onPointerDown={(event) => {
-                  event.stopPropagation();
-                  setContextOverlay(null);
-                  if (selectedEdge === edge.id) {
-                    editRelationship(edge);
-                    return;
-                  }
-                  setSelectedEdge(edge.id);
-                  setSelectedNode(null);
-                  setMenu(null);
-                }}
-              >
-                {!largeTopology && <path className="net-wire-hit" d={path} />}
-                <path
-                  className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
-                  d={path}
-                  stroke={busProfiles[edge.bus].color}
-                />
-              </g>
-            );
-          })}
-          {drag?.mode === "wire" &&
-            (() => {
-              const from = effectiveTopology.nodes.find((node) => node.id === drag.nodeId);
-              const fromPort = from?.ports.find((p) => p.id === drag.portId);
-              if (!from || !fromPort) return null;
+          <svg
+            aria-hidden="true"
+            className="net-wires"
+            preserveAspectRatio="none"
+            viewBox={`0 0 ${canvasWidth} ${surfaceHeight}`}
+          >
+          <g
+            className="net-wire-layer"
+            data-wire-step={WIRE_ALIGNMENT_STEP.toFixed(1)}
+            data-wire-offset-x={wireAlignmentOffsetX.toFixed(1)}
+            transform={`translate(${wireAlignmentOffsetX} 0)`}
+          >
+            {visibleRenderedEdges.map(({ edge, path }) => {
               return (
-                <path
-                  className="net-wire pending"
-                  d={pendingEdgePath(effectiveTopology, from, fromPort, { x: drag.x, y: drag.y })}
-                  stroke={busProfiles[drag.bus].color}
-                />
+                <g
+                  key={edge.id}
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    editRelationship(edge);
+                  }}
+                  onPointerEnter={(event) => showEdgeOverlay(edge, event.clientX, event.clientY)}
+                  onPointerLeave={() => setContextOverlay(null)}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    setContextOverlay(null);
+                    if (selectedEdge === edge.id) {
+                      editRelationship(edge);
+                      return;
+                    }
+                    setSelectedEdge(edge.id);
+                    setSelectedNode(null);
+                    setMenu(null);
+                  }}
+                >
+                  {!largeTopology && <path className="net-wire-hit" d={path} />}
+                  <path
+                    className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
+                    d={path}
+                    stroke={busProfiles[edge.bus].color}
+                  />
+                </g>
               );
-            })()}
+            })}
+            {drag?.mode === "wire" &&
+              (() => {
+                const from = effectiveTopology.nodes.find((node) => node.id === drag.nodeId);
+                const fromPort = from?.ports.find((p) => p.id === drag.portId);
+                if (!from || !fromPort) return null;
+                return (
+                  <path
+                    className="net-wire pending"
+                    d={pendingEdgePath(effectiveTopology, from, fromPort, { x: drag.x, y: drag.y })}
+                    stroke={busProfiles[drag.bus].color}
+                  />
+                );
+              })()}
+          </g>
           </svg>
 
           {renderedNodes.map((node) => {
@@ -2421,7 +2584,9 @@ export function NetworkEditor({
                 event.currentTarget.setPointerCapture(event.pointerId);
                 setMenu(null);
                 const point = pointFromEvent(event);
-                activeDragRef.current = { mode: "move", nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y };
+                const nextDrag = { mode: "move" as const, nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y };
+                activeDragRef.current = nextDrag;
+                setDrag(nextDrag);
               }}
               style={{
                 left: node.x,
@@ -2488,7 +2653,7 @@ export function NetworkEditor({
                         ? { mode: "move-port" as const, nodeId: node.id, portId: port.id }
                         : { mode: "wire" as const, nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y };
                       activeDragRef.current = nextDrag;
-                      if (nextDrag.mode === "wire") setDrag(nextDrag);
+                      setDrag(nextDrag);
                     }}
                     style={{
                       ...portStyle,
@@ -2512,14 +2677,16 @@ export function NetworkEditor({
                   event.stopPropagation();
                   const point = pointFromEvent(event);
                   setMenu(null);
-                  activeDragRef.current = {
-                    mode: "resize",
+                  const nextDrag = {
+                    mode: "resize" as const,
                     nodeId: node.id,
                     startX: point.x,
                     startY: point.y,
                     startWidth: nodeWidth(node),
                     startHeight: nodeHeight(node),
                   };
+                  activeDragRef.current = nextDrag;
+                  setDrag(nextDrag);
                 }}
                 title="Boxgröße ändern"
                 type="button"

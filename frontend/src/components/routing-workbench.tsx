@@ -35,6 +35,14 @@ import { notifyWorkflowChanged } from "./workflow-header";
 
 const VIEWS = ["Table", "Network Proposals", "Graph", "Matrix", "AI Proposals", "Validation", "Conflicts"] as const;
 type RoutingView = (typeof VIEWS)[number];
+type RoutingEditorSeed = {
+  sourceNodeId?: string;
+  destinationNodeId?: string;
+  sourceInterfaceId?: string;
+  destinationInterfaceId?: string;
+  name?: string;
+  topic?: string;
+};
 const ROUTING_PROPOSAL_PAGE_SIZE = 50;
 
 const isHardware = (item: object): item is HardwareNode => "device_type" in item;
@@ -66,7 +74,7 @@ export function RoutingWorkbench({ initialView = "Table" }: { initialView?: Rout
   const [selected, setSelected] = useState<RoutingEntry | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [bulkEditor, setBulkEditor] = useState(false);
-  const [editor, setEditor] = useState<{ mode: "manual" | "ai"; route?: RoutingEntry } | null>(null);
+  const [editor, setEditor] = useState<{ mode: "manual" | "ai"; route?: RoutingEntry; seed?: RoutingEditorSeed } | null>(null);
   const [wizardRoute, setWizardRoute] = useState<RoutingEntry | null>(null);
   const [handledEditRoute, setHandledEditRoute] = useState("");
   const [busy, setBusy] = useState("");
@@ -275,8 +283,10 @@ export function RoutingWorkbench({ initialView = "Table" }: { initialView?: Rout
             <RoutingMatrix
               interfaceNames={interfaceNames}
               interfaceNetworks={interfaceNetworks}
+              interfaces={interfaces}
               nodeNames={nodeNames}
               nodeTypes={nodeTypes}
+              onCreate={(seed) => setEditor({ mode: "manual", seed })}
               onEdit={setWizardRoute}
               onSelect={setSelected}
               routes={routes}
@@ -354,6 +364,7 @@ export function RoutingWorkbench({ initialView = "Table" }: { initialView?: Rout
           route={editor.route}
           routes={routes}
           schema={schema}
+          seed={editor.seed}
           signals={signals}
         />
       )}
@@ -649,7 +660,7 @@ function RoutingGraph({ routes, nodeNames, signalNames, onSelect }: { routes: Ro
 }
 
 type RoutingMatrixMode = "ecu" | "function" | "interface";
-type MatrixAxis = { key: string; label: string; type: string };
+type MatrixAxis = { key: string; label: string; type: string; nodeId?: string; interfaceId?: string; topic?: string };
 
 const routingMatrixModes: Array<{ key: RoutingMatrixMode; label: string }> = [
   { key: "ecu", label: "ECU" },
@@ -715,6 +726,8 @@ function sourceInterfaceAxis(route: RoutingEntry, interfaceNames: Map<string, st
   return {
     key: interfaceId ? `interface:${interfaceId}` : `source:${route.source.node_id}`,
     label: interfaceId ? interfaceNames.get(interfaceId) ?? interfaceId : `${nodeNames.get(route.source.node_id) ?? route.source.node_id} · ohne Interface`,
+    interfaceId: interfaceId ?? undefined,
+    nodeId: route.source.node_id,
     type: "",
   };
 }
@@ -724,6 +737,8 @@ function destinationInterfaceAxis(route: RoutingEntry, destination: RoutingEntry
   return {
     key: interfaceId ? `interface:${interfaceId}` : `destination:${destination.node_id}`,
     label: interfaceId ? interfaceNames.get(interfaceId) ?? interfaceId : `${nodeNames.get(destination.node_id) ?? destination.node_id} · ohne Interface`,
+    interfaceId: interfaceId ?? undefined,
+    nodeId: destination.node_id,
     type: "",
   };
 }
@@ -732,12 +747,14 @@ function uniqueSortedAxes(axes: MatrixAxis[]) {
   return [...new Map(axes.map((axis) => [axis.key, axis])).values()].sort((a, b) => compareGerman(a.label, b.label));
 }
 
-function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interfaceNetworks, onEdit, onSelect }: {
+function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interfaceNetworks, interfaces, onCreate, onEdit, onSelect }: {
   routes: RoutingEntry[];
   nodeNames: Map<string, string>;
   nodeTypes: Map<string, string>;
   interfaceNames: Map<string, string>;
   interfaceNetworks: Map<string, string>;
+  interfaces: EngInterface[];
+  onCreate: (seed: RoutingEditorSeed) => void;
   onEdit: (route: RoutingEntry) => void;
   onSelect: (route: RoutingEntry) => void;
 }) {
@@ -745,6 +762,28 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLocaleLowerCase("de-DE");
   const labelForNode = useCallback((id: string) => nodeNames.get(id) ?? id, [nodeNames]);
+  const interfaceById = useMemo(() => new Map(interfaces.map((item) => [item.id, item])), [interfaces]);
+
+  function openSeededEditor(source: MatrixAxis, destination: MatrixAxis) {
+    const sourceNodeId = source.nodeId ?? (source.interfaceId ? interfaceById.get(source.interfaceId)?.hardware_node_id ?? undefined : undefined) ?? source.key;
+    const destinationNodeId = destination.nodeId ?? (destination.interfaceId ? interfaceById.get(destination.interfaceId)?.hardware_node_id ?? undefined : undefined);
+    const sourceInterface = source.interfaceId
+      ? interfaceById.get(source.interfaceId)
+      : interfaces.find((item) => item.hardware_node_id === sourceNodeId);
+    const sourceProtocol = sourceInterface ? interfaceProtocol(sourceInterface.interface_type) : undefined;
+    const destinationInterface = destination.interfaceId
+      ? interfaceById.get(destination.interfaceId)
+      : interfaces.find((item) => item.hardware_node_id === destinationNodeId && interfaceProtocol(item.interface_type) === sourceProtocol)
+        ?? interfaces.find((item) => item.hardware_node_id === destinationNodeId);
+    onCreate({
+      sourceNodeId,
+      destinationNodeId,
+      sourceInterfaceId: sourceInterface?.id,
+      destinationInterfaceId: destinationInterface?.id,
+      name: destination.topic ? `${source.label} → ${destination.label}` : undefined,
+      topic: destination.topic,
+    });
+  }
 
   const filteredRoutes = useMemo(() => {
     if (!normalizedQuery) return routes;
@@ -776,11 +815,13 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
     const rows = uniqueSortedAxes(filteredRoutes.map((route) => ({
       key: route.source.node_id,
       label: systemNameForRoute(route, nodeNames),
+      nodeId: route.source.node_id,
       type: nodeTypes.get(route.source.node_id) ?? "",
     })));
     const columns = uniqueSortedAxes(filteredRoutes.map((route) => ({
       key: functionNameForRoute(route),
       label: functionNameForRoute(route),
+      topic: functionNameForRoute(route),
       type: "",
     })));
     const cellMap = new Map<string, RoutingEntry[]>();
@@ -811,7 +852,7 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
                   <th><MatrixAxisLabel label={system.label} type={system.type} /></th>
                   {columns.map((fn) => {
                     const matches = cellMap.get(`${system.key}\u0000${fn.key}`) ?? [];
-                    return <MatrixCell key={fn.key} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onEdit={onEdit} onSelect={onSelect} />;
+                    return <MatrixCell key={fn.key} destination={fn} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onCreate={openSeededEditor} onEdit={onEdit} onSelect={onSelect} source={system} />;
                   })}
                 </tr>
               ))}
@@ -860,7 +901,7 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
                   <th><MatrixAxisLabel label={source.label} type={source.type} /></th>
                   {columns.map((destination) => {
                     const matches = cellMap.get(`${source.key}\u0000${destination.key}`) ?? [];
-                    return <MatrixCell key={destination.key} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onEdit={onEdit} onSelect={onSelect} />;
+                    return <MatrixCell key={destination.key} destination={destination} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onCreate={openSeededEditor} onEdit={onEdit} onSelect={onSelect} source={source} />;
                   })}
                 </tr>
               ))}
@@ -875,11 +916,13 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
   const sources = uniqueSortedAxes([...new Set(filteredRoutes.map((route) => route.source.node_id))].map((id) => ({
     key: id,
     label: labelForNode(id),
+    nodeId: id,
     type: nodeTypes.get(id) ?? "",
   })));
   const destinations = uniqueSortedAxes([...new Set(filteredRoutes.flatMap((route) => route.destinations.map((item) => item.node_id)))].map((id) => ({
     key: id,
     label: labelForNode(id),
+    nodeId: id,
     type: nodeTypes.get(id) ?? "",
   })));
   const cellMap = new Map<string, RoutingEntry[]>();
@@ -912,7 +955,7 @@ function RoutingMatrix({ routes, nodeNames, nodeTypes, interfaceNames, interface
                 <th><MatrixAxisLabel label={source.label} type={source.type} /></th>
                 {destinations.map((destination) => {
                   const matches = cellMap.get(`${source.key}\u0000${destination.key}`) ?? [];
-                  return <MatrixCell key={destination.key} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onEdit={onEdit} onSelect={onSelect} />;
+                  return <MatrixCell key={destination.key} destination={destination} interfaceNames={interfaceNames} interfaceNetworks={interfaceNetworks} matches={matches} onCreate={openSeededEditor} onEdit={onEdit} onSelect={onSelect} source={source} />;
                 })}
               </tr>
             ))}
@@ -978,14 +1021,31 @@ function MatrixToolbar({ mode, query, resultCount, setMode, setQuery }: {
   );
 }
 
-function MatrixCell({ matches, interfaceNames, interfaceNetworks, onEdit, onSelect }: {
+function MatrixCell({ matches, source, destination, interfaceNames, interfaceNetworks, onCreate, onEdit, onSelect }: {
   matches: RoutingEntry[];
+  source: MatrixAxis;
+  destination: MatrixAxis;
   interfaceNames: Map<string, string>;
   interfaceNetworks: Map<string, string>;
+  onCreate: (source: MatrixAxis, destination: MatrixAxis) => void;
   onEdit: (route: RoutingEntry) => void;
   onSelect: (route: RoutingEntry) => void;
 }) {
-  if (!matches.length) return <td className="routing-matrix-empty">—</td>;
+  if (!matches.length) {
+    return (
+      <td className="routing-matrix-empty">
+        <button
+          className="routing-matrix-empty-button"
+          onClick={() => onCreate(source, destination)}
+          title={`Route anlegen: ${source.label} → ${destination.label}`}
+          type="button"
+        >
+          <span>+</span>
+          <small>Anlegen</small>
+        </button>
+      </td>
+    );
+  }
   const first = matches[0];
   const networks = [...new Set(matches.map((route) => routeNetworkLabel(route, interfaceNetworks)))].slice(0, 2).join(", ");
   return (
@@ -1454,7 +1514,7 @@ function BulkSelectField({ enabled, label, onToggle, children }: { enabled: bool
   );
 }
 
-function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces, messages, signals, onClose, onSave, onGenerate, onDuplicate, onDelete }: {
+function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces, messages, signals, seed, onClose, onSave, onGenerate, onDuplicate, onDelete }: {
   mode: "manual" | "ai";
   route?: RoutingEntry;
   routes: RoutingEntry[];
@@ -1463,41 +1523,56 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
   interfaces: EngInterface[];
   messages: EngMessage[];
   signals: EngSignal[];
+  seed?: RoutingEditorSeed;
   onClose: () => void;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onGenerate: (payload: Record<string, unknown>) => Promise<void>;
   onDuplicate?: () => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
-  const initialSourceId = route?.source.node_id ?? hardware[0]?.id ?? "";
+  const seededSourceInterface = seed?.sourceInterfaceId ? interfaces.find((item) => item.id === seed.sourceInterfaceId) : undefined;
+  const seededDestinationInterface = seed?.destinationInterfaceId ? interfaces.find((item) => item.id === seed.destinationInterfaceId) : undefined;
+  const initialSourceId = route?.source.node_id ?? seed?.sourceNodeId ?? seededSourceInterface?.hardware_node_id ?? hardware[0]?.id ?? "";
+  const initialDestinationNodeId = seed?.destinationNodeId ?? seededDestinationInterface?.hardware_node_id ?? "";
   const initialDestinationIds = route?.destinations.map((item) => item.node_id).filter((id) => id !== initialSourceId) ?? [];
-  const [name, setName] = useState(route?.name ?? "");
+  const initialDestinationIdsWithSeed = route ? initialDestinationIds : initialDestinationNodeId && initialDestinationNodeId !== initialSourceId ? [initialDestinationNodeId] : [];
+  const initialSourceInterfaceId = route?.source.interface_id ?? seed?.sourceInterfaceId ?? "";
+  const initialSourceInterface = interfaces.find((item) => item.id === initialSourceInterfaceId);
+  const initialDestinationInterfaceId = seed?.destinationInterfaceId ?? "";
+  const initialProtocol = route?.source.protocol ?? (initialSourceInterface ? interfaceProtocol(initialSourceInterface.interface_type) : "CAN_FD");
+  const [name, setName] = useState(route?.name ?? seed?.name ?? "");
   const [description, setDescription] = useState(route?.description ?? "");
   const [sourceId, setSourceId] = useState(initialSourceId);
   const [sourcePortId, setSourcePortId] = useState(route?.source.port_id ?? "");
-  const [sourceInterfaceId, setSourceInterfaceId] = useState(route?.source.interface_id ?? "");
-  const [sourceNetworkId, setSourceNetworkId] = useState(route?.source.network_id ?? "");
-  const [destinationIds, setDestinationIds] = useState<string[]>(initialDestinationIds);
+  const [sourceInterfaceId, setSourceInterfaceId] = useState(initialSourceInterfaceId);
+  const [sourceNetworkId, setSourceNetworkId] = useState(route?.source.network_id ?? networkId(initialSourceInterface) ?? "");
+  const [destinationIds, setDestinationIds] = useState<string[]>(initialDestinationIdsWithSeed);
   const [destinationInterfaces, setDestinationInterfaces] = useState<Record<string, string>>(
-    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.interface_id ?? ""]) ?? []),
+    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.interface_id ?? ""]) ?? (
+      initialDestinationNodeId ? [[initialDestinationNodeId, initialDestinationInterfaceId]] : []
+    )),
   );
   const [destinationPorts, setDestinationPorts] = useState<Record<string, string>>(
     Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.port_id ?? ""]) ?? []),
   );
   const [destinationNetworks, setDestinationNetworks] = useState<Record<string, string>>(
-    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.network_id ?? ""]) ?? []),
+    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.network_id ?? ""]) ?? (
+      initialDestinationNodeId ? [[initialDestinationNodeId, networkId(seededDestinationInterface) ?? ""]] : []
+    )),
   );
   const [destinationProtocols, setDestinationProtocols] = useState<Record<string, string>>(
-    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.protocol ?? route?.source.protocol ?? "CAN_FD"]) ?? []),
+    Object.fromEntries(route?.destinations.map((item) => [item.node_id, item.protocol ?? route?.source.protocol ?? "CAN_FD"]) ?? (
+      initialDestinationNodeId ? [[initialDestinationNodeId, seededDestinationInterface ? interfaceProtocol(seededDestinationInterface.interface_type) : initialProtocol]] : []
+    )),
   );
-  const [payloadMode, setPayloadMode] = useState<RoutingPayloadMode>(routingPayloadMode(route));
+  const [payloadMode, setPayloadMode] = useState<RoutingPayloadMode>(seed?.topic && !route ? "topic" : routingPayloadMode(route));
   const [messageIds, setMessageIds] = useState<string[]>(routingMessageIds(route));
   const [signalIds, setSignalIds] = useState<string[]>(route?.payload.signal_ids ?? []);
   const [interfaceDefinitionId, setInterfaceDefinitionId] = useState(route?.payload.interface_definition_id ?? messages.find((item) => routingMessageIds(route).includes(item.id))?.interface_id ?? "");
-  const [topic, setTopic] = useState(route?.payload.topic ?? "");
+  const [topic, setTopic] = useState(route?.payload.topic ?? seed?.topic ?? "");
   const [dataObject, setDataObject] = useState(route?.payload.data_object ?? "");
-  const [gatewayIds, setGatewayIds] = useState<string[]>(routingGatewayIds(route).filter((id) => id !== initialSourceId && !initialDestinationIds.includes(id)));
-  const [protocol, setProtocol] = useState(route?.source.protocol ?? "CAN_FD");
+  const [gatewayIds, setGatewayIds] = useState<string[]>(routingGatewayIds(route).filter((id) => id !== initialSourceId && !initialDestinationIdsWithSeed.includes(id)));
+  const [protocol, setProtocol] = useState(initialProtocol);
   const [routingType, setRoutingType] = useState(route?.routing_policy.routing_type ?? "UNICAST");
   const [priority, setPriority] = useState(route?.route.priority ?? "NORMAL");
   const [redundancy, setRedundancy] = useState(route?.routing_policy.redundancy ?? "NONE");
