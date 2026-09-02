@@ -34,22 +34,22 @@ const CANVAS_MARGIN = 36;
 const CANVAS_EXTRA_SPACE = 320;
 const EVA_LABEL_HEIGHT = 72;
 const EVA_ROW_GAP = 38;
-const EVA_GATEWAY_TO_PROCESSING_GAP = 156;
-const EVA_PROCESSING_TO_ENDPOINT_GAP = 148;
+const EVA_GATEWAY_TO_PROCESSING_GAP = 116;
+const EVA_PROCESSING_TO_ENDPOINT_GAP = 92;
 const EVA_CLUSTER_GAP = 48;
 const EVA_CLUSTER_PADDING = 18;
 const EVA_GATEWAY_MIN_WIDTH = 280;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.5;
 const ZOOM_STEP = 0.1;
-const WIRE_ALIGNMENT_DEFAULT_OFFSET = 0.5;
+const WIRE_ALIGNMENT_DEFAULT_OFFSET = 0;
 const WIRE_ALIGNMENT_STEP = 0.5;
 const WIRE_ALIGNMENT_LIMIT = 12;
-const WIRE_ALIGNMENT_OFFSET_STORAGE_KEY = "networkis:wire-alignment-offset-x";
+const WIRE_ALIGNMENT_OFFSET_STORAGE_KEY = "networkis:wire-alignment-offset-x:v2";
 const LARGE_TOPOLOGY_NODE_THRESHOLD = 48;
 const LARGE_TOPOLOGY_EDGE_THRESHOLD = 48;
 const LARGE_TOPOLOGY_RENDER_BATCH = 48;
-const NETWORK_LAYOUT_CACHE_PREFIX = "networkis:network-layout:v6:";
+const NETWORK_LAYOUT_CACHE_PREFIX = "networkis:network-layout:v7:";
 
 const kindLabels: Record<NodeKind, string> = {
   ecu: "ECU",
@@ -66,6 +66,24 @@ function normalizeWireAlignmentOffset(value: number) {
 }
 
 const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
+
+function wireMarkerId(bus: BusType, position: "start" | "end") {
+  return `net-wire-arrow-${position}-${bus}`;
+}
+
+function wireMarkerStart(edge: TopologyEdge) {
+  const direction = edge.direction ?? "BIDIRECTIONAL";
+  return direction === "BIDIRECTIONAL" || direction === "TARGET_TO_SOURCE"
+    ? `url(#${wireMarkerId(edge.bus, "start")})`
+    : undefined;
+}
+
+function wireMarkerEnd(edge: TopologyEdge) {
+  const direction = edge.direction ?? "BIDIRECTIONAL";
+  return direction === "BIDIRECTIONAL" || direction === "SOURCE_TO_TARGET"
+    ? `url(#${wireMarkerId(edge.bus, "end")})`
+    : undefined;
+}
 
 type DragState =
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
@@ -408,6 +426,23 @@ function primaryGatewayManualSpan(topology: NetworkTopology, surfaceWidth: numbe
       .map((node) => node.x + nodeWidth(node) + CANVAS_MARGIN),
   );
   return Math.max(EVA_GATEWAY_MIN_WIDTH, Math.ceil(visibleRightEdge - CANVAS_MARGIN * 2));
+}
+
+function viewportAlignedTopology(topology: NetworkTopology): NetworkTopology {
+  if (topology.nodes.length === 0) return topology;
+  const minimumX = Math.min(...topology.nodes.map((node) => node.x));
+  const minimumY = Math.min(...topology.nodes.map((node) => node.y));
+  const deltaX = Math.max(0, CANVAS_MARGIN - minimumX);
+  const deltaY = Math.max(0, EVA_LABEL_HEIGHT + 8 - minimumY);
+  if (deltaX === 0 && deltaY === 0) return topology;
+  return {
+    ...topology,
+    nodes: topology.nodes.map((node) => ({
+      ...node,
+      x: node.x + deltaX,
+      y: node.y + deltaY,
+    })),
+  };
 }
 
 function orderPortsByConnectedNodes(topology: NetworkTopology): NetworkTopology {
@@ -1461,10 +1496,10 @@ function arrangeTopology(
     });
   }
 
-  return nameGatewayInterfaces(orderPortsByConnectedNodes({
+  return viewportAlignedTopology(nameGatewayInterfaces(orderPortsByConnectedNodes({
     ...sizedTopology,
     nodes: sizedTopology.nodes.map((node) => arranged.get(node.id) ?? node),
-  }));
+  })));
 }
 
 export function NetworkEditor({
@@ -1969,13 +2004,13 @@ export function NetworkEditor({
     [effectiveTopology, routingEntries],
   );
   const evaStable = useMemo(
-    () => centralGatewayArchitecture || (effectiveTopology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
+    () => effectiveTopology.nodes.length > 0 && surfaceWidth > 0 && !hasLayoutProblems(
       effectiveTopology,
       surfaceWidth,
       routingEntries,
       evaGroups,
-    )),
-    [centralGatewayArchitecture, effectiveTopology, evaGroups, routingEntries, surfaceWidth],
+    ),
+    [effectiveTopology, evaGroups, routingEntries, surfaceWidth],
   );
   const evaClusters = useMemo(
     () => evaClusterLayouts(effectiveTopology, routingEntries, evaGroups),
@@ -2090,9 +2125,8 @@ export function NetworkEditor({
   }, [commitRelationships, onChange, routingEntries, surfaceWidth, topology]);
 
   const applyAutoLayout = useCallback(() => {
-    if (centralGatewayArchitecture) return;
     arrangeCurrentTopology(true);
-  }, [arrangeCurrentTopology, centralGatewayArchitecture]);
+  }, [arrangeCurrentTopology]);
 
   useEffect(() => {
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
@@ -2107,7 +2141,6 @@ export function NetworkEditor({
       return;
     }
     arrangedStructureRef.current = structureSignature;
-    if (centralGatewayArchitecture) return;
     if (!evaStable) arrangeCurrentTopology(true);
   }, [arrangeCurrentTopology, cacheSignature, centralGatewayArchitecture, drag, evaStable, layoutSignature, onChange, structureSignature, surfaceWidth, topology]);
 
@@ -2333,65 +2366,6 @@ export function NetworkEditor({
             <button aria-label="Vergrößern" disabled={zoom >= MAX_ZOOM} onClick={() => changeZoom(zoom + ZOOM_STEP)} title="Vergrößern" type="button">+</button>
             <button className="net-zoom-fit" onClick={fitCanvas} title="Gesamtes Netzwerk einpassen" type="button">Einpassen</button>
           </div>
-          <div
-            aria-label="Linienausrichtung"
-            className={`net-wire-align-controls ${wireAlignmentOffsetX !== 0 ? "active" : ""}`}
-            data-wire-step={WIRE_ALIGNMENT_STEP.toFixed(1)}
-            data-wire-offset-x={wireAlignmentOffsetX.toFixed(1)}
-            role="group"
-            title={`Linienversatz: ${wireAlignmentOffsetX.toFixed(1)} px`}
-          >
-            <button
-              aria-label="Linien um 0,5 Pixel nach links verschieben"
-              aria-keyshortcuts="Alt+ArrowLeft"
-              disabled={wireAlignmentOffsetX <= -WIRE_ALIGNMENT_LIMIT}
-              onClick={() => changeWireAlignmentOffset(-WIRE_ALIGNMENT_STEP)}
-              title="Linien 0,5 px nach links (Alt + Pfeil links)"
-              type="button"
-            >
-              −
-            </button>
-            <button
-              aria-label="Linienversatz zurücksetzen"
-              aria-live="polite"
-              className="net-wire-align-value"
-              onClick={resetWireAlignmentOffset}
-              title="Linienversatz zurücksetzen"
-              type="button"
-            >
-              {wireAlignmentOffsetX.toFixed(1)} px
-            </button>
-            <button
-              aria-label="Linien um 0,5 Pixel nach rechts verschieben"
-              aria-keyshortcuts="Alt+ArrowRight"
-              disabled={wireAlignmentOffsetX >= WIRE_ALIGNMENT_LIMIT}
-              onClick={() => changeWireAlignmentOffset(WIRE_ALIGNMENT_STEP)}
-              title="Linien 0,5 px nach rechts (Alt + Pfeil rechts)"
-              type="button"
-            >
-              +
-            </button>
-            <button
-              aria-label="Linienversatz auf 0 Pixel zurücksetzen"
-              className="net-wire-align-reset"
-              onClick={resetWireAlignmentOffset}
-              title="Linienversatz auf 0 px zurücksetzen"
-              type="button"
-            >
-              0
-            </button>
-            <input
-              aria-label="Linienversatz als Slider einstellen"
-              className="net-wire-align-slider"
-              max={WIRE_ALIGNMENT_LIMIT}
-              min={-WIRE_ALIGNMENT_LIMIT}
-              onChange={(event) => commitWireAlignmentOffset(Number(event.target.value))}
-              step={WIRE_ALIGNMENT_STEP}
-              title="Linienversatz ziehen"
-              type="range"
-              value={wireAlignmentOffsetX}
-            />
-          </div>
           <button
             aria-pressed={fullscreen}
             className="net-add net-fullscreen-toggle"
@@ -2504,11 +2478,42 @@ export function NetworkEditor({
             preserveAspectRatio="none"
             viewBox={`0 0 ${canvasWidth} ${surfaceHeight}`}
           >
+          <defs>
+            {busOrder.map((bus) => (
+              <marker
+                id={wireMarkerId(bus, "end")}
+                key={`${bus}-end`}
+                markerHeight="7"
+                markerUnits="strokeWidth"
+                markerWidth="8"
+                orient="auto"
+                refX="7.5"
+                refY="0"
+                viewBox="0 -5 10 10"
+              >
+                <path d="M 0 -4 L 8 0 L 0 4 z" fill={busProfiles[bus].color} />
+              </marker>
+            ))}
+            {busOrder.map((bus) => (
+              <marker
+                id={wireMarkerId(bus, "start")}
+                key={`${bus}-start`}
+                markerHeight="7"
+                markerUnits="strokeWidth"
+                markerWidth="8"
+                orient="auto"
+                refX="0.5"
+                refY="0"
+                viewBox="0 -5 10 10"
+              >
+                <path d="M 8 -4 L 0 0 L 8 4 z" fill={busProfiles[bus].color} />
+              </marker>
+            ))}
+          </defs>
           <g
             className="net-wire-layer"
             data-wire-step={WIRE_ALIGNMENT_STEP.toFixed(1)}
-            data-wire-offset-x={wireAlignmentOffsetX.toFixed(1)}
-            transform={`translate(${wireAlignmentOffsetX} 0)`}
+            data-wire-offset-x="0.0"
           >
             {visibleRenderedEdges.map(({ edge, path }) => {
               return (
@@ -2536,6 +2541,8 @@ export function NetworkEditor({
                   <path
                     className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
                     d={path}
+                    markerEnd={wireMarkerEnd(edge)}
+                    markerStart={wireMarkerStart(edge)}
                     stroke={busProfiles[edge.bus].color}
                   />
                 </g>

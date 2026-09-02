@@ -257,14 +257,14 @@ class JobService:
     ) -> None:
         try:
             result = future.result()
-            if self._is_cancellation_requested(job_id):
-                self._update_workflow_snapshot(payload, "CANCELED", job_id, result=result)
-                self._update(job_id, status="canceled", result=result)
+            if self._is_cancellation_requested(job_id) or self._status(job_id) == "canceled":
                 return
             self._record_routing_results(payload, validate_only, job_id, result)
             self._update_workflow_snapshot(payload, "COMPLETED", job_id, result=result)
             self._update(job_id, status="completed", result=result)
         except Exception as exc:
+            if self._status(job_id) == "canceled":
+                return
             logger.exception("Simulation worker failed")
             self._update_workflow_snapshot(payload, "FAILED", job_id)
             self._update(job_id, status="failed", error=str(exc))
@@ -273,7 +273,7 @@ class JobService:
                 self._futures.pop(job_id, None)
 
     def _execute(self, job_id: str, payload: dict[str, Any], validate_only: bool) -> None:
-        if self._is_cancellation_requested(job_id):
+        if self._is_cancellation_requested(job_id) or self._status(job_id) == "canceled":
             self._update_workflow_snapshot(payload, "CANCELED", job_id)
             self._update(job_id, status="canceled")
             return
@@ -287,14 +287,14 @@ class JobService:
                 output_dir,
                 validate_only=validate_only,
             )
-            if self._is_cancellation_requested(job_id):
-                self._update_workflow_snapshot(payload, "CANCELED", job_id, result=result)
-                self._update(job_id, status="canceled", result=result)
+            if self._is_cancellation_requested(job_id) or self._status(job_id) == "canceled":
                 return
             self._record_routing_results(payload, validate_only, job_id, result)
             self._update_workflow_snapshot(payload, "COMPLETED", job_id, result=result)
             self._update(job_id, status="completed", result=result)
         except Exception as exc:
+            if self._status(job_id) == "canceled":
+                return
             self._update_workflow_snapshot(payload, "FAILED", job_id)
             self._update(job_id, status="failed", error=str(exc))
 
@@ -350,8 +350,14 @@ class JobService:
         with self._lock:
             return bool(self._jobs.get(job_id, {}).get("cancellation_requested"))
 
+    def _status(self, job_id: str) -> str | None:
+        with self._lock:
+            job = self._jobs.get(job_id)
+            return str(job.get("status")) if job else None
+
     def cancel(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:
-        canceled_before_start = False
+        canceled = False
+        workflow_payload: dict[str, Any] | None = None
         with self._lock:
             job = self._jobs.get(job_id)
             if job is None or (project_id is not None and job.get("project_id") != project_id):
@@ -359,15 +365,19 @@ class JobService:
             if job["status"] in {"completed", "failed", "canceled"}:
                 return copy.deepcopy(job)
             job["cancellation_requested"] = True
+            job["status"] = "canceled"
+            job["canceled_at"] = _now()
+            job["error"] = None
             job["updated_at"] = _now()
             future = self._futures.get(job_id)
-            if future is not None and future.cancel():
-                job["status"] = "canceled"
-                canceled_before_start = True
+            if future is not None:
+                future.cancel()
             self._persist_locked()
             response = copy.deepcopy(job)
-        if canceled_before_start:
-            self._update_workflow_snapshot(response, "CANCELED", job_id)
+            workflow_payload = response
+            canceled = True
+        if canceled and workflow_payload is not None:
+            self._update_workflow_snapshot(workflow_payload, "CANCELED", job_id)
         return response
 
     def get(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:

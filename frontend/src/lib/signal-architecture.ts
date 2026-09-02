@@ -118,6 +118,50 @@ function looksLikeStateSignal(value: string): boolean {
     || /(?:^|[-_\s])(?:status|state|mode|zustand)(?:[-_\s]|$)/i.test(value);
 }
 
+function defaultStateEnumValues(label: string): Record<string, number> {
+  const key = label.toLowerCase();
+  if (key.includes("gateway")) {
+    return {
+      OFF: 0,
+      INIT: 1,
+      CONFIGURING: 2,
+      READY: 3,
+      ACTIVE: 4,
+      STANDBY: 5,
+      SHUTTING_DOWN: 6,
+      ERROR: 7,
+    };
+  }
+  if (/(kommunikation|connect|bus|link)/i.test(label)) {
+    return {
+      OFFLINE: 0,
+      INITIALIZING: 1,
+      CONNECTED: 2,
+      PARTIAL: 3,
+      BUS_OFF: 4,
+      LINK_LOSS: 5,
+      ERROR: 6,
+    };
+  }
+  return {
+    OFF: 0,
+    INIT: 1,
+    SELF_TEST: 2,
+    READY: 3,
+    RUNNING: 4,
+    DEGRADED: 5,
+    ERROR: 6,
+    SHUTDOWN: 7,
+  };
+}
+
+function isLegacyGenericStateDomain(values: Record<string, unknown>) {
+  const keys = Object.keys(values).map((key) => key.toUpperCase()).sort();
+  if (keys.length === 0) return false;
+  const legacyKeys = new Set(["DEGRADED", "ERROR", "NOT_AVAILABLE", "OK", "ROUTING_LIMITED", "WARNING"]);
+  return keys.every((key) => legacyKeys.has(key)) && keys.some((key) => key === "OK" || key === "NOT_AVAILABLE");
+}
+
 function ceilLog2(count: number): number | null {
   if (!Number.isFinite(count) || count <= 0) return null;
   return Math.max(1, Math.ceil(Math.log2(count)));
@@ -169,6 +213,10 @@ export function buildCanonicalSignalDefinition(signal: SignalRecord): CanonicalS
   const enumValues = record(data.enum_values ?? configuration.enum_values);
   const allowedValues = array(data.allowed_values ?? configuration.allowed_values);
   const useDefaultStateDomain = semanticType === "STATE" && looksLikeStateSignal(signalLabel(signal)) && entriesCount(enumValues) === 0 && allowedValues.length === 0;
+  const useExpandedStateDomain = useDefaultStateDomain || (semanticType === "STATE" && looksLikeStateSignal(signalLabel(signal)) && isLegacyGenericStateDomain(enumValues));
+  const expandedStateEnumValues = defaultStateEnumValues(signalLabel(signal));
+  const expandedReservedValues = Array.from({ length: 16 }, (_, index) => index)
+    .filter((value) => !Object.values(expandedStateEnumValues).includes(value));
 
   return {
     id: text(signal.id),
@@ -186,11 +234,11 @@ export function buildCanonicalSignalDefinition(signal: SignalRecord): CanonicalS
       minimum: number(signal.min_value ?? signal.minimum ?? data.minimum),
       maximum: number(signal.max_value ?? signal.maximum ?? data.maximum),
       resolution: number(data.resolution ?? signal.resolution ?? factor),
-      allowedValues: useDefaultStateDomain ? ["OK", "WARNING", "ERROR", "NOT_AVAILABLE"] : allowedValues,
-      enumValues: useDefaultStateDomain ? { OK: 0, WARNING: 1, ERROR: 2, NOT_AVAILABLE: 3 } : enumValues,
+      allowedValues: useExpandedStateDomain ? Object.keys(expandedStateEnumValues) : allowedValues,
+      enumValues: useExpandedStateDomain ? expandedStateEnumValues : enumValues,
       invalidValues: array(data.invalid_values ?? configuration.invalid_values ?? (data.invalid_value == null ? [] : [data.invalid_value])),
-      reservedValues: useDefaultStateDomain ? [4, 5, 6, 7] : array(data.reserved_values ?? configuration.reserved_values),
-      defaultValue: data.default_value ?? signal.default_value ?? (useDefaultStateDomain ? "OK" : null),
+      reservedValues: useExpandedStateDomain ? expandedReservedValues : array(data.reserved_values ?? configuration.reserved_values),
+      defaultValue: useExpandedStateDomain ? Object.keys(expandedStateEnumValues)[0] : data.default_value ?? signal.default_value ?? null,
     },
     encoding: {
       rawDatatype,

@@ -709,6 +709,20 @@ def intelligence_assess_route():
     return jsonify(IntelligenceService(_project_id()).assess())
 
 
+@engineering_api.route("/intelligence/issues/approve", methods=["POST"])
+def intelligence_approve_issue_route():
+    return jsonify(IntelligenceService(_project_id()).approve_issue(_routing_payload()))
+
+
+@engineering_api.route("/intelligence/issues/approve-all", methods=["POST"])
+def intelligence_approve_all_issues_route():
+    payload = _routing_payload()
+    issues = payload.get("issues")
+    if not isinstance(issues, list):
+        raise EngineeringValidationError("issues muss eine Liste sein.")
+    return jsonify(IntelligenceService(_project_id()).approve_issues(issues))
+
+
 @engineering_api.route("/intelligence/export", methods=["GET"])
 def intelligence_export_route():
     snapshot = IntelligenceService(_project_id()).latest(include_outdated=True)

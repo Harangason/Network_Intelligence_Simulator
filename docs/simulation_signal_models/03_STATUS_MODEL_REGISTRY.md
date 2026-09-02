@@ -1,0 +1,1 @@
+# Status Model Registry`n`nStatusModelRegistry loest Gateway, Controller/ECU, Sensor, Camera, Actuator, Motor, Network Interface und Function Modelle auf. Unbekannte Statussignale fallen auf Controller-Status zurueck, nicht auf Zufall.`n

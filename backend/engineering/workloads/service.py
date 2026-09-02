@@ -33,7 +33,12 @@ from ..proposals import (
 )
 from ..repository import list_objects
 from .generators import default_signal_generators
-from .handlers import SignalGenerationWorkloadHandler, StructuredObjectWorkloadHandler, normalized_name
+from .handlers import (
+    RequirementExpansionWorkloadHandler,
+    SignalGenerationWorkloadHandler,
+    StructuredObjectWorkloadHandler,
+    normalized_name,
+)
 from .models import WORKLOAD_STATUSES, WORKLOAD_TYPES, parse_workload_request
 from .registry import WorkloadTypeRegistry
 
@@ -50,7 +55,9 @@ def _registry() -> WorkloadTypeRegistry:
     registry = WorkloadTypeRegistry()
     registry.register(SignalGenerationWorkloadHandler())
     for workload_type in WORKLOAD_TYPES:
-        if workload_type != "SIGNAL_GENERATION":
+        if workload_type == "REQUIREMENT_EXPANSION":
+            registry.register(RequirementExpansionWorkloadHandler())
+        elif workload_type != "SIGNAL_GENERATION":
             registry.register(StructuredObjectWorkloadHandler(workload_type))
     return registry
 

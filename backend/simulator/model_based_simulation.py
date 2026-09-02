@@ -6,16 +6,26 @@ import ast
 import hashlib
 import math
 import operator
-import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+try:
+    from signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type
+    from signals.derived import DerivedSignalEngine
+    from signals.quality import SignalQualityEngine
+    from signals.faults import SignalFaultOverlayRegistry
+except ImportError:  # pragma: no cover - package import fallback
+    from .signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type
+    from .signals.derived import DerivedSignalEngine
+    from .signals.quality import SignalQualityEngine
+    from .signals.faults import SignalFaultOverlayRegistry
 
 
 BEHAVIOR_TYPES = (
     "CONSTANT", "STEP", "RAMP", "LINEAR", "SINE", "TRIANGLE", "SAWTOOTH",
     "PULSE", "RANDOM_WALK", "BOUNDED_RANDOM", "STATE_DEPENDENT", "FORMULA",
-    "LOOKUP_TABLE", "EXTERNAL_SERIES",
+    "LOOKUP_TABLE", "EXTERNAL_SERIES", "PHYSICS_MODEL", "STATE_MACHINE", "STATUS_MODEL",
 )
 MODEL_LABELS = (
     "PHYSICS_BASED", "RULE_BASED", "EMPIRICAL", "SYNTHETIC", "GENERIC_ESTIMATE",
@@ -26,6 +36,8 @@ DEFAULT_MODEL_TRACE_EVENT_LIMIT = 5_000
 SIGNAL_FAULTS = (
     "SIGNAL_STUCK", "SIGNAL_OFFSET", "SIGNAL_DRIFT", "SIGNAL_SPIKE", "SIGNAL_DROPOUT", "SIGNAL_NOISE",
     "SIGNAL_OUT_OF_RANGE", "SIGNAL_FROZEN", "SIGNAL_DELAYED", "SIGNAL_WRONG_SCALE", "SIGNAL_INVALID_VALUE",
+    "INVALID_STATE", "STUCK_STATE", "WRONG_TRANSITION", "DELAYED_TRANSITION", "STUCK_TRUE", "STUCK_FALSE",
+    "TOGGLE", "COUNTER_SKIP", "COUNTER_RESET", "COUNTER_WRONG_INCREMENT",
 )
 MESSAGE_FAULTS = (
     "MESSAGE_LOSS", "MESSAGE_DELAY", "MESSAGE_JITTER", "MESSAGE_DUPLICATION", "MESSAGE_CORRUPTION", "MESSAGE_WRONG_CYCLE",
@@ -80,6 +92,64 @@ def _trace_limit(config: dict[str, Any], key: str, default: int) -> int:
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+def _raw_semantic_type(raw: dict[str, Any], name: str, data_type: str, length_bits: int) -> str:
+    configuration = _mapping(raw.get("configuration"))
+    data = _mapping(raw.get("data"))
+    configured = str(
+        _mapping(raw.get("semantic")).get("semantic_type")
+        or configuration.get("semantic_type")
+        or configuration.get("signal_type")
+        or data.get("semantic_type")
+        or ""
+    ).upper()
+    if configured:
+        return configured
+    lowered = name.lower()
+    type_name = data_type.lower()
+    if _mapping(data.get("enum") or configuration.get("enum")) or "enum" in type_name:
+        return "ENUM"
+    if "state" in lowered or "status" in lowered:
+        return "STATE"
+    if "enabled" in lowered or "valid" in lowered or type_name in {"bool", "boolean"} or length_bits == 1:
+        return "BOOLEAN"
+    if "counter" in lowered or "alive" in lowered:
+        return "COUNTER"
+    if "event" in lowered:
+        return "EVENT"
+    if any(token in lowered for token in ("temperature", "temp")):
+        return "TEMPERATURE"
+    if "rpm" in lowered or "speed" in lowered:
+        return "RPM"
+    if "torque" in lowered:
+        return "TORQUE"
+    if "pressure" in lowered:
+        return "PRESSURE"
+    if "voltage" in lowered:
+        return "VOLTAGE"
+    if "current" in lowered:
+        return "CURRENT"
+    if "position" in lowered or "angle" in lowered:
+        return "POSITION"
+    if "velocity" in lowered:
+        return "VELOCITY"
+    if "acceleration" in lowered or "accel" in lowered:
+        return "ACCELERATION"
+    return "NUMERIC_PHYSICAL"
+
+
+def _trace_kind(semantic_type: str) -> str:
+    semantic = semantic_type.upper()
+    if semantic in {"STATE", "ENUM", "QUALITY", "BITFIELD"}:
+        return "state"
+    if semantic == "BOOLEAN":
+        return "boolean"
+    if semantic == "COUNTER":
+        return "counter"
+    if semantic == "EVENT":
+        return "event"
+    return "numeric"
 
 
 def _stable_seed(seed: int, *parts: object) -> int:
@@ -159,12 +229,22 @@ class SignalDefinition:
         factor = max(1e-12, abs(_number(raw.get("factor"), _number(data.get("resolution"), 1.0))))
         behavior_type = str(behavior.get("behavior_type") or behavior.get("type") or "").upper()
         name = str(raw.get("name") or raw.get("display_name") or raw.get("id") or "Signal")
+        length_bits = max(1, int(raw.get("length_bits") or 16))
+        data_type = str(raw.get("data_type") or data.get("datatype") or "unsigned")
+        semantic_type = _raw_semantic_type(raw, name, data_type, length_bits)
         if behavior_type not in BEHAVIOR_TYPES:
-            lowered = f"{name} {raw.get('domain') or ''}".lower()
-            behavior_type = "SINE" if "temper" in lowered else "RAMP" if "motion" in lowered else "BOUNDED_RANDOM"
+            behavior_type = (
+                "FORMULA" if _sequence(behavior.get("dependencies") or raw.get("dependencies"))
+                else "STATE_MACHINE" if semantic_type in {"ENUM", "STATE", "BOOLEAN", "COUNTER", "BITFIELD", "EVENT", "QUALITY"}
+                else "PHYSICS_MODEL"
+            )
         model_label = str(behavior.get("model_label") or "GENERIC_ESTIMATE").upper()
-        if model_label not in MODEL_LABELS:
-            model_label = "GENERIC_ESTIMATE"
+        if model_label not in MODEL_LABELS or model_label == "GENERIC_ESTIMATE":
+            model_label = (
+                "PHYSICS_BASED" if behavior_type == "PHYSICS_MODEL"
+                else "RULE_BASED" if behavior_type in {"FORMULA", "STATE_DEPENDENT", "LOOKUP_TABLE", "EXTERNAL_SERIES", "STATE_MACHINE", "STATUS_MODEL"}
+                else "SYNTHETIC"
+            )
         cycle_ms = _number(
             communication.get("cycle_ms"),
             _number((message or {}).get("cycle_ms"), 100.0),
@@ -180,7 +260,7 @@ class SignalDefinition:
             resolution=factor,
             cycle_ms=max(0.001, cycle_ms),
             start_bit=max(0, int(raw.get("start_bit") or 0)),
-            length_bits=max(1, int(raw.get("length_bits") or 16)),
+            length_bits=length_bits,
             byte_order=str(raw.get("byte_order") or "little_endian"),
             factor=factor,
             offset=_number(raw.get("offset_value"), 0.0),
@@ -189,7 +269,7 @@ class SignalDefinition:
             parameters={**configuration, **_mapping(behavior.get("parameters")), **behavior},
             dependencies=dependencies,
             domain=str(raw.get("domain") or "generic"),
-            data_type=str(raw.get("data_type") or data.get("datatype") or "unsigned"),
+            data_type=data_type,
             invalid_value=(
                 _number(data.get("invalid_value"), 0.0)
                 if data.get("invalid_value") is not None
@@ -212,62 +292,31 @@ class SignalBehaviorEngine:
         self.seed = seed
         self._state: dict[str, float] = {}
         self._history: dict[str, list[tuple[float, float]]] = defaultdict(list)
+        self._last_samples: dict[str, Any] = {}
+        self.emulator = PlausibleSignalEmulationService(seed=seed)
 
     def sample(self, signal: SignalDefinition, time_s: float, context: dict[str, float] | None = None) -> float:
         return self.generate_signal_value(signal, time_s, context or {})
 
     def generate_signal_value(self, signal: SignalDefinition, time_s: float, context: dict[str, float]) -> float:
-        params = signal.parameters
         minimum, maximum = signal.minimum, signal.maximum
-        span = maximum - minimum
         midpoint = (minimum + maximum) / 2.0
-        period = max(1e-9, _number(params.get("period_s"), max(signal.cycle_ms / 1000.0 * 20, 1.0)))
-        phase = _number(params.get("phase"), 0.0)
-        index = max(0, round(time_s * 1000.0 / signal.cycle_ms))
-        rng = random.Random(_stable_seed(self.seed, signal.id, index))
-        behavior = signal.behavior_type
-        if behavior == "CONSTANT":
-            value = _number(params.get("value"), midpoint)
-        elif behavior == "STEP":
-            value = _number(params.get("before"), minimum) if time_s < _number(params.get("at_s"), period / 2) else _number(params.get("after"), maximum)
-        elif behavior in {"RAMP", "LINEAR"}:
-            slope = _number(params.get("slope"), span / period)
-            value = _number(params.get("start"), minimum) + slope * time_s
-        elif behavior == "SINE":
-            amplitude = _number(params.get("amplitude"), span * 0.4)
-            value = _number(params.get("center"), midpoint) + amplitude * math.sin(2 * math.pi * time_s / period + phase)
-        elif behavior == "TRIANGLE":
-            fraction = ((time_s / period) + phase) % 1.0
-            value = minimum + span * (1.0 - abs(2.0 * fraction - 1.0))
-        elif behavior == "SAWTOOTH":
-            value = minimum + span * (((time_s / period) + phase) % 1.0)
-        elif behavior == "PULSE":
-            duty = _clamp(_number(params.get("duty_cycle"), 0.5), 0.0, 1.0)
-            value = maximum if ((time_s / period) + phase) % 1.0 < duty else minimum
-        elif behavior == "RANDOM_WALK":
-            previous = self._state.get(signal.id, midpoint)
-            value = previous + rng.uniform(-span * 0.025, span * 0.025)
-        elif behavior == "STATE_DEPENDENT":
-            dependency_values = [float((context or {}).get(item, midpoint)) for item in signal.dependencies]
-            value = sum(dependency_values) / len(dependency_values) if dependency_values else midpoint
-        elif behavior == "FORMULA":
-            variables = {"t": time_s, "min": minimum, "max": maximum, "mid": midpoint, **(context or {})}
-            value = FormulaEvaluator.evaluate(str(params.get("formula") or "mid"), variables)
-        elif behavior in {"LOOKUP_TABLE", "EXTERNAL_SERIES"}:
-            points = _sequence(params.get("points") or params.get("series"))
-            normalized = sorted(
-                (_number(point.get("time_s"), 0.0), _number(point.get("value"), midpoint))
-                for point in points if isinstance(point, dict)
-            )
-            value = midpoint
-            for point_time, point_value in normalized:
-                if point_time > time_s:
-                    break
-                value = point_value
-        else:  # BOUNDED_RANDOM
-            value = rng.uniform(minimum, maximum)
+        dt = (
+            max(0.0, time_s - self._history[signal.id][-1][0])
+            if self._history.get(signal.id)
+            else signal.cycle_ms / 1000.0
+        )
+        simulation_context = SimulationContext(
+            current_time=time_s,
+            dt=dt,
+            seed=self.seed,
+            signal_values=context or {},
+            environment={"ambient_temperature": 22.0, "supply_voltage": 13.6},
+        )
+        sample = self.emulator.step(signal, time_s, dt, simulation_context)
+        self._last_samples[signal.id] = sample
+        value = midpoint if sample.quantized_value is None else sample.quantized_value
         value = self.apply_limits(signal, value)
-        value = self.apply_resolution(signal, value)
         self.advance_state(signal, time_s, value)
         return value
 
@@ -294,9 +343,10 @@ class SignalBehaviorEngine:
         self._history[signal.id].append((time_s, value))
 
     def delayed(self, signal_id: str, time_s: float, delay_s: float, fallback: float) -> float:
-        target = time_s - delay_s
-        prior = [value for timestamp, value in self._history.get(signal_id, []) if timestamp <= target]
-        return prior[-1] if prior else fallback
+        return self.emulator.delayed(signal_id, time_s, delay_s, fallback)
+
+    def sample_details(self, signal_id: str) -> Any | None:
+        return self._last_samples.get(signal_id)
 
 
 class FunctionBehaviorEngine:
@@ -312,6 +362,7 @@ class FaultInjectionEngine:
         self.faults = [item for item in faults if isinstance(item, dict) and item.get("enabled", True)]
         self.seed = seed
         self._frozen: dict[str, float] = {}
+        self.overlay = SignalFaultOverlayRegistry()
 
     @staticmethod
     def _active(fault: dict[str, Any], time_s: float) -> bool:
@@ -333,28 +384,17 @@ class FaultInjectionEngine:
             fault_type = normalize_fault_type(fault.get("type"))
             if fault_type not in SIGNAL_FAULTS or not self._active(fault, time_s) or not self._target_matches(fault, object_id=signal.id, name=signal.name, domain=signal.domain):
                 continue
-            magnitude = _number(fault.get("magnitude"), (signal.maximum - signal.minimum) * 0.1)
-            if fault_type in {"SIGNAL_STUCK", "SIGNAL_FROZEN"}:
-                value = self._frozen.setdefault(signal.id, baseline)
-            elif fault_type == "SIGNAL_OFFSET":
-                value = (value if value is not None else baseline) + magnitude
-            elif fault_type == "SIGNAL_DRIFT":
-                value = (value if value is not None else baseline) + magnitude * max(0.0, time_s - _number(fault.get("start_s"), 0.0))
-            elif fault_type == "SIGNAL_SPIKE":
-                value = (value if value is not None else baseline) + magnitude
-            elif fault_type == "SIGNAL_DROPOUT":
-                value = None
-            elif fault_type == "SIGNAL_NOISE":
-                rng = random.Random(_stable_seed(self.seed, signal.id, fault_type, time_s))
-                value = (value if value is not None else baseline) + rng.gauss(0.0, abs(magnitude))
-            elif fault_type == "SIGNAL_OUT_OF_RANGE":
-                value = signal.maximum + abs(magnitude)
-            elif fault_type == "SIGNAL_DELAYED":
-                value = behavior.delayed(signal.id, time_s, max(0.0, _number(fault.get("delay_s"), 0.1)), baseline)
-            elif fault_type == "SIGNAL_WRONG_SCALE":
-                value = (value if value is not None else baseline) * _number(fault.get("scale"), 2.0)
-            elif fault_type == "SIGNAL_INVALID_VALUE":
-                value = None
+            value = self.overlay.apply(
+                fault_type,
+                value=value,
+                baseline=baseline,
+                signal=signal,
+                fault=fault,
+                time_s=time_s,
+                behavior=behavior,
+                seed=self.seed,
+                cache=self._frozen,
+            )
             applied.append(fault_type)
         return value, applied
 
@@ -466,6 +506,8 @@ class ModelBasedSimulationEngine:
         scenario_mode = str(scenario.get("mode") or "NORMAL").upper()
         self.behavior = SignalBehaviorEngine(self.signals, seed=self.seed)
         self.functions = FunctionBehaviorEngine()
+        self.derived = DerivedSignalEngine()
+        self.quality = SignalQualityEngine()
         configured_faults = [] if scenario_mode == "NORMAL" else _sequence(scenario.get("faults") or config.get("faults"))
         self.faults = FaultInjectionEngine(configured_faults, seed=self.seed)
         self.codec = MessageCodec()
@@ -474,17 +516,17 @@ class ModelBasedSimulationEngine:
         metadata = _mapping(route.get("metadata"))
         signal_ids = [str(item) for item in _sequence(metadata.get("signal_ids"))]
         if signal_ids:
-            return [self.by_id[item] for item in signal_ids if item in self.by_id]
+            return self.derived.order([self.by_id[item] for item in signal_ids if item in self.by_id])
         message_id = str(metadata.get("message_id") or "")
         if message_id and self.by_message.get(message_id):
-            return self.by_message[message_id]
+            return self.derived.order(self.by_message[message_id])
         sender_interface = str(_mapping(route.get("sender")).get("interface_id") or "")
         engineering = _mapping(metadata.get("engineering"))
         message_ids = [str(item) for item in _sequence(engineering.get("message_ids"))]
         if message_ids:
-            return [signal for message in message_ids for signal in self.by_message.get(message, [])]
+            return self.derived.order([signal for message in message_ids for signal in self.by_message.get(message, [])])
         candidates = [signal for signal in self.signals if str(signal.parameters.get("interface_id") or "") == sender_interface]
-        return candidates
+        return self.derived.order(candidates)
 
     def encode_event(self, route: dict[str, Any], time_s: float, payload_bytes: int) -> dict[str, Any]:
         values: dict[str, float] = {}
@@ -492,17 +534,26 @@ class ModelBasedSimulationEngine:
         samples: list[dict[str, Any]] = []
         for signal in self.route_signals(route):
             baseline = self.functions.evaluate(signal, time_s, values, self.behavior)
+            baseline_sample = self.behavior.sample_details(signal.id)
             value, faults = self.faults.signal_value(signal, time_s, baseline, self.behavior)
             if value is not None:
                 values[signal.id] = value
                 values[signal.name] = value
             encoded.append((signal, value))
+            semantic_type = infer_semantic_type(signal)
+            trace_kind = _trace_kind(semantic_type)
             samples.append({
                 "signal_id": signal.id, "signal": signal.name, "value": value,
-                "golden_value": baseline, "unit": signal.unit, "minimum": signal.minimum,
+                "actual_value": value, "golden_value": baseline, "unit": signal.unit, "minimum": signal.minimum,
                 "maximum": signal.maximum, "resolution": signal.resolution,
                 "cycle_ms": signal.cycle_ms, "behavior_type": signal.behavior_type,
-                "model_label": signal.model_label, "faults": faults,
+                "model_label": getattr(baseline_sample, "model_type", signal.model_label), "semantic_type": semantic_type,
+                "trace_kind": trace_kind, "interpolation": "step" if trace_kind in {"state", "boolean", "counter"} else "marker" if trace_kind == "event" else "linear",
+                "display_value": value if baseline_sample is None else getattr(baseline_sample, "display_value", value),
+                "state": None if baseline_sample is None else getattr(baseline_sample, "state", None),
+                "quality": self.quality.evaluate(signal, value, faults),
+                "source_dependencies": signal.dependencies, "fault_state": faults,
+                "faults": faults,
                 "received_value": self.codec.decode(self.codec.encode([(signal, value)], payload_bytes), signal) if value is not None or signal.invalid_value is not None else None,
             })
         return {"payload_hex": self.codec.encode(encoded, payload_bytes), "signals": samples}
@@ -512,7 +563,8 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
     signal_series: dict[str, dict[str, Any]] = {}
     synchronized_events: list[dict[str, Any]] = []
     frame_limit = _trace_limit(config, "model_trace_frame_limit", DEFAULT_MODEL_TRACE_FRAME_LIMIT)
-    signal_point_limit = _trace_limit(config, "model_trace_signal_point_limit", DEFAULT_MODEL_TRACE_SIGNAL_POINT_LIMIT)
+    signal_point_limit = _trace_limit(config, "model_trace_signal_point_limit", 0)
+    points_per_signal_limit = _trace_limit(config, "model_trace_points_per_signal", 800)
     synchronized_event_limit = _trace_limit(config, "model_trace_event_limit", DEFAULT_MODEL_TRACE_EVENT_LIMIT)
     total_signal_samples = 0
     stored_signal_samples = 0
@@ -566,11 +618,32 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
             if not isinstance(sample, dict):
                 continue
             signal_id = str(sample.get("signal_id"))
-            series = signal_series.setdefault(signal_id, {key: sample.get(key) for key in ("signal_id", "signal", "unit", "minimum", "maximum", "resolution", "cycle_ms", "behavior_type", "model_label")})
+            series = signal_series.setdefault(signal_id, {key: sample.get(key) for key in ("signal_id", "signal", "unit", "minimum", "maximum", "resolution", "cycle_ms", "behavior_type", "model_label", "semantic_type", "quality", "source_dependencies")})
+            series.setdefault("trace_kind", sample.get("trace_kind") or _trace_kind(str(sample.get("semantic_type") or "")))
+            series.setdefault("interpolation", sample.get("interpolation") or ("linear" if series.get("trace_kind") == "numeric" else "step"))
             series.setdefault("points", [])
+            series["_seen_samples"] = int(series.get("_seen_samples") or 0) + 1
             total_signal_samples += 1
-            if signal_point_limit == 0 or stored_signal_samples < signal_point_limit:
-                series["points"].append({"time_s": event.get("time_s"), "value": sample.get("value"), "golden_value": sample.get("golden_value"), "faults": sample.get("faults") or []})
+            sample_point = {
+                "time_s": event.get("time_s"),
+                "value": sample.get("value"),
+                "actual_value": sample.get("actual_value", sample.get("value")),
+                "golden_value": sample.get("golden_value"),
+                "quality": sample.get("quality"),
+                "display_value": sample.get("display_value"),
+                "state": sample.get("state"),
+                "trace_kind": sample.get("trace_kind") or series.get("trace_kind"),
+                "fault_state": sample.get("fault_state") or sample.get("faults") or [],
+                "faults": sample.get("faults") or [],
+            }
+            series["_last_point"] = sample_point
+            cycle_s = max(0.001, float(sample.get("cycle_ms") or 100.0) / 1000.0)
+            expected_points = max(1, math.ceil(float(config.get("duration_s") or 1.0) / cycle_s) + 1)
+            point_stride = 1 if points_per_signal_limit == 0 else max(1, math.ceil(expected_points / max(1, points_per_signal_limit)))
+            global_capacity = signal_point_limit == 0 or stored_signal_samples < signal_point_limit
+            per_signal_capacity = points_per_signal_limit == 0 or len(series["points"]) < points_per_signal_limit
+            if global_capacity and per_signal_capacity and (int(series["_seen_samples"]) - 1) % point_stride == 0:
+                series["points"].append(sample_point)
                 stored_signal_samples += 1
             if isinstance(sample.get("value"), (int, float)) and isinstance(sample.get("golden_value"), (int, float)):
                 deltas.append(float(sample["value"]) - float(sample["golden_value"]))
@@ -607,6 +680,21 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
                 "faults": [str(fault.get("type") or "Fault")],
             })
     ordered_events = sorted(synchronized_events, key=lambda item: float(item.get("time_s") or 0.0))
+    for series in signal_series.values():
+        last_point = series.pop("_last_point", None)
+        series["sample_count"] = int(series.pop("_seen_samples", 0) or 0)
+        series["stored_sample_count"] = len(series.get("points") or [])
+        if (
+            isinstance(last_point, dict)
+            and (not series["points"] or series["points"][-1].get("time_s") != last_point.get("time_s"))
+            and (signal_point_limit == 0 or stored_signal_samples < signal_point_limit)
+        ):
+            if points_per_signal_limit and len(series["points"]) >= points_per_signal_limit:
+                series["points"][-1] = last_point
+            else:
+                series["points"].append(last_point)
+                stored_signal_samples += 1
+            series["stored_sample_count"] = len(series["points"])
     changed_samples = sum(1 for delta in deltas if abs(delta) > 1e-12)
     affected_signals = sorted({
         str(item.get("signal"))
@@ -639,6 +727,11 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
     }
     return {
         "schema": "communication-simulator.model-trace.v1",
+        "signal_emulation_validation": config.get("signal_emulation_validation") or {
+            "valid": True,
+            "errors": [],
+            "warnings": [],
+        },
         "scenario": {
             "name": scenario.get("name") or "Normalbetrieb",
             "mode": scenario.get("mode") or "NORMAL",
@@ -704,6 +797,7 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
             "truncated": len(frame_timeline) < len(events) or stored_signal_samples < total_signal_samples or len(ordered_events) < total_synchronized_events,
             "frame_limit": frame_limit,
             "signal_point_limit": signal_point_limit,
+            "points_per_signal_limit": points_per_signal_limit,
             "event_limit": synchronized_event_limit,
             "stored_frames": len(frame_timeline),
             "total_frames": len(events),

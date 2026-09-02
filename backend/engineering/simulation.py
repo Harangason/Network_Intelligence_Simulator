@@ -14,6 +14,11 @@ from .project_context import activate_project, current_project_id, reset_project
 from .repository import list_objects
 from .routing.repository import list_routes
 
+try:
+    from simulator.signals.core.validation import validate_signal_emulation_model
+except ImportError:  # pragma: no cover - package import fallback
+    from backend.simulator.signals.core.validation import validate_signal_emulation_model
+
 
 SCENARIO_MODES = {"NORMAL", "USER_DEFINED_FAULT", "AI_GENERATED_FAULT", "STRESS"}
 SIGNAL_FAULTS = {
@@ -162,7 +167,80 @@ def enrich_simulation_config(config: dict[str, Any], project_id: str) -> dict[st
             communication["message_ids"] = sorted(message_ids)
         if linked_routes:
             communication["routing_entry_ids"] = sorted(str(route.get("id")) for route in linked_routes)
+    _apply_simulation_scope(enriched)
+    signal_validation = validate_signal_emulation_model(enriched)
+    enriched["signal_emulation_validation"] = signal_validation
+    if not signal_validation["valid"]:
+        first_error = signal_validation["errors"][0]["message"] if signal_validation["errors"] else "ungueltige Signal-Emulation"
+        raise EngineeringValidationError(f"Signal-Emulation Preflight fehlgeschlagen: {first_error}")
     return enriched
+
+
+def _scope_values(raw: Any) -> set[str]:
+    if not isinstance(raw, list):
+        return set()
+    return {str(item) for item in raw if str(item)}
+
+
+def _simulation_scope(config: dict[str, Any]) -> dict[str, Any]:
+    scenario = config.get("scenario") if isinstance(config.get("scenario"), dict) else {}
+    scope = scenario.get("simulation_scope") or config.get("simulation_scope") or {}
+    return scope if isinstance(scope, dict) else {}
+
+
+def _apply_simulation_scope(config: dict[str, Any]) -> None:
+    scope = _simulation_scope(config)
+    if not scope or bool(scope.get("include_all")) or str(scope.get("mode") or "ALL").upper() == "ALL":
+        return
+    selected_message_ids = _scope_values(scope.get("message_ids"))
+    selected_signal_ids = _scope_values(scope.get("signal_ids"))
+    if not selected_message_ids and not selected_signal_ids:
+        return
+
+    model = config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {}
+    messages = [item for item in model.get("messages") or [] if isinstance(item, dict)]
+    signals = [item for item in model.get("signals") or [] if isinstance(item, dict)]
+    message_by_id = {str(item.get("id")): item for item in messages}
+    signals_by_message: dict[str, list[dict[str, Any]]] = {}
+    for signal in signals:
+        signals_by_message.setdefault(str(signal.get("message_id") or ""), []).append(signal)
+
+    if selected_signal_ids:
+        selected_signal_rows = [item for item in signals if str(item.get("id")) in selected_signal_ids]
+        selected_message_ids.update(str(item.get("message_id")) for item in selected_signal_rows if item.get("message_id"))
+    if selected_message_ids and not selected_signal_ids:
+        for message_id in selected_message_ids:
+            selected_signal_ids.update(str(item.get("id")) for item in signals_by_message.get(message_id, []) if item.get("id"))
+
+    selected_message_ids = {item for item in selected_message_ids if item in message_by_id}
+    selected_signal_ids = {item for item in selected_signal_ids if any(str(signal.get("id")) == item for signal in signals)}
+    if not selected_message_ids and not selected_signal_ids:
+        return
+
+    model["messages"] = [item for item in messages if str(item.get("id")) in selected_message_ids]
+    model["signals"] = [item for item in signals if str(item.get("id")) in selected_signal_ids]
+    counts = model.get("counts") if isinstance(model.get("counts"), dict) else {}
+    counts["messages"] = len(model["messages"])
+    counts["signals"] = len(model["signals"])
+    model["counts"] = counts
+
+    communications = config.get("communications") if isinstance(config.get("communications"), list) else []
+    filtered_communications: list[dict[str, Any]] = []
+    for communication in communications:
+        if not isinstance(communication, dict):
+            continue
+        communication_message_ids = _scope_values(communication.get("message_ids"))
+        communication_signal_ids = _scope_values(communication.get("signal_ids"))
+        message_match = bool(communication_message_ids & selected_message_ids)
+        signal_match = bool(communication_signal_ids & selected_signal_ids)
+        if not message_match and not signal_match:
+            continue
+        if communication_message_ids:
+            communication["message_ids"] = sorted(communication_message_ids & selected_message_ids)
+        if communication_signal_ids:
+            communication["signal_ids"] = sorted(communication_signal_ids & selected_signal_ids)
+        filtered_communications.append(communication)
+    config["communications"] = filtered_communications
 
 
 def validate_scenario(scenario: dict[str, Any], engineering_model: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -235,13 +313,14 @@ def save_scenario(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as connection:
         row = connection.execute(
             "INSERT INTO engineering_simulation_scenarios "
-            "(project_id, name, description, mode, duration_s, speed, seed, trace_formats, faults, "
+            "(project_id, name, description, mode, duration_s, speed, seed, trace_formats, simulation_scope, faults, "
             "initial_conditions, signal_profiles, expected_behavior, source, review_state, approval_state, created_by) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
             (
                 current_project_id(), str(scenario.get("name") or "Simulationsszenario"), scenario.get("description"), scenario["mode"],
                 float(scenario.get("duration_s") or 1), float(scenario.get("speed") or 1), int(scenario.get("seed") or 42),
-                Jsonb(scenario.get("trace_formats") or ["universal-jsonl"]), Jsonb(scenario.get("faults") or []),
+                Jsonb(scenario.get("trace_formats") or ["universal-jsonl"]), Jsonb(scenario.get("simulation_scope") or {}),
+                Jsonb(scenario.get("faults") or []),
                 Jsonb(scenario.get("initial_conditions") or {}), Jsonb(scenario.get("signal_profiles") or []),
                 Jsonb(scenario.get("expected_behavior") or {}), str(scenario.get("source") or "manual"),
                 "reviewed", "approved", scenario.get("created_by") or "simulation-user",

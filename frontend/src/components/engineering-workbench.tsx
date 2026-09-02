@@ -41,6 +41,7 @@ import {
   takePendingEngineeringAgentWizard,
 } from "@/lib/agent-task-events";
 import { readActiveProjectId } from "@/lib/user-settings";
+import { buildCanonicalSignalDefinition } from "@/lib/signal-architecture";
 import { EngineeringAgentWizard } from "@/components/agent-chat-core";
 import { StructureTreeWorkbench } from "@/components/structure-tree-workbench";
 
@@ -122,7 +123,7 @@ const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = 
   functions: ["hardware-nodes"],
   interfaces: ["functions", "hardware-nodes"],
   messages: ["interfaces"],
-  signals: ["messages"],
+  signals: ["messages", "interfaces", "functions"],
 };
 
 const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
@@ -130,17 +131,54 @@ const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
   functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung"],
   interfaces: ["Name", "Funktion", "Interface-Typ", "Hardware"],
   messages: ["Name", "Interface", "Message-ID", "Richtung", "Zyklus", "DLC"],
-  signals: ["Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
+  signals: ["Funktion", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
 };
 
 function referenceName(names: Record<string, string>, id: string | null) {
   return id ? names[id] ?? "Unbekannt" : "—";
 }
 
+type TableSort = {
+  column: number;
+  direction: "asc" | "desc";
+} | null;
+
+function compareEngineeringTableValues(left: string, right: string) {
+  const leftNumber = parseSortableNumber(left);
+  const rightNumber = parseSortableNumber(right);
+  if (leftNumber !== null && rightNumber !== null && leftNumber !== rightNumber) {
+    return leftNumber - rightNumber;
+  }
+  return left.localeCompare(right, "de-DE", { numeric: true, sensitivity: "base" });
+}
+
+function parseSortableNumber(value: string) {
+  const match = value.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
+function signalFunctionName(
+  item: EngineeringObject,
+  names: Record<string, string>,
+  objectsById: Map<string, EngineeringObject>,
+) {
+  if (!("message_id" in item) || !item.message_id) return "—";
+  const message = objectsById.get(item.message_id);
+  const interfaceId = message && "interface_id" in message && typeof message.interface_id === "string"
+    ? message.interface_id
+    : null;
+  const interfaceObject = interfaceId ? objectsById.get(interfaceId) : null;
+  const functionId = interfaceObject && "function_id" in interfaceObject && typeof interfaceObject.function_id === "string"
+    ? interfaceObject.function_id
+    : null;
+  return referenceName(names, functionId);
+}
+
 function resourceTableValues(
   resource: EngineeringResource,
   item: EngineeringObject,
   names: Record<string, string>,
+  objectsById: Map<string, EngineeringObject>,
 ): string[] {
   switch (resource) {
     case "hardware-nodes":
@@ -170,6 +208,7 @@ function resourceTableValues(
       ];
     case "signals":
       return [
+        signalFunctionName(item, names, objectsById),
         item.name,
         "message_id" in item ? referenceName(names, item.message_id) : "—",
         "start_bit" in item && item.start_bit !== null ? String(item.start_bit) : "—",
@@ -419,6 +458,7 @@ export function EngineeringWorkbench() {
   const [resource, setResource] = useState<EngineeringResource>("hardware-nodes");
   const [schema, setSchema] = useState<EngineeringSchema | null>(null);
   const [items, setItems] = useState<EngineeringObject[]>([]);
+  const [referenceObjects, setReferenceObjects] = useState<EngineeringObject[]>([]);
   const [referenceNames, setReferenceNames] = useState<Record<string, string>>({});
   const [relations, setRelations] = useState<EngineeringRelation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -431,6 +471,7 @@ export function EngineeringWorkbench() {
   const [activeInterfaceIds, setActiveInterfaceIds] = useState<Set<string> | null>(null);
   const [showUnusedInterfaces, setShowUnusedInterfaces] = useState(false);
   const [columnFilters, setColumnFilters] = useState<string[]>([]);
+  const [tableSort, setTableSort] = useState<TableSort>(null);
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
   const [deepLinkTarget, setDeepLinkTarget] = useState<{ id: string; edit: boolean } | null>(null);
@@ -472,9 +513,11 @@ export function EngineeringWorkbench() {
       Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listAllEngineeringObjects(reference))),
     ])
       .then(([nextItems, referenceGroups]) => {
+        const nextReferences = referenceGroups.flat();
         setItems(nextItems);
+        setReferenceObjects(nextReferences);
         setReferenceNames(
-          Object.fromEntries(referenceGroups.flat().map((reference) => [reference.id, reference.name])),
+          Object.fromEntries(nextReferences.map((reference) => [reference.id, reference.name])),
         );
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Backend nicht erreichbar."))
@@ -484,6 +527,7 @@ export function EngineeringWorkbench() {
   useEffect(() => {
     setSelectedId(null);
     setColumnFilters([]);
+    setTableSort(null);
     setPage(1);
   }, [resource]);
 
@@ -548,15 +592,29 @@ export function EngineeringWorkbench() {
       ? activeItems.filter((item) => !unusedNetworkInterfaces.some((unused) => unused.id === item.id))
       : activeItems;
   }, [items, resource, showUnusedInterfaces, unusedNetworkInterfaces]);
+  const tableHeaders = RESOURCE_TABLE_HEADERS[resource];
+  const engineeringObjectsById = useMemo(
+    () => new Map([...items, ...referenceObjects].map((item) => [item.id, item])),
+    [items, referenceObjects],
+  );
   const visibleItems = useMemo(
-    () => baseVisibleItems.filter((item) => {
-      const values = resourceTableValues(resource, item, referenceNames);
-      return columnFilters.every((filter, index) => {
-        const query = (filter ?? "").trim().toLocaleLowerCase("de-DE");
-        return !query || (values[index] ?? "").toLocaleLowerCase("de-DE").includes(query);
+    () => {
+      const filtered = baseVisibleItems.filter((item) => {
+        const values = resourceTableValues(resource, item, referenceNames, engineeringObjectsById);
+        return columnFilters.every((filter, index) => {
+          const query = (filter ?? "").trim().toLocaleLowerCase("de-DE");
+          return !query || (values[index] ?? "").toLocaleLowerCase("de-DE").includes(query);
+        });
       });
-    }),
-    [baseVisibleItems, columnFilters, referenceNames, resource],
+      if (!tableSort) return filtered;
+      return [...filtered].sort((left, right) => {
+        const leftValues = resourceTableValues(resource, left, referenceNames, engineeringObjectsById);
+        const rightValues = resourceTableValues(resource, right, referenceNames, engineeringObjectsById);
+        const order = compareEngineeringTableValues(leftValues[tableSort.column] ?? "", rightValues[tableSort.column] ?? "");
+        return tableSort.direction === "asc" ? order : -order;
+      });
+    },
+    [baseVisibleItems, columnFilters, engineeringObjectsById, referenceNames, resource, tableSort],
   );
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / ENGINEERING_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -771,10 +829,36 @@ export function EngineeringWorkbench() {
             <table className={`eng-table ${resource}`}>
               <thead>
                 <tr>
-                  {RESOURCE_TABLE_HEADERS[resource].map((header) => <th key={header}>{header}</th>)}
+                  {tableHeaders.map((header, index) => {
+                    const isActiveSort = tableSort?.column === index;
+                    return (
+                      <th key={header}>
+                        <button
+                          aria-label={`${header} sortieren`}
+                          aria-sort={isActiveSort ? (tableSort.direction === "asc" ? "ascending" : "descending") : "none"}
+                          className={`eng-table-sort ${isActiveSort ? "active" : ""}`}
+                          onClick={() => {
+                            setTableSort((current) => (
+                              current?.column === index
+                                ? { column: index, direction: current.direction === "asc" ? "desc" : "asc" }
+                                : { column: index, direction: "asc" }
+                            ));
+                            setSelectedId(null);
+                            setPage(1);
+                          }}
+                          type="button"
+                        >
+                          <span>{header}</span>
+                          <span aria-hidden="true" className="eng-table-sort-indicator">
+                            {isActiveSort ? (tableSort.direction === "asc" ? "↑" : "↓") : "↕"}
+                          </span>
+                        </button>
+                      </th>
+                    );
+                  })}
                 </tr>
                 <tr className="eng-table-filter-row">
-                  {RESOURCE_TABLE_HEADERS[resource].map((header, index) => (
+                  {tableHeaders.map((header, index) => (
                     <th key={`${header}:filter`}>
                       <input
                         aria-label={`${header} filtern`}
@@ -799,7 +883,7 @@ export function EngineeringWorkbench() {
               <tbody>
                 {visibleItems.length === 0 && (
                   <tr className="eng-table-filter-empty">
-                    <td colSpan={RESOURCE_TABLE_HEADERS[resource].length}>
+                    <td colSpan={tableHeaders.length}>
                       Keine Einträge entsprechen den Spaltenfiltern.
                     </td>
                   </tr>
@@ -810,7 +894,7 @@ export function EngineeringWorkbench() {
                       className={`eng-object-surface ${engineeringObjectTypeClass(item.object_type)} ${item.id === selectedId ? "selected" : ""}`}
                       onClick={() => setSelectedId(item.id)}
                     >
-                      {resourceTableValues(resource, item, referenceNames).map((value, index) => (
+                      {resourceTableValues(resource, item, referenceNames, engineeringObjectsById).map((value, index) => (
                         <td className={index === 0 ? undefined : "muted"} key={`${item.id}:${index}`}>
                           {value}
                         </td>
@@ -818,7 +902,7 @@ export function EngineeringWorkbench() {
                     </tr>
                     {item.id === selectedId && (
                       <tr className="eng-detail-row">
-                        <td colSpan={RESOURCE_TABLE_HEADERS[resource].length}>
+                        <td colSpan={tableHeaders.length}>
                           <DetailPanel
                             item={item}
                             referenceNames={referenceNames}
@@ -2095,6 +2179,17 @@ function signalRangeValue(minimum: unknown, maximum: unknown, unit?: string | nu
   return `${signalParameterValue(minimum, unit)} bis ${signalParameterValue(maximum, unit)}`;
 }
 
+function signalValueText(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : String(value);
+}
+
+function signalTimeline(data: Record<string, unknown>) {
+  return Array.isArray(data.state_timeline)
+    ? data.state_timeline.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object" && !Array.isArray(item))
+    : [];
+}
+
 function SignalParameterOverview({
   item,
   referenceNames,
@@ -2103,6 +2198,10 @@ function SignalParameterOverview({
   referenceNames: Record<string, string>;
 }) {
   const communication = item.communication ?? {};
+  const canonical = buildCanonicalSignalDefinition(item);
+  const enumEntries = Object.entries(canonical.valueDomain.enumValues);
+  const hasStateDomain = canonical.semantic.semanticType === "STATE" || canonical.semantic.semanticType === "ENUM" || enumEntries.length > 0;
+  const timeline = signalTimeline(item.data ?? {});
   const message = item.message_id ? referenceNames[item.message_id] ?? item.message_id : "—";
   return (
     <>
@@ -2121,6 +2220,42 @@ function SignalParameterOverview({
         <div><dt>Einheit</dt><dd>{signalParameterValue(item.unit)}</dd></div>
         <div><dt>Wertebereich</dt><dd>{signalRangeValue(item.min_value, item.max_value, item.unit)}</dd></div>
       </dl>
+
+      {hasStateDomain && (
+        <>
+          <div className="section-title signal-parameter-heading">
+            <span>Zustandsdefinition</span>
+          </div>
+          <div className="signal-state-domain">
+            <div className="signal-state-code-grid">
+              {enumEntries.map(([state, code]) => (
+                <span key={state}>
+                  <b>{state}</b>
+                  <i>{signalValueText(code)}</i>
+                </span>
+              ))}
+            </div>
+            <dl className="overview-list eng-signal-parameter-list">
+              <div><dt>Default</dt><dd>{signalValueText(canonical.valueDomain.defaultValue)}</dd></div>
+              <div><dt>Reserviert</dt><dd>{canonical.valueDomain.reservedValues.map(signalValueText).join(", ") || "—"}</dd></div>
+              <div><dt>Ungültig</dt><dd>{canonical.valueDomain.invalidValues.map(signalValueText).join(", ") || "—"}</dd></div>
+              <div><dt>Semantik</dt><dd>{canonical.semantic.semanticType}</dd></div>
+            </dl>
+            {timeline.length > 0 && (
+              <div className="signal-state-timeline" aria-label="Zustandsablauf">
+                {timeline.map((step, index) => (
+                  <span key={`${signalValueText(step.state)}:${index}`}>
+                    {signalValueText(step.state)}
+                    <small>
+                      {signalValueText(step.from_s)}s bis {step.to_s === null || step.to_s === undefined ? "offen" : `${signalValueText(step.to_s)}s`}
+                    </small>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="section-title signal-parameter-heading">
         <span>Timing &amp; Qualität</span>

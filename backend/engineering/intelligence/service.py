@@ -6,8 +6,11 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any
 
+from psycopg.types.json import Jsonb
+
 from ..db import get_connection
 from ..knowledge import CanonicalKnowledgeService
+from ..models import EngineeringValidationError
 from ..relations import list_relations
 from ..repository import list_objects
 from ..routing.repository import list_routes
@@ -147,6 +150,88 @@ class IntelligenceService:
                 }
             )
         return points
+
+    @staticmethod
+    def issue_key(issue: dict[str, Any]) -> str:
+        return "::".join(
+            str(issue.get(key) or "").strip()
+            for key in ("code", "object_type", "object_id")
+        )
+
+    @staticmethod
+    def _assessment_status(issues: list[dict[str, Any]]) -> str:
+        open_issues = [item for item in issues if str(item.get("status") or "").upper() != "APPROVED"]
+        if any(item.get("severity") == "ERROR" for item in open_issues):
+            return "ERROR"
+        if any(item.get("severity") == "WARNING" for item in open_issues):
+            return "WARNING"
+        return "COMPLETE"
+
+    def _issue_reviews(self) -> dict[str, dict[str, Any]]:
+        try:
+            with get_connection() as connection:
+                rows = connection.execute(
+                    """
+                    SELECT issue_key, issue_code, object_type, object_id, status, note, reviewed_by, reviewed_at
+                    FROM engineering_intelligence_issue_reviews
+                    WHERE project_id = %s
+                    """,
+                    (self.project_id,),
+                ).fetchall()
+        except Exception:
+            return {}
+        return {str(row["issue_key"]): row for row in rows}
+
+    @classmethod
+    def _apply_issue_reviews(
+        cls,
+        issues: list[dict[str, Any]],
+        reviews: dict[str, dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        reviewed: list[dict[str, Any]] = []
+        for issue in issues:
+            next_issue = {**issue, "issue_key": cls.issue_key(issue)}
+            review = reviews.get(next_issue["issue_key"])
+            if review and str(review.get("status") or "").upper() == "APPROVED":
+                next_issue.update(
+                    {
+                        "original_severity": next_issue.get("original_severity") or next_issue.get("severity"),
+                        "severity": "INFO",
+                        "status": "APPROVED",
+                        "approval_state": "APPROVED",
+                        "review_state": "REVIEWED",
+                        "approved_at": review.get("reviewed_at").isoformat() if hasattr(review.get("reviewed_at"), "isoformat") else review.get("reviewed_at"),
+                        "approved_by": review.get("reviewed_by") or "intelligence-workbench",
+                        "approval_note": review.get("note") or "Fachlich als erwartete Topologie bestaetigt.",
+                        "recommendation": review.get("note") or "Fachlich bestaetigt; keine technische Aenderung erforderlich.",
+                    }
+                )
+            reviewed.append(next_issue)
+        return reviewed
+
+    def _update_latest_intelligence_snapshot(self, reviews: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+        latest = self.latest(include_outdated=False) or self.latest(include_outdated=True)
+        if not latest:
+            return None
+        results = latest.get("results") or {}
+        issues = self._apply_issue_reviews(list(results.get("critical_issues") or latest.get("findings") or []), reviews)
+        status = self._assessment_status(issues)
+        results["critical_issues"] = issues
+        findings = issues
+        results.setdefault("governance", {})["issue_review_count"] = sum(
+            1 for item in issues if str(item.get("status") or "").upper() == "APPROVED"
+        )
+        with get_connection() as connection:
+            row = connection.execute(
+                """
+                UPDATE engineering_analysis_snapshots
+                SET results = %s, findings = %s, status = %s
+                WHERE id = %s AND project_id = %s
+                RETURNING *
+                """,
+                (Jsonb(results), Jsonb(findings), status, latest["id"], self.project_id),
+            ).fetchone()
+        return self.workflow._serialize_row(row) if row else latest
 
     @staticmethod
     def _routing_analysis(routes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -327,6 +412,7 @@ class IntelligenceService:
             *self._convert_findings(data["capacity"].get("findings") or []),
             *self._convert_findings(data["preflight"].get("findings") or []),
         ]
+        issues = self._apply_issue_reviews(issues, self._issue_reviews())
         issues.sort(key=lambda item: {"ERROR": 0, "WARNING": 1, "INFO": 2}.get(item["severity"], 3))
         rag = self._rag_insights(issues)
         distribution = plan_network_distribution(
@@ -365,9 +451,10 @@ class IntelligenceService:
                 "rule": "Analyze / Generate Proposal -> Validate -> Human Review -> Approval",
                 "engineering_objects_are_source_of_truth": True,
                 "automatic_changes": False,
+                "issue_review_count": sum(1 for item in issues if str(item.get("status") or "").upper() == "APPROVED"),
             },
         }
-        status = "ERROR" if any(item["severity"] == "ERROR" for item in issues) else "WARNING" if issues else "COMPLETE"
+        status = self._assessment_status(issues)
         source_objects = [
             {"object_type": object_type, "object_id": str(item.get("id")), "version": item.get("version")}
             for object_type, items in objects.items() for item in items
@@ -403,6 +490,50 @@ class IntelligenceService:
 
     def latest(self, *, include_outdated: bool = True) -> dict[str, Any] | None:
         return self.workflow.latest_analysis("intelligence", include_outdated=include_outdated)
+
+    def approve_issue(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self.approve_issues([data])
+
+    def approve_issues(self, items: list[dict[str, Any]]) -> dict[str, Any]:
+        if not items:
+            raise EngineeringValidationError("Mindestens ein Intelligence-Befund muss angegeben werden.")
+        actor = "intelligence-workbench"
+        note = "Gateway ist fachlich als erwarteter Single Point bestaetigt."
+        values = []
+        for data in items:
+            issue = {
+                "code": str(data.get("code") or data.get("issue_code") or "").strip(),
+                "object_type": str(data.get("object_type") or "").strip(),
+                "object_id": str(data.get("object_id") or "").strip(),
+            }
+            if issue["code"] != "SINGLE_POINT_OF_FAILURE" or issue["object_type"] != "HardwareNode" or not issue["object_id"]:
+                raise EngineeringValidationError("Nur Hardware-Gateway-Befunde vom Typ SINGLE_POINT_OF_FAILURE koennen direkt bestaetigt werden.")
+            issue_key = self.issue_key(issue)
+            note = str(data.get("note") or note).strip()
+            actor = str(data.get("actor") or actor).strip()
+            values.append((self.project_id, issue_key, issue["code"], issue["object_type"], issue["object_id"], note, actor))
+        rows = []
+        with get_connection() as connection:
+            for value in values:
+                row = connection.execute(
+                    """
+                    INSERT INTO engineering_intelligence_issue_reviews
+                        (project_id, issue_key, issue_code, object_type, object_id, status, note, reviewed_by)
+                    VALUES (%s, %s, %s, %s, %s, 'APPROVED', %s, %s)
+                    ON CONFLICT (project_id, issue_key) DO UPDATE
+                    SET status = 'APPROVED',
+                        note = EXCLUDED.note,
+                        reviewed_by = EXCLUDED.reviewed_by,
+                        reviewed_at = now()
+                    RETURNING *
+                    """,
+                    value,
+                ).fetchone()
+                if row:
+                    rows.append(row)
+        reviews = {str(row["issue_key"]): row for row in rows}
+        snapshot = self._update_latest_intelligence_snapshot(reviews)
+        return snapshot or {"project_id": self.project_id, "status": "APPROVED", "reviews": rows}
 
     def create_proposal(self, data: dict[str, Any]) -> dict[str, Any]:
         latest = self.latest(include_outdated=False)

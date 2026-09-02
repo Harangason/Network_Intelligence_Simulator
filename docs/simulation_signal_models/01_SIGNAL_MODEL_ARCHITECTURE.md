@@ -1,0 +1,1 @@
+# Signal Model Architecture`n`nState-, Physical-, Derived-, Noise-, Constraint- und Fault-Module sind unter backend/simulator/signals getrennt. Die zentrale Registry waehlt das Modell anhand von behavior_type, Semantik und Signalname.`n

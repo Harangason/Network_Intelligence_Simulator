@@ -153,6 +153,70 @@ def test_jobs_are_isolated_by_project() -> None:
     assert service.get("project-b-job", "project-b")["id"] == "project-b-job"
 
 
+def test_cancel_marks_running_job_terminal_and_updates_workflow(monkeypatch) -> None:
+    service = JobService(synchronous=True, persist=False)
+    service._jobs["job-1"] = {
+        "id": "job-1",
+        "project_id": "project-1",
+        "workflow_snapshot_id": "snapshot-1",
+        "status": "running",
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+        "result": None,
+        "error": None,
+    }
+    events: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        service,
+        "_update_workflow_snapshot",
+        lambda _payload, status, _job_id, **_kwargs: events.append(("workflow", status)),
+    )
+
+    response = service.cancel("job-1", "project-1")
+
+    assert response["status"] == "canceled"
+    assert response["cancellation_requested"] is True
+    assert service.get("job-1", "project-1")["status"] == "canceled"
+    assert events == [("workflow", "CANCELED")]
+
+
+def test_canceled_job_is_not_overwritten_by_late_thread_result(monkeypatch, tmp_path: Path) -> None:
+    class SimulationStub:
+        @staticmethod
+        def run(_payload: dict, _output_dir: Path, *, validate_only: bool) -> dict:
+            return {"status": "completed", "summary": "late"}
+
+    service = JobService(
+        simulation_service=SimulationStub(),
+        synchronous=True,
+        persist=False,
+    )
+    service._jobs["job-1"] = {
+        "id": "job-1",
+        "project_id": "project-1",
+        "workflow_snapshot_id": "snapshot-1",
+        "status": "canceled",
+        "cancellation_requested": True,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+        "result": None,
+        "error": None,
+    }
+    events: list[tuple[str, str]] = []
+    monkeypatch.setattr("backend.app.job_service.TRACE_ROOT", tmp_path)
+    monkeypatch.setattr(
+        service,
+        "_update_workflow_snapshot",
+        lambda _payload, status, _job_id, **_kwargs: events.append(("workflow", status)),
+    )
+
+    service._execute("job-1", {"project_id": "project-1", "workflow_snapshot_id": "snapshot-1"}, False)
+
+    assert service.get("job-1", "project-1")["status"] == "canceled"
+    assert service.get("job-1", "project-1")["result"] is None
+    assert events == [("workflow", "CANCELED")]
+
+
 def test_terminal_job_status_is_published_after_workflow_snapshot(monkeypatch, tmp_path: Path) -> None:
     class SimulationStub:
         @staticmethod

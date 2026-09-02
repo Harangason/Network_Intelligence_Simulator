@@ -58,7 +58,10 @@ async function gpuSample() {
 
 async function ollamaSample() {
   try {
-    const response = await fetch("http://127.0.0.1:11434/api/ps", {
+    const baseUrl = (process.env.LOCAL_AI_BASE_URL ?? "http://127.0.0.1:11434/v1")
+      .replace(/\/$/, "")
+      .replace(/\/v1$/, "");
+    const response = await fetch(`${baseUrl}/api/ps`, {
       cache: "no-store",
       signal: AbortSignal.timeout(1500),
     });

@@ -1469,12 +1469,12 @@ type HardwareRadialLink = {
   kind: HardwareDiagramLinkKind;
 };
 
-const HARDWARE_RADIAL_ROOT_GAP = 10;
-const HARDWARE_RADIAL_CLUSTER_GAP = 5;
-const HARDWARE_RADIAL_GROUP_GAP = 2.5;
-const COMBINED_RADIAL_ROOT_GAP = 34;
-const COMBINED_RADIAL_CLUSTER_GAP = 16;
-const COMBINED_RADIAL_GROUP_GAP = 7;
+const HARDWARE_RADIAL_ROOT_GAP = 14;
+const HARDWARE_RADIAL_CLUSTER_GAP = 7;
+const HARDWARE_RADIAL_GROUP_GAP = 3.5;
+const COMBINED_RADIAL_ROOT_GAP = 56;
+const COMBINED_RADIAL_CLUSTER_GAP = 28;
+const COMBINED_RADIAL_GROUP_GAP = 14;
 
 function HardwareTopologyView({ functions, topology }: { functions: EngFunction[]; topology: NetworkTopology }) {
   const [zoom, setZoom] = useState(1.1);
@@ -1496,8 +1496,8 @@ function HardwareTopologyView({ functions, topology }: { functions: EngFunction[
     : selectedNode
       ? `${selectedNode.name} · ${hardwareNodeRole(selectedNode.kind)} · ${selectedNode.connectionCount} Verbindung(en)`
       : "";
-  const width = diagramMode === "combined" ? 3000 : 2200;
-  const height = diagramMode === "combined" ? 2600 : 1900;
+  const width = diagramMode === "combined" ? 4200 : 2600;
+  const height = diagramMode === "combined" ? 3600 : 2200;
   const cx = width * 0.5;
   const cy = height * 0.53;
   const scaledWidth = Math.round(width * zoom);
@@ -1710,7 +1710,7 @@ function buildHardwareRadialTree(
   const root = buildHardwareDiagramTree(topology, functions, mode);
   const maxDepth = Math.max(1, hardwareTreeDepth(root));
   const leafSlots = Math.max(1, hardwareVisibleLeafCount(root, collapsedNodeIds, mode));
-  const radiusStep = (mode === "combined" ? 1120 : 820) / maxDepth;
+  const radiusStep = (mode === "combined" ? 1540 : 960) / maxDepth;
   let cursor = 0;
   const nodes: HardwareRadialNode[] = [];
   const links: HardwareRadialLink[] = [];
@@ -1730,7 +1730,7 @@ function buildHardwareRadialTree(
     const middle = visibleChildren.length === 0 ? start + 0.5 : start + leaves / 2;
     const placed: HardwareRadialNode = {
       ...node,
-      angle: (middle / leafSlots) * Math.PI * 2,
+      angle: hardwareSlotAngle(middle, leafSlots, mode),
       radius: depth * radiusStep,
       depth,
       collapsed,
@@ -2154,7 +2154,7 @@ function hardwareShowNodeLabel(
   if (selected || (hasFocus && focused)) return true;
   if (mode !== "combined") return true;
   if (node.children.length > 0) return true;
-  return node.kind === "gateway" || node.kind === "group" || node.kind === "function";
+  return node.kind === "gateway" || node.kind === "group";
 }
 
 function hardwareLeafCount(node: HardwareTreeNode): number {
@@ -2180,6 +2180,14 @@ function hardwareChildGap(depth: number, mode: HardwareDiagramMode) {
   if (depth === 0) return HARDWARE_RADIAL_ROOT_GAP;
   if (depth === 1) return HARDWARE_RADIAL_CLUSTER_GAP;
   return HARDWARE_RADIAL_GROUP_GAP;
+}
+
+function hardwareSlotAngle(slot: number, totalSlots: number, mode: HardwareDiagramMode) {
+  const safeTotal = Math.max(1, totalSlots);
+  if (mode !== "combined") return (slot / safeTotal) * Math.PI * 2;
+  const span = Math.PI * 1.78;
+  const offset = (Math.PI * 2 - span) / 2;
+  return offset + (slot / safeTotal) * span;
 }
 
 function hardwareTreeDepth(node: HardwareTreeNode): number {

@@ -19,14 +19,16 @@ import {
   mergeSimulationFormats,
   simulationFormatDefinitions,
 } from "@/lib/simulation-formats";
+import { listAllEngineeringObjects } from "@/lib/engineering-api";
 import { topologyToConfig, type NetworkTopology } from "@/lib/topology";
 import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/lib/workflow-api";
-import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
+import type { Catalog, EngMessage, EngSignal, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 
 type SimulationView = "network" | "signals" | "load" | "events";
+type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
 type ScenarioFault = {
   id: string;
   scope: "SIGNAL" | "MESSAGE" | "NETWORK";
@@ -53,12 +55,19 @@ export function ModelSimulationRunner() {
   const [job, setJob] = useState<SimulationJob | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [savedScenarioNotice, setSavedScenarioNotice] = useState("");
   const [mode, setMode] = useState("GOLDEN");
   const [duration, setDuration] = useState(2);
   const [speed, setSpeed] = useState(1);
   const [seed, setSeed] = useState(42);
   const [formats, setFormats] = useState(defaultSimulationFormats);
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
+  const [messages, setMessages] = useState<EngMessage[]>([]);
+  const [signals, setSignals] = useState<EngSignal[]>([]);
+  const [scopeMode, setScopeMode] = useState<SimulationScopeMode>("ALL");
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(() => new Set());
+  const [selectedSignalIds, setSelectedSignalIds] = useState<Set<string>>(() => new Set());
+  const [scopeSearch, setScopeSearch] = useState("");
   const [faults, setFaults] = useState<ScenarioFault[]>([]);
   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
   const [faultType, setFaultType] = useState<string>(FAULT_TYPES.SIGNAL[0]);
@@ -88,6 +97,16 @@ export function ModelSimulationRunner() {
   useEffect(() => {
     if (!workflow?.project_id) return;
     void listSimulationFaultProposals(workflow.project_id).then((response) => setProposals(response.items)).catch(() => undefined);
+    void Promise.all([
+      listAllEngineeringObjects("messages"),
+      listAllEngineeringObjects("signals"),
+    ]).then(([nextMessages, nextSignals]) => {
+      setMessages(nextMessages as EngMessage[]);
+      setSignals(nextSignals as EngSignal[]);
+    }).catch(() => {
+      setMessages([]);
+      setSignals([]);
+    });
   }, [workflow?.project_id]);
 
   useEffect(() => {
@@ -141,6 +160,34 @@ export function ModelSimulationRunner() {
     () => formats.map((format) => describeSimulationFormat(format).label),
     [formats],
   );
+  const simulationScope = useMemo(() => {
+    const messageIds = scopeMode === "MESSAGE" ? [...selectedMessageIds] : [];
+    const signalIds = scopeMode === "SIGNAL" ? [...selectedSignalIds] : [];
+    return {
+      mode: scopeMode,
+      include_all: scopeMode === "ALL",
+      message_ids: messageIds,
+      signal_ids: signalIds,
+      selected_count: scopeMode === "ALL" ? messages.length + signals.length : messageIds.length + signalIds.length,
+    };
+  }, [messages.length, scopeMode, selectedMessageIds, selectedSignalIds, signals.length]);
+  const scopeValid = simulationScope.include_all || simulationScope.selected_count > 0;
+
+  function buildScenario(name?: string) {
+    const scenarioMode = mode === "GOLDEN" ? "NORMAL" : mode;
+    return {
+      name: name || (mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"),
+      mode: scenarioMode,
+      trace_type: mode,
+      duration_s: duration,
+      speed,
+      seed,
+      trace_formats: formats,
+      simulation_scope: simulationScope,
+      faults,
+      source: "simulation-workbench",
+    };
+  }
 
   const handleJobChange = useCallback((nextJob: SimulationJob) => {
     setJob(nextJob);
@@ -162,29 +209,29 @@ export function ModelSimulationRunner() {
       let config: Record<string, unknown> = hasTopology
         ? topologyToConfig(topology, formats).config
         : { name: "validated_workflow_simulation", industry: workflow.parameters.industry ?? "automotive", technology: workflow.parameters.technology ?? "can_fd", node_count: 2, formats };
-      const scenarioMode = mode === "GOLDEN" ? "NORMAL" : mode;
-      const scenario = {
-        name: mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario",
-        mode: scenarioMode,
-        trace_type: mode,
-        duration_s: duration,
-        speed,
-        seed,
-        trace_formats: formats,
-        faults,
-      };
+      const scenario = buildScenario();
       const storedScenario = await saveSimulationScenario(workflow.project_id, scenario);
+      const communicationRows = Array.isArray(config.communications)
+        ? config.communications.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+        : [];
+      const estimatedEventCount = communicationRows.reduce((sum, communication) => {
+        const cycleMs = Math.max(0.001, Number(communication.cycle_ms ?? communication.period_ms ?? 100));
+        return sum + Math.ceil(duration / (cycleMs / 1000));
+      }, 0);
+      const maxEvents = Math.min(2_000_000, Math.max(100_000, Math.ceil(estimatedEventCount * 1.15)));
       config = {
         ...config,
         ...workflow.parameters,
         duration_s: duration,
         seed,
         formats,
-        max_events: 25_000,
-        model_trace_frame_limit: 8_000,
-        model_trace_signal_point_limit: 12_000,
-        model_trace_event_limit: 3_000,
-        golden_trace_event_limit: 8_000,
+        max_events: maxEvents,
+        model_trace_frame_limit: 25_000,
+        model_trace_signal_point_limit: 300_000,
+        model_trace_points_per_signal: 800,
+        model_trace_event_limit: 10_000,
+        golden_trace_event_limit: 10_000,
+        simulation_scope: simulationScope,
         scenario: { ...scenario, scenario_id: storedScenario.scenario_id },
       };
       const nextSnapshot = await createSimulationSnapshot(config);
@@ -203,6 +250,24 @@ export function ModelSimulationRunner() {
       notifyWorkflowChanged();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Simulation konnte nicht gestartet werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveScenarioAs() {
+    if (!workflow || !valid || formats.length === 0 || !scopeValid) return;
+    const defaultName = `${mode === "GOLDEN" ? "Golden / Ideal" : mode === "NORMAL" ? "Normalbetrieb" : mode === "STRESS" ? "Stresstest" : "Fehlerszenario"} ${new Date().toLocaleString("de-DE")}`;
+    const name = window.prompt("Szenario speichern unter", defaultName)?.trim();
+    if (!name) return;
+    setBusy(true);
+    setError("");
+    setSavedScenarioNotice("");
+    try {
+      const saved = await saveSimulationScenario(workflow.project_id, buildScenario(name));
+      setSavedScenarioNotice(`Szenario "${String(saved.name || name)}" gespeichert.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Szenario konnte nicht gespeichert werden.");
     } finally {
       setBusy(false);
     }
@@ -334,12 +399,27 @@ export function ModelSimulationRunner() {
           )}
         </div>
         <div className="simulation-transport-controls">
-          <button className="button primary" disabled={!valid || busy || Boolean(job) || formats.length === 0} type="submit">Start</button>
+          <button className="button secondary" disabled={!valid || busy || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
+          <button className="button primary" disabled={!valid || busy || Boolean(job) || formats.length === 0 || !scopeValid} type="submit">Start</button>
           <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
           <button className="button secondary" disabled={!job} onClick={reset} type="button">Reset</button>
         </div>
       </form>
+      {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
+
+      <SimulationScopeSelector
+        messages={messages}
+        mode={scopeMode}
+        onMode={setScopeMode}
+        onSearch={setScopeSearch}
+        onSelectedMessages={setSelectedMessageIds}
+        onSelectedSignals={setSelectedSignalIds}
+        search={scopeSearch}
+        selectedMessageIds={selectedMessageIds}
+        selectedSignalIds={selectedSignalIds}
+        signals={signals}
+      />
 
       <section className="panel fault-editor">
           <div className="compact-heading"><div><p className="eyebrow">Fault scenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
@@ -379,6 +459,100 @@ export function ModelSimulationRunner() {
   );
 }
 
+function SimulationScopeSelector({
+  messages,
+  mode,
+  onMode,
+  onSearch,
+  onSelectedMessages,
+  onSelectedSignals,
+  search,
+  selectedMessageIds,
+  selectedSignalIds,
+  signals,
+}: {
+  messages: EngMessage[];
+  mode: SimulationScopeMode;
+  onMode: (mode: SimulationScopeMode) => void;
+  onSearch: (value: string) => void;
+  onSelectedMessages: (value: Set<string>) => void;
+  onSelectedSignals: (value: Set<string>) => void;
+  search: string;
+  selectedMessageIds: Set<string>;
+  selectedSignalIds: Set<string>;
+  signals: EngSignal[];
+}) {
+  const normalizedSearch = search.trim().toLowerCase();
+  const signalCountByMessage = useMemo(() => {
+    const counts = new Map<string, number>();
+    signals.forEach((signal) => {
+      if (!signal.message_id) return;
+      counts.set(signal.message_id, (counts.get(signal.message_id) ?? 0) + 1);
+    });
+    return counts;
+  }, [signals]);
+  const filteredMessages = messages
+    .filter((item) => !normalizedSearch || [item.name, item.message_id_hex, item.id].some((value) => String(value ?? "").toLowerCase().includes(normalizedSearch)))
+    .slice(0, 80);
+  const filteredSignals = signals
+    .filter((item) => !normalizedSearch || [item.display_name, item.name, item.unit, item.id].some((value) => String(value ?? "").toLowerCase().includes(normalizedSearch)))
+    .slice(0, 120);
+  const selectedCount = mode === "ALL" ? messages.length + signals.length : mode === "MESSAGE" ? selectedMessageIds.size : selectedSignalIds.size;
+
+  function toggle(set: Set<string>, id: string, checked: boolean) {
+    const next = new Set(set);
+    if (checked) next.add(id);
+    else next.delete(id);
+    return next;
+  }
+
+  return (
+    <section className="panel simulation-scope-panel">
+      <div className="compact-heading">
+        <div>
+          <p className="eyebrow">Simulation scope</p>
+          <h2>Signale und Botschaften auswählen</h2>
+        </div>
+        <span>{mode === "ALL" ? "Default: alles" : `${selectedCount} ausgewählt`}</span>
+      </div>
+      <div className="simulation-scope-toolbar" role="group" aria-label="Simulationsumfang">
+        <button className={mode === "ALL" ? "active" : ""} onClick={() => onMode("ALL")} type="button">Alle</button>
+        <button className={mode === "MESSAGE" ? "active" : ""} onClick={() => onMode("MESSAGE")} type="button">Botschaften</button>
+        <button className={mode === "SIGNAL" ? "active" : ""} onClick={() => onMode("SIGNAL")} type="button">Signale</button>
+        <input aria-label="Signale und Botschaften suchen" onChange={(event) => onSearch(event.target.value)} placeholder="Suche nach Signal, Message, ID" value={search} />
+      </div>
+      {mode === "ALL" ? (
+        <div className="simulation-scope-summary">
+          <strong>Alle Messages und Signals werden simuliert.</strong>
+          <span>{messages.length} Botschaften · {signals.length} Signale</span>
+        </div>
+      ) : mode === "MESSAGE" ? (
+        <div className="simulation-scope-list">
+          {filteredMessages.map((message) => (
+            <label className={selectedMessageIds.has(message.id) ? "selected" : ""} key={message.id}>
+              <input checked={selectedMessageIds.has(message.id)} onChange={(event) => onSelectedMessages(toggle(selectedMessageIds, message.id, event.target.checked))} type="checkbox" />
+              <span>{message.name}</span>
+              <small>{message.message_id_hex ?? "Message"} · {signalCountByMessage.get(message.id) ?? 0} Signale · {message.cycle_ms ?? "-"} ms</small>
+            </label>
+          ))}
+          {!filteredMessages.length && <p>Keine Botschaften gefunden.</p>}
+        </div>
+      ) : (
+        <div className="simulation-scope-list dense">
+          {filteredSignals.map((signal) => (
+            <label className={selectedSignalIds.has(signal.id) ? "selected" : ""} key={signal.id}>
+              <input checked={selectedSignalIds.has(signal.id)} onChange={(event) => onSelectedSignals(toggle(selectedSignalIds, signal.id, event.target.checked))} type="checkbox" />
+              <span>{signal.display_name || signal.name}</span>
+              <small>{signal.unit || "unitless"} · {signal.length_bits ?? "-"} bit · {signal.message_id ?? "ohne Message"}</small>
+            </label>
+          ))}
+          {!filteredSignals.length && <p>Keine Signale gefunden.</p>}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function NumberInput({ label, unit, value, min, step, onChange }: { label: string; unit?: string; value: number; min: number; step: number; onChange: (value: number) => void }) {
   return <label><span>{label}{unit ? ` (${unit})` : ""}</span><input min={min} step={step} type="number" value={value} onChange={(event) => onChange(Number(event.target.value))} /></label>;
 }
@@ -407,10 +581,14 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
   const [selected, setSelected] = useState(() => trace.signals.map((series) => series.signal_id));
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState(0);
+  const signalIds = useMemo(() => trace.signals.map((series) => series.signal_id), [trace.signals]);
+  useEffect(() => {
+    setSelected(signalIds);
+  }, [signalIds]);
   const windowDuration = trace.scenario.duration_s / zoom;
   const windowStart = Math.min(Math.max(0, pan), Math.max(0, trace.scenario.duration_s - windowDuration));
   const windowEnd = windowStart + windowDuration;
-  return <div className="signal-plot-workbench"><div className="signal-plot-controls"><div className="signal-selector">{trace.signals.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...current, series.signal_id] : current.filter((id) => id !== series.signal_id))} />{series.signal}</label>)}</div><label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label><label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label></div><div className="signal-lanes">{trace.signals.filter((series) => selected.includes(series.signal_id)).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && selected.length === 0 && <div className="simulation-empty-state"><strong>Keine Signale ausgewählt</strong><span>Wähle oben mindestens eine Signallane.</span></div>}</div></div>;
+  return <div className="signal-plot-workbench"><div className="signal-plot-controls"><div className="signal-selector-actions"><button className="button secondary tiny" disabled={selected.length === signalIds.length} onClick={() => setSelected(signalIds)} type="button">Alle Signale</button><button className="button secondary tiny" disabled={selected.length === 0} onClick={() => setSelected([])} type="button">Keine</button><span>{selected.length} / {signalIds.length}</span></div><div className="signal-selector">{trace.signals.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...current, series.signal_id] : current.filter((id) => id !== series.signal_id))} />{series.signal}</label>)}</div><label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label><label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label></div><div className="signal-lanes">{trace.signals.filter((series) => selected.includes(series.signal_id)).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && selected.length === 0 && <div className="simulation-empty-state"><strong>Keine Signale ausgewählt</strong><span>Wähle oben mindestens eine Signallane.</span></div>}</div></div>;
 }
 
 function SignalLane({ series, windowStart, windowEnd, playhead }: { series: ModelSignalSeries; windowStart: number; windowEnd: number; playhead: number }) {

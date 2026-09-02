@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 15
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -431,11 +431,28 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         review_reason TEXT
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS engineering_intelligence_issue_reviews (
+        issue_review_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id TEXT NOT NULL REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,
+        issue_key TEXT NOT NULL,
+        issue_code TEXT NOT NULL,
+        object_type TEXT NOT NULL,
+        object_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'APPROVED'
+            CHECK (status IN ('APPROVED', 'REJECTED')),
+        note TEXT,
+        reviewed_by TEXT,
+        reviewed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(project_id, issue_key)
+    )
+    """,
     "ALTER TABLE engineering_simulation_snapshots ADD COLUMN IF NOT EXISTS result JSONB NOT NULL DEFAULT '{}'::jsonb",
     "CREATE INDEX IF NOT EXISTS idx_workflow_analysis_latest ON engineering_analysis_snapshots(project_id, analysis_type, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_workflow_simulations_latest ON engineering_simulation_snapshots(project_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_workflow_events_project ON engineering_workflow_events(project_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_optimization_proposals_project ON engineering_optimization_proposals(project_id, status, priority DESC, created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_intelligence_issue_reviews_project ON engineering_intelligence_issue_reviews(project_id, issue_code, object_type, object_id)",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_functions ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_interfaces ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
@@ -657,6 +674,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         speed DOUBLE PRECISION NOT NULL DEFAULT 1 CHECK (speed > 0),
         seed BIGINT NOT NULL DEFAULT 42,
         trace_formats JSONB NOT NULL DEFAULT '["universal-jsonl"]'::jsonb,
+        simulation_scope JSONB NOT NULL DEFAULT '{}'::jsonb,
         faults JSONB NOT NULL DEFAULT '[]'::jsonb,
         baseline_scenario_id UUID REFERENCES engineering_simulation_scenarios(scenario_id) ON DELETE SET NULL,
         source TEXT NOT NULL DEFAULT 'manual',
@@ -731,6 +749,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_trace_metadata_project ON engineering_trace_metadata(project_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_simulation_campaigns_project ON engineering_simulation_campaigns(project_id, created_at DESC)",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS description TEXT",
+    "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS simulation_scope JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS initial_conditions JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS signal_profiles JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS expected_behavior JSONB NOT NULL DEFAULT '{}'::jsonb",

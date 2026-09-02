@@ -1,0 +1,1 @@
+# Derived Signals`n`nSignalDependencyGraph sortiert topologisch, loest Referenzen per ID/Name und meldet Zyklen mit SignalDependencyCycleError. Dirty dependents koennen von einer geaenderten Quelle aus bestimmt werden.`n

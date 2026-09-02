@@ -6,6 +6,11 @@ import re
 from copy import deepcopy
 from typing import Any
 
+from ..requirement_expansion import (
+    WORKFLOW_STATUSES,
+    expand_requirement,
+)
+
 from .registry import WorkloadHandler
 
 SIGNAL_REQUIRED_FIELDS = (
@@ -137,16 +142,66 @@ def _semantic_type_for_signal(name: str, unit: str, minimum: float, maximum: flo
 
 
 def _state_value_domain(name: str) -> dict[str, Any]:
-    if "gateway" in name.lower():
-        enum_values = {"OK": 0, "DEGRADED": 1, "ROUTING_LIMITED": 2, "ERROR": 3}
+    key = name.lower()
+    if "gateway" in key:
+        enum_values = {
+            "OFF": 0,
+            "INIT": 1,
+            "CONFIGURING": 2,
+            "READY": 3,
+            "ACTIVE": 4,
+            "STANDBY": 5,
+            "SHUTTING_DOWN": 6,
+            "ERROR": 7,
+        }
+        timeline = [
+            {"state": "OFF", "from_s": 0.0, "to_s": 0.1},
+            {"state": "INIT", "from_s": 0.1, "to_s": 0.5},
+            {"state": "CONFIGURING", "from_s": 0.5, "to_s": 1.2},
+            {"state": "READY", "from_s": 1.2, "to_s": 1.5},
+            {"state": "ACTIVE", "from_s": 1.5, "to_s": None},
+        ]
+    elif any(token in key for token in ("kommunikation", "connect", "gateway", "bus", "link")):
+        enum_values = {
+            "OFFLINE": 0,
+            "INITIALIZING": 1,
+            "CONNECTED": 2,
+            "PARTIAL": 3,
+            "BUS_OFF": 4,
+            "LINK_LOSS": 5,
+            "ERROR": 6,
+        }
+        timeline = [
+            {"state": "OFFLINE", "from_s": 0.0, "to_s": 0.2},
+            {"state": "INITIALIZING", "from_s": 0.2, "to_s": 1.0},
+            {"state": "CONNECTED", "from_s": 1.0, "to_s": None},
+        ]
     else:
-        enum_values = {"OK": 0, "WARNING": 1, "ERROR": 2, "NOT_AVAILABLE": 3}
+        enum_values = {
+            "OFF": 0,
+            "INIT": 1,
+            "SELF_TEST": 2,
+            "READY": 3,
+            "RUNNING": 4,
+            "DEGRADED": 5,
+            "ERROR": 6,
+            "SHUTDOWN": 7,
+        }
+        timeline = [
+            {"state": "OFF", "from_s": 0.0, "to_s": 0.2},
+            {"state": "INIT", "from_s": 0.2, "to_s": 0.8},
+            {"state": "SELF_TEST", "from_s": 0.8, "to_s": 1.4},
+            {"state": "READY", "from_s": 1.4, "to_s": 2.0},
+            {"state": "RUNNING", "from_s": 2.0, "to_s": None},
+        ]
+    reserved_values = [value for value in range(0, 16) if value not in set(enum_values.values())]
     return {
         "enum_values": enum_values,
         "allowed_values": list(enum_values),
-        "reserved_values": [4, 5, 6, 7],
+        "reserved_values": reserved_values,
         "invalid_values": [15],
-        "default_value": "OK",
+        "default_value": next(iter(enum_values)),
+        "state_timeline": timeline,
         "resolution": 1,
     }
 
@@ -588,3 +643,169 @@ class StructuredObjectWorkloadHandler(WorkloadHandler):
 
     def repair(self, orchestrator, workload: dict[str, Any]) -> dict[str, Any]:
         return {"status": "SUCCESS", "repaired": 0, "note": "Unsichere fachliche Inhalte erfordern Review statt Halluzinationsreparatur."}
+
+
+class RequirementExpansionWorkloadHandler(WorkloadHandler):
+    workload_type = "REQUIREMENT_EXPANSION"
+
+    def plan(self, orchestrator, workload: dict[str, Any], packages: list[dict[str, Any]]) -> None:
+        raw_prompt = str(workload.get("prompt") or "").strip()
+        if not raw_prompt:
+            for package in packages:
+                orchestrator.block_package(package, "EMPTY_REQUIREMENT", "Die Anforderung ist leer")
+            return
+
+        for package in packages:
+            orchestrator.unblock_package(package)
+            if int(package["requested_count"]) != 1:
+                orchestrator.block_package(
+                    package,
+                    "INVALID_PACKAGE_COUNT",
+                    "Requirement Expansion erzeugt genau einen Ergebnis-Paketblock.",
+                )
+
+    def execute(self, orchestrator, workload: dict[str, Any], package: dict[str, Any]) -> dict[str, Any]:
+        if str(package.get("status")) == "BLOCKED":
+            return {
+                "status": "BLOCKED",
+                "requested": int(package["requested_count"]),
+                "generated": 0,
+                "valid": 0,
+                "invalid": 0,
+                "objects": [],
+                "validation_findings": package.get("findings") or [],
+                "remaining": package["requested_count"],
+            }
+
+        result = expand_requirement(
+            str(workload.get("prompt") or ""),
+            domain=str(workload.get("domain") or "automotive"),
+            model=str(workload.get("model") or "engineering-workload-orchestrator"),
+        )
+
+        definition = {
+            "object_type": "Documentation",
+            "name": "RequirementExpansionDraft",
+            "title": "Requirement Expansion Proposal",
+            "id": f"{workload['workload_id']}:{package['package_code']}",
+            "status": result["status"],
+            "workflow_status": result["workflow_status"],
+            "interpretation": result["interpretation"],
+            "ambiguity": result["ambiguity"],
+            "assumptions": result["assumptions"],
+            "functions": result["functions"],
+            "sensors": result["sensors"],
+            "coordinate_system": result["coordinate_system"],
+            "parameters": result["parameters"],
+            "status_models": result["status_models"],
+            "data_objects": result["data_objects"],
+            "signals": result["signals"],
+            "hardware": result["hardware"],
+            "communications": result["communications"],
+            "messages": result["messages"],
+            "routing": result["routing"],
+            "capacity": result["capacity"],
+            "open_decisions": result["open_decisions"],
+            "findings": result["findings"],
+            "completion": result["completion"],
+            "provenance": result["provenance"],
+            "confidence": result["confidence"],
+            "assumptions_status": result["assumptions_status"],
+            "open_decisions_status": result["open_decisions_status"],
+            "generated_by": "engineer-requirement-expansion-handler",
+            "domain": workload.get("domain") or "automotive",
+            "source_prompt": str(workload.get("prompt") or ""),
+        }
+
+        orchestrator.upsert_workload_object(
+            workload,
+            package,
+            key := f"requirement-expansion:{package['package_code']}",
+            definition,
+            review_state="READY_FOR_REVIEW",
+            approval_state="PENDING",
+        )
+
+        objects = orchestrator.list_workload_objects(str(workload["workload_id"]), str(package["work_package_id"]))
+        return {
+            "status": "SUCCESS",
+            "requested": int(package["requested_count"]),
+            "generated": len(objects),
+            "valid": sum(bool(item.get("is_valid")) for item in objects),
+            "invalid": sum(not bool(item.get("is_valid")) for item in objects),
+            "objects": [str(item["workload_object_id"]) for item in objects],
+            "validation_findings": [finding for item in objects for finding in item.get("validation_results") or []],
+            "remaining": max(0, int(package["requested_count"]) - len(objects)),
+        }
+
+    def validate(self, orchestrator, workload: dict[str, Any]) -> dict[str, Any]:
+        objects = orchestrator.list_workload_objects(str(workload["workload_id"]))
+        for item in objects:
+            definition = dict(item.get("definition") or {})
+            findings: list[dict[str, Any]] = []
+            if definition.get("status") != "OK":
+                findings.append({"code": "INVALID_STATUS", "severity": "ERROR", "message": "Status der Expansion muss OK sein."})
+            if str(definition.get("workflow_status") or "") not in WORKFLOW_STATUSES:
+                findings.append({"code": "INVALID_WORKFLOW_STATUS", "severity": "ERROR", "message": "Ungueltiger Workflow-Status."})
+            if not definition.get("interpretation"):
+                findings.append({"code": "MISSING_INTERPRETATION", "severity": "ERROR", "message": "Interpretation fehlt."})
+            if not definition.get("functions"):
+                findings.append({"code": "MISSING_FUNCTIONS", "severity": "ERROR", "message": "Funktionen fehlen."})
+            if not definition.get("sensors"):
+                findings.append({"code": "MISSING_SENSORS", "severity": "ERROR", "message": "Sensorik fehlt."})
+            required_sections = (
+                "parameters",
+                "status_models",
+                "data_objects",
+                "signals",
+                "hardware",
+                "communications",
+                "messages",
+                "routing",
+                "capacity",
+                "completion",
+            )
+            for section in required_sections:
+                if not definition.get(section):
+                    findings.append({"code": "MISSING_REQUIREMENT_EXPANSION_SECTION", "field": section, "severity": "ERROR"})
+            capacity = definition.get("capacity") or {}
+            for field in ("raw_mbit_s", "effective_mbit_s", "suggested_technology", "cycle_time_ms", "latency_budget_ms"):
+                if capacity.get(field) is None:
+                    findings.append({"code": "MISSING_CAPACITY_FIELD", "field": field, "severity": "ERROR"})
+            messages = definition.get("messages") or []
+            for message in messages:
+                if not isinstance(message, dict):
+                    findings.append({"code": "INVALID_MESSAGE", "severity": "ERROR"})
+                    continue
+                if not message.get("name") or not message.get("transport"):
+                    findings.append({"code": "INCOMPLETE_MESSAGE_PACKING", "field": str(message.get("name") or "unknown"), "severity": "ERROR"})
+                if message.get("transport") == "CAN_FD" and message.get("packed_payload_bytes") not in (8, 12, 16, 20, 24, 32, 48, 64):
+                    findings.append({"code": "INVALID_CAN_FD_PAYLOAD", "field": str(message.get("name") or "unknown"), "severity": "ERROR"})
+            routing = definition.get("routing") or []
+            for route in routing:
+                if not isinstance(route, dict) or not route.get("from") or not route.get("to") or not route.get("media"):
+                    findings.append({"code": "INCOMPLETE_ROUTING", "severity": "ERROR"})
+            completion = definition.get("completion") or {}
+            if completion.get("ready_for_auto_apply") is not False:
+                findings.append({"code": "MISSING_HUMAN_REVIEW_GATE", "severity": "ERROR", "message": "Requirement Expansion darf nicht automatisch angewendet werden."})
+            orchestrator.update_workload_object_validation(item, definition, findings)
+        orchestrator.recount_packages(str(workload["workload_id"]))
+        return {"status": "SUCCESS", "validated": len(objects)}
+
+    def repair(self, orchestrator, workload: dict[str, Any]) -> dict[str, Any]:
+        repaired = 0
+        for item in orchestrator.list_workload_objects(str(workload["workload_id"])):
+            definition = dict(item.get("definition") or {})
+            changed = False
+            if definition.get("assumptions_status") != "REQUIRED_REVIEW" and definition.get("assumptions_status") != "COMPLETED":
+                definition["assumptions_status"] = "REQUIRED_REVIEW" if definition.get("open_decisions") else "COMPLETED"
+                changed = True
+            if not definition.get("confidence"):
+                definition["confidence"] = 0.75
+                changed = True
+            if changed:
+                orchestrator.replace_workload_object_definition(item, definition)
+                repaired += 1
+        if repaired:
+            orchestrator.sync_workload_proposals(str(workload["workload_id"]))
+        return {"status": "SUCCESS", "repaired": repaired}

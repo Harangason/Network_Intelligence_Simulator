@@ -43,6 +43,7 @@ WORKLOAD_TYPES = (
     "FAULT_GENERATION",
     "TEST_CASE_GENERATION",
     "TRACE_FINDING_GENERATION",
+    "REQUIREMENT_EXPANSION",
     "DOCUMENTATION",
     "TRACE_ANALYSIS",
     "NETWORK_ANALYSIS",
@@ -63,6 +64,7 @@ WORKLOAD_OBJECT_TYPES: dict[str, str] = {
     "FAULT_GENERATION": "FaultScenario",
     "TEST_CASE_GENERATION": "TestCase",
     "TRACE_FINDING_GENERATION": "TraceFinding",
+    "REQUIREMENT_EXPANSION": "Documentation",
     "DOCUMENTATION": "Documentation",
     "TRACE_ANALYSIS": "TraceAnalysis",
     "NETWORK_ANALYSIS": "NetworkAnalysis",
@@ -82,6 +84,14 @@ _TYPE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("ECU_GENERATION", re.compile(r"\becus?\b", re.I)),
     ("NODE_GENERATION", re.compile(r"\b(knoten|nodes?)\b", re.I)),
     ("PARAMETER_GENERATION", re.compile(r"\bparameter\b", re.I)),
+    (
+        "REQUIREMENT_EXPANSION",
+        re.compile(
+            r"\b(anforderung|anfrage|meine\s+anforderung|requirement|fuer\s+meine\s+(funktion|funktionalitaet)|"
+            r"benoetige|benötige|bedarf)\b",
+            re.I,
+        ),
+    ),
     ("TEST_CASE_GENERATION", re.compile(r"\b(testf[aä]lle?|test cases?)\b", re.I)),
     ("DOCUMENTATION", re.compile(r"\b(dokumentation|documentation)\b", re.I)),
 )
@@ -180,7 +190,9 @@ def _payload_packages(payload: dict[str, Any]) -> list[dict[str, Any]]:
 def parse_workload_request(prompt: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     """Parse a user outcome into measurable packages without declaring completion."""
     payload = dict(payload or {})
-    prompt = str(prompt or payload.get("prompt") or "").strip()
+    prompt = str(
+        prompt or payload.get("prompt") or payload.get("specification") or payload.get("request") or ""
+    ).strip()
     if not prompt:
         raise EngineeringValidationError("prompt ist fuer einen Workload erforderlich.")
     workload_type = _workload_type(prompt, payload.get("workload_type"))
@@ -191,6 +203,8 @@ def parse_workload_request(prompt: str, payload: dict[str, Any] | None = None) -
         requested_total = _explicit_total(prompt)
     if requested_total is None and packages:
         requested_total = sum(item["requested_count"] for item in packages)
+    if requested_total is None and workload_type == "REQUIREMENT_EXPANSION":
+        requested_total = 1
     if not isinstance(requested_total, int) or isinstance(requested_total, bool) or requested_total <= 0:
         raise EngineeringValidationError("Eine positive Gesamtzielmenge konnte nicht ermittelt werden.")
     if not packages:

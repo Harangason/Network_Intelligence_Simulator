@@ -147,6 +147,54 @@ def test_graph_analytics_finds_articulation_point_and_isolated_node():
     assert result["node_count"] == 3
 
 
+def test_gateway_single_point_issue_requires_user_confirmation():
+    objects = _objects()
+    result = GraphAnalyticsService().analyze(
+        objects["HardwareNode"],
+        objects["Interface"],
+        [],
+        {
+            "nodes": [{"id": "node-a"}, {"id": "node-b"}, {"id": "node-c"}],
+            "edges": [{"source": "node-a", "target": "node-b"}, {"source": "node-b", "target": "node-c"}],
+        },
+        [],
+        [],
+    )
+
+    issue = next(item for item in result["issues"] if item["code"] == "SINGLE_POINT_OF_FAILURE")
+    assert issue["object_id"] == "node-b"
+    assert issue["requires_user_confirmation"] is True
+    assert issue["approval_state"] == "PENDING_CONFIRMATION"
+
+
+def test_approved_gateway_single_point_issue_no_longer_blocks_assessment():
+    issue = {
+        "severity": "WARNING",
+        "category": "Graph",
+        "code": "SINGLE_POINT_OF_FAILURE",
+        "object_type": "HardwareNode",
+        "object_id": "node-b",
+        "status": "OPEN",
+        "recommendation": "Redundanten Pfad vorsehen.",
+    }
+    reviewed = IntelligenceService._apply_issue_reviews(
+        [issue],
+        {
+            IntelligenceService.issue_key(issue): {
+                "status": "APPROVED",
+                "reviewed_by": "tester",
+                "reviewed_at": "2026-09-02T10:00:00Z",
+                "note": "Gateway ist fachlich als erwarteter Single Point bestaetigt.",
+            }
+        },
+    )
+
+    assert reviewed[0]["status"] == "APPROVED"
+    assert reviewed[0]["severity"] == "INFO"
+    assert reviewed[0]["original_severity"] == "WARNING"
+    assert IntelligenceService._assessment_status(reviewed) == "COMPLETE"
+
+
 def test_graph_analytics_normalizes_agent_topology_and_interface_edges():
     hardware = [
         {"id": "node-a", "name": "A"},
@@ -303,6 +351,27 @@ def test_intelligence_assessment_endpoint_uses_active_project(monkeypatch):
 
     assert response.status_code == 200
     assert response.get_json()["project_id"] == "project-intelligence"
+
+
+def test_intelligence_issue_approval_endpoint_uses_active_project(monkeypatch):
+    class FakeIntelligenceService:
+        def __init__(self, project_id):
+            self.project_id = project_id
+
+        def approve_issue(self, data):
+            return {"project_id": self.project_id, "approved": data["object_id"]}
+
+    monkeypatch.setattr("backend.engineering.api.IntelligenceService", FakeIntelligenceService)
+    client = create_app(testing=True).test_client()
+
+    response = client.post(
+        "/api/engineering/intelligence/issues/approve",
+        json={"code": "SINGLE_POINT_OF_FAILURE", "object_type": "HardwareNode", "object_id": "node-b"},
+        headers={"X-Project-ID": "project-intelligence"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == {"project_id": "project-intelligence", "approved": "node-b"}
 
 
 def test_project_import_endpoint_never_treats_bundle_as_engineering_mutation(monkeypatch):

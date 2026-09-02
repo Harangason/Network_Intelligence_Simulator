@@ -1,0 +1,1 @@
+# Temperature Model`n`nTemperatur entwickelt sich kontinuierlich aus Ambient, Heat Input, Cooling, Thermal Mass sowie max_rise_rate/max_fall_rate. Ohne Eingangsmodell nutzt sie einen warmup fallback.`n

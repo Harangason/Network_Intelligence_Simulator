@@ -289,6 +289,7 @@ class GraphAnalyticsService:
     ) -> dict[str, Any]:
         nodes = {str(item.get("id")) for item in hardware}
         node_names = {str(item.get("id")): str(item.get("name") or item.get("id")) for item in hardware}
+        node_types = {str(item.get("id")): str(item.get("device_type") or "") for item in hardware}
         edges = self._edges(topology, relations, interfaces)
         adjacency: dict[str, set[str]] = defaultdict(set)
         for source, target in edges:
@@ -346,8 +347,8 @@ class GraphAnalyticsService:
             )
             for node in isolated
         ]
-        issues.extend(
-            _issue(
+        for node in articulation:
+            issue = _issue(
                 "WARNING",
                 "Graph",
                 "SINGLE_POINT_OF_FAILURE",
@@ -357,8 +358,25 @@ class GraphAnalyticsService:
                 cause="Der Knoten ist ein Artikulationspunkt der physischen Topologie.",
                 recommendation="Redundanten Pfad oder alternatives Gateway vorsehen.",
             )
-            for node in articulation
-        )
+            node_label = f"{node_names.get(node, node)} {node_types.get(node, '')}".lower()
+            if "gateway" in node_label:
+                issue.update(
+                    {
+                        "requires_user_confirmation": True,
+                        "approval_state": "PENDING_CONFIRMATION",
+                        "review_state": "UNREVIEWED",
+                        "confirmation_label": "Gateway-Single-Point bestätigen",
+                        "detected_cause": (
+                            "Gateway ist Artikulationspunkt der physischen Topologie. "
+                            "Das kann in E/E-Systemen fachlich erwartet sein und benoetigt eine bewusste Nutzerbestaetigung."
+                        ),
+                        "recommendation": (
+                            "Wenn dieses Gateway bewusst allein im System steht, als erwartete Topologie bestaetigen; "
+                            "andernfalls redundanten Pfad oder alternatives Gateway vorsehen."
+                        ),
+                    }
+                )
+            issues.append(issue)
         return {
             "node_count": len(nodes),
             "edge_count": len(edges),

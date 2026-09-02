@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   assessIntelligence,
+  approveIntelligenceIssue,
+  approveIntelligenceIssues,
   createOptimizationProposal,
   getIntelligence,
   intelligenceExportUrl,
@@ -102,6 +104,32 @@ export function IntelligenceWorkbench() {
     }
   }
 
+  async function approveIssue(issue: IntelligenceIssue) {
+    setBusy(true);
+    try {
+      const next = await approveIntelligenceIssue(issue);
+      setSnapshot(next);
+      notifyWorkflowChanged();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Befund konnte nicht bestaetigt werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function approveIssues(issues: IntelligenceIssue[]) {
+    setBusy(true);
+    try {
+      const next = await approveIntelligenceIssues(issues);
+      setSnapshot(next);
+      notifyWorkflowChanged();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Befunde konnten nicht bestaetigt werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading && !snapshot) return <section className="intelligence-workbench"><div className="analysis-empty"><span className="spinner" /><strong>Systemdaten werden korreliert</strong><p>Engineering-, Routing-, Graph- und Simulationsquellen werden versioniert ausgewertet.</p></div></section>;
   if (!snapshot) return <section className="intelligence-workbench"><div className="notice error">{error || "Keine Intelligence-Daten verfügbar."}</div><button className="button primary" onClick={() => void load()} type="button">Erneut laden</button></section>;
 
@@ -133,7 +161,7 @@ export function IntelligenceWorkbench() {
         ))}
       </nav>
 
-      {view === "overview" && <Overview onCreate={persistRecommendation} proposals={proposals} snapshot={snapshot} />}
+      {view === "overview" && <Overview onApprove={approveIssue} onApproveAll={approveIssues} onCreate={persistRecommendation} proposals={proposals} snapshot={snapshot} />}
       {view === "analytics" && <Analytics snapshot={snapshot} />}
       {view === "insights" && <Insights onCreate={persistRecommendation} proposals={proposals} onReview={reviewProposal} snapshot={snapshot} />}
       {view === "knowledge" && <Knowledge snapshot={snapshot} />}
@@ -141,7 +169,7 @@ export function IntelligenceWorkbench() {
   );
 }
 
-function Overview({ snapshot, proposals, onCreate }: { snapshot: IntelligenceSnapshot; proposals: OptimizationProposal[]; onCreate(item: IntelligenceRecommendation): Promise<void> }) {
+function Overview({ snapshot, proposals, onCreate, onApprove, onApproveAll }: { snapshot: IntelligenceSnapshot; proposals: OptimizationProposal[]; onCreate(item: IntelligenceRecommendation): Promise<void>; onApprove(item: IntelligenceIssue): Promise<void>; onApproveAll(items: IntelligenceIssue[]): Promise<void> }) {
   const { system_health: health, maturity, critical_issues: issues } = snapshot.results;
   return (
     <div className="intelligence-view">
@@ -163,7 +191,7 @@ function Overview({ snapshot, proposals, onCreate }: { snapshot: IntelligenceSna
       </div>
 
       <NetworkDistribution snapshot={snapshot} onCreate={onCreate} proposals={proposals} />
-      <IssueTable issues={issues} onCreate={onCreate} proposals={proposals} />
+      <IssueTable issues={issues} onApprove={onApprove} onApproveAll={onApproveAll} onCreate={onCreate} proposals={proposals} />
     </div>
   );
 }
@@ -248,7 +276,7 @@ function Knowledge({ snapshot }: { snapshot: IntelligenceSnapshot }) {
   );
 }
 
-function IssueTable({ issues, proposals, onCreate }: { issues: IntelligenceIssue[]; proposals: OptimizationProposal[]; onCreate(item: IntelligenceRecommendation): Promise<void> }) {
+function IssueTable({ issues, proposals, onCreate, onApprove, onApproveAll }: { issues: IntelligenceIssue[]; proposals: OptimizationProposal[]; onCreate(item: IntelligenceRecommendation): Promise<void>; onApprove(item: IntelligenceIssue): Promise<void>; onApproveAll(items: IntelligenceIssue[]): Promise<void> }) {
   const pageSize = 30;
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("ALL");
@@ -271,13 +299,14 @@ function IssueTable({ issues, proposals, onCreate }: { issues: IntelligenceIssue
   }, [category, group, issues, search, severity, sort]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice(page * pageSize, (page + 1) * pageSize);
+  const visibleConfirmable = visible.filter((item) => isConfirmableIssue(item));
   useEffect(() => { setPage(0); }, [category, group, search, severity, sort]);
   useEffect(() => { if (page >= pageCount) setPage(pageCount - 1); }, [page, pageCount]);
   return (
     <section className="intelligence-section full issue-table-section">
-      <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><span>{filtered.length} von {issues.length}</span></div>
+      <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><div className="analysis-actions"><span>{filtered.length} von {issues.length}</span><button className="button primary tiny" disabled={!visibleConfirmable.length} onClick={() => void onApproveAll(visibleConfirmable)} type="button">Allow all</button></div></div>
       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; return <tr key={rowKey}><td><Status value={item.severity} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small></td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button><Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href="/studio?mode=network">Netz öffnen</Link><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
+      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href="/studio?mode=network">Netz öffnen</Link><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
       {selectedIssue && <IssueDetailDialog issue={selectedIssue} onClose={() => setSelectedIssue(null)} onCreate={onCreate} proposalExists={proposals.some((proposal) => proposal.problem === selectedIssue.problem)} />}
       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
     </section>
@@ -342,6 +371,15 @@ function ScoreBar({ label: barLabel, value }: { label: string; value: number }) 
 function Status({ value }: { value: string }) {
   const normalized = value.toLowerCase().replaceAll("_", "-");
   return <span className={`intelligence-status status-${normalized}`}>{value}</span>;
+}
+
+function isConfirmableIssue(issue: IntelligenceIssue) {
+  return Boolean(
+    (issue.requires_user_confirmation
+      || (issue.code === "SINGLE_POINT_OF_FAILURE" && issue.object_type === "HardwareNode"))
+    && issue.status !== "APPROVED"
+    && issue.approval_state !== "APPROVED",
+  );
 }
 
 const ISSUE_RESOURCE_BY_TYPE: Record<string, string> = {

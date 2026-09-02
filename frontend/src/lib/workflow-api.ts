@@ -467,6 +467,7 @@ export const getWorkflowSimulationSnapshot = (snapshotId: string) =>
 
 export type IntelligenceIssue = {
   severity: "ERROR" | "WARNING" | "INFO";
+  original_severity?: "ERROR" | "WARNING" | "INFO";
   category: string;
   code: string;
   object_type: string;
@@ -476,6 +477,14 @@ export type IntelligenceIssue = {
   affected_objects: string[];
   recommendation: string;
   status: string;
+  approval_state?: "PENDING_CONFIRMATION" | "APPROVED" | "REJECTED" | string;
+  review_state?: "UNREVIEWED" | "REVIEWED" | string;
+  requires_user_confirmation?: boolean;
+  confirmation_label?: string;
+  approval_note?: string;
+  approved_at?: string;
+  approved_by?: string;
+  issue_key?: string;
   evidence: Array<Record<string, unknown>>;
 };
 
@@ -588,6 +597,32 @@ export const assessIntelligence = (projectId?: string) =>
   request<IntelligenceSnapshot>("/intelligence/assess", {
     method: "POST", body: "{}", signal: AbortSignal.timeout(30000),
     headers: projectId ? { "X-Project-ID": projectId } : undefined,
+  });
+
+export const approveIntelligenceIssue = (issue: Pick<IntelligenceIssue, "code" | "object_type" | "object_id">, projectId?: string) =>
+  request<IntelligenceSnapshot>("/intelligence/issues/approve", {
+    method: "POST",
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
+    body: JSON.stringify({
+      code: issue.code,
+      object_type: issue.object_type,
+      object_id: issue.object_id,
+      actor: "intelligence-workbench",
+    }),
+  });
+
+export const approveIntelligenceIssues = (issues: Array<Pick<IntelligenceIssue, "code" | "object_type" | "object_id">>, projectId?: string) =>
+  request<IntelligenceSnapshot>("/intelligence/issues/approve-all", {
+    method: "POST",
+    headers: projectId ? { "X-Project-ID": projectId } : undefined,
+    body: JSON.stringify({
+      issues: issues.map((issue) => ({
+        code: issue.code,
+        object_type: issue.object_type,
+        object_id: issue.object_id,
+        actor: "intelligence-workbench",
+      })),
+    }),
   });
 
 export const listOptimizationProposals = (projectId?: string) =>
