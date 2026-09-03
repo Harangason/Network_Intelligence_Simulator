@@ -37,6 +37,7 @@ export type ExtractedEngineeringChain = {
   communication?: Record<string, unknown>;
   quality?: Record<string, unknown>;
   protocol_bindings?: Array<Record<string, unknown>>;
+  transport_network_ref?: string;
   domain: string;
 };
 
@@ -50,7 +51,132 @@ export type ExtractedEngineeringSpecification = {
   targetCounts: EngineeringTargetCounts;
 };
 
-export type NetworkArchitectureMode = "eva" | "ecu_gateway" | "gateway_direct" | "hybrid_ai";
+const INTELLIGENT_DEVICE_TYPES = new Set([
+  "ECU",
+  "Gateway",
+  "PLC",
+  "RobotController",
+  "EmbeddedController",
+  "IndustrialPC",
+  "FlightComputer",
+  "BatteryManagementSystem",
+  "EnergyController",
+  "BuildingController",
+]);
+
+function requiresCompleteSignalModel(chain: ExtractedEngineeringChain) {
+  if (INTELLIGENT_DEVICE_TYPES.has(chain.device_type)) return true;
+  return /camera|kamera|vision|radar|lidar|scanner|ultrasonic|advanced[_ -]?imu/i.test(chain.hardware_name);
+}
+
+function companionSignal(
+  chain: ExtractedEngineeringChain,
+  suffix: string,
+  overrides: Partial<ExtractedEngineeringChain>,
+): ExtractedEngineeringChain {
+  const base = identifier(chain.hardware_name);
+  return {
+    ...chain,
+    signal_name: `${base}${suffix}`,
+    signal_display_name: `${base}${suffix}`,
+    start_bit: 0,
+    ...overrides,
+    configuration: {
+      ...(chain.configuration ?? {}),
+      generation_role: suffix.toUpperCase(),
+    },
+  };
+}
+
+/**
+ * Class 3/4 devices need an inspectable minimum model instead of a single
+ * placeholder signal. Message packing assigns the final offsets and DLC.
+ */
+export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]) {
+  return chains.flatMap((chain) => {
+    if (!requiresCompleteSignalModel(chain)) return [chain];
+    const candidates = [
+      chain,
+      companionSignal(chain, "Status", {
+        length_bits: 4,
+        data_type: "unsigned",
+        factor: 1,
+        offset_value: 0,
+        unit: "code",
+        min_value: 0,
+        max_value: 15,
+        semantic: { semantic_type: "STATE", meaning: "Betriebszustand" },
+        data: {
+          enum_values: { OFF: 0, INIT: 1, READY: 2, ACTIVE: 3, DEGRADED: 4, ERROR: 5 },
+          default_value: "OFF",
+          invalid_value: 15,
+          reserved_values: [6, 7, 8, 9, 10, 11, 12, 13, 14],
+        },
+      }),
+      companionSignal(chain, "Health", {
+        length_bits: 3,
+        data_type: "unsigned",
+        factor: 1,
+        offset_value: 0,
+        unit: "code",
+        min_value: 0,
+        max_value: 7,
+        semantic: { semantic_type: "ENUM", meaning: "Diagnosezustand" },
+        data: {
+          enum_values: { OK: 0, WARNING: 1, DEGRADED: 2, FAILED: 3 },
+          default_value: "OK",
+          invalid_value: 7,
+          reserved_values: [4, 5, 6],
+        },
+      }),
+      companionSignal(chain, "Quality", {
+        length_bits: 8,
+        data_type: "unsigned",
+        factor: 0.5,
+        offset_value: 0,
+        unit: "%",
+        min_value: 0,
+        max_value: 100,
+        semantic: { semantic_type: "NUMERIC", meaning: "Datenqualitaet" },
+      }),
+      companionSignal(chain, "AliveCounter", {
+        length_bits: 4,
+        data_type: "unsigned",
+        factor: 1,
+        offset_value: 0,
+        unit: "count",
+        min_value: 0,
+        max_value: 15,
+        semantic: { semantic_type: "COUNTER", meaning: "Lebendzaehler" },
+      }),
+      companionSignal(chain, "Mode", {
+        length_bits: 4,
+        data_type: "unsigned",
+        factor: 1,
+        offset_value: 0,
+        unit: "code",
+        min_value: 0,
+        max_value: 15,
+        semantic: { semantic_type: "ENUM", meaning: "Betriebsart" },
+        data: {
+          enum_values: { NORMAL: 0, SERVICE: 1, DIAGNOSTIC: 2, SAFE: 3 },
+          default_value: "NORMAL",
+          invalid_value: 15,
+          reserved_values: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+        },
+      }),
+    ];
+    const seen = new Set<string>();
+    return candidates.filter((candidate) => {
+      const key = normalized(candidate.signal_name);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 5);
+  });
+}
+
+export type NetworkArchitectureMode = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai";
 
 export type EngineeringHardwareCounts = {
   sensors: number;
@@ -107,6 +233,166 @@ function generatedSignalBitLength(input: {
 
 function generatedMessageDlc(lengthBits: number) {
   return Math.max(1, Math.ceil(Math.max(1, lengthBits) / 8));
+}
+
+const CAN_FD_PAYLOAD_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64] as const;
+const DEFAULT_INTERFACE_TARGET_LOAD_PERCENT = 60;
+
+export function validPayloadBytes(interfaceType: string, requiredBytes: number) {
+  const required = Math.max(0, Math.ceil(requiredBytes));
+  const technology = normalized(interfaceType);
+  if (technology.includes("canfd") || technology.includes("canxl")) {
+    const candidate = CAN_FD_PAYLOAD_CLASSES.find((bytes) => bytes >= required);
+    return candidate ?? null;
+  }
+  if (technology === "can" || technology.includes("lin")) return required <= 8 ? Math.max(1, required) : null;
+  return Math.max(1, required);
+}
+
+function maxPayloadBytes(interfaceType: string) {
+  const technology = normalized(interfaceType);
+  if (technology.includes("canfd") || technology.includes("canxl")) return 64;
+  if (technology === "can" || technology.includes("lin")) return 8;
+  if (technology.includes("ethernet") || technology.includes("someip")) return 1400;
+  return 64;
+}
+
+function estimateMessageLoadPercent(interfaceType: string, payloadBytes: number, cycleMs: number) {
+  const technology = normalized(interfaceType);
+  const cycleSeconds = Math.max(cycleMs, 1) / 1000;
+  if (technology.includes("canfd") || technology.includes("canxl")) {
+    const arbitrationBits = Math.ceil(55 * 1.2);
+    const dataBits = Math.ceil((payloadBytes * 8 + 28) * 1.15);
+    const transmitSeconds = arbitrationBits / 1_000_000 + dataBits / 2_000_000;
+    return transmitSeconds / cycleSeconds * 100;
+  }
+  if (technology === "can") {
+    const frameBits = Math.ceil((47 + payloadBytes * 8) * 1.2);
+    return (frameBits / 500_000) / cycleSeconds * 100;
+  }
+  if (technology.includes("lin")) {
+    return ((34 + payloadBytes * 10) / 19_200) / cycleSeconds * 100;
+  }
+  if (technology.includes("ethernet") || technology.includes("someip")) {
+    const wireBytes = Math.max(84, payloadBytes + 74);
+    return ((wireBytes * 8) / 100_000_000) / cycleSeconds * 100;
+  }
+  return (((payloadBytes + 24) * 8) / 1_000_000) / cycleSeconds * 100;
+}
+
+function messageGroupKey(chain: ExtractedEngineeringChain) {
+  const communication = chain.communication ?? {};
+  const consumers = Array.isArray(communication.consumers) ? communication.consumers.map(String).sort().join(",") : "";
+  return [
+    normalized(chain.hardware_name),
+    normalized(chain.function_name),
+    normalized(chain.interface_type),
+    String(chain.cycle_ms),
+    String(communication.priority ?? ""),
+    consumers,
+  ].join("|");
+}
+
+function packedMessageName(chain: ExtractedEngineeringChain, index: number) {
+  const suffix = index === 0 ? "Data" : `Data${index + 1}`;
+  return `${identifier(chain.function_name || chain.hardware_name)}${suffix}`;
+}
+
+function packedInterfaceName(chain: ExtractedEngineeringChain, channel: number) {
+  return `${identifier(chain.hardware_name)}_${channel + 1}`;
+}
+
+export function packEngineeringChains(
+  chains: ExtractedEngineeringChain[],
+  targetLoadPercent = DEFAULT_INTERFACE_TARGET_LOAD_PERCENT,
+) {
+  const packed = chains.map((chain) => ({ ...chain }));
+  const grouped = new Map<string, ExtractedEngineeringChain[]>();
+  for (const chain of packed) {
+    const key = messageGroupKey(chain);
+    grouped.set(key, [...(grouped.get(key) ?? []), chain]);
+  }
+
+  type PackedMessage = {
+    name: string;
+    interfaceType: string;
+    producerKey: string;
+    hardwareName: string;
+    cycleMs: number;
+    usedBits: number;
+    dlc: number;
+    chains: ExtractedEngineeringChain[];
+  };
+  const messages: PackedMessage[] = [];
+
+  for (const group of grouped.values()) {
+    const ordered = [...group].sort((left, right) => left.signal_name.localeCompare(right.signal_name, "de-DE", { numeric: true, sensitivity: "base" }));
+    const groupMessages: PackedMessage[] = [];
+    for (const chain of ordered) {
+      const maxBits = maxPayloadBytes(chain.interface_type) * 8;
+      const signalBits = Math.max(1, chain.length_bits);
+      let message = groupMessages.find((candidate) => candidate.usedBits + signalBits <= maxBits);
+      if (!message) {
+        message = {
+          name: packedMessageName(chain, groupMessages.length),
+          interfaceType: chain.interface_type,
+          producerKey: normalized(chain.hardware_name),
+          hardwareName: chain.hardware_name,
+          cycleMs: chain.cycle_ms,
+          usedBits: 0,
+          dlc: 1,
+          chains: [],
+        };
+        groupMessages.push(message);
+        messages.push(message);
+      }
+      chain.message_name = message.name;
+      chain.start_bit = message.usedBits;
+      message.usedBits += signalBits;
+      const dlc = validPayloadBytes(chain.interface_type, Math.ceil(message.usedBits / 8));
+      message.dlc = dlc ?? maxPayloadBytes(chain.interface_type);
+      message.chains.push(chain);
+    }
+  }
+
+  const interfaceLoads = new Map<string, number[]>();
+  messages.sort((left, right) => (
+    left.producerKey.localeCompare(right.producerKey)
+    || left.interfaceType.localeCompare(right.interfaceType)
+    || left.name.localeCompare(right.name, "de-DE", { numeric: true, sensitivity: "base" })
+  ));
+  for (const message of messages) {
+    const key = `${message.producerKey}|${normalized(message.interfaceType)}`;
+    const loads = interfaceLoads.get(key) ?? [];
+    const load = estimateMessageLoadPercent(message.interfaceType, message.dlc, message.cycleMs);
+    let channel = loads.findIndex((currentLoad) => currentLoad + load <= targetLoadPercent);
+    if (channel < 0) {
+      channel = loads.length;
+      loads.push(0);
+    }
+    loads[channel] += load;
+    interfaceLoads.set(key, loads);
+    const interfaceName = packedInterfaceName(message.chains[0], channel);
+    const messageIdBase = 0x180 + messages.indexOf(message);
+    for (const chain of message.chains) {
+      chain.interface_name = interfaceName;
+      chain.dlc = message.dlc;
+      chain.message_id_hex = `0x${messageIdBase.toString(16).toUpperCase()}`;
+      chain.configuration = {
+        ...chain.configuration,
+        packing_policy: "MINIMUM_VALID_SIZE",
+        payload_used_bits: message.usedBits,
+        payload_capacity_bits: message.dlc * 8,
+        payload_free_bits: message.dlc * 8 - message.usedBits,
+        payload_utilization: Number((message.usedBits / (message.dlc * 8)).toFixed(4)),
+        interface_allocation_policy: "REUSE_EXISTING_CAPACITY_FIRST",
+        projected_message_load_percent: Number(load.toFixed(4)),
+        projected_interface_load_percent: Number(loads[channel].toFixed(4)),
+      };
+    }
+  }
+
+  return packed;
 }
 
 type SignalArchitectureInput = {
@@ -281,9 +567,11 @@ const COUNT_WORDS: Record<string, number> = {
 const COUNT_TOKEN = "(\\d+|ein|eine|einem|einen|einer|eins|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn)";
 
 export function extractNetworkArchitectureMode(text: string): NetworkArchitectureMode {
-  const explicit = text.match(/Netzarchitektur-ID:\s*(eva|ecu_gateway|gateway_direct|hybrid_ai)\b/i)?.[1]
+  const explicit = text.match(/Netzarchitektur-ID:\s*(sensor_ecu_actuator|eva|ecu_gateway|gateway_ecu_segments|gateway_direct|hybrid_ai)\b/i)?.[1]
     ?.toLowerCase() as NetworkArchitectureMode | undefined;
   if (explicit) return explicit;
+  if (/Variante\s*0|Sensor\s*[-–>]+\s*ECU\s*[-–>]+\s*Aktor|Sensor\s+ECU\s+Aktor/i.test(text)) return "sensor_ecu_actuator";
+  if (/Variante\s*4|Gateway-Segmente|Gateway.*(?:bis\s+zu\s+)?6\s+ECU|6\s+ECU.*Gateway/i.test(text)) return "gateway_ecu_segments";
   if (/KI-Kombination|Kombination\s+aus\s+Variante\s*2\s*(?:\+|und)\s*3/i.test(text)) return "hybrid_ai";
   if (/Variante\s*3|Gateway-direkt/i.test(text)) return "gateway_direct";
   if (/Variante\s*2|ECU-vermittelt/i.test(text)) return "ecu_gateway";
@@ -883,9 +1171,24 @@ function signalName(name: string, context: string) {
   if (key.includes("thermal")) return "Solltemperatur";
   if (key.includes("motion")) return "Temperaturgrenzwert";
   if (key.includes("temperatur")) return "Temperatur";
+  if (key.includes("druck")) return "Druck";
   if (/warnhinweis/i.test(context)) return `${identifier(baseName(name))}Warnung`;
   if (key.includes("gateway")) return "GatewayStatus";
   return `${identifier(baseName(name))}Status`;
+}
+
+function generatedPhysicalDefaults(name: string) {
+  const key = normalized(name);
+  if (key.includes("temperatur")) return { min: -40, max: 215, unit: "degC" };
+  if (key.includes("druck")) return { min: 0, max: 250, unit: "bar" };
+  if (key.includes("drehzahl")) return { min: 0, max: 8000, unit: "rpm" };
+  if (key.includes("strom")) return { min: -200, max: 200, unit: "A" };
+  if (key.includes("winkel")) return { min: -180, max: 180, unit: "deg" };
+  if (key.includes("geschwindigkeit") || key.includes("speed")) {
+    return { min: 0, max: 300, unit: "km/h" };
+  }
+  if (key.includes("position")) return { min: 0, max: 100, unit: "%" };
+  return { min: undefined, max: undefined, unit: undefined };
 }
 
 export function extractEngineeringSpecification(text: string, overrides: Partial<EngineeringHardwareCounts> = {}): ExtractedEngineeringSpecification {
@@ -912,13 +1215,14 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const hardwareName = normalizeHardwareName(entry.name);
-    const unit = unitFrom(context);
-    const factor = factorFrom(context, unit);
     const signal = signalName(hardwareName, context);
+    const defaults = generatedPhysicalDefaults(signal);
+    const unit = unitFrom(context) ?? defaults.unit;
+    const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
     const objectDetectionSignal = signal === "ObjektErkannt";
-    const minValue = range.min ?? (objectDetectionSignal ? 0 : undefined);
-    const maxValue = range.max ?? (objectDetectionSignal ? 1 : undefined);
+    const minValue = range.min ?? (objectDetectionSignal ? 0 : defaults.min);
+    const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
     const hardwareId = identifier(hardwareName);
     const chainInterfaceType = interfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
       ? "Ethernet"
@@ -983,7 +1287,9 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
   );
 
   return {
-    chains: expanded.chains.map((chain) => ({ ...chain, hardware_name: normalizeHardwareName(chain.hardware_name) })),
+    chains: packEngineeringChains(
+      expanded.chains.map((chain) => ({ ...chain, hardware_name: normalizeHardwareName(chain.hardware_name) })),
+    ),
     domain,
     interfaceType,
     communicationSystems,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import multiprocessing
 import os
 import tempfile
 import threading
@@ -109,7 +110,13 @@ class JobService:
     def _get_executor(self) -> ProcessPoolExecutor | ThreadPoolExecutor:
         if self.executor is None:
             if self.execution_mode == "process":
-                self.executor = ProcessPoolExecutor(max_workers=self.max_workers)
+                # A forked worker inherits psycopg sockets and prepared-statement
+                # state from the Flask process. Spawning gives simulations a clean
+                # interpreter and keeps the parent's connection pool intact.
+                self.executor = ProcessPoolExecutor(
+                    max_workers=self.max_workers,
+                    mp_context=multiprocessing.get_context("spawn"),
+                )
             else:
                 self.executor = ThreadPoolExecutor(
                     max_workers=self.max_workers,

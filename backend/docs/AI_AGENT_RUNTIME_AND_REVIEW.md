@@ -113,7 +113,7 @@ OPENAI_AI_MODEL=gpt-5-mini
 NVIDIA_AI_MODEL=nvidia/nemotron-3-nano-30b-a3b
 WAITRESS_THREADS=16
 SIMULATION_WORKERS=12
-SIMULATION_EXECUTOR=process
+SIMULATION_EXECUTOR=thread
 ```
 
 ## Nutzung der Workstation

@@ -37,6 +37,7 @@ from .handlers import (
     RequirementExpansionWorkloadHandler,
     SignalGenerationWorkloadHandler,
     StructuredObjectWorkloadHandler,
+    normalize_message_name,
     normalized_name,
 )
 from .models import WORKLOAD_STATUSES, WORKLOAD_TYPES, parse_workload_request
@@ -44,6 +45,7 @@ from .registry import WorkloadTypeRegistry
 
 PROPOSAL_RESOURCES = {
     "HardwareNode": "hardware-nodes",
+    "HardwareNetworkInterface": "hardware-interfaces",
     "Function": "functions",
     "Interface": "interfaces",
     "Message": "messages",
@@ -322,6 +324,13 @@ class EngineeringWorkloadOrchestrator:
         workload = self.get_workload(workload_id)
         if workload["status"] in {"CANCELED", "FAILED", "COMPLETED"}:
             return workload
+        if workload["status"] in {"READY_FOR_REVIEW", "BLOCKED"}:
+            return self.evaluate_workload_completion(workload_id, actor=actor)
+        if (
+            workload["status"] == "INCOMPLETE"
+            and int(workload["attempts"]) >= int(workload["max_generation_attempts"])
+        ):
+            return self.evaluate_workload_completion(workload_id, actor=actor)
         self._set_workload_status(workload_id, "PLANNING", actor=actor, start=True)
         workload = self.get_workload(workload_id)
         handler = self.registry.get(str(workload["workload_type"]))
@@ -499,6 +508,25 @@ class EngineeringWorkloadOrchestrator:
         workload = self.get_workload(workload_id)
         if workload["status"] == "CANCELED":
             raise EngineeringValidationError("Ein abgebrochener Workload kann nicht fortgesetzt werden.")
+        if workload["status"] in {"READY_FOR_REVIEW", "BLOCKED"}:
+            self.audit(
+                workload,
+                "WORKLOAD_RESUME_SKIPPED",
+                {"reason": "HUMAN_REVIEW_OR_BLOCKER_REQUIRED", "status": workload["status"]},
+                actor=actor,
+            )
+            return self.evaluate_workload_completion(workload_id, actor=actor)
+        if (
+            workload["status"] == "INCOMPLETE"
+            and int(workload["attempts"]) >= int(workload["max_generation_attempts"])
+        ):
+            self.audit(
+                workload,
+                "WORKLOAD_RESUME_SKIPPED",
+                {"reason": "MAX_GENERATION_ATTEMPTS_REACHED", "status": workload["status"]},
+                actor=actor,
+            )
+            return self.evaluate_workload_completion(workload_id, actor=actor)
         self._set_workload_status(workload_id, "IN_PROGRESS", actor=actor)
         self.audit(workload, "WORKLOAD_RESUMED", {}, actor=actor)
         return self.start_workload(workload_id, actor=actor)
@@ -592,7 +620,7 @@ class EngineeringWorkloadOrchestrator:
             (item for item in interfaces if node and str(item.get("hardware_node_id")) == str(node.get("id"))),
             None,
         )
-        expected_name = "ThermalECU_SignalBatch" if category == "thermal" else "MotionECU_SignalBatch"
+        expected_name = normalize_message_name(category)
         message = next((item for item in messages if normalized_name(item.get("name")) == normalized_name(expected_name)), None)
         if message is None and engineering_interface:
             message = next(
@@ -634,7 +662,7 @@ class EngineeringWorkloadOrchestrator:
             "object_type": "Message",
             "resource": "messages",
             "name": message_name,
-            "description": f"CAN-FD-Container fuer den {category}-Signal-Workload.",
+            "description": f"Container fuer den {category}-Signal-Workload.",
             "domain": workload.get("domain") or "automotive",
             "interface_id": str(engineering_interface["id"]),
             "message_id_hex": message_id_hex,
@@ -867,9 +895,73 @@ class EngineeringWorkloadOrchestrator:
             for item in items:
                 index = item.get("proposal_index")
                 if isinstance(index, int) and 0 <= index < len(proposed):
+                    if str(proposed[index].get("proposal_action") or proposed[index].get("action") or "CREATE").upper() in {"UPDATE", "DELETE", "DEPRECATE"}:
+                        continue
                     proposed[index] = {**dict(item["definition"]), "object_type": item["object_type"], "resource": PROPOSAL_RESOURCES.get(item["object_type"])}
             update_proposal(proposal_id, {"proposed_objects": proposed, "actor": "engineering-workload-orchestrator"})
             validate_proposal(proposal_id, actor="engineering-workload-orchestrator")
+
+    def create_review_proposal(
+        self,
+        workload: dict[str, Any],
+        item: dict[str, Any],
+        object_type: str,
+        definition: dict[str, Any],
+        *,
+        prompt: str,
+    ) -> dict[str, Any]:
+        resource = PROPOSAL_RESOURCES.get(object_type)
+        if not resource:
+            raise EngineeringValidationError(f"{object_type} besitzt keinen Engineering-Proposal-Adapter.")
+        proposal = create_proposal(
+            {
+                "proposal_type": "OBJECT",
+                "target_object": {
+                    "resource": resource,
+                    "workload_id": str(workload["workload_id"]),
+                    "workload_object_id": str(item["workload_object_id"]),
+                    "proposal_action": definition.get("proposal_action") or "UPDATE",
+                },
+                "prompt": prompt,
+                "model": workload.get("model") or "engineering-workload-orchestrator-v2",
+                "proposed_objects": [{**definition, "object_type": object_type, "resource": resource}],
+                "evidence": [
+                    {
+                        "type": "ENGINEERING_WORKLOAD_AUDIT",
+                        "workload_id": str(workload["workload_id"]),
+                        "workload_object_id": str(item["workload_object_id"]),
+                        "validation_results": item.get("validation_results") or [],
+                    }
+                ],
+                "retrieved_context": [],
+                "validation_results": [],
+                "created_by": "engineering-workload-orchestrator",
+                "confidence": 0.88,
+            }
+        )
+        proposal = validate_proposal(str(proposal["proposal_id"]), actor="engineering-workload-orchestrator")
+        self.audit(
+            workload,
+            "AUDIT_PROPOSAL_READY_FOR_REVIEW" if proposal["status"] == "READY_FOR_REVIEW" else "AUDIT_PROPOSAL_DRAFT",
+            {"proposal_id": str(proposal["proposal_id"]), "status": proposal["status"], "object_type": object_type},
+            package_id=str(item["work_package_id"]),
+        )
+        return proposal
+
+    def attach_object_to_proposal(self, item: dict[str, Any], proposal: dict[str, Any], proposal_index: int) -> None:
+        with get_connection() as connection:
+            connection.execute(
+                "UPDATE engineering_workload_objects SET proposal_id = %s, proposal_index = %s, "
+                "review_state = %s, approval_state = %s, updated_at = now() WHERE workload_object_id = %s",
+                (
+                    proposal["proposal_id"],
+                    proposal_index,
+                    "READY_FOR_REVIEW" if proposal.get("status") == "READY_FOR_REVIEW" else "DRAFT",
+                    "PENDING",
+                    item["workload_object_id"],
+                ),
+            )
+            connection.commit()
 
     def sync_workload_approvals(self, workload_id: str) -> None:
         objects = self.list_workload_objects(workload_id)

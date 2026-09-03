@@ -345,6 +345,32 @@ export const getWorkflowSummary = () =>
 export const setWorkflowContext = (context: Record<string, unknown>) =>
   request<WorkflowState>("/workflow/context?view=summary", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState);
 
+export type EngineeringWorkloadSummary = {
+  workload_id: string;
+  status: string;
+  workload_type?: string;
+  title?: string;
+  updated_at?: string;
+};
+
+export const listEngineeringWorkloads = (params: { status?: string; workload_type?: string; limit?: number; offset?: number } = {}) => {
+  const query = new URLSearchParams();
+  if (params.status) query.set("status", params.status);
+  if (params.workload_type) query.set("workload_type", params.workload_type);
+  if (params.limit !== undefined) query.set("limit", String(params.limit));
+  if (params.offset !== undefined) query.set("offset", String(params.offset));
+  const suffix = query.toString();
+  return request<{ items: EngineeringWorkloadSummary[]; count: number }>(
+    `/workloads${suffix ? `?${suffix}` : ""}`,
+  );
+};
+
+export const cancelEngineeringWorkload = (workloadId: string, actor = "engineering-agent-wizard") =>
+  request<EngineeringWorkloadSummary>(`/workloads/${encodeURIComponent(workloadId)}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ actor }),
+  });
+
 export const saveWorkflowParameters = (parameters: Record<string, unknown>) =>
   request<WorkflowState>("/workflow/parameters", {
     method: "PATCH",

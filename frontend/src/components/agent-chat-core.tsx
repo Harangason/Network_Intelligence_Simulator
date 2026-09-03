@@ -39,8 +39,10 @@ import { routingApprovalProgress } from "@/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
 import { readActiveProjectId } from "@/lib/user-settings";
 import {
+  cancelEngineeringWorkload,
   createOptimizationProposal,
   getWorkflow,
+  listEngineeringWorkloads,
   setWorkflowContext,
   type IntelligenceRecommendation,
   type WorkflowState,
@@ -518,7 +520,37 @@ type TaskAttachment = {
   size: number;
   kind: string;
   content?: string;
+  previewDataUrl?: string;
+  source: "task" | "architecture";
+  analysisHint: string;
 };
+
+const MAX_TASK_ATTACHMENTS = 8;
+const SUPPORTED_EVIDENCE_ACCEPT = [
+  ".txt",
+  ".md",
+  ".csv",
+  ".json",
+  ".svg",
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".ppt",
+  ".pptx",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".bmp",
+  "text/*",
+  "image/*",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+].join(",");
 
 type ChoiceGroup = {
   id: string;
@@ -611,7 +643,7 @@ const PROCESS_GROUP: ChoiceGroup = {
     ],
 };
 
-type NetworkArchitectureId = "eva" | "ecu_gateway" | "gateway_direct" | "hybrid_ai";
+type NetworkArchitectureId = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai";
 
 type NetworkArchitectureOption = {
   id: NetworkArchitectureId;
@@ -622,6 +654,13 @@ type NetworkArchitectureOption = {
 };
 
 const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
+  {
+    id: "sensor_ecu_actuator",
+    label: "Variante 0 · Sensor-ECU-Aktor",
+    detail: "Lokaler Regelkreis ohne Gateway/BCM-Pfad: Sensoren liefern an die ECU, die ECU steuert Aktoren.",
+    diagram: "Sensor -> ECU -> Aktor",
+    rules: "Lokale Funktionskette: Sensoren und Aktoren werden fachlich an die zuständige ECU gebunden. Es werden keine Gateway-/BCM-Verbindungen und keine direkten Sensor-/Aktor-Netzpfade angelegt.",
+  },
   {
     id: "eva",
     label: "Variante 1 · Einfaches EVA",
@@ -644,6 +683,13 @@ const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
     rules: "Sensoren, ECUs und Aktoren werden als eigenständige Teilnehmer direkt an Gateway oder BCM angebunden.",
   },
   {
+    id: "gateway_ecu_segments",
+    label: "Variante 4 · Gateway-Segmente",
+    detail: "Ein Gateway-Segment bündelt bis zu 6 ECUs; Sensoren und Aktoren bleiben an der fachlichen ECU.",
+    diagram: "Sensor/Aktor -> ECU 1 --\\\nSensor/Aktor -> ECU 2 --- Gateway / BCM\n... bis ECU 6 ----/",
+    rules: "Segmentierte Gateway-Backbone-Architektur: Sensoren und Aktoren werden fachlich an ECUs geführt; pro Gateway-Leitung werden bis zu 6 ECUs als Bussegment gebündelt. Das Gateway kennt die ECU-Segmente, legt aber keine Sensor-/Aktor-Direktanbindungen an.",
+  },
+  {
     id: "hybrid_ai",
     label: "KI-Kombination · Variante 2 + 3",
     detail: "Die KI entscheidet je Teilnehmer zwischen lokaler ECU-Zuordnung und direkter Gateway-Anbindung.",
@@ -658,7 +704,7 @@ function architectureOption(id: NetworkArchitectureId | "") {
 
 type AgentWizardContext = {
   agent_prompt?: string;
-  attachments: Array<{ kind: string; name: string; size: number }>;
+  attachments: Array<{ kind: string; name: string; size: number; source?: "task" | "architecture" }>;
   confirmed_at: string;
   industry: string;
   mode: "full" | "can";
@@ -680,6 +726,7 @@ type AgentWizardContext = {
   task: string;
   technologies: string[];
   communication_system_counts?: Array<{ id: string; label: string; recognized: number; count: number }>;
+  planned_network_connections?: number;
   system_cluster_assignments?: EquipmentClusterAssignment[];
 };
 
@@ -691,7 +738,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     ? (context[key] as unknown[]).filter((item): item is string => typeof item === "string")
     : [];
   const attachments = Array.isArray(context.attachments)
-    ? context.attachments.filter((item): item is { kind: string; name: string; size: number } => (
+    ? context.attachments.filter((item): item is AgentWizardContext["attachments"][number] => (
       Boolean(item)
       && typeof item === "object"
       && typeof (item as Record<string, unknown>).kind === "string"
@@ -739,6 +786,9 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
         }))
         .filter((item) => item.id && item.label && Number.isFinite(item.count))
       : undefined,
+    planned_network_connections: Number.isFinite(Number(context.planned_network_connections))
+      ? Number(context.planned_network_connections)
+      : undefined,
     system_cluster_assignments: Array.isArray(context.system_cluster_assignments)
       ? context.system_cluster_assignments
         .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
@@ -776,6 +826,12 @@ function takeLegacyWizardContext(projectId: string) {
 }
 
 type AgentPerformanceSample = {
+  ai?: {
+    provider: string;
+    local_model: string;
+    local_fast_model: string;
+    local_model_loaded: boolean;
+  };
   cpu_percent: number;
   frontend_rss_mb: number;
   gpu: null | { utilization_percent: number; memory_used_mb: number; memory_total_mb: number };
@@ -984,6 +1040,7 @@ export function EngineeringAgentWizard({
   const {
     messages: wizardMessages,
     sendMessage: sendWizardMessage,
+    stop: stopWizardMessage,
     status: wizardAgentStatus,
     error: wizardAgentError,
   } = useChat<EngineeringAgentUIMessage>({
@@ -999,6 +1056,7 @@ export function EngineeringAgentWizard({
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
   const [hardwareItems, setHardwareItems] = useState<EngineeringObject[]>([]);
   const [routingReviewBusy, setRoutingReviewBusy] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [supplementOpen, setSupplementOpen] = useState(false);
   const [supplementText, setSupplementText] = useState("");
   const [supplementBusy, setSupplementBusy] = useState(false);
@@ -1330,7 +1388,6 @@ export function EngineeringAgentWizard({
       selected,
     };
   });
-
   const questionnaireSteps = [
     ...(mode === "full" ? [{ id: "industry", label: "Industrie" }] : []),
     { id: "technologies", label: "Technologien" },
@@ -1346,6 +1403,11 @@ export function EngineeringAgentWizard({
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
   const effectiveBusy = busy || submitting;
   const selectedArchitecture = architectureOption(networkArchitecture);
+  const plannedNetworkConnections = plannedNetworkConnectionCount({
+    architectureId: selectedArchitecture?.id,
+    clusterAssignments: equipmentClusterAssignments,
+    equipmentCounts,
+  });
   const architectureReady = Boolean(
     selectedArchitecture
     && architectureApproved
@@ -1371,10 +1433,10 @@ export function EngineeringAgentWizard({
     }
   }
 
-  async function handleTaskFiles(files: FileList | null) {
-    const selected = Array.from(files ?? []).slice(0, 3);
-    const attachments = await Promise.all(selected.map(readTaskAttachment));
-    setTaskFiles(attachments);
+  async function handleTaskFiles(files: FileList | null, source: TaskAttachment["source"] = "task") {
+    const selected = Array.from(files ?? []).slice(0, MAX_TASK_ATTACHMENTS);
+    const attachments = await Promise.all(selected.map((file) => readTaskAttachment(file, source)));
+    setTaskFiles((current) => mergeTaskAttachments(current, attachments));
   }
 
   function selectNetworkArchitecture(id: NetworkArchitectureId) {
@@ -1393,7 +1455,8 @@ export function EngineeringAgentWizard({
     setArchitectureAiProposal(
       `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren der fachlich zuständigen ECU zu. ` +
       `Binde zentrale, diagnoseorientierte oder hochbandbreitige Teilnehmer direkt an Gateway/BCM an. ` +
-      `Begründe jede Direktanbindung anhand von Semantik, Safety, Latenz und Bandbreite${technologies ? ` für ${technologies}` : ""}.`,
+      `Begründe jede Direktanbindung anhand von Semantik, Safety, Latenz und Bandbreite${technologies ? ` für ${technologies}` : ""}. ` +
+      `Beruecksichtige angehaengte Architektur-Evidence wie PDF, PowerPoint, Bilder, Diagramme und Textauszuege als Quelle fuer Cluster, Knoten und Verbindungen.`,
     );
   }
 
@@ -1417,7 +1480,7 @@ export function EngineeringAgentWizard({
     const nextRunId = crypto.randomUUID();
     const confirmedAt = new Date().toISOString();
     const nextContext: AgentWizardContext = {
-      attachments: taskFiles.map((file) => ({ kind: file.kind, name: file.name, size: file.size })),
+      attachments: taskFiles.map((file) => ({ kind: file.kind, name: file.name, size: file.size, source: file.source })),
       confirmed_at: confirmedAt,
       industry: mode === "can" ? "Aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry,
       mode,
@@ -1439,6 +1502,7 @@ export function EngineeringAgentWizard({
       task: taskText.trim() || "Aufgabe wurde als Datei übergeben.",
       technologies: selectedTechnologyValues,
       communication_system_counts: communicationSystemCounts,
+      planned_network_connections: plannedNetworkConnections,
       system_cluster_assignments: equipmentClusterAssignments,
     };
     const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
@@ -1450,6 +1514,7 @@ export function EngineeringAgentWizard({
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
         `- Netzwerktechnologien: ${selectedTechnologyValues.length ? selectedTechnologyValues.join("; ") : "nicht vorgegeben, passende Technologien aus der gewaehlten Industrie verwenden"}\n` +
         `- Kommunikationssystem-Sollwerte: ${JSON.stringify(communicationSystemCounts)}\n` +
+        `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
         `- Systemcluster-Details: ${JSON.stringify(equipmentClusterAssignments)}\n` +
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
@@ -1557,6 +1622,66 @@ export function EngineeringAgentWizard({
       details: "Die temporäre Rückkehr zum Engineering-Auftrag wurde beendet.",
     }).catch(() => undefined);
     onFinish?.();
+  }
+
+  async function cancelWizardRun() {
+    if (cancelBusy) return;
+    const activeRunId = runId || submittedContext?.run_id || "without-run-id";
+    setCancelBusy(true);
+    setStatusError("");
+    try {
+      stopWizardMessage();
+      const workloadIds = collectWorkloadIds(currentRunMessages);
+      if (!workloadIds.length) {
+        const workloads = await listEngineeringWorkloads({ limit: 50 });
+        workloads.items
+          .filter((item) => ["QUEUED", "IN_PROGRESS", "PAUSED"].includes(String(item.status).toUpperCase()))
+          .forEach((item) => {
+            if (item.workload_id) workloadIds.push(item.workload_id);
+          });
+      }
+      await Promise.all([...new Set(workloadIds)].map((workloadId) => (
+        cancelEngineeringWorkload(workloadId).catch((error) => {
+          void writeWizardDiagnostic("error", {
+            projectId,
+            runId: activeRunId,
+            step: "status-overview",
+            event: "workload-cancel-failed",
+            details: error instanceof Error ? error.message : `Workload ${workloadId} konnte nicht abgebrochen werden.`,
+          }).catch(() => undefined);
+        })
+      )));
+      const canceledWorkflow = await setWorkflowContext({
+        agent_wizard_status: submittedContext ? {
+          ...submittedContext,
+          status: "CANCELED",
+          canceled_at: new Date().toISOString(),
+        } : null,
+        agent_execution: {
+          run_id: activeRunId,
+          state: "CANCELED",
+          step: execution?.step ?? "engineering_model",
+          completed: execution?.completed ?? 0,
+          total: execution?.total ?? 0,
+          message: "Der Engineering-Auftrag wurde durch den Nutzer abgebrochen.",
+          updated_at: new Date().toISOString(),
+        },
+      });
+      setWorkflow(canceledWorkflow);
+      finishEngineeringAgentWizardSession(projectId);
+      void writeWizardDiagnostic("workflow", {
+        projectId,
+        runId: activeRunId,
+        step: "status-overview",
+        event: "popup-canceled-by-user",
+        details: "Der laufende Engineering-Agent und zugehoerige Workloads wurden abgebrochen.",
+      }).catch(() => undefined);
+      setStatusError("Auftrag abgebrochen.");
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : "Der Auftrag konnte nicht abgebrochen werden.");
+    } finally {
+      setCancelBusy(false);
+    }
   }
 
   function selectedFor(group: ChoiceGroup) {
@@ -1785,7 +1910,16 @@ export function EngineeringAgentWizard({
   const workflowHasProgress = persistedStatusRows.some((item) => item.progress > 0);
   const currentStatusStep = statusRows.find((item) => item.active || (executionStopped && item.id === execution?.step))?.label
     ?? persistedStatusRows.find((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status))?.label ?? "Abgeschlossen";
-  const activeModel = performance?.ollama[0]?.name ?? "Kein Modell geladen";
+  const activeAnalysis = performance?.ai?.provider
+    ? performance.ai.provider === "hybrid-demand"
+      ? "Regelwerk + KI bei Bedarf"
+      : performance.ai.provider
+    : "Regelwerk";
+  const activeModel = performance?.ai
+    ? performance.ai.local_model_loaded
+      ? performance.ai.local_model
+      : `Standby: ${performance.ai.local_model}`
+    : performance?.ollama[0]?.name ?? "Standby";
   const hasResumablePrompt = currentRunMessages.some((message) => (
     message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
   )) || Boolean(submittedContext?.agent_prompt?.trim());
@@ -1822,6 +1956,11 @@ export function EngineeringAgentWizard({
     sensors: Number(hardwareByType.SensorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length),
     actuators: Number(hardwareByType.ActuatorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "actuator").length),
   };
+  const displayedPlannedNetworkConnections = submittedContext?.planned_network_connections ?? plannedNetworkConnectionCount({
+    architectureId: submittedContext?.network_architecture?.id ?? selectedArchitecture?.id,
+    clusterAssignments: submittedContext?.system_cluster_assignments ?? equipmentClusterAssignments,
+    equipmentCounts: hardwareDetails,
+  });
   const blockerDetails = workflow?.active_step === "engineering_model"
     ? scopeMismatchSummaries(workflow.artifact_checks?.engineering_model?.scope_mismatches)
     : [];
@@ -1831,12 +1970,41 @@ export function EngineeringAgentWizard({
     ? `Auftrag angehalten: ${blockerSummary}`
     : documentedDeviationSummary ? `Dokumentierte Abweichung: ${documentedDeviationSummary}` : "Auftrag angehalten";
   const analysisCounts = [
-    ...EQUIPMENT_CATEGORIES.map(({ key, label }) => ({ label, value: hardwareDetails[key] })),
-    { label: "Funktionen", value: Number(engineeringCounts.functions ?? 0) },
-    { label: "Interfaces", value: Number(engineeringCounts.interfaces ?? 0) },
-    { label: "Nachrichten", value: Number(engineeringCounts.messages ?? 0) },
-    { label: "Signale", value: Number(engineeringCounts.signals ?? 0) },
-    { label: "Routen", value: routingReview.total },
+    ...EQUIPMENT_CATEGORIES.map(({ key, label }) => ({
+      label,
+      value: hardwareDetails[key],
+      detail: `${hardwareDetails[key]} erkannte Hardware-Teilnehmer. Die Device Class entscheidet, ob daraus eine eigene Funktion wird.`,
+    })),
+    {
+      label: "Funktionen",
+      value: Number(engineeringCounts.functions ?? 0),
+      detail: "Soll nach Class-Modell nur fuer Class 3/4 automatisch entstehen. Basic/Passive Sensoren und Aktoren bleiben ohne kuenstliche Function.",
+    },
+    {
+      label: "Interfaces",
+      value: Number(engineeringCounts.interfaces ?? 0),
+      detail: "Logische Interfaces werden je Teilnehmer oder Subsystem erzeugt. Direkte Hardware-Interfaces zaehlen separat im Hardware-Interface-Modell.",
+    },
+    {
+      label: "Nachrichten",
+      value: Number(engineeringCounts.messages ?? 0),
+      detail: "Gepackte Kommunikationsobjekte. Mehrere Signale koennen eine Nachricht teilen, wenn Bus, Zyklus und Producer passen.",
+    },
+    {
+      label: "Signale",
+      value: Number(engineeringCounts.signals ?? 0),
+      detail: "Einzelne Werte, Statuscodes, Commands oder Datenindikatoren innerhalb der Nachrichten.",
+    },
+    {
+      label: "Netzverbindungen",
+      value: displayedPlannedNetworkConnections,
+      detail: "Geplante physische oder logische Netzpfade aus Architektur, Clustern und Teilnehmerumfang.",
+    },
+    {
+      label: "Routen",
+      value: routingReview.total,
+      detail: "Vorbereitete Routing-Pfade, die vor der Uebernahme validiert und freigegeben werden muessen.",
+    },
   ];
   const analysisHeading = agentPending
     ? "Erste Analyse läuft"
@@ -1971,12 +2139,41 @@ export function EngineeringAgentWizard({
           <div className="agent-architecture-ai">
             <div>
               <strong>KI-Architekturentwurf</strong>
-              <small>Erstellt eine prüfbare Kombination aus Variante 2 und 3. Erst deine Freigabe macht sie verbindlich.</small>
+              <small>Erstellt eine prüfbare Kombination aus Architekturvarianten. PDF, PowerPoint, Bilder, SVG und Text können als Evidence einfließen.</small>
             </div>
-            <button className="button secondary tiny" disabled={effectiveBusy} onClick={generateHybridArchitecture} type="button">
-              KI-Entwurf erstellen
-            </button>
+            <div className="agent-architecture-ai-actions">
+              <label className="button secondary tiny agent-file-button">
+                <input
+                  accept={SUPPORTED_EVIDENCE_ACCEPT}
+                  disabled={effectiveBusy}
+                  multiple
+                  onChange={(event) => {
+                    void handleTaskFiles(event.target.files, "architecture");
+                    event.currentTarget.value = "";
+                  }}
+                  type="file"
+                />
+                Evidence hinzufügen
+              </label>
+              <button className="button secondary tiny" disabled={effectiveBusy} onClick={generateHybridArchitecture} type="button">
+                KI-Entwurf erstellen
+              </button>
+            </div>
           </div>
+          {taskFiles.some((file) => file.source === "architecture") && (
+            <ul className="agent-file-list agent-architecture-files">
+              {taskFiles.filter((file) => file.source === "architecture").map((file) => (
+                <li key={`architecture-${file.name}-${file.size}`}>
+                  {file.previewDataUrl && <img alt="" className="agent-attachment-thumb" src={file.previewDataUrl} />}
+                  <span>
+                    <strong>{file.name}</strong>
+                    <span>{file.kind} · {formatFileSize(file.size)}</span>
+                    <small>{file.analysisHint}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           {networkArchitecture === "hybrid_ai" && (
             <label className="agent-questionnaire-note">
               <span>KI-Leitplanke</span>
@@ -2037,23 +2234,30 @@ export function EngineeringAgentWizard({
           </label>
           <label className="agent-file-drop">
             <input
-              accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*"
+              accept={SUPPORTED_EVIDENCE_ACCEPT}
               disabled={busy}
               multiple
-              onChange={(event) => void handleTaskFiles(event.target.files)}
+              onChange={(event) => {
+                void handleTaskFiles(event.target.files, "task");
+                event.currentTarget.value = "";
+              }}
               type="file"
             />
             <span>
-              <strong>Text, Word oder PDF hinzufügen</strong>
-              <small>Textdateien werden direkt gelesen. PDF/DOCX werden als Anlage referenziert.</small>
+              <strong>Text, PDF, PowerPoint oder Bild hinzufügen</strong>
+              <small>Text/SVG wird direkt gelesen. PDF, Office und Bilder werden als Evidence in den Auftrag aufgenommen.</small>
             </span>
           </label>
           {taskFiles.length > 0 && (
             <ul className="agent-file-list">
               {taskFiles.map((file) => (
                 <li key={`${file.name}-${file.size}`}>
-                  <strong>{file.name}</strong>
-                  <span>{file.kind} · {formatFileSize(file.size)}</span>
+                  {file.previewDataUrl && <img alt="" className="agent-attachment-thumb" src={file.previewDataUrl} />}
+                  <span>
+                    <strong>{file.name}</strong>
+                    <span>{file.kind} · {formatFileSize(file.size)}</span>
+                    <small>{file.source === "architecture" ? "Architektur-Evidence" : "Aufgaben-Anlage"}</small>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -2112,6 +2316,7 @@ export function EngineeringAgentWizard({
           <dl className="agent-equipment-facts">
             <div><dt>Architektur</dt><dd>{selectedArchitecture?.label}</dd></div>
             <div><dt>Kommunikationssysteme im Auftrag</dt><dd>{communicationSystemCounts.map((item) => `${item.label}: ${item.count}`).join(", ") || "Keine vorgegeben"}</dd></div>
+            <div><dt>Netzverbindungen geplant</dt><dd>{plannedNetworkConnections}</dd></div>
             <div><dt>Parameter</dt><dd>{parameterMode === "defaults" ? "Technologie-Defaults" : "Nutzerdefiniert"}</dd></div>
           </dl>
           {equipmentClusters.length > 0 && (
@@ -2252,9 +2457,10 @@ export function EngineeringAgentWizard({
               <strong>{analysisHeading}</strong>
               <div className="agent-wizard-analysis-counts" aria-label="Gefundene Engineering-Objekte">
                 {analysisCounts.map((item) => (
-                  <span key={item.label}>
+                  <span key={item.label} tabIndex={0}>
                     <small>{item.label}</small>
                     <b>{item.value}</b>
+                    <em className="agent-wizard-count-popover">{item.detail}</em>
                   </span>
                 ))}
               </div>
@@ -2381,15 +2587,21 @@ export function EngineeringAgentWizard({
             <span><small>RAM</small><strong>{performance ? `${performance.memory_percent} %` : "..."}</strong></span>
             <span><small>GPU</small><strong>{performance?.gpu ? `${performance.gpu.utilization_percent} %` : "n/a"}</strong></span>
             <span><small>VRAM</small><strong>{performance?.gpu ? `${performance.gpu.memory_used_mb}/${performance.gpu.memory_total_mb} MB` : "n/a"}</strong></span>
-            <span><small>Modell</small><strong>{activeModel}</strong></span>
+            <span><small>Analyse</small><strong>{activeAnalysis}</strong></span>
+            <span><small>LLM</small><strong>{activeModel}</strong></span>
           </div>
 
           {displayedStatusError && <p className="notice error" role="alert">{displayedStatusError}</p>}
           <footer className="agent-wizard-status-footer">
             <small className="agent-wizard-log-status">TXT-Protokolle aktiv: Workflow · Rückfragen · Performance · Fehler</small>
-            <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused} onClick={() => void finishWizard()} type="button">
-              Fertig stellen
-            </button>
+            <div className="agent-wizard-status-actions">
+              <button className="button secondary" disabled={cancelBusy || (!agentPending && execution?.state !== "RUNNING")} onClick={() => void cancelWizardRun()} type="button">
+                {cancelBusy ? "Breche ab..." : "Abbrechen"}
+              </button>
+              <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused || cancelBusy} onClick={() => void finishWizard()} type="button">
+                Fertig stellen
+              </button>
+            </div>
           </footer>
         </section>
       )}
@@ -2417,29 +2629,102 @@ function toggleSelection(values: string[], optionId: string) {
   return values.includes(optionId) ? values.filter((id) => id !== optionId) : [...values, optionId];
 }
 
-async function readTaskAttachment(file: File): Promise<TaskAttachment> {
+function mergeTaskAttachments(current: TaskAttachment[], incoming: TaskAttachment[]) {
+  const merged = [...current];
+  incoming.forEach((attachment) => {
+    const index = merged.findIndex((item) => item.name === attachment.name && item.size === attachment.size);
+    if (index >= 0) {
+      merged[index] = attachment;
+    } else {
+      merged.push(attachment);
+    }
+  });
+  return merged.slice(-MAX_TASK_ATTACHMENTS);
+}
+
+async function readTaskAttachment(file: File, source: TaskAttachment["source"]): Promise<TaskAttachment> {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  const canReadAsText = file.type.startsWith("text/") || ["txt", "md", "csv", "json"].includes(extension);
+  const kind = attachmentKind(file, extension);
+  const analysisHint = attachmentAnalysisHint(kind, extension, source);
+  const canReadAsText = file.type.startsWith("text/") || ["txt", "md", "csv", "json", "svg"].includes(extension);
+  const previewDataUrl = file.type.startsWith("image/") && extension !== "svg" && file.size <= 2 * 1024 * 1024
+    ? await readAttachmentPreview(file)
+    : undefined;
   if (!canReadAsText) {
-    return { name: file.name, size: file.size, kind: file.type || extension.toUpperCase() || "Datei" };
+    return { analysisHint, kind, name: file.name, previewDataUrl, size: file.size, source };
   }
   try {
     const content = await file.text();
     return {
-      name: file.name,
-      size: file.size,
-      kind: file.type || "Text",
+      analysisHint,
       content: content.slice(0, 12000),
+      kind,
+      name: file.name,
+      previewDataUrl,
+      size: file.size,
+      source,
     };
   } catch {
-    return { name: file.name, size: file.size, kind: file.type || "Text" };
+    return { analysisHint, kind, name: file.name, previewDataUrl, size: file.size, source };
   }
 }
 
 function formatTaskAttachment(file: TaskAttachment) {
-  const base = `- ${file.name} (${file.kind}, ${formatFileSize(file.size)})`;
-  if (!file.content) return `${base}: Inhalt nicht direkt ausgelesen; Datei als Aufgabenreferenz beruecksichtigen.`;
-  return `${base}:\n${file.content}`;
+  const source = file.source === "architecture" ? "Architektur-Evidence" : "Aufgaben-Anlage";
+  const base = `- ${source}: ${file.name} (${file.kind}, ${formatFileSize(file.size)})`;
+  if (!file.content) return `${base}: ${file.analysisHint}`;
+  return `${base}: ${file.analysisHint}\n${file.content}`;
+}
+
+function attachmentKind(file: File, extension: string) {
+  if (file.type) return file.type;
+  const knownKinds: Record<string, string> = {
+    bmp: "image/bmp",
+    csv: "text/csv",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    gif: "image/gif",
+    jpeg: "image/jpeg",
+    jpg: "image/jpeg",
+    json: "application/json",
+    md: "text/markdown",
+    pdf: "application/pdf",
+    png: "image/png",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    svg: "image/svg+xml",
+    txt: "text/plain",
+    webp: "image/webp",
+  };
+  return knownKinds[extension] ?? (extension.toUpperCase() || "Datei");
+}
+
+function attachmentAnalysisHint(kind: string, extension: string, source: TaskAttachment["source"]) {
+  const scope = source === "architecture"
+    ? "als Architektur-Evidence fuer Netzvarianten, Cluster, Knoten, Interfaces und Verbindungen auswerten"
+    : "als Aufgabenquelle fuer Umfang, Anforderungen und technische Vorgaben auswerten";
+  if (kind.startsWith("image/")) {
+    return `Bild/Screenshot/Diagramm ${scope}; erkennbare Beschriftungen, Topologie und Gruppierungen beruecksichtigen.`;
+  }
+  if (/pdf/i.test(kind) || extension === "pdf") {
+    return `PDF ${scope}; Diagramme, Tabellen und Begleittext als fachliche Vorgabe behandeln.`;
+  }
+  if (/presentation|powerpoint/i.test(kind) || ["ppt", "pptx"].includes(extension)) {
+    return `PowerPoint ${scope}; Folien, Architektur-Skizzen und Tabellen als fachliche Vorgabe behandeln.`;
+  }
+  if (/word/i.test(kind) || ["doc", "docx"].includes(extension)) {
+    return `Word-Dokument ${scope}; Anforderungen und Tabellen als fachliche Vorgabe behandeln.`;
+  }
+  return `Textinhalt ${scope}.`;
+}
+
+function readAttachmentPreview(file: File) {
+  return new Promise<string | undefined>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : undefined);
+    reader.onerror = () => resolve(undefined);
+    reader.readAsDataURL(file);
+  });
 }
 
 function formatFileSize(size: number) {
@@ -2574,6 +2859,25 @@ function communicationSystemInputRows(args: {
   return rows;
 }
 
+function plannedNetworkConnectionCount(args: {
+  architectureId?: NetworkArchitectureId;
+  clusterAssignments: EquipmentClusterAssignment[];
+  equipmentCounts: EngineeringHardwareCounts;
+}) {
+  const participantConnections = args.equipmentCounts.ecus + args.equipmentCounts.sensors + args.equipmentCounts.actuators;
+  const selectedClusterDevices = args.clusterAssignments
+    .filter((assignment) => assignment.selected)
+    .reduce((sum, assignment) => sum + Math.max(0, Number(assignment.devices) || 0), 0);
+  if (args.architectureId === "hybrid_ai") return Math.max(selectedClusterDevices, participantConnections);
+  if (args.architectureId === "gateway_ecu_segments") {
+    const ecuSegments = Math.ceil(Math.max(0, args.equipmentCounts.ecus) / 6);
+    return args.equipmentCounts.sensors + args.equipmentCounts.actuators + ecuSegments;
+  }
+  if (args.architectureId === "sensor_ecu_actuator") return args.equipmentCounts.sensors + args.equipmentCounts.actuators;
+  if (args.architectureId === "ecu_gateway") return args.equipmentCounts.sensors + args.equipmentCounts.actuators + args.equipmentCounts.ecus;
+  return participantConnections;
+}
+
 function scopeMismatchSummaries(value: unknown) {
   if (!value || typeof value !== "object") return [];
   const labels: Record<string, string> = {
@@ -2581,6 +2885,12 @@ function scopeMismatchSummaries(value: unknown) {
     ecus: "ECUs",
     gateways: "Gateways",
     sensors: "Sensoren",
+    hardware_nodes: "Hardware-Knoten",
+    functions: "Funktionen",
+    hardware_interfaces: "Hardware-Interfaces",
+    interfaces: "Logische Interfaces",
+    messages: "Nachrichten",
+    signals: "Signale",
   };
   return Object.entries(value as Record<string, { actual?: number; target?: number }>).flatMap(([key, item]) => {
     const actual = Number(item?.actual);
@@ -3113,6 +3423,22 @@ function MessagePart({
   }
 
   return null;
+}
+
+function collectWorkloadIds(messages: EngineeringAgentUIMessage[]) {
+  const ids: string[] = [];
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    const item = value as Record<string, unknown>;
+    if (typeof item.workload_id === "string" && item.workload_id) ids.push(item.workload_id);
+    Object.values(item).forEach(visit);
+  };
+  messages.forEach(visit);
+  return ids;
 }
 
 function AgentMessageText({ text }: { text: string }) {

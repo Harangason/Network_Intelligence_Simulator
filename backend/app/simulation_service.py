@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import re
 import sys
 from pathlib import Path
@@ -24,6 +25,18 @@ from standalone_cli import (  # noqa: E402
 )
 
 from .runtime_analysis import RuntimeBusLoadMonitor
+
+
+DEFAULT_WORKFLOW_EVENT_LIMIT = 100_000
+
+
+def _workflow_event_limit() -> int:
+    raw = os.environ.get("WORKFLOW_EVENT_LIMIT", str(DEFAULT_WORKFLOW_EVENT_LIMIT)).strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        value = DEFAULT_WORKFLOW_EVENT_LIMIT
+    return min(10_000_000, max(1, value))
 
 
 class SimulationService:
@@ -198,6 +211,12 @@ class SimulationService:
             ):
                 if key in payload:
                     config[key] = copy.deepcopy(payload[key])
+            if payload.get("workflow_managed"):
+                try:
+                    requested_events = int(config.get("max_events") or DEFAULT_WORKFLOW_EVENT_LIMIT)
+                except (TypeError, ValueError):
+                    requested_events = DEFAULT_WORKFLOW_EVENT_LIMIT
+                config["max_events"] = min(max(1, requested_events), _workflow_event_limit())
             config["output_dir"] = str(output_dir)
             return config
 

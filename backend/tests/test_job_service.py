@@ -36,6 +36,22 @@ def test_desktop_jobs_default_to_process_workers(monkeypatch) -> None:
     }
 
 
+def test_process_workers_use_spawn_to_protect_database_connections(monkeypatch) -> None:
+    monkeypatch.delenv("VERCEL", raising=False)
+    service = JobService(
+        synchronous=False,
+        execution_mode="process",
+        max_workers=2,
+        persist=False,
+    )
+
+    executor = service._get_executor()
+    try:
+        assert executor._mp_context.get_start_method() == "spawn"
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
 def test_job_registry_survives_restart(tmp_path: Path) -> None:
     registry = tmp_path / "jobs" / "registry.json"
     first = JobService(synchronous=True, registry_path=registry, persist=True)

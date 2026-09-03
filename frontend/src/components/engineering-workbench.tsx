@@ -47,6 +47,7 @@ import { StructureTreeWorkbench } from "@/components/structure-tree-workbench";
 
 const RESOURCES: EngineeringResource[] = [
   "hardware-nodes",
+  "hardware-interfaces",
   "functions",
   "interfaces",
   "messages",
@@ -63,6 +64,13 @@ const HARDWARE_PRESETS = [
   { label: "Sensor", deviceType: "SensorController" },
   { label: "Aktor", deviceType: "ActuatorController" },
 ] as const;
+
+const DEFAULT_TYPING_BY_DEVICE_TYPE: Record<string, { deviceClass: number; typing: string; complexity: string }> = {
+  ECU: { deviceClass: 4, typing: "Intelligent Subsystem", complexity: "SERVICE_DATA" },
+  Gateway: { deviceClass: 4, typing: "Intelligent Subsystem", complexity: "SERVICE_DATA" },
+  SensorController: { deviceClass: 1, typing: "Basic Sensor", complexity: "PHYSICAL_SCALAR" },
+  ActuatorController: { deviceClass: 1, typing: "Basic Actuator", complexity: "CONTROL_COMMAND" },
+};
 
 const REQUIREMENT_FIELDS = [
   { key: "cycle_time_ms", label: "Zyklus", unit: "ms" },
@@ -101,6 +109,11 @@ const RESOURCE_HIERARCHY: Partial<
     parentLabel: "Hardware-Knoten",
     relationType: "HAS_FUNCTION",
   },
+  "hardware-interfaces": {
+    parentResource: "hardware-nodes",
+    parentLabel: "Hardware-Knoten",
+    relationType: "HAS_HARDWARE_INTERFACE",
+  },
   interfaces: {
     parentResource: "functions",
     parentLabel: "Funktion",
@@ -120,17 +133,19 @@ const RESOURCE_HIERARCHY: Partial<
 
 const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = {
   "hardware-nodes": [],
+  "hardware-interfaces": ["hardware-nodes", "messages", "functions", "interfaces"],
   functions: ["hardware-nodes"],
-  interfaces: ["functions", "hardware-nodes"],
-  messages: ["interfaces"],
+  interfaces: ["functions", "hardware-nodes", "messages"],
+  messages: ["interfaces", "hardware-interfaces"],
   signals: ["messages", "interfaces", "functions"],
 };
 
 const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
-  "hardware-nodes": ["Name", "Gerätetyp", "Domäne"],
+  "hardware-nodes": ["Name", "Gerätetyp", "Class", "Typisierung", "Domäne"],
+  "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status"],
   functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung"],
   interfaces: ["Name", "Funktion", "Interface-Typ", "Hardware"],
-  messages: ["Name", "Interface", "Message-ID", "Richtung", "Zyklus", "DLC"],
+  messages: ["Name", "Interface", "Hardware Interface", "Message-ID", "Richtung", "Zyklus", "DLC"],
   signals: ["Funktion", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
 };
 
@@ -157,6 +172,142 @@ function parseSortableNumber(value: string) {
   return match ? Number(match[0]) : null;
 }
 
+const BUS_TECH_NAME_PATTERN = /(?:^|_)(?:can_fd|can|lin|flexray|ethernet|ethercat|profinet|modbustcp|modbusrtu|rs232|rs485|spi|i2c|usb|pcie|mqtt|opcua)(?=_|$)/gi;
+const MESSAGE_NAME_SUFFIX_PATTERN = /(?:_)?(?:data|message|nachricht|aktor|actor|sensor|status|command|steuerung)$/i;
+const SIGNAL_INITIAL_ALIASES: Record<string, string> = {
+  gateway: "gw",
+  system_gateway: "sgw",
+  systemgateway: "sgw",
+};
+
+function asciiName(value: string) {
+  return value
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function splitNameTokens(value: string) {
+  return asciiName(value)
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .split("_")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function toSnakeCase(value: unknown) {
+  return splitNameTokens(String(value ?? "")).join("_").toLowerCase();
+}
+
+function toPascalCase(value: unknown) {
+  return splitNameTokens(String(value ?? ""))
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join("");
+}
+
+function normalizeMessageName(value: unknown) {
+  const withoutBus = toSnakeCase(value).replace(BUS_TECH_NAME_PATTERN, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+  const base = withoutBus.replace(MESSAGE_NAME_SUFFIX_PATTERN, "") || withoutBus;
+  return toPascalCase(base || value);
+}
+
+function normalizeInterfaceName(value: unknown) {
+  const raw = String(value ?? "");
+  const cleaned = toSnakeCase(raw)
+    .replace(BUS_TECH_NAME_PATTERN, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+  return cleaned ? cleaned.split("_").map((token) => /^\d+$/.test(token) ? token : token.charAt(0).toUpperCase() + token.slice(1)).join("_") : raw;
+}
+
+function normalizedInterfaceGroupName(value: unknown) {
+  return toSnakeCase(value)
+    .replace(BUS_TECH_NAME_PATTERN, "_")
+    .replace(/_\d+$/g, "")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+function signalInitials(value: unknown) {
+  const cleaned = toSnakeCase(String(value ?? "")).replace(MESSAGE_NAME_SUFFIX_PATTERN, "");
+  if (SIGNAL_INITIAL_ALIASES[cleaned]) return SIGNAL_INITIAL_ALIASES[cleaned];
+  const tokens = cleaned.split("_").filter(Boolean);
+  if (tokens.length > 1) return tokens.map((token) => token.charAt(0)).join("");
+  const token = tokens[0] ?? "";
+  if (!token) return "sig";
+  const consonants = token.replace(/[aeiou]/g, "");
+  return (consonants.length >= 2 ? consonants.slice(0, 2) : token.slice(0, 2)).toLowerCase();
+}
+
+function normalizeSignalName(value: unknown, messageName?: unknown) {
+  const raw = toSnakeCase(value);
+  const base = raw.replace(/^sig_/, "").replace(/_signal$/, "") || "signal";
+  if (!String(messageName ?? "").trim()) return base;
+  const prefix = signalInitials(messageName);
+  return base.startsWith(`${prefix}_`) && base.endsWith(`_${prefix}`) ? base : `${prefix}_${base}_${prefix}`;
+}
+
+function parseTypedSignalValue(value: string) {
+  const text = value.trim();
+  if (!text) return "";
+  if (/^-?\d+(?:\.\d+)?$/.test(text)) return Number(text);
+  if (/^(true|false)$/i.test(text)) return /^true$/i.test(text);
+  return text;
+}
+
+function parseSignalValueList(value: FormDataEntryValue | null) {
+  return String(value ?? "")
+    .split(/[,\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map(parseTypedSignalValue);
+}
+
+function formatSignalValueList(values: unknown[]) {
+  return values.map(signalValueText).join(", ");
+}
+
+function parseSignalEnumValues(value: FormDataEntryValue | null) {
+  const entries: Record<string, unknown> = {};
+  for (const line of String(value ?? "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const separator = trimmed.includes("=") ? "=" : trimmed.includes(":") ? ":" : "";
+    if (!separator) continue;
+    const [rawKey, ...rawValueParts] = trimmed.split(separator);
+    const key = rawKey.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const rawValue = rawValueParts.join(separator).trim();
+    if (key) entries[key] = parseTypedSignalValue(rawValue);
+  }
+  return entries;
+}
+
+function parseSignalEnumValueRows(form: FormData) {
+  const states = form.getAll("edit_enum_state");
+  const codes = form.getAll("edit_enum_code");
+  const kinds = form.getAll("edit_enum_kind");
+  const entries: Record<string, unknown> = {};
+  const reservedValues: unknown[] = [];
+  states.forEach((stateValue, index) => {
+    const state = String(stateValue ?? "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const code = String(codes[index] ?? "").trim();
+    const kind = String(kinds[index] ?? "defined");
+    if (!code) return;
+    const parsedCode = parseTypedSignalValue(code);
+    if (kind === "reserved") {
+      reservedValues.push(parsedCode);
+      return;
+    }
+    if (state) entries[state] = parsedCode;
+  });
+  return { enumValues: entries, reservedValues };
+}
+
+function formatSignalEnumValues(values: Record<string, unknown>) {
+  return Object.entries(values).map(([state, code]) => `${state}=${signalValueText(code)}`).join("\n");
+}
+
 function signalFunctionName(
   item: EngineeringObject,
   names: Record<string, string>,
@@ -174,6 +325,28 @@ function signalFunctionName(
   return referenceName(names, functionId);
 }
 
+function hardwareClassValue(item: EngineeringObject) {
+  return "device_class" in item && item.device_class !== null && item.device_class !== undefined
+    ? String(item.device_class)
+    : "—";
+}
+
+function hardwareTypingValue(item: EngineeringObject) {
+  return "device_typing" in item ? item.device_typing || "—" : "—";
+}
+
+function hardwareGeneratorPolicy(item: EngineeringObject) {
+  if (!("hardware_information" in item)) return {};
+  const policy = item.hardware_information.generator_policy;
+  return policy && typeof policy === "object" && !Array.isArray(policy) ? policy as Record<string, unknown> : {};
+}
+
+function hardwareCapabilities(item: EngineeringObject) {
+  if (!("hardware_information" in item)) return {};
+  const profile = item.hardware_information.device_capability_profile;
+  return profile && typeof profile === "object" && !Array.isArray(profile) ? profile as Record<string, unknown> : {};
+}
+
 function resourceTableValues(
   resource: EngineeringResource,
   item: EngineeringObject,
@@ -182,7 +355,35 @@ function resourceTableValues(
 ): string[] {
   switch (resource) {
     case "hardware-nodes":
-      return [item.name, "device_type" in item ? engineeringDeviceTypeLabel(item.device_type) : "—", item.domain ?? "—"];
+      return [
+        item.name,
+        "device_type" in item ? engineeringDeviceTypeLabel(item.device_type) : "—",
+        hardwareClassValue(item),
+        hardwareTypingValue(item),
+        item.domain ?? "—",
+      ];
+    case "hardware-interfaces": {
+      const messageCount = "message_refs" in item && Array.isArray(item.message_refs)
+        ? item.message_refs.length
+        : Array.from(objectsById.values()).filter((candidate) => (
+            "hardware_interface_id" in candidate && candidate.hardware_interface_id === item.id
+          )).length;
+      const load = "static_load" in item && item.static_load !== null
+        ? `${item.static_load} %`
+        : "runtime_load" in item && item.runtime_load !== null
+          ? `${item.runtime_load} %`
+          : "—";
+      return [
+        "hardware_node_id" in item ? referenceName(names, item.hardware_node_id) : "—",
+        item.name,
+        "technology" in item ? item.technology : "—",
+        "channel_index" in item && item.channel_index !== null ? String(item.channel_index) : "—",
+        "network_ref" in item ? item.network_ref ?? "—" : "—",
+        String(messageCount),
+        load,
+        "status" in item ? item.status : "—",
+      ];
+    }
     case "functions":
       return [
         item.name,
@@ -201,6 +402,7 @@ function resourceTableValues(
       return [
         item.name,
         "interface_id" in item ? referenceName(names, item.interface_id) : "—",
+        "hardware_interface_id" in item ? referenceName(names, item.hardware_interface_id) : "—",
         "message_id_hex" in item ? item.message_id_hex ?? "—" : "—",
         "direction" in item ? item.direction ?? "—" : "—",
         "cycle_ms" in item && item.cycle_ms !== null ? `${item.cycle_ms} ms` : "—",
@@ -254,6 +456,7 @@ const RELATION_TYPES = [
 
 const OBJECT_TYPE_TO_RESOURCE: Record<string, EngineeringResource> = {
   HardwareNode: "hardware-nodes",
+  HardwareNetworkInterface: "hardware-interfaces",
   Function: "functions",
   Interface: "interfaces",
   Message: "messages",
@@ -264,6 +467,7 @@ const WIZARD_STEPS = ["Identität", "Zuordnung", "Details", "Prüfen"] as const;
 
 const REQUIRED_PROPOSAL_FIELDS: Record<string, string[]> = {
   HardwareNode: ["name"],
+  HardwareNetworkInterface: ["name", "hardware_node_id", "technology"],
   Function: ["name", "hardware_node_id"],
   Interface: ["name", "function_id", "interface_type"],
   Message: ["name", "interface_id"],
@@ -276,11 +480,30 @@ const FIELD_LABELS: Record<string, string> = {
   domain: "Domäne",
   description: "Beschreibung",
   device_type: "Gerätetyp",
+  device_class: "Class",
+  device_typing: "Typisierung",
+  data_complexity: "Data Complexity",
+  classification_status: "Klassifikationsstatus",
+  capability_profile_ref: "Capability-Profil",
   hardware_node_id: "Hardware-Knoten",
+  hardware_interface_id: "Hardware Interface",
   function_id: "Funktion",
   interface_id: "Interface",
   message_id: "Message",
   interface_type: "Interface-Typ",
+  technology: "Technologie",
+  controller_ref: "Controller",
+  physical_port_ref: "Physischer Port",
+  channel_index: "Kanal",
+  network_ref: "Netzwerk",
+  bitrate: "Bitrate",
+  data_bitrate: "Data Bitrate",
+  status: "Status",
+  static_load: "Statische Last",
+  runtime_load: "Runtime Last",
+  target_load_limit: "Ziel-Last",
+  warning_load_limit: "Warn-Last",
+  hard_load_limit: "Harte Last",
   message_id_hex: "Message-ID",
   direction: "Richtung",
   cycle_ms: "Zyklus",
@@ -314,6 +537,29 @@ function proposalObjectType(proposal: EngineeringProposal, item: Record<string, 
   if (targetResource in RESOURCE_TO_OBJECT_TYPE) return RESOURCE_TO_OBJECT_TYPE[targetResource as EngineeringResource];
   if (proposal.proposal_type === "RELATION") return "Relation";
   return proposal.proposal_type || "Object";
+}
+
+function proposalAction(item: Record<string, unknown>) {
+  const action = String(item.proposal_action ?? item.action ?? "CREATE").toUpperCase();
+  return ["CREATE", "UPDATE", "DELETE", "DEPRECATE"].includes(action) ? action : "CREATE";
+}
+
+function proposalActionLabel(action: string) {
+  if (action === "UPDATE") return "Korrigieren";
+  if (action === "DELETE") return "Loeschen";
+  if (action === "DEPRECATE") return "Ausmustern";
+  return "Ergaenzen";
+}
+
+function proposalApplyLabel(action: string) {
+  if (action === "UPDATE") return "Korrektur uebernehmen";
+  if (action === "DELETE") return "Loeschen freigeben";
+  if (action === "DEPRECATE") return "Ausmustern freigeben";
+  return "Freigeben";
+}
+
+function proposalItemApplied(item: Record<string, unknown>) {
+  return String(item.proposal_state ?? "").toUpperCase() === "APPROVED" || Boolean(item.applied_action);
 }
 
 function fieldValue(value: unknown) {
@@ -905,6 +1151,8 @@ export function EngineeringWorkbench() {
                         <td colSpan={tableHeaders.length}>
                           <DetailPanel
                             item={item}
+                            peerItems={items}
+                            referenceObjects={referenceObjects}
                             referenceNames={referenceNames}
                             resource={resource}
                             relations={relations}
@@ -1099,6 +1347,8 @@ function ProposalReviewPanel({
                 <div className="eng-proposal-objects">
                   {proposal.proposed_objects.map((item, index) => {
                     const validation = proposal.validation_results.find((candidate) => candidate.index === index);
+                    const action = proposalAction(item);
+                    const applied = proposalItemApplied(item);
                     return (
                       <div className={`eng-proposal-object eng-object-surface ${engineeringObjectTypeClass(proposalObjectType(proposal, item))}`} key={`${proposal.proposal_id}:${index}`}>
                         {editing ? (
@@ -1108,12 +1358,17 @@ function ProposalReviewPanel({
                             <label>Beschreibung<input defaultValue={String(item.description ?? "")} name={`description-${index}`} /></label>
                           </div>
                         ) : (
-                          <div><strong>{String(item.name ?? item.relation_type ?? `Objekt ${index + 1}`)}</strong><span className={`eng-object-badge ${engineeringObjectTypeClass(proposalObjectType(proposal, item))}`}>{engineeringObjectTypeLabel(proposalObjectType(proposal, item))}</span><span>{String(item.domain ?? "generic")}</span></div>
+                          <div>
+                            <strong>{String(item.name ?? item.relation_type ?? `Objekt ${index + 1}`)}</strong>
+                            <span className={`eng-object-badge ${engineeringObjectTypeClass(proposalObjectType(proposal, item))}`}>{engineeringObjectTypeLabel(proposalObjectType(proposal, item))}</span>
+                            <span className={`eng-proposal-action ${action.toLowerCase()}`}>{proposalActionLabel(action)}</span>
+                            <span>{String(item.domain ?? "generic")}</span>
+                          </div>
                         )}
                         <div className="eng-proposal-object-actions">
                           {validation && <span className={`status-badge ${validation.valid ? "completed" : "outdated"}`}>{validation.valid ? "VALID" : "INVALID"}</span>}
                           <button className="button secondary tiny" disabled={proposal.status === "APPROVED" || Boolean(busy)} onClick={() => setWizard({ proposalId: proposal.proposal_id, index })} type="button">Wizard</button>
-                          {item.canonical_id ? <span className="status-badge approved">Freigegeben</span> : <button className="button primary tiny" disabled={!validation?.valid || Boolean(busy)} onClick={() => void act(`approve:${proposal.proposal_id}:${index}`, () => approveEngineeringProposal(proposal.proposal_id, [index]), "Objekt freigegeben und versioniert gespeichert.")} type="button">Freigeben</button>}
+                          {applied ? <span className="status-badge approved">Uebernommen</span> : <button className="button primary tiny" disabled={!validation?.valid || Boolean(busy)} onClick={() => void act(`approve:${proposal.proposal_id}:${index}`, () => approveEngineeringProposal(proposal.proposal_id, [index]), "Vorschlag ins kanonische Modell uebernommen.")} type="button">{proposalApplyLabel(action)}</button>}
                         </div>
                         {validation?.errors.map((error) => <small className="routing-issue error" key={error}>{error}</small>)}
                       </div>
@@ -1200,6 +1455,9 @@ function ProposalObjectWizard({
         setDraft((current) => ({
           ...current,
           ...(objectType === "HardwareNode" && !current.device_type ? { device_type: nextSchema.device_types[0] ?? "ECU" } : {}),
+          ...(objectType === "HardwareNode" && !current.device_class ? { device_class: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.deviceClass ?? 1 } : {}),
+          ...(objectType === "HardwareNode" && !current.device_typing ? { device_typing: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.typing ?? "Basic Communication Device" } : {}),
+          ...(objectType === "HardwareNode" && !current.data_complexity ? { data_complexity: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.complexity ?? "SERVICE_DATA" } : {}),
           ...(objectType === "Interface" && !current.interface_type ? { interface_type: nextSchema.interface_types[0] ?? "CAN" } : {}),
         }));
       })
@@ -1276,6 +1534,13 @@ function ProposalObjectWizard({
       if (field in next && fieldValue(next[field]).trim() === "") next[field] = null;
     }
     if (objectType === "HardwareNode" && !next.device_type) next.device_type = schema?.device_types[0] ?? "ECU";
+    if (objectType === "HardwareNode") {
+      const defaults = DEFAULT_TYPING_BY_DEVICE_TYPE[String(next.device_type ?? "ECU")] ?? DEFAULT_TYPING_BY_DEVICE_TYPE.ECU;
+      next.device_class = optionalNumberValue(fieldValue(next.device_class || defaults.deviceClass));
+      if (!next.device_typing) next.device_typing = defaults.typing;
+      if (!next.data_complexity) next.data_complexity = defaults.complexity;
+      next.classification_status = next.classification_status || "CONFIRMED";
+    }
     if (objectType === "Interface" && !next.interface_type) next.interface_type = schema?.interface_types[0] ?? "CAN";
     return next;
   }
@@ -1356,12 +1621,40 @@ function ProposalObjectWizard({
         {step === 1 && (
           <div className="proposal-wizard-grid">
             {objectType === "HardwareNode" && (
-              <label className="field">
-                <span>Gerätetyp</span>
-                <select required onChange={(event) => updateField("device_type", event.target.value)} value={fieldValue(draft.device_type || schema?.device_types[0] || "ECU")}>
-                  {(schema?.device_types ?? ["ECU"]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
-                </select>
-              </label>
+              <>
+                <label className="field">
+                  <span>Gerätetyp</span>
+                  <select required onChange={(event) => {
+                    const defaults = DEFAULT_TYPING_BY_DEVICE_TYPE[event.target.value];
+                    updateField("device_type", event.target.value);
+                    if (defaults) {
+                      updateField("device_class", defaults.deviceClass);
+                      updateField("device_typing", defaults.typing);
+                      updateField("data_complexity", defaults.complexity);
+                    }
+                  }} value={fieldValue(draft.device_type || schema?.device_types[0] || "ECU")}>
+                    {(schema?.device_types ?? ["ECU"]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Class</span>
+                  <select required onChange={(event) => updateField("device_class", Number(event.target.value))} value={fieldValue(draft.device_class || 1)}>
+                    {(schema?.device_classes ?? [{ value: 1, label: "Basic" }]).map((item) => <option key={item.value} value={item.value}>{item.value} · {item.label}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Typisierung</span>
+                  <select required onChange={(event) => updateField("device_typing", event.target.value)} value={fieldValue(draft.device_typing || "Basic Communication Device")}>
+                    {(schema?.device_typings ?? ["Basic Communication Device"]).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Data Complexity</span>
+                  <select required onChange={(event) => updateField("data_complexity", event.target.value)} value={fieldValue(draft.data_complexity || "SERVICE_DATA")}>
+                    {(schema?.data_complexities ?? ["SERVICE_DATA"]).map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+              </>
             )}
             {objectType === "Function" && (
               <ReferenceSelect label="Hardware-Knoten" options={references["hardware-nodes"] ?? []} proposal={proposal} references={references} required value={fieldValue(draft.hardware_node_id)} onChange={(value) => updateField("hardware_node_id", value || null)} draft={draft} />
@@ -1495,13 +1788,15 @@ function ProposalWizardSummary({
     ? ["relation_type", "source_type", "source_id", "target_type", "target_id"]
     : [];
   const assignmentFields = {
-    HardwareNode: ["device_type"],
+    HardwareNode: ["device_type", "device_class", "device_typing", "data_complexity", "classification_status"],
+    HardwareNetworkInterface: ["hardware_node_id", "technology", "network_ref"],
     Function: ["hardware_node_id"],
     Interface: ["function_id", "hardware_node_id", "interface_type"],
     Message: ["interface_id"],
     Signal: ["message_id"],
   }[objectType] ?? [];
   const detailFields = {
+    HardwareNetworkInterface: ["controller_ref", "physical_port_ref", "channel_index", "bitrate", "data_bitrate", "static_load", "runtime_load", "target_load_limit", "warning_load_limit", "hard_load_limit", "status"],
     Message: ["message_id_hex", "direction", "cycle_ms", "dlc"],
     Signal: ["display_name", "start_bit", "length_bits", "byte_order", "data_type", "factor", "offset_value", "unit", "min_value", "max_value"],
   }[objectType] ?? [];
@@ -1636,7 +1931,12 @@ function CreateForm({
   const [deviceType, setDeviceType] = useState(
     hardwarePreset ?? schema?.device_types[0] ?? "ECU",
   );
+  const initialHardwareDefaults = DEFAULT_TYPING_BY_DEVICE_TYPE[hardwarePreset ?? "ECU"] ?? DEFAULT_TYPING_BY_DEVICE_TYPE.ECU;
+  const [deviceClass, setDeviceClass] = useState(initialHardwareDefaults.deviceClass);
+  const [deviceTyping, setDeviceTyping] = useState(initialHardwareDefaults.typing);
+  const [dataComplexity, setDataComplexity] = useState(initialHardwareDefaults.complexity);
   const [parents, setParents] = useState<EngineeringObject[]>([]);
+  const [hardwareInterfaces, setHardwareInterfaces] = useState<EngineeringObject[]>([]);
   const [parentId, setParentId] = useState("");
   const [loadingParents, setLoadingParents] = useState(false);
   const hierarchy = RESOURCE_HIERARCHY[resource];
@@ -1677,6 +1977,24 @@ function CreateForm({
   }, [hierarchy]);
 
   useEffect(() => {
+    if (resource !== "messages") {
+      setHardwareInterfaces([]);
+      return;
+    }
+    let cancelled = false;
+    listAllEngineeringObjects("hardware-interfaces")
+      .then((items) => {
+        if (!cancelled) setHardwareInterfaces(items);
+      })
+      .catch(() => {
+        if (!cancelled) setHardwareInterfaces([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [resource]);
+
+  useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !submitting) onClose();
     };
@@ -1690,13 +2008,45 @@ function CreateForm({
   }
 
   function payloadFrom(form: FormData) {
+    const parent = parents.find((item) => item.id === parentId);
+    let normalizedName: unknown = form.get("name");
+    if (resource === "interfaces") normalizedName = normalizeInterfaceName(normalizedName);
+    if (resource === "messages") normalizedName = normalizeMessageName(normalizedName);
+    if (resource === "signals") normalizedName = normalizeSignalName(normalizedName, parent?.name);
     const payload: Record<string, unknown> = {
-      name: form.get("name"),
+      name: normalizedName,
       description: form.get("description") || null,
       domain: form.get("domain") || null,
     };
-    const parent = parents.find((item) => item.id === parentId);
-    if (resource === "hardware-nodes") payload.device_type = form.get("device_type");
+    if (resource === "hardware-nodes") {
+      payload.device_type = form.get("device_type");
+      payload.device_class = optionalFormNumber(form, "device_class");
+      payload.device_typing = form.get("device_typing") || null;
+      payload.data_complexity = form.get("data_complexity") || null;
+      payload.classification_status = "CONFIRMED";
+    }
+    if (resource === "hardware-interfaces") {
+      payload.hardware_node_id = parentId;
+      payload.technology = form.get("technology") || "CAN_FD";
+      payload.controller_ref = form.get("controller_ref") || null;
+      payload.physical_port_ref = form.get("physical_port_ref") || null;
+      payload.channel_index = optionalFormNumber(form, "channel_index");
+      payload.network_ref = form.get("network_ref") || null;
+      payload.bitrate = optionalFormNumber(form, "bitrate");
+      payload.data_bitrate = optionalFormNumber(form, "data_bitrate");
+      payload.status = form.get("status") || "UNMAPPED";
+      payload.message_refs = [];
+      payload.capabilities = {
+        reuse_existing_capacity_first: true,
+        multiple_messages_allowed: true,
+        multiple_functions_allowed: true,
+      };
+      payload.static_load = optionalFormNumber(form, "static_load");
+      payload.runtime_load = optionalFormNumber(form, "runtime_load");
+      payload.target_load_limit = optionalFormNumber(form, "target_load_limit");
+      payload.warning_load_limit = optionalFormNumber(form, "warning_load_limit");
+      payload.hard_load_limit = optionalFormNumber(form, "hard_load_limit");
+    }
     if (resource === "functions") payload.hardware_node_id = parentId;
     if (resource === "interfaces") payload.interface_type = form.get("interface_type");
     if (resource === "interfaces" && parent) {
@@ -1705,6 +2055,7 @@ function CreateForm({
     }
     if (resource === "messages") {
       payload.interface_id = parentId;
+      payload.hardware_interface_id = form.get("hardware_interface_id") || null;
       payload.message_id_hex = form.get("message_id_hex") || null;
       payload.direction = form.get("direction") || null;
       payload.cycle_ms = optionalFormNumber(form, "cycle_ms");
@@ -1820,7 +2171,16 @@ function CreateForm({
           <select
             id="device_type"
             name="device_type"
-            onChange={(event) => setDeviceType(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              const defaults = DEFAULT_TYPING_BY_DEVICE_TYPE[next];
+              setDeviceType(next);
+              if (defaults) {
+                setDeviceClass(defaults.deviceClass);
+                setDeviceTyping(defaults.typing);
+                setDataComplexity(defaults.complexity);
+              }
+            }}
             required
             value={deviceType}
           >
@@ -1831,6 +2191,30 @@ function CreateForm({
             ))}
           </select>
         </div>
+      )}
+      {resource === "hardware-nodes" && (
+        <>
+          <div className="field">
+            <label htmlFor="device_class">Class</label>
+            <select id="device_class" name="device_class" onChange={(event) => setDeviceClass(Number(event.target.value))} required value={deviceClass}>
+              {(schema?.device_classes ?? [{ value: 1, label: "Basic" }]).map((item) => (
+                <option key={item.value} value={item.value}>{item.value} · {item.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="device_typing">Typisierung</label>
+            <select id="device_typing" name="device_typing" onChange={(event) => setDeviceTyping(event.target.value)} required value={deviceTyping}>
+              {(schema?.device_typings ?? ["Basic Communication Device"]).map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="data_complexity">Data Complexity</label>
+            <select id="data_complexity" name="data_complexity" onChange={(event) => setDataComplexity(event.target.value)} required value={dataComplexity}>
+              {(schema?.data_complexities ?? ["SERVICE_DATA"]).map((type) => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+        </>
       )}
 
       {resource === "interfaces" && (
@@ -1845,19 +2229,61 @@ function CreateForm({
           </select>
         </div>
       )}
+      {resource === "hardware-interfaces" && (
+        <div className="field">
+          <label htmlFor="technology">Technologie</label>
+          <select id="technology" name="technology" required>
+            {(schema?.interface_types ?? ["CAN_FD"]).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       </div>
 
       <div className="proposal-wizard-grid three" hidden={step !== 2}>
-      {!(["messages", "signals"] as EngineeringResource[]).includes(resource) && (
+      {!(["hardware-interfaces", "messages", "signals"] as EngineeringResource[]).includes(resource) && (
         <div className="proposal-wizard-help">
           <strong>Keine weiteren technischen Pflichtfelder</strong>
           <span>Identität und Zuordnung reichen für diesen Objekttyp aus. Zusätzliche Beziehungen können anschließend am Objekt gepflegt werden.</span>
         </div>
       )}
 
+      {resource === "hardware-interfaces" && (
+        <>
+        <div className="form-grid three">
+          <div className="field"><label htmlFor="controller_ref">Controller</label><input id="controller_ref" name="controller_ref" placeholder="CAN0" type="text" /></div>
+          <div className="field"><label htmlFor="physical_port_ref">Physischer Port</label><input id="physical_port_ref" name="physical_port_ref" placeholder="Port 1" type="text" /></div>
+          <div className="field"><label htmlFor="channel_index">Kanal</label><input defaultValue="1" id="channel_index" min="1" name="channel_index" type="number" /></div>
+          <div className="field"><label htmlFor="network_ref">Netzwerk / Bussegment</label><input id="network_ref" name="network_ref" placeholder="CAN_FD_A" type="text" /></div>
+          <div className="field"><label htmlFor="bitrate">Bitrate</label><input defaultValue="500000" id="bitrate" min="1" name="bitrate" step="1" type="number" /></div>
+          <div className="field"><label htmlFor="data_bitrate">Data Bitrate</label><input defaultValue="2000000" id="data_bitrate" min="1" name="data_bitrate" step="1" type="number" /></div>
+          <div className="field"><label htmlFor="target_load_limit">Ziel-Last (%)</label><input defaultValue="60" id="target_load_limit" min="0" name="target_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="warning_load_limit">Warn-Last (%)</label><input defaultValue="75" id="warning_load_limit" min="0" name="warning_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="hard_load_limit">Harte Last (%)</label><input defaultValue="90" id="hard_load_limit" min="0" name="hard_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="static_load">Statische Last (%)</label><input id="static_load" min="0" name="static_load" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="runtime_load">Runtime Last (%)</label><input id="runtime_load" min="0" name="runtime_load" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="status">Status</label><select defaultValue="UNMAPPED" id="status" name="status">{["CONFIGURED", "UNMAPPED", "ACTIVE", "OUTDATED", "OVERLOADED", "ERROR"].map((value) => <option key={value}>{value}</option>)}</select></div>
+        </div>
+        </>
+      )}
+
       {resource === "messages" && (
         <>
         <div className="form-grid">
+          <div className="field">
+            <label htmlFor="hardware_interface_id">Hardware Interface</label>
+            <select id="hardware_interface_id" name="hardware_interface_id">
+              <option value="">Noch nicht zugewiesen</option>
+              {hardwareInterfaces.map((hardwareInterface) => (
+                <option key={hardwareInterface.id} value={hardwareInterface.id}>
+                  {hardwareInterface.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="field">
             <label htmlFor="message_id_hex">Message-ID (hex)</label>
             <input id="message_id_hex" name="message_id_hex" type="text" placeholder="0x1A0" />
@@ -1934,6 +2360,8 @@ function CreateForm({
 function DetailPanel({
   item,
   initialEdit = false,
+  peerItems,
+  referenceObjects,
   referenceNames,
   resource,
   relations,
@@ -1943,6 +2371,8 @@ function DetailPanel({
 }: {
   item: EngineeringObject;
   initialEdit?: boolean;
+  peerItems: EngineeringObject[];
+  referenceObjects: EngineeringObject[];
   referenceNames: Record<string, string>;
   resource: EngineeringResource;
   relations: EngineeringRelation[];
@@ -2031,6 +2461,8 @@ function DetailPanel({
           {showEdit && (
             <EditObjectForm
               item={item}
+              referenceObjects={referenceObjects}
+              referenceNames={referenceNames}
               resource={resource}
               schema={schema}
               onSaved={() => {
@@ -2057,43 +2489,57 @@ function DetailPanel({
               <dd>{item.approval_state}</dd>
             </div>
           </dl>
+          {resource === "interfaces" && "interface_type" in item && (
+            <InterfaceMessageList interfaceItem={item} interfaces={peerItems} messages={referenceObjects} />
+          )}
+          {resource === "hardware-interfaces" && "technology" in item && (
+            <HardwareInterfaceOverview hardwareInterface={item} referenceObjects={referenceObjects} referenceNames={referenceNames} />
+          )}
+          {resource === "hardware-nodes" && "device_type" in item && (
+            <HardwareClassificationOverview item={item} />
+          )}
           {resource === "signals" && "start_bit" in item && (
             <SignalParameterOverview item={item} referenceNames={referenceNames} />
           )}
           {item.description && <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>{item.description}</p>}
 
-          <div className="section-title">
-            <span>Lifecycle</span>
-          </div>
-          <div className="eng-pill-row">
-            {["draft", "active", "deprecated", "superseded"].map((state) => (
-              <button
-                className={`button secondary tiny ${item.lifecycle_state === state ? "active" : ""}`}
-                disabled={busy}
-                key={state}
-                onClick={() => setLifecycle(state)}
-                type="button"
-              >
-                {state}
-              </button>
-            ))}
-          </div>
-
-          <div className="section-title">
-            <span>Review</span>
-          </div>
-          <div className="eng-pill-row">
-            {["unreviewed", "in_review", "reviewed", "rejected"].map((state) => (
-              <button
-                className={`button secondary tiny ${item.review_state === state ? "active" : ""}`}
-                disabled={busy}
-                key={state}
-                onClick={() => setReview(state)}
-                type="button"
-              >
-                {state}
-              </button>
-            ))}
+          <div className="eng-governance-row">
+            <div>
+              <div className="section-title">
+                <span>Lifecycle</span>
+              </div>
+              <div className="eng-pill-row">
+                {["draft", "active", "deprecated", "superseded"].map((state) => (
+                  <button
+                    className={`button secondary tiny ${item.lifecycle_state === state ? "active" : ""}`}
+                    disabled={busy}
+                    key={state}
+                    onClick={() => setLifecycle(state)}
+                    type="button"
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="section-title">
+                <span>Review</span>
+              </div>
+              <div className="eng-pill-row">
+                {["unreviewed", "in_review", "reviewed", "rejected"].map((state) => (
+                  <button
+                    className={`button secondary tiny ${item.review_state === state ? "active" : ""}`}
+                    disabled={busy}
+                    key={state}
+                    onClick={() => setReview(state)}
+                    type="button"
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {notice && <div className="notice error">{notice}</div>}
@@ -2188,6 +2634,205 @@ function signalTimeline(data: Record<string, unknown>) {
   return Array.isArray(data.state_timeline)
     ? data.state_timeline.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object" && !Array.isArray(item))
     : [];
+}
+
+function isEngMessage(item: EngineeringObject): item is Extract<EngineeringObject, { interface_id: string | null }> {
+  return "interface_id" in item && "message_id_hex" in item;
+}
+
+function isEngInterface(item: EngineeringObject): item is Extract<EngineeringObject, { interface_type: string }> {
+  return "interface_type" in item;
+}
+
+function isHardwareNetworkInterface(item: EngineeringObject): item is Extract<EngineeringObject, { technology: string }> {
+  return "technology" in item && "network_ref" in item;
+}
+
+function HardwareClassificationOverview({ item }: { item: Extract<EngineeringObject, { device_type: string }> }) {
+  const profile = hardwareCapabilities(item);
+  const policy = hardwareGeneratorPolicy(item);
+  const capabilityLabels = [
+    "measurement_capabilities",
+    "actuation_capabilities",
+    "processing_capabilities",
+    "diagnostic_capabilities",
+    "communication_capabilities",
+    "output_types",
+  ];
+  const visibleCapabilities = capabilityLabels
+    .map((key) => ({ key, values: Array.isArray(profile[key]) ? profile[key] as unknown[] : [] }))
+    .filter((entry) => entry.values.length > 0);
+  return (
+    <>
+      <div className="section-title signal-parameter-heading">
+        <span>Geräteklasse &amp; Generator-Policy</span>
+      </div>
+      <dl className="overview-list eng-signal-parameter-list">
+        <div><dt>Gerätetyp</dt><dd>{engineeringDeviceTypeLabel(item.device_type)}</dd></div>
+        <div><dt>Class</dt><dd>{hardwareClassValue(item)}</dd></div>
+        <div><dt>Typisierung</dt><dd>{hardwareTypingValue(item)}</dd></div>
+        <div><dt>Data Complexity</dt><dd>{"data_complexity" in item ? item.data_complexity : "—"}</dd></div>
+        <div><dt>Klassifikation</dt><dd>{"classification_status" in item ? item.classification_status : "—"}</dd></div>
+        <div><dt>Profil</dt><dd>{"capability_profile_ref" in item ? item.capability_profile_ref ?? "—" : "—"}</dd></div>
+      </dl>
+      {visibleCapabilities.length > 0 && (
+        <div className="hardware-capability-list" aria-label="Device Capabilities">
+          {visibleCapabilities.map((entry) => (
+            <span key={entry.key}>
+              <b>{FIELD_LABELS[entry.key] ?? entry.key.replace(/_/g, " ")}</b>
+              <i>{entry.values.map(signalValueText).join(", ")}</i>
+            </span>
+          ))}
+        </div>
+      )}
+      {Object.keys(policy).length > 0 && (
+        <div className="hardware-generator-policy" aria-label="Generator Policy">
+          {Object.entries(policy).map(([key, value]) => (
+            <span key={key}><b>{key.replace(/_/g, " ")}</b><i>{signalValueText(value)}</i></span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function HardwareInterfaceOverview({
+  hardwareInterface,
+  referenceObjects,
+  referenceNames,
+}: {
+  hardwareInterface: Extract<EngineeringObject, { technology: string }>;
+  referenceObjects: EngineeringObject[];
+  referenceNames: Record<string, string>;
+}) {
+  const messages = referenceObjects
+    .filter(isEngMessage)
+    .filter((message) => message.hardware_interface_id === hardwareInterface.id)
+    .sort((left, right) => compareEngineeringTableValues(left.name, right.name));
+  const functions = [...new Set(messages
+    .map((message) => {
+      if (!message.interface_id) return "";
+      const logicalInterface = referenceObjects.find((item) => item.id === message.interface_id);
+      return logicalInterface && "function_id" in logicalInterface && logicalInterface.function_id
+        ? referenceNames[logicalInterface.function_id] ?? logicalInterface.function_id
+        : "";
+    })
+    .filter(Boolean))];
+
+  return (
+    <>
+      <div className="section-title signal-parameter-heading">
+        <span>Physische Schnittstelle</span>
+      </div>
+      <dl className="overview-list eng-signal-parameter-list">
+        <div><dt>Hardware Node</dt><dd>{"hardware_node_id" in hardwareInterface ? referenceName(referenceNames, hardwareInterface.hardware_node_id) : "—"}</dd></div>
+        <div><dt>Technologie</dt><dd>{signalParameterValue(hardwareInterface.technology)}</dd></div>
+        <div><dt>Controller / Channel</dt><dd>{signalParameterValue("controller_ref" in hardwareInterface ? hardwareInterface.controller_ref : null)} / {signalParameterValue("channel_index" in hardwareInterface ? hardwareInterface.channel_index : null)}</dd></div>
+        <div><dt>Physical Port</dt><dd>{signalParameterValue("physical_port_ref" in hardwareInterface ? hardwareInterface.physical_port_ref : null)}</dd></div>
+        <div><dt>Network</dt><dd>{signalParameterValue("network_ref" in hardwareInterface ? hardwareInterface.network_ref : null)}</dd></div>
+        <div><dt>Bitrate</dt><dd>{signalParameterValue("bitrate" in hardwareInterface ? hardwareInterface.bitrate : null, "bit/s")}</dd></div>
+        <div><dt>Data Bitrate</dt><dd>{signalParameterValue("data_bitrate" in hardwareInterface ? hardwareInterface.data_bitrate : null, "bit/s")}</dd></div>
+        <div><dt>Messages</dt><dd>{messages.length}</dd></div>
+        <div><dt>Funktionen</dt><dd>{functions.length ? functions.join(", ") : "—"}</dd></div>
+        <div><dt>Statische Last</dt><dd>{signalParameterValue("static_load" in hardwareInterface ? hardwareInterface.static_load : null, "%")}</dd></div>
+        <div><dt>Runtime Last</dt><dd>{signalParameterValue("runtime_load" in hardwareInterface ? hardwareInterface.runtime_load : null, "%")}</dd></div>
+        <div><dt>Reserve</dt><dd>{hardwareInterface.target_load_limit !== null && hardwareInterface.static_load !== null ? `${Math.max(0, hardwareInterface.target_load_limit - hardwareInterface.static_load).toFixed(1)} %` : "—"}</dd></div>
+        <div><dt>Status</dt><dd>{"status" in hardwareInterface ? hardwareInterface.status : "—"}</dd></div>
+      </dl>
+
+      <div className="section-title signal-parameter-heading">
+        <span>Nachrichten auf diesem Hardware Interface</span>
+      </div>
+      {messages.length === 0 ? (
+        <p className="eng-inline-empty">Noch keine Message ist physisch auf dieses Hardware Interface gelegt.</p>
+      ) : (
+        <div className="interface-message-list" aria-label="Messages auf Hardware Interface">
+          {messages.map((message) => (
+            <div key={message.id}>
+              <strong>{message.name}<small>{message.interface_id ? referenceName(referenceNames, message.interface_id) : "ohne logisches Interface"}</small></strong>
+              <span>{message.message_id_hex ?? "keine ID"}</span>
+              <span>{message.direction ?? "—"}</span>
+              <span>{signalParameterValue(message.cycle_ms, "ms")}</span>
+              <span>DLC {signalParameterValue(message.dlc)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function InterfaceMessageList({
+  interfaceItem,
+  interfaces,
+  messages,
+}: {
+  interfaceItem: Extract<EngineeringObject, { interface_type: string }>;
+  interfaces: EngineeringObject[];
+  messages: EngineeringObject[];
+}) {
+  const allMessages = messages.filter(isEngMessage);
+  const interfaceMessages = allMessages
+    .filter((message) => message.interface_id === interfaceItem.id)
+    .sort((left, right) => compareEngineeringTableValues(left.name, right.name));
+  const currentFunctionId = "function_id" in interfaceItem && typeof interfaceItem.function_id === "string" ? interfaceItem.function_id : null;
+  const currentGroupName = normalizedInterfaceGroupName(interfaceItem.name);
+  const interfaceNameById = new Map(
+    interfaces
+      .filter(isEngInterface)
+      .map((item) => [item.id, item.name]),
+  );
+  const relatedInterfaceIds = new Set(
+    interfaces
+      .filter(isEngInterface)
+      .filter((item) => item.id !== interfaceItem.id)
+      .filter((item) => {
+        const sameFunction = currentFunctionId && "function_id" in item && item.function_id === currentFunctionId;
+        const sameGroup = currentGroupName && normalizedInterfaceGroupName(item.name) === currentGroupName;
+        return sameFunction || sameGroup;
+      })
+      .map((item) => item.id),
+  );
+  const relatedMessages = interfaceMessages.length > 0
+    ? []
+    : allMessages
+      .filter((message) => message.interface_id !== null && relatedInterfaceIds.has(message.interface_id))
+      .sort((left, right) => compareEngineeringTableValues(left.name, right.name));
+  const visibleMessages = interfaceMessages.length > 0 ? interfaceMessages : relatedMessages;
+  const showingRelatedMessages = interfaceMessages.length === 0 && relatedMessages.length > 0;
+
+  return (
+    <>
+      <div className="section-title signal-parameter-heading">
+        <span>Nachrichten</span>
+      </div>
+      {showingRelatedMessages && (
+        <p className="eng-inline-hint">
+          Keine direkte Nachricht auf diesem Interface. Angezeigt werden Nachrichten auf verwandten Interfaces derselben Funktion.
+        </p>
+      )}
+      {visibleMessages.length === 0 ? (
+        <p className="eng-inline-empty">
+          Keine Nachrichten direkt auf diesem Interface. Das passiert, wenn Import oder Generator Messages noch nicht mit diesem Interface verknuepft haben.
+        </p>
+      ) : (
+        <div className="interface-message-list" aria-label={showingRelatedMessages ? "Nachrichten verwandter Interfaces" : "Nachrichten dieses Interfaces"}>
+          {visibleMessages.map((message) => (
+            <div key={message.id}>
+              <strong>
+                {message.name}
+                {showingRelatedMessages && <small>{message.interface_id ? interfaceNameById.get(message.interface_id) ?? "verwandtes Interface" : "ohne Interface"}</small>}
+              </strong>
+              <span>{message.message_id_hex ?? "keine ID"}</span>
+              <span>{message.direction ?? "—"}</span>
+              <span>{signalParameterValue(message.cycle_ms, "ms")}</span>
+              <span>DLC {signalParameterValue(message.dlc)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
 }
 
 function SignalParameterOverview({
@@ -2302,13 +2947,99 @@ function RequirementFields({ prefix, defaults = {} }: { prefix: string; defaults
   );
 }
 
+function SignalValueDomainFields({ item }: { item: EngSignal }) {
+  const canonical = buildCanonicalSignalDefinition(item);
+  const enumRows = Object.entries(canonical.valueDomain.enumValues)
+    .map(([state, code]) => ({ state, code, kind: "defined" }));
+  const reservedRows = canonical.valueDomain.reservedValues
+    .map((code) => ({ state: `RESERVED_${signalValueText(code)}`, code, kind: "reserved" }));
+  const tableRows = [
+    ...enumRows,
+    ...reservedRows,
+    ...Array.from({ length: 3 }, () => ({ state: "", code: "", kind: "defined" })),
+  ];
+  return (
+    <fieldset className="eng-requirement-fields eng-signal-edit-group">
+      <legend>Wertcodierung</legend>
+      <div className="signal-value-domain-editor">
+        <div className="signal-value-domain-controls">
+          <div className="field">
+            <label htmlFor="edit_semantic_type">Semantik</label>
+            <select defaultValue={canonical.semantic.semanticType} id="edit_semantic_type" name="edit_semantic_type">
+              {["NUMERIC", "STATE", "ENUM", "BOOLEAN", "BITFIELD", "COUNTER", "FLAG", "RAW", "STRING", "BYTE_ARRAY", "CUSTOM"].map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="edit_default_value">Default</label>
+            <input defaultValue={signalValueText(canonical.valueDomain.defaultValue)} id="edit_default_value" name="edit_default_value" type="text" />
+          </div>
+          <div className="field">
+            <label htmlFor="edit_invalid_values">Ungültig</label>
+            <input defaultValue={formatSignalValueList(canonical.valueDomain.invalidValues)} id="edit_invalid_values" name="edit_invalid_values" placeholder="15, 255" type="text" />
+          </div>
+        </div>
+        <div className="signal-code-table-field">
+          <span>Definitionen</span>
+          <div className="signal-code-table-scroll">
+            <table className="signal-code-table">
+              <thead>
+                <tr>
+                  <th>Zustand / Botschaft</th>
+                  <th>Code</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tableRows.map((row, index) => (
+                  <tr key={`${row.state}:${index}`}>
+                    <td>
+                      <input
+                        aria-label={`Zustand oder Botschaft ${index + 1}`}
+                        defaultValue={row.state}
+                        name="edit_enum_state"
+                        placeholder={index >= enumRows.length + reservedRows.length ? "NEUER_WERT" : undefined}
+                        type="text"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        aria-label={`Code ${index + 1}`}
+                        defaultValue={signalValueText(row.code) === "—" ? "" : signalValueText(row.code)}
+                        name="edit_enum_code"
+                        placeholder={index >= enumRows.length + reservedRows.length ? String(index) : undefined}
+                        type="text"
+                      />
+                    </td>
+                    <td>
+                      <select aria-label={`Status ${index + 1}`} defaultValue={row.kind} name="edit_enum_kind">
+                        <option value="defined">Definiert</option>
+                        <option value="reserved">Reserviert</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  );
+}
+
 function EditObjectForm({
   item,
+  referenceObjects,
+  referenceNames,
   resource,
   schema,
   onSaved,
 }: {
   item: EngineeringObject;
+  referenceObjects: EngineeringObject[];
+  referenceNames: Record<string, string>;
   resource: EngineeringResource;
   schema: EngineeringSchema | null;
   onSaved: () => void;
@@ -2326,14 +3057,42 @@ function EditObjectForm({
     setSubmitting(true);
     setFormError("");
     const form = new FormData(event.currentTarget);
+    let normalizedName: unknown = form.get("edit_name");
+    if (resource === "interfaces") normalizedName = normalizeInterfaceName(normalizedName);
+    if (resource === "messages") normalizedName = normalizeMessageName(normalizedName);
+    if (resource === "signals" && "message_id" in item) {
+      normalizedName = normalizeSignalName(normalizedName, item.message_id ? referenceNames[item.message_id] : undefined);
+    }
     const payload: Record<string, unknown> = {
-      name: form.get("edit_name"),
+      name: normalizedName,
       domain: form.get("edit_domain") || null,
       description: form.get("edit_description") || null,
     };
-    if (resource === "hardware-nodes") payload.device_type = form.get("edit_device_type");
+    if (resource === "hardware-nodes") {
+      payload.device_type = form.get("edit_device_type");
+      payload.device_class = optionalNumber(form, "edit_device_class");
+      payload.device_typing = form.get("edit_device_typing") || null;
+      payload.data_complexity = form.get("edit_data_complexity") || null;
+      payload.classification_status = form.get("edit_classification_status") || "CONFIRMED";
+    }
+    if (resource === "hardware-interfaces") {
+      payload.technology = form.get("edit_technology") || null;
+      payload.controller_ref = form.get("edit_controller_ref") || null;
+      payload.physical_port_ref = form.get("edit_physical_port_ref") || null;
+      payload.channel_index = optionalNumber(form, "edit_channel_index");
+      payload.network_ref = form.get("edit_network_ref") || null;
+      payload.bitrate = optionalNumber(form, "edit_bitrate");
+      payload.data_bitrate = optionalNumber(form, "edit_data_bitrate");
+      payload.status = form.get("edit_status") || "UNMAPPED";
+      payload.static_load = optionalNumber(form, "edit_static_load");
+      payload.runtime_load = optionalNumber(form, "edit_runtime_load");
+      payload.target_load_limit = optionalNumber(form, "edit_target_load_limit");
+      payload.warning_load_limit = optionalNumber(form, "edit_warning_load_limit");
+      payload.hard_load_limit = optionalNumber(form, "edit_hard_load_limit");
+    }
     if (resource === "interfaces") payload.interface_type = form.get("edit_interface_type");
     if (resource === "messages") {
+      payload.hardware_interface_id = form.get("edit_hardware_interface_id") || null;
       payload.message_id_hex = form.get("edit_message_id_hex") || null;
       payload.direction = form.get("edit_direction") || null;
       payload.cycle_ms = optionalNumber(form, "edit_cycle_ms");
@@ -2357,6 +3116,24 @@ function EditObjectForm({
       payload.communication = {
         ...("communication" in item ? item.communication : {}),
         ...requirementPayload(form, "edit_requirement_"),
+      };
+      const semanticType = String(form.get("edit_semantic_type") || "UNKNOWN").toUpperCase();
+      const { enumValues, reservedValues } = parseSignalEnumValueRows(form);
+      const invalidValues = parseSignalValueList(form.get("edit_invalid_values"));
+      const defaultValue = parseTypedSignalValue(String(form.get("edit_default_value") ?? ""));
+      payload.data = {
+        ...("data" in item ? item.data : {}),
+        semantic_type: semanticType,
+        enum_values: enumValues,
+        allowed_values: Object.keys(enumValues),
+        reserved_values: reservedValues,
+        invalid_values: invalidValues,
+        default_value: defaultValue,
+      };
+      payload.semantic = {
+        ...("semantic" in item ? item.semantic : {}),
+        semantic_type: semanticType,
+        quantity: normalizedName,
       };
     }
     try {
@@ -2383,12 +3160,66 @@ function EditObjectForm({
       </div>
 
       {resource === "hardware-nodes" && "device_type" in item && (
-        <div className="field">
-          <label htmlFor="edit_device_type">Gerätetyp</label>
-          <select defaultValue={item.device_type} id="edit_device_type" name="edit_device_type" required>
-            {(schema?.device_types ?? [item.device_type]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
-          </select>
+        <fieldset className="eng-requirement-fields">
+          <legend>Geräteklasse &amp; Typisierung</legend>
+          <div className="form-grid three">
+            <div className="field">
+              <label htmlFor="edit_device_type">Gerätetyp</label>
+              <select defaultValue={item.device_type} id="edit_device_type" name="edit_device_type" required>
+                {(schema?.device_types ?? [item.device_type]).map((type) => <option key={type} value={type}>{engineeringDeviceTypeLabel(type)}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="edit_device_class">Class</label>
+              <select defaultValue={item.device_class ?? 1} id="edit_device_class" name="edit_device_class" required>
+                {(schema?.device_classes ?? [{ value: item.device_class ?? 1, label: "Basic" }]).map((option) => <option key={option.value} value={option.value}>{option.value} · {option.label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="edit_device_typing">Typisierung</label>
+              <select defaultValue={item.device_typing ?? "Basic Communication Device"} id="edit_device_typing" name="edit_device_typing" required>
+                {(schema?.device_typings ?? [item.device_typing ?? "Basic Communication Device"]).map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="edit_data_complexity">Data Complexity</label>
+              <select defaultValue={item.data_complexity ?? "SERVICE_DATA"} id="edit_data_complexity" name="edit_data_complexity" required>
+                {(schema?.data_complexities ?? [item.data_complexity ?? "SERVICE_DATA"]).map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="edit_classification_status">Status</label>
+              <select defaultValue={item.classification_status ?? "CONFIRMED"} id="edit_classification_status" name="edit_classification_status" required>
+                {(schema?.classification_statuses ?? ["UNKNOWN", "PROPOSED", "CONFIRMED", "REVIEW_REQUIRED"]).map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+      )}
+
+      {resource === "hardware-interfaces" && isHardwareNetworkInterface(item) && (
+        <>
+        <div className="form-grid three">
+          <div className="field">
+            <label htmlFor="edit_technology">Technologie</label>
+            <select defaultValue={item.technology} id="edit_technology" name="edit_technology" required>
+              {(schema?.interface_types ?? [item.technology]).map((type) => <option key={type}>{type}</option>)}
+            </select>
+          </div>
+          <div className="field"><label htmlFor="edit_controller_ref">Controller</label><input defaultValue={item.controller_ref ?? ""} id="edit_controller_ref" name="edit_controller_ref" type="text" /></div>
+          <div className="field"><label htmlFor="edit_physical_port_ref">Physischer Port</label><input defaultValue={item.physical_port_ref ?? ""} id="edit_physical_port_ref" name="edit_physical_port_ref" type="text" /></div>
+          <div className="field"><label htmlFor="edit_channel_index">Kanal</label><input defaultValue={item.channel_index ?? ""} id="edit_channel_index" min="1" name="edit_channel_index" type="number" /></div>
+          <div className="field"><label htmlFor="edit_network_ref">Netzwerk / Bussegment</label><input defaultValue={item.network_ref ?? ""} id="edit_network_ref" name="edit_network_ref" type="text" /></div>
+          <div className="field"><label htmlFor="edit_bitrate">Bitrate</label><input defaultValue={item.bitrate ?? ""} id="edit_bitrate" min="1" name="edit_bitrate" step="1" type="number" /></div>
+          <div className="field"><label htmlFor="edit_data_bitrate">Data Bitrate</label><input defaultValue={item.data_bitrate ?? ""} id="edit_data_bitrate" min="1" name="edit_data_bitrate" step="1" type="number" /></div>
+          <div className="field"><label htmlFor="edit_target_load_limit">Ziel-Last (%)</label><input defaultValue={item.target_load_limit ?? ""} id="edit_target_load_limit" min="0" name="edit_target_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="edit_warning_load_limit">Warn-Last (%)</label><input defaultValue={item.warning_load_limit ?? ""} id="edit_warning_load_limit" min="0" name="edit_warning_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="edit_hard_load_limit">Harte Last (%)</label><input defaultValue={item.hard_load_limit ?? ""} id="edit_hard_load_limit" min="0" name="edit_hard_load_limit" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="edit_static_load">Statische Last (%)</label><input defaultValue={item.static_load ?? ""} id="edit_static_load" min="0" name="edit_static_load" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="edit_runtime_load">Runtime Last (%)</label><input defaultValue={item.runtime_load ?? ""} id="edit_runtime_load" min="0" name="edit_runtime_load" step="any" type="number" /></div>
+          <div className="field"><label htmlFor="edit_status">Status</label><select defaultValue={item.status} id="edit_status" name="edit_status">{["CONFIGURED", "UNMAPPED", "ACTIVE", "OUTDATED", "OVERLOADED", "ERROR"].map((value) => <option key={value}>{value}</option>)}</select></div>
         </div>
+        </>
       )}
 
       {resource === "interfaces" && "interface_type" in item && (
@@ -2403,6 +3234,17 @@ function EditObjectForm({
       {resource === "messages" && "message_id_hex" in item && (
         <>
         <div className="form-grid">
+          <div className="field">
+            <label htmlFor="edit_hardware_interface_id">Hardware Interface</label>
+            <select defaultValue={item.hardware_interface_id ?? ""} id="edit_hardware_interface_id" name="edit_hardware_interface_id">
+              <option value="">Noch nicht zugewiesen</option>
+              {referenceObjects.filter(isHardwareNetworkInterface).map((hardwareInterface) => (
+                <option key={hardwareInterface.id} value={hardwareInterface.id}>
+                  {hardwareInterface.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="field">
             <label htmlFor="edit_message_id_hex">Message-ID</label>
             <input defaultValue={item.message_id_hex ?? ""} id="edit_message_id_hex" name="edit_message_id_hex" type="text" />
@@ -2449,6 +3291,7 @@ function EditObjectForm({
             <div className="field"><label htmlFor="edit_max_value">Maximum</label><input defaultValue={item.max_value ?? ""} id="edit_max_value" name="edit_max_value" step="any" type="number" /></div>
           </div>
         </fieldset>
+        <SignalValueDomainFields item={item} />
         <RequirementFields defaults={item.communication} prefix="edit_requirement_" />
         </>
       )}

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "project": {
+    "name": "Network Intelligence Simulator",
+    "root": "I:\\PycharmProjects\\My_first_Network_Simulator",
+    "frontend_url": "http://127.0.0.1:13500",
+    "backend_url": "http://127.0.0.1:15050"
+  },
+  "paths": {
+    "docker_cli": "C:\\Users\\marti\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin\\docker.exe",
+    "docker_compose": "C:\\Users\\marti\\.docker\\cli-plugins\\docker-compose.exe",
+    "docker_desktop": "C:\\Users\\marti\\AppData\\Local\\Programs\\DockerDesktop\\Docker Desktop.exe",
+    "ollama_cli": "C:\\Users\\marti\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+    "ollama_models": "I:\\engineering-intelligence-platform\\models\\ollama",
+    "runtime_root": "backend\\runtime",
+    "service_logs": "backend\\runtime\\service-logs"
+  },
+  "docker": {
+    "compose_file": "docker-compose.networkis.yml",
+    "networkis_service": "networkis",
+    "database_service": "networkis-db",
+    "networkis_container": "NetworkIS",
+    "database_container": "NetworkIS-db",
+    "frontend_port": 13500,
+    "backend_port": 15050,
+    "database_port": 5432,
+    "restart_policy": "unless-stopped"
+  },
+  "resources": {
+    "waitress_threads": 16,
+    "simulation_executor": "thread",
+    "simulation_workers": 12,
+    "workflow_event_limit": 100000,
+    "service_restarts": 5,
+    "numeric_threads": 1,
+    "ollama_context_length": 8192,
+    "ollama_keep_alive": "10m",
+    "memory_budget": {
+      "backend_hot_cache_mb": 1024,
+      "frontend_runtime_mb": 1024,
+      "trace_artifact_soft_limit_mb": 2048
+    }
+  },
+  "ai": {
+    "active_provider": "hybrid-demand",
+    "cloud_escalation": "on_failure",
+    "providers": {
+      "ollama": {
+        "enabled": 1,
+        "active": 1,
+        "base_url_windows": "http://127.0.0.1:11434/v1",
+        "base_url_docker": "http://host.docker.internal:11434/v1",
+        "model": "qwen3.8:27b",
+        "fast_model": "llama3.1:8b",
+        "api_key": "ollama"
+      },
+      "openai": {
+        "enabled": 1,
+        "active": 0,
+        "uses_env_key": 1,
+        "env_key": "OPENAI_API_KEY"
+      },
+      "nvidia": {
+        "enabled": 0,
+        "active": 0,
+        "uses_env_key": 1,
+        "env_key": "NVIDIA_API_KEY",
+        "model": "nvidia/nemotron-3-nano-30b-a3b"
+      }
+    }
+  }
+}

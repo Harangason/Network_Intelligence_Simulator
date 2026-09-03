@@ -361,6 +361,7 @@ export function rejectEngineeringProposal(id: string): Promise<EngineeringPropos
 
 export const RESOURCE_LABELS: Record<EngineeringResource, string> = {
   "hardware-nodes": "Hardware-Knoten",
+  "hardware-interfaces": "Hardware Interfaces",
   functions: "Funktionen",
   interfaces: "Interfaces",
   messages: "Nachrichten",
@@ -369,6 +370,7 @@ export const RESOURCE_LABELS: Record<EngineeringResource, string> = {
 
 export const RESOURCE_TO_OBJECT_TYPE: Record<EngineeringResource, string> = {
   "hardware-nodes": "HardwareNode",
+  "hardware-interfaces": "HardwareNetworkInterface",
   functions: "Function",
   interfaces: "Interface",
   messages: "Message",

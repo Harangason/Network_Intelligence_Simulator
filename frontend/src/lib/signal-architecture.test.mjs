@@ -61,8 +61,8 @@ test("legacy status names are treated as conservative state signals", () => {
   const result = requirement({ id: "status", name: "ProcessStatus", data_type: "unsigned", min_value: 0, max_value: 255, factor: 1, offset_value: 0, length_bits: 8 });
 
   assert.equal(result.semanticType, "STATE");
-  assert.equal(result.valueCount, 8);
-  assert.equal(result.requiredBits, 3);
+  assert.equal(result.valueCount, 16);
+  assert.equal(result.requiredBits, 4);
   assert.equal(result.status, "OVERDIMENSIONED");
 });
 

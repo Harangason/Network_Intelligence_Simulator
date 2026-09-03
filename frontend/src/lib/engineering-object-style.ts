@@ -2,6 +2,7 @@ import type { EngineeringObjectType, EngineeringResource } from "@/lib/types";
 
 export const ENGINEERING_OBJECT_LABELS: Record<EngineeringObjectType, string> = {
   HardwareNode: "Hardware",
+  HardwareNetworkInterface: "Hardware Interface",
   Function: "Funktion",
   Interface: "Interface",
   Message: "Nachricht",
@@ -10,6 +11,7 @@ export const ENGINEERING_OBJECT_LABELS: Record<EngineeringObjectType, string> = 
 
 const RESOURCE_TYPES: Record<EngineeringResource, EngineeringObjectType> = {
   "hardware-nodes": "HardwareNode",
+  "hardware-interfaces": "HardwareNetworkInterface",
   functions: "Function",
   interfaces: "Interface",
   messages: "Message",
@@ -20,6 +22,10 @@ const TYPE_ALIASES: Record<string, EngineeringObjectType> = {
   hardware: "HardwareNode",
   hardwarenode: "HardwareNode",
   hardwarenodes: "HardwareNode",
+  hardwareinterface: "HardwareNetworkInterface",
+  hardwareinterfaces: "HardwareNetworkInterface",
+  hardwarenetworkinterface: "HardwareNetworkInterface",
+  hardwarenetworkinterfaces: "HardwareNetworkInterface",
   funktion: "Function",
   funktionen: "Function",
   function: "Function",

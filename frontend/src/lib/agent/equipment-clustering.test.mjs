@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { extractEngineeringSpecification } from "./engineering-specification.ts";
 import { buildEquipmentClusters, equipmentClusterSummary } from "./equipment-clustering.ts";
 
 function chain(name, deviceType, interfaceType = "LIN") {
@@ -99,4 +100,47 @@ test("automotive equipment is grouped by domain families instead of singleton fa
   assert.equal(clusters.find((cluster) => cluster.label === "Fahrerassistenz")?.devices.length, 4);
   assert.equal(clusters.find((cluster) => cluster.label === "Antrieb")?.devices[0]?.hardware_name, "OilLevel");
   assert.equal(clusters.some((cluster) => /^Oil|ParkassistenzSchalt|Vertical/.test(cluster.label)), false);
+});
+
+test("clusters count unique hardware and ignore misleading signal names", () => {
+  const drive = chain("Antriebs", "ECU", "CAN_FD");
+  const driveStatus = { ...drive, signal_name: "BrakeControlStatus", signal_display_name: "BrakeControlStatus" };
+  const driveCurrent = { ...drive, signal_name: "BrakeControlCurrent", signal_display_name: "BrakeControlCurrent" };
+
+  const clusters = buildEquipmentClusters([driveStatus, driveCurrent], [
+    { id: "automotive-can_fd", label: "Automotive CAN-FD", count: 1 },
+  ]);
+
+  assert.equal(clusters.length, 1);
+  assert.equal(clusters[0].label, "Antrieb");
+  assert.equal(clusters[0].devices.length, 1);
+  assert.deepEqual(clusters[0].counts, { ECU: 1 });
+});
+
+test("automotive scale clusters stay compact enough to guide network node planning", () => {
+  const specification = [
+    "Industrie: Automotive",
+    "- 100 Sensoren",
+    "- 100 Aktoren",
+    "- 30 ECUs",
+    "- Gateway 0",
+    "Kommunikationssysteme:",
+    "CAN FD 10",
+    "LIN 25",
+    "Automotive Ethernet 5",
+    "SOME/IP 1",
+  ].join("\n");
+  const extracted = extractEngineeringSpecification(specification);
+  const clusters = buildEquipmentClusters(extracted.chains, [
+    { id: "automotive-can_fd", label: "automotive - can_fd", count: 10 },
+    { id: "automotive-lin", label: "automotive - lin", count: 25 },
+    { id: "automotive-ethernet", label: "automotive - automotive_ethernet", count: 5 },
+    { id: "automotive-someip", label: "automotive - someip", count: 1 },
+  ]);
+
+  assert.equal(clusters.length, 10);
+  assert.equal(clusters.some((cluster) => cluster.devices.length === 1), false);
+  assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AmbientLight"))?.label, "Licht");
+  assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AccessoryCurrent"))?.label, "Energie");
+  assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "TransmissionInputSpeed"))?.label, "Antrieb");
 });

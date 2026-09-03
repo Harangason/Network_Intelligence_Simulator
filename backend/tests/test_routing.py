@@ -566,6 +566,7 @@ def test_generation_reuses_canonical_interfaces_protocol_and_message_cycle(monke
     }
     monkeypatch.setattr(service, "_node", lambda node_id: nodes[node_id])
     monkeypatch.setattr(service, "_interface_candidates", lambda node_id: interfaces[node_id])
+    monkeypatch.setattr(service, "_hardware_interface_candidates", lambda _node_id: [])
     monkeypatch.setattr(
         service,
         "_message_context",

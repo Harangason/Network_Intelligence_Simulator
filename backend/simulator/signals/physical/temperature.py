@@ -15,7 +15,7 @@ def temperature(signal: Any, time_s: float, context: Any, state: Any) -> float:
     thermal_mass = max(0.001, number(signal.parameters.get("thermal_mass"), 8.0))
     cooling = number(signal.parameters.get("cooling"), 0.06) * max(0.0, previous - ambient)
     target_delta = (heat_input - cooling) / thermal_mass
-    if not signal_values and time_s >= 3.0:
+    if not signal_values or (current <= 0.0 and rpm <= 0.0):
         target_delta = max(target_delta, number(signal.parameters.get("warmup_rate"), 1.4))
     dt = time_delta(signal, time_s, state)
     rise = number(signal.parameters.get("max_rise_rate"), 2.0)

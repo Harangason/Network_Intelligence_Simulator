@@ -12,6 +12,13 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
+from .device_classification import (
+    CLASSIFICATION_STATUSES,
+    DATA_COMPLEXITIES,
+    DEVICE_CLASSES,
+    DEVICE_TYPINGS_BY_CLASS,
+)
+
 # ---------------------------------------------------------------------------
 # Gemeinsame Governance-Vokabulare (gelten für jedes EngineeringObject)
 # ---------------------------------------------------------------------------
@@ -69,6 +76,12 @@ INTERFACE_TYPES = (
     "Other",
 )
 
+DEVICE_TYPINGS = tuple(
+    typing
+    for typings in DEVICE_TYPINGS_BY_CLASS.values()
+    for typing in typings
+)
+
 MESSAGE_DIRECTIONS = ("rx", "tx", "bidirectional")
 SIGNAL_BYTE_ORDERS = ("little_endian", "big_endian")
 
@@ -76,6 +89,7 @@ SIGNAL_BYTE_ORDERS = ("little_endian", "big_endian")
 # target_type referenziert werden können.
 RELATABLE_OBJECT_TYPES = (
     "HardwareNode",
+    "HardwareNetworkInterface",
     "Function",
     "Interface",
     "Message",
@@ -88,6 +102,7 @@ RELATION_TYPES = (
     "HAS_FUNCTION",
     "HAS_CAPABILITY",
     "HAS_PORT",
+    "HAS_HARDWARE_INTERFACE",
     "HAS_INTERFACE",
     "CONNECTED_TO",
     "COMMUNICATES_WITH",

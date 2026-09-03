@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from math import ceil
 from typing import Any
+from uuid import UUID
 
 from psycopg.types.json import Jsonb
 
@@ -69,6 +70,12 @@ def detect_routing_loop(hops: list[Any]) -> list[str]:
     return duplicates
 
 
+def is_gateway_fanout_interface(interface: dict[str, Any]) -> bool:
+    name = str(interface.get("name") or "").strip().lower()
+    parts = name.split("_")
+    return len(parts) == 3 and parts[0] == "system" and all(part.isdigit() for part in parts[1:])
+
+
 class RoutingValidator:
     """Validates references, path semantics, timing, payload and estimated load."""
 
@@ -84,6 +91,23 @@ class RoutingValidator:
         if not project_id or not source_node_id or not destination_node_ids:
             return None, []
         with get_connection() as connection:
+            hardware_interfaces = connection.execute(
+                "SELECT hardware_node_id, network_ref FROM engineering_hardware_interfaces "
+                "WHERE hardware_node_id = ANY(%s::uuid[]) AND project_id = %s "
+                "AND network_ref IS NOT NULL AND network_ref <> ''",
+                ([source_node_id, *destination_node_ids], project_id),
+            ).fetchall()
+            networks_by_node: dict[str, set[str]] = {}
+            for item in hardware_interfaces:
+                networks_by_node.setdefault(str(item["hardware_node_id"]), set()).add(str(item["network_ref"]))
+            source_networks = networks_by_node.get(source_node_id, set())
+            hardware_unmapped = [
+                destination_id
+                for destination_id in destination_node_ids
+                if not source_networks.intersection(networks_by_node.get(destination_id, set()))
+            ]
+            if source_networks and not hardware_unmapped:
+                return True, []
             row = connection.execute(
                 "SELECT topology FROM engineering_workflow_projects WHERE project_id = %s",
                 (project_id,),
@@ -227,6 +251,34 @@ class RoutingValidator:
             elif interface.get("hardware_node_id") and str(interface["hardware_node_id"]) != str(destination.get("node_id")):
                 error("DESTINATION_INTERFACE_MISMATCH", "Ein Destination Interface gehört nicht zum gewählten Node.")
 
+        raw_hardware_interface_ids = [str(source.get("port_id") or "")]
+        raw_hardware_interface_ids.extend(str(item.get("port_id") or "") for item in destinations if isinstance(item, dict))
+        hardware_interface_ids = []
+        for item in raw_hardware_interface_ids:
+            try:
+                hardware_interface_ids.append(str(UUID(item)))
+            except (ValueError, TypeError, AttributeError):
+                # A synchronized topology uses stable port names instead of
+                # canonical HardwareNetworkInterface UUIDs.
+                continue
+        hardware_interfaces = self._rows("engineering_hardware_interfaces", hardware_interface_ids)
+        source_port_id = str(source.get("port_id") or "")
+        if source_port_id in hardware_interface_ids:
+            source_port = hardware_interfaces.get(source_port_id)
+            if source_port is None:
+                error("SOURCE_HARDWARE_INTERFACE_NOT_FOUND", "Das physische Source Hardware Interface existiert nicht.")
+            elif str(source_port.get("hardware_node_id") or "") != source_node_id:
+                error("SOURCE_HARDWARE_INTERFACE_MISMATCH", "Das physische Source Interface gehört nicht zum Source Node.")
+        for destination in destinations:
+            port_id = str(destination.get("port_id") or "")
+            if port_id not in hardware_interface_ids:
+                continue
+            port = hardware_interfaces.get(port_id)
+            if port is None:
+                error("DESTINATION_HARDWARE_INTERFACE_NOT_FOUND", f"Hardware Interface {port_id} existiert nicht.")
+            elif str(port.get("hardware_node_id") or "") != str(destination.get("node_id") or ""):
+                error("DESTINATION_HARDWARE_INTERFACE_MISMATCH", "Ein physisches Destination Interface gehört nicht zum gewählten Node.")
+
         message_ids = list(dict.fromkeys([
             *[str(item) for item in payload.get("message_ids", []) if item],
             *([str(payload.get("message_id"))] if payload.get("message_id") else []),
@@ -252,8 +304,22 @@ class RoutingValidator:
         if protocol not in PROTOCOL_CAPACITY:
             warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
             protocol = "CUSTOM"
-        for interface in interfaces.values():
-            supported = INTERFACE_PROTOCOLS.get(str(interface.get("interface_type")), set(PROTOCOL_CAPACITY))
+        shared_network_transport = bool(source.get("network_id")) and all(
+            destination.get("network_id") == source.get("network_id")
+            for destination in destinations
+            if isinstance(destination, dict)
+        )
+        protocol_interfaces = hardware_interfaces.values() if hardware_interface_ids \
+            else [] if shared_network_transport \
+            else interfaces.values()
+        for interface in protocol_interfaces:
+            if is_gateway_fanout_interface(interface):
+                error(
+                    "GATEWAY_FANOUT_INTERFACE",
+                    f"Interface {interface.get('name')} ist ein Systemgateway-Fanout-Duplikat und darf nicht als Routing-Endpunkt verwendet werden.",
+                )
+            interface_type = str(interface.get("technology") or interface.get("interface_type") or "Other")
+            supported = INTERFACE_PROTOCOLS.get(interface_type, set(PROTOCOL_CAPACITY))
             if protocol not in supported and not path.get("transformations"):
                 error(
                     "PROTOCOL_INCOMPATIBLE",

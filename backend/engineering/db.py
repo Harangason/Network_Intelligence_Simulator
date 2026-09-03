@@ -20,6 +20,7 @@ from psycopg_pool import ConnectionPool
 from .schema import ensure_schema
 
 _pool: ConnectionPool | None = None
+_pool_pid: int | None = None
 _pool_lock = threading.Lock()
 DEFAULT_CONNECT_TIMEOUT_SECONDS = 2.0
 
@@ -49,10 +50,16 @@ def _timeout_seconds(name: str, default: float) -> float:
 
 def get_pool() -> ConnectionPool:
     """Gibt den lazily initialisierten, prozessweiten Connection-Pool zurück."""
-    global _pool
-    if _pool is not None:
+    global _pool, _pool_pid
+    process_id = os.getpid()
+    if _pool is not None and _pool_pid == process_id:
         return _pool
     with _pool_lock:
+        if _pool is not None and _pool_pid != process_id:
+            # Never operate on inherited psycopg connections. Closing such a
+            # pool can send protocol messages over the parent's copied sockets.
+            _pool = None
+            _pool_pid = None
         if _pool is not None:
             return _pool
         timeout = _timeout_seconds("ENGINEERING_DB_TIMEOUT", DEFAULT_CONNECT_TIMEOUT_SECONDS)
@@ -71,6 +78,7 @@ def get_pool() -> ConnectionPool:
             candidate.close()
             raise
         _pool = candidate
+        _pool_pid = process_id
     return _pool
 
 
@@ -88,7 +96,8 @@ def get_connection() -> Iterator[Connection]:
 
 def close_pool() -> None:
     """Schließt den Connection-Pool (z. B. für Tests/Teardown)."""
-    global _pool
-    if _pool is not None:
+    global _pool, _pool_pid
+    if _pool is not None and _pool_pid == os.getpid():
         _pool.close()
-        _pool = None
+    _pool = None
+    _pool_pid = None

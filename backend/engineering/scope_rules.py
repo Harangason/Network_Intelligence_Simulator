@@ -127,13 +127,29 @@ def normalize_engineering_scope_rules(value: Any) -> dict[str, Any]:
     if enforcement != "exact":
         raise EngineeringValidationError("engineering_scope_rules.enforcement muss 'exact' sein.")
 
-    return {
-        "version": 1,
+    normalized = {
+        "version": int(value.get("version") or 1),
         "source": str(value.get("source") or "engineering-specification").strip(),
         "enforcement": "exact",
         "hardware_counts": counts,
         "communication_systems": systems,
     }
+    raw_model_counts = value.get("model_counts")
+    if raw_model_counts is not None:
+        allowed_model_counts = {
+            "hardware_nodes", "functions", "hardware_interfaces", "interfaces", "messages", "signals"
+        }
+        if not isinstance(raw_model_counts, dict):
+            raise EngineeringValidationError("engineering_scope_rules.model_counts muss ein Objekt sein.")
+        model_counts: dict[str, int] = {}
+        for key, raw_count in raw_model_counts.items():
+            if key not in allowed_model_counts or isinstance(raw_count, bool) or not isinstance(raw_count, int) or raw_count < 0:
+                raise EngineeringValidationError(f"Ungueltiger Modell-Sollwert: {key}={raw_count!r}.")
+            model_counts[key] = raw_count
+        normalized["model_counts"] = model_counts
+    if value.get("network_architecture"):
+        normalized["network_architecture"] = str(value["network_architecture"])
+    return normalized
 
 
 def hardware_scope_category(device_type: Any) -> str | None:

@@ -10,7 +10,7 @@ from ..models import EngineeringValidationError
 from ..project_context import current_project_id
 from .repository import create_proposal
 from .retrieval import HybridRoutingRetriever
-from .validation import RoutingValidator
+from .validation import RoutingValidator, is_gateway_fanout_interface
 
 INTERFACE_TO_PROTOCOL = {
     "CAN": "CAN",
@@ -48,6 +48,14 @@ class RoutingGenerationService:
             return connection.execute(
                 "SELECT * FROM engineering_interfaces WHERE hardware_node_id = %s "
                 "AND project_id = %s ORDER BY created_at",
+                (node_id, current_project_id()),
+            ).fetchall()
+
+    def _hardware_interface_candidates(self, node_id: str) -> list[dict[str, Any]]:
+        with get_connection() as connection:
+            return connection.execute(
+                "SELECT * FROM engineering_hardware_interfaces WHERE hardware_node_id = %s "
+                "AND project_id = %s ORDER BY channel_index, created_at",
                 (node_id, current_project_id()),
             ).fetchall()
 
@@ -193,6 +201,15 @@ class RoutingGenerationService:
         message = self._message_context(message_id)
         source_interfaces = self._interface_candidates(str(source["id"]))
         destination_interfaces = self._interface_candidates(str(destination["id"]))
+        source_hardware_interfaces = self._hardware_interface_candidates(str(source["id"]))
+        destination_hardware_interfaces = self._hardware_interface_candidates(str(destination["id"]))
+        if destination.get("device_type") == "Gateway":
+            stable_gateway_interfaces = [
+                item for item in destination_interfaces
+                if not is_gateway_fanout_interface(item)
+            ]
+            if stable_gateway_interfaces:
+                destination_interfaces = stable_gateway_interfaces
 
         source_interface_id = connections[0].get("source_interface_id") if connections else None
         source_interface = next(
@@ -233,9 +250,49 @@ class RoutingGenerationService:
         if destination_interface is None and destination_interfaces:
             destination_interface = destination_interfaces[0]
 
-        protocol = str(candidate.get("protocol") or "CUSTOM")
-        if protocol == "CUSTOM" and source_interface_type:
-            protocol = INTERFACE_TO_PROTOCOL.get(source_interface_type, "CUSTOM")
+        message_hardware_interface_id = str((message or {}).get("hardware_interface_id") or "")
+        shared_hardware_pair = next(
+            (
+                (source_hardware, destination_hardware)
+                for source_hardware in source_hardware_interfaces
+                for destination_hardware in destination_hardware_interfaces
+                if source_hardware.get("network_ref")
+                and source_hardware.get("network_ref") == destination_hardware.get("network_ref")
+                and source_hardware.get("technology") == destination_hardware.get("technology")
+                and (
+                    not message_hardware_interface_id
+                    or str(source_hardware.get("id")) == message_hardware_interface_id
+                )
+            ),
+            None,
+        )
+        if shared_hardware_pair is None:
+            shared_hardware_pair = next(
+                (
+                    (source_hardware, destination_hardware)
+                    for source_hardware in source_hardware_interfaces
+                    for destination_hardware in destination_hardware_interfaces
+                    if source_hardware.get("network_ref")
+                    and source_hardware.get("network_ref") == destination_hardware.get("network_ref")
+                    and source_hardware.get("technology") == destination_hardware.get("technology")
+                ),
+                None,
+            )
+        source_hardware_interface = shared_hardware_pair[0] if shared_hardware_pair else next(
+            (item for item in source_hardware_interfaces if str(item.get("id")) == message_hardware_interface_id),
+            source_hardware_interfaces[0] if source_hardware_interfaces else None,
+        )
+        destination_hardware_interface = shared_hardware_pair[1] if shared_hardware_pair else next(
+            (
+                item for item in destination_hardware_interfaces
+                if source_hardware_interface
+                and item.get("technology") == source_hardware_interface.get("technology")
+            ),
+            destination_hardware_interfaces[0] if destination_hardware_interfaces else None,
+        )
+
+        transport_type = str((source_hardware_interface or {}).get("technology") or source_interface_type)
+        protocol = INTERFACE_TO_PROTOCOL.get(transport_type, str(candidate.get("protocol") or "CUSTOM"))
         source_interface_id = str(source_interface["id"]) if source_interface else None
         destination_interface_id = (
             str(destination_interface["id"]) if destination_interface else None
@@ -246,9 +303,9 @@ class RoutingGenerationService:
             "description": "Graphbasierter Routing-Vorschlag des Engineering-Agenten.",
             "source": {
                 "node_id": str(source["id"]),
-                "port_id": None,
+                "port_id": str(source_hardware_interface["id"]) if source_hardware_interface else None,
                 "interface_id": source_interface_id,
-                "network_id": None,
+                "network_id": (source_hardware_interface or {}).get("network_ref"),
                 "protocol": protocol,
             },
             "payload": {
@@ -261,9 +318,13 @@ class RoutingGenerationService:
             "destinations": [
                 {
                     "node_id": str(destination["id"]),
+                    "port_id": str(destination_hardware_interface["id"]) if destination_hardware_interface else None,
                     "interface_id": destination_interface_id,
-                    "network_id": None,
-                    "protocol": protocol,
+                    "network_id": (destination_hardware_interface or {}).get("network_ref"),
+                    "protocol": INTERFACE_TO_PROTOCOL.get(
+                        str((destination_hardware_interface or {}).get("technology") or ""),
+                        protocol,
+                    ),
                 }
             ],
             "route": {

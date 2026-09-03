@@ -33,14 +33,14 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "climate",
     label: "Klima",
-    terms: ["klima", "climate", "hvac", "heizung", "heater", "ventilation", "blower", "temperature", "temperatur", "thermo", "thermal", "compressor", "kompressor", "refrigerant", "kaeltemittel"],
+    terms: ["klima", "klimatisierung", "climate", "hvac", "heizung", "heater", "ventilation", "blower", "cabin", "innenraum", "ambient", "aussen", "thermo", "thermal", "thermomanagement", "coolant", "kuehlmittel", "compressor", "kompressor", "refrigerant", "kaeltemittel"],
     preferredNetworks: ["canfd", "can"],
     recommendation: "Thermik, Regelung und Komfortsignale gemeinsam bewerten.",
   },
   {
     id: "lighting",
     label: "Licht",
-    terms: ["licht", "light", "lamp", "illumination"],
+    terms: ["licht", "innenlicht", "aussenlicht", "ambientlight", "light", "lamp", "illumination"],
     preferredNetworks: ["lin", "canfd", "can"],
     recommendation: "Lokale Lichtsignale zusammenhalten und bei Lastspitzen auf mehrere Segmente verteilen.",
   },
@@ -54,7 +54,7 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "safety",
     label: "Sicherheit",
-    terms: ["safety", "restraint", "airbag", "brake", "bremse", "stability", "stabilitaet", "stabilitat"],
+    terms: ["safety", "sicherheit", "restraint", "airbag", "brake", "bremse", "brems", "brakepedal", "bremsregelung", "stability", "stabilitaet", "stabilitat", "stabilitaetsregelung"],
     preferredNetworks: ["canfd", "can", "ethernet"],
     recommendation: "Safety-nahe Teilnehmer gemeinsam pruefen und nicht blind auf langsame Busse legen.",
   },
@@ -66,7 +66,8 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
       "ultraschall", "ultrasonic", "radar", "lidar", "kamera", "camera", "frontkamera", "heckkamera",
       "lane", "spur", "acceleration", "beschleunigung", "verticalacceleration", "lateralacceleration",
       "longitudinalacceleration", "pitchrate", "yawrate", "rollrate", "damper", "daempfer", "suspension",
-      "fahrwerk", "reifendruck", "tirepressure",
+      "fahrwerk", "fahrdynamik", "reifendruck", "tirepressure", "tire", "reifen", "wheel", "rad", "wheelspeed",
+      "wheelload", "wheelangle", "wheeltorque", "tirewear", "suspensiontravel",
     ],
     preferredNetworks: ["ethernet", "canfd", "can"],
     recommendation: "Umfeld-, Park- und Fahrdynamiksignale gemeinsam auf Latenz, Bandbreite und Sensorfusion pruefen.",
@@ -74,28 +75,28 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "energy",
     label: "Energie",
-    terms: ["energy", "energie", "battery", "batterie", "power", "spannung", "voltage", "current", "strom"],
+    terms: ["energy", "energie", "energieversorgung", "battery", "batterie", "batteriemanagement", "power", "spannung", "voltage", "current", "strom", "bordnetz", "alternator", "generator", "dclink", "zellspannung", "inverter", "ladesteuerung"],
     preferredNetworks: ["canfd", "can", "lin"],
     recommendation: "Versorgungs- und Batteriethemen als belastbaren Systemrahmen planen.",
   },
   {
     id: "motion",
     label: "Antrieb",
-    terms: ["drive", "motion", "antrieb", "engine", "motor", "gear", "getriebe", "traction", "steering", "lenkung", "throttle", "turbo", "oil", "oel", "kraftstoff", "fuel", "exhaust", "abgas"],
+    terms: ["drive", "motion", "antrieb", "engine", "motor", "elektromotor", "gear", "getriebe", "transmission", "traction", "steering", "lenkung", "hinterachslenkung", "accelerator", "fahrpedal", "clutch", "kupplung", "throttle", "drossel", "boost", "intake", "ansaugluft", "turbo", "oil", "oel", "kraftstoff", "fuel", "exhaust", "abgas", "abgasnachbehandlung", "egr", "agrventil", "urea", "harnstoff"],
     preferredNetworks: ["canfd", "ethernet", "can"],
     recommendation: "Antriebsnahe Regelungsdaten mit Latenz- und Lastreserve behandeln.",
   },
   {
     id: "body_comfort",
     label: "Karosserie und Komfort",
-    terms: ["karosserie", "body", "comfort", "komfort", "schiebedach", "sunroof", "heckklappe", "tailgate", "wischer", "washer", "wasch", "seat", "sitz", "window", "fenster", "door", "tuer"],
+    terms: ["karosserie", "body", "bodycontrol", "comfort", "komfort", "schiebedach", "sunroof", "heckklappe", "tailgate", "anhaenger", "trailer", "wischer", "washer", "wasch", "rain", "regen", "seat", "sitz", "fahrersitz", "beifahrersitz", "window", "fenster", "door", "tuer", "fahrertuer", "beifahrertuer", "fondtuer"],
     preferredNetworks: ["lin", "canfd", "can"],
     recommendation: "Lokale Komfortfunktionen zusammenhalten und langsame Segmente bewusst abgrenzen.",
   },
   {
     id: "infotainment",
     label: "Infotainment und Anzeige",
-    terms: ["infotainment", "headup", "display", "sound", "audio", "telematik", "connectivity", "konnektivitaet", "navigation"],
+    terms: ["infotainment", "headup", "headupdisplay", "display", "kombiinstrument", "sound", "soundsystem", "audio", "telematik", "connectivity", "konnektivitaet", "navigation"],
     preferredNetworks: ["ethernet", "lin", "canfd"],
     recommendation: "Anzeige-, Audio- und Telematikpfade fachlich pruefen; unklare Stellglieder nicht automatisch als physische Aktoren freigeben.",
   },
@@ -107,6 +108,47 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
     recommendation: "Diagnosepfade getrennt von zyklischer Regelkommunikation auswerten.",
   },
 ];
+
+const FALLBACK_CLUSTER_BY_DEVICE_TYPE: Record<string, { id: string; label: string; preferredNetworks: string[]; recommendation: string }> = {
+  SensorController: {
+    id: "fallback:sensors",
+    label: "Allgemeine Sensorik",
+    preferredNetworks: ["canfd", "lin", "ethernet", "can"],
+    recommendation: "Nicht eindeutig zugeordnete Sensoren gemeinsam pruefen und danach fachlich auf Steuergeraete verteilen.",
+  },
+  ActuatorController: {
+    id: "fallback:actuators",
+    label: "Allgemeine Aktorik",
+    preferredNetworks: ["lin", "canfd", "can"],
+    recommendation: "Nicht eindeutig zugeordnete Aktoren nicht einzeln als Systemcluster behandeln, sondern gemeinsam nach Funktion verteilen.",
+  },
+  ECU: {
+    id: "fallback:controllers",
+    label: "Allgemeine Steuergeraete",
+    preferredNetworks: ["canfd", "ethernet", "can"],
+    recommendation: "Nicht eindeutig zugeordnete Steuergeraete als Review-Gruppe behalten und nicht als zufaellige Einzelcluster fortschreiben.",
+  },
+};
+
+const SHORT_COMPOUND_TERMS = new Set([
+  "egr",
+  "agr",
+  "hvac",
+  "lin",
+  "oil",
+  "oel",
+  "rad",
+  "tuer",
+  "light",
+  "licht",
+  "motor",
+  "boost",
+  "turbo",
+  "fuel",
+  "gear",
+  "rain",
+  "regen",
+]);
 
 const FUNCTION_SUFFIX_PATTERN = /(?:schaltausgang|stellglied|status|state|mode|data|daten|signal|position|current|pressure|temperature|temperatur|voltage|spannung|level|niveau|flow|rate|switch|valve|aktor|aktuator)$/i;
 
@@ -123,6 +165,10 @@ function keyText(value: string) {
 
 function compactKey(value: string) {
   return keyText(value).replace(/\s+/g, "");
+}
+
+function keyTokens(value: string) {
+  return keyText(value).split(" ").filter(Boolean);
 }
 
 function displayLabel(value: string) {
@@ -152,24 +198,38 @@ function text(value: unknown) {
 }
 
 function chainCorpus(chain: ExtractedEngineeringChain) {
+  const semantic = record(chain.semantic);
+  const data = record(chain.data);
   return [
     chain.hardware_name,
     chain.hardware_description,
-    chain.function_name,
-    chain.function_description,
-    chain.interface_name,
-    chain.message_name,
-    chain.signal_name,
-    chain.signal_display_name,
-    text(record(chain.semantic).category),
-    text(record(chain.semantic).system_frame),
-    text(record(chain.semantic).systemFrame),
+    text(semantic.category),
+    text(semantic.system_frame),
+    text(semantic.systemFrame),
+    text(data.system_frame),
   ].filter(Boolean).join(" ");
 }
 
 function ruleFor(chain: ExtractedEngineeringChain) {
-  const corpus = compactKey(chainCorpus(chain));
-  return CLUSTER_RULES.find((rule) => rule.terms.some((term) => corpus.includes(compactKey(term))));
+  const corpus = chainCorpus(chain);
+  const compactCorpus = compactKey(corpus);
+  const tokens = new Set(keyTokens(corpus));
+  const scored = CLUSTER_RULES
+    .map((rule, index) => {
+      const score = rule.terms.reduce((total, term) => {
+        const compactTerm = compactKey(term);
+        if (!compactTerm) return total;
+        const exactMatch = tokens.has(compactTerm);
+        const compoundMatch = compactTerm.length > 5 || SHORT_COMPOUND_TERMS.has(compactTerm)
+          ? compactCorpus.includes(compactTerm)
+          : false;
+        return exactMatch || compoundMatch ? total + Math.max(1, compactTerm.length) : total;
+      }, 0);
+      return { index, rule, score };
+    })
+    .filter((candidate) => candidate.score > 0)
+    .sort((left, right) => right.score - left.score || left.index - right.index);
+  return scored[0]?.rule;
 }
 
 function explicitSystemName(chain: ExtractedEngineeringChain) {
@@ -178,7 +238,6 @@ function explicitSystemName(chain: ExtractedEngineeringChain) {
     semantic.system_frame,
     semantic.systemFrame,
     semantic.system,
-    semantic.category,
     record(chain.data).system_frame,
   ].map(text).filter(Boolean);
   return candidates.find((candidate) => compactKey(candidate).length > 2) ?? "";
@@ -219,6 +278,24 @@ function deviceCounts(devices: ExtractedEngineeringChain[]) {
   }, {});
 }
 
+function uniqueDevices(devices: ExtractedEngineeringChain[]) {
+  const byHardware = new Map<string, ExtractedEngineeringChain>();
+  for (const chain of devices) {
+    const key = `${chain.device_type}:${compactKey(chain.hardware_name)}`;
+    if (!byHardware.has(key)) byHardware.set(key, chain);
+  }
+  return [...byHardware.values()];
+}
+
+function fallbackClusterFor(chain: ExtractedEngineeringChain) {
+  return FALLBACK_CLUSTER_BY_DEVICE_TYPE[chain.device_type] ?? {
+    id: `system:${slug(inferredSystemName(chain))}`,
+    label: displayLabel(inferredSystemName(chain)),
+    preferredNetworks: [chain.interface_type, "canfd", "can", "lin"],
+    recommendation: "Fachlich zusammenhaengende Teilnehmer als Systemrahmen pruefen.",
+  };
+}
+
 export function buildEquipmentClusters(
   chains: ExtractedEngineeringChain[],
   networkOptions: EquipmentNetworkOption[],
@@ -230,12 +307,13 @@ export function buildEquipmentClusters(
     .forEach((chain) => {
       const rule = ruleFor(chain);
       const explicit = explicitSystemName(chain);
-      const label = rule?.label ?? displayLabel(explicit || inferredSystemName(chain));
-      const id = rule ? `rule:${rule.id}` : `system:${slug(label)}`;
+      const fallback = explicit ? null : fallbackClusterFor(chain);
+      const label = rule?.label ?? displayLabel(explicit || fallback?.label || inferredSystemName(chain));
+      const id = rule ? `rule:${rule.id}` : explicit ? `system:${slug(label)}` : fallback?.id ?? `system:${slug(label)}`;
       const bucket = buckets.get(id) ?? {
         label,
-        recommendation: rule?.recommendation ?? "Fachlich zusammenhaengende Teilnehmer als Systemrahmen pruefen.",
-        preferredNetworks: rule?.preferredNetworks ?? [chain.interface_type, "canfd", "can", "lin"],
+        recommendation: rule?.recommendation ?? fallback?.recommendation ?? "Fachlich zusammenhaengende Teilnehmer als Systemrahmen pruefen.",
+        preferredNetworks: rule?.preferredNetworks ?? fallback?.preferredNetworks ?? [chain.interface_type, "canfd", "can", "lin"],
         devices: [],
       };
       bucket.devices.push(chain);
@@ -245,7 +323,7 @@ export function buildEquipmentClusters(
   return [...buckets.entries()]
     .map(([id, bucket]) => {
       const network = recommendedNetwork(networkOptions, bucket.preferredNetworks);
-      const sortedDevices = [...bucket.devices].sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de"));
+      const sortedDevices = uniqueDevices(bucket.devices).sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de"));
       return {
         id,
         label: bucket.label,

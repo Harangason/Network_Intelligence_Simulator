@@ -81,6 +81,9 @@ async function performanceSample() {
   const [cpu, gpu, ollama] = await Promise.all([cpuPercent(), gpuSample(), ollamaSample()]);
   const totalMemory = os.totalmem();
   const usedMemory = totalMemory - os.freemem();
+  const aiProvider = process.env.AI_PROVIDER ?? "hybrid-demand";
+  const localAiModel = process.env.LOCAL_AI_MODEL ?? "qwen3.8:27b";
+  const localAiFastModel = process.env.LOCAL_AI_FAST_MODEL ?? "llama3.1:8b";
   return {
     cpu_percent: cpu,
     memory_percent: Number((usedMemory / Math.max(1, totalMemory) * 100).toFixed(1)),
@@ -89,6 +92,12 @@ async function performanceSample() {
     frontend_rss_mb: Math.round(process.memoryUsage().rss / 1024 / 1024),
     gpu,
     ollama,
+    ai: {
+      provider: aiProvider,
+      local_model: localAiModel,
+      local_fast_model: localAiFastModel,
+      local_model_loaded: ollama.some((model) => model.name === localAiModel || model.name.replace(/:latest$/, "") === localAiModel.replace(/:latest$/, "")),
+    },
   };
 }
 

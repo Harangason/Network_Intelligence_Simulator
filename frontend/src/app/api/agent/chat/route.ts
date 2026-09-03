@@ -193,17 +193,29 @@ function specificationSummary(result: Awaited<ReturnType<typeof registerEngineer
   const targets = result.target_counts;
   const actual = result.actual_counts;
   const excess = result.excess_counts;
+  const communication = result.communication_scope;
+  const model = result.model_scope;
   const targetSummary = targets && actual
     ? `Soll/Ist: Sensoren ${targets.sensors}/${actual.sensors}, Aktoren ${targets.actuators}/${actual.actuators}, ECUs ${targets.ecus}/${actual.ecus}, Gateways ${targets.gateways}/${actual.gateways}.`
     : "";
   const excessSummary = excess && Object.values(excess).some((count) => Number(count) > 0)
     ? ` Ueberschritten: Sensoren +${excess.sensors}, Aktoren +${excess.actuators}, ECUs +${excess.ecus}, Gateways +${excess.gateways}.`
     : "";
+  const communicationSummary = communication
+    ? ` Kommunikation Soll/Ist: Interfaces ${communication.expected.interfaces}/${communication.actual.interfaces}, Nachrichten ${communication.expected.messages}/${communication.actual.messages}, Signale ${communication.expected.signals}/${communication.actual.signals}.`
+    : "";
+  const modelSummary = model
+    ? ` Modell Soll/Ist: Funktionen ${model.expected.functions}/${model.actual.functions}, Hardware-Interfaces ${model.expected.hardware_interfaces}/${model.actual.hardware_interfaces}.`
+    : "";
+  const reviewProposals = Array.isArray(result.review_proposals) ? result.review_proposals.length : 0;
+  const reviewSummary = reviewProposals > 0
+    ? ` ${reviewProposals} Review-Proposal(s) fuer die Modellbereinigung vorbereitet.`
+    : "";
   if (result.complete !== true) {
     const failureSummary = failures ? ` ${failures} Teilnehmer konnten nicht vollstaendig angelegt werden.` : "";
-    return `${registered} von ${recognized} geplanten Teilnehmern wurden registriert. ${targetSummary}${excessSummary}${failureSummary} Der Engineering-Auftrag bleibt offen; Folgeschritte werden nicht gestartet.`;
+    return `${registered} von ${recognized} geplanten Teilnehmern wurden registriert. ${targetSummary}${excessSummary}${modelSummary}${communicationSummary}${reviewSummary}${failureSummary} Der Engineering-Auftrag bleibt offen.`;
   }
-  return `${recognized} Teilnehmer geplant. ${registered} vollstaendige Engineering-Ketten mit Hardware, Funktion, Interface, Nachricht und Signal wurden registriert. ${targetSummary}`;
+  return `${recognized} Teilnehmer geplant. ${registered} vollstaendige, klassengerechte Engineering-Teilnehmer wurden registriert. ${targetSummary}${modelSummary}${communicationSummary}`;
 }
 
 type ScopeCountKey = "sensors" | "actuators" | "ecus" | "gateways";
@@ -244,8 +256,44 @@ function scopeDeviationItems(result: Awaited<ReturnType<typeof registerEngineeri
   });
 }
 
+function communicationDeviationItems(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  const communication = result.communication_scope;
+  if (!communication) return [];
+  return (["interfaces", "messages", "signals"] as const).flatMap((key) => {
+    const target = Number(communication.expected[key] ?? 0);
+    const current = Number(communication.actual[key] ?? 0);
+    if (target === current) return [];
+    return [{
+      key,
+      label: key === "interfaces" ? "Interfaces" : key === "messages" ? "Nachrichten" : "Signale",
+      target,
+      actual: current,
+      missing: Math.max(0, target - current),
+      excess: Math.max(0, current - target),
+    }];
+  });
+}
+
+function modelDeviationItems(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
+  const model = result.model_scope;
+  if (!model) return [];
+  return (["functions", "hardware_interfaces"] as const).flatMap((key) => {
+    const target = Number(model.expected[key] ?? 0);
+    const current = Number(model.actual[key] ?? 0);
+    if (target === current) return [];
+    return [{
+      key,
+      label: key === "functions" ? "Funktionen" : "Hardware-Interfaces",
+      target,
+      actual: current,
+      missing: Math.max(0, target - current),
+      excess: Math.max(0, current - target),
+    }];
+  });
+}
+
 function scopeDeviationSummary(result: Awaited<ReturnType<typeof registerEngineeringSpecification>>) {
-  return scopeDeviationItems(result)
+  return [...scopeDeviationItems(result), ...modelDeviationItems(result), ...communicationDeviationItems(result)]
     .map((item) => `${item.label} ${item.actual}/${item.target}${item.missing ? `, ${item.missing} fehlen` : item.excess ? `, ${item.excess} zu viel` : ""}`)
     .join("; ");
 }
@@ -657,6 +705,30 @@ function createWorkflowAutomationResponse(messages: UIMessage[], target: Automat
   return createUIMessageStreamResponse({ stream });
 }
 
+class WizardRunCanceledError extends Error {
+  constructor() {
+    super("Der Engineering-Auftrag wurde abgebrochen. Es werden keine weiteren Modellobjekte geschrieben.");
+    this.name = "WizardRunCanceledError";
+  }
+}
+
+async function ensureWizardRunActive(runId: string) {
+  if (!runId) return;
+  const workflow = await inspectWorkflowState();
+  const context = workflow && typeof workflow === "object"
+    ? (workflow.context as Record<string, unknown> | undefined) ?? {}
+    : {};
+  const execution = context.agent_execution && typeof context.agent_execution === "object"
+    ? context.agent_execution as Record<string, unknown>
+    : {};
+  const wizard = context.agent_wizard_status && typeof context.agent_wizard_status === "object"
+    ? context.agent_wizard_status as Record<string, unknown>
+    : {};
+  const executionCanceled = String(execution.run_id ?? "") === runId && String(execution.state ?? "") === "CANCELED";
+  const wizardCanceled = String(wizard.run_id ?? "") === runId && String(wizard.status ?? "") === "CANCELED";
+  if (executionCanceled || wizardCanceled) throw new WizardRunCanceledError();
+}
+
 function createSpecificationResponse(messages: UIMessage[], specificationText: string) {
   const runId = specificationText.match(/- Lauf-ID:\s*([^\s]+)/)?.[1] ?? "";
   const stream = createUIMessageStream({
@@ -676,8 +748,11 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
         if (state === "RUNNING") runningMessage = message;
         const next: AgentRunStatus = { ...progress, run_id: runId, state, message, updated_at: new Date().toISOString() };
         // Serialize heartbeats and final results so a late heartbeat cannot replace the outcome.
-        statusWrite = statusWrite.catch(() => undefined).then(() => runId
-          ? saveWorkflowContext({ agent_execution: next }) : undefined);
+        statusWrite = statusWrite.catch(() => undefined).then(async () => {
+          if (!runId) return undefined;
+          if (state === "RUNNING") await ensureWizardRunActive(runId);
+          return saveWorkflowContext({ agent_execution: next });
+        });
         return statusWrite;
       };
       const reportProgress = async (next: AgentBuildProgress) => {
@@ -704,17 +779,46 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
         heartbeat = setInterval(() => {
           void persistRun("RUNNING", runningMessage).catch((error) => audit("build heartbeat failed", { runId, error: String(error) }));
         }, 30_000);
-        const result = await registerEngineeringSpecification(specificationText, reportProgress);
+        const result = await registerEngineeringSpecification(specificationText, reportProgress, () => ensureWizardRunActive(runId));
         engineeringModelComplete = result.complete === true;
         writer.write({ type: "tool-output-available", toolCallId, output: workflowStreamOutput(result) });
         let summary = specificationSummary(result);
         const deviationItems = scopeDeviationItems(result);
+        const communicationDeviations = communicationDeviationItems(result);
+        const modelDeviations = modelDeviationItems(result);
         const deviationSummary = scopeDeviationSummary(result);
+        const reviewProposalCount = Array.isArray(result.review_proposals) ? result.review_proposals.length : 0;
+        const communicationReviewGate =
+          !engineeringModelComplete
+          && Number(result.registered_chains ?? 0) === Number(result.recognized ?? 0)
+          && deviationItems.length === 0
+          && (communicationDeviations.length > 0 || modelDeviations.length > 0)
+          && reviewProposalCount > 0
+          && !hasRegistrationFailures(result);
         const scopeContinuationAllowed = !engineeringModelComplete
           && approvedScopeContinuation
           && deviationItems.length > 0
           && !hasRegistrationFailures(result)
           && previousScopeContinuations < MAX_SCOPE_DEVIATION_CONTINUATIONS;
+        if (communicationReviewGate) {
+          const workflowBeforeContext = wizardStatus && typeof wizardStatus === "object" ? wizardStatus : {};
+          await saveWorkflowContext({
+            active_workflow_step: "routing",
+            agent_wizard_status: {
+              ...workflowBeforeContext,
+              communication_review: {
+                run_id: runId,
+                ready_for_review: true,
+                created_at: new Date().toISOString(),
+                deviations: [...modelDeviations, ...communicationDeviations],
+                proposals: reviewProposalCount,
+                summary: deviationSummary,
+                decision: "Kommunikationsabweichung als Review-Proposal vorbereitet; Folgeschritte duerfen weiterlaufen.",
+              },
+            },
+          }).catch((error) => audit("communication review persistence failed", { runId, error: String(error) }));
+          summary += ` Kommunikations-Review-Gate vorbereitet: ${deviationSummary}. Die Folgeschritte laufen weiter; die Bereinigung bleibt als Proposal zur Freigabe sichtbar.`;
+        }
         if (scopeContinuationAllowed) {
           const nextContinuations = previousScopeContinuations + 1;
           await saveWorkflowContext({
@@ -736,7 +840,7 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
         } else if (!engineeringModelComplete && approvedScopeContinuation && deviationItems.length > 0 && !hasRegistrationFailures(result)) {
           summary += ` Keine weitere automatische Fortsetzung: Die dokumentierte Scope-Abweichung (${deviationSummary}) wurde fuer diese Lauf-ID bereits freigegeben. Damit wird eine Endlosschleife verhindert.`;
         }
-        const engineeringModelUsable = engineeringModelComplete || scopeContinuationAllowed;
+        const engineeringModelUsable = engineeringModelComplete || scopeContinuationAllowed || communicationReviewGate;
 
         if (engineeringModelUsable && routingRequested(specificationText) && Number(result.registered_chains ?? 0) >= 2) {
           const routingToolCallId = crypto.randomUUID();
@@ -747,7 +851,7 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
             toolName: "create_route_proposal",
             input: {},
           });
-          const routing = await registerRoutingProposalForSpecification(specificationText, reportProgress);
+          const routing = await registerRoutingProposalForSpecification(specificationText, reportProgress, () => ensureWizardRunActive(runId));
           writer.write({ type: "tool-output-available", toolCallId: routingToolCallId, output: workflowStreamOutput(routing) });
           summary += ` ${routingSummary(routing)}`;
           reviewGateReached = Boolean(
@@ -779,7 +883,8 @@ function createSpecificationResponse(messages: UIMessage[], specificationText: s
       } catch (error) {
         clearInterval(heartbeat);
         const errorText = error instanceof Error ? error.message : String(error);
-        await persistRun("BLOCKED", errorText).catch((statusError) => {
+        const terminalState = error instanceof WizardRunCanceledError ? "CANCELED" : "BLOCKED";
+        await persistRun(terminalState, errorText).catch((statusError) => {
           audit("build status persistence failed", { runId, error: String(statusError) });
         });
         writer.write({ type: "tool-output-error", toolCallId: activeToolCallId, errorText });

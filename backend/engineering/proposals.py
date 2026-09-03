@@ -16,12 +16,14 @@ from .models import (
 )
 from .relations import create_relation
 from .repository import (
-    PARENT_LINKS,
+    parent_link_for_payload,
     NotFoundError,
     create_object,
+    delete_object,
     find_equivalent_hardware_node,
     get_object,
     get_spec,
+    update_object,
 )
 
 PROPOSAL_STATUSES = (
@@ -36,6 +38,7 @@ PROPOSAL_STATUSES = (
 
 RESOURCE_OBJECT_TYPES = {
     "hardware-nodes": "HardwareNode",
+    "hardware-interfaces": "HardwareNetworkInterface",
     "functions": "Function",
     "interfaces": "Interface",
     "messages": "Message",
@@ -149,7 +152,7 @@ def _normalize_proposal_references(proposal: dict[str, Any]) -> tuple[dict[str, 
             proposed_objects.append(item)
             continue
         reference_fields = ["source_id", "target_id"] if object_type == "Relation" else []
-        parent_link = PARENT_LINKS.get(object_type)
+        parent_link = parent_link_for_payload(object_type, item)
         if parent_link:
             reference_fields.append(parent_link[0])
         for field in reference_fields:
@@ -170,6 +173,15 @@ def validate_proposed_items(proposal: dict[str, Any]) -> list[dict[str, Any]]:
         object_type = str(item.get("object_type") or "Unknown")
         try:
             object_type = _proposal_object_type(proposal, item)
+            action = str(item.get("proposal_action") or item.get("action") or "CREATE").upper()
+            if action in {"UPDATE", "DELETE", "DEPRECATE"}:
+                canonical_id = str(item.get("canonical_id") or item.get("target_id") or "")
+                if not canonical_id:
+                    raise EngineeringValidationError("canonical_id ist fuer Update/Delete-Proposals erforderlich.")
+                validate_uuid(canonical_id)
+                get_object(object_type, canonical_id)
+                results.append({"index": index, "object_type": object_type, "valid": True, "errors": []})
+                continue
             if object_type == "Relation":
                 required = ("relation_type", "source_type", "source_id", "target_type", "target_id")
                 missing = [field for field in required if not item.get(field)]
@@ -186,8 +198,10 @@ def validate_proposed_items(proposal: dict[str, Any]) -> list[dict[str, Any]]:
                 if not item.get("name"):
                     raise EngineeringValidationError("Pflichtfeld fehlt: 'name'")
                 spec = get_spec(object_type)
+                if object_type == "Interface" and not (item.get("function_id") or item.get("hardware_node_id")):
+                    raise EngineeringValidationError("Pflichtfeld fehlt: 'function_id' oder 'hardware_node_id'")
                 spec.validate(item)
-                parent_link = PARENT_LINKS.get(object_type)
+                parent_link = parent_link_for_payload(object_type, item)
                 if parent_link:
                     parent_field, parent_type, _ = parent_link
                     if item.get(parent_field):
@@ -311,8 +325,11 @@ def approve_proposal(
     for index in sorted(selected):
         item = proposed_objects[index]
         if item.get("canonical_id"):
-            continue
+            action = str(item.get("proposal_action") or item.get("action") or "CREATE").upper()
+            if action not in {"UPDATE", "DELETE", "DEPRECATE"}:
+                continue
         object_type = _proposal_object_type(proposal, item)
+        action = str(item.get("proposal_action") or item.get("action") or "CREATE").upper()
         provenance = {
             **dict(item.get("provenance") or {}),
             "proposal_id": proposal_id,
@@ -321,10 +338,57 @@ def approve_proposal(
             "evidence": proposal.get("evidence") or [],
             "approved_by": actor,
         }
+        if action in {"UPDATE", "DELETE", "DEPRECATE"}:
+            canonical_id = str(item.get("canonical_id") or item.get("target_id") or "")
+            if action == "UPDATE":
+                update_payload = {
+                    key: value
+                    for key, value in item.items()
+                    if key not in {"object_type", "resource", "canonical_id", "target_id", "proposal_state", "proposal_action", "action"}
+                }
+                update_payload.update(
+                    {
+                        "source": "ai_generated",
+                        "provenance": provenance,
+                        "review_state": "reviewed",
+                        "approval_state": "approved",
+                        "actor": actor,
+                        "change_summary": "AI-gestuetzter Korrekturvorschlag uebernommen",
+                    }
+                )
+                created = update_object(object_type, canonical_id, update_payload)
+                item["canonical_id"] = str(created.get("id"))
+                item["proposal_state"] = "APPROVED"
+                item["applied_action"] = "UPDATE"
+            else:
+                existing = get_object(object_type, canonical_id)
+                if existing.get("lifecycle_state") == "draft":
+                    delete_object(object_type, canonical_id)
+                    item["proposal_state"] = "APPROVED"
+                    item["applied_action"] = "DELETE"
+                else:
+                    update_object(
+                        object_type,
+                        canonical_id,
+                        {
+                            "lifecycle_state": "deprecated",
+                            "source": "ai_generated",
+                            "provenance": provenance,
+                            "review_state": "reviewed",
+                            "approval_state": "approved",
+                            "actor": actor,
+                            "change_summary": "AI-gestuetzter Vorschlag zur Ausmusterung uebernommen",
+                        },
+                    )
+                    item["proposal_state"] = "APPROVED"
+                    item["applied_action"] = "DEPRECATE"
+            proposed_objects[index] = item
+            _update_proposal_row(proposal_id, proposed_objects=proposed_objects, validation_results=validation, status="PARTIALLY_APPROVED", actor=actor)
+            continue
         payload = {
             key: value
             for key, value in item.items()
-            if key not in {"object_type", "resource", "canonical_id", "proposal_state"}
+            if key not in {"object_type", "resource", "canonical_id", "proposal_state", "proposal_action", "action"}
         }
         payload.update(
             {

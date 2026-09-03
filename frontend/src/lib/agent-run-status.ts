@@ -8,7 +8,7 @@ export type AgentBuildProgress = {
 
 export type AgentRunStatus = AgentBuildProgress & {
   run_id: string;
-  state: "RUNNING" | "BLOCKED" | "REVIEW_REQUIRED" | "COMPLETED";
+  state: "RUNNING" | "BLOCKED" | "REVIEW_REQUIRED" | "COMPLETED" | "CANCELED";
   message: string;
   updated_at: string;
 };
@@ -17,7 +17,7 @@ export function readAgentRunStatus(value: unknown, runId: string): AgentRunStatu
   if (!value || typeof value !== "object" || !runId) return null;
   const item = value as Record<string, unknown>;
   if (item.run_id !== runId
-    || !["RUNNING", "BLOCKED", "REVIEW_REQUIRED", "COMPLETED"].includes(String(item.state))
+    || !["RUNNING", "BLOCKED", "REVIEW_REQUIRED", "COMPLETED", "CANCELED"].includes(String(item.state))
     || !RUN_STEPS.some((step) => step === item.step)
     || !Number.isFinite(item.completed) || !Number.isFinite(item.total)
     || Number(item.completed) < 0 || Number(item.total) < 0

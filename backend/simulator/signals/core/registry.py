@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import math
 import operator
+import random
 from typing import Any, Callable
 
 from .context import SimulationContext

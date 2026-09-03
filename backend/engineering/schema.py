@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 17
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -23,6 +23,12 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         description TEXT,
         domain TEXT,
         device_type TEXT NOT NULL DEFAULT 'GenericDevice',
+        device_class INTEGER NOT NULL DEFAULT 1 CHECK (device_class BETWEEN 0 AND 4),
+        device_typing TEXT NOT NULL DEFAULT 'Basic Communication Device',
+        data_complexity TEXT NOT NULL DEFAULT 'SERVICE_DATA',
+        classification_status TEXT NOT NULL DEFAULT 'UNKNOWN'
+            CHECK (classification_status IN ('UNKNOWN', 'PROPOSED', 'CONFIRMED', 'REVIEW_REQUIRED')),
+        capability_profile_ref TEXT,
         identity JSONB NOT NULL DEFAULT '{}'::jsonb,
         product_information JSONB NOT NULL DEFAULT '{}'::jsonb,
         hardware_information JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -52,6 +58,47 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         description TEXT,
         domain TEXT,
         hardware_node_id UUID REFERENCES engineering_hardware_nodes(id) ON DELETE SET NULL,
+        version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
+        lifecycle_state TEXT NOT NULL DEFAULT 'draft'
+            CHECK (lifecycle_state IN ('draft', 'active', 'deprecated', 'superseded')),
+        source TEXT NOT NULL DEFAULT 'manual'
+            CHECK (source IN ('manual', 'import', 'ai_generated', 'simulation_derived')),
+        provenance JSONB NOT NULL DEFAULT '{}'::jsonb,
+        confidence DOUBLE PRECISION CHECK (confidence IS NULL OR confidence BETWEEN 0 AND 1),
+        review_state TEXT NOT NULL DEFAULT 'unreviewed'
+            CHECK (review_state IN ('unreviewed', 'in_review', 'reviewed', 'rejected')),
+        approval_state TEXT NOT NULL DEFAULT 'pending'
+            CHECK (approval_state IN ('pending', 'approved', 'rejected')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        created_by TEXT,
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        modified_by TEXT
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS engineering_hardware_interfaces (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id TEXT NOT NULL DEFAULT 'default',
+        name TEXT NOT NULL,
+        description TEXT,
+        domain TEXT,
+        hardware_node_id UUID NOT NULL REFERENCES engineering_hardware_nodes(id) ON DELETE CASCADE,
+        technology TEXT NOT NULL,
+        controller_ref TEXT,
+        physical_port_ref TEXT,
+        channel_index INTEGER CHECK (channel_index IS NULL OR channel_index > 0),
+        network_ref TEXT,
+        bitrate DOUBLE PRECISION CHECK (bitrate IS NULL OR bitrate > 0),
+        data_bitrate DOUBLE PRECISION CHECK (data_bitrate IS NULL OR data_bitrate > 0),
+        capabilities JSONB NOT NULL DEFAULT '{}'::jsonb,
+        status TEXT NOT NULL DEFAULT 'UNMAPPED'
+            CHECK (status IN ('CONFIGURED', 'UNMAPPED', 'ACTIVE', 'OUTDATED', 'OVERLOADED', 'ERROR')),
+        message_refs JSONB NOT NULL DEFAULT '[]'::jsonb,
+        static_load DOUBLE PRECISION CHECK (static_load IS NULL OR static_load >= 0),
+        runtime_load DOUBLE PRECISION CHECK (runtime_load IS NULL OR runtime_load >= 0),
+        target_load_limit DOUBLE PRECISION CHECK (target_load_limit IS NULL OR target_load_limit >= 0),
+        warning_load_limit DOUBLE PRECISION CHECK (warning_load_limit IS NULL OR warning_load_limit >= 0),
+        hard_load_limit DOUBLE PRECISION CHECK (hard_load_limit IS NULL OR hard_load_limit >= 0),
         version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
         lifecycle_state TEXT NOT NULL DEFAULT 'draft'
             CHECK (lifecycle_state IN ('draft', 'active', 'deprecated', 'superseded')),
@@ -227,9 +274,14 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     """,
     "CREATE INDEX IF NOT EXISTS idx_eng_nodes_domain ON engineering_hardware_nodes(domain)",
     "CREATE INDEX IF NOT EXISTS idx_eng_functions_node ON engineering_functions(hardware_node_id)",
+    "CREATE INDEX IF NOT EXISTS idx_eng_hardware_interfaces_node ON engineering_hardware_interfaces(hardware_node_id)",
+    "CREATE INDEX IF NOT EXISTS idx_eng_hardware_interfaces_project ON engineering_hardware_interfaces(project_id, created_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_eng_hardware_interfaces_network ON engineering_hardware_interfaces(project_id, network_ref)",
     "ALTER TABLE engineering_interfaces ADD COLUMN IF NOT EXISTS function_id UUID REFERENCES engineering_functions(id) ON DELETE SET NULL",
+    "ALTER TABLE engineering_messages ADD COLUMN IF NOT EXISTS hardware_interface_id UUID REFERENCES engineering_hardware_interfaces(id) ON DELETE SET NULL",
     "CREATE INDEX IF NOT EXISTS idx_eng_interfaces_node ON engineering_interfaces(hardware_node_id)",
     "CREATE INDEX IF NOT EXISTS idx_eng_interfaces_function ON engineering_interfaces(function_id)",
+    "CREATE INDEX IF NOT EXISTS idx_eng_messages_hardware_interface ON engineering_messages(hardware_interface_id)",
     "CREATE INDEX IF NOT EXISTS idx_eng_messages_interface ON engineering_messages(interface_id)",
     "CREATE INDEX IF NOT EXISTS idx_eng_signals_message ON engineering_signals(message_id)",
     "CREATE INDEX IF NOT EXISTS idx_eng_relations_source ON engineering_relations(source_type, source_id)",
@@ -455,6 +507,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_intelligence_issue_reviews_project ON engineering_intelligence_issue_reviews(project_id, issue_code, object_type, object_id)",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_functions ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
+    "ALTER TABLE engineering_hardware_interfaces ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_interfaces ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_messages ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_signals ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
@@ -748,6 +801,13 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_fault_proposals_review ON engineering_fault_proposals(project_id, status, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_trace_metadata_project ON engineering_trace_metadata(project_id, created_at DESC)",
     "CREATE INDEX IF NOT EXISTS idx_simulation_campaigns_project ON engineering_simulation_campaigns(project_id, created_at DESC)",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS device_class INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS device_typing TEXT NOT NULL DEFAULT 'Basic Communication Device'",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS data_complexity TEXT NOT NULL DEFAULT 'SERVICE_DATA'",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS classification_status TEXT NOT NULL DEFAULT 'UNKNOWN'",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS capability_profile_ref TEXT",
+    "CREATE INDEX IF NOT EXISTS idx_hardware_nodes_device_class ON engineering_hardware_nodes(project_id, device_class)",
+    "CREATE INDEX IF NOT EXISTS idx_hardware_nodes_device_typing ON engineering_hardware_nodes(project_id, device_typing)",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS description TEXT",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS simulation_scope JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE engineering_simulation_scenarios ADD COLUMN IF NOT EXISTS initial_conditions JSONB NOT NULL DEFAULT '{}'::jsonb",

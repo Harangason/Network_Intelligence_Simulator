@@ -171,6 +171,56 @@ def test_hierarchy_relations_are_created_automatically() -> None:
     client.delete(f"/api/engineering/hardware-nodes/{node['id']}")
 
 
+def test_direct_hardware_interface_proposal_creates_hardware_relation() -> None:
+    client = _client()
+    headers = {"X-Project-ID": "pytest-direct-interface-proposal"}
+    node = client.post(
+        "/api/engineering/hardware-nodes",
+        headers=headers,
+        json={"name": "TemperatureSensor", "device_type": "TemperatureSensor", "actor": "pytest"},
+    ).get_json()
+    proposal = client.post(
+        "/api/engineering/proposals",
+        headers=headers,
+        json={
+            "proposal_type": "OBJECT",
+            "target_object": {"resource": "interfaces"},
+            "prompt": "Create the direct sensor interface.",
+            "model": "pytest",
+            "proposed_objects": [
+                {
+                    "object_type": "Interface",
+                    "resource": "interfaces",
+                    "name": "TemperatureSensor_1",
+                    "hardware_node_id": node["id"],
+                    "interface_type": "LIN",
+                    "domain": "automotive",
+                }
+            ],
+        },
+    ).get_json()
+
+    validated = client.post(
+        f"/api/engineering/proposals/{proposal['proposal_id']}/validate",
+        headers=headers,
+        json={"actor": "pytest"},
+    )
+    assert validated.status_code == 200
+    approved = client.post(
+        f"/api/engineering/proposals/{proposal['proposal_id']}/approve",
+        headers=headers,
+        json={"actor": "pytest"},
+    )
+    assert approved.status_code == 200
+    interface_id = approved.get_json()["proposed_objects"][0]["canonical_id"]
+
+    relations = client.get("/api/engineering/relations", headers=headers).get_json()["items"]
+    assert ("HAS_INTERFACE", node["id"], interface_id) in {
+        (item["relation_type"], item["source_id"], item["target_id"])
+        for item in relations
+    }
+
+
 def test_approved_engineering_proposal_invalidates_workflow() -> None:
     client = _client()
     headers = {"X-Project-ID": "pytest-proposal-workflow-invalidation"}

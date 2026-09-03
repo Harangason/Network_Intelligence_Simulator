@@ -88,6 +88,35 @@ test("Variante 3 bindet Sensoren und ECUs direkt an das Gateway an", () => {
   assert.equal(plans.every((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
 });
 
+test("Variante 0 bleibt beim lokalen Sensor-ECU-Aktor-Regelkreis", () => {
+  const specification = extractEngineeringSpecification(`${SAMPLE}\n- 100 Aktoren\n`);
+  const plans = semanticRoutePlans(specification.chains, "sensor_ecu_actuator");
+  const sensorPlans = plans.filter((plan) => plan.source.device_type === "SensorController");
+  const actuatorDestinations = plans.filter((plan) => /Actuator/i.test(plan.destinations[0]?.device_type ?? ""));
+
+  assert.equal(sensorPlans.length, 100);
+  assert.equal(actuatorDestinations.length, 100);
+  assert.equal(plans.some((plan) => plan.destinations[0]?.device_type === "Gateway"), false);
+  assert.equal(sensorPlans.every((plan) => plan.destinations[0]?.device_type === "ECU"), true);
+  assert.equal(actuatorDestinations.every((plan) => plan.source.device_type === "ECU"), true);
+});
+
+test("Variante 4 bündelt bis zu sechs ECUs pro Gateway-Segment", () => {
+  const specification = extractEngineeringSpecification(`${SAMPLE}\n- 100 Aktoren\n`);
+  const plans = semanticRoutePlans(specification.chains, "gateway_ecu_segments");
+  const sensorPlans = plans.filter((plan) => plan.source.device_type === "SensorController");
+  const gatewaySegments = plans.filter((plan) => plan.source.device_type === "Gateway");
+  const actuatorPlans = plans.filter((plan) => /Actuator/i.test(plan.destinations[0]?.device_type ?? ""));
+
+  assert.equal(sensorPlans.length, 100);
+  assert.equal(actuatorPlans.length, 100);
+  assert.equal(actuatorPlans.every((plan) => plan.source.device_type === "ECU"), true);
+  assert.equal(gatewaySegments.length, 9);
+  assert.equal(gatewaySegments.every((plan) => plan.destinations.length <= 6), true);
+  assert.equal(gatewaySegments.reduce((sum, plan) => sum + plan.destinations.length, 0), 50);
+  assert.equal(plans.some((plan) => plan.source.device_type === "ECU" && plan.destinations[0]?.device_type === "Gateway"), false);
+});
+
 test("der KI-Hybrid kombiniert ECU-vermittelte und direkte Gateway-Pfade", () => {
   const specification = extractEngineeringSpecification(SAMPLE);
   const plans = semanticRoutePlans(specification.chains, "hybrid_ai");

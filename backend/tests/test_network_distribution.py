@@ -50,6 +50,46 @@ def test_routing_uses_the_physical_interface_and_segment():
     assert route["destinations"][0]["interface_id"] == "ia"
 
 
+def test_hardware_interface_ports_do_not_replace_logical_route_interfaces():
+    source_hwi = "00000000-0000-0000-0000-000000000101"
+    target_hwi = "00000000-0000-0000-0000-000000000102"
+    physical = {
+        "nodes": [
+            {
+                "id": "source",
+                "engineeringId": "source-node",
+                "ports": [{"id": "source-port", "bus": "can_fd", "hardwareInterfaceId": source_hwi}],
+            },
+            {
+                "id": "target",
+                "engineeringId": "target-node",
+                "ports": [{"id": "target-port", "bus": "can_fd", "hardwareInterfaceId": target_hwi}],
+            },
+        ],
+        "edges": [{
+            "id": "edge",
+            "source": "source",
+            "sourcePort": "source-port",
+            "target": "target",
+            "targetPort": "target-port",
+            "bus": "can_fd",
+            "routingEntryId": "route",
+        }],
+    }
+    route = {
+        "id": "route",
+        "source": {"node_id": "source-node", "interface_id": "logical-source", "protocol": "CAN_FD"},
+        "destinations": [{"node_id": "target-node", "interface_id": "logical-target", "protocol": "CAN_FD"}],
+    }
+
+    result = enrich_route_from_linked_topology(route, physical)
+
+    assert result["source"]["interface_id"] == "logical-source"
+    assert result["source"]["port_id"] == source_hwi
+    assert result["destinations"][0]["interface_id"] == "logical-target"
+    assert result["destinations"][0]["port_id"] == target_hwi
+
+
 def hardware():
     return [
         {"id": "ecu", "name": "Airbag-ECU", "device_type": "ECU"},

@@ -109,10 +109,19 @@ def enrich_route_from_linked_topology(
         port_id = str(
             (edge.get("sourcePort") if is_source else edge.get("targetPort")) or ""
         ).strip()
+        port = _port(nodes_by_id.get(topology_id, {}), port_id)
+        hardware_interface_id = str(
+            port.get("hardwareInterfaceId") or port.get("hardware_interface_id") or ""
+        ).strip()
+        logical_interface_id = (
+            endpoint.get("interface_id")
+            if hardware_interface_id
+            else port.get("engineeringId") or endpoint.get("interface_id")
+        )
         return {
             **endpoint,
-            "port_id": port_id or endpoint.get("port_id"),
-            "interface_id": _port(nodes_by_id.get(topology_id, {}), port_id).get("engineeringId") or endpoint.get("interface_id"),
+            "port_id": hardware_interface_id or port_id or endpoint.get("port_id"),
+            "interface_id": logical_interface_id,
             "network_id": port_networks.get(port_id, f"network-{bus}"),
         }
 

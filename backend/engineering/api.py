@@ -15,7 +15,16 @@ import psycopg
 from flask import Blueprint, Response, g, jsonify, request
 from psycopg_pool import PoolTimeout
 
-from .models import DEVICE_TYPES, EngineeringValidationError, INTERFACE_TYPES, MESSAGE_DIRECTIONS
+from .models import (
+    CLASSIFICATION_STATUSES,
+    DATA_COMPLEXITIES,
+    DEVICE_TYPES,
+    DEVICE_TYPINGS,
+    EngineeringValidationError,
+    INTERFACE_TYPES,
+    MESSAGE_DIRECTIONS,
+)
+from .device_classification import DeviceClassificationRegistry
 from .db import get_connection
 from .performance_governance import assert_within_budget, performance_governance_summary
 from .proposals import (
@@ -43,6 +52,7 @@ from .topology_sync import sync_topology
 from .importer import commit_import, preview_import
 from .knowledge import CanonicalKnowledgeService
 from .semantic_intelligence import SemanticClassificationService
+from backend.intelligence.ml import MLInferenceService
 from .routing.config_builder import CommunicationConfigBuilder
 from .routing.generation import RoutingGenerationService
 from .routing.network_sync import synchronize_network_routes
@@ -98,6 +108,7 @@ logger = logging.getLogger(__name__)
 # URL-Segment (Plural, kebab-case) -> kanonischer Objekttyp
 RESOURCES: dict[str, str] = {
     "hardware-nodes": "HardwareNode",
+    "hardware-interfaces": "HardwareNetworkInterface",
     "functions": "Function",
     "interfaces": "Interface",
     "messages": "Message",
@@ -110,10 +121,15 @@ FILTERABLE_QUERY_PARAMS = (
     "review_state",
     "approval_state",
     "hardware_node_id",
+    "hardware_interface_id",
     "function_id",
     "interface_id",
     "message_id",
     "device_type",
+    "device_class",
+    "device_typing",
+    "data_complexity",
+    "classification_status",
     "interface_type",
 )
 
@@ -146,14 +162,18 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
                 continue
             synced_interface = interfaces.get(str(port.get("id"))) or {}
             interface_name = synced_interface.get("engineering_name") or port.get("name")
+            hardware_interface_id = synced_interface.get("hardware_interface_id") \
+                or port.get("hardwareInterfaceId")
             if port.get("id") and interface_name:
                 interface_names_by_port[str(port.get("id"))] = str(interface_name)
             ports.append(
                 {
                     **port,
                     "name": interface_name,
-                    "engineeringId": synced_interface.get("engineering_id")
-                    or port.get("engineeringId"),
+                    "engineeringId": port.get("engineeringId") if hardware_interface_id else (
+                        synced_interface.get("engineering_id") or port.get("engineeringId")
+                    ),
+                    "hardwareInterfaceId": hardware_interface_id,
                 }
             )
         nodes.append(
@@ -331,9 +351,19 @@ def _propagate_source_changes(response):
             for route in list_routes(limit=500)
             if route.get("status") not in {"SUPERSEDED", "DEPRECATED", "REJECTED"}
         ]
-        if not active_routes:
+        if getattr(g, "routing_validation_failed", False):
+            status = "ERROR"
+            reason = "Die Routing-Tabelle enthaelt fachlich ungueltige Gateway-Fanout-Endpunkte."
+        elif not active_routes:
             status = "IN_PROGRESS"
             reason = "Routing-Vorschlaege wurden vorbereitet; die Routing-Tabelle ist noch leer."
+        elif any(
+            route.get("status") == "CONFLICT"
+            or (isinstance(route.get("validation"), dict) and route["validation"].get("valid") is False)
+            for route in active_routes
+        ):
+            status = "ERROR"
+            reason = "Die Routing-Tabelle enthaelt ungueltige Routen und muss ueberarbeitet werden."
         elif all(route.get("approval_state") == "APPROVED" for route in active_routes):
             status = "APPROVED"
             reason = "Alle aktiven Routen sind technisch geprueft und freigegeben."
@@ -401,10 +431,16 @@ def performance_governance():
 @engineering_api.route("/schema", methods=["GET"])
 def schema():
     """Metadaten für Frontend-Formulare: Vokabulare und Ressourcen-Layout."""
+    registry = DeviceClassificationRegistry()
     return jsonify(
         {
             "resources": list(RESOURCES.keys()),
             "device_types": list(DEVICE_TYPES),
+            "device_classes": registry.class_options(),
+            "device_typings": list(DEVICE_TYPINGS),
+            "data_complexities": list(DATA_COMPLEXITIES),
+            "classification_statuses": list(CLASSIFICATION_STATUSES),
+            "device_capability_profiles": registry.profile_options(),
             "interface_types": list(INTERFACE_TYPES),
             "message_directions": list(MESSAGE_DIRECTIONS),
         }
@@ -775,6 +811,55 @@ def semantic_classification_route():
     return jsonify(SemanticClassificationService().classify(payload))
 
 
+@engineering_api.route("/ml/models/train", methods=["POST"])
+def ml_train_model_route():
+    payload = _routing_payload()
+    task = str(payload.get("task") or "SIGNAL_SEMANTIC_CLASSIFICATION")
+    return jsonify(MLInferenceService().train_task(task))
+
+
+@engineering_api.route("/ml/classify/signal", methods=["POST"])
+def ml_classify_signal_route():
+    return jsonify(MLInferenceService().classify_signal(_routing_payload()))
+
+
+@engineering_api.route("/ml/classify/status", methods=["POST"])
+def ml_classify_status_route():
+    return jsonify(MLInferenceService().classify_status(_routing_payload()))
+
+
+@engineering_api.route("/ml/classify/physical", methods=["POST"])
+def ml_select_physical_model_route():
+    return jsonify(MLInferenceService().select_physical_model(_routing_payload()))
+
+
+@engineering_api.route("/ml/classify/fault", methods=["POST"])
+def ml_classify_fault_route():
+    return jsonify(MLInferenceService().classify_fault(_routing_payload()))
+
+
+@engineering_api.route("/ml/rank/routes", methods=["POST"])
+def ml_rank_routes_route():
+    payload = _routing_payload()
+    routes = payload.get("routes") if isinstance(payload.get("routes"), list) else []
+    return jsonify(MLInferenceService().rank_routes(routes))
+
+
+@engineering_api.route("/ml/score/packing", methods=["POST"])
+def ml_score_packing_route():
+    return jsonify(MLInferenceService().score_packing(_routing_payload()))
+
+
+@engineering_api.route("/ml/score/architecture", methods=["POST"])
+def ml_score_architecture_route():
+    return jsonify(MLInferenceService().score_architecture(_routing_payload()))
+
+
+@engineering_api.route("/ml/explain/qwen", methods=["POST"])
+def ml_explain_for_qwen_route():
+    return jsonify(MLInferenceService().explain_for_qwen(_routing_payload()))
+
+
 @engineering_api.route("/projects", methods=["GET"])
 def list_projects_route():
     with get_connection() as connection:
@@ -1065,7 +1150,10 @@ def routing_schema_route():
 @engineering_api.route("/routing/validate", methods=["POST"])
 def validate_routing_table_route():
     routes = list_routes(limit=500)
-    return jsonify(RoutingValidator(project_id=_project_id()).validate_table(routes))
+    result = RoutingValidator(project_id=_project_id()).validate_table(routes)
+    if not result.get("valid"):
+        g.routing_validation_failed = True
+    return jsonify(result)
 
 
 @engineering_api.route("/routing/generate", methods=["POST"])

@@ -16,6 +16,41 @@ from backend.engineering.workflow import service as workflow_service_module
 from backend.engineering.workflow.service import WorkflowStatusService, is_topology_layout_only_change
 
 
+def test_topology_artifact_accepts_canonical_hardware_interface_ports():
+    topology = {
+        "nodes": [
+            {
+                "id": "source",
+                "name": "Source",
+                "kind": "sensor",
+                "engineeringId": "hardware-source",
+                "ports": [{"id": "source-port", "hardwareInterfaceId": "hwi-source"}],
+            },
+            {
+                "id": "target",
+                "name": "Target",
+                "kind": "ecu",
+                "engineeringId": "hardware-target",
+                "ports": [{"id": "target-port", "hardwareInterfaceId": "hwi-target"}],
+            },
+        ],
+        "edges": [{
+            "id": "edge",
+            "source": "source",
+            "sourcePort": "source-port",
+            "target": "target",
+            "targetPort": "target-port",
+            "engineeringRelationId": "relation",
+        }],
+    }
+
+    result = WorkflowStatusService._topology_artifact_check(topology)
+
+    assert result["complete"] is True
+    assert result["status"] == "COMPLETE"
+    assert result["invalid"] == {"nodes": 0, "edges": 0}
+
+
 def test_engineering_change_marks_existing_dependent_results_outdated():
     state = {
         "versions": default_versions(),
@@ -103,6 +138,40 @@ def test_empty_future_steps_stay_empty_until_a_result_exists():
     assert changed["statuses"]["routing"] == "COMPLETE"
     assert changed["statuses"]["capacity_timing"] == "EMPTY"
     assert "capacity_timing" not in changed["stale_reasons"]
+
+
+def test_routing_artifact_check_rejects_gateway_fanout_interfaces():
+    class Result:
+        def __init__(self, row):
+            self.row = row
+
+        def fetchone(self):
+            return self.row
+
+    class Connection:
+        def __init__(self):
+            self.calls = 0
+
+        def execute(self, query, values):
+            self.calls += 1
+            if self.calls == 1:
+                return Result({
+                    "total": 250,
+                    "approved": 0,
+                    "valid": 0,
+                    "invalid": 0,
+                    "conflicts": 0,
+                })
+            return Result({"routes": 247, "interfaces": 247})
+
+    service = WorkflowStatusService("analysis-project")
+
+    result = service._routing_artifact_check(Connection())
+
+    assert result["status"] == "ERROR"
+    assert result["complete"] is False
+    assert result["counts"]["gateway_fanout_routes"] == 247
+    assert result["counts"]["gateway_fanout_interfaces"] == 247
 
 
 def test_completed_simulation_drops_previous_recalculation_reason():
@@ -232,6 +301,30 @@ def test_workflow_context_persists_agent_execution_without_losing_wizard(monkeyp
     assert saved["context"]["engineering_scope_rules"]["hardware_counts"]["gateways"] == 1
     assert saved["context"]["active_project"] == "project-a"
     assert "unknown_context_key" not in saved["context"]
+
+
+def test_canceled_wizard_run_is_terminal_for_late_status_writes(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_execution": {"run_id": "run-a", "state": "CANCELED"},
+        "agent_wizard_status": {"run_id": "run-a", "status": "CANCELED"},
+    }}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+
+    saved = service.set_context({
+        "agent_execution": {"run_id": "run-a", "state": "RUNNING"},
+        "agent_wizard_status": {"run_id": "run-a", "status": "RUNNING"},
+    })
+
+    assert saved["context"]["agent_execution"]["state"] == "CANCELED"
+    assert saved["context"]["agent_wizard_status"]["status"] == "CANCELED"
 
 
 def test_workflow_state_hides_stale_reason_after_step_is_complete():
@@ -372,6 +465,48 @@ def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
 
     network_codes = {item["code"] for item in response["category_checks"]["network"]}
     assert "WORKFLOW_STEP_NOT_READY" in network_codes
+
+
+def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {
+            **default_statuses(),
+            "engineering_model": "COMPLETE",
+            "routing": "COMPLETE",
+            "network_editor": "COMPLETE",
+            "parameters": "COMPLETE",
+            "capacity_timing": "COMPLETE",
+        },
+        "parameters": {},
+        "topology": {"nodes": [], "edges": []},
+    }
+    objects = {
+        "HardwareNode": [{"id": "hardware", "name": "Basic sensor"}],
+        "Function": [],
+        "Interface": [{"id": "interface", "name": "Basic sensor interface", "hardware_node_id": "hardware", "function_id": None}],
+        "Message": [],
+        "Signal": [],
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        service.workflow,
+        "create_analysis_snapshot",
+        lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+    )
+    monkeypatch.setattr(
+        capacity_service_module,
+        "list_objects",
+        lambda object_type, **_kwargs: objects[object_type],
+    )
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    response = service.run()
+
+    model_codes = {item["code"] for item in response["category_checks"]["engineering_model"]}
+    assert "INTERFACE_PARENT_MISSING" not in model_codes
 
 
 def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync(monkeypatch):

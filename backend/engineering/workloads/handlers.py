@@ -118,6 +118,104 @@ def normalized_name(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", "", text)
 
 
+def snake_case_name(value: Any) -> str:
+    text = str(value or "").replace("ß", "ss")
+    text = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", text)
+    text = text.lower()
+    text = text.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue")
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    return re.sub(r"_+", "_", text).strip("_")
+
+
+_BUS_NAME_TOKENS = re.compile(
+    r"(?:^|_)(?:can_fd|can|lin|flexray|ethernet|ethercat|profinet|modbustcp|modbusrtu|rs232|rs485|spi|i2c|usb|pcie|mqtt|opcua)(?=_|$)",
+    re.IGNORECASE,
+)
+_MESSAGE_SUFFIX = re.compile(r"(?:_)?(?:data|message|nachricht|aktor|actor|sensor|status|command|steuerung)$", re.IGNORECASE)
+_INITIAL_ALIASES = {"gateway": "gw", "system_gateway": "sgw", "systemgateway": "sgw"}
+
+
+def pascal_case_name(value: Any) -> str:
+    return "".join(token[:1].upper() + token[1:] for token in snake_case_name(value).split("_") if token)
+
+
+def normalize_interface_name(value: Any) -> str:
+    base = re.sub(r"_+", "_", _BUS_NAME_TOKENS.sub("_", snake_case_name(value))).strip("_")
+    if not base:
+        return str(value or "")
+    return "_".join(token if token.isdigit() else token[:1].upper() + token[1:] for token in base.split("_"))
+
+
+def normalize_message_name(value: Any) -> str:
+    base = re.sub(r"_+", "_", _BUS_NAME_TOKENS.sub("_", snake_case_name(value))).strip("_")
+    base = _MESSAGE_SUFFIX.sub("", base) or base
+    return pascal_case_name(base or value)
+
+
+def signal_initials(value: Any) -> str:
+    base = _MESSAGE_SUFFIX.sub("", snake_case_name(value))
+    if base in _INITIAL_ALIASES:
+        return _INITIAL_ALIASES[base]
+    tokens = [token for token in base.split("_") if token]
+    if len(tokens) > 1:
+        return "".join(token[0] for token in tokens)
+    token = tokens[0] if tokens else ""
+    consonants = re.sub(r"[aeiou]", "", token)
+    return (consonants[:2] or token[:2] or "sig").lower()
+
+
+def normalize_signal_name(value: Any, message_name: Any = None) -> str:
+    base = re.sub(r"^sig_", "", snake_case_name(value))
+    base = re.sub(r"_signal$", "", base) or "signal"
+    if not str(message_name or "").strip():
+        return base
+    prefix = signal_initials(message_name)
+    if base.startswith(f"{prefix}_") and base.endswith(f"_{prefix}"):
+        return base
+    return f"{prefix}_{base}_{prefix}"
+
+
+def normalize_workload_candidate(target: str, definition: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(definition)
+    if target == "Interface" and normalized.get("name"):
+        normalized["name"] = normalize_interface_name(normalized["name"])
+    elif target == "Message" and normalized.get("name"):
+        normalized["name"] = normalize_message_name(normalized["name"])
+    elif target == "Signal" and normalized.get("name"):
+        normalized["name"] = normalize_signal_name(normalized["name"], normalized.get("message_name") or normalized.get("message_id"))
+        normalized.setdefault("display_name", normalized["name"])
+    return normalized
+
+
+def suggest_candidate_repair(target: str, definition: dict[str, Any]) -> dict[str, Any]:
+    repaired = normalize_workload_candidate(target, dict(definition))
+    if target == "Message":
+        repaired.setdefault("direction", "tx")
+        repaired.setdefault("cycle_ms", 10)
+        repaired.setdefault("dlc", 8)
+        repaired.setdefault("configuration", {})
+        repaired.setdefault("description", f"Kommunikationsnachricht fuer {repaired.get('name') or 'Funktion'}.")
+    elif target == "Signal":
+        message_name = repaired.get("message_name") or repaired.get("message_id")
+        if repaired.get("name"):
+            repaired["name"] = normalize_signal_name(repaired["name"], message_name)
+            repaired.setdefault("display_name", repaired["name"])
+        repaired.setdefault("byte_order", "little_endian")
+        repaired.setdefault("data_type", repaired.get("datatype") or "unsigned")
+        repaired.setdefault("factor", repaired.get("resolution") or 1)
+        repaired.setdefault("offset_value", 0)
+        repaired.setdefault("unit", repaired.get("unit") or "code")
+        repaired.setdefault("min_value", repaired.get("minimum") if repaired.get("minimum") is not None else 0)
+        repaired.setdefault("max_value", repaired.get("maximum") if repaired.get("maximum") is not None else 255)
+        repaired.setdefault("configuration", {})
+        repaired.setdefault("semantic", {})
+        repaired.setdefault("data", {})
+        repaired.setdefault("communication", {})
+        repaired.setdefault("quality", {})
+        repaired.setdefault("protocol_bindings", [])
+    return repaired
+
+
 def semantic_alias_key(value: Any) -> str:
     key = normalized_name(value)
     for index, aliases in enumerate(SIGNAL_ALIAS_GROUPS):
@@ -300,10 +398,11 @@ def _signal_definition(
     message = context["message"]
     producer = str(context["node"].get("name") or package["category"])
     cycle_time = float(message.get("cycle_ms") or 10)
-    identifier = f"{workload['workload_id']}:{normalized_name(candidate['name'])}"
+    signal_name = normalize_signal_name(candidate["name"], message.get("name"))
+    identifier = f"{workload['workload_id']}:{normalized_name(signal_name)}"
     start_bit = index * 16
     layers = _canonical_signal_layers(
-        name=str(candidate["name"]),
+        name=signal_name,
         description=str(candidate["description"]),
         category=str(package["category"]),
         datatype=str(candidate["datatype"]),
@@ -321,8 +420,8 @@ def _signal_definition(
         "id": identifier,
         "object_type": "Signal",
         "resource": "signals",
-        "name": candidate["name"],
-        "display_name": candidate["name"],
+        "name": signal_name,
+        "display_name": signal_name,
         "description": candidate["description"],
         "category": package["category"],
         "datatype": candidate["datatype"],
@@ -370,7 +469,7 @@ def _existing_signal_definition(
     return {
         **_signal_definition(workload, package, candidate, context, 0),
         "id": str(existing["id"]),
-        "name": str(existing.get("name") or candidate["name"]),
+        "name": normalize_signal_name(existing.get("name") or candidate["name"], context["message"].get("name")),
         "display_name": str(existing.get("display_name") or existing.get("name") or candidate["name"]),
         "description": str(existing.get("description") or candidate["description"]),
         "datatype": str(existing.get("data_type") or candidate["datatype"]),
@@ -597,11 +696,12 @@ class StructuredObjectWorkloadHandler(WorkloadHandler):
                 )
 
     def execute(self, orchestrator, workload: dict[str, Any], package: dict[str, Any]) -> dict[str, Any]:
-        candidates = list((package.get("configuration") or {}).get("candidate_objects") or [])[: int(package["requested_count"])]
+        raw_candidates = list((package.get("configuration") or {}).get("candidate_objects") or [])[: int(package["requested_count"])]
         if str(package.get("status")) == "BLOCKED":
             return {"status": "SUCCESS", "requested": package["requested_count"], "generated": 0, "valid": 0, "invalid": 0, "objects": [], "validation_findings": package.get("findings") or [], "remaining": package["requested_count"]}
         proposal = None
         target = str(workload["target_object"])
+        candidates = [normalize_workload_candidate(target, dict(candidate)) for candidate in raw_candidates]
         if target in {"HardwareNode", "Function", "Interface", "Message", "Signal"}:
             proposal = orchestrator.create_validated_proposal(workload, package, target, candidates)
         for index, candidate in enumerate(candidates):
@@ -631,6 +731,18 @@ class StructuredObjectWorkloadHandler(WorkloadHandler):
                 findings.append({"code": "MISSING_FIELD", "field": "id", "severity": "ERROR"})
             if not definition.get("name") and workload["target_object"] not in {"Documentation", "TraceAnalysis", "NetworkAnalysis", "BusLoadAnalysis"}:
                 findings.append({"code": "MISSING_FIELD", "field": "name", "severity": "ERROR"})
+            expected = suggest_candidate_repair(str(workload["target_object"]), definition)
+            if definition.get("name") and expected.get("name") != definition.get("name"):
+                findings.append(
+                    {
+                        "code": "CANONICAL_NAME_REPAIR_AVAILABLE",
+                        "severity": "ERROR",
+                        "field": "name",
+                        "current": definition.get("name"),
+                        "suggested": expected.get("name"),
+                        "message": "Name folgt nicht dem kanonischen Engineering-Schema.",
+                    }
+                )
             key = normalized_name(definition.get("name") or definition.get("id"))
             duplicate_of = names.get(key)
             if duplicate_of:
@@ -642,7 +754,63 @@ class StructuredObjectWorkloadHandler(WorkloadHandler):
         return {"status": "SUCCESS", "validated": len(objects)}
 
     def repair(self, orchestrator, workload: dict[str, Any]) -> dict[str, Any]:
-        return {"status": "SUCCESS", "repaired": 0, "note": "Unsichere fachliche Inhalte erfordern Review statt Halluzinationsreparatur."}
+        repaired = 0
+        delete_marked = 0
+        target = str(workload["target_object"])
+        for item in orchestrator.list_workload_objects(str(workload["workload_id"])):
+            findings = [finding for finding in item.get("validation_results") or [] if isinstance(finding, dict)]
+            if not findings:
+                continue
+            definition = dict(item.get("definition") or {})
+            if any(finding.get("code") in {"POSSIBLE_DUPLICATE", "DUPLICATE_NAME", "DUPLICATE_ID"} for finding in findings):
+                if item.get("canonical_id"):
+                    proposal = orchestrator.create_review_proposal(
+                        workload,
+                        item,
+                        target,
+                        {
+                            **definition,
+                            "canonical_id": str(item["canonical_id"]),
+                            "proposal_action": "DELETE",
+                            "proposal_state": "READY_FOR_REVIEW",
+                            "ai_recommendation": "Ueberzaehliges oder doppeltes Objekt entfernen beziehungsweise ausmustern.",
+                        },
+                        prompt="KI-Audit: ueberzaehliges Objekt zur Entfernung markieren",
+                    )
+                    orchestrator.attach_object_to_proposal(item, proposal, 0)
+                    delete_marked += 1
+                continue
+            suggestion = suggest_candidate_repair(target, definition)
+            if suggestion == definition:
+                continue
+            suggestion.update(
+                {
+                    "proposal_action": "UPDATE" if item.get("canonical_id") else "CREATE",
+                    "proposal_state": "READY_FOR_REVIEW",
+                    "ai_recommendation": "Kanonische Parameter wurden aus Generatorregeln und ML-/Audit-Hinweisen vorgeschlagen.",
+                }
+            )
+            if item.get("canonical_id"):
+                suggestion["canonical_id"] = str(item["canonical_id"])
+                proposal = orchestrator.create_review_proposal(
+                    workload,
+                    item,
+                    target,
+                    suggestion,
+                    prompt="KI-Audit: Objektparameter korrigieren",
+                )
+                orchestrator.attach_object_to_proposal(item, proposal, 0)
+            else:
+                orchestrator.replace_workload_object_definition(item, suggestion)
+            repaired += 1
+        if repaired:
+            orchestrator.sync_workload_proposals(str(workload["workload_id"]))
+        return {
+            "status": "SUCCESS",
+            "repaired": repaired,
+            "delete_marked": delete_marked,
+            "note": "Korrekturen wurden als Review-Proposals bereitgestellt; automatische Uebernahme erfolgt nicht.",
+        }
 
 
 class RequirementExpansionWorkloadHandler(WorkloadHandler):

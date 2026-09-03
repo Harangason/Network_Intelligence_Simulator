@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import socket
 import sys
 from io import BytesIO
@@ -181,7 +182,7 @@ def test_backend_runtime_root_falls_back_when_project_runtime_is_blocked(
     assert environment["SIMULATOR_RUNTIME_ROOT"] == str(fallback)
 
 
-def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
+def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     for name in (
@@ -197,6 +198,7 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
         "WAITRESS_THREADS",
         "SIMULATION_WORKERS",
         "SIMULATION_EXECUTOR",
+        "WORKFLOW_EVENT_LIMIT",
         "DATABASE_URL",
     ):
         monkeypatch.delenv(name, raising=False)
@@ -211,9 +213,109 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_process_workers(
     assert environment["OLLAMA_CONTEXT_LENGTH"] == "8192"
     assert environment["WAITRESS_THREADS"] == "16"
     assert environment["SIMULATION_WORKERS"] == "12"
-    assert environment["SIMULATION_EXECUTOR"] == "process"
+    assert environment["SIMULATION_EXECUTOR"] == "thread"
+    assert environment["WORKFLOW_EVENT_LIMIT"] == "100000"
     assert environment["OMP_NUM_THREADS"] == "1"
     assert environment["DATABASE_URL"] == LAUNCHER.DEFAULT_DATABASE_URL
+
+
+def test_runtime_environment_uses_persisted_resource_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    project_root = tmp_path / "simulator"
+    project_root.mkdir()
+    config_dir = project_root / "config"
+    config_dir.mkdir()
+    (config_dir / "networkis.resources.json").write_text(
+        """
+        {
+          "paths": {"ollama_models": "X:\\\\models\\\\ollama"},
+          "resources": {
+            "waitress_threads": 10,
+            "simulation_workers": 6,
+            "simulation_executor": "thread",
+            "workflow_event_limit": 75000,
+            "service_restarts": 2,
+            "numeric_threads": 2,
+            "ollama_context_length": 4096,
+            "ollama_keep_alive": "5m"
+          },
+          "ai": {
+            "active_provider": "local",
+            "cloud_escalation": "never",
+            "providers": {
+              "ollama": {
+                "base_url_windows": "http://127.0.0.1:11434/v1",
+                "model": "llama3.1:8b",
+                "fast_model": "llama3.1:8b",
+                "api_key": "ollama"
+              },
+              "nvidia": {"model": "nvidia/test"}
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "ROOT", project_root)
+    monkeypatch.setattr(LAUNCHER, "RUNTIME_CONFIG_FILE", config_dir / "networkis.resources.json")
+    for name in (
+        "AI_PROVIDER",
+        "LOCAL_AI_BASE_URL",
+        "LOCAL_AI_MODEL",
+        "LOCAL_AI_FAST_MODEL",
+        "LOCAL_AI_API_KEY",
+        "CLOUD_ESCALATION",
+        "OLLAMA_MODELS",
+        "OLLAMA_CONTEXT_LENGTH",
+        "OLLAMA_KEEP_ALIVE",
+        "WAITRESS_THREADS",
+        "SIMULATION_WORKERS",
+        "SIMULATION_EXECUTOR",
+        "WORKFLOW_EVENT_LIMIT",
+        "NETWORKIS_SERVICE_RESTARTS",
+        "OMP_NUM_THREADS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    environment = LAUNCHER._runtime_environment()
+
+    assert environment["AI_PROVIDER"] == "local"
+    assert environment["LOCAL_AI_MODEL"] == "llama3.1:8b"
+    assert environment["WAITRESS_THREADS"] == "10"
+    assert environment["SIMULATION_WORKERS"] == "6"
+    assert environment["SIMULATION_EXECUTOR"] == "thread"
+    assert environment["WORKFLOW_EVENT_LIMIT"] == "75000"
+    assert environment["NETWORKIS_SERVICE_RESTARTS"] == "2"
+    assert environment["OLLAMA_MODELS"] == "X:\\models\\ollama"
+    assert environment["OLLAMA_CONTEXT_LENGTH"] == "4096"
+    assert environment["OMP_NUM_THREADS"] == "2"
+
+
+def test_docker_probe_uses_persisted_docker_cli_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    docker = tmp_path / "docker.exe"
+    docker.write_text("", encoding="utf-8")
+    config_file = tmp_path / "networkis.resources.json"
+    config_file.write_text(
+        json.dumps({"paths": {"docker_cli": str(docker)}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(LAUNCHER, "RUNTIME_CONFIG_FILE", config_file)
+    monkeypatch.setattr(LAUNCHER.shutil, "which", lambda _command: None)
+    monkeypatch.setattr(
+        LAUNCHER,
+        "_run_command",
+        lambda args, **_kwargs: LAUNCHER.subprocess.CompletedProcess(args, 0, "ok"),
+    )
+
+    probe = LAUNCHER._docker_probe()
+
+    assert probe.available
+    assert probe.executable == str(docker)
 
 
 def test_launcher_rejects_non_canonical_project_root(

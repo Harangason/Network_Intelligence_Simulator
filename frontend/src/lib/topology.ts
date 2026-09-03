@@ -11,6 +11,7 @@ export type TopologyPort = {
   side: PortSide;
   offset: number;
   engineeringId?: string;
+  hardwareInterfaceId?: string;
 };
 
 export type TopologyNode = {
@@ -23,7 +24,7 @@ export type TopologyNode = {
   height?: number;
   ports: TopologyPort[];
   engineeringId?: string;
-  engineeringFunctionId?: string;
+  engineeringFunctionId?: string | null;
   systemOwnerId?: string;
   systemOwnerSource?: string;
 };
@@ -67,13 +68,20 @@ export type TopologySyncResult = {
     topology_node_id: string;
     engineering_id: string;
     engineering_name?: string;
-    function_id: string;
-    interfaces: Array<{ topology_port_id: string; engineering_id: string; engineering_name?: string }>;
+    function_id?: string | null;
+    interfaces: Array<{
+      topology_port_id: string;
+      engineering_id: string;
+      engineering_name?: string;
+      object_type?: "Interface" | "HardwareNetworkInterface";
+      hardware_interface_id?: string;
+    }>;
   }>;
   edges: Array<{ topology_edge_id: string; engineering_relation_id: string }>;
   counts: {
     hardware_nodes: number;
     interfaces: number;
+    hardware_interfaces?: number;
     connections: number;
   };
 };

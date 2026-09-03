@@ -47,7 +47,7 @@ const LEVELS: Level[] = [
   { type: "Signal", resource: "signals", label: "Signale", singular: "Signal", parentType: "Message", parentField: "message_id", relationType: "CONTAINS_SIGNAL" },
 ];
 
-const LEVEL_BY_TYPE = Object.fromEntries(LEVELS.map((level) => [level.type, level])) as Record<EngineeringObjectType, Level>;
+const LEVEL_BY_TYPE = Object.fromEntries(LEVELS.map((level) => [level.type, level])) as Partial<Record<EngineeringObjectType, Level>>;
 const WIZARD_STEPS = [...LEVELS.map((level) => level.label), "KI-Prüfung"];
 const STRUCTURE_NAME_COLLATOR = new Intl.Collator("de-DE", { numeric: true, sensitivity: "base" });
 const SYSTEM_FRAME_FAMILIES: Array<{ sources: string[]; owners: string[] }> = [
@@ -200,7 +200,11 @@ function buildSystemFrameGroups(hardware: HardwareNode[]) {
 }
 
 function emptySelection(): Record<EngineeringObjectType, string[]> {
-  return { HardwareNode: [], Function: [], Interface: [], Message: [], Signal: [] };
+  return { HardwareNode: [], HardwareNetworkInterface: [], Function: [], Interface: [], Message: [], Signal: [] };
+}
+
+function emptyObjects(): Record<EngineeringObjectType, EngineeringObject[]> {
+  return { HardwareNode: [], HardwareNetworkInterface: [], Function: [], Interface: [], Message: [], Signal: [] };
 }
 
 function includesText(item: EngineeringObject, query: string) {
@@ -215,7 +219,7 @@ function isHardwareNode(item: EngineeringObject): item is HardwareNode {
 
 export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void }) {
   const [objects, setObjects] = useState<Record<EngineeringObjectType, EngineeringObject[]>>({
-    HardwareNode: [], Function: [], Interface: [], Message: [], Signal: [],
+    ...emptyObjects(),
   });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -251,7 +255,10 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
         Promise.all(LEVELS.map((level) => listAllEngineeringObjects(level.resource))),
         listSystemDuplicateCandidates(),
       ]);
-      const next = Object.fromEntries(LEVELS.map((level, index) => [level.type, groups[index]])) as Record<EngineeringObjectType, EngineeringObject[]>;
+      const next = {
+        ...emptyObjects(),
+        ...Object.fromEntries(LEVELS.map((level, index) => [level.type, groups[index]])),
+      } as Record<EngineeringObjectType, EngineeringObject[]>;
       setObjects(next);
       setSystemDuplicates(duplicates);
     } catch (caught) {
@@ -357,13 +364,14 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
 
   async function assignByDrop(child: EngineeringObject, parent: EngineeringObject) {
     const level = LEVEL_BY_TYPE[child.object_type];
+    if (!level) return;
     if (!level.parentType || level.parentType !== parent.object_type || !level.parentField || !level.relationType) return;
     setBusy(true);
     setError("");
     try {
       await applyEngineeringStructure({
         assignments: [{
-          child_type: child.object_type as Exclude<EngineeringObjectType, "HardwareNode">,
+          child_type: child.object_type as Exclude<EngineeringObjectType, "HardwareNode" | "HardwareNetworkInterface">,
           child_id: child.id,
           child_name: child.name,
           parent_type: parent.object_type,
@@ -447,7 +455,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     if (draggedType === "HardwareNode") {
       return target.object_type === "HardwareNode" && draggedIdRef.current !== target.id;
     }
-    return LEVEL_BY_TYPE[draggedType].parentType === target.object_type;
+    return LEVEL_BY_TYPE[draggedType]?.parentType === target.object_type;
   }
 
   function canDropOnSystemFrame(group: SystemFrameGroup) {
@@ -460,6 +468,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   async function saveName() {
     if (!renaming || !renaming.value.trim()) return;
     const level = LEVEL_BY_TYPE[renaming.type];
+    if (!level) return;
     setBusy(true);
     setError("");
     try {
@@ -508,7 +517,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     if (!treeVisible(item)) return null;
     const nodeChildren = children(item).filter(treeVisible);
     const isExpanded = expanded.has(item.id) || Boolean(normalizedQuery);
-    const level = LEVEL_BY_TYPE[item.object_type];
+    const level = LEVEL_BY_TYPE[item.object_type] ?? LEVELS[0];
     const displayName = structureDisplayName(item);
     const duplicateCandidates = item.object_type === "HardwareNode"
       ? systemDuplicatesByHardware.get(item.id) ?? []

@@ -184,3 +184,67 @@ def test_proposal_approval_reuses_semantic_hardware_without_creating_duplicate(m
         "similarity": 1.0,
         "reason": "kontrolliertes Fachsynonym",
     }
+
+
+def test_update_proposal_validation_accepts_existing_canonical_target(monkeypatch):
+    observed = []
+    monkeypatch.setattr(proposals, "get_object", lambda object_type, object_id: observed.append((object_type, object_id)) or {"id": object_id})
+    proposal = {
+        "target_object": {"resource": "messages"},
+        "proposed_objects": [
+            {
+                "object_type": "Message",
+                "resource": "messages",
+                "canonical_id": SOURCE,
+                "proposal_action": "UPDATE",
+                "name": "TemperaturErfassung",
+            }
+        ],
+    }
+
+    result = proposals.validate_proposed_items(proposal)
+
+    assert result == [{"index": 0, "object_type": "Message", "valid": True, "errors": []}]
+    assert observed == [("Message", SOURCE)]
+
+
+def test_update_proposal_approval_updates_existing_object(monkeypatch):
+    proposal = {
+        "proposal_id": "proposal-2",
+        "status": "READY_FOR_REVIEW",
+        "target_object": {"resource": "messages"},
+        "prompt": "Korrektur",
+        "model": "pytest",
+        "evidence": [],
+        "proposed_objects": [
+            {
+                "object_type": "Message",
+                "resource": "messages",
+                "canonical_id": SOURCE,
+                "proposal_action": "UPDATE",
+                "name": "TemperaturErfassung",
+                "interface_id": TARGET,
+            }
+        ],
+    }
+    state = dict(proposal)
+    updates = []
+
+    monkeypatch.setattr(proposals, "get_proposal", lambda _proposal_id: dict(state))
+    monkeypatch.setattr(proposals, "get_object", lambda object_type, object_id: {"id": object_id, "object_type": object_type})
+    monkeypatch.setattr(proposals, "update_object", lambda object_type, object_id, payload: updates.append((object_type, object_id, payload)) or {"id": object_id})
+
+    def fake_update(_proposal_id, **changes):
+        for key in ("proposed_objects", "validation_results", "status"):
+            if changes.get(key) is not None:
+                state[key] = changes[key]
+        return dict(state)
+
+    monkeypatch.setattr(proposals, "_update_proposal_row", fake_update)
+
+    approved = proposals.approve_proposal("proposal-2", actor="human-reviewer")
+
+    assert approved["status"] == "APPROVED"
+    assert approved["proposed_objects"][0]["applied_action"] == "UPDATE"
+    assert updates[0][0:2] == ("Message", SOURCE)
+    assert updates[0][2]["name"] == "TemperaturErfassung"

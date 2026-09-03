@@ -83,7 +83,9 @@ export function ModelSimulationRunner() {
 
   const loadWorkflow = useCallback(async () => {
     try {
-      setWorkflow(await getWorkflow());
+      const nextWorkflow = await getWorkflow();
+      setWorkflow(nextWorkflow);
+      setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Workflow nicht verfügbar.");
     }
@@ -218,7 +220,7 @@ export function ModelSimulationRunner() {
         const cycleMs = Math.max(0.001, Number(communication.cycle_ms ?? communication.period_ms ?? 100));
         return sum + Math.ceil(duration / (cycleMs / 1000));
       }, 0);
-      const maxEvents = Math.min(2_000_000, Math.max(100_000, Math.ceil(estimatedEventCount * 1.15)));
+      const maxEvents = Math.min(100_000, Math.max(1, Math.ceil(estimatedEventCount * 1.15)));
       config = {
         ...config,
         ...workflow.parameters,

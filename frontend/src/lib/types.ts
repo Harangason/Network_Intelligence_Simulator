@@ -191,12 +191,13 @@ export type SimulationJob = {
 };
 
 // ---------------------------------------------------------------------------
-// Engineering-Modell (kanonische Objekte: HardwareNode, Function, Interface,
-// Message, Signal) und Relations (Kanten des Knowledge Graphs).
+// Engineering-Modell (kanonische Objekte: HardwareNode, HardwareNetworkInterface,
+// Function, Interface, Message, Signal) und Relations (Kanten des Knowledge Graphs).
 // ---------------------------------------------------------------------------
 
 export type EngineeringResource =
   | "hardware-nodes"
+  | "hardware-interfaces"
   | "functions"
   | "interfaces"
   | "messages"
@@ -248,6 +249,7 @@ export interface EngineeringProposal {
 
 export type EngineeringObjectType =
   | "HardwareNode"
+  | "HardwareNetworkInterface"
   | "Function"
   | "Interface"
   | "Message"
@@ -279,6 +281,11 @@ export type GovernanceFields = {
 
 export type HardwareNode = GovernanceFields & {
   device_type: string;
+  device_class: number;
+  device_typing: string;
+  data_complexity: string;
+  classification_status: string;
+  capability_profile_ref: string | null;
   identity: Record<string, unknown>;
   product_information: Record<string, unknown>;
   hardware_information: Record<string, unknown>;
@@ -287,6 +294,25 @@ export type HardwareNode = GovernanceFields & {
 
 export type EngFunction = GovernanceFields & {
   hardware_node_id: string | null;
+};
+
+export type HardwareNetworkInterface = GovernanceFields & {
+  hardware_node_id: string;
+  technology: string;
+  controller_ref: string | null;
+  physical_port_ref: string | null;
+  channel_index: number | null;
+  network_ref: string | null;
+  bitrate: number | null;
+  data_bitrate: number | null;
+  capabilities: Record<string, unknown>;
+  status: "CONFIGURED" | "UNMAPPED" | "ACTIVE" | "OUTDATED" | "OVERLOADED" | "ERROR";
+  message_refs: unknown[];
+  static_load: number | null;
+  runtime_load: number | null;
+  target_load_limit: number | null;
+  warning_load_limit: number | null;
+  hard_load_limit: number | null;
 };
 
 export type EngInterface = GovernanceFields & {
@@ -298,6 +324,7 @@ export type EngInterface = GovernanceFields & {
 
 export type EngMessage = GovernanceFields & {
   interface_id: string | null;
+  hardware_interface_id: string | null;
   message_id_hex: string | null;
   direction: "rx" | "tx" | "bidirectional" | null;
   cycle_ms: number | null;
@@ -325,11 +352,16 @@ export type EngSignal = GovernanceFields & {
   protocol_bindings: Record<string, unknown>;
 };
 
-export type EngineeringObject = HardwareNode | EngFunction | EngInterface | EngMessage | EngSignal;
+export type EngineeringObject = HardwareNode | HardwareNetworkInterface | EngFunction | EngInterface | EngMessage | EngSignal;
 
 export type EngineeringSchema = {
   resources: EngineeringResource[];
   device_types: string[];
+  device_classes: { value: number; label: string }[];
+  device_typings: string[];
+  data_complexities: string[];
+  classification_statuses: string[];
+  device_capability_profiles: Record<string, unknown>[];
   interface_types: string[];
   message_directions: string[];
 };
@@ -347,7 +379,7 @@ export type EngineeringRelation = {
 };
 
 export type StructureSuggestion = {
-  child_type: Exclude<EngineeringObjectType, "HardwareNode">;
+  child_type: Exclude<EngineeringObjectType, "HardwareNode" | "HardwareNetworkInterface">;
   child_id: string;
   child_name: string;
   parent_type: EngineeringObjectType;

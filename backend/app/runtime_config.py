@@ -10,8 +10,28 @@ import shutil
 import subprocess
 from dataclasses import asdict, dataclass
 from io import StringIO
+from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
+
+
+ROOT = Path(__file__).resolve().parents[2]
+RUNTIME_CONFIG_FILE = ROOT / "config" / "networkis.resources.json"
+
+
+def _load_resource_config() -> dict[str, object]:
+    if not RUNTIME_CONFIG_FILE.is_file():
+        return {}
+    try:
+        payload = json.loads(RUNTIME_CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _section(config: dict[str, object], name: str) -> dict[str, object]:
+    value = config.get(name)
+    return value if isinstance(value, dict) else {}
 
 
 def _bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -38,9 +58,9 @@ def runtime_settings() -> RuntimeSettings:
     logical_cores = max(1, os.cpu_count() or 1)
     default_workers = min(12, max(2, logical_cores // 2))
     default_threads = min(32, max(8, logical_cores // 2))
-    executor = os.environ.get("SIMULATION_EXECUTOR", "process").strip().lower()
+    executor = os.environ.get("SIMULATION_EXECUTOR", "thread").strip().lower()
     if executor not in {"process", "thread"}:
-        executor = "process"
+        executor = "thread"
     return RuntimeSettings(
         logical_cores=logical_cores,
         api_threads=_bounded_int("WAITRESS_THREADS", default_threads, 4, 64),
@@ -142,6 +162,7 @@ def _ollama_status(settings: RuntimeSettings) -> dict[str, object]:
 
 def runtime_status() -> dict[str, object]:
     settings = runtime_settings()
+    config = _load_resource_config()
     memory = _total_memory_bytes()
     return {
         "settings": asdict(settings),
@@ -164,5 +185,12 @@ def runtime_status() -> dict[str, object]:
             "local_base_url": settings.local_ai_base_url,
             "local_model": settings.local_ai_model,
             "ollama": _ollama_status(settings),
+            "configured": _section(config, "ai"),
+        },
+        "configured_resources": _section(config, "resources"),
+        "configured_paths": {
+            key: value
+            for key, value in _section(config, "paths").items()
+            if key not in {"openai_api_key", "nvidia_api_key"}
         },
     }

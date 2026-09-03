@@ -83,7 +83,7 @@ test("legacy status signals use a conservative state domain instead of open nume
   const text = result.checks.map((check) => check.text).join(" ");
 
   assert.equal(result.semanticType, "STATE");
-  assert.equal(result.requiredBits, 3);
+  assert.equal(result.requiredBits, 4);
   assert.equal(result.status, "PASS");
   assert.ok(!codes(result).includes("SEMANTIC_MISSING"));
   assert.doesNotMatch(text, /Wertebereich|Skalierung|Datentyp/);

@@ -34,6 +34,8 @@ const ROUTE_RULES: RouteRule[] = [
   { source: ["ambientlight", "umgebungshelligkeit"], targets: ["aussenlicht", "bodycontrol"] },
 ];
 
+const GATEWAY_ECU_SEGMENT_SIZE = 6;
+
 const GENERIC_ROUTE_TOKENS = new Set([
   "automotive", "controller", "data", "ecu", "erfassung", "generated", "hardware",
   "message", "sensor", "signal", "status", "steuerung",
@@ -139,6 +141,18 @@ function gatewayForProcessor(
     )[0]?.gateway;
 }
 
+function processorSegments(processors: ExtractedEngineeringChain[], size = GATEWAY_ECU_SEGMENT_SIZE) {
+  const ordered = [...processors].sort((left, right) => (
+    canonicalInterfaceKey(left.interface_type).localeCompare(canonicalInterfaceKey(right.interface_type))
+    || left.hardware_name.localeCompare(right.hardware_name, "de-DE", { numeric: true, sensitivity: "base" })
+  ));
+  const segments: ExtractedEngineeringChain[][] = [];
+  for (let index = 0; index < ordered.length; index += size) {
+    segments.push(ordered.slice(index, index + size));
+  }
+  return segments;
+}
+
 export function semanticRoutePlans(
   chains: ExtractedEngineeringChain[],
   architecture: NetworkArchitectureMode = "ecu_gateway",
@@ -156,17 +170,30 @@ export function semanticRoutePlans(
       if (gateway) plans.push({ source: participant, destinations: [gateway] });
     }
   } else {
-    for (const endpoint of endpoints) {
-      const processor = semanticProcessorForSensor(endpoint, processors);
+    for (const [endpointIndex, endpoint] of endpoints.entries()) {
+      const actuator = /actuator|aktor/.test(semanticRouteKey(endpoint.device_type));
+      const processor = semanticProcessorForSensor(endpoint, processors)
+        ?? (actuator && processors.length ? processors[endpointIndex % processors.length] : undefined);
       const gateway = gatewayForProcessor(endpoint, gateways);
       const directInHybrid = architecture === "hybrid_ai"
         && (canonicalInterfaceKey(endpoint.interface_type) === "ethernet" || !processor);
-      if (directInHybrid && gateway) plans.push({ source: endpoint, destinations: [gateway] });
+      if (actuator && processor) {
+        if (processor) plans.push({ source: processor, destinations: [endpoint] });
+      } else if (directInHybrid && gateway) plans.push({ source: endpoint, destinations: [gateway] });
       else if (processor) plans.push({ source: endpoint, destinations: [processor] });
     }
-    for (const processor of processors) {
-      const gateway = gatewayForProcessor(processor, gateways);
-      if (gateway) plans.push({ source: processor, destinations: [gateway] });
+    if (architecture === "sensor_ecu_actuator") {
+      // Pure local control loop: endpoint <-> ECU only, no Gateway/BCM route layer.
+    } else if (architecture === "gateway_ecu_segments") {
+      for (const segment of processorSegments(processors)) {
+        const gateway = gatewayForProcessor(segment[0], gateways);
+        if (gateway && segment.length) plans.push({ source: gateway, destinations: segment });
+      }
+    } else {
+      for (const processor of processors) {
+        const gateway = gatewayForProcessor(processor, gateways);
+        if (gateway) plans.push({ source: processor, destinations: [gateway] });
+      }
     }
   }
   if (!plans.length && chains.length >= 2) {

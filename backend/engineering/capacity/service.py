@@ -970,8 +970,13 @@ class PreflightService:
             if not item.get("hardware_node_id"):
                 add("engineering_model", "ERROR", "FUNCTION_PARENT_MISSING", f"Funktion {item.get('name')} besitzt keinen Hardware Node.")
         for item in interfaces:
-            if not item.get("function_id"):
-                add("engineering_model", "ERROR", "INTERFACE_PARENT_MISSING", f"Interface {item.get('name')} besitzt keine Funktion.")
+            if not (item.get("function_id") or item.get("hardware_node_id")):
+                add(
+                    "engineering_model",
+                    "ERROR",
+                    "INTERFACE_PARENT_MISSING",
+                    f"Interface {item.get('name')} besitzt weder Funktion noch Hardware Node.",
+                )
         for item in messages:
             if not item.get("interface_id"):
                 add("engineering_model", "ERROR", "MESSAGE_PARENT_MISSING", f"Message {item.get('name')} besitzt kein Interface.")

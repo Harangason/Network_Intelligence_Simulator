@@ -132,6 +132,18 @@ def test_data_quality_accepts_unitless_status_signals():
     )
 
 
+def test_data_quality_accepts_direct_hardware_owned_interfaces():
+    objects = _objects()
+    objects["Interface"][0].update({"function_id": None, "hardware_node_id": "node-a"})
+
+    result = DataQualityService().analyze(objects)
+
+    assert not any(
+        item["code"] == "MISSING_REQUIRED_DATA" and item["object_id"] == "interface-a"
+        for item in result["issues"]
+    )
+
+
 def test_graph_analytics_finds_articulation_point_and_isolated_node():
     objects = _objects()
     result = GraphAnalyticsService().analyze(
@@ -236,6 +248,35 @@ def test_graph_analytics_normalizes_agent_topology_and_interface_edges():
     assert result["edge_count"] == 1
     assert result["isolated_nodes"] == []
     assert not any(issue["code"] == "ISOLATED_NODE" for issue in result["issues"])
+
+
+def test_graph_analytics_projects_hardware_interface_relations_to_hardware_nodes():
+    hardware = [
+        {"id": "node-a", "name": "A"},
+        {"id": "node-b", "name": "B"},
+    ]
+    hardware_interfaces = [
+        {"id": "port-a", "hardware_node_id": "node-a"},
+        {"id": "port-b", "hardware_node_id": "node-b"},
+    ]
+    relations = [
+        {
+            "relation_type": "CONNECTED_TO",
+            "source_type": "HardwareNetworkInterface",
+            "source_id": "port-a",
+            "target_type": "HardwareNetworkInterface",
+            "target_id": "port-b",
+        }
+    ]
+
+    result = GraphAnalyticsService().analyze(
+        hardware, [], [], {}, relations, [], hardware_interfaces,
+    )
+
+    assert result["node_count"] == 2
+    assert result["edge_count"] == 1
+    assert result["isolated_nodes"] == []
+    assert set(result["single_points_of_failure"]) <= {"node-a", "node-b"}
 
 
 def test_anomaly_detection_marks_unusual_cycle_without_calling_it_an_error():

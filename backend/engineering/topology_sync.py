@@ -107,6 +107,8 @@ def _find_preferred_interface(
 def _find_connection(
     source_id: str,
     target_id: str,
+    source_type: str,
+    target_type: str,
     relation_type: str,
     topology_id: str,
     edge_id: str,
@@ -116,8 +118,8 @@ def _find_connection(
             "SELECT * FROM engineering_relations "
             "WHERE project_id = %s AND ("
             "(attributes ->> 'topology_id' = %s AND attributes ->> 'topology_edge_id' = %s) OR "
-            "(relation_type = %s AND source_type = 'Interface' AND source_id = %s "
-            "AND target_type = 'Interface' AND target_id = %s)) "
+            "(relation_type = %s AND source_type = %s AND source_id = %s "
+            "AND target_type = %s AND target_id = %s)) "
             "ORDER BY CASE WHEN attributes ->> 'topology_id' = %s "
             "AND attributes ->> 'topology_edge_id' = %s THEN 0 ELSE 1 END LIMIT 1",
             (
@@ -125,7 +127,9 @@ def _find_connection(
                 topology_id,
                 edge_id,
                 relation_type,
+                source_type,
                 source_id,
+                target_type,
                 target_id,
                 topology_id,
                 edge_id,
@@ -137,14 +141,18 @@ def _update_connection_if_changed(
     current: dict[str, Any],
     *,
     relation_type: str,
+    source_type: str,
     source_id: str,
+    target_type: str,
     target_id: str,
     attributes: dict[str, Any],
 ) -> dict[str, Any]:
     merged_attributes = {**(current.get("attributes") or {}), **attributes}
     if (
         current.get("relation_type") == relation_type
+        and current.get("source_type") == source_type
         and str(current.get("source_id")) == source_id
+        and current.get("target_type") == target_type
         and str(current.get("target_id")) == target_id
         and current.get("attributes") == merged_attributes
     ):
@@ -152,11 +160,14 @@ def _update_connection_if_changed(
 
     with get_connection() as connection:
         row = connection.execute(
-            "UPDATE engineering_relations SET relation_type = %s, source_id = %s, "
-            "target_id = %s, attributes = %s WHERE id = %s AND project_id = %s RETURNING *",
+            "UPDATE engineering_relations SET relation_type = %s, source_type = %s, source_id = %s, "
+            "target_type = %s, target_id = %s, attributes = %s "
+            "WHERE id = %s AND project_id = %s RETURNING *",
             (
                 relation_type,
+                source_type,
                 source_id,
+                target_type,
                 target_id,
                 Jsonb(merged_attributes),
                 current["id"],
@@ -278,10 +289,17 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 hardware_updates,
             )
 
-        function = _find_function(topology_id, str(hardware["id"]))
+        raw_ports = raw_node.get("ports", [])
+        if not isinstance(raw_ports, list):
+            raise EngineeringValidationError("'node.ports' muss eine Liste sein.")
+        uses_physical_interfaces = bool(raw_ports) and all(
+            isinstance(raw_port, dict) and raw_port.get("hardwareInterfaceId")
+            for raw_port in raw_ports
+        )
+        function = None if uses_physical_interfaces else _find_function(topology_id, str(hardware["id"]))
         canonical_name = str(hardware.get("name") or name)
         function_name = f"{canonical_name} Kommunikation"
-        if function is None:
+        if function is None and not uses_physical_interfaces:
             function = create_object(
                 "Function",
                 {
@@ -291,13 +309,10 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                     "provenance": provenance,
                 },
             )
-        elif (function.get("provenance") or {}).get("origin") == ORIGIN:
+        elif function is not None and (function.get("provenance") or {}).get("origin") == ORIGIN:
             function = _update_if_changed("Function", function, {"name": function_name})
 
         synchronized_ports: list[dict[str, str]] = []
-        raw_ports = raw_node.get("ports", [])
-        if not isinstance(raw_ports, list):
-            raise EngineeringValidationError("'node.ports' muss eine Liste sein.")
         port_name_bases = [
             str(
                 requested_interface_names.get(str(raw_port.get("id") or "").strip())
@@ -341,6 +356,52 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 "bus": bus,
                 "network_id": port_networks.get(port_id, f"network-{bus}"),
             }
+            requested_hardware_interface_id = str(raw_port.get("hardwareInterfaceId") or "").strip()
+            if requested_hardware_interface_id:
+                try:
+                    hardware_interface = get_object(
+                        "HardwareNetworkInterface", requested_hardware_interface_id
+                    )
+                except NotFoundError as error:
+                    raise EngineeringValidationError(
+                        "Verknuepftes HardwareNetworkInterface nicht gefunden: "
+                        f"{requested_hardware_interface_id!r}"
+                    ) from error
+                if str(hardware_interface.get("hardware_node_id") or "") != str(hardware["id"]):
+                    raise EngineeringValidationError(
+                        f"HardwareNetworkInterface {requested_hardware_interface_id!r} "
+                        f"gehoert nicht zu {name!r}."
+                    )
+                if str(hardware_interface.get("technology") or "") != interface_type:
+                    raise EngineeringValidationError(
+                        f"HardwareNetworkInterface {requested_hardware_interface_id!r} nutzt "
+                        f"{hardware_interface.get('technology')!r} statt {interface_type!r}."
+                    )
+                hardware_interface = _update_if_changed(
+                    "HardwareNetworkInterface",
+                    hardware_interface,
+                    {
+                        "capabilities": {
+                            **(hardware_interface.get("capabilities") or {}),
+                            **configuration,
+                        }
+                    },
+                )
+                claimed_interface_ports[str(hardware_interface["id"])] = port_id
+                interface_by_port[port_id] = {
+                    **hardware_interface,
+                    "_topology_object_type": "HardwareNetworkInterface",
+                }
+                synchronized_ports.append(
+                    {
+                        "topology_port_id": port_id,
+                        "engineering_id": str(hardware_interface["id"]),
+                        "hardware_interface_id": str(hardware_interface["id"]),
+                        "engineering_name": str(hardware_interface["name"]),
+                        "object_type": "HardwareNetworkInterface",
+                    }
+                )
+                continue
             requested_interface_id = str(raw_port.get("engineeringId") or raw_port.get("engineering_id") or "").strip()
             interface = None
             if requested_interface_id:
@@ -414,12 +475,13 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             elif not reused_interface:
                 interface = _update_if_changed("Interface", interface, expected_interface)
             claimed_interface_ports[str(interface["id"])] = port_id
-            interface_by_port[port_id] = interface
+            interface_by_port[port_id] = {**interface, "_topology_object_type": "Interface"}
             synchronized_ports.append(
                 {
                     "topology_port_id": port_id,
                     "engineering_id": str(interface["id"]),
                     "engineering_name": str(interface["name"]),
+                    "object_type": "Interface",
                 }
             )
 
@@ -428,7 +490,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 "topology_node_id": node_id,
                 "engineering_id": str(hardware["id"]),
                 "engineering_name": canonical_name,
-                "function_id": str(function["id"]),
+                "function_id": str(function["id"]) if function is not None else None,
                 "interfaces": synchronized_ports,
             }
         )
@@ -446,6 +508,8 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             raise EngineeringValidationError(
                 f"Verbindung {edge_id!r} referenziert einen unbekannten Port."
             )
+        source_type = str(source_interface.get("_topology_object_type") or "Interface")
+        target_type = str(target_interface.get("_topology_object_type") or "Interface")
         relation_type = str(raw_edge.get("relationType") or "CONNECTED_TO").strip()
         if relation_type not in {"CONNECTED_TO", "COMMUNICATES_WITH", "CONNECTED_VIA"}:
             raise EngineeringValidationError(
@@ -454,6 +518,8 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
         relation = _find_connection(
             str(source_interface["id"]),
             str(target_interface["id"]),
+            source_type,
+            target_type,
             relation_type,
             topology_id,
             edge_id,
@@ -474,9 +540,9 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             relation = create_relation(
                 {
                     "relation_type": relation_type,
-                    "source_type": "Interface",
+                    "source_type": source_type,
                     "source_id": str(source_interface["id"]),
-                    "target_type": "Interface",
+                    "target_type": target_type,
                     "target_id": str(target_interface["id"]),
                     "attributes": relation_attributes,
                 }
@@ -485,7 +551,9 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
             relation = _update_connection_if_changed(
                 relation,
                 relation_type=relation_type,
+                source_type=source_type,
                 source_id=str(source_interface["id"]),
+                target_type=target_type,
                 target_id=str(target_interface["id"]),
                 attributes=relation_attributes,
             )
@@ -500,6 +568,18 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
         "counts": {
             "hardware_nodes": len(synchronized_nodes),
             "interfaces": len(interface_by_port),
+            **(
+                {"hardware_interfaces": sum(
+                    1
+                    for item in interface_by_port.values()
+                    if item.get("_topology_object_type") == "HardwareNetworkInterface"
+                )}
+                if any(
+                    item.get("_topology_object_type") == "HardwareNetworkInterface"
+                    for item in interface_by_port.values()
+                )
+                else {}
+            ),
             "connections": len(synchronized_edges),
         },
     }

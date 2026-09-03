@@ -12,7 +12,7 @@ def test_runtime_defaults_scale_for_workstation(monkeypatch) -> None:
 
     assert settings.api_threads == 16
     assert settings.simulation_workers == 12
-    assert settings.simulation_executor == "process"
+    assert settings.simulation_executor == "thread"
 
 
 def test_runtime_settings_are_bounded(monkeypatch) -> None:
@@ -25,4 +25,4 @@ def test_runtime_settings_are_bounded(monkeypatch) -> None:
 
     assert settings.api_threads == 64
     assert settings.simulation_workers == 8
-    assert settings.simulation_executor == "process"
+    assert settings.simulation_executor == "thread"

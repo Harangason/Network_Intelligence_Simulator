@@ -89,7 +89,7 @@ class DataQualityService:
     REQUIRED_FIELDS = {
         "HardwareNode": ("name", "device_type"),
         "Function": ("name", "hardware_node_id"),
-        "Interface": ("name", "function_id", "interface_type"),
+        "Interface": ("name", "interface_type"),
         "Message": ("name", "interface_id", "direction", "cycle_ms", "dlc"),
         "Signal": ("name", "message_id", "data_type", "length_bits"),
     }
@@ -115,6 +115,12 @@ class DataQualityService:
                         missing.append(field)
                     else:
                         complete_fields += 1
+                if object_type == "Interface":
+                    total_fields += 1
+                    if row.get("function_id") or row.get("hardware_node_id"):
+                        complete_fields += 1
+                    else:
+                        missing.append("function_id oder hardware_node_id")
                 if object_type == "Signal" and _signal_unit_required(row):
                     total_fields += 1
                     if row.get("unit"):
@@ -207,6 +213,7 @@ class GraphAnalyticsService:
         topology: dict[str, Any],
         relations: list[dict[str, Any]],
         interfaces: list[dict[str, Any]],
+        hardware_interfaces: list[dict[str, Any]],
     ) -> list[tuple[str, str]]:
         edges: set[tuple[str, str]] = set()
         topology_nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
@@ -221,7 +228,7 @@ class GraphAnalyticsService:
         }
         interface_to_hardware = {
             str(interface.get("id")): str(interface.get("hardware_node_id"))
-            for interface in interfaces
+            for interface in [*interfaces, *hardware_interfaces]
             if interface.get("id") and interface.get("hardware_node_id")
         }
         for edge in topology.get("edges") or []:
@@ -236,9 +243,13 @@ class GraphAnalyticsService:
             if relation.get("relation_type") == "CONNECTED_TO":
                 source_id = str(relation.get("source_id") or "")
                 target_id = str(relation.get("target_id") or "")
-                if str(relation.get("source_type") or "").lower() == "interface":
+                if str(relation.get("source_type") or "").lower() in {
+                    "interface", "hardwarenetworkinterface", "hardware_network_interface",
+                }:
                     source_id = interface_to_hardware.get(source_id, source_id)
-                if str(relation.get("target_type") or "").lower() == "interface":
+                if str(relation.get("target_type") or "").lower() in {
+                    "interface", "hardwarenetworkinterface", "hardware_network_interface",
+                }:
                     target_id = interface_to_hardware.get(target_id, target_id)
                 if source_id and target_id and source_id != target_id:
                     edges.add((source_id, target_id))
@@ -286,11 +297,12 @@ class GraphAnalyticsService:
         topology: dict[str, Any],
         relations: list[dict[str, Any]],
         routes: list[dict[str, Any]],
+        hardware_interfaces: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         nodes = {str(item.get("id")) for item in hardware}
         node_names = {str(item.get("id")): str(item.get("name") or item.get("id")) for item in hardware}
         node_types = {str(item.get("id")): str(item.get("device_type") or "") for item in hardware}
-        edges = self._edges(topology, relations, interfaces)
+        edges = self._edges(topology, relations, interfaces, hardware_interfaces or [])
         adjacency: dict[str, set[str]] = defaultdict(set)
         for source, target in edges:
             nodes.update((source, target))

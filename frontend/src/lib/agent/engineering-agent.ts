@@ -12,6 +12,9 @@ import { appendAgentDiagnostic } from "@/lib/agent/agent-diagnostics-log";
 import { agentLearningContext } from "@/lib/agent/feedback-store";
 import {
   extractEngineeringSpecification,
+  expandEngineeringSignalModel,
+  packEngineeringChains,
+  type ExtractedEngineeringChain,
   isEngineeringAnalysisWorkRequest,
   isEngineeringReviewRequest,
   isStructuredEngineeringSpecification,
@@ -34,6 +37,7 @@ import {
   listObjects,
   listRelations,
   updateRoutingProposal,
+  updateObject,
   validateRoutingEntry,
   validateRoutingTable,
   listEngineeringToolRegistry,
@@ -71,12 +75,13 @@ import { routingApprovalProgress } from "@/lib/routing-approval";
 import { normalizePhysicalTopology, topologyToConfig, type BusType, type NetworkTopology, type NodeKind } from "@/lib/topology";
 import type { RoutingEntry } from "@/lib/types";
 
-const RESOURCE_ENUM = ["hardware-nodes", "functions", "interfaces", "messages", "signals"] as const;
-const OBJECT_TYPE_ENUM = ["HardwareNode", "Function", "Interface", "Message", "Signal"] as const;
+const RESOURCE_ENUM = ["hardware-nodes", "hardware-interfaces", "functions", "interfaces", "messages", "signals"] as const;
+const OBJECT_TYPE_ENUM = ["HardwareNode", "HardwareNetworkInterface", "Function", "Interface", "Message", "Signal"] as const;
 type EngineeringResourceName = typeof RESOURCE_ENUM[number];
 
 const OBJECT_TYPE_RESOURCE: Record<typeof OBJECT_TYPE_ENUM[number], EngineeringResourceName> = {
   HardwareNode: "hardware-nodes",
+  HardwareNetworkInterface: "hardware-interfaces",
   Function: "functions",
   Interface: "interfaces",
   Message: "messages",
@@ -87,11 +92,12 @@ const WORKFLOW_MANIFEST = [
   {
     id: "engineering_model",
     label: "Engineering-Modell",
-    goal: "Kanonische HardwareNodes, Functions, Interfaces, Messages, Signals und Relations aufbauen.",
-    creates: ["HardwareNode", "Function", "Interface", "Message", "Signal", "Relation"],
+    goal: "Kanonische HardwareNodes, HardwareNetworkInterfaces, Functions, Interfaces, Messages, Signals und Relations aufbauen.",
+    creates: ["HardwareNode", "HardwareNetworkInterface", "Function", "Interface", "Message", "Signal", "Relation"],
     requires: [],
     relationshipRules: [
-      "HardwareNode ist Elternobjekt fuer Functions und Interfaces.",
+      "HardwareNode ist Elternobjekt fuer HardwareNetworkInterfaces und Functions.",
+      "HardwareNetworkInterface beschreibt physische Controller/Kanal/Port-Zuordnung; Interface bleibt logisch-funktional.",
       "Function gehoert zu genau einem HardwareNode.",
       "Interface gehoert zu einem HardwareNode und optional zu einer Function.",
       "Message gehoert zu einem Interface.",
@@ -496,11 +502,25 @@ type EngineeringObjectInput = {
   description?: string;
   domain?: string;
   device_type?: string;
+  device_class?: number;
+  device_typing?: string;
+  data_complexity?: string;
+  classification_status?: string;
   interface_type?: string;
+  technology?: string;
   hardware_node_id?: string;
+  hardware_interface_id?: string;
   function_id?: string;
   interface_id?: string;
+  controller_ref?: string;
+  physical_port_ref?: string;
+  channel_index?: number;
+  network_ref?: string;
+  bitrate?: number;
+  data_bitrate?: number;
+  capabilities?: Record<string, unknown>;
   message_id?: string;
+  message_name?: string;
   direction?: "rx" | "tx" | "bidirectional";
   message_id_hex?: string;
   cycle_ms?: number;
@@ -523,6 +543,38 @@ type EngineeringObjectInput = {
   protocol_bindings?: Array<Record<string, unknown>>;
 };
 
+export function inferredDeviceClassification(name: unknown, deviceType: unknown) {
+  const text = `${String(name ?? "")} ${String(deviceType ?? "")}`.toLowerCase();
+  const type = canonicalDeviceType(String(deviceType ?? "GenericDevice"));
+  if (type === "Gateway" || text.includes("gateway")) {
+    return { device_class: 4, device_typing: "Intelligent Subsystem", data_complexity: "SERVICE_DATA" };
+  }
+  if (["ECU", "PLC", "RobotController", "EmbeddedController", "IndustrialPC", "FlightComputer", "BatteryManagementSystem", "EnergyController", "BuildingController"].includes(type)) {
+    return { device_class: 4, device_typing: "Intelligent Subsystem", data_complexity: "SERVICE_DATA" };
+  }
+  if (/camera|kamera|vision/.test(text)) {
+    return { device_class: 3, device_typing: "Perception Sensor", data_complexity: "IMAGE_STREAM" };
+  }
+  if (/radar|lidar|scanner|ultrasonic/.test(text)) {
+    return { device_class: 3, device_typing: text.includes("lidar") ? "Perception Device" : "Perception Sensor", data_complexity: text.includes("lidar") ? "POINT_CLOUD" : "STRUCTURED_OBJECT_LIST" };
+  }
+  if (type === "SensorController" || text.includes("sensor")) {
+    if (/smart|digital|diagnostic|imu|encoder/.test(text)) return { device_class: 2, device_typing: "Smart Sensor", data_complexity: "MULTI_VALUE" };
+    return { device_class: 1, device_typing: "Basic Sensor", data_complexity: "PHYSICAL_SCALAR" };
+  }
+  if (type === "ActuatorController" || /actuator|aktor|valve|pump|servo|motor/.test(text)) {
+    if (/servo|controlled|smart|pump|driver/.test(text)) return { device_class: 2, device_typing: "Controlled Actuator", data_complexity: "CONTROL_COMMAND" };
+    return { device_class: 1, device_typing: "Basic Actuator", data_complexity: "CONTROL_COMMAND" };
+  }
+  return { device_class: 1, device_typing: "Basic Communication Device", data_complexity: "SERVICE_DATA" };
+}
+
+function chainRequiresFunctionModel(input: EngineeringChainInput) {
+  const classification = inferredDeviceClassification(input.hardware_name, input.device_type);
+  const deviceClass = Number(input.device_class ?? classification.device_class);
+  return deviceClass >= 3;
+}
+
 type CanonicalEngineeringObject = {
   resource: EngineeringResourceName;
   id: string;
@@ -533,6 +585,30 @@ type CanonicalEngineeringObject = {
 type EngineeringRegistrationIndex = {
   canonical: Record<EngineeringResourceName, Map<string, CanonicalEngineeringObject>>;
   proposals: Record<string, unknown>[];
+};
+
+type CommunicationScopeAudit = {
+  expected: {
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  actual: {
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  missing: {
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  excess: {
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  cleanup_proposals: Array<Record<string, unknown>>;
 };
 
 function sameEngineeringName(value: unknown, expected: string) {
@@ -550,8 +626,9 @@ function registrationKey(resource: EngineeringResourceName, name: string, device
 }
 
 async function createEngineeringRegistrationIndex(): Promise<EngineeringRegistrationIndex> {
-  const [hardware, functions, interfaces, messages, signals, proposals] = await Promise.all([
+  const [hardware, hardwareInterfaces, functions, interfaces, messages, signals, proposals] = await Promise.all([
     listObjects("hardware-nodes", { limit: "500" }),
+    listObjects("hardware-interfaces", { limit: "500" }),
     listObjects("functions", { limit: "500" }),
     listObjects("interfaces", { limit: "500" }),
     listObjects("messages", { limit: "500" }),
@@ -560,6 +637,7 @@ async function createEngineeringRegistrationIndex(): Promise<EngineeringRegistra
   ]);
   const source: Record<EngineeringResourceName, Record<string, unknown>[]> = {
     "hardware-nodes": hardware.items,
+    "hardware-interfaces": hardwareInterfaces.items,
     functions: functions.items,
     interfaces: interfaces.items,
     messages: messages.items,
@@ -587,6 +665,269 @@ function rememberCanonicalObjects(
   for (const item of canonicalObjects) {
     index.canonical[item.resource].set(registrationKey(item.resource, item.name, item.device_type), item);
   }
+}
+
+function expectedCommunicationScope(chains: EngineeringChainInput[]) {
+  const interfaces = new Set<string>();
+  const messages = new Set<string>();
+  const signals = new Set<string>();
+  for (const chain of chains) {
+    interfaces.add(engineeringNameKey(normalizeAgentInterfaceName(chain.interface_name)));
+    messages.add(engineeringNameKey(normalizeAgentMessageName(chain.message_name)));
+    signals.add(engineeringNameKey(normalizeAgentSignalName(chain.signal_name, chain.message_name)));
+  }
+  return { interfaces, messages, signals };
+}
+
+function activeCanonicalItems(items: Record<string, unknown>[]) {
+  return items.filter((item) => {
+    const lifecycle = String(item.lifecycle_state ?? item.lifecycle ?? "").toLowerCase();
+    const approval = String(item.approval_state ?? "").toLowerCase();
+    return lifecycle !== "deprecated" && lifecycle !== "superseded" && approval !== "rejected";
+  });
+}
+
+function gatewayFanoutInterfaceName(value: unknown) {
+  return /^system_\d+_\d+$/i.test(agentSnakeCase(value));
+}
+
+function isGatewayNode(item: Record<string, unknown> | undefined) {
+  if (!item) return false;
+  return canonicalDeviceType(String(item.device_type ?? "")) === "Gateway"
+    || /gateway/.test(agentSnakeCase(item.name));
+}
+
+function isGatewayFanoutInterface(
+  item: Record<string, unknown>,
+  hardwareById: Map<string, Record<string, unknown>>,
+) {
+  if (!gatewayFanoutInterfaceName(item.name)) return false;
+  return isGatewayNode(hardwareById.get(String(item.hardware_node_id ?? "")));
+}
+
+function existingCleanupProposal(
+  proposals: Record<string, unknown>[],
+  resource: EngineeringResourceName,
+  canonicalId: string,
+  actions = ["DELETE", "DEPRECATE"],
+) {
+  return proposals.find((proposal) => {
+    if (["APPROVED", "REJECTED", "SUPERSEDED"].includes(String(proposal.status ?? ""))) return false;
+    const proposedObjects = Array.isArray(proposal.proposed_objects) ? proposal.proposed_objects : [];
+    return proposedObjects.some((item) => {
+      if (!item || typeof item !== "object") return false;
+      const candidate = item as Record<string, unknown>;
+      const action = String(candidate.proposal_action ?? candidate.action ?? "").toUpperCase();
+      return candidate.resource === resource
+        && String(candidate.canonical_id ?? candidate.target_id ?? "") === canonicalId
+        && actions.includes(action);
+    });
+  });
+}
+
+async function createInterfaceCleanupProposals(
+  expectedInterfaceNames: Set<string>,
+  interfaces: Record<string, unknown>[],
+  hardwareById: Map<string, Record<string, unknown>>,
+  messages: Record<string, unknown>[],
+  registrationIndex: EngineeringRegistrationIndex,
+) {
+  const proposals: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
+  const messageInterfaceIds = new Set(
+    messages.map((message) => String(message.interface_id ?? "")).filter(Boolean),
+  );
+  const orderedInterfaces = [...activeCanonicalItems(interfaces)].sort((left, right) => {
+    const leftName = String(left.name ?? "");
+    const rightName = String(right.name ?? "");
+    const leftCanonical = leftName === normalizeAgentInterfaceName(leftName) ? 0 : 1;
+    const rightCanonical = rightName === normalizeAgentInterfaceName(rightName) ? 0 : 1;
+    return leftCanonical - rightCanonical || leftName.localeCompare(rightName, "de-DE", { numeric: true, sensitivity: "base" });
+  });
+
+  for (const item of orderedInterfaces) {
+    const id = String(item.id ?? "");
+    const name = String(item.name ?? "");
+    if (!id || !name) continue;
+    const canonicalName = normalizeAgentInterfaceName(name);
+    const nameKey = engineeringNameKey(canonicalName);
+    const scopedKey = [
+      String(item.hardware_node_id ?? ""),
+      String(item.function_id ?? ""),
+      canonicalInterfaceType(String(item.interface_type ?? "")),
+      nameKey,
+    ].join("|");
+    const gatewayFanout = isGatewayFanoutInterface(item, hardwareById);
+    const unexpectedName = gatewayFanout || !expectedInterfaceNames.has(nameKey);
+    const duplicate = seen.has(scopedKey);
+    if (!unexpectedName && !duplicate) {
+      seen.add(scopedKey);
+      if (name !== canonicalName && !existingCleanupProposal(registrationIndex.proposals, "interfaces", id, ["UPDATE"])) {
+        const proposal = await createProposal({
+          proposal_type: "OBJECT",
+          target_object: { resource: "interfaces", proposal_action: "UPDATE" },
+          prompt: `KI-Audit: Interface ${name} in ${canonicalName} umbenennen`,
+          model: engineeringAgentOrchestrator,
+          proposed_objects: [{
+            object_type: "Interface",
+            resource: "interfaces",
+            canonical_id: id,
+            proposal_action: "UPDATE",
+            name: canonicalName,
+            ai_recommendation: "Der Interface-Name darf die Bustechnik nicht im Namen tragen; die Technologie steht im Interface-Typ.",
+          }],
+          evidence: [{
+            source: "engineering-specification-scope-audit",
+            expected_name: canonicalName,
+            actual_interface: { id, name },
+          }],
+          retrieved_context: [],
+          validation_results: [],
+          created_by: "engineering-chat-agent",
+        });
+        registrationIndex.proposals.push(proposal);
+        proposals.push(await validateEngineeringProposal(String(proposal.proposal_id ?? "")));
+      }
+      continue;
+    }
+    if (existingCleanupProposal(registrationIndex.proposals, "interfaces", id)) continue;
+    const proposalAction = messageInterfaceIds.has(id) ? "DEPRECATE" : "DELETE";
+    const proposal = await createProposal({
+      proposal_type: "OBJECT",
+      target_object: { resource: "interfaces", proposal_action: proposalAction },
+      prompt: `KI-Audit: ${unexpectedName ? "ueberzaehliges" : "doppeltes"} Interface ${name} bereinigen`,
+      model: engineeringAgentOrchestrator,
+      proposed_objects: [{
+        object_type: "Interface",
+        resource: "interfaces",
+        canonical_id: id,
+        proposal_action: proposalAction,
+        name,
+        lifecycle_state: "deprecated",
+        ai_recommendation: gatewayFanout
+          ? "Dieses Systemgateway-Interface ist ein pro-Teilnehmer-Fanout. Das Gateway darf vorhandene Teilnehmer-Interfaces nur verbinden oder routen, aber keine eigenen Teilnehmer-Duplikate erzeugen."
+          : unexpectedName
+          ? "Dieses Interface liegt ausserhalb der gepackten Soll-Kommunikationsstruktur und sollte entfernt oder ausgemustert werden."
+          : "Dieses Interface dupliziert eine bereits vorhandene Hardware/Funktion/Technologie/Nummer-Kombination.",
+      }],
+      evidence: [{
+        source: "engineering-specification-scope-audit",
+        rule: gatewayFanout ? "SYSTEM_GATEWAY_MUST_NOT_CREATE_PARTICIPANT_INTERFACES" : "EXPECTED_COMMUNICATION_SCOPE",
+        expected_interfaces: [...expectedInterfaceNames],
+        actual_interface: { id, name },
+      }],
+      retrieved_context: [],
+      validation_results: [],
+      created_by: "engineering-chat-agent",
+    });
+    registrationIndex.proposals.push(proposal);
+    proposals.push(await validateEngineeringProposal(String(proposal.proposal_id ?? "")));
+    seen.add(scopedKey);
+  }
+
+  return proposals;
+}
+
+async function createFunctionCleanupProposals(
+  functions: Record<string, unknown>[],
+  hardwareById: Map<string, Record<string, unknown>>,
+  registrationIndex: EngineeringRegistrationIndex,
+) {
+  const proposals: Record<string, unknown>[] = [];
+  const seenNodes = new Set<string>();
+  for (const item of activeCanonicalItems(functions)) {
+    const id = String(item.id ?? "");
+    const nodeId = String(item.hardware_node_id ?? "");
+    const hardware = hardwareById.get(nodeId);
+    if (!id || !hardware) continue;
+    const classification = inferredDeviceClassification(hardware.name, hardware.device_type);
+    const deviceClass = Number(hardware.device_class ?? classification.device_class);
+    const unexpected = deviceClass < 3;
+    const duplicate = seenNodes.has(nodeId);
+    seenNodes.add(nodeId);
+    if ((!unexpected && !duplicate) || existingCleanupProposal(registrationIndex.proposals, "functions", id)) continue;
+    const proposal = await createProposal({
+      proposal_type: "OBJECT",
+      target_object: { resource: "functions", proposal_action: "DEPRECATE" },
+      prompt: `KI-Audit: unzulaessige Funktion ${String(item.name ?? id)} ausmustern`,
+      model: engineeringAgentOrchestrator,
+      proposed_objects: [{
+        object_type: "Function",
+        resource: "functions",
+        canonical_id: id,
+        proposal_action: "DEPRECATE",
+        name: item.name,
+        lifecycle_state: "deprecated",
+        ai_recommendation: unexpected
+          ? `Device Class ${deviceClass} darf keine automatisch erzeugte eigene Systemfunktion besitzen.`
+          : "Pro HardwareNode ist im Generator genau eine kanonische Basisfunktion vorgesehen; weitere Funktionen benoetigen eine explizite fachliche Definition.",
+      }],
+      evidence: [{
+        source: "engineering-generation-plan",
+        rule: unexpected ? "DEVICE_CLASS_FUNCTION_POLICY" : "ONE_GENERATED_BASE_FUNCTION_PER_NODE",
+        hardware_node: { id: nodeId, name: hardware.name, device_class: deviceClass },
+      }],
+      retrieved_context: [],
+      validation_results: [],
+      created_by: "engineering-chat-agent",
+    });
+    registrationIndex.proposals.push(proposal);
+    proposals.push(await validateEngineeringProposal(String(proposal.proposal_id ?? "")));
+  }
+  return proposals;
+}
+
+async function auditCommunicationScope(
+  chains: EngineeringChainInput[],
+  registrationIndex: EngineeringRegistrationIndex,
+): Promise<CommunicationScopeAudit> {
+  const expectedScope = expectedCommunicationScope(chains);
+  const [hardwareResult, interfacesResult, messagesResult, signalsResult] = await Promise.all([
+    listObjects("hardware-nodes", { limit: "1000" }),
+    listObjects("interfaces", { limit: "1000" }),
+    listObjects("messages", { limit: "1000" }),
+    listObjects("signals", { limit: "1000" }),
+  ]);
+  const hardwareById = new Map(
+    activeCanonicalItems(hardwareResult.items).flatMap((item) => {
+      const id = String(item.id ?? "");
+      return id ? [[id, item] as const] : [];
+    }),
+  );
+  const interfaces = activeCanonicalItems(interfacesResult.items);
+  const messages = activeCanonicalItems(messagesResult.items);
+  const signals = activeCanonicalItems(signalsResult.items);
+  const cleanupProposals = await createInterfaceCleanupProposals(
+    expectedScope.interfaces,
+    interfaces,
+    hardwareById,
+    messages,
+    registrationIndex,
+  );
+
+  return {
+    expected: {
+      interfaces: expectedScope.interfaces.size,
+      messages: expectedScope.messages.size,
+      signals: expectedScope.signals.size,
+    },
+    actual: {
+      interfaces: interfaces.length,
+      messages: messages.length,
+      signals: signals.length,
+    },
+    missing: {
+      interfaces: Math.max(0, expectedScope.interfaces.size - interfaces.length),
+      messages: Math.max(0, expectedScope.messages.size - messages.length),
+      signals: Math.max(0, expectedScope.signals.size - signals.length),
+    },
+    excess: {
+      interfaces: Math.max(0, interfaces.length - expectedScope.interfaces.size),
+      messages: Math.max(0, messages.length - expectedScope.messages.size),
+      signals: Math.max(0, signals.length - expectedScope.signals.size),
+    },
+    cleanup_proposals: cleanupProposals,
+  };
 }
 
 const CANONICAL_DEVICE_TYPES = new Set([
@@ -636,6 +977,62 @@ function canonicalInterfaceType(value: string | undefined) {
   return "Other";
 }
 
+const AGENT_BUS_NAME_PATTERN = /(?:^|_)(?:can_fd|can|lin|flexray|ethernet|ethercat|profinet|modbustcp|modbusrtu|rs232|rs485|spi|i2c|usb|pcie|mqtt|opcua)(?=_|$)/gi;
+const AGENT_MESSAGE_SUFFIX_PATTERN = /(?:_)?(?:data|message|nachricht|aktor|actor|sensor|status|command|steuerung)$/i;
+const AGENT_SIGNAL_INITIAL_ALIASES: Record<string, string> = {
+  gateway: "gw",
+  system_gateway: "sgw",
+  systemgateway: "sgw",
+};
+
+function agentNameTokens(value: unknown) {
+  return String(value ?? "")
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .split("_")
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function agentSnakeCase(value: unknown) {
+  return agentNameTokens(value).join("_").toLowerCase();
+}
+
+function agentPascalCase(value: unknown) {
+  return agentNameTokens(value).map((token) => token.charAt(0).toUpperCase() + token.slice(1)).join("");
+}
+
+function normalizeAgentInterfaceName(value: unknown) {
+  const base = agentSnakeCase(value).replace(AGENT_BUS_NAME_PATTERN, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+  return base ? base.split("_").map((token) => /^\d+$/.test(token) ? token : token.charAt(0).toUpperCase() + token.slice(1)).join("_") : String(value ?? "");
+}
+
+function normalizeAgentMessageName(value: unknown) {
+  const withoutBus = agentSnakeCase(value).replace(AGENT_BUS_NAME_PATTERN, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
+  const base = withoutBus.replace(AGENT_MESSAGE_SUFFIX_PATTERN, "") || withoutBus;
+  return agentPascalCase(base || value);
+}
+
+function agentSignalInitials(value: unknown) {
+  const base = agentSnakeCase(value).replace(AGENT_MESSAGE_SUFFIX_PATTERN, "");
+  if (AGENT_SIGNAL_INITIAL_ALIASES[base]) return AGENT_SIGNAL_INITIAL_ALIASES[base];
+  const tokens = base.split("_").filter(Boolean);
+  if (tokens.length > 1) return tokens.map((token) => token.charAt(0)).join("");
+  const token = tokens[0] ?? "";
+  const consonants = token.replace(/[aeiou]/g, "");
+  return (consonants.length >= 2 ? consonants.slice(0, 2) : token.slice(0, 2) || "sig").toLowerCase();
+}
+
+function normalizeAgentSignalName(value: unknown, messageName?: unknown) {
+  const base = agentSnakeCase(value).replace(/^sig_/, "").replace(/_signal$/, "") || "signal";
+  if (!String(messageName ?? "").trim()) return base;
+  const prefix = agentSignalInitials(messageName);
+  return base.startsWith(`${prefix}_`) && base.endsWith(`_${prefix}`) ? base : `${prefix}_${base}_${prefix}`;
+}
+
 function canonicalObjectsFromProposal(
   proposal: Record<string, unknown>,
   resource: EngineeringResourceName,
@@ -669,14 +1066,39 @@ async function createAndApproveEngineeringObject(
   registrationIndex?: EngineeringRegistrationIndex,
 ) {
   const { resource, ...rest } = input;
-  const existingCanonical = await findCanonicalEngineeringObject(resource, rest.name, registrationIndex, rest.device_type);
+  const restRecord = rest as Record<string, unknown>;
+  const objectName = resource === "interfaces"
+    ? normalizeAgentInterfaceName(rest.name)
+    : resource === "messages"
+      ? normalizeAgentMessageName(rest.name)
+      : resource === "signals"
+        ? normalizeAgentSignalName(rest.name, restRecord.message_name ?? rest.message_id)
+        : rest.name;
+  const existingCanonical = await findCanonicalEngineeringObject(resource, objectName, registrationIndex, rest.device_type);
   if (existingCanonical?.id) {
+    if (resource === "hardware-nodes") {
+      const classification = inferredDeviceClassification(objectName, rest.device_type);
+      const current = await getObject(resource, String(existingCanonical.id));
+      const expectedClass = Number(rest.device_class ?? classification.device_class);
+      const classificationChanged = Number(current.device_class ?? -1) !== expectedClass
+        || String(current.device_typing ?? "") !== String(rest.device_typing ?? classification.device_typing)
+        || String(current.data_complexity ?? "") !== String(rest.data_complexity ?? classification.data_complexity);
+      if (classificationChanged) {
+        await updateObject(resource, String(existingCanonical.id), {
+          device_type: canonicalDeviceType(rest.device_type),
+          device_class: expectedClass,
+          device_typing: rest.device_typing ?? classification.device_typing,
+          data_complexity: rest.data_complexity ?? classification.data_complexity,
+          classification_status: rest.classification_status ?? "PROPOSED",
+        });
+      }
+    }
     const result = {
       created: false,
       reused: true,
       resource,
       proposal: null,
-      canonical_objects: [{ resource, id: String(existingCanonical.id), name: rest.name, device_type: rest.device_type }],
+      canonical_objects: [{ resource, id: String(existingCanonical.id), name: objectName, device_type: rest.device_type }],
       note: "Das gleichnamige Objekt war bereits im kanonischen Modell registriert.",
     };
     rememberCanonicalObjects(registrationIndex, result.canonical_objects);
@@ -693,14 +1115,14 @@ async function createAndApproveEngineeringObject(
       && (resource !== "hardware-nodes" || canonicalDeviceType(String((item as Record<string, unknown>).device_type ?? "")) === canonicalDeviceType(rest.device_type))
       && sameEngineeringName(
       (item as Record<string, unknown>).name,
-      rest.name,
+      objectName,
     ));
   });
 
   let proposal = existingProposal;
   if (!proposal) {
     const payload: Record<string, unknown> = {
-      name: rest.name,
+      name: objectName,
       description: rest.description ?? null,
       domain: rest.domain ?? null,
       source: "ai_generated",
@@ -708,9 +1130,34 @@ async function createAndApproveEngineeringObject(
       approval_state: "pending",
       provenance: { agent: "engineering-chat-agent", reason: "user-requested object" },
     };
-    if (resource === "hardware-nodes") payload.device_type = canonicalDeviceType(rest.device_type);
+    if (resource === "hardware-nodes") {
+      const classification = inferredDeviceClassification(objectName, rest.device_type);
+      payload.device_type = canonicalDeviceType(rest.device_type);
+      payload.device_class = rest.device_class ?? classification.device_class;
+      payload.device_typing = rest.device_typing ?? classification.device_typing;
+      payload.data_complexity = rest.data_complexity ?? classification.data_complexity;
+      payload.classification_status = rest.classification_status ?? "PROPOSED";
+    }
     if (resource === "functions") {
       payload.hardware_node_id = await resolveObjectReference(rest.hardware_node_id, "hardware-nodes") ?? null;
+    }
+    if (resource === "hardware-interfaces") {
+      payload.hardware_node_id = await resolveObjectReference(rest.hardware_node_id, "hardware-nodes") ?? null;
+      payload.technology = canonicalInterfaceType(rest.technology ?? rest.interface_type);
+      payload.controller_ref = rest.controller_ref ?? null;
+      payload.physical_port_ref = rest.physical_port_ref ?? null;
+      payload.channel_index = rest.channel_index ?? 1;
+      payload.network_ref = rest.network_ref ?? null;
+      payload.bitrate = rest.bitrate ?? null;
+      payload.data_bitrate = rest.data_bitrate ?? null;
+      payload.capabilities = rest.capabilities ?? {};
+      payload.status = "ACTIVE";
+      payload.message_refs = [];
+      payload.static_load = 0;
+      payload.runtime_load = 0;
+      payload.target_load_limit = 60;
+      payload.warning_load_limit = 75;
+      payload.hard_load_limit = 90;
     }
     if (resource === "interfaces") {
       payload.interface_type = canonicalInterfaceType(rest.interface_type);
@@ -719,6 +1166,7 @@ async function createAndApproveEngineeringObject(
     }
     if (resource === "messages") {
       payload.interface_id = await resolveObjectReference(rest.interface_id, "interfaces") ?? null;
+      payload.hardware_interface_id = await resolveObjectReference(rest.hardware_interface_id, "hardware-interfaces") ?? null;
       payload.direction = rest.direction ?? "tx";
       payload.message_id_hex = rest.message_id_hex ?? null;
       payload.cycle_ms = rest.cycle_ms ?? 10;
@@ -821,6 +1269,10 @@ const proposeEngineeringObject = tool({
       .string()
       .optional()
       .describe("Nur für 'hardware-nodes', z. B. 'ECU', 'PLC', 'Gateway'."),
+    device_class: z.number().int().min(0).max(4).optional().describe("Nur fuer 'hardware-nodes': Device Class 0 bis 4."),
+    device_typing: z.string().optional().describe("Nur fuer 'hardware-nodes': Typisierung innerhalb der Device Class."),
+    data_complexity: z.string().optional().describe("Nur fuer 'hardware-nodes': Datenkomplexitaet, z. B. PHYSICAL_SCALAR oder IMAGE_STREAM."),
+    classification_status: z.string().optional().describe("Nur fuer 'hardware-nodes': UNKNOWN, PROPOSED, CONFIRMED oder REVIEW_REQUIRED."),
     interface_type: z
       .string()
       .optional()
@@ -857,6 +1309,9 @@ const engineeringChainInputSchema = z.object({
     hardware_name: z.string().describe("Name des Hardware-Knotens, z. B. ThermalECU."),
     hardware_description: z.string().optional(),
     device_type: z.string().optional().describe("Standard: ECU."),
+    device_class: z.number().int().min(0).max(4).optional(),
+    device_typing: z.string().optional(),
+    data_complexity: z.string().optional(),
     function_name: z.string(),
     function_description: z.string().optional(),
     interface_name: z.string(),
@@ -883,6 +1338,7 @@ const engineeringChainInputSchema = z.object({
     communication: z.record(z.string(), z.unknown()).optional(),
     quality: z.record(z.string(), z.unknown()).optional(),
     protocol_bindings: z.array(z.record(z.string(), z.unknown())).optional(),
+    transport_network_ref: z.string().optional(),
     domain: z.string().optional(),
   });
 
@@ -901,39 +1357,64 @@ async function registerEngineeringChain(
       description: input.hardware_description,
       domain: input.domain,
       device_type: input.device_type ?? "ECU",
+      device_class: input.device_class,
+      device_typing: input.device_typing,
+      data_complexity: input.data_complexity,
     }, registrationIndex);
     canonicalObjects.push(...hardware.canonical_objects);
     steps.push(hardware);
     const hardwareId = hardware.canonical_objects[0]?.id;
 
-    const engineeringFunction = await createAndApproveEngineeringObject({
-      resource: "functions",
-      name: input.function_name,
-      description: input.function_description,
-      domain: input.domain,
-      hardware_node_id: hardwareId,
-    }, registrationIndex);
-    canonicalObjects.push(...engineeringFunction.canonical_objects);
-    steps.push(engineeringFunction);
-    const functionId = engineeringFunction.canonical_objects[0]?.id;
+    const requiresFunction = chainRequiresFunctionModel(input);
+    let functionId: string | undefined;
+    if (requiresFunction) {
+      const engineeringFunction = await createAndApproveEngineeringObject({
+        resource: "functions",
+        name: input.function_name,
+        description: input.function_description,
+        domain: input.domain,
+        hardware_node_id: hardwareId,
+      }, registrationIndex);
+      canonicalObjects.push(...engineeringFunction.canonical_objects);
+      steps.push(engineeringFunction);
+      functionId = engineeringFunction.canonical_objects[0]?.id;
+    }
 
     const engineeringInterface = await createAndApproveEngineeringObject({
       resource: "interfaces",
       name: input.interface_name,
       domain: input.domain,
       hardware_node_id: hardwareId,
-      function_id: functionId,
+      function_id: requiresFunction ? functionId : undefined,
       interface_type: input.interface_type ?? "CAN",
     }, registrationIndex);
     canonicalObjects.push(...engineeringInterface.canonical_objects);
     steps.push(engineeringInterface);
     const interfaceId = engineeringInterface.canonical_objects[0]?.id;
 
+    const hardwareInterface = await createAndApproveEngineeringObject({
+      resource: "hardware-interfaces",
+      name: `${input.hardware_name}_channel_1`,
+      description: `Physischer ${input.interface_type ?? "CAN"}-Kanal fuer ${input.hardware_name}.`,
+      domain: input.domain,
+      hardware_node_id: hardwareId,
+      technology: input.interface_type ?? "CAN",
+      controller_ref: `${input.hardware_name}_controller_1`,
+      physical_port_ref: `${input.hardware_name}_port_1`,
+      channel_index: 1,
+      network_ref: input.transport_network_ref ?? `${input.hardware_name}_local_network`,
+      capabilities: { source: "engineering-generation-plan", max_channels: 1 },
+    }, registrationIndex);
+    canonicalObjects.push(...hardwareInterface.canonical_objects);
+    steps.push(hardwareInterface);
+    const hardwareInterfaceId = hardwareInterface.canonical_objects[0]?.id;
+
     const message = await createAndApproveEngineeringObject({
       resource: "messages",
       name: input.message_name,
       domain: input.domain,
       interface_id: interfaceId,
+      hardware_interface_id: hardwareInterfaceId,
       message_id_hex: input.message_id_hex,
       direction: input.direction ?? "tx",
       cycle_ms: input.cycle_ms ?? 10,
@@ -949,6 +1430,7 @@ async function registerEngineeringChain(
       display_name: input.signal_display_name,
       domain: input.domain,
       message_id: messageId,
+      message_name: input.message_name,
       start_bit: input.start_bit ?? 0,
       length_bits: input.length_bits ?? 16,
       byte_order: input.byte_order ?? "little_endian",
@@ -970,10 +1452,12 @@ async function registerEngineeringChain(
 
     return {
       created: true,
-      complete: canonicalObjects.length === RESOURCE_ENUM.length,
+      complete: true,
       canonical_objects: canonicalObjects,
       steps,
-      note: "Vollstaendige Engineering-Kette wurde kanonisch registriert; die Proposals bleiben als Auditspur erhalten.",
+      note: requiresFunction
+        ? "Engineering-Kette mit eigener Function wurde kanonisch registriert; die Proposals bleiben als Auditspur erhalten."
+        : "Engineering-Kette ohne kuenstliche Function wurde gemaess Device Class direkt am HardwareNode registriert.",
     };
 }
 
@@ -988,15 +1472,35 @@ const createEngineeringChain = tool({
 export async function registerEngineeringSpecification(
   specificationText: string,
   onProgress?: (progress: AgentBuildProgress) => void | Promise<void>,
+  ensureActive?: () => void | Promise<void>,
 ) {
   return serializeProposalCreation(async () => {
+    await ensureActive?.();
     if (isEngineeringReviewRequest(specificationText)) {
       throw new Error("Eine Review-Anfrage darf kein Engineering-Modell erzeugen oder ersetzen.");
     }
     const extracted = extractEngineeringSpecification(specificationText);
+    const transportPlan = architectureTransportPlan(
+      extracted.chains,
+      extracted.networkArchitecture,
+      extracted.communicationSystems,
+    );
+    const generationChains = packEngineeringChains(expandEngineeringSignalModel(extracted.chains))
+      .map((chain) => ({
+        ...chain,
+        ...(transportPlan.overrides.get(engineeringNameKey(chain.hardware_name)) ?? {}),
+      }));
+    const uniqueHardwareChains = [...extracted.chains.reduce((items, chain) => {
+      const key = engineeringNameKey(chain.hardware_name);
+      if (!items.has(key)) items.set(key, chain);
+      return items;
+    }, new Map<string, EngineeringChainInput>()).values()];
+    const expectedCommunication = expectedCommunicationScope(generationChains);
+    const expectedFunctions = uniqueHardwareChains.filter(chainRequiresFunctionModel).length;
+    const additionalHardwareInterfaces = transportPlan.additional.length;
     const scopeRules = extracted.targetCounts.explicit
       ? {
-        version: 1,
+        version: 2,
         source: "engineering-specification",
         enforcement: "exact",
         hardware_counts: {
@@ -1006,6 +1510,15 @@ export async function registerEngineeringSpecification(
           gateways: extracted.targetCounts.gateways,
         },
         communication_systems: extracted.communicationSystems,
+        network_architecture: extracted.networkArchitecture,
+        model_counts: {
+          hardware_nodes: uniqueHardwareChains.length,
+          functions: expectedFunctions,
+          hardware_interfaces: uniqueHardwareChains.length + additionalHardwareInterfaces,
+          interfaces: expectedCommunication.interfaces.size,
+          messages: expectedCommunication.messages.size,
+          signals: expectedCommunication.signals.size,
+        },
       }
       : null;
     if (scopeRules) {
@@ -1022,40 +1535,83 @@ export async function registerEngineeringSpecification(
       };
     }
 
+    const hardwareGroups = [...generationChains.reduce((groups, chain) => {
+      const key = engineeringNameKey(chain.hardware_name);
+      groups.set(key, [...(groups.get(key) ?? []), chain]);
+      return groups;
+    }, new Map<string, EngineeringChainInput[]>()).values()];
     const packageSize = 5;
     const registrationIndex = await createEngineeringRegistrationIndex();
     const canonicalObjects: CanonicalEngineeringObject[] = [];
     const registeredNames = new Set<string>();
     const failures: Array<{ name: string; error: string }> = [];
     const workPackages: Array<Record<string, unknown>> = [];
-    await onProgress?.({ step: "engineering_model", completed: 0, total: extracted.chains.length });
-    for (let offset = 0; offset < extracted.chains.length; offset += packageSize) {
-      const packageChains = extracted.chains.slice(offset, offset + packageSize);
-      const settled = await Promise.all(packageChains.map(async (chain) => {
-        try {
-          const result = await registerEngineeringChain(chain, registrationIndex);
-          canonicalObjects.push(...result.canonical_objects);
-          registeredNames.add(engineeringNameKey(chain.hardware_name));
-          return { chain, complete: result.complete, error: "" };
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          failures.push({ name: chain.hardware_name, error: message });
-          return { chain, complete: false, error: message };
+    await onProgress?.({ step: "engineering_model", completed: 0, total: hardwareGroups.length });
+    for (let offset = 0; offset < hardwareGroups.length; offset += packageSize) {
+      await ensureActive?.();
+      const packageGroups = hardwareGroups.slice(offset, offset + packageSize);
+      const settled = await Promise.all(packageGroups.map(async (group) => {
+        const hardwareName = group[0]?.hardware_name ?? "Unbekannt";
+        for (const chain of group) {
+          await ensureActive?.();
+          try {
+            const result = await registerEngineeringChain(chain, registrationIndex);
+            canonicalObjects.push(...result.canonical_objects);
+            if (!result.complete) return { hardwareName, complete: false, error: "Registrierung unvollstaendig." };
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            failures.push({ name: `${hardwareName}/${chain.signal_name}`, error: message });
+            return { hardwareName, complete: false, error: message };
+          }
         }
+        registeredNames.add(engineeringNameKey(hardwareName));
+        return { hardwareName, complete: true, error: "" };
       }));
       const packageFailures = settled.filter((item) => !item.complete);
       workPackages.push({
         package: Math.floor(offset / packageSize) + 1,
-        requested: packageChains.length,
+        requested: packageGroups.length,
         registered: settled.length - packageFailures.length,
         status: packageFailures.length ? "PARTIAL" : "COMPLETED",
-        first_object: packageChains[0]?.hardware_name,
-        last_object: packageChains.at(-1)?.hardware_name,
+        first_object: packageGroups[0]?.[0]?.hardware_name,
+        last_object: packageGroups.at(-1)?.[0]?.hardware_name,
       });
-      await onProgress?.({ step: "engineering_model", completed: registeredNames.size, total: extracted.chains.length });
+      await onProgress?.({ step: "engineering_model", completed: registeredNames.size, total: hardwareGroups.length });
     }
 
-    const finalHardware = await listObjects("hardware-nodes", { limit: "500" });
+    if (transportPlan.additional.length) {
+      await ensureActive?.();
+      canonicalObjects.push(...await registerArchitectureHardwareInterfaces(transportPlan.additional, registrationIndex));
+    }
+
+    const [finalHardware, finalFunctions, finalHardwareInterfaces] = await Promise.all([
+      listObjects("hardware-nodes", { limit: "500" }),
+      listObjects("functions", { limit: "1000" }),
+      listObjects("hardware-interfaces", { limit: "1000" }),
+    ]);
+    const communicationAudit = await auditCommunicationScope(generationChains, registrationIndex);
+    const activeHardware = activeCanonicalItems(finalHardware.items);
+    const hardwareById = new Map(activeHardware.map((item) => [String(item.id ?? ""), item]));
+    const activeFunctions = activeCanonicalItems(finalFunctions.items);
+    const activeHardwareInterfaces = activeCanonicalItems(finalHardwareInterfaces.items);
+    const functionCleanupProposals = await createFunctionCleanupProposals(
+      activeFunctions,
+      hardwareById,
+      registrationIndex,
+    );
+    const modelScope = {
+      expected: { functions: expectedFunctions, hardware_interfaces: uniqueHardwareChains.length + additionalHardwareInterfaces },
+      actual: { functions: activeFunctions.length, hardware_interfaces: activeHardwareInterfaces.length },
+      missing: {
+        functions: Math.max(0, expectedFunctions - activeFunctions.length),
+        hardware_interfaces: Math.max(0, uniqueHardwareChains.length + additionalHardwareInterfaces - activeHardwareInterfaces.length),
+      },
+      excess: {
+        functions: Math.max(0, activeFunctions.length - expectedFunctions),
+        hardware_interfaces: Math.max(0, activeHardwareInterfaces.length - (uniqueHardwareChains.length + additionalHardwareInterfaces)),
+      },
+      cleanup_proposals: functionCleanupProposals,
+    };
     const actualCounts = finalHardware.items.reduce<{ sensors: number; actuators: number; ecus: number; gateways: number }>(
       (counts, item) => {
         const deviceType = canonicalDeviceType(String(item.device_type ?? ""));
@@ -1080,18 +1636,25 @@ export async function registerEngineeringSpecification(
       ecus: Math.max(0, actualCounts.ecus - targetCounts.ecus),
       gateways: Math.max(0, actualCounts.gateways - targetCounts.gateways),
     };
+    const communicationSatisfied =
+      Object.values(communicationAudit.missing).every((count) => count === 0)
+      && Object.values(communicationAudit.excess).every((count) => count === 0);
+    const modelSatisfied = Object.values(modelScope.missing).every((count) => count === 0)
+      && Object.values(modelScope.excess).every((count) => count === 0);
     const targetsSatisfied = !targetCounts.explicit || (
       Object.values(missingCounts).every((count) => count === 0)
       && Object.values(excessCounts).every((count) => count === 0)
+      && communicationSatisfied
+      && modelSatisfied
     );
     const complete = failures.length === 0
-      && registeredNames.size === extracted.chains.length
+      && registeredNames.size === hardwareGroups.length
       && targetsSatisfied;
 
     return {
       created: canonicalObjects.length > 0,
       complete,
-      recognized: extracted.chains.length,
+      recognized: hardwareGroups.length,
       registered_chains: registeredNames.size,
       domain: extracted.domain,
       interface_type: extracted.interfaceType,
@@ -1106,14 +1669,19 @@ export async function registerEngineeringSpecification(
       actual_counts: actualCounts,
       missing_counts: missingCounts,
       excess_counts: excessCounts,
+      communication_scope: communicationAudit,
+      model_scope: modelScope,
       work_packages: workPackages,
       failures,
       canonical_object_count: canonicalObjects.length,
       canonical_objects: canonicalObjects.slice(0, 20),
       canonical_objects_truncated: canonicalObjects.length > 20,
+      review_proposals: [...communicationAudit.cleanup_proposals, ...functionCleanupProposals],
       note: complete
         ? "Alle exakten Projektregeln wurden in begrenzten Arbeitspaketen als vollstaendige Engineering-Ketten registriert."
-        : "Der Auftrag bleibt offen: Fehlgeschlagene Ketten sowie Unter- oder Ueberschreitungen der Projektregeln sind einzeln ausgewiesen.",
+        : communicationAudit.cleanup_proposals.length || functionCleanupProposals.length
+          ? "Der Auftrag bleibt offen: Ueberzaehlige oder doppelte Kommunikationsobjekte wurden als Review-Proposals zur Uebernahme markiert."
+          : "Der Auftrag bleibt offen: Fehlgeschlagene Ketten sowie Unter- oder Ueberschreitungen der Projektregeln sind einzeln ausgewiesen.",
     };
   });
 }
@@ -1384,13 +1952,19 @@ async function createVerifiedRouteProposal(input: RouteProposalInput) {
 
     let messageId: string | undefined;
     if (input.message_id) {
+      const rawMessageName = input.message_id;
       const messages = await listObjects("messages");
-      const message = resolveFrom(messages.items, input.message_id);
+      const normalizedMessageName = normalizeAgentMessageName(rawMessageName);
+      const message = messages.items.find((item) => (
+        String(item.id ?? "") === rawMessageName
+        || sameEngineeringName(item.name, rawMessageName)
+        || sameEngineeringName(item.name, normalizedMessageName)
+      ));
       if (!message) {
         return {
           created: false,
           blocked: true,
-          reason: `Message '${input.message_id}' wurde nicht im kanonischen Modell gefunden.`,
+          reason: `Message '${rawMessageName}' wurde nicht im kanonischen Modell gefunden.`,
         };
       }
       messageId = String(message.id);
@@ -1399,7 +1973,15 @@ async function createVerifiedRouteProposal(input: RouteProposalInput) {
     let signalIds: string[] | undefined;
     if (input.signal_ids?.length) {
       const signals = await listObjects("signals");
-      const resolvedSignals = input.signal_ids.map((value) => resolveFrom(signals.items, value));
+      const signalMessageName = input.message_id;
+      const resolvedSignals = input.signal_ids.map((value) => {
+        const normalizedSignalName = normalizeAgentSignalName(value, signalMessageName);
+        return signals.items.find((item) => (
+          String(item.id ?? "") === value
+          || sameEngineeringName(item.name, value)
+          || sameEngineeringName(item.name, normalizedSignalName)
+        ));
+      });
       const missingSignals = input.signal_ids.filter((_, index) => !resolvedSignals[index]);
       if (missingSignals.length) {
         return {
@@ -1487,6 +2069,9 @@ async function ensureSpecificationRoutingInterfaces(plans: SemanticRoutePlan[]) 
     for (const destination of plan.destinations) {
       const target = hardwareByName.get(engineeringNameKey(destination.hardware_name));
       if (!target?.id) continue;
+      if (isGatewayNode(target)) {
+        continue;
+      }
       const targetId = String(target.id);
       const compatible = (interfacesByNode.get(targetId) ?? [])
         .some((item) => canonicalInterfaceType(String(item.interface_type ?? "")) === interfaceType);
@@ -1495,9 +2080,10 @@ async function ensureSpecificationRoutingInterfaces(plans: SemanticRoutePlan[]) 
       if (!targetFunction?.id) {
         throw new Error(`${destination.hardware_name} besitzt keine Funktion für ein ${interfaceType}-Interface.`);
       }
+      const interfaceOrdinal = (interfacesByNode.get(targetId)?.length ?? 0) + 1;
       const result = await createAndApproveEngineeringObject({
         resource: "interfaces",
-        name: `${destination.hardware_name}_${interfaceType}`,
+        name: `${destination.hardware_name}_${interfaceOrdinal}`,
         description: `${interfaceType}-Schnittstelle für einen kanonischen Kommunikationspfad.`,
         domain: destination.domain,
         interface_type: interfaceType,
@@ -1515,10 +2101,171 @@ async function ensureSpecificationRoutingInterfaces(plans: SemanticRoutePlan[]) 
   }
 }
 
+type ArchitectureHardwareInterface = {
+  hardwareName: string;
+  name: string;
+  technology: string;
+  networkRef: string;
+  channelIndex: number;
+  purpose: "local" | "backbone";
+};
+
+function networkToken(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function backboneTechnology(communicationSystems: string[]) {
+  const canonical = communicationSystems.map((item) => canonicalInterfaceType(item));
+  return canonical.find((item) => item === "CAN_FD")
+    ?? canonical.find((item) => item === "Ethernet")
+    ?? canonical.find((item) => item === "FlexRay")
+    ?? canonical[0]
+    ?? "CAN_FD";
+}
+
+function architectureTransportPlan(
+  chains: ExtractedEngineeringChain[],
+  architecture: ReturnType<typeof extractEngineeringSpecification>["networkArchitecture"],
+  communicationSystems: string[],
+) {
+  const overrides = new Map<string, Pick<ExtractedEngineeringChain, "interface_type" | "transport_network_ref">>();
+  const additional = new Map<string, ArchitectureHardwareInterface>();
+  if (architecture !== "gateway_ecu_segments" && architecture !== "sensor_ecu_actuator" && architecture !== "ecu_gateway") {
+    return { overrides, additional: [] as ArchitectureHardwareInterface[] };
+  }
+
+  const plans = semanticRoutePlans(chains, architecture);
+  const localAssignments = new Map<string, Map<string, { networkRef: string; count: number }>>();
+  for (const plan of plans) {
+    if (canonicalDeviceType(plan.source.device_type) === "Gateway") continue;
+    for (const destination of plan.destinations) {
+      const sourceType = canonicalDeviceType(plan.source.device_type);
+      const destinationType = canonicalDeviceType(destination.device_type);
+      const processor = sourceType === "ECU" && destinationType === "ActuatorController"
+        ? plan.source
+        : destinationType === "ECU" && ["SensorController", "ActuatorController"].includes(sourceType)
+          ? destination
+          : undefined;
+      const endpoint = processor === plan.source ? destination : processor === destination ? plan.source : undefined;
+      if (!processor || !endpoint) continue;
+      const technology = canonicalInterfaceType(endpoint.interface_type);
+      const processorKey = engineeringNameKey(processor.hardware_name);
+      const networkRef = `${networkToken(processor.hardware_name)}_local_${networkToken(technology)}`;
+      overrides.set(engineeringNameKey(endpoint.hardware_name), {
+        interface_type: technology,
+        transport_network_ref: networkRef,
+      });
+      const byTechnology = localAssignments.get(processorKey) ?? new Map();
+      const existing = byTechnology.get(technology);
+      byTechnology.set(technology, { networkRef, count: (existing?.count ?? 0) + 1 });
+      localAssignments.set(processorKey, byTechnology);
+    }
+  }
+
+  for (const processor of chains.filter((chain) => canonicalDeviceType(chain.device_type) === "ECU")) {
+    const assignments = [...(localAssignments.get(engineeringNameKey(processor.hardware_name)) ?? new Map()).entries()]
+      .sort((left, right) => right[1].count - left[1].count || left[0].localeCompare(right[0]));
+    const primary = assignments[0];
+    if (primary) {
+      overrides.set(engineeringNameKey(processor.hardware_name), {
+        interface_type: primary[0],
+        transport_network_ref: primary[1].networkRef,
+      });
+    }
+    assignments.slice(1).forEach(([technology, assignment], index) => {
+      const name = `${processor.hardware_name}_local_${networkToken(technology)}_${index + 2}`;
+      additional.set(engineeringNameKey(name), {
+        hardwareName: processor.hardware_name,
+        name,
+        technology,
+        networkRef: assignment.networkRef,
+        channelIndex: index + 2,
+        purpose: "local",
+      });
+    });
+  }
+
+  if (architecture === "gateway_ecu_segments") {
+    const technology = backboneTechnology(communicationSystems);
+    const gatewaySegments = plans.filter((plan) => canonicalDeviceType(plan.source.device_type) === "Gateway");
+    gatewaySegments.forEach((plan, segmentIndex) => {
+      const segmentNumber = segmentIndex + 1;
+      const networkRef = `gateway_segment_${String(segmentNumber).padStart(2, "0")}`;
+      if (segmentIndex === 0) {
+        overrides.set(engineeringNameKey(plan.source.hardware_name), {
+          interface_type: technology,
+          transport_network_ref: networkRef,
+        });
+      } else {
+        const name = `${plan.source.hardware_name}_segment_${segmentNumber}`;
+        additional.set(engineeringNameKey(name), {
+          hardwareName: plan.source.hardware_name,
+          name,
+          technology,
+          networkRef,
+          channelIndex: segmentNumber,
+          purpose: "backbone",
+        });
+      }
+      plan.destinations.forEach((processor) => {
+        const name = `${processor.hardware_name}_backbone_1`;
+        additional.set(engineeringNameKey(name), {
+          hardwareName: processor.hardware_name,
+          name,
+          technology,
+          networkRef,
+          channelIndex: 2,
+          purpose: "backbone",
+        });
+      });
+    });
+  }
+  return { overrides, additional: [...additional.values()] };
+}
+
+async function registerArchitectureHardwareInterfaces(
+  interfaces: ArchitectureHardwareInterface[],
+  registrationIndex: EngineeringRegistrationIndex,
+) {
+  const hardware = await listObjects("hardware-nodes", { limit: "1000" });
+  const hardwareByName = new Map(
+    hardware.items.map((item) => [engineeringNameKey(String(item.name ?? "")), item]),
+  );
+  const canonicalObjects: CanonicalEngineeringObject[] = [];
+  for (const item of interfaces) {
+      const node = hardwareByName.get(engineeringNameKey(item.hardwareName));
+      if (!node?.id) continue;
+      const result = await createAndApproveEngineeringObject({
+        resource: "hardware-interfaces",
+        name: item.name,
+        description: item.purpose === "backbone"
+          ? `Physische Anbindung an das gemeinsame Gateway-Segment ${item.networkRef}.`
+          : `Zusaetzlicher lokaler ${item.technology}-Kanal fuer ${item.hardwareName}.`,
+        domain: String(node.domain ?? "automotive"),
+        hardware_node_id: String(node.id),
+        technology: item.technology,
+        controller_ref: `${item.name}_controller`,
+        physical_port_ref: `${item.name}_port`,
+        channel_index: item.channelIndex,
+        network_ref: item.networkRef,
+        capabilities: {
+          source: "engineering-generation-plan",
+          architecture: "gateway_ecu_segments",
+          shared_segment: true,
+          maximum_ecus: 6,
+        },
+      }, registrationIndex);
+      canonicalObjects.push(...result.canonical_objects);
+  }
+  return canonicalObjects;
+}
+
 export async function registerRoutingProposalForSpecification(
   specificationText: string,
   onProgress?: (progress: AgentBuildProgress) => void | Promise<void>,
+  ensureActive?: () => void | Promise<void>,
 ) {
+  await ensureActive?.();
   const extracted = extractEngineeringSpecification(specificationText);
   if (extracted.chains.length < 2) {
     return {
@@ -1536,9 +2283,9 @@ export async function registerRoutingProposalForSpecification(
 
   const routePlans = semanticRoutePlans(extracted.chains, extracted.networkArchitecture);
   await onProgress?.({ step: "routing", completed: 0, total: routePlans.length });
-  await ensureSpecificationRoutingInterfaces(routePlans);
 
   async function processRoutePlan(plan: SemanticRoutePlan) {
+    await ensureActive?.();
     const result = await createVerifiedRouteProposal({
       prompt: concreteRequestText(specificationText),
       source_node_id: plan.source.hardware_name,
@@ -1615,6 +2362,7 @@ export async function registerRoutingProposalForSpecification(
 
   const routePackageSize = 2;
   for (let offset = 0; offset < routePlans.length; offset += routePackageSize) {
+    await ensureActive?.();
     const outcomes = await Promise.all(
       routePlans.slice(offset, offset + routePackageSize).map(processRoutePlan),
     );
@@ -1886,12 +2634,12 @@ function routePathNodeIds(route: Record<string, unknown>) {
 const buildNetworkTopology = tool({
   description:
     "Erzeugt und speichert die physische Netzwerk-Topologie aus allen freigegebenen Routing-Eintraegen. " +
-    "Kanonische Hardware- und Interface-IDs bleiben erhalten; Nodes, Ports, Edges und CONNECTED_TO-Kanten werden synchronisiert.",
+    "Kanonische Hardware- und HardwareNetworkInterface-IDs bleiben erhalten; Nodes, Ports, Edges und CONNECTED_TO-Kanten werden synchronisiert.",
   inputSchema: z.object({}),
   execute: async () => {
-    const [hardwareResult, interfaceResult, routeResult, workflowResult] = await Promise.all([
+    const [hardwareResult, hardwareInterfaceResult, routeResult, workflowResult] = await Promise.all([
       listObjects("hardware-nodes"),
-      listObjects("interfaces"),
+      listObjects("hardware-interfaces", { limit: "1000" }),
       listRoutingEntries(),
       inspectWorkflowState(),
     ]);
@@ -1905,7 +2653,7 @@ const buildNetworkTopology = tool({
     const routes = approvalProgress.routes as unknown as Record<string, unknown>[];
     const hardware = new Map(hardwareResult.items.map((item) => [String(item.id), item]));
     const interfacesByNode = new Map<string, Record<string, unknown>[]>();
-    interfaceResult.items.forEach((item) => {
+    hardwareInterfaceResult.items.forEach((item) => {
       const nodeId = String(item.hardware_node_id ?? "");
       if (!nodeId) return;
       interfacesByNode.set(nodeId, [...(interfacesByNode.get(nodeId) ?? []), item]);
@@ -1917,10 +2665,10 @@ const buildNetworkTopology = tool({
     }
     const missingInterfaces = involvedIds.filter((id) => !(interfacesByNode.get(id)?.length));
     if (missingInterfaces.length) {
-      throw new Error(`Fuer Routing-Nodes fehlen Interfaces: ${missingInterfaces.join(", ")}`);
+      throw new Error(`Fuer Routing-Nodes fehlen HardwareNetworkInterfaces: ${missingInterfaces.join(", ")}`);
     }
     const nodeId = (engineeringId: string) => `engineering-${engineeringId}`;
-    const portId = (engineeringId: string) => `engineering-port-${engineeringId}`;
+    const portId = (engineeringId: string) => `engineering-hardware-port-${engineeringId}`;
     const existingTopology = objectRecord(workflowResult.topology) as NetworkTopology;
     const existingNodes = Array.isArray(existingTopology.nodes) ? existingTopology.nodes : [];
     const existingEdges = Array.isArray(existingTopology.edges) ? existingTopology.edges : [];
@@ -1936,12 +2684,14 @@ const buildNetworkTopology = tool({
       const existingPorts = existingNode?.ports ?? [];
       const generatedPorts = interfaces.map((engineeringInterface, portIndex) => ({
         id: portId(String(engineeringInterface.id)),
-        name: String(engineeringInterface.name ?? engineeringInterface.interface_type ?? `Port ${portIndex + 1}`),
-        bus: busForProtocol(engineeringInterface.interface_type),
+        name: String(engineeringInterface.name ?? engineeringInterface.technology ?? `Port ${portIndex + 1}`),
+        bus: busForProtocol(engineeringInterface.technology),
         side: portIndex % 2 === 0 ? "right" as const : "left" as const,
         offset: 52 + portIndex * 24,
-        engineeringId: String(engineeringInterface.id),
+        hardwareInterfaceId: String(engineeringInterface.id),
       }));
+      const manualPorts = existingPorts.filter((port) => !port.id.startsWith("engineering-port-")
+        && !port.id.startsWith("engineering-hardware-port-"));
       return {
         ...existingNode,
         id: existingNode?.id ?? nodeId(engineeringId),
@@ -1950,12 +2700,7 @@ const buildNetworkTopology = tool({
         x: existingNode?.x ?? 80 + (index % 4) * 280,
         y: existingNode?.y ?? 100 + Math.floor(index / 4) * 220,
         engineeringId,
-        ports: [
-          ...existingPorts,
-          ...generatedPorts.filter((port) => !existingPorts.some(
-            (existingPort) => existingPort.engineeringId === port.engineeringId,
-          )),
-        ],
+        ports: [...manualPorts, ...generatedPorts],
       };
     });
     const generatedNodesByEngineeringId = new Map(
@@ -1975,14 +2720,14 @@ const buildNetworkTopology = tool({
     const topologyPortId = (engineeringNodeId: string, engineeringInterfaceId: string) => (
       nodes
         .find((node) => node.engineeringId === engineeringNodeId)
-        ?.ports.find((port) => port.engineeringId === engineeringInterfaceId)?.id
+        ?.ports.find((port) => port.hardwareInterfaceId === engineeringInterfaceId)?.id
       ?? portId(engineeringInterfaceId)
     );
     const interfaceFor = (engineeringNodeId: string, explicit: unknown, bus: BusType) => {
       const candidates = interfacesByNode.get(engineeringNodeId) ?? [];
       const explicitId = String(explicit ?? "");
       return candidates.find((item) => String(item.id) === explicitId)
-        ?? candidates.find((item) => busForProtocol(item.interface_type) === bus)
+        ?? candidates.find((item) => busForProtocol(item.technology) === bus)
         ?? candidates[0];
     };
     const edges: NetworkTopology["edges"] = [];
@@ -1997,10 +2742,10 @@ const buildNetworkTopology = tool({
         for (let segment = 0; segment < path.length - 1; segment += 1) {
           const left = path[segment];
           const right = path[segment + 1];
-          const leftInterface = interfaceFor(left, segment === 0 ? source.interface_id : undefined, bus);
+          const leftInterface = interfaceFor(left, segment === 0 ? source.port_id : undefined, bus);
           const rightInterface = interfaceFor(
             right,
-            segment === path.length - 2 ? destination.interface_id : undefined,
+            segment === path.length - 2 ? destination.port_id : undefined,
             bus,
           );
           if (!leftInterface?.id || !rightInterface?.id) {
@@ -3333,13 +4078,21 @@ Consumern gelangt. Nutze Graphpfade, technische Evidence und vorhandene
 Engineering-Objekte, bevor du Routingvorschläge erzeugst.
 
 Eine im Wizard explizit freigegebene Netzarchitektur ist verbindlich. Verwende
-Netzarchitektur-ID eva fuer einfache EVA-Systemrahmen, ecu_gateway fuer
-Sensor/Aktor -> fachliche ECU -> Gateway/BCM, gateway_direct fuer direkte
-Sensor/ECU/Aktor -> Gateway/BCM-Pfade und hybrid_ai fuer die freigegebene
-KI-Kombination. Bei hybrid_ai bleiben lokale, echtzeit- oder regelungskritische
-Teilnehmer an ihrer fachlichen ECU; zentrale, systemweite oder hochbandbreitige
-Teilnehmer duerfen direkt an Gateway/BCM angebunden werden. Ersetze diese
-Entscheidung nicht stillschweigend durch ein anderes Profil.
+Netzarchitektur-ID sensor_ecu_actuator fuer lokale Sensor -> ECU -> Aktor
+Regelkreise ohne Gateway/BCM-Pfad, eva fuer einfache EVA-Systemrahmen,
+ecu_gateway fuer Sensor/Aktor -> fachliche ECU -> Gateway/BCM,
+gateway_ecu_segments fuer Gateway-Backbone-Segmente mit bis zu 6 ECUs pro
+Gateway-Leitung, gateway_direct fuer direkte Sensor/ECU/Aktor -> Gateway/BCM-
+Pfade und hybrid_ai fuer die freigegebene KI-Kombination. Bei
+sensor_ecu_actuator bleiben Sensoren und Aktoren ausschliesslich an ihrer
+fachlichen ECU; lege keine Gateway-/BCM-Verbindungen fuer diese lokale Variante
+an. Bei gateway_ecu_segments bleiben Sensoren und Aktoren an ihrer fachlichen
+ECU; das Gateway bindet ECU-Segmente an und legt keine eigenen
+Sensor-/Aktor-Direktpfade an. Bei hybrid_ai bleiben lokale,
+echtzeit- oder regelungskritische Teilnehmer an ihrer fachlichen ECU; zentrale,
+systemweite oder hochbandbreitige Teilnehmer duerfen direkt an Gateway/BCM
+angebunden werden. Ersetze diese Entscheidung nicht stillschweigend durch ein
+anderes Profil.
 
 Der verbindliche Workflow lautet:
 Engineering-Modell -> Routing-Tabelle -> Netzwerk-Editor -> Parameter ->

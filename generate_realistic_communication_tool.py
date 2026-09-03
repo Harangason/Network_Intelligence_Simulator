@@ -38,6 +38,7 @@ DEFAULT_DATABASE_URL = (
 ENGINEERING_DB_CONTAINER = "network-simulator-engineering-db"
 DEPENDENCY_HEALTH_INTERVAL_SECONDS = 5.0
 DEFAULT_SERVICE_RESTART_LIMIT = 5
+RUNTIME_CONFIG_FILE = ROOT / "config" / "networkis.resources.json"
 
 
 class DependencyCheck(NamedTuple):
@@ -58,6 +59,50 @@ DOCKER_INFERENCE_MARKERS = (
     "dockerinference",
     "inference manager",
 )
+
+
+def _load_simulator_resource_config() -> dict[str, object]:
+    if not RUNTIME_CONFIG_FILE.is_file():
+        return {}
+    try:
+        payload = json.loads(RUNTIME_CONFIG_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _config_section(config: dict[str, object], name: str) -> dict[str, object]:
+    section = config.get(name)
+    return section if isinstance(section, dict) else {}
+
+
+def _config_text(section: dict[str, object], name: str, default: str) -> str:
+    value = section.get(name)
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text or default
+
+
+def _config_int(section: dict[str, object], name: str, default: int) -> int:
+    try:
+        return int(section.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _configured_path(section: dict[str, object], name: str) -> str | None:
+    value = section.get(name)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text and Path(text).is_file() else None
+
+
+def _configured_docker_executable(config: dict[str, object] | None = None) -> str | None:
+    config = config or _load_simulator_resource_config()
+    configured = _configured_path(_config_section(config, "paths"), "docker_cli")
+    return configured or shutil.which("docker")
 
 
 def _wait_for_url(
@@ -238,7 +283,7 @@ def _run_command(arguments: list[str], *, timeout_s: float | None = None) -> sub
 
 
 def _docker_probe(timeout_s: float = 5.0) -> DockerProbe:
-    docker = shutil.which("docker")
+    docker = _configured_docker_executable()
     if docker is None:
         return DockerProbe(False, None, "Docker CLI wurde nicht gefunden.")
     result = _run_command([docker, "info"], timeout_s=timeout_s)
@@ -316,8 +361,10 @@ def _docker_doctor_detail(probe: DockerProbe) -> str:
 
 
 def _try_start_docker_desktop() -> str:
+    config = _load_simulator_resource_config()
+    paths = _config_section(config, "paths")
     outputs: list[str] = []
-    docker = shutil.which("docker")
+    docker = _configured_docker_executable(config)
     use_desktop_cli = os.environ.get("NETWORKIS_USE_DOCKER_DESKTOP_CLI_START", "").strip().lower() in {"1", "true", "yes"}
     if docker is not None and use_desktop_cli:
         result = _run_command([docker, "desktop", "start"], timeout_s=8)
@@ -325,9 +372,12 @@ def _try_start_docker_desktop() -> str:
             outputs.append(result.stdout.strip())
     elif docker is not None:
         outputs.append("Docker Desktop CLI-Start wurde uebersprungen, weil dieser Befehl auf Windows haengen kann.")
-    docker_desktop = Path(r"C:\Program Files\Docker\Docker\Docker Desktop.exe")
-    if docker_desktop.is_file():
-        subprocess.Popen([str(docker_desktop)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    docker_desktop = _configured_path(paths, "docker_desktop")
+    if docker_desktop is None:
+        fallback = Path(r"C:\Program Files\Docker\Docker\Docker Desktop.exe")
+        docker_desktop = str(fallback) if fallback.is_file() else None
+    if docker_desktop:
+        subprocess.Popen([docker_desktop], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return "\n".join(outputs)
 
 
@@ -425,7 +475,7 @@ def _ensure_engineering_database(environment: dict[str, str]) -> None:
                 )
             raise RuntimeError(_docker_unavailable_message(docker_probe))
 
-    docker = shutil.which("docker")
+    docker = _configured_docker_executable()
     if docker is None:
         raise RuntimeError("Docker CLI wurde nicht gefunden. Die Engineering-Datenbank kann nicht gestartet werden.")
     origin = _run_command(
@@ -634,6 +684,13 @@ def _load_runtime_env_file(environment: dict[str, str], path: Path) -> None:
 
 
 def _runtime_environment() -> dict[str, str]:
+    config = _load_simulator_resource_config()
+    ai_config = _config_section(config, "ai")
+    providers = _config_section(ai_config, "providers")
+    ollama = _config_section(providers, "ollama")
+    nvidia = _config_section(providers, "nvidia")
+    resources = _config_section(config, "resources")
+    paths = _config_section(config, "paths")
     environment = os.environ.copy()
     _load_runtime_env_file(environment, ROOT / ".env.local")
     shared_env_file = Path(
@@ -645,23 +702,28 @@ def _runtime_environment() -> dict[str, str]:
         # Accept the organization-wide alias and make it authoritative for NetworkIS.
         environment["OPENAI_API_KEY"] = shared_openai_key
     logical_cores = max(1, os.cpu_count() or 1)
-    environment.setdefault("AI_PROVIDER", "hybrid-demand")
-    environment.setdefault("LOCAL_AI_BASE_URL", DEFAULT_LOCAL_AI_URL)
-    environment.setdefault("LOCAL_AI_MODEL", DEFAULT_LOCAL_AI_MODEL)
-    environment.setdefault("LOCAL_AI_FAST_MODEL", DEFAULT_LOCAL_AI_FAST_MODEL)
-    environment.setdefault("CLOUD_ESCALATION", "on_failure")
+    environment.setdefault("AI_PROVIDER", _config_text(ai_config, "active_provider", "hybrid-demand"))
+    environment.setdefault("LOCAL_AI_BASE_URL", _config_text(ollama, "base_url_windows", DEFAULT_LOCAL_AI_URL))
+    environment.setdefault("LOCAL_AI_MODEL", _config_text(ollama, "model", DEFAULT_LOCAL_AI_MODEL))
+    environment.setdefault("LOCAL_AI_FAST_MODEL", _config_text(ollama, "fast_model", DEFAULT_LOCAL_AI_FAST_MODEL))
+    environment.setdefault("LOCAL_AI_API_KEY", _config_text(ollama, "api_key", "ollama"))
+    environment.setdefault("CLOUD_ESCALATION", _config_text(ai_config, "cloud_escalation", "on_failure"))
+    environment.setdefault("NVIDIA_AI_MODEL", _config_text(nvidia, "model", "nvidia/nemotron-3-nano-30b-a3b"))
     environment.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
-    environment.setdefault("OLLAMA_MODELS", r"I:\engineering-intelligence-platform\models\ollama")
-    environment.setdefault("OLLAMA_CONTEXT_LENGTH", "8192")
-    environment.setdefault("OLLAMA_KEEP_ALIVE", "10m")
-    environment.setdefault("WAITRESS_THREADS", str(min(32, max(8, logical_cores // 2))))
-    environment.setdefault("SIMULATION_WORKERS", str(min(12, max(2, logical_cores // 2))))
-    environment.setdefault("SIMULATION_EXECUTOR", "process")
-    # Each worker gets one numeric-library thread; parallelism is owned by the process pool.
-    environment.setdefault("OMP_NUM_THREADS", "1")
-    environment.setdefault("OPENBLAS_NUM_THREADS", "1")
-    environment.setdefault("MKL_NUM_THREADS", "1")
-    environment.setdefault("NUMEXPR_NUM_THREADS", "1")
+    environment.setdefault("OLLAMA_MODELS", _config_text(paths, "ollama_models", r"I:\engineering-intelligence-platform\models\ollama"))
+    environment.setdefault("OLLAMA_CONTEXT_LENGTH", str(_config_int(resources, "ollama_context_length", 8192)))
+    environment.setdefault("OLLAMA_KEEP_ALIVE", _config_text(resources, "ollama_keep_alive", "10m"))
+    environment.setdefault("WAITRESS_THREADS", str(_config_int(resources, "waitress_threads", min(32, max(8, logical_cores // 2)))))
+    environment.setdefault("SIMULATION_WORKERS", str(_config_int(resources, "simulation_workers", min(12, max(2, logical_cores // 2)))))
+    environment.setdefault("SIMULATION_EXECUTOR", _config_text(resources, "simulation_executor", "thread"))
+    environment.setdefault("NETWORKIS_SERVICE_RESTARTS", str(_config_int(resources, "service_restarts", DEFAULT_SERVICE_RESTART_LIMIT)))
+    environment.setdefault("WORKFLOW_EVENT_LIMIT", str(_config_int(resources, "workflow_event_limit", 100_000)))
+    # Keep numeric libraries single-threaded; JobService owns simulation parallelism.
+    numeric_threads = str(_config_int(resources, "numeric_threads", 1))
+    environment.setdefault("OMP_NUM_THREADS", numeric_threads)
+    environment.setdefault("OPENBLAS_NUM_THREADS", numeric_threads)
+    environment.setdefault("MKL_NUM_THREADS", numeric_threads)
+    environment.setdefault("NUMEXPR_NUM_THREADS", numeric_threads)
     return environment
 
 

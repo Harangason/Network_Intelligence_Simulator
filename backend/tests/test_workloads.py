@@ -8,9 +8,15 @@ from engineering.workloads.handlers import (
     SignalGenerationWorkloadHandler,
     THERMAL_SIGNAL_CATALOG,
     semantic_alias_key,
+    suggest_candidate_repair,
     validate_signal_definition,
 )
 from engineering.workloads.models import evaluate_workload_completion, parse_workload_request
+from engineering.workloads.service import EngineeringWorkloadOrchestrator
+from engineering.routing.generation import is_gateway_fanout_interface
+
+
+SOURCE = "00000000-0000-0000-0000-000000000001"
 
 
 def _packages(*, valid_thermal: int, valid_motion: int, status: str = "IN_PROGRESS"):
@@ -219,3 +225,73 @@ def test_structured_non_signal_workload_uses_same_package_model():
 
     assert plan["workload_type"] == "MESSAGE_GENERATION"
     assert sum(item["requested_count"] for item in plan["work_packages"]) == 8
+
+
+def test_message_audit_repair_removes_data_suffix_and_fills_transport_defaults():
+    repaired = suggest_candidate_repair("Message", {"name": "TemperaturErfassungData", "interface_id": SOURCE})
+
+    assert repaired["name"] == "TemperaturErfassung"
+    assert repaired["direction"] == "tx"
+    assert repaired["cycle_ms"] == 10
+    assert repaired["dlc"] == 8
+
+
+def test_signal_audit_repair_fills_missing_coding_parameters():
+    repaired = suggest_candidate_repair("Signal", {"name": "DiagnoseStatus", "message_name": "Gateway"})
+
+    assert repaired["name"] == "gw_diagnose_status_gw"
+    assert repaired["byte_order"] == "little_endian"
+    assert repaired["min_value"] == 0
+    assert repaired["max_value"] == 255
+
+
+def test_resume_ready_for_review_does_not_restart_workload():
+    orchestrator = EngineeringWorkloadOrchestrator.__new__(EngineeringWorkloadOrchestrator)
+    workload = {
+        "workload_id": "workload-1",
+        "status": "READY_FOR_REVIEW",
+        "attempts": 2,
+        "max_generation_attempts": 3,
+    }
+    status_changes: list[str] = []
+    audits: list[str] = []
+
+    orchestrator.get_workload = lambda workload_id: workload
+    orchestrator.evaluate_workload_completion = lambda workload_id, actor=None: {"status": "READY_FOR_REVIEW"}
+    orchestrator.audit = lambda current, event_type, details=None, actor=None, package_id=None: audits.append(event_type)
+    orchestrator._set_workload_status = lambda workload_id, status, actor=None, start=False: status_changes.append(status)
+
+    result = orchestrator.resume("workload-1", actor="tester")
+
+    assert result["status"] == "READY_FOR_REVIEW"
+    assert status_changes == []
+    assert audits == ["WORKLOAD_RESUME_SKIPPED"]
+
+
+def test_resume_exhausted_incomplete_does_not_start_new_attempt():
+    orchestrator = EngineeringWorkloadOrchestrator.__new__(EngineeringWorkloadOrchestrator)
+    workload = {
+        "workload_id": "workload-1",
+        "status": "INCOMPLETE",
+        "attempts": 3,
+        "max_generation_attempts": 3,
+    }
+    status_changes: list[str] = []
+    audits: list[str] = []
+
+    orchestrator.get_workload = lambda workload_id: workload
+    orchestrator.evaluate_workload_completion = lambda workload_id, actor=None: {"status": "INCOMPLETE"}
+    orchestrator.audit = lambda current, event_type, details=None, actor=None, package_id=None: audits.append(event_type)
+    orchestrator._set_workload_status = lambda workload_id, status, actor=None, start=False: status_changes.append(status)
+
+    result = orchestrator.resume("workload-1", actor="tester")
+
+    assert result["status"] == "INCOMPLETE"
+    assert status_changes == []
+    assert audits == ["WORKLOAD_RESUME_SKIPPED"]
+
+
+def test_gateway_fanout_interfaces_are_not_routing_interfaces():
+    assert is_gateway_fanout_interface({"name": "System_1_22"}) is True
+    assert is_gateway_fanout_interface({"name": "System_1"}) is False
+    assert is_gateway_fanout_interface({"name": "Fahrwerk_7"}) is False

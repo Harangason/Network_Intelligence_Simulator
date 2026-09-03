@@ -58,6 +58,7 @@ class IntelligenceService:
         return {
             "state": state,
             "objects": objects,
+            "hardware_interfaces": list_objects("HardwareNetworkInterface", limit=5000),
             "routes": list_routes(limit=5000),
             "relations": list_relations(limit=10000),
             "capacity": self.workflow.latest_analysis("capacity_timing", include_outdated=True) or {},
@@ -393,6 +394,7 @@ class IntelligenceService:
         graph = GraphAnalyticsService().analyze(
             objects["HardwareNode"], objects["Interface"], objects["Signal"],
             data["state"].get("topology") or {}, data["relations"], data["routes"],
+            data.get("hardware_interfaces") or [],
         )
         routing = self._routing_analysis(data["routes"])
         capacity_timing = self._capacity_analytics(data["capacity"])

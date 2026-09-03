@@ -1,7 +1,8 @@
 """Generische Persistenzschicht für die kanonischen Engineering-Objekte.
 
 Alle Entitätstabellen (``engineering_hardware_nodes``, ``engineering_functions``,
-``engineering_interfaces``, ``engineering_messages``, ``engineering_signals``)
+``engineering_hardware_interfaces``, ``engineering_interfaces``,
+``engineering_messages``, ``engineering_signals``)
 teilen sich dieselben Governance-Spalten (``version``, ``lifecycle_state``,
 ``source``, ``provenance``, ``confidence``, ``review_state``,
 ``approval_state``, ``created_at``/``created_by``, ``modified_at``/``modified_by``).
@@ -22,7 +23,10 @@ from .db import get_connection
 from .project_context import current_project_id
 from .models import (
     APPROVAL_STATES,
+    CLASSIFICATION_STATUSES,
+    DATA_COMPLEXITIES,
     DEVICE_TYPES,
+    DEVICE_TYPINGS,
     EngineeringValidationError,
     INTERFACE_TYPES,
     LIFECYCLE_STATES,
@@ -33,6 +37,7 @@ from .models import (
     validate_choice,
     validate_uuid as _validate_uuid,
 )
+from .device_classification import DeviceClassificationRegistry
 from .scope_rules import (
     communication_system_allows_interface,
     hardware_scope_category,
@@ -92,6 +97,11 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         object_type="HardwareNode",
         own_columns=(
             "device_type",
+            "device_class",
+            "device_typing",
+            "data_complexity",
+            "classification_status",
+            "capability_profile_ref",
             "identity",
             "product_information",
             "hardware_information",
@@ -100,7 +110,12 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         json_columns=frozenset(
             {"identity", "product_information", "hardware_information", "software_information"}
         ),
-        enum_fields={"device_type": DEVICE_TYPES},
+        enum_fields={
+            "device_type": DEVICE_TYPES,
+            "device_typing": DEVICE_TYPINGS,
+            "data_complexity": DATA_COMPLEXITIES,
+            "classification_status": CLASSIFICATION_STATUSES,
+        },
     ),
     "Function": EntitySpec(
         table="engineering_functions",
@@ -109,12 +124,37 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         json_columns=frozenset(),
         required=("hardware_node_id",),
     ),
+    "HardwareNetworkInterface": EntitySpec(
+        table="engineering_hardware_interfaces",
+        object_type="HardwareNetworkInterface",
+        own_columns=(
+            "hardware_node_id",
+            "technology",
+            "controller_ref",
+            "physical_port_ref",
+            "channel_index",
+            "network_ref",
+            "bitrate",
+            "data_bitrate",
+            "capabilities",
+            "status",
+            "message_refs",
+            "static_load",
+            "runtime_load",
+            "target_load_limit",
+            "warning_load_limit",
+            "hard_load_limit",
+        ),
+        json_columns=frozenset({"capabilities", "message_refs"}),
+        required=("hardware_node_id", "technology"),
+        enum_fields={"technology": INTERFACE_TYPES},
+    ),
     "Interface": EntitySpec(
         table="engineering_interfaces",
         object_type="Interface",
         own_columns=("hardware_node_id", "function_id", "interface_type", "configuration"),
         json_columns=frozenset({"configuration"}),
-        required=("function_id", "interface_type"),
+        required=("interface_type",),
         enum_fields={"interface_type": INTERFACE_TYPES},
     ),
     "Message": EntitySpec(
@@ -122,6 +162,7 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         object_type="Message",
         own_columns=(
             "interface_id",
+            "hardware_interface_id",
             "message_id_hex",
             "direction",
             "cycle_ms",
@@ -164,10 +205,29 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
 
 PARENT_LINKS: dict[str, tuple[str, str, str]] = {
     "Function": ("hardware_node_id", "HardwareNode", "HAS_FUNCTION"),
+    "HardwareNetworkInterface": ("hardware_node_id", "HardwareNode", "HAS_HARDWARE_INTERFACE"),
     "Interface": ("function_id", "Function", "HAS_INTERFACE"),
     "Message": ("interface_id", "Interface", "HAS_MESSAGE"),
     "Signal": ("message_id", "Message", "CONTAINS_SIGNAL"),
 }
+
+
+def parent_link_for_payload(
+    object_type: str,
+    payload: dict[str, Any],
+) -> tuple[str, str, str] | None:
+    """Return the canonical parent relation for an object payload.
+
+    Logical interfaces may belong either to a function or, for class 0-2
+    devices, directly to the hardware node.
+    """
+    if object_type == "Interface":
+        if payload.get("function_id"):
+            return "function_id", "Function", "HAS_INTERFACE"
+        if payload.get("hardware_node_id"):
+            return "hardware_node_id", "HardwareNode", "HAS_INTERFACE"
+        return None
+    return PARENT_LINKS.get(object_type)
 
 
 def _all_columns(spec: EntitySpec) -> tuple[str, ...]:
@@ -215,6 +275,31 @@ def _governance_defaults(data: dict[str, Any]) -> dict[str, Any]:
         "approval_state": approval_state,
         "created_by": data.get("created_by") or data.get("actor"),
     }
+
+
+def _apply_hardware_classification_defaults(data: dict[str, Any]) -> dict[str, Any]:
+    supplied = any(data.get(field) not in (None, "") for field in ("device_class", "device_typing", "data_complexity"))
+    registry = DeviceClassificationRegistry()
+    profile = registry.resolve_profile(
+        name=str(data.get("name") or ""),
+        device_type=str(data.get("device_type") or "GenericDevice"),
+        device_class=data.get("device_class"),
+        device_typing=str(data.get("device_typing") or "") or None,
+        data_complexity=str(data.get("data_complexity") or "") or None,
+    )
+    payload = {
+        **data,
+        "device_class": profile.device_class,
+        "device_typing": profile.device_typing,
+        "data_complexity": profile.data_complexity,
+        "classification_status": data.get("classification_status") or ("CONFIRMED" if supplied else "PROPOSED"),
+        "capability_profile_ref": data.get("capability_profile_ref") or profile.capability_profile_ref,
+    }
+    hardware_information = dict(payload.get("hardware_information") or {})
+    hardware_information["device_capability_profile"] = profile.to_dict()
+    hardware_information["generator_policy"] = profile.generator_policy
+    payload["hardware_information"] = hardware_information
+    return payload
 
 
 def _enforce_engineering_scope_rules(
@@ -267,12 +352,15 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     spec = get_spec(object_type)
     if not data.get("name"):
         raise EngineeringValidationError("Pflichtfeld fehlt: 'name'")
+    if object_type == "Interface" and not (data.get("function_id") or data.get("hardware_node_id")):
+        raise EngineeringValidationError("Pflichtfeld fehlt: 'function_id' oder 'hardware_node_id'")
     if object_type == "HardwareNode":
         data = {
             **data,
             "device_type": data.get("device_type") or infer_device_type(str(data["name"])),
             "name": normalize_hardware_name(data["name"]),
         }
+        data = _apply_hardware_classification_defaults(data)
     if object_type == "Interface" and data.get("function_id"):
         parent_function = get_object("Function", str(data["function_id"]))
         data = {**data, "hardware_node_id": parent_function["hardware_node_id"]}
@@ -282,9 +370,13 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     payload = {col: data.get(col) for col in columns}
     payload.update(_governance_defaults(data))
     project_id = current_project_id()
-    parent_link = PARENT_LINKS.get(object_type)
+    parent_link = parent_link_for_payload(object_type, payload)
     if parent_link and payload.get(parent_link[0]):
         get_object(parent_link[1], str(payload[parent_link[0]]))
+    if object_type == "Interface" and not payload.get("function_id") and payload.get("hardware_node_id"):
+        get_object("HardwareNode", str(payload["hardware_node_id"]))
+    if object_type == "Message" and payload.get("hardware_interface_id"):
+        get_object("HardwareNetworkInterface", str(payload["hardware_interface_id"]))
 
     insert_columns = ["project_id", *payload.keys()]
     values = [project_id, *[_wrap_value(col, payload[col], spec) for col in payload]]
@@ -483,8 +575,19 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             )
         if "name" in updates or "device_type" in updates:
             updates["name"] = normalize_hardware_name(requested_name)
+        if any(field in updates for field in ("name", "device_type", "device_class", "device_typing", "data_complexity")):
+            merged = _apply_hardware_classification_defaults({**existing, **updates})
+            for field in ("device_class", "device_typing", "data_complexity", "classification_status", "capability_profile_ref", "hardware_information"):
+                updates[field] = merged[field]
     parent_link = PARENT_LINKS.get(object_type)
     parent = None
+    if object_type == "Interface" and ("function_id" in updates or "hardware_node_id" in updates):
+        next_function_id = updates.get("function_id", existing.get("function_id"))
+        next_hardware_node_id = updates.get("hardware_node_id", existing.get("hardware_node_id"))
+        if not (next_function_id or next_hardware_node_id):
+            raise EngineeringValidationError("Pflichtfeld fehlt: 'function_id' oder 'hardware_node_id'")
+        if not next_function_id and next_hardware_node_id:
+            get_object("HardwareNode", str(next_hardware_node_id))
     if parent_link and parent_link[0] in updates:
         parent_field, parent_type, _ = parent_link
         if not updates.get(parent_field):
@@ -492,6 +595,8 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
         parent = get_object(parent_type, str(updates[parent_field]))
         if object_type == "Interface" and parent.get("hardware_node_id"):
             updates["hardware_node_id"] = parent["hardware_node_id"]
+    if object_type == "Message" and updates.get("hardware_interface_id"):
+        get_object("HardwareNetworkInterface", str(updates["hardware_interface_id"]))
     if not updates:
         return existing
 

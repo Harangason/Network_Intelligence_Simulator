@@ -20,6 +20,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 SOURCE_TABLES = (
     "engineering_hardware_nodes",
+    "engineering_hardware_interfaces",
     "engineering_functions",
     "engineering_interfaces",
     "engineering_messages",
@@ -78,12 +79,14 @@ WORKSPACE_RESET_TABLES = (
     "engineering_signals",
     "engineering_messages",
     "engineering_interfaces",
+    "engineering_hardware_interfaces",
     "engineering_functions",
     "engineering_hardware_nodes",
 )
 
 SOURCE_UUID_KEYS = {
     "engineering_hardware_nodes": "id",
+    "engineering_hardware_interfaces": "id",
     "engineering_functions": "id",
     "engineering_interfaces": "id",
     "engineering_messages": "id",

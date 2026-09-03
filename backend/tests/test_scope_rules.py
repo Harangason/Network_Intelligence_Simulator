@@ -51,6 +51,28 @@ def test_scope_rules_normalize_exact_system_limits():
     }
 
 
+def test_scope_rules_preserve_generation_plan_counts_and_architecture():
+    rules = normalize_engineering_scope_rules({
+        "version": 2,
+        "hardware_counts": {"sensors": 2, "actuators": 2, "ecus": 1, "gateways": 1},
+        "communication_systems": ["CAN_FD", "Ethernet"],
+        "network_architecture": "gateway_ecu_segments",
+        "model_counts": {
+            "hardware_nodes": 6,
+            "functions": 2,
+            "hardware_interfaces": 8,
+            "interfaces": 6,
+            "messages": 6,
+            "signals": 14,
+        },
+    })
+
+    assert rules["version"] == 2
+    assert rules["network_architecture"] == "gateway_ecu_segments"
+    assert rules["model_counts"]["functions"] == 2
+    assert rules["model_counts"]["signals"] == 14
+
+
 def test_scope_rules_accept_someip_as_ethernet_carried_protocol():
     rules = normalize_engineering_scope_rules(
         {

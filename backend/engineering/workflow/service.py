@@ -216,6 +216,11 @@ class WorkflowStatusService:
                 "JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id "
                 f"WHERE f.project_id = %s AND NOT {placeholder}"
             ),
+            "hardware_interfaces": (
+                "SELECT COUNT(*) AS count FROM engineering_hardware_interfaces hi "
+                "JOIN engineering_hardware_nodes h ON h.id = hi.hardware_node_id AND h.project_id = hi.project_id "
+                f"WHERE hi.project_id = %s AND NOT {placeholder}"
+            ),
             "interfaces": (
                 "SELECT COUNT(*) AS count FROM engineering_interfaces i "
                 "JOIN engineering_hardware_nodes h ON h.id = i.hardware_node_id AND h.project_id = i.project_id "
@@ -260,16 +265,18 @@ class WorkflowStatusService:
                      SELECT 1 FROM engineering_hardware_nodes n
                      WHERE n.id = f.hardware_node_id AND n.project_id = f.project_id))) AS functions,
                 (SELECT COUNT(*) FROM engineering_interfaces i
-                 WHERE i.project_id = %s AND (i.hardware_node_id IS NULL OR i.function_id IS NULL
+                 WHERE i.project_id = %s AND (i.hardware_node_id IS NULL
                      OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n
                          WHERE n.id = i.hardware_node_id AND n.project_id = i.project_id)
-                     OR NOT EXISTS (SELECT 1 FROM engineering_functions f
-                         WHERE f.id = i.function_id AND f.project_id = i.project_id))) AS interfaces,
+                     OR (i.function_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM engineering_functions f
+                         WHERE f.id = i.function_id AND f.project_id = i.project_id)))) AS interfaces,
                 (SELECT COUNT(*) FROM engineering_messages m
                  WHERE m.project_id = %s AND (m.interface_id IS NULL OR m.direction IS NULL
-                     OR m.cycle_ms IS NULL OR m.dlc IS NULL
+                     OR m.hardware_interface_id IS NULL OR m.cycle_ms IS NULL OR m.dlc IS NULL
                      OR NOT EXISTS (SELECT 1 FROM engineering_interfaces i
-                         WHERE i.id = m.interface_id AND i.project_id = m.project_id))) AS messages,
+                         WHERE i.id = m.interface_id AND i.project_id = m.project_id)
+                     OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi
+                         WHERE hi.id = m.hardware_interface_id AND hi.project_id = m.project_id))) AS messages,
                 (SELECT COUNT(*) FROM engineering_signals s
                  WHERE s.project_id = %s AND (s.message_id IS NULL OR s.start_bit IS NULL
                      OR s.length_bits IS NULL OR s.byte_order IS NULL OR s.data_type IS NULL
@@ -280,14 +287,62 @@ class WorkflowStatusService:
             (self.project_id, self.project_id, self.project_id, self.project_id),
         ).fetchone()
         incomplete = {key: int(value or 0) for key, value in broken.items()}
+        consistency_row = connection.execute(
+            """
+            SELECT
+                (SELECT COUNT(*) FROM engineering_hardware_nodes h
+                 WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3
+                   AND h.lifecycle_state NOT IN ('deprecated', 'superseded')) AS function_required,
+                (SELECT COUNT(*) FROM engineering_hardware_nodes h
+                 WHERE h.project_id = %s AND COALESCE(h.device_class, 0) >= 3
+                   AND h.lifecycle_state NOT IN ('deprecated', 'superseded')
+                   AND NOT EXISTS (SELECT 1 FROM engineering_functions f
+                       WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id
+                         AND f.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS functions_missing,
+                (SELECT COUNT(*) FROM engineering_functions f
+                 JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id
+                 WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3
+                   AND f.lifecycle_state NOT IN ('deprecated', 'superseded')) AS functions_unexpected,
+                (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM (
+                    SELECT f.hardware_node_id, COUNT(*) AS count
+                    FROM engineering_functions f
+                    WHERE f.project_id = %s AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
+                    GROUP BY f.hardware_node_id HAVING COUNT(*) > 1
+                ) grouped) AS functions_duplicate,
+                (SELECT COUNT(*) FROM engineering_hardware_nodes h
+                 WHERE h.project_id = %s AND h.lifecycle_state NOT IN ('deprecated', 'superseded')
+                   AND NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi
+                       WHERE hi.project_id = h.project_id AND hi.hardware_node_id = h.id
+                         AND hi.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS hardware_interfaces_missing,
+                (SELECT COUNT(*) FROM engineering_messages m
+                 WHERE m.project_id = %s AND m.lifecycle_state NOT IN ('deprecated', 'superseded')
+                   AND COALESCE(m.dlc, 0) * 8 < COALESCE((
+                       SELECT MAX(s.start_bit + s.length_bits) FROM engineering_signals s
+                       WHERE s.project_id = m.project_id AND s.message_id = m.id
+                         AND s.lifecycle_state NOT IN ('deprecated', 'superseded')
+                   ), 0)) AS messages_overflow
+            """,
+            (self.project_id,) * 6,
+        ).fetchone()
+        consistency = {key: int(value or 0) for key, value in consistency_row.items()}
         has_any = any(counts.values())
-        complete = all(counts.values()) and not any(incomplete.values())
+        required_counts_present = (
+            counts["hardware_nodes"] > 0
+            and counts["hardware_interfaces"] > 0
+            and counts["interfaces"] > 0
+            and counts["messages"] > 0
+            and counts["signals"] > 0
+            and (consistency["function_required"] == 0 or counts["functions"] > 0)
+        )
+        blocking_consistency = {key: value for key, value in consistency.items() if key != "function_required"}
+        complete = required_counts_present and not any(incomplete.values()) and not any(blocking_consistency.values())
         return {
             "status": "COMPLETE" if complete else ("IN_PROGRESS" if has_any else "EMPTY"),
             "complete": complete,
             "counts": counts,
             "hardware_by_type": hardware_by_type,
             "incomplete": incomplete,
+            "consistency": consistency,
         }
 
     def _routing_artifact_check(self, connection) -> dict[str, Any]:
@@ -296,6 +351,7 @@ class WorkflowStatusService:
             SELECT COUNT(*) AS total,
                    COUNT(*) FILTER (WHERE approval_state = 'APPROVED') AS approved,
                    COUNT(*) FILTER (WHERE validation ->> 'valid' = 'true') AS valid,
+                   COUNT(*) FILTER (WHERE validation ->> 'valid' = 'false') AS invalid,
                    COUNT(*) FILTER (WHERE status = 'CONFLICT') AS conflicts
             FROM engineering_routing_entries
             WHERE project_id = %s
@@ -306,10 +362,44 @@ class WorkflowStatusService:
         total = int(counts["total"] or 0)
         approved = int(counts["approved"] or 0)
         valid = int(counts["valid"] or 0)
+        invalid = int(counts["invalid"] or 0)
         conflicts = int(counts["conflicts"] or 0)
+        fanout = connection.execute(
+            """
+            WITH active_routes AS (
+                SELECT id, source, destinations
+                FROM engineering_routing_entries
+                WHERE project_id = %s
+                  AND status NOT IN ('SUPERSEDED', 'DEPRECATED', 'REJECTED', 'OUTDATED')
+            ),
+            route_interfaces AS (
+                SELECT id AS route_id, source ->> 'interface_id' AS interface_id
+                FROM active_routes
+                UNION ALL
+                SELECT route.id AS route_id, destination.value ->> 'interface_id' AS interface_id
+                FROM active_routes AS route
+                CROSS JOIN LATERAL jsonb_array_elements(
+                    CASE
+                        WHEN jsonb_typeof(route.destinations) = 'array' THEN route.destinations
+                        ELSE '[]'::jsonb
+                    END
+                ) AS destination(value)
+            )
+            SELECT COUNT(DISTINCT route_interfaces.route_id) AS routes,
+                   COUNT(DISTINCT interfaces.id) AS interfaces
+            FROM route_interfaces
+            JOIN engineering_interfaces AS interfaces
+              ON interfaces.id::text = route_interfaces.interface_id
+             AND interfaces.project_id = %s
+            WHERE interfaces.name ~* '^system_[0-9]+_[0-9]+$'
+            """,
+            (self.project_id, self.project_id),
+        ).fetchone()
+        fanout_routes = int(fanout["routes"] or 0)
+        fanout_interfaces = int(fanout["interfaces"] or 0)
         complete = total > 0 and approved == total and valid == total
         status = "APPROVED" if complete else (
-            "WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY")
+            "ERROR" if invalid or fanout_routes else ("WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY"))
         )
         return {
             "status": status,
@@ -318,7 +408,10 @@ class WorkflowStatusService:
                 "total": total,
                 "approved": approved,
                 "valid": valid,
+                "invalid": invalid,
                 "conflicts": conflicts,
+                "gateway_fanout_routes": fanout_routes,
+                "gateway_fanout_interfaces": fanout_interfaces,
             },
         }
 
@@ -340,7 +433,7 @@ class WorkflowStatusService:
             for port in ports:
                 if isinstance(port, dict) and port.get("id"):
                     port_owner[str(port["id"])] = node_id
-                    if not port.get("engineeringId"):
+                    if not (port.get("engineeringId") or port.get("hardwareInterfaceId")):
                         invalid_nodes += 1
                 else:
                     invalid_nodes += 1
@@ -441,8 +534,19 @@ class WorkflowStatusService:
     ) -> dict[str, Any]:
         if step == "engineering_model":
             check = self._model_artifact_check(connection)
-            mismatches = scope_count_mismatches(check["hardware_by_type"],
-                                                (state.get("context") or {}).get("engineering_scope_rules"))
+            raw_rules = (state.get("context") or {}).get("engineering_scope_rules")
+            mismatches = scope_count_mismatches(check["hardware_by_type"], raw_rules)
+            if raw_rules:
+                rules = normalize_engineering_scope_rules(raw_rules)
+                for key, target in (rules.get("model_counts") or {}).items():
+                    actual = int(check["counts"].get(key, 0))
+                    if actual != int(target):
+                        mismatches[key] = {
+                            "target": int(target),
+                            "actual": actual,
+                            "missing": max(0, int(target) - actual),
+                            "excess": max(0, actual - int(target)),
+                        }
             check["scope_mismatches"] = mismatches
             if mismatches:
                 check["complete"] = False
@@ -588,6 +692,28 @@ class WorkflowStatusService:
             normalize_step(str(active_step))
         with get_connection() as connection:
             state = self._get_locked(connection)
+            current_execution = state["context"].get("agent_execution") or {}
+            next_execution = cleaned.get("agent_execution") or {}
+            if (
+                isinstance(current_execution, dict)
+                and isinstance(next_execution, dict)
+                and current_execution.get("state") == "CANCELED"
+                and current_execution.get("run_id")
+                and current_execution.get("run_id") == next_execution.get("run_id")
+                and next_execution.get("state") != "CANCELED"
+            ):
+                cleaned.pop("agent_execution", None)
+            current_wizard = state["context"].get("agent_wizard_status") or {}
+            next_wizard = cleaned.get("agent_wizard_status") or {}
+            if (
+                isinstance(current_wizard, dict)
+                and isinstance(next_wizard, dict)
+                and current_wizard.get("status") == "CANCELED"
+                and current_wizard.get("run_id")
+                and current_wizard.get("run_id") == next_wizard.get("run_id")
+                and next_wizard.get("status") != "CANCELED"
+            ):
+                cleaned.pop("agent_wizard_status", None)
             merged = {**state["context"], **cleaned, "active_project": self.project_id}
             connection.execute(
                 """
