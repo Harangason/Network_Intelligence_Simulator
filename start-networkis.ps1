@@ -54,8 +54,12 @@ $env:OPENBLAS_NUM_THREADS = $NumericThreads
 $env:MKL_NUM_THREADS = $NumericThreads
 $env:NUMEXPR_NUM_THREADS = $NumericThreads
 
-& $Docker info *> $DockerDiag
-if ($LASTEXITCODE -ne 0) {
+function Wait-DockerEngine {
+  & $Docker info *> $DockerDiag
+  if ($LASTEXITCODE -eq 0) {
+    return
+  }
+
   if (Test-ReadablePath $DockerDesktop) {
     Write-Host "Docker Desktop wird gestartet..."
     Start-Process -FilePath $DockerDesktop -WindowStyle Hidden
@@ -78,6 +82,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "Docker Engine wurde nicht rechtzeitig bereit."
   }
 }
+
+Write-Host "Pruefe Docker Engine..."
+Wait-DockerEngine
+Write-Host "Docker Engine ist bereit."
 
 if (Test-ReadablePath $Ollama) {
   try {
