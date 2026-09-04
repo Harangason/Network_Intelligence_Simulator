@@ -8,8 +8,9 @@ import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type Simulat
 import type { SimulationJob } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { withProjectParam } from "@/lib/user-settings";
 
-export function SimulationRunner() {
+export function SimulationRunner({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
   const [job, setJob] = useState<SimulationJob | null>(null);
@@ -103,7 +104,7 @@ export function SimulationRunner() {
   );
   return (
     <section className="simulation-runner">
-      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href="/studio/validation">Preflight öffnen →</Link></div>}
+      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", initialProjectId)}>Preflight öffnen →</Link></div>}
       {simulationOutdated && <div className="workflow-blocker warning"><strong>Frühere Simulation ist OUTDATED</strong><span>{workflow?.stale_reasons.simulation}</span></div>}
       <div className="simulation-layout">
         <form className="panel simulation-control-panel" onSubmit={start}>
@@ -119,7 +120,7 @@ export function SimulationRunner() {
             <NumberControl label="Korruption" name="corruption_probability" value="0" min="0" max="1" step="0.001" />
           </div>
           {error && <div className="notice error">{error}</div>}
-          <div className="form-actions"><Link className="button secondary" href="/studio/validation">Preflight prüfen</Link>{job && !["completed", "failed", "canceled"].includes(job.status) && <button className="button secondary" disabled={busy} onClick={() => void stop()} type="button">Stop</button>}{job && ["completed", "failed", "canceled"].includes(job.status) && <button className="button secondary" disabled={busy} onClick={reset} type="button">Reset</button>}<button className="button primary" disabled={!valid || busy || Boolean(job)} type="submit">{busy ? "Snapshot wird erstellt ..." : job ? "Lauf gestartet" : "Snapshot erstellen & starten ->"}</button><Link className="button secondary" href="/trace-analysis">Trace-Analyse</Link></div>
+          <div className="form-actions"><Link className="button secondary" href={withProjectParam("/studio/validation", initialProjectId)}>Preflight prüfen</Link>{job && !["completed", "failed", "canceled"].includes(job.status) && <button className="button secondary" disabled={busy} onClick={() => void stop()} type="button">Stop</button>}{job && ["completed", "failed", "canceled"].includes(job.status) && <button className="button secondary" disabled={busy} onClick={reset} type="button">Reset</button>}<button className="button primary" disabled={!valid || busy || Boolean(job)} type="submit">{busy ? "Snapshot wird erstellt ..." : job ? "Lauf gestartet" : "Snapshot erstellen & starten ->"}</button><Link className="button secondary" href={withProjectParam("/trace-analysis", initialProjectId)}>Trace-Analyse</Link></div>
         </form>
         <aside className="side-column">
           <div className="panel snapshot-summary"><p className="eyebrow">Source versions</p><h2>Validierter Stand</h2><dl className="overview-list">{sourceSummary.map(([key, value]) => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>v{value}</dd></div>)}</dl>{snapshot && <p className="snapshot-id">Snapshot {snapshot.id}</p>}</div>

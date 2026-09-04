@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDevJob, listDevJobs } from "../_dev-opt/store";
-import { proxyBackend } from "../_backend";
+import { projectHeaders, projectIdFromRequest, proxyBackend } from "../_backend";
 
 // DEV-OPT: local/v0 simulation fallback; production requests are handled by Flask.
 export async function POST(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const backend = await proxyBackend("/simulations", {
     method: "POST",
     body: JSON.stringify(payload),
-    headers: { "X-Project-ID": request.headers.get("X-Project-ID") ?? "default" },
+    headers: projectHeaders(projectIdFromRequest(request, payload as Record<string, unknown>)),
   });
   if (backend) return backend;
   if ((payload as Record<string, unknown>).workflow_managed) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const backend = await proxyBackend("/simulations", {
-    headers: { "X-Project-ID": request.headers.get("X-Project-ID") ?? "default" },
+    headers: projectHeaders(projectIdFromRequest(request)),
   });
   return backend ?? NextResponse.json({ jobs: listDevJobs() });
 }

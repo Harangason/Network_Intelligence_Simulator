@@ -21,6 +21,7 @@ import psycopg
 import yaml
 
 from .ingestion import EngineeringChunk, EngineeringChunker, KnowledgeIngestionPipeline
+from .industry_rag import IndustryRAGOrchestrator, SIGNAL_NAME_PATTERN
 
 
 CANONICAL_TYPE_ALIASES = {
@@ -184,6 +185,48 @@ class XmlSourceAdapter(SourceAdapter):
         return _raw_entities(self.source_type, request, records)
 
 
+class SignalListSourceAdapter(SourceAdapter):
+    """Stages one-signal-per-line lists as aggregate RAG profiles.
+
+    Individual signal names are used only for transient classification. They
+    are not returned to the ingestion pipeline and therefore are not indexed.
+    """
+
+    source_type = "signal-list"
+
+    def load(self, request: SourceRequest) -> list[RawEntity]:
+        names: list[str] = []
+        seen: set[str] = set()
+        duplicate_count = 0
+        rejected_count = 0
+        for line in _text(request).splitlines():
+            candidate = line.strip()
+            if not candidate or candidate.startswith(("#", "//")):
+                continue
+            if not SIGNAL_NAME_PATTERN.fullmatch(candidate):
+                rejected_count += 1
+                continue
+            if candidate in seen:
+                duplicate_count += 1
+                continue
+            seen.add(candidate)
+            names.append(candidate)
+        if not names:
+            raise ValueError("Signal-list source requires one signal identifier per line.")
+        profiles = IndustryRAGOrchestrator().corpus_profiles(
+            names,
+            source_id=request.source_id,
+            industry=request.options.get("industry") or request.options.get("domain"),
+            domain=request.options.get("domain"),
+            technology=request.options.get("technology"),
+            source_quality=float(request.options.get("source_quality") or 0.42),
+            duplicate_count=duplicate_count,
+            rejected_count=rejected_count,
+        )
+        records = (("SignalCorpusProfile", profile) for profile in profiles)
+        return _raw_entities(self.source_type, request, records)
+
+
 class SqliteSourceAdapter(SourceAdapter):
     source_type = "sqlite"
 
@@ -279,7 +322,7 @@ class SourceAdapterRegistry:
         self._adapters: dict[str, SourceAdapter] = {}
         for adapter in adapters or (
             CsvSourceAdapter(), JsonSourceAdapter(), YamlSourceAdapter(), XmlSourceAdapter(),
-            SqliteSourceAdapter(), PostgresSourceAdapter(), RestSourceAdapter(),
+            SignalListSourceAdapter(), SqliteSourceAdapter(), PostgresSourceAdapter(), RestSourceAdapter(),
         ):
             self.register(adapter)
 
@@ -290,6 +333,8 @@ class SourceAdapterRegistry:
         normalized = source_type.strip().lower()
         if normalized == "yml":
             normalized = "yaml"
+        if normalized in {"signal_list", "signals-list", "signal-names", "signal_names"}:
+            normalized = "signal-list"
         try:
             return self._adapters[normalized]
         except KeyError as error:
@@ -330,14 +375,17 @@ class SourceIngestionService:
         staged = self.stage(source_type, request)
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for item in staged:
+            payload_metadata = dict(item.payload.get("metadata") or {}) if isinstance(item.payload.get("metadata"), dict) else {}
+            payload = {key: value for key, value in item.payload.items() if key != "metadata"}
             grouped[item.object_type].append(
                 {
                     "id": item.staging_id,
-                    **item.payload,
+                    **payload,
                     "metadata": {
                         "knowledge_level": item.knowledge_level,
-                        "source_quality": 0.55,
+                        "source_quality": payload_metadata.pop("source_quality", 0.55),
                         "evidence": [item.provenance],
+                        **payload_metadata,
                     },
                 }
             )

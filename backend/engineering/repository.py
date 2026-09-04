@@ -44,7 +44,12 @@ from .scope_rules import (
     normalize_engineering_scope_rules,
     scope_placeholder_sql,
 )
-from .structure_rules import equivalent_system_names, infer_device_type, normalize_hardware_name
+from .structure_rules import (
+    equivalent_system_names,
+    infer_device_type,
+    is_placeholder_system_name,
+    normalize_hardware_name,
+)
 
 GOVERNANCE_COLUMNS = (
     "version",
@@ -360,6 +365,10 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
             "device_type": data.get("device_type") or infer_device_type(str(data["name"])),
             "name": normalize_hardware_name(data["name"]),
         }
+        if is_placeholder_system_name(data["name"]):
+            raise EngineeringValidationError(
+                f"{data['name']!r} ist eine Objektart oder ein Platzhalter, aber kein technischer Systemname."
+            )
         data = _apply_hardware_classification_defaults(data)
     if object_type == "Interface" and data.get("function_id"):
         parent_function = get_object("Function", str(data["function_id"]))
@@ -507,13 +516,14 @@ def find_equivalent_hardware_node(data: dict[str, Any]) -> dict[str, Any] | None
     generic_types = {"", "GenericDevice", "CustomDevice"}
     matches: list[tuple[tuple[int, float, int, int, str], dict[str, Any]]] = []
     for candidate in list_objects("HardwareNode", limit=5000):
+        candidate_domain = str(candidate.get("domain") or "").strip().casefold()
         equivalent, similarity = equivalent_system_names(
             proposed_name,
             candidate.get("name"),
+            domain=proposed_domain if proposed_domain and proposed_domain == candidate_domain else None,
         )
         if not equivalent:
             continue
-        candidate_domain = str(candidate.get("domain") or "").strip().casefold()
         if proposed_domain and candidate_domain and proposed_domain != candidate_domain:
             continue
         candidate_device_type = str(candidate.get("device_type") or "").strip()
@@ -614,6 +624,22 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     confidence = updates.get("confidence")
     if confidence is not None and (not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1):
         raise EngineeringValidationError("confidence muss zwischen 0 und 1 liegen.")
+
+    effective_updates = {
+        key: value
+        for key, value in updates.items()
+        if not (
+            existing.get(key) == value
+            or (
+                isinstance(existing.get(key), uuid.UUID)
+                and value is not None
+                and str(existing[key]) == str(value)
+            )
+        )
+    }
+    if not effective_updates:
+        return existing
+    updates = effective_updates
 
     actor = data.get("modified_by") or data.get("actor")
     set_columns = list(updates.keys()) + ["version", "modified_by"]

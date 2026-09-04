@@ -14,6 +14,21 @@ def physical_port_networks(topology: dict[str, Any]) -> dict[str, str]:
         for port in node.get("ports", []) if isinstance(port, dict) and port.get("id")
     }
     adjacency: dict[str, set[str]] = defaultdict(set)
+    hardware_interface_ports: dict[str, list[str]] = defaultdict(list)
+    for node in topology.get("nodes", []):
+        if not isinstance(node, dict):
+            continue
+        for port in node.get("ports", []):
+            if not isinstance(port, dict) or not port.get("id") or not port.get("hardwareInterfaceId"):
+                continue
+            hardware_interface_ports[str(port["hardwareInterfaceId"])].append(str(port["id"]))
+    for aliases in hardware_interface_ports.values():
+        if len(aliases) < 2:
+            continue
+        anchor = aliases[0]
+        for alias in aliases[1:]:
+            adjacency[anchor].add(alias)
+            adjacency[alias].add(anchor)
     for edge in topology.get("edges", []):
         if not isinstance(edge, dict):
             continue

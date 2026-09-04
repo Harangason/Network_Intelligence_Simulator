@@ -3,11 +3,13 @@
 from .ai_gateway import AIModelGateway, AIProvider, LocalAIProvider
 from .entity_resolution import EntityResolutionResult, EntityResolutionService
 from .ingestion import EngineeringChunk, EngineeringChunker, KnowledgeIngestionPipeline
+from .industry_rag import IndustryRAGOrchestrator, IndustrySignalRAGProfile
 from .retrieval import EngineeringContextBuilder, HybridRetrievalService, KnowledgeDocument
 from .sources import (
     PostgresSourceAdapter,
     RawEntity,
     RestSourceAdapter,
+    SignalListSourceAdapter,
     SourceAdapter,
     SourceAdapterRegistry,
     SourceIngestionService,
@@ -25,6 +27,8 @@ __all__ = [
     "EngineeringSemanticVocabulary",
     "EngineeringChunk",
     "EngineeringChunker",
+    "IndustryRAGOrchestrator",
+    "IndustrySignalRAGProfile",
     "EntityResolutionResult",
     "EntityResolutionService",
     "GraphStore",
@@ -38,6 +42,7 @@ __all__ = [
     "PostgresSourceAdapter",
     "RawEntity",
     "RestSourceAdapter",
+    "SignalListSourceAdapter",
     "SourceAdapter",
     "SourceAdapterRegistry",
     "SourceIngestionService",

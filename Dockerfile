@@ -4,7 +4,9 @@ FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV NODE_ENV=development
+ENV NODE_ENV=production
+ENV NETWORKIS_FRONTEND_MODE=production
+ENV NETWORKIS_NEXT_DIST_DIR=.next-networkis
 ENV FLASK_HOST=0.0.0.0
 ENV FLASK_PORT=15050
 ENV FRONTEND_PORT=13500
@@ -20,9 +22,11 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir -r /app/backend/requirements.txt
 
 COPY frontend/package.json frontend/package-lock.json /app/frontend/
-RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci --include=dev
 
 COPY . /app
+
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build
 
 EXPOSE 13500 15050
 

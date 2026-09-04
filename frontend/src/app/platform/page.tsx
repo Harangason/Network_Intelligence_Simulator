@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Arrow, MarketingShell, PageHero } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
 
 const capabilities = [
   ["01", "Model", "Definiere Knoten, Bitraten, Payloads, Zyklen und Fehlerraten für reproduzierbare Szenarien."],
@@ -25,7 +24,7 @@ export default function PlatformPage() {
         <div><p className="section-label">Broad by design</p><h2>Von Embedded Bus bis Wide Area Network.</h2><p>Die Plattform abstrahiert gemeinsame Netzwerkparameter, ohne technologiespezifische Grenzen zu verstecken.</p></div>
         <div className="family-list">{families.map((family, index) => <div key={family}><span>{String(index + 1).padStart(2, "0")}</span><strong>{family}</strong><i>Supported</i></div>)}</div>
       </section>
-      <section className="page-cta"><p className="section-label">Start with a real system</p><h2>Turn a configuration into evidence.</h2><Link className="primary-link" href="/studio">Open studio <Arrow /></Link></section>
+      <section className="page-cta"><p className="section-label">Start with a real system</p><h2>Turn a configuration into evidence.</h2><ProjectAwareLink className="primary-link" href="/studio">Open studio <Arrow /></ProjectAwareLink></section>
     </MarketingShell>
   );
 }

@@ -12,11 +12,18 @@ import {
   requestEngineeringAgentWizard,
   type EngineeringAgentWizardSession,
 } from "@/lib/agent-task-events";
-import { adoptActiveProjectFromUrl, readActiveProjectId, SETTINGS_EVENT } from "@/lib/user-settings";
+import {
+  adoptActiveProjectFromUrl,
+  ensureCurrentUrlProjectParam,
+  readActiveProjectId,
+  SETTINGS_EVENT,
+  withProjectParam,
+} from "@/lib/user-settings";
 
-export function StudioTopbar() {
+export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: string }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [activeProjectId, setActiveProjectId] = useState(initialProjectId);
   const [wizardSession, setWizardSession] = useState<EngineeringAgentWizardSession | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [agentLogEnabled, setAgentLogEnabled] = useState(false);
@@ -26,14 +33,22 @@ export function StudioTopbar() {
   }, []);
 
   useEffect(() => {
-    adoptActiveProjectFromUrl();
+    const activeProject = adoptActiveProjectFromUrl() ?? readActiveProjectId();
+    setActiveProjectId(activeProject);
+    ensureCurrentUrlProjectParam(activeProject);
     syncWizardSession();
+    const handleSettingsChanged = () => {
+      const nextProjectId = readActiveProjectId();
+      setActiveProjectId(nextProjectId);
+      ensureCurrentUrlProjectParam(nextProjectId);
+      syncWizardSession();
+    };
     window.addEventListener(ENGINEERING_AGENT_WIZARD_SESSION_EVENT, syncWizardSession);
-    window.addEventListener(SETTINGS_EVENT, syncWizardSession);
+    window.addEventListener(SETTINGS_EVENT, handleSettingsChanged);
     window.addEventListener("storage", syncWizardSession);
     return () => {
       window.removeEventListener(ENGINEERING_AGENT_WIZARD_SESSION_EVENT, syncWizardSession);
-      window.removeEventListener(SETTINGS_EVENT, syncWizardSession);
+      window.removeEventListener(SETTINGS_EVENT, handleSettingsChanged);
       window.removeEventListener("storage", syncWizardSession);
     };
   }, [syncWizardSession]);
@@ -56,7 +71,7 @@ export function StudioTopbar() {
   function returnToWizard() {
     if (!wizardSession) return;
     requestEngineeringAgentWizard(wizardSession.projectId);
-    if (pathname !== "/studio/engineering") router.push("/studio/engineering");
+    if (pathname !== "/studio/engineering") router.push(withProjectParam("/studio/engineering", wizardSession.projectId));
   }
 
   async function toggleAgentLogging() {
@@ -86,7 +101,7 @@ export function StudioTopbar() {
   return (
     <>
       <header className="topbar">
-        <Link className="brand" href="/">
+        <Link className="brand" href={withProjectParam("/", activeProjectId)}>
           <span className="brand-mark" aria-hidden="true">CS</span>
           <div>
             <strong>Communication Simulator</strong>
@@ -117,7 +132,7 @@ export function StudioTopbar() {
           <button className="topbar-command" onClick={() => setImportOpen(true)} type="button">
             Importieren
           </button>
-          <Link className="topbar-link" href="/studio/settings">Einstellungen</Link>
+          <Link className="topbar-link" href={withProjectParam("/studio/settings", activeProjectId)}>Einstellungen</Link>
           <RuntimeStatus />
         </div>
       </header>

@@ -9,7 +9,7 @@ import {
   type WorkflowStep,
   type WorkflowStepId,
 } from "@/lib/workflow-api";
-import { SETTINGS_EVENT } from "@/lib/user-settings";
+import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
 import { WORKFLOW_CHANGED_EVENT } from "./workflow-header";
 
 type StatusBucket = {
@@ -93,7 +93,13 @@ function buildDonutGradient(buckets: StatusBucket[], total: number) {
   return `conic-gradient(${stops.join(", ")})`;
 }
 
-export function WorkflowStatusOverview({ compact = false }: { compact?: boolean }) {
+export function WorkflowStatusOverview({
+  compact = false,
+  initialProjectId = "",
+}: {
+  compact?: boolean;
+  initialProjectId?: string;
+}) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -109,16 +115,21 @@ export function WorkflowStatusOverview({ compact = false }: { compact?: boolean 
   }, []);
 
   useEffect(() => {
-    refresh();
-    const timer = window.setInterval(refresh, 10000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    refreshWhenVisible();
+    const timer = window.setInterval(refreshWhenVisible, 30000);
     window.addEventListener(WORKFLOW_CHANGED_EVENT, refresh);
     window.addEventListener(SETTINGS_EVENT, refresh);
-    window.addEventListener("focus", refresh);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, refresh);
       window.removeEventListener(SETTINGS_EVENT, refresh);
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [refresh]);
 
@@ -137,6 +148,7 @@ export function WorkflowStatusOverview({ compact = false }: { compact?: boolean 
   }, [steps]);
 
   const total = steps.length;
+  const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const currentCount = buckets.find((bucket) => bucket.key === "current")?.count ?? 0;
   const gradient = buildDonutGradient(buckets, total);
   const summary = buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(", ");
@@ -184,7 +196,7 @@ export function WorkflowStatusOverview({ compact = false }: { compact?: boolean 
             {steps.map((step) => (
               <Link
                 className={`workflow-status-step status-${step.status.toLowerCase()} ${step.id === workflow?.active_step ? "active" : ""}`}
-                href={STEP_LINKS[step.id]}
+                href={withProjectParam(STEP_LINKS[step.id], projectIdForLinks)}
                 key={step.id}
                 title={step.reason || `${step.label}: ${STATUS_LABELS[step.status]}`}
               >

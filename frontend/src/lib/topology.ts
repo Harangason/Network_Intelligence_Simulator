@@ -128,6 +128,41 @@ export function collapsePhysicalEdges(edges: TopologyEdge[]): TopologyEdge[] {
   return [...physicalEdges.values()];
 }
 
+function collapseSharedHardwareInterfacePorts(topology: NetworkTopology): NetworkTopology {
+  const replacements = new Map<string, string>();
+  const nodes = topology.nodes.map((node) => {
+    const canonicalByInterface = new Map<string, TopologyPort>();
+    const ports: TopologyPort[] = [];
+    for (const port of node.ports) {
+      const interfaceId = port.hardwareInterfaceId;
+      if (!interfaceId) {
+        ports.push({ ...port });
+        continue;
+      }
+      const key = `${interfaceId}\u0000${port.bus}`;
+      const canonical = canonicalByInterface.get(key);
+      if (canonical) {
+        replacements.set(`${node.id}\u0000${port.id}`, canonical.id);
+        continue;
+      }
+      const normalized = {
+        ...port,
+        id: port.id.replace(/--connection-\d+$/, ""),
+      };
+      canonicalByInterface.set(key, normalized);
+      replacements.set(`${node.id}\u0000${port.id}`, normalized.id);
+      ports.push(normalized);
+    }
+    return { ...node, ports };
+  });
+  const edges = topology.edges.map((edge) => ({
+    ...edge,
+    sourcePort: replacements.get(`${edge.source}\u0000${edge.sourcePort}`) ?? edge.sourcePort,
+    targetPort: replacements.get(`${edge.target}\u0000${edge.targetPort}`) ?? edge.targetPort,
+  }));
+  return { ...topology, nodes, edges };
+}
+
 export function expandSharedPhysicalPorts(topology: NetworkTopology): NetworkTopology {
   type PortUse = { edgeId: string; endpoint: "source" | "target" };
   const portUses = new Map<string, PortUse[]>();
@@ -146,7 +181,7 @@ export function expandSharedPhysicalPorts(topology: NetworkTopology): NetworkTop
     ports: node.ports.flatMap((port) => {
       const uses = [...(portUses.get(portKey(node.id, port.id)) ?? [])]
         .sort((left, right) => left.edgeId.localeCompare(right.edgeId) || left.endpoint.localeCompare(right.endpoint));
-      if (uses.length <= 1) return [{ ...port }];
+      if (uses.length <= 1 || port.hardwareInterfaceId) return [{ ...port }];
       return uses.map((use, index) => {
         const id = `${port.id}--connection-${index + 1}`;
         replacementIds.set(`${use.edgeId}\u0000${use.endpoint}`, id);
@@ -168,7 +203,8 @@ export function expandSharedPhysicalPorts(topology: NetworkTopology): NetworkTop
 }
 
 export function normalizePhysicalTopology(topology: NetworkTopology): NetworkTopology {
-  return expandSharedPhysicalPorts({ ...topology, edges: collapsePhysicalEdges(topology.edges) });
+  const collapsed = collapseSharedHardwareInterfacePorts(topology);
+  return expandSharedPhysicalPorts({ ...collapsed, edges: collapsePhysicalEdges(collapsed.edges) });
 }
 
 export function engineeringHardwareKind(

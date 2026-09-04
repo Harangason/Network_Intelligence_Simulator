@@ -12,8 +12,9 @@ import {
   type SimulationSnapshot,
 } from "@/lib/workflow-api";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
+import { withProjectParam } from "@/lib/user-settings";
 
-export function ResultsWorkbench() {
+export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);
   const [capacity, setCapacity] = useState<AnalysisSnapshot | null>(null);
   const [jobs, setJobs] = useState<Record<string, SimulationJob>>({});
@@ -82,6 +83,7 @@ export function ResultsWorkbench() {
   const runtime = observed?.runtime_metrics;
   const compareJob = compareSnapshot?.job_id ? jobs[compareSnapshot.job_id] : undefined;
   const compareRuntime = (compareJob?.result ?? compareSnapshot?.result)?.runtime_metrics;
+  const projectIdForLinks = initialProjectId;
   const runtimePeak = Math.max(0, ...(runtime?.networks ?? []).map((item) => item.peak_load_percent));
   const runtimeBurst = Math.max(0, ...(runtime?.networks ?? []).map((item) => item.burst_load_percent));
   const runtimeLatency = Math.max(0, ...(runtime?.routes ?? []).map((item) => item.maximum_end_to_end_latency_ms));
@@ -113,12 +115,12 @@ export function ResultsWorkbench() {
             <div className="metric-strip"><div className="metric"><span>Snapshot</span><strong>{selected.id.slice(0, 8)}</strong></div><div className="metric"><span>Run Status</span><strong>{job?.status ?? selected.status}</strong></div><div className="metric"><span>Prognose Peak</span><strong>{predicted ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Runtime Peak</span><strong>{runtime?.available ? `${runtimePeak.toFixed(2)} %` : "—"}</strong></div><div className="metric"><span>Trace Events</span><strong>{traceEvents?.toLocaleString("de-DE") ?? "—"}</strong></div></div>
             {compareRuntime?.available && <div className="impact-strip"><ResultMetric label="Δ Runtime Peak" value={`${(runtimePeak - comparePeak).toFixed(2)} %`} /><ResultMetric label="Δ Events" value={String((runtime?.summary?.event_count ?? 0) - (compareRuntime.summary?.event_count ?? 0))} /><ResultMetric label="Δ Drops" value={String((runtime?.summary?.dropped_frames ?? 0) - (compareRuntime.summary?.dropped_frames ?? 0))} /><ResultMetric label="Δ Timeouts" value={String((runtime?.summary?.timeouts ?? 0) - (compareRuntime.summary?.timeouts ?? 0))} /></div>}
             <div className="comparison-grid"><section><p className="eyebrow">Calculated</p><h3>Engineering-Prognose</h3><dl className="overview-list"><div><dt>Peak Load</dt><dd>{predicted ? `${Number(predicted.max_peak_load_percent).toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{predicted ? `${Number(predicted.worst_end_to_end_latency_ms).toFixed(3)} ms` : "—"}</dd></div><div><dt>Reserve</dt><dd>{predicted ? `${Number(predicted.minimum_capacity_reserve_percent).toFixed(2)} %` : "—"}</dd></div><div><dt>Netze</dt><dd>{predicted ? String(predicted.network_count) : "—"}</dd></div></dl></section><section><p className="eyebrow">Observed</p><h3>Simulation</h3><dl className="overview-list"><div><dt>Peak / Burst</dt><dd>{runtime?.available ? `${runtimePeak.toFixed(2)} / ${runtimeBurst.toFixed(2)} %` : "—"}</dd></div><div><dt>Worst E2E</dt><dd>{runtime?.available ? `${runtimeLatency.toFixed(3)} ms` : "—"}</dd></div><div><dt>Drops / Korruption</dt><dd>{runtime?.available ? `${runtime.summary?.dropped_frames ?? 0} / ${runtime.summary?.corrupted_frames ?? 0}` : "—"}</dd></div><div><dt>Timeouts / Jitter</dt><dd>{runtime?.available ? `${runtime.summary?.timeouts ?? 0} / ${runtime.summary?.jitter_violations ?? 0}` : "—"}</dd></div></dl></section></div>
-            {runtime?.available ? <RuntimeAnalysis runtime={runtime} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
+            {runtime?.available ? <RuntimeAnalysis projectId={projectIdForLinks} runtime={runtime} /> : <div className="workflow-blocker warning"><strong>Keine Runtime-Metriken</strong><span>{runtime?.reason ?? "Dieser historische Lauf wurde noch ohne Runtime-Analyse erzeugt."}</span></div>}
             <div className="source-version-table"><strong>Quellversionen</strong>{Object.entries(selected.source_versions ?? {}).map(([key, value]) => <span key={key}>{key.replaceAll("_", " ")} <b>v{value}</b></span>)}</div>
           </> : <div className="analysis-empty"><strong>Kein Lauf ausgewählt</strong><p>Ergebnisse werden nicht gelöscht; veraltete Läufe bleiben als historische Evidenz sichtbar.</p></div>}
         </div>
       </div>
-      <div className="analysis-footer-actions"><Link className="button secondary" href="/studio/simulation">Simulation öffnen</Link><Link className="button primary" href="/studio/engineering">Zum Engineering-Modell →</Link></div>
+      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam("/studio/simulation", projectIdForLinks)}>Simulation öffnen</Link><Link className="button primary" href={withProjectParam("/studio/engineering", projectIdForLinks)}>Zum Engineering-Modell →</Link></div>
     </section>
   );
 }
@@ -127,7 +129,7 @@ function ResultMetric({ label, value }: { label: string; value: string }) {
   return <div className="metric"><span>{label}</span><strong>{value}</strong></div>;
 }
 
-function RuntimeAnalysis({ runtime }: { runtime: RuntimeMetrics }) {
+function RuntimeAnalysis({ projectId, runtime }: { projectId?: string; runtime: RuntimeMetrics }) {
   return (
     <div className="runtime-analysis">
       <div className="metric-strip compact">
@@ -144,7 +146,7 @@ function RuntimeAnalysis({ runtime }: { runtime: RuntimeMetrics }) {
         <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Netz</th><th>Technologie</th><th>Ø / Peak / Burst</th><th>Queue Ø / Max</th><th>Drops</th><th>Korruption</th></tr></thead><tbody>{(runtime.networks ?? []).map((item) => <tr key={item.network_id}><td><strong>{item.network_id}</strong></td><td>{item.technology}</td><td>{item.average_load_percent.toFixed(2)} / {item.peak_load_percent.toFixed(2)} / {item.burst_load_percent.toFixed(2)} %</td><td>{item.average_queue_depth.toFixed(2)} / {item.maximum_queue_depth}</td><td>{item.dropped_count}</td><td>{item.corrupted_count}</td></tr>)}</tbody></table></div>
       </section>
       <section className="runtime-section">
-        <div className="panel-heading"><div><p className="eyebrow">Route drilldown</p><h3>Latency & Jitter</h3></div><Link className="button secondary tiny" href="/studio/routing">Routing öffnen</Link></div>
+        <div className="panel-heading"><div><p className="eyebrow">Route drilldown</p><h3>Latency & Jitter</h3></div><Link className="button secondary tiny" href={withProjectParam("/studio/routing", projectId)}>Routing öffnen</Link></div>
         <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Cycle Soll / Ist</th><th>Jitter Ø / p95 / p99</th><th>E2E Ø / Max</th><th>Queue Max</th><th>Violations</th></tr></thead><tbody>{(runtime.routes ?? []).map((item) => <tr key={item.route_id}><td><strong>{item.route_name}</strong><small>{item.route_id}</small></td><td>{item.network_id}</td><td>{item.configured_cycle_ms.toFixed(3)} / {item.actual_average_cycle_ms.toFixed(3)} ms</td><td>{item.average_jitter_ms.toFixed(3)} / {item.p95_jitter_ms.toFixed(3)} / {item.p99_jitter_ms.toFixed(3)} ms</td><td>{item.average_end_to_end_latency_ms.toFixed(3)} / {item.maximum_end_to_end_latency_ms.toFixed(3)} ms</td><td>{item.maximum_queue_delay_ms.toFixed(3)} ms</td><td><span className={`load-status ${item.status === "PASS" ? "load-normal" : "load-overload"}`}>{item.timeouts} T · {item.jitter_violations} J · {item.latency_violations ?? 0} L · {item.freshness_violations ?? 0} F</span></td></tr>)}</tbody></table></div>
       </section>
       {!!runtime.gateways?.length && <section className="runtime-section"><div className="panel-heading"><div><p className="eyebrow">Runtime gateways</p><h3>Throughput & Processing</h3></div></div><div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Gateway</th><th>Events</th><th>Throughput</th><th>Load</th><th>Queue</th><th>Processing / Conversion</th></tr></thead><tbody>{runtime.gateways.map((item) => <tr key={item.gateway_id}><td><strong>{item.gateway_id}</strong></td><td>{item.event_count}</td><td>{item.current_throughput_bps.toFixed(0)} / {item.maximum_throughput_bps.toFixed(0)} bit/s</td><td>{item.processing_load_percent.toFixed(3)} %</td><td>{item.average_queue_delay_ms.toFixed(3)} ms</td><td>{item.processing_delay_ms.toFixed(3)} / {item.protocol_conversion_delay_ms.toFixed(3)} ms</td></tr>)}</tbody></table></div></section>}

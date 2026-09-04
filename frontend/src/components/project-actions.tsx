@@ -5,7 +5,7 @@ import { useState } from "react";
 import { clearEngineeringAgentHistory } from "@/lib/agent-chat-history";
 import { openProjectBundleFromFile, saveProjectBundleToFile } from "@/lib/project-file";
 import { clearWorkflowApiCaches, exportProjectBundle, getWorkflowSummary, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
-import { normalizeProjectId, readUserSettings, writeUserSettings } from "@/lib/user-settings";
+import { normalizeProjectId, readUserSettings, withProjectParam, writeUserSettings } from "@/lib/user-settings";
 import {
   ENGINEERING_AGENT_PENDING_TASK_KEY,
   ENGINEERING_AGENT_PENDING_WIZARD_KEY,
@@ -65,11 +65,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       setActiveProject(nextProjectId);
       notifyAgentAboutNewProject(nextProjectId);
       setMessage(`Neu: leerer Workspace ${nextProjectId}`);
-      if (window.location.pathname === "/studio/engineering") {
-        window.location.reload();
-      } else {
-        window.location.assign("/studio/engineering");
-      }
+      window.location.assign(withProjectParam("/studio/engineering", nextProjectId));
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Neuer Workspace konnte nicht angelegt werden.");
     } finally {
@@ -120,7 +116,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       await getWorkflowSummary();
       setClearDialogOpen(false);
       setMessage(`Geleert: ${current} · Neuer Workspace: ${nextProjectId}`);
-      window.location.reload();
+      window.location.assign(withProjectParam(`${window.location.pathname}${window.location.search}`, nextProjectId));
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : "Workspace konnte nicht geleert werden.");
     } finally {
@@ -137,7 +133,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
       const imported = await importProjectBundle(bundle);
       setActiveProject(imported.project_id);
       setMessage(`Geöffnet: ${imported.project_id}`);
-      router.push("/studio");
+      router.push(withProjectParam("/studio", imported.project_id));
     } catch (caught) {
       if ((caught as { name?: string }).name !== "AbortError") {
         setMessage(caught instanceof Error ? caught.message : "Projekt konnte nicht geöffnet werden.");

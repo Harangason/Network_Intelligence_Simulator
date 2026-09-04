@@ -54,6 +54,35 @@ SEMANTIC_NOISE = {
 }
 
 SYSTEM_NAME_DUPLICATE_THRESHOLD = 0.86
+INDUSTRY_SYSTEM_ALIASES = {
+    "automotive": {
+        "motion": "motorsteuerung",
+        "antrieb": "motorsteuerung",
+        "antriebs": "motorsteuerung",
+        "motionantriebs": "motorsteuerung",
+        "motor": "motorsteuerung",
+        "motorsteuerung": "motorsteuerung",
+        "getriebe": "getriebesteuerung",
+        "getriebesteuerung": "getriebesteuerung",
+        "lenkungs": "lenkung",
+        "lenkung": "lenkung",
+        "klima": "klimatisierung",
+        "klimatisierung": "klimatisierung",
+        "thermal": "thermomanagement",
+        "thermomanagement": "thermomanagement",
+    },
+}
+SYSTEM_NAME_PLACEHOLDERS = {
+    "ecu",
+    "ecus",
+    "function",
+    "functions",
+    "funktion",
+    "funktionen",
+    "funktions",
+    "funktions ecu",
+    "funktions ecus",
+}
 HARDWARE_NAME_SUFFIX = re.compile(
     r"(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuerger(?:ä|ae|a|�)t))+(?P<instance>[-_ ]\d+)?$",
     flags=re.IGNORECASE,
@@ -66,6 +95,13 @@ def normalize_hardware_name(value: Any) -> str:
     original = str(value or "").strip()
     normalized = HARDWARE_NAME_SUFFIX.sub(lambda match: match.group("instance") or "", original).strip("-_ ")
     return normalized or original
+
+
+def is_placeholder_system_name(value: Any) -> bool:
+    normalized = normalize_hardware_name(value).strip().casefold().replace("_", "-")
+    normalized = re.sub(r"\s*-\s*", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized in SYSTEM_NAME_PLACEHOLDERS
 
 
 def _name_tokens(value: Any) -> list[str]:
@@ -135,9 +171,32 @@ def system_name_similarity(left: Any, right: Any) -> float:
     return semantic_name_similarity(left, right)
 
 
-def equivalent_system_names(left: Any, right: Any) -> tuple[bool, float]:
+def _industry_system_name(value: Any, domain: Any = None) -> str:
+    normalized = normalize_hardware_name(value).lower()
+    normalized = normalized.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    compact = re.sub(r"[^a-z0-9]+", "", normalized)
+    profile = re.sub(r"[^a-z0-9_]+", "", str(domain or "").strip().lower())
+    return INDUSTRY_SYSTEM_ALIASES.get(profile, {}).get(compact, compact)
+
+
+def is_canonical_system_name(value: Any, domain: Any = None) -> bool:
+    """Return whether a controlled industry alias already uses its canonical spelling."""
+
+    normalized = normalize_hardware_name(value).lower()
+    normalized = normalized.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss")
+    compact = re.sub(r"[^a-z0-9]+", "", normalized)
+    profile = re.sub(r"[^a-z0-9_]+", "", str(domain or "").strip().lower())
+    aliases = INDUSTRY_SYSTEM_ALIASES.get(profile, {})
+    return bool(compact) and aliases.get(compact, compact) == compact
+
+
+def equivalent_system_names(left: Any, right: Any, *, domain: Any = None) -> tuple[bool, float]:
     """Return whether two names denote the same system with conservative confidence."""
 
+    left_industry_name = _industry_system_name(left, domain)
+    right_industry_name = _industry_system_name(right, domain)
+    if left_industry_name and left_industry_name == right_industry_name:
+        return True, 1.0
     similarity = system_name_similarity(left, right)
     return similarity >= SYSTEM_NAME_DUPLICATE_THRESHOLD, similarity
 

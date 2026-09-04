@@ -180,6 +180,20 @@ test("neu 9 system scope generates all 100 actuators alongside sensors, ECUs and
   }
 });
 
+test("class 0 to 2 sensor and actuator templates start on LIN", () => {
+  const result = extractEngineeringSpecification(SAMPLE, { sensors: 100, actuators: 100 });
+  const basicSensors = result.chains.filter((chain) =>
+    chain.device_type === "SensorController"
+      && !/camera|kamera|vision|radar|lidar|scanner|ultrasonic/i.test(chain.hardware_name),
+  );
+  const actuators = result.chains.filter((chain) => chain.device_type === "ActuatorController");
+
+  assert.ok(basicSensors.length > 0);
+  assert.ok(actuators.length > 0);
+  assert.ok(basicSensors.every((chain) => chain.interface_type === "LIN"));
+  assert.ok(actuators.every((chain) => chain.interface_type === "LIN"));
+});
+
 test("gateway-direct generation does not add a central computer beside the system gateway", () => {
   const result = extractEngineeringSpecification(SAMPLE, { actuators: 100 });
   const centralComputerNames = result.chains
@@ -214,7 +228,7 @@ test("corrected quantities can exceed the initial template catalog", () => {
 
 test("generated system variants follow the selected industry without ECU suffixes", () => {
   const examples = [
-    ["Automotive", "automotive", "Thermal"],
+    ["Automotive", "automotive", "Kuehlkreislaufsteuerung"],
     ["Industrial Automation", "industrial_automation", "SPSLeitsystem"],
     ["Embedded Systems", "embedded_systems", "MainControl"],
     ["Aerospace / Defense", "aerospace", "FlightManagement"],
@@ -236,7 +250,38 @@ test("generated system variants follow the selected industry without ECU suffixe
   }
 });
 
-test("generated sensor templates are industry specific", () => {
+test("automotive prose headings do not create generic or synonymous duplicate ECUs", () => {
+  const result = extractEngineeringSpecification(`Industrie: Automotive
+- 50 Funktions-ECUs
+- 1 zentrales Gateway
+
+## 1. Anforderungen
+- je Funktion-ECU min 5 und max 20 Signale anlegen
+
+## 9. Beispiel Motion-/Antriebs-ECU
+- Motorsteuergeraet
+- Getriebesteuergeraet
+- Lenkungssteuergeraet
+- Fahrwerksteuergeraet
+- Klimasteuergeraet
+`);
+  const ecuNames = result.chains
+    .filter((chain) => chain.device_type === "ECU")
+    .map((chain) => chain.hardware_name);
+
+  assert.equal(ecuNames.length, 50);
+  assert.equal(new Set(ecuNames.map((name) => name.toLowerCase())).size, 50);
+  assert.equal(ecuNames.filter((name) => name === "Motorsteuerung").length, 1);
+  assert.equal(ecuNames.filter((name) => name === "Getriebesteuerung").length, 1);
+  assert.equal(ecuNames.filter((name) => name === "Lenkung").length, 1);
+  assert.equal(ecuNames.filter((name) => name === "Fahrwerk").length, 1);
+  assert.equal(ecuNames.filter((name) => name === "Klimatisierung").length, 1);
+  for (const invalid of ["Funktion", "Motion", "Antriebs", "Motor", "Getriebe", "Lenkungs", "Klima", "Thermal", "Fahrdynamik"]) {
+    assert.equal(ecuNames.includes(invalid), false, invalid);
+  }
+});
+
+test("generated sensor names stay industry specific while basic devices start on LIN", () => {
   const industrial = extractEngineeringSpecification("Industrie: Industrial Automation\n- 2 Sensoren\n- 1 ECU");
   const embedded = extractEngineeringSpecification("Industrie: Embedded Systems\n- 2 Sensoren\n- 1 ECU");
 
@@ -246,7 +291,7 @@ test("generated sensor templates are industry specific", () => {
   );
   assert.deepEqual(
     embedded.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.interface_type),
-    ["I2C", "I2C"],
+    ["LIN", "LIN"],
   );
   assert.equal(industrial.chains.some((chain) => /^FrontLeftWheel/.test(chain.hardware_name)), false);
 });

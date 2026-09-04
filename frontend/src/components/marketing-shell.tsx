@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { withProjectParam } from "@/lib/user-settings";
 import { ProjectActions } from "./project-actions";
 
 const navigation = [
@@ -10,6 +12,21 @@ const navigation = [
   { href: "/workflow", label: "Workflow" },
   { href: "/about", label: "About" },
 ];
+
+type ProjectAwareLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
+  href: string;
+  projectId?: string;
+};
+
+export function ProjectAwareLink({ href, projectId, ...props }: ProjectAwareLinkProps) {
+  const [resolvedHref, setResolvedHref] = useState(href);
+
+  useEffect(() => {
+    setResolvedHref(withProjectParam(href, projectId));
+  }, [href, projectId]);
+
+  return <Link {...props} href={resolvedHref} />;
+}
 
 export function LogoMark() {
   return (
@@ -31,20 +48,20 @@ export function MarketingNav() {
   const pathname = usePathname();
   return (
     <nav className="landing-nav" aria-label="Hauptnavigation">
-      <Link className="landing-logo" href="/" aria-label="Communication Simulator Startseite">
+      <ProjectAwareLink className="landing-logo" href="/" aria-label="Communication Simulator Startseite">
         <LogoMark />
         <span>communication<br />simulator</span>
-      </Link>
+      </ProjectAwareLink>
       <div className="nav-links">
         {navigation.map((item) => (
-          <Link aria-current={pathname === item.href ? "page" : undefined} className={pathname === item.href ? "active" : ""} href={item.href} key={item.href}>
+          <ProjectAwareLink aria-current={pathname === item.href ? "page" : undefined} className={pathname === item.href ? "active" : ""} href={item.href} key={item.href}>
             {item.label}
-          </Link>
+          </ProjectAwareLink>
         ))}
       </div>
       <div className="landing-nav-actions">
         <ProjectActions className="landing-project-actions" showMessage={false} />
-        <Link className="nav-cta" href="/studio">Open studio <Arrow /></Link>
+        <ProjectAwareLink className="nav-cta" href="/studio">Open studio <Arrow /></ProjectAwareLink>
       </div>
     </nav>
   );
@@ -53,9 +70,9 @@ export function MarketingNav() {
 export function MarketingFooter() {
   return (
     <footer className="landing-footer">
-      <Link className="landing-logo footer-logo" href="/"><LogoMark /><span>communication<br />simulator</span></Link>
+      <ProjectAwareLink className="landing-logo footer-logo" href="/"><LogoMark /><span>communication<br />simulator</span></ProjectAwareLink>
       <p>Simulation infrastructure for connected systems.</p>
-      <div>{navigation.map((item) => <Link href={item.href} key={item.href}>{item.label}</Link>)}<Link href="/studio">Studio</Link></div>
+      <div>{navigation.map((item) => <ProjectAwareLink href={item.href} key={item.href}>{item.label}</ProjectAwareLink>)}<ProjectAwareLink href="/studio">Studio</ProjectAwareLink></div>
       <span>© 2026 CS LAB</span>
     </footer>
   );

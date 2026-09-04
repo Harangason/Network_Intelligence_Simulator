@@ -436,6 +436,62 @@ def test_topology_layout_change_ignores_only_visual_fields():
     assert is_topology_layout_only_change(current, renamed) is False
 
 
+def test_topology_layout_is_stored_as_project_scoped_node_rows(monkeypatch):
+    rows = []
+
+    class Result:
+        def __init__(self, value=None):
+            self.value = value
+
+        def fetchall(self):
+            return self.value or []
+
+    class Connection:
+        def execute(self, query, parameters=None):
+            statement = " ".join(str(query).split())
+            if statement.startswith("INSERT INTO engineering_workflow_projects"):
+                return Result()
+            if statement.startswith("DELETE FROM engineering_topology_layouts"):
+                rows.clear()
+                return Result()
+            if statement.startswith("INSERT INTO engineering_topology_layouts"):
+                rows.append({
+                    "node_id": parameters[3],
+                    "x": parameters[4],
+                    "y": parameters[5],
+                    "width": parameters[6],
+                    "height": parameters[7],
+                    "ports": json.loads(parameters[8]),
+                    "updated_at": None,
+                })
+                return Result()
+            if "FROM engineering_topology_layouts" in statement:
+                return Result(list(rows))
+            raise AssertionError(statement)
+
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    service = WorkflowStatusService("project-layout")
+    saved = service.save_topology_layout("topology-a", 16, [{
+        "node_id": "motor",
+        "x": 120,
+        "y": 240,
+        "width": 168,
+        "ports": {"motor-lin": {"side": "bottom", "offset": 1.5}},
+    }])
+
+    assert saved["project_id"] == "project-layout"
+    assert saved["topology_key"] == "topology-a"
+    assert saved["nodes"] == [{
+        "node_id": "motor",
+        "x": 120.0,
+        "y": 240.0,
+        "width": 168.0,
+        "height": None,
+        "ports": {"motor-lin": {"side": "bottom", "offset": 1.0}},
+        "updated_at": None,
+    }]
+
+
 def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
     state = {
         "versions": default_versions(),

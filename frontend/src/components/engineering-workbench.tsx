@@ -132,11 +132,11 @@ const RESOURCE_HIERARCHY: Partial<
 };
 
 const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = {
-  "hardware-nodes": [],
+  "hardware-nodes": ["hardware-interfaces", "functions"],
   "hardware-interfaces": ["hardware-nodes", "messages", "functions", "interfaces"],
-  functions: ["hardware-nodes"],
+  functions: ["hardware-nodes", "interfaces", "messages"],
   interfaces: ["functions", "hardware-nodes", "messages"],
-  messages: ["interfaces", "hardware-interfaces"],
+  messages: ["interfaces", "hardware-interfaces", "signals"],
   signals: ["messages", "interfaces", "functions"],
 };
 
@@ -909,6 +909,24 @@ export function EngineeringWorkbench() {
     setRefreshKey((key) => key + 1);
   }
 
+  function navigateToObject(targetResource: EngineeringResource, targetId: string) {
+    const params = new URLSearchParams(window.location.search);
+    params.set("resource", targetResource);
+    params.set("object", targetId);
+    params.delete("type");
+    params.delete("edit");
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    setShowStructureTree(false);
+    setShowCreate(false);
+    setDeepLinkTarget({ id: targetId, edit: false });
+    if (targetResource === resource) {
+      setSelectedId(targetId);
+    } else {
+      setSelectedId(null);
+      setResource(targetResource);
+    }
+  }
+
   if (error) {
     return (
       <>
@@ -957,6 +975,7 @@ export function EngineeringWorkbench() {
                   setResource(res);
                   setShowCreate(false);
                   setHardwarePreset(null);
+                  setDeepLinkTarget(null);
                 }}
                 role="tab"
                 type="button"
@@ -1163,6 +1182,7 @@ export function EngineeringWorkbench() {
                               setSelectedId(null);
                               refresh();
                             }}
+                            onNavigate={navigateToObject}
                           />
                         </td>
                       </tr>
@@ -2368,6 +2388,7 @@ function DetailPanel({
   schema,
   onChanged,
   onDeleted,
+  onNavigate,
 }: {
   item: EngineeringObject;
   initialEdit?: boolean;
@@ -2379,6 +2400,7 @@ function DetailPanel({
   schema: EngineeringSchema | null;
   onChanged: () => void;
   onDeleted: () => void;
+  onNavigate: (targetResource: EngineeringResource, targetId: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -2454,9 +2476,14 @@ function DetailPanel({
               <p className={`eyebrow eng-object-label ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{engineeringObjectTypeLabel(engineeringResourceType(resource))}</p>
               <h2>{item.name}</h2>
             </div>
-            <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
-              {showEdit ? "Abbrechen" : "Bearbeiten"}
-            </button>
+            <div className="eng-detail-actions">
+              <button className="button secondary tiny" onClick={() => setShowEdit((value) => !value)} type="button">
+                {showEdit ? "Abbrechen" : "Bearbeiten"}
+              </button>
+              <button className="button secondary tiny" disabled={busy || item.lifecycle_state !== "draft"} onClick={remove} type="button">
+                Löschen
+              </button>
+            </div>
           </div>
           {showEdit && (
             <EditObjectForm
@@ -2489,11 +2516,8 @@ function DetailPanel({
               <dd>{item.approval_state}</dd>
             </div>
           </dl>
-          {resource === "interfaces" && "interface_type" in item && (
-            <InterfaceMessageList interfaceItem={item} interfaces={peerItems} messages={referenceObjects} />
-          )}
           {resource === "hardware-interfaces" && "technology" in item && (
-            <HardwareInterfaceOverview hardwareInterface={item} referenceObjects={referenceObjects} referenceNames={referenceNames} />
+            <HardwareInterfaceOverview hardwareInterface={item} onNavigate={onNavigate} referenceObjects={referenceObjects} referenceNames={referenceNames} />
           )}
           {resource === "hardware-nodes" && "device_type" in item && (
             <HardwareClassificationOverview item={item} />
@@ -2501,6 +2525,14 @@ function DetailPanel({
           {resource === "signals" && "start_bit" in item && (
             <SignalParameterOverview item={item} referenceNames={referenceNames} />
           )}
+          <TraceabilityNextLevel
+            item={item}
+            peerItems={peerItems}
+            referenceNames={referenceNames}
+            referenceObjects={referenceObjects}
+            resource={resource}
+            onNavigate={onNavigate}
+          />
           {item.description && <p className="muted" style={{ marginTop: 14, fontSize: 12 }}>{item.description}</p>}
 
           <div className="eng-governance-row">
@@ -2544,11 +2576,6 @@ function DetailPanel({
 
           {notice && <div className="notice error">{notice}</div>}
 
-          <div className="form-actions">
-            <button className="button secondary" disabled={busy || item.lifecycle_state !== "draft"} onClick={remove} type="button">
-              Löschen
-            </button>
-          </div>
         </div>
       </details>
 
@@ -2640,12 +2667,193 @@ function isEngMessage(item: EngineeringObject): item is Extract<EngineeringObjec
   return "interface_id" in item && "message_id_hex" in item;
 }
 
+function isEngFunction(item: EngineeringObject): item is Extract<EngineeringObject, { hardware_node_id: string | null }> {
+  return item.object_type === "Function" && "hardware_node_id" in item;
+}
+
 function isEngInterface(item: EngineeringObject): item is Extract<EngineeringObject, { interface_type: string }> {
   return "interface_type" in item;
 }
 
 function isHardwareNetworkInterface(item: EngineeringObject): item is Extract<EngineeringObject, { technology: string }> {
   return "technology" in item && "network_ref" in item;
+}
+
+function isEngSignal(item: EngineeringObject): item is EngSignal {
+  return item.object_type === "Signal" && "message_id" in item;
+}
+
+type TraceShortcut = {
+  id: string;
+  label: string;
+  resource: EngineeringResource;
+  title: string;
+};
+
+type TraceEntry = {
+  item: EngineeringObject;
+  meta: string;
+  resource: EngineeringResource;
+  shortcut?: TraceShortcut;
+};
+
+type TraceGroup = {
+  emptyText: string;
+  entries: TraceEntry[];
+  label: string;
+  resource: EngineeringResource;
+};
+
+function uniqueEngineeringObjects(objects: EngineeringObject[]) {
+  const seen = new Set<string>();
+  return objects.filter((object) => {
+    if (seen.has(object.id)) return false;
+    seen.add(object.id);
+    return true;
+  });
+}
+
+function sortedEngineeringObjects<T extends EngineeringObject>(objects: T[]) {
+  return [...objects].sort((left, right) => compareEngineeringTableValues(left.name, right.name));
+}
+
+function TraceabilityNextLevel({
+  item,
+  peerItems,
+  referenceNames,
+  referenceObjects,
+  resource,
+  onNavigate,
+}: {
+  item: EngineeringObject;
+  peerItems: EngineeringObject[];
+  referenceNames: Record<string, string>;
+  referenceObjects: EngineeringObject[];
+  resource: EngineeringResource;
+  onNavigate: (targetResource: EngineeringResource, targetId: string) => void;
+}) {
+  const knownObjects = uniqueEngineeringObjects([...peerItems, ...referenceObjects]);
+  const functions = knownObjects.filter(isEngFunction);
+  const hardwareInterfaces = knownObjects.filter(isHardwareNetworkInterface);
+  const interfaces = knownObjects.filter(isEngInterface);
+  const messages = knownObjects.filter(isEngMessage);
+  const signals = knownObjects.filter(isEngSignal);
+  const groups: TraceGroup[] = [];
+
+  if (resource === "hardware-nodes" && "device_type" in item) {
+    const childFunctions = sortedEngineeringObjects(functions.filter((candidate) => candidate.hardware_node_id === item.id));
+    const childHardwareInterfaces = sortedEngineeringObjects(hardwareInterfaces.filter((candidate) => candidate.hardware_node_id === item.id));
+    groups.push({
+      emptyText: "Keine Funktion ist diesem Hardware-Knoten direkt zugeordnet.",
+      entries: childFunctions.map((child) => ({
+        item: child,
+        meta: child.description || child.domain || "Funktion",
+        resource: "functions",
+      })),
+      label: "Funktionen",
+      resource: "functions",
+    });
+    groups.push({
+      emptyText: "Kein Hardware Interface ist diesem Hardware-Knoten direkt zugeordnet.",
+      entries: childHardwareInterfaces.map((child) => ({
+        item: child,
+        meta: [child.technology, child.network_ref].filter(Boolean).join(" · ") || "Hardware Interface",
+        resource: "hardware-interfaces",
+      })),
+      label: "Hardware Interfaces",
+      resource: "hardware-interfaces",
+    });
+  }
+
+  if (resource === "functions" && isEngFunction(item)) {
+    const childInterfaces = sortedEngineeringObjects(interfaces.filter((candidate) => candidate.function_id === item.id));
+    groups.push({
+      emptyText: "Kein Interface ist dieser Funktion direkt zugeordnet.",
+      entries: childInterfaces.map((child) => {
+        const childMessages = sortedEngineeringObjects(messages.filter((message) => message.interface_id === child.id));
+        const firstMessage = childMessages[0];
+        return {
+          item: child,
+          meta: [child.interface_type, child.hardware_node_id ? referenceName(referenceNames, child.hardware_node_id) : ""].filter(Boolean).join(" · ") || "Interface",
+          resource: "interfaces",
+          shortcut: firstMessage ? {
+            id: firstMessage.id,
+            label: childMessages.length === 1 ? "Nachricht" : `${childMessages.length} Nachrichten`,
+            resource: "messages",
+            title: firstMessage.name,
+          } : undefined,
+        };
+      }),
+      label: "Interfaces",
+      resource: "interfaces",
+    });
+  }
+
+  if (resource === "interfaces" && isEngInterface(item)) {
+    const childMessages = sortedEngineeringObjects(messages.filter((message) => message.interface_id === item.id));
+    groups.push({
+      emptyText: "Keine Nachricht ist diesem Interface direkt zugeordnet.",
+      entries: childMessages.map((child) => ({
+        item: child,
+        meta: [child.message_id_hex || "keine ID", child.direction || "Richtung offen", signalParameterValue(child.cycle_ms, "ms"), `DLC ${signalParameterValue(child.dlc)}`].join(" · "),
+        resource: "messages",
+      })),
+      label: "Nachrichten",
+      resource: "messages",
+    });
+  }
+
+  if (resource === "messages" && isEngMessage(item)) {
+    const childSignals = sortedEngineeringObjects(signals.filter((signal) => signal.message_id === item.id));
+    groups.push({
+      emptyText: "Kein Signal ist dieser Nachricht direkt zugeordnet.",
+      entries: childSignals.map((child) => ({
+        item: child,
+        meta: [child.display_name || child.name, signalParameterValue(child.start_bit), signalParameterValue(child.length_bits, "Bit"), child.data_type || ""].filter(Boolean).join(" · "),
+        resource: "signals",
+      })),
+      label: "Signale",
+      resource: "signals",
+    });
+  }
+
+  const visibleGroups = groups.filter((group) => group.entries.length > 0 || group.resource !== "hardware-interfaces");
+  if (visibleGroups.length === 0) return null;
+
+  return (
+    <section className="eng-trace-next-level" aria-label="Nächste Ebene">
+      <div className="section-title signal-parameter-heading">
+        <span>Nächste Ebene</span>
+      </div>
+      {visibleGroups.map((group) => (
+        <div className="eng-trace-group" key={group.resource}>
+          <div className="eng-trace-group-heading">
+            <strong>{group.label}</strong>
+            <span>{group.entries.length}</span>
+          </div>
+          {group.entries.length === 0 ? (
+            <p className="eng-inline-empty">{group.emptyText}</p>
+          ) : (
+            <div className="eng-trace-list">
+              {group.entries.map((entry) => (
+                <div className={`eng-trace-entry eng-object-surface ${engineeringObjectTypeClass(engineeringResourceType(entry.resource))}`} key={entry.item.id}>
+                  <button className="eng-trace-main" onClick={() => onNavigate(entry.resource, entry.item.id)} type="button">
+                    <strong>{entry.item.name}</strong>
+                    <small>{entry.meta}</small>
+                  </button>
+                  {entry.shortcut && (
+                    <button className="eng-trace-shortcut" onClick={() => onNavigate(entry.shortcut!.resource, entry.shortcut!.id)} title={entry.shortcut.title} type="button">
+                      {entry.shortcut.label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function HardwareClassificationOverview({ item }: { item: Extract<EngineeringObject, { device_type: string }> }) {
@@ -2698,10 +2906,12 @@ function HardwareClassificationOverview({ item }: { item: Extract<EngineeringObj
 
 function HardwareInterfaceOverview({
   hardwareInterface,
+  onNavigate,
   referenceObjects,
   referenceNames,
 }: {
   hardwareInterface: Extract<EngineeringObject, { technology: string }>;
+  onNavigate: (targetResource: EngineeringResource, targetId: string) => void;
   referenceObjects: EngineeringObject[];
   referenceNames: Record<string, string>;
 }) {
@@ -2748,13 +2958,13 @@ function HardwareInterfaceOverview({
       ) : (
         <div className="interface-message-list" aria-label="Messages auf Hardware Interface">
           {messages.map((message) => (
-            <div key={message.id}>
+            <button className="interface-message-link" key={message.id} onClick={() => onNavigate("messages", message.id)} type="button">
               <strong>{message.name}<small>{message.interface_id ? referenceName(referenceNames, message.interface_id) : "ohne logisches Interface"}</small></strong>
               <span>{message.message_id_hex ?? "keine ID"}</span>
               <span>{message.direction ?? "—"}</span>
               <span>{signalParameterValue(message.cycle_ms, "ms")}</span>
               <span>DLC {signalParameterValue(message.dlc)}</span>
-            </div>
+            </button>
           ))}
         </div>
       )}

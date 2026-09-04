@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ProjectAwareLink } from "@/components/marketing-shell";
 import { SimulationResult } from "@/components/simulation-result";
 
 export default async function SimulationPage({
@@ -10,9 +10,9 @@ export default async function SimulationPage({
   return (
     <main className="shell detail-shell">
       <header className="topbar">
-        <Link className="back-link" href="/studio">
+        <ProjectAwareLink className="back-link" href="/studio">
           ← Neue Simulation
-        </Link>
+        </ProjectAwareLink>
         <span className="mono muted">{id}</span>
       </header>
       <SimulationResult jobId={id} standalone />

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Arrow, MarketingShell, PageHero } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
 
 const steps = [
   { index: "01", label: "Configure", title: "Choose the system boundary.", text: "Wähle Anwendungsbereich und Protokoll. Lege Knoten, Timing, Payload, Bitrate und Fehlerwahrscheinlichkeiten fest.", command: "domain: automotive\nprotocol: can_fd\nnodes: 12" },
@@ -15,7 +14,7 @@ export default function WorkflowPage() {
       <section className="workflow-steps">
         {steps.map((step) => <article className="workflow-step" key={step.index}><div className="step-index">{step.index}</div><div><p className="section-label">{step.label}</p><h2>{step.title}</h2><p>{step.text}</p></div><pre><code>{step.command}</code></pre></article>)}
       </section>
-      <section className="page-cta"><p className="section-label">Try the complete flow</p><h2>Your first trace is one configuration away.</h2><Link className="primary-link" href="/studio">Start workflow <Arrow /></Link></section>
+      <section className="page-cta"><p className="section-label">Try the complete flow</p><h2>Your first trace is one configuration away.</h2><ProjectAwareLink className="primary-link" href="/studio">Start workflow <Arrow /></ProjectAwareLink></section>
     </MarketingShell>
   );
 }

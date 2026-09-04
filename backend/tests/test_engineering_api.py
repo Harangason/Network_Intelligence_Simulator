@@ -54,6 +54,13 @@ def test_create_get_update_list_delete_hardware_node() -> None:
     assert updated["description"] == "Updated description"
     assert updated["version"] == 2
 
+    unchanged_resp = client.patch(
+        f"/api/engineering/hardware-nodes/{node_id}",
+        json={"description": "Updated description", "actor": "pytest"},
+    )
+    assert unchanged_resp.status_code == 200
+    assert unchanged_resp.get_json()["version"] == 2
+
     list_resp = client.get("/api/engineering/hardware-nodes")
     assert list_resp.status_code == 200
     listed = list_resp.get_json()

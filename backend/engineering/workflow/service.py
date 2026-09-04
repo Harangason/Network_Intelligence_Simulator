@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime, timezone
 from typing import Any
 
@@ -771,6 +772,112 @@ class WorkflowStatusService:
             status=check["status"],
             actor=actor,
         )
+
+    def get_topology_layout(self, topology_key: str, layout_version: int) -> dict[str, Any]:
+        key = str(topology_key or "").strip()
+        version = int(layout_version)
+        if not key or version < 1:
+            raise ValueError("topology_key und eine positive layout_version sind erforderlich.")
+        with get_connection() as connection:
+            self._ensure(connection)
+            rows = connection.execute(
+                """
+                SELECT node_id, x, y, width, height, ports, updated_at
+                FROM engineering_topology_layouts
+                WHERE project_id = %s AND topology_key = %s AND layout_version = %s
+                ORDER BY node_id
+                """,
+                (self.project_id, key, version),
+            ).fetchall()
+        return {
+            "project_id": self.project_id,
+            "topology_key": key,
+            "layout_version": version,
+            "nodes": [self._serialize_row(row) for row in rows],
+        }
+
+    def save_topology_layout(
+        self,
+        topology_key: str,
+        layout_version: int,
+        nodes: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        key = str(topology_key or "").strip()
+        version = int(layout_version)
+        if not key or version < 1 or not isinstance(nodes, list):
+            raise ValueError("topology_key, layout_version und nodes sind erforderlich.")
+
+        normalized: dict[str, dict[str, Any]] = {}
+        for raw_node in nodes:
+            if not isinstance(raw_node, dict):
+                raise ValueError("Jeder Layout-Knoten muss ein Objekt sein.")
+            node_id = str(raw_node.get("node_id") or "").strip()
+            try:
+                x = float(raw_node["x"])
+                y = float(raw_node["y"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError("Jeder Layout-Knoten benoetigt endliche x/y-Koordinaten.") from error
+            if not node_id or not math.isfinite(x) or not math.isfinite(y):
+                raise ValueError("Jeder Layout-Knoten benoetigt ID und endliche x/y-Koordinaten.")
+
+            dimensions: dict[str, float | None] = {}
+            for field in ("width", "height"):
+                value = raw_node.get(field)
+                if value is None:
+                    dimensions[field] = None
+                    continue
+                number = float(value)
+                if not math.isfinite(number) or number <= 0:
+                    raise ValueError(f"{field} muss positiv und endlich sein.")
+                dimensions[field] = number
+
+            raw_ports = raw_node.get("ports") or {}
+            if not isinstance(raw_ports, dict):
+                raise ValueError("ports muss ein Objekt sein.")
+            ports: dict[str, dict[str, Any]] = {}
+            for port_id, raw_port in raw_ports.items():
+                if not isinstance(raw_port, dict) or raw_port.get("side") not in {"left", "right", "top", "bottom"}:
+                    raise ValueError("Jeder Layout-Port benoetigt eine gueltige Seite.")
+                offset = float(raw_port.get("offset", 0.5))
+                if not math.isfinite(offset):
+                    raise ValueError("Port-Offsets muessen endlich sein.")
+                ports[str(port_id)] = {"side": raw_port["side"], "offset": max(0.0, min(1.0, offset))}
+
+            normalized[node_id] = {
+                "node_id": node_id,
+                "x": x,
+                "y": y,
+                "width": dimensions["width"],
+                "height": dimensions["height"],
+                "ports": ports,
+            }
+
+        with get_connection() as connection:
+            self._ensure(connection)
+            connection.execute(
+                "DELETE FROM engineering_topology_layouts WHERE project_id = %s AND layout_version = %s",
+                (self.project_id, version),
+            )
+            for node in normalized.values():
+                connection.execute(
+                    """
+                    INSERT INTO engineering_topology_layouts
+                        (project_id, topology_key, layout_version, node_id, x, y, width, height, ports)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb)
+                    """,
+                    (
+                        self.project_id,
+                        key,
+                        version,
+                        node["node_id"],
+                        node["x"],
+                        node["y"],
+                        node["width"],
+                        node["height"],
+                        _json(node["ports"]),
+                    ),
+                )
+        return self.get_topology_layout(key, version)
 
     def create_analysis_snapshot(
         self,

@@ -2,6 +2,7 @@ from backend.engineering.structure_rules import (
     adapt_structure_name,
     equivalent_system_names,
     infer_device_type,
+    is_placeholder_system_name,
     normalize_hardware_name,
     recommend_structure_name,
     score_structure_parent,
@@ -17,6 +18,12 @@ def test_hardware_name_keeps_type_in_separate_field():
     assert normalize_hardware_name("Airbag-Steuergeraet-2") == "Airbag-2"
     assert normalize_hardware_name("System-Gateway") == "System"
     assert normalize_hardware_name("ECU") == "ECU"
+
+
+def test_generic_object_labels_are_not_valid_hardware_system_names():
+    for name in ("Funktion", "Function", "Funktions-ECU", "ECU"):
+        assert is_placeholder_system_name(name)
+    assert not is_placeholder_system_name("Motorsteuerung")
 
 
 def test_infer_device_type_from_engineering_name():
@@ -84,6 +91,15 @@ def test_system_synonyms_are_precise_enough_for_adas():
     assert semantic_name_similarity("ADAS", "Driver Door ECU") < 0.86
     assert equivalent_system_names("ADAS", "Fahrerassistenz-ECU") == (True, 1.0)
     assert equivalent_system_names("Abgasnachbehandlung-ECU", "Airbag-ECU")[0] is False
+
+
+def test_automotive_system_aliases_are_exact_and_domain_scoped():
+    for alias in ("Motion", "Antriebs-ECU", "Motorsteuergeraet", "Motor"):
+        assert equivalent_system_names(alias, "Motorsteuerung", domain="automotive") == (True, 1.0)
+    assert equivalent_system_names("Getriebe", "Getriebesteuerung", domain="automotive") == (True, 1.0)
+    assert equivalent_system_names("Lenkungs", "Lenkung", domain="automotive") == (True, 1.0)
+    assert equivalent_system_names("Motor", "Motorsteuerung", domain="building_automation")[0] is False
+    assert equivalent_system_names("Lenkung", "Fahrwerk", domain="automotive")[0] is False
 
 
 def test_copied_names_are_adapted_to_the_target_ecu():

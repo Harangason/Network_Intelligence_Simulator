@@ -12,7 +12,9 @@ export type IndustrySensorTemplate = {
 export type IndustryTemplateProfile = {
   gatewayName?: string;
   id: string;
+  ignoredSystemNames?: readonly string[];
   label: string;
   sensorTemplates: readonly IndustrySensorTemplate[];
+  systemAliases?: Readonly<Record<string, string>>;
   systemVariants: readonly string[];
 };

@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request, send_file
 
 from .job_service import JOBS
 from .runtime_config import runtime_status
+from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
 from ..engineering.workflow.service import WorkflowStatusService
 from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
 
@@ -17,7 +18,27 @@ api = Blueprint("api", __name__)
 
 
 def _request_project_id() -> str:
-    return str(request.args.get("project_id") or request.headers.get("X-Project-ID") or "default")
+    return normalize_context_project_id(
+        request.args.get("project")
+        or request.args.get("project_id")
+        or request.args.get("projectId")
+        or request.headers.get("X-Project-ID")
+        or "default"
+    )
+
+
+def _payload_project_id(payload: dict, fallback: str = "default") -> str:
+    return normalize_context_project_id(
+        payload.get("project")
+        or payload.get("project_id")
+        or payload.get("projectId")
+        or fallback
+    )
+
+
+def _explicit_project_id() -> str | None:
+    raw = request.args.get("project") or request.args.get("project_id") or request.args.get("projectId") or request.headers.get("X-Project-ID")
+    return normalize_context_project_id(raw) if raw else None
 
 
 @api.route("/health", methods=["GET"])
@@ -49,9 +70,9 @@ def create_simulation():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
-    explicit_project_id = request.args.get("project_id") or request.headers.get("X-Project-ID")
-    request_project_id = str(explicit_project_id or payload.get("project_id") or "default")
-    payload_project_id = str(payload.get("project_id") or request_project_id)
+    explicit_project_id = _explicit_project_id()
+    request_project_id = normalize_context_project_id(explicit_project_id or _payload_project_id(payload))
+    payload_project_id = _payload_project_id(payload, request_project_id)
     if explicit_project_id and payload_project_id != request_project_id:
         return jsonify({"error": "Projekt-ID in Header und Payload stimmt nicht überein."}), 409
     payload["project_id"] = request_project_id
@@ -74,9 +95,9 @@ def validate_simulation():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
-    explicit_project_id = request.args.get("project_id") or request.headers.get("X-Project-ID")
-    request_project_id = str(explicit_project_id or payload.get("project_id") or "default")
-    payload_project_id = str(payload.get("project_id") or request_project_id)
+    explicit_project_id = _explicit_project_id()
+    request_project_id = normalize_context_project_id(explicit_project_id or _payload_project_id(payload))
+    payload_project_id = _payload_project_id(payload, request_project_id)
     if explicit_project_id and payload_project_id != request_project_id:
         return jsonify({"error": "Projekt-ID in Header und Payload stimmt nicht überein."}), 409
     payload["project_id"] = request_project_id
@@ -96,7 +117,7 @@ def simulation(job_id: str):
             {
                 "index": index,
                 "name": Path(path).name,
-                "url": f"/api/simulations/{job_id}/artifacts/{index}?project_id={project_id}",
+                "url": f"/api/simulations/{job_id}/artifacts/{index}?project={compact_context_project_id(project_id)}",
             }
             for index, path in enumerate(artifacts)
         ]
@@ -124,7 +145,7 @@ def create_simulation_campaign():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein Kampagnen-Objekt wird erwartet."}), 400
-    project_id = str(payload.get("project_id") or "default")
+    project_id = _payload_project_id(payload)
     workflow = WorkflowStatusService(project_id).get()
     if workflow.get("statuses", {}).get("validation") not in {"APPROVED", "WARNING"}:
         return jsonify({"error": "Eine aktuelle erfolgreiche Validierung ist für Kampagnen erforderlich."}), 409
@@ -158,7 +179,7 @@ def create_simulation_campaign():
 
 @api.route("/simulation-campaigns/<campaign_id>", methods=["GET"])
 def simulation_campaign(campaign_id: str):
-    project_id = str(request.args.get("project_id") or request.headers.get("X-Project-ID") or "default")
+    project_id = _request_project_id()
     campaign = get_campaign_record(project_id, campaign_id)
     if campaign is None:
         return jsonify({"error": "Simulationskampagne nicht gefunden."}), 404

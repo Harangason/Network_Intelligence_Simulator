@@ -292,6 +292,16 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
         raw_ports = raw_node.get("ports", [])
         if not isinstance(raw_ports, list):
             raise EngineeringValidationError("'node.ports' muss eine Liste sein.")
+        hardware_interface_ports: dict[str, list[str]] = {}
+        for raw_port in raw_ports:
+            if not isinstance(raw_port, dict):
+                continue
+            hardware_interface_id = str(raw_port.get("hardwareInterfaceId") or "").strip()
+            topology_port_id = str(raw_port.get("id") or "").strip()
+            if hardware_interface_id and topology_port_id:
+                hardware_interface_ports.setdefault(hardware_interface_id, []).append(topology_port_id)
+        for topology_port_ids in hardware_interface_ports.values():
+            topology_port_ids.sort()
         uses_physical_interfaces = bool(raw_ports) and all(
             isinstance(raw_port, dict) and raw_port.get("hardwareInterfaceId")
             for raw_port in raw_ports
@@ -377,15 +387,27 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                         f"HardwareNetworkInterface {requested_hardware_interface_id!r} nutzt "
                         f"{hardware_interface.get('technology')!r} statt {interface_type!r}."
                     )
+                linked_port_ids = hardware_interface_ports.get(requested_hardware_interface_id, [port_id])
+                capabilities = {
+                    key: value
+                    for key, value in (hardware_interface.get("capabilities") or {}).items()
+                    if key not in {"topology_port_id", "topology_port_ids"}
+                }
+                capabilities.update(
+                    {
+                        key: value
+                        for key, value in configuration.items()
+                        if key != "topology_port_id"
+                    }
+                )
+                if len(linked_port_ids) == 1:
+                    capabilities["topology_port_id"] = linked_port_ids[0]
+                else:
+                    capabilities["topology_port_ids"] = linked_port_ids
                 hardware_interface = _update_if_changed(
                     "HardwareNetworkInterface",
                     hardware_interface,
-                    {
-                        "capabilities": {
-                            **(hardware_interface.get("capabilities") or {}),
-                            **configuration,
-                        }
-                    },
+                    {"capabilities": capabilities},
                 )
                 claimed_interface_ports[str(hardware_interface["id"])] = port_id
                 interface_by_port[port_id] = {

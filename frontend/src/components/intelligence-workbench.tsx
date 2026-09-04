@@ -27,7 +27,7 @@ import {
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 import { createIntelligenceLoader } from "@/lib/intelligence-loader";
-import { readActiveProjectId } from "@/lib/user-settings";
+import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 
 type View = "overview" | "analytics" | "insights" | "knowledge";
 
@@ -231,7 +231,7 @@ function Analytics({ snapshot }: { snapshot: IntelligenceSnapshot }) {
         <AnalyticsSummary eyebrow="Data Quality" title="Engineering data" data={data.data_quality} link="/studio/engineering" />
       </div>
       <section className="intelligence-section full">
-        <div className="section-heading"><div><p className="eyebrow">Capacity & Timing</p><h3>Requirement deviations</h3></div><Link className="button secondary tiny" href="/studio/capacity">Capacity öffnen</Link></div>
+        <div className="section-heading"><div><p className="eyebrow">Capacity & Timing</p><h3>Requirement deviations</h3></div><Link className="button secondary tiny" href={withProjectParam("/studio/capacity")}>Capacity öffnen</Link></div>
         <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Bereich</th><th>Objekt</th><th>Messgröße</th><th>Ist</th><th>Anforderung</th><th>Abweichung</th><th>Severity</th></tr></thead><tbody>{requirements.map((row, index) => <tr key={`${row.object_id}-${index}`}><td>{String(row.category)}</td><td>{String(row.object_id)}</td><td>{String(row.metric)}</td><td>{formatValue(row.current_value)}</td><td>{formatValue(row.requirement)}</td><td>{formatValue(row.deviation)}</td><td><Status value={String(row.severity)} /></td></tr>)}</tbody></table></div>
       </section>
       <section className="intelligence-section full">
@@ -269,7 +269,7 @@ function Knowledge({ snapshot }: { snapshot: IntelligenceSnapshot }) {
     <div className="intelligence-view">
       <div className="intelligence-overview-grid">
         <section className="intelligence-section"><div className="section-heading"><div><p className="eyebrow">Hybrid RAG</p><h3>Retrieved Evidence</h3></div></div><div className="knowledge-list">{rag.map((item, index) => <article className={`eng-object-surface ${engineeringObjectTypeClass(item.object_type)}`} key={`${item.object_id}-${index}`}><span className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type ?? "Knowledge")}</span><strong>{String(item.text ?? item.object_id)}</strong><small>{String(item.source_id ?? "canonical-model")} · Score {formatValue(item.score)}</small></article>)}{!rag.length && <p className="muted">Für die aktuellen Befunde wurde keine zusätzliche Knowledge-Evidence gefunden.</p>}</div></section>
-        <section className="intelligence-section"><div className="section-heading"><div><p className="eyebrow">Knowledge Graph</p><h3>Structural insights</h3></div><Link className="button secondary tiny" href="/studio/engineering">Modell öffnen</Link></div><RecordList data={graph} /></section>
+        <section className="intelligence-section"><div className="section-heading"><div><p className="eyebrow">Knowledge Graph</p><h3>Structural insights</h3></div><Link className="button secondary tiny" href={withProjectParam("/studio/engineering")}>Modell öffnen</Link></div><RecordList data={graph} /></section>
       </div>
       <section className="intelligence-section full"><div className="section-heading"><div><p className="eyebrow">Maturity criteria</p><h3>Konfigurierbare, deterministische Regeln</h3></div></div><div className="criteria-list">{Object.entries(maturity.criteria).map(([levelName, criterion]) => <div className={levelName === maturity.level ? "active" : ""} key={levelName}><strong>{levelName}</strong><span>{criterion}</span></div>)}</div></section>
     </div>
@@ -306,7 +306,7 @@ function IssueTable({ issues, proposals, onCreate, onApprove, onApproveAll }: { 
     <section className="intelligence-section full issue-table-section">
       <div className="section-heading"><div><p className="eyebrow">Critical issues</p><h3>Technische Problemübersicht</h3></div><div className="analysis-actions"><span>{filtered.length} von {issues.length}</span><button className="button primary tiny" disabled={!visibleConfirmable.length} onClick={() => void onApproveAll(visibleConfirmable)} type="button">Allow all</button></div></div>
       <div className="table-controls"><label><span>Suche</span><input onChange={(event) => setSearch(event.target.value)} placeholder="Objekt, Ursache, Code ..." value={search} /></label><label><span>Severity</span><select onChange={(event) => setSeverity(event.target.value)} value={severity}><option>ALL</option><option>ERROR</option><option>WARNING</option><option>INFO</option></select></label><label><span>Kategorie</span><select onChange={(event) => setCategory(event.target.value)} value={category}><option>ALL</option>{categories.map((item) => <option key={item}>{item}</option>)}</select></label><label><span>Sortieren</span><select onChange={(event) => setSort(event.target.value)} value={sort}><option value="severity">Severity</option><option value="category">Kategorie</option><option value="object">Objekt</option></select></label><label><span>Gruppieren</span><select onChange={(event) => setGroup(event.target.value)} value={group}><option value="none">Keine</option><option value="severity">Severity</option><option value="category">Kategorie</option></select></label></div>
-      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href="/studio?mode=network">Netz öffnen</Link><Link className="button secondary tiny" href={`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
+      <div className="analysis-table-wrap"><table className="analysis-table issue-table"><thead><tr><th>Severity</th><th>Status</th><th>Category</th><th>Object</th><th>Problem</th><th>Detected Cause</th><th>Affected</th><th>Recommendation</th><th>Aktionen</th></tr></thead><tbody>{visible.map((item, index) => { const rowKey = `${item.code}-${item.object_id}-${index}`; const approved = item.status === "APPROVED" || item.approval_state === "APPROVED"; const confirmable = isConfirmableIssue(item); return <tr key={rowKey}><td><Status value={item.severity} />{item.original_severity && <small>vorher {item.original_severity}</small>}</td><td><Status value={approved ? "APPROVED" : item.approval_state || item.status} /></td><td>{item.category}</td><td><strong className="issue-object-name">{issueObjectLabel(item)}</strong><small className={`eng-object-badge ${engineeringObjectTypeClass(item.object_type)}`}>{engineeringObjectTypeLabel(item.object_type)}</small><small className="issue-object-id">{item.object_id}</small></td><td><button className="issue-problem-button" onClick={() => setSelectedIssue(item)} type="button">{item.problem}</button><small>{item.code}</small>{item.approval_note && <small>{item.approval_note}</small>}</td><td>{item.detected_cause}</td><td>{item.affected_objects.length}</td><td>{item.recommendation}</td><td><div className="table-actions"><button className="button secondary tiny" onClick={() => setSelectedIssue(item)} type="button">Details</button>{confirmable && <button className="button primary tiny" onClick={() => void onApprove(item)} type="button">Allow</button>}<Link className="button secondary tiny" href={objectLink(item)}>Zum Editor</Link><Link className="button secondary tiny" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link><Link className="button secondary tiny" href={withProjectParam(`/studio/engineering?graph=${encodeURIComponent(item.object_id)}`)}>Graph</Link><button className="button secondary tiny" onClick={() => askAgent(buildIssueAgentPrompt(item))} type="button">Ask AI</button><button className="button primary tiny" disabled={approved || proposals.some((proposal) => proposal.problem === item.problem)} onClick={() => void onCreate(recommendationFromIssue(item))} type="button">Create Proposal</button></div></td></tr>; })}</tbody></table></div>
       {selectedIssue && <IssueDetailDialog issue={selectedIssue} onClose={() => setSelectedIssue(null)} onCreate={onCreate} proposalExists={proposals.some((proposal) => proposal.problem === selectedIssue.problem)} />}
       <footer className="table-pagination"><span>{filtered.length ? `${page * pageSize + 1}-${Math.min((page + 1) * pageSize, filtered.length)} von ${filtered.length}` : "Keine Treffer"}</span><div><button className="button secondary tiny" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))} type="button">Zurück</button><span>Seite {page + 1} / {pageCount}</span><button className="button secondary tiny" disabled={page + 1 >= pageCount} onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} type="button">Weiter</button></div></footer>
     </section>
@@ -346,7 +346,7 @@ function IssueDetailDialog({ issue, onClose, onCreate, proposalExists }: { issue
         </div>
         <footer>
           <Link className="button secondary" href={objectLink(issue)}>Zum Editor</Link>
-          <Link className="button secondary" href="/studio?mode=network">Netz öffnen</Link>
+          <Link className="button secondary" href={withProjectParam("/studio?mode=network")}>Netz öffnen</Link>
           <button className="button secondary" onClick={() => askAgent(buildIssueAgentPrompt(issue))} type="button">Ask AI</button>
           <button className="button primary" disabled={proposalExists} onClick={() => void onCreate(recommendationFromIssue(issue))} type="button">Create Proposal</button>
         </footer>
@@ -356,7 +356,7 @@ function IssueDetailDialog({ issue, onClose, onCreate, proposalExists }: { issue
 }
 
 function AnalyticsSummary({ eyebrow, title, data, link }: { eyebrow: string; title: string; data: Record<string, unknown>; link: string }) {
-  return <section className="intelligence-section"><div className="section-heading"><div><p className="eyebrow">{eyebrow}</p><h3>{title}</h3></div><Link className="button secondary tiny" href={link}>Öffnen</Link></div><RecordList data={data} /></section>;
+  return <section className="intelligence-section"><div className="section-heading"><div><p className="eyebrow">{eyebrow}</p><h3>{title}</h3></div><Link className="button secondary tiny" href={withProjectParam(link)}>Öffnen</Link></div><RecordList data={data} /></section>;
 }
 
 function RecordList({ data }: { data: Record<string, unknown> }) {
@@ -402,12 +402,12 @@ function issueObjectLabel(issue: IntelligenceIssue) {
 }
 
 function objectLink(issue: IntelligenceIssue) {
-  if (issue.object_type === "RoutingEntry" || issue.category === "Routing") return `/studio/routing?route=${encodeURIComponent(issue.object_id)}&edit=1`;
-  if (issue.object_type === "Network" || issue.category === "Network" || issue.category === "Graph") return "/studio?mode=network";
-  if (issue.category.includes("Capacity") || issue.category === "Timing") return "/studio/capacity";
+  if (issue.object_type === "RoutingEntry" || issue.category === "Routing") return withProjectParam(`/studio/routing?route=${encodeURIComponent(issue.object_id)}&edit=1`);
+  if (issue.object_type === "Network" || issue.category === "Network" || issue.category === "Graph") return withProjectParam("/studio?mode=network");
+  if (issue.category.includes("Capacity") || issue.category === "Timing") return withProjectParam("/studio/capacity");
   const resource = ISSUE_RESOURCE_BY_TYPE[issue.object_type];
   const resourceParam = resource ? `resource=${encodeURIComponent(resource)}&type=${encodeURIComponent(issue.object_type)}&` : "";
-  return `/studio/engineering?${resourceParam}object=${encodeURIComponent(issue.object_id)}&edit=1`;
+  return withProjectParam(`/studio/engineering?${resourceParam}object=${encodeURIComponent(issue.object_id)}&edit=1`);
 }
 
 function recommendationFromIssue(issue: IntelligenceIssue): IntelligenceRecommendation {

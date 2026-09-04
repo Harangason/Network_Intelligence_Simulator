@@ -43,6 +43,7 @@ class KnowledgeDocument:
     knowledge_level: str = "L2_NORMALIZED"
     source_quality: float = 0.7
     evidence: tuple[dict[str, Any], ...] = ()
+    extra_metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def embedding_id(self) -> str:
@@ -51,9 +52,13 @@ class KnowledgeDocument:
     def metadata(self, embedding_model: str) -> dict[str, Any]:
         payload = asdict(self)
         payload.pop("text")
+        extra_metadata = payload.pop("extra_metadata")
         payload["embedding_id"] = self.embedding_id
         payload["embedding_model"] = embedding_model
         payload["evidence"] = [dict(item) for item in self.evidence]
+        for key, value in extra_metadata.items():
+            if key not in payload and key != "text":
+                payload[key] = value
         return payload
 
 

@@ -12,6 +12,7 @@ from .repository import BASE_COLUMNS, PARENT_LINKS, create_object, get_object, g
 from .structure_rules import (
     adapt_structure_name,
     equivalent_system_names,
+    is_canonical_system_name,
     semantic_name_signature,
     semantic_name_similarity,
 )
@@ -148,9 +149,11 @@ def analyze_system_duplicates() -> dict[str, Any]:
     candidates: list[dict[str, Any]] = []
     for index, left in enumerate(hardware):
         for right in hardware[index + 1:]:
+            pair_domain = left.get("domain") if left.get("domain") == right.get("domain") else None
             semantic_duplicate, name_similarity = equivalent_system_names(
                 left.get("name"),
                 right.get("name"),
+                domain=pair_domain,
             )
             left_profile = profiles[str(left["id"])]
             right_profile = profiles[str(right["id"])]
@@ -168,10 +171,24 @@ def analyze_system_duplicates() -> dict[str, Any]:
             )
             if not semantic_duplicate and not structural_duplicate:
                 continue
+            if (
+                semantic_duplicate
+                and not is_canonical_system_name(left.get("name"), pair_domain)
+                and not is_canonical_system_name(right.get("name"), pair_domain)
+                and any(
+                    other.get("id") not in {left.get("id"), right.get("id")}
+                    and other.get("domain") == pair_domain
+                    and is_canonical_system_name(other.get("name"), pair_domain)
+                    and equivalent_system_names(left.get("name"), other.get("name"), domain=pair_domain)[0]
+                    for other in hardware
+                )
+            ):
+                continue
 
-            def canonical_rank(item: dict[str, Any]) -> tuple[int, int, int, str]:
+            def canonical_rank(item: dict[str, Any]) -> tuple[int, int, int, int, str]:
                 profile = profiles[str(item["id"])]
                 return (
+                    int(is_canonical_system_name(item.get("name"), item.get("domain"))),
                     int(profile["total"]),
                     int(item.get("approval_state") == "approved"),
                     int(item.get("review_state") == "reviewed"),

@@ -26,6 +26,7 @@ import type { Catalog, EngMessage, EngSignal, ModelSignalSeries, ModelSimulation
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
+import { withProjectParam } from "@/lib/user-settings";
 
 type SimulationView = "network" | "signals" | "load" | "events";
 type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
@@ -48,7 +49,7 @@ const FAULT_TYPES = {
   NETWORK: ["NETWORK_OVERLOAD", "BUS_OFF", "LINK_DOWN", "GATEWAY_DELAY", "GATEWAY_DROP", "QUEUE_OVERFLOW", "CONGESTION", "TEMPORARY_DISCONNECT"],
 } as const;
 
-export function ModelSimulationRunner() {
+export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [snapshot, setSnapshot] = useState<SimulationSnapshot | null>(null);
@@ -138,6 +139,7 @@ export function ModelSimulationRunner() {
   }, [duration, job?.result?.model_simulation, playing, speed]);
 
   const valid = workflow?.statuses.validation === "APPROVED" || workflow?.statuses.validation === "WARNING";
+  const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const simulationOutdated = workflow?.statuses.simulation === "OUTDATED";
   const running = Boolean(job && !["completed", "failed", "canceled"].includes(job.status));
   const selectedTechnology = useMemo(() => {
@@ -353,7 +355,7 @@ export function ModelSimulationRunner() {
 
   return (
     <section className="simulation-runner model-simulation-runner">
-      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href="/studio/validation">Preflight öffnen</Link></div>}
+      {!valid && <div className="workflow-blocker error"><strong>Simulation blockiert</strong><span>Ein aktueller Preflight mit Status APPROVED oder WARNING ist erforderlich.</span><Link href={withProjectParam("/studio/validation", projectIdForLinks)}>Preflight öffnen</Link></div>}
       {simulationOutdated && <div className="workflow-blocker warning"><strong>Frühere Simulation ist OUTDATED</strong><span>{workflow?.stale_reasons.simulation}</span></div>}
 
       <form className="panel simulation-command-bar" onSubmit={start}>
@@ -446,13 +448,13 @@ export function ModelSimulationRunner() {
         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
         {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} />}
         {modelTrace && view === "signals" && <SignalsView trace={modelTrace} playhead={playhead} />}
-        {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} trace={modelTrace} playhead={playhead} />}
+        {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} playhead={playhead} projectId={projectIdForLinks} trace={modelTrace} />}
         {modelTrace && view === "events" && <EventsView trace={modelTrace} playhead={playhead} />}
       </section>
 
       {job && (
         <SimulationResult
-          action={<Link className="button primary result-heading-action" href={`/trace-analysis?job=${job.id}&view=signals`}>Trace direkt analysieren</Link>}
+          action={<Link className="button primary result-heading-action" href={withProjectParam(`/trace-analysis?job=${job.id}&view=signals`, workflow?.project_id)}>Trace direkt analysieren</Link>}
           jobId={job.id}
           onJobChange={handleJobChange}
         />
@@ -611,8 +613,8 @@ function modelLabel(label: ModelSignalSeries["model_label"]) {
   return { PHYSICS_BASED: "Physikbasiert", RULE_BASED: "Regelbasiert", EMPIRICAL: "Empirisch", SYNTHETIC: "Synthetisch", GENERIC_ESTIMATE: "Generische Schätzung" }[label];
 }
 
-function BusLoadView({ metrics, trace, playhead }: { metrics: RuntimeNetworkMetric[]; trace: ModelSimulationTrace; playhead: number }) {
-  return <div className="bus-load-grid"><div className="bus-load-source"><strong>SIMULATED LOAD</strong><span>Aus tatsächlichen Frames, Protokolloverhead, Zeitstempeln und Bitrate.</span><Link href="/studio/capacity">CALCULATED LOAD im Capacity View</Link></div>{metrics.map((network) => {
+function BusLoadView({ metrics, projectId, trace, playhead }: { metrics: RuntimeNetworkMetric[]; projectId?: string; trace: ModelSimulationTrace; playhead: number }) {
+  return <div className="bus-load-grid"><div className="bus-load-source"><strong>SIMULATED LOAD</strong><span>Aus tatsächlichen Frames, Protokolloverhead, Zeitstempeln und Bitrate.</span><Link href={withProjectParam("/studio/capacity", projectId)}>CALCULATED LOAD im Capacity View</Link></div>{metrics.map((network) => {
     const visible = (trace.bus_load ?? []).filter((point) => point.network_id === network.network_id && point.time_s <= playhead + 0.000001);
     const current = visible.at(-1)?.load_percent ?? 0;
     const peakToNow = Math.max(0, ...visible.map((point) => point.load_percent));

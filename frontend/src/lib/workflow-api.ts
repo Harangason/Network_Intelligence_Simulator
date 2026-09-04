@@ -1,21 +1,11 @@
 import type { NetworkTopology } from "./topology";
 import type { SimulationResultPayload } from "./types";
-import { readActiveProjectId } from "./user-settings";
+import { compactProjectId, readActiveProjectId } from "./user-settings";
 import type { InspectionObject, InspectionSources } from "./capacity-network-inspection";
 
 const BASE = "/api/engineering";
-const LOCAL_FRONTEND_PORT = "13500";
-const LOCAL_BACKEND_BASE = "http://127.0.0.1:15050/api/engineering";
 
 function workflowBaseUrl(): string {
-  if (
-    typeof window !== "undefined" &&
-    (window.location.port === LOCAL_FRONTEND_PORT ||
-      window.location.hostname === "127.0.0.1" ||
-      window.location.hostname === "localhost")
-  ) {
-    return LOCAL_BACKEND_BASE;
-  }
   return BASE;
 }
 
@@ -339,8 +329,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const getWorkflow = () =>
   request<WorkflowState>("/workflow", { signal: AbortSignal.timeout(180000) }).then(normalizeWorkflowState);
 
-export const getWorkflowSummary = () =>
-  request<WorkflowState>("/workflow?view=summary").then(normalizeWorkflowState);
+let workflowSummaryRequest: Promise<WorkflowState> | null = null;
+
+export const getWorkflowSummary = () => {
+  if (!workflowSummaryRequest) {
+    workflowSummaryRequest = request<WorkflowState>("/workflow?view=summary")
+      .then(normalizeWorkflowState)
+      .finally(() => {
+        workflowSummaryRequest = null;
+      });
+  }
+  return workflowSummaryRequest;
+};
 
 export const setWorkflowContext = (context: Record<string, unknown>) =>
   request<WorkflowState>("/workflow/context?view=summary", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState);
@@ -383,6 +383,37 @@ export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "
     body: JSON.stringify({ topology }),
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
+
+export type WorkflowTopologyLayoutNode = {
+  node_id: string;
+  x: number;
+  y: number;
+  width?: number | null;
+  height?: number | null;
+  ports: Record<string, { side: "left" | "right" | "top" | "bottom"; offset: number }>;
+  updated_at?: string;
+};
+
+export type WorkflowTopologyLayout = {
+  project_id: string;
+  topology_key: string;
+  layout_version: number;
+  nodes: WorkflowTopologyLayoutNode[];
+};
+
+export const getWorkflowTopologyLayout = (topologyKey: string, layoutVersion: number) => {
+  const query = new URLSearchParams({ topology_key: topologyKey, layout_version: String(layoutVersion) });
+  return request<WorkflowTopologyLayout>(`/workflow/topology-layout?${query.toString()}`);
+};
+
+export const saveWorkflowTopologyLayout = (
+  topologyKey: string,
+  layoutVersion: number,
+  nodes: WorkflowTopologyLayoutNode[],
+) => request<WorkflowTopologyLayout>("/workflow/topology-layout", {
+  method: "PUT",
+  body: JSON.stringify({ topology_key: topologyKey, layout_version: layoutVersion, nodes }),
+});
 
 export const calculateCapacity = (overrides?: Record<string, unknown>) =>
   request<{
@@ -670,7 +701,7 @@ export const reviewOptimizationProposal = (proposalId: string, status: Optimizat
   });
 
 export const intelligenceExportUrl = (format: "json" | "csv", section = "issues") =>
-  `${workflowBaseUrl()}/intelligence/export?format=${format}&section=${encodeURIComponent(section)}&project_id=${encodeURIComponent(readActiveProjectId())}`;
+  `${workflowBaseUrl()}/intelligence/export?format=${format}&section=${encodeURIComponent(section)}&project=${encodeURIComponent(compactProjectId(readActiveProjectId()))}`;
 
 export type ProjectBundle = {
   format: "network-intelligence-project";

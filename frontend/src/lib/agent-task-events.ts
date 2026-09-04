@@ -180,9 +180,12 @@ export function queueEngineeringWorkflowContinuation(projectId?: string) {
   if (pending?.gate === "routing-approval") {
     return resumePendingEngineeringAgentTask(projectId);
   }
-  if (pending && !pending.workflowTarget) return false;
+  // A workflow task already stored in the session is owned by AgentChatCore.
+  // Redispatching it from the global status poll caused completed/blocked runs
+  // to restart themselves every few seconds.
+  if (pending) return false;
 
-  const task = pending ?? persistEngineeringAgentTask(
+  const task = persistEngineeringAgentTask(
     ROUTING_CONTINUATION_PROMPT,
     "external",
     undefined,
@@ -190,8 +193,6 @@ export function queueEngineeringWorkflowContinuation(projectId?: string) {
     "data_science_intelligence",
   );
   if (!task) return false;
-  if (task.lastDispatchAt && Date.now() - task.lastDispatchAt < 4_000) return false;
-
   const dispatchedTask = updatePendingEngineeringAgentTask({
     ...task,
     lastDispatchAt: Date.now(),

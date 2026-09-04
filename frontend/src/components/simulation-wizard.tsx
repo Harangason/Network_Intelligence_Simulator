@@ -26,6 +26,7 @@ import {
   notifyWorkflowDraftStatus,
   WORKFLOW_CHANGED_EVENT,
 } from "./workflow-header";
+import { withProjectParam } from "@/lib/user-settings";
 
 const parameterNavItems = [
   ["parameter-technology", "Technologie"],
@@ -517,8 +518,10 @@ function mergeRoutingSuggestionsIntoTopology(
 }
 
 export function SimulationWizard({
+  initialProjectId = "",
   initialMode = "parameters",
 }: {
+  initialProjectId?: string;
   initialMode?: "parameters" | "network";
 }) {
   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
@@ -555,6 +558,7 @@ export function SimulationWizard({
   const [routingLinkRevision, setRoutingLinkRevision] = useState("");
   const localWorkflowChangeRef = useRef(false);
   const topologyRef = useRef(topology);
+  const projectIdForLinks = initialProjectId;
 
   useEffect(() => {
     topologyRef.current = topology;
@@ -1017,7 +1021,7 @@ export function SimulationWizard({
                 />
                 <span>JSON-Modus</span>
               </label>
-              <Link className="button secondary" href="/studio/capacity">
+              <Link className="button secondary" href={withProjectParam("/studio/capacity", projectIdForLinks)}>
                 Weiter zu Capacity
               </Link>
               <button
@@ -1057,7 +1061,7 @@ export function SimulationWizard({
                 </div>
               </div>
               <div className="net-model-sync-actions">
-                <Link href="/studio/engineering">Modell öffnen ↗</Link>
+                <Link href={withProjectParam("/studio/engineering", projectIdForLinks)}>Modell öffnen ↗</Link>
                 <button
                   className={`net-add net-sync-button ${modelRefreshPending ? "warning" : ""}`}
                   disabled={!workflowLoaded || topology.nodes.length === 0 || engineeringSync.status === "syncing"}
@@ -1095,7 +1099,7 @@ export function SimulationWizard({
                   </strong>
                 </div>
                 <div className="net-route-suggestions-actions">
-                  <Link href="/studio/routing?view=graph">Routing-Graph öffnen ↗</Link>
+                  <Link href={withProjectParam("/studio/routing?view=graph", projectIdForLinks)}>Routing-Graph öffnen ↗</Link>
                   {routingNetworkSuggestions.length > 0 && (
                     <button
                       className="net-add"
@@ -1242,7 +1246,7 @@ export function SimulationWizard({
 
         {mode === "network" && (
           <div className="form-actions">
-            <Link className="button secondary" href="/studio?mode=parameters">
+            <Link className="button secondary" href={withProjectParam("/studio?mode=parameters", projectIdForLinks)}>
               Weiter zu Parametern
             </Link>
             <button

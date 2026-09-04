@@ -1,6 +1,6 @@
 import type { Catalog, SimulationJob } from "./types";
 import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local-simulator";
-import { readActiveProjectId } from "./user-settings";
+import { compactProjectId, readActiveProjectId } from "./user-settings";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const signal = init?.signal ?? AbortSignal.timeout(10000);
@@ -36,7 +36,7 @@ function isRequestTimeout(error: unknown) {
 
 function projectPath(path: string, projectId: string) {
   const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}project_id=${encodeURIComponent(projectId)}`;
+  return `${path}${separator}project=${encodeURIComponent(compactProjectId(projectId))}`;
 }
 
 function announceMode(mode: "backend" | "browser") {

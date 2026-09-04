@@ -7,11 +7,13 @@ export function StudioWorkflowHero({
   title,
   children,
   className = "",
+  initialProjectId = "",
 }: {
   eyebrow: string;
   title: string;
   children: ReactNode;
   className?: string;
+  initialProjectId?: string;
 }) {
   return (
     <section className={`hero studio-workflow-hero ${className}`.trim()}>
@@ -21,7 +23,7 @@ export function StudioWorkflowHero({
         <p className="hero-copy">{children}</p>
       </div>
       <div className="studio-workflow-hero-status">
-        <WorkflowStatusOverview compact />
+        <WorkflowStatusOverview compact initialProjectId={initialProjectId} />
       </div>
     </section>
   );

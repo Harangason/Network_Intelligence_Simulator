@@ -11,8 +11,9 @@ import type { RoutingEntry } from "@/lib/types";
 import { getPreflight, getWorkflow, runPreflight, type AnalysisFinding, type PreflightCategory, type PreflightResults, type WorkflowState, type WorkflowStatus } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
+import { withProjectParam } from "@/lib/user-settings";
 
-export function PreflightWorkbench() {
+export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [findings, setFindings] = useState<AnalysisFinding[]>([]);
   const [routes, setRoutes] = useState<RoutingEntry[]>([]);
@@ -105,6 +106,7 @@ export function PreflightWorkbench() {
   }
 
   const canSimulate = status === "APPROVED" || status === "WARNING";
+  const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const warningCount = findings.filter((finding) => finding.severity === "WARNING").length;
   const errorCount = findings.filter((finding) => finding.severity === "ERROR").length;
   const verdictText = outdated
@@ -153,7 +155,7 @@ export function PreflightWorkbench() {
           <button className={`finding finding-${finding.severity.toLowerCase()}`} key={`${finding.code}-${index}`} onClick={() => openFinding(finding)} type="button"><span>{finding.category?.replaceAll("_", " ") ?? finding.severity}</span><strong>{finding.message}</strong><small>{finding.code}{finding.recommendation ? ` · ${finding.recommendation}` : ""}</small></button>
         )) : <div className="analysis-empty"><strong>Noch keine Befunde</strong><p>Führe den Preflight aus, sobald Capacity & Timing aktuell ist.</p></div>}
       </div>
-      <div className="analysis-footer-actions"><Link className="button secondary" href="/studio/capacity">Capacity öffnen</Link><Link aria-disabled={!canSimulate || outdated} className={`button primary ${!canSimulate || outdated ? "disabled" : ""}`} href={canSimulate && !outdated ? "/studio/simulation" : "/studio/validation"}>Simulation vorbereiten →</Link></div>
+      <div className="analysis-footer-actions"><Link className="button secondary" href={withProjectParam("/studio/capacity", projectIdForLinks)}>Capacity öffnen</Link><Link aria-disabled={!canSimulate || outdated} className={`button primary ${!canSimulate || outdated ? "disabled" : ""}`} href={withProjectParam(canSimulate && !outdated ? "/studio/simulation" : "/studio/validation", projectIdForLinks)}>Simulation vorbereiten →</Link></div>
       {selectedFinding && (
         <FindingDialog
           busy={busy}
@@ -162,6 +164,7 @@ export function PreflightWorkbench() {
           onPayloadDraft={setPayloadDraft}
           onSavePayload={() => void savePayloadFinding()}
           payloadDraft={payloadDraft}
+          projectId={projectIdForLinks}
           route={routes.find((item) => item.id === selectedFinding.object_id) ?? null}
         />
       )}
@@ -169,7 +172,7 @@ export function PreflightWorkbench() {
   );
 }
 
-function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadDraft, onSavePayload }: {
+function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadDraft, onSavePayload, projectId }: {
   finding: AnalysisFinding;
   route: RoutingEntry | null;
   payloadDraft: string;
@@ -177,6 +180,7 @@ function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadD
   onClose: () => void;
   onPayloadDraft: (value: string) => void;
   onSavePayload: () => void;
+  projectId?: string;
 }) {
   const editablePayload = finding.object_type === "RoutingEntry" && finding.code === "PAYLOAD_UNSPECIFIED" && Boolean(route);
   const problemHref = finding.object_type === "RoutingEntry" && finding.object_id
@@ -219,7 +223,7 @@ function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadD
           {editablePayload ? (
             <button className="button primary" disabled={busy || !payloadDraft.trim()} onClick={onSavePayload} type="button">{busy ? "Speichert ..." : "Übernehmen"}</button>
           ) : (
-            <Link className="button primary" href={problemHref}>Zum Problem</Link>
+            <Link className="button primary" href={withProjectParam(problemHref, projectId)}>Zum Problem</Link>
           )}
         </footer>
       </section>

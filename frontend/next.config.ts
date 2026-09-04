@@ -14,8 +14,8 @@ const nextConfig: NextConfig = {
     // diesen Next.js-Dienst dort gar nicht erst. Im lokalen `next dev`
     // (ohne `vercel dev`-Orchestrierung) fehlt dieses Routing jedoch, daher
     // proxyen wir /api/* hier zusätzlich auf das lokal laufende Flask-Backend.
-    if (process.env.NODE_ENV === "production") return [];
-    const backendApiUrl = process.env.SIMULATOR_BACKEND_API_URL ?? "http://127.0.0.1:15050/api";
+    const backendApiUrl = process.env.SIMULATOR_BACKEND_API_URL;
+    if (!backendApiUrl) return [];
     return [
       {
         source: "/api/:path((?!agent).*)",

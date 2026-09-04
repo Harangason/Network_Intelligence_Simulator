@@ -37,11 +37,12 @@ import { listAllEngineeringObjects } from "@/lib/engineering-api";
 import { approveRoutes, listRoutes } from "@/lib/routing-api";
 import { routingApprovalProgress } from "@/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
-import { readActiveProjectId } from "@/lib/user-settings";
+import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
+import { topologyClusterKnowledgeSummary } from "@/lib/topology-cluster-knowledge";
 import {
   cancelEngineeringWorkload,
   createOptimizationProposal,
-  getWorkflow,
+  getWorkflowSummary,
   listEngineeringWorkloads,
   setWorkflowContext,
   type IntelligenceRecommendation,
@@ -53,7 +54,6 @@ import { WORKFLOW_CHANGED_EVENT } from "./workflow-header";
 import { AgentToolResult } from "./agent-tool-result";
 import { WorkloadProgress } from "./workload-progress";
 
-const MAX_AUTOMATIC_RUNS_WITHOUT_PROGRESS = 2;
 const EQUIPMENT_CATEGORIES = [
   { key: "gateways", label: "Gateways", type: "Gateway" },
   { key: "ecus", label: "ECUs", type: "ECU" },
@@ -165,7 +165,7 @@ export function AgentChatCore({
     let runnableTask = task;
     try {
       if (task.workflowTarget) {
-        const workflow = await getWorkflow();
+        const workflow = await getWorkflowSummary();
         if (workflow.context.agent_wizard_status) return;
         const progress = engineeringAgentWorkflowProgress(task, workflow.statuses, workflow.versions);
         if (progress.complete) {
@@ -299,7 +299,7 @@ export function AgentChatCore({
     const continueWorkflow = async () => {
       const pending = readPendingEngineeringAgentTask(activeProjectId);
       if (!pending?.workflowTarget) return;
-      const workflow = await getWorkflow();
+      const workflow = await getWorkflowSummary();
       if (!active) return;
       const progress = engineeringAgentWorkflowProgress(pending, workflow.statuses, workflow.versions);
       if (progress.complete) {
@@ -315,21 +315,12 @@ export function AgentChatCore({
         return;
       }
 
-      const madeProgress = pending.lastWorkflowSignature !== progress.signature;
-      const noProgressRuns = madeProgress ? 0 : (pending.noProgressRuns ?? 0) + 1;
-      const nextTask = updatePendingEngineeringAgentTask({
+      updatePendingEngineeringAgentTask({
         ...pending,
-        paused: noProgressRuns >= MAX_AUTOMATIC_RUNS_WITHOUT_PROGRESS,
+        paused: true,
         lastWorkflowSignature: progress.signature,
-        noProgressRuns,
+        noProgressRuns: (pending.noProgressRuns ?? 0) + 1,
       });
-      if (nextTask && !nextTask.paused && active) {
-        const taskToRun = nextTask;
-        continuationTimerRef.current = window.setTimeout(() => {
-          continuationTimerRef.current = null;
-          void runTask(taskToRun);
-        }, 750);
-      }
     };
     void continueWorkflow();
     return () => {
@@ -339,16 +330,6 @@ export function AgentChatCore({
         continuationTimerRef.current = null;
       }
     };
-  }, [activeProjectId, historyReady, runTask, status]);
-
-  useEffect(() => {
-    const resumePausedWorkflow = () => {
-      if (!historyReady || status !== "ready") return;
-      const pending = readPendingEngineeringAgentTask(activeProjectId);
-      if (pending?.workflowTarget && pending.paused) void runTask(pending);
-    };
-    window.addEventListener(WORKFLOW_CHANGED_EVENT, resumePausedWorkflow);
-    return () => window.removeEventListener(WORKFLOW_CHANGED_EVENT, resumePausedWorkflow);
   }, [activeProjectId, historyReady, runTask, status]);
 
   useEffect(() => {
@@ -381,7 +362,7 @@ export function AgentChatCore({
         activeProjectId,
         "data_science_intelligence",
       );
-      window.location.assign("/studio/routing");
+      window.location.assign(withProjectParam("/studio/routing", activeProjectId));
       return;
     }
     const originalRequest = latestUserRequestBefore(stableMessages, confirmationRequest.messageId);
@@ -728,6 +709,11 @@ type AgentWizardContext = {
   communication_system_counts?: Array<{ id: string; label: string; recognized: number; count: number }>;
   planned_network_connections?: number;
   system_cluster_assignments?: EquipmentClusterAssignment[];
+  topology_cluster_knowledge?: {
+    profile: string;
+    ruleSummary: string[];
+    lessonSummary: string[];
+  };
 };
 
 function restoredWizardContext(value: unknown, projectId: string): AgentWizardContext | null {
@@ -804,6 +790,17 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
           evidence: Array.isArray(item.evidence) ? item.evidence.filter((value): value is string => typeof value === "string") : [],
         }))
         .filter((item) => item.cluster_id && item.label)
+      : undefined,
+    topology_cluster_knowledge: context.topology_cluster_knowledge && typeof context.topology_cluster_knowledge === "object"
+      ? {
+        profile: String((context.topology_cluster_knowledge as Record<string, unknown>).profile ?? "generic"),
+        ruleSummary: Array.isArray((context.topology_cluster_knowledge as Record<string, unknown>).ruleSummary)
+          ? ((context.topology_cluster_knowledge as Record<string, unknown>).ruleSummary as unknown[]).filter((item): item is string => typeof item === "string")
+          : [],
+        lessonSummary: Array.isArray((context.topology_cluster_knowledge as Record<string, unknown>).lessonSummary)
+          ? ((context.topology_cluster_knowledge as Record<string, unknown>).lessonSummary as unknown[]).filter((item): item is string => typeof item === "string")
+          : [],
+      }
       : undefined,
   };
 }
@@ -1097,7 +1094,7 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     let active = true;
-    void getWorkflow().then((nextWorkflow) => {
+    void getWorkflowSummary().then((nextWorkflow) => {
       if (!active) return;
       setWorkflow(nextWorkflow);
       const legacyContext = takeLegacyWizardContext(projectId);
@@ -1142,7 +1139,7 @@ export function EngineeringAgentWizard({
       if (refreshing) return;
       refreshing = true;
       try {
-        const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflow(), listRoutes()]);
+        const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflowSummary(), listRoutes()]);
         if (!active) return;
         setWorkflow(nextWorkflow);
         setRoutingEntries(nextRoutes);
@@ -1479,6 +1476,7 @@ export function EngineeringAgentWizard({
     const concreteTask = `${taskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}`;
     const nextRunId = crypto.randomUUID();
     const confirmedAt = new Date().toISOString();
+    const topologyKnowledge = topologyClusterKnowledgeSummary(projectId, mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry);
     const nextContext: AgentWizardContext = {
       attachments: taskFiles.map((file) => ({ kind: file.kind, name: file.name, size: file.size, source: file.source })),
       confirmed_at: confirmedAt,
@@ -1504,6 +1502,7 @@ export function EngineeringAgentWizard({
       communication_system_counts: communicationSystemCounts,
       planned_network_connections: plannedNetworkConnections,
       system_cluster_assignments: equipmentClusterAssignments,
+      topology_cluster_knowledge: topologyKnowledge,
     };
     const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
     const prompt =
@@ -1517,6 +1516,9 @@ export function EngineeringAgentWizard({
         `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
         `- Systemcluster-Details: ${JSON.stringify(equipmentClusterAssignments)}\n` +
+        `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
+        `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
+        `- Gelernte Topologie-Nachbarschaften: ${topologyKnowledge.lessonSummary.join("; ") || "noch keine Projektkorrekturen gelernt"}\n` +
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
@@ -1530,6 +1532,7 @@ export function EngineeringAgentWizard({
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
+        "Verbindliche Topologie-Regel: Systemrahmen sind kompakte Nachbarschaftsgruppen, keine ueber den ganzen View gezogenen Container. Ordne fachlich verwandte Rahmen nebeneinander an, fuehre Leitungen innerhalb und zwischen benachbarten Rahmen lokal, und gib Korrekturen des Nutzers als abstrakte Cluster-Nachbarschaften an den RAG-Kontext zurueck.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
     setRunId(nextRunId);
@@ -1790,7 +1793,7 @@ export function EngineeringAgentWizard({
     setStatusError("");
     try {
       await approveRoutes(routeIds);
-      const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflow(), listRoutes()]);
+      const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflowSummary(), listRoutes()]);
       setWorkflow(nextWorkflow);
       setRoutingEntries(nextRoutes);
       await writeWizardDiagnostic("question", {
@@ -2521,7 +2524,7 @@ export function EngineeringAgentWizard({
               <a
                 aria-label={`${item.label} öffnen, Status ${WORKFLOW_DISPLAY_STATUS_LABEL[item.displayStatus]}, ${item.progress} Prozent`}
                 className={`agent-wizard-progress-card ${item.selected ? "selected" : ""} status-${item.displayStatus.toLowerCase()}`}
-                href={WORKFLOW_STEP_HREF[item.id]}
+                href={withProjectParam(WORKFLOW_STEP_HREF[item.id], projectId)}
                 key={item.id}
                 onClick={() => activateEngineeringAgentWizardSession(projectId)}
                 title={item.displayStatus === "BLOCKED" ? blockedTitle : `${item.label} öffnen`}
@@ -3641,7 +3644,7 @@ function IntelligenceActionButtons({ output, projectId }: { output: unknown; pro
 
   async function run(action: IntelligenceActionSuggestion) {
     if (action.kind === "navigate" && action.href) {
-      window.location.assign(action.href);
+      window.location.assign(withProjectParam(action.href, projectId));
       return;
     }
     if (!action.proposal) return;

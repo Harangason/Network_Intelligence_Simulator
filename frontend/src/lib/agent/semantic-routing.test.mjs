@@ -78,6 +78,11 @@ test("die Referenzarchitektur erzeugt genau 100 Sensor- und 50 Gateway-Pfade", (
   assert.equal(ecuPlans.length, 50);
   assert.equal(plans.some((plan) => plan.source.device_type === "Gateway"), false);
   assert.equal(ecuPlans.every((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
+  assert.equal(ecuPlans.every((plan) => Boolean(plan.networkSegment?.key)), true);
+  const motorPlan = ecuPlans.find((plan) => plan.source.hardware_name === "Motorsteuerung");
+  const fuelPlan = ecuPlans.find((plan) => plan.source.hardware_name === "Kraftstoffsystem");
+  assert.equal(motorPlan?.networkSegment?.key, "powertrain");
+  assert.deepEqual(fuelPlan?.networkSegment, motorPlan?.networkSegment);
 });
 
 test("Variante 3 bindet Sensoren und ECUs direkt an das Gateway an", () => {
@@ -86,6 +91,10 @@ test("Variante 3 bindet Sensoren und ECUs direkt an das Gateway an", () => {
 
   assert.equal(plans.length, 150);
   assert.equal(plans.every((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
+  assert.equal(plans.every((plan) => Boolean(plan.networkSegment?.key)), true);
+  const motorPlan = plans.find((plan) => plan.source.hardware_name === "Motorsteuerung");
+  const fuelPlan = plans.find((plan) => plan.source.hardware_name === "Kraftstoffsystem");
+  assert.deepEqual(fuelPlan?.networkSegment, motorPlan?.networkSegment);
 });
 
 test("Variante 0 bleibt beim lokalen Sensor-ECU-Aktor-Regelkreis", () => {
@@ -111,10 +120,19 @@ test("Variante 4 bündelt bis zu sechs ECUs pro Gateway-Segment", () => {
   assert.equal(sensorPlans.length, 100);
   assert.equal(actuatorPlans.length, 100);
   assert.equal(actuatorPlans.every((plan) => plan.source.device_type === "ECU"), true);
-  assert.equal(gatewaySegments.length, 9);
+  assert.ok(gatewaySegments.length >= Math.ceil(50 / 6));
   assert.equal(gatewaySegments.every((plan) => plan.destinations.length <= 6), true);
   assert.equal(gatewaySegments.reduce((sum, plan) => sum + plan.destinations.length, 0), 50);
   assert.equal(plans.some((plan) => plan.source.device_type === "ECU" && plan.destinations[0]?.device_type === "Gateway"), false);
+  const motorSegment = gatewaySegments.find((plan) => plan.destinations.some((item) => item.hardware_name === "Motorsteuerung"));
+  assert.ok(motorSegment);
+  assert.equal(motorSegment.networkSegment?.key, "powertrain");
+  assert.deepEqual(
+    ["Motorsteuerung", "Kraftstoffsystem", "Abgasnachbehandlung", "Getriebesteuerung"]
+      .filter((name) => !motorSegment.destinations.some((item) => item.hardware_name === name)),
+    [],
+  );
+  assert.equal(gatewaySegments.every((plan) => Boolean(plan.networkSegment?.key)), true);
 });
 
 test("der KI-Hybrid kombiniert ECU-vermittelte und direkte Gateway-Pfade", () => {
@@ -125,4 +143,28 @@ test("der KI-Hybrid kombiniert ECU-vermittelte und direkte Gateway-Pfade", () =>
   assert.equal(sensorPlans.length, 100);
   assert.equal(sensorPlans.some((plan) => plan.destinations[0]?.device_type === "ECU"), true);
   assert.equal(sensorPlans.some((plan) => plan.destinations[0]?.device_type === "Gateway"), true);
+  assert.equal(
+    plans
+      .filter((plan) => plan.source.device_type === "ECU" && plan.destinations[0]?.device_type === "Gateway")
+      .every((plan) => Boolean(plan.networkSegment?.key)),
+    true,
+  );
+  assert.equal(
+    plans
+      .filter((plan) => plan.destinations[0]?.device_type === "Gateway")
+      .every((plan) => Boolean(plan.networkSegment?.key)),
+    true,
+  );
+});
+
+test("Variante 1 gruppiert ihre ECU-Gateway-Pfade ebenfalls nach Fachsegment", () => {
+  const specification = extractEngineeringSpecification(SAMPLE);
+  const plans = semanticRoutePlans(specification.chains, "eva");
+  const gatewayPlans = plans.filter((plan) => plan.destinations[0]?.device_type === "Gateway");
+  const motorPlan = gatewayPlans.find((plan) => plan.source.hardware_name === "Motorsteuerung");
+  const fuelPlan = gatewayPlans.find((plan) => plan.source.hardware_name === "Kraftstoffsystem");
+
+  assert.ok(motorPlan);
+  assert.deepEqual(fuelPlan?.networkSegment, motorPlan.networkSegment);
+  assert.equal(gatewayPlans.every((plan) => Boolean(plan.networkSegment?.key)), true);
 });

@@ -569,6 +569,24 @@ export function inferredDeviceClassification(name: unknown, deviceType: unknown)
   return { device_class: 1, device_typing: "Basic Communication Device", data_complexity: "SERVICE_DATA" };
 }
 
+export function initialInterfaceTypeForDevice(
+  name: unknown,
+  deviceType: unknown,
+  deviceClass: unknown,
+  requestedInterfaceType: unknown,
+) {
+  const type = canonicalDeviceType(String(deviceType ?? "GenericDevice"));
+  const classification = inferredDeviceClassification(name, type);
+  const resolvedClass = Number(deviceClass ?? classification.device_class);
+  const isSimpleEndpoint = type === "SensorController"
+    || type === "ActuatorController"
+    || /sensor|actuator/i.test(classification.device_typing);
+  if (resolvedClass <= 2 && isSimpleEndpoint) {
+    return "LIN";
+  }
+  return canonicalInterfaceType(String(requestedInterfaceType ?? "CAN"));
+}
+
 function chainRequiresFunctionModel(input: EngineeringChainInput) {
   const classification = inferredDeviceClassification(input.hardware_name, input.device_type);
   const deviceClass = Number(input.device_class ?? classification.device_class);
@@ -1348,18 +1366,26 @@ async function registerEngineeringChain(
   input: EngineeringChainInput,
   registrationIndex?: EngineeringRegistrationIndex,
 ) {
-    const canonicalObjects: CanonicalEngineeringObject[] = [];
-    const steps: Array<Record<string, unknown>> = [];
+  const canonicalObjects: CanonicalEngineeringObject[] = [];
+  const steps: Array<Record<string, unknown>> = [];
+  const classification = inferredDeviceClassification(input.hardware_name, input.device_type);
+  const deviceClass = Number(input.device_class ?? classification.device_class);
+  const interfaceType = initialInterfaceTypeForDevice(
+    input.hardware_name,
+    input.device_type,
+    deviceClass,
+    input.interface_type,
+  );
 
-    const hardware = await createAndApproveEngineeringObject({
+  const hardware = await createAndApproveEngineeringObject({
       resource: "hardware-nodes",
       name: input.hardware_name,
       description: input.hardware_description,
       domain: input.domain,
       device_type: input.device_type ?? "ECU",
-      device_class: input.device_class,
-      device_typing: input.device_typing,
-      data_complexity: input.data_complexity,
+      device_class: deviceClass,
+      device_typing: input.device_typing ?? classification.device_typing,
+      data_complexity: input.data_complexity ?? classification.data_complexity,
     }, registrationIndex);
     canonicalObjects.push(...hardware.canonical_objects);
     steps.push(hardware);
@@ -1386,7 +1412,7 @@ async function registerEngineeringChain(
       domain: input.domain,
       hardware_node_id: hardwareId,
       function_id: requiresFunction ? functionId : undefined,
-      interface_type: input.interface_type ?? "CAN",
+      interface_type: interfaceType,
     }, registrationIndex);
     canonicalObjects.push(...engineeringInterface.canonical_objects);
     steps.push(engineeringInterface);
@@ -1395,10 +1421,10 @@ async function registerEngineeringChain(
     const hardwareInterface = await createAndApproveEngineeringObject({
       resource: "hardware-interfaces",
       name: `${input.hardware_name}_channel_1`,
-      description: `Physischer ${input.interface_type ?? "CAN"}-Kanal fuer ${input.hardware_name}.`,
+      description: `Physischer ${interfaceType}-Kanal fuer ${input.hardware_name}.`,
       domain: input.domain,
       hardware_node_id: hardwareId,
-      technology: input.interface_type ?? "CAN",
+      technology: interfaceType,
       controller_ref: `${input.hardware_name}_controller_1`,
       physical_port_ref: `${input.hardware_name}_port_1`,
       channel_index: 1,
@@ -2108,6 +2134,7 @@ type ArchitectureHardwareInterface = {
   networkRef: string;
   channelIndex: number;
   purpose: "local" | "backbone";
+  maximumParticipants?: number;
 };
 
 function networkToken(value: string) {
@@ -2130,9 +2157,6 @@ function architectureTransportPlan(
 ) {
   const overrides = new Map<string, Pick<ExtractedEngineeringChain, "interface_type" | "transport_network_ref">>();
   const additional = new Map<string, ArchitectureHardwareInterface>();
-  if (architecture !== "gateway_ecu_segments" && architecture !== "sensor_ecu_actuator" && architecture !== "ecu_gateway") {
-    return { overrides, additional: [] as ArchitectureHardwareInterface[] };
-  }
 
   const plans = semanticRoutePlans(chains, architecture);
   const localAssignments = new Map<string, Map<string, { networkRef: string; count: number }>>();
@@ -2185,37 +2209,81 @@ function architectureTransportPlan(
     });
   }
 
-  if (architecture === "gateway_ecu_segments") {
+  if (architecture !== "sensor_ecu_actuator") {
     const technology = backboneTechnology(communicationSystems);
-    const gatewaySegments = plans.filter((plan) => canonicalDeviceType(plan.source.device_type) === "Gateway");
-    gatewaySegments.forEach((plan, segmentIndex) => {
+    const gatewayLinks = plans.flatMap((plan) => {
+      const sourceIsGateway = canonicalDeviceType(plan.source.device_type) === "Gateway";
+      if (sourceIsGateway) {
+        return plan.destinations.map((participant) => ({ gateway: plan.source, participant, segment: plan.networkSegment }));
+      }
+      const gateway = plan.destinations.find((destination) => canonicalDeviceType(destination.device_type) === "Gateway");
+      return gateway ? [{ gateway, participant: plan.source, segment: plan.networkSegment }] : [];
+    });
+    const groupedGatewayLinks = [...gatewayLinks.reduce((groups, link, index) => {
+      const fallbackKey = `segment_${String(index + 1).padStart(2, "0")}`;
+      const segmentKey = link.segment?.key ?? fallbackKey;
+      const segmentOrdinal = link.segment?.ordinal ?? 1;
+      const key = [engineeringNameKey(link.gateway.hardware_name), segmentKey, segmentOrdinal].join("::");
+      const current = groups.get(key) ?? {
+        gateway: link.gateway,
+        key: segmentKey,
+        ordinal: segmentOrdinal,
+        participants: [] as ExtractedEngineeringChain[],
+      };
+      if (!current.participants.some((item) => sameEngineeringName(item.hardware_name, link.participant.hardware_name))) {
+        current.participants.push(link.participant);
+      }
+      groups.set(key, current);
+      return groups;
+    }, new Map<string, {
+      gateway: ExtractedEngineeringChain;
+      key: string;
+      ordinal: number;
+      participants: ExtractedEngineeringChain[];
+    }>()).values()];
+
+    groupedGatewayLinks.forEach((segment, segmentIndex) => {
       const segmentNumber = segmentIndex + 1;
-      const networkRef = `gateway_segment_${String(segmentNumber).padStart(2, "0")}`;
+      const familyKey = segment.key;
+      const familyOrdinal = segment.ordinal;
+      const maximumParticipants = architecture === "gateway_ecu_segments" ? 6 : undefined;
+      const networkRef = `gateway_${networkToken(familyKey)}_${networkToken(technology)}${familyOrdinal > 1 ? `_${familyOrdinal}` : ""}`;
       if (segmentIndex === 0) {
-        overrides.set(engineeringNameKey(plan.source.hardware_name), {
+        overrides.set(engineeringNameKey(segment.gateway.hardware_name), {
           interface_type: technology,
           transport_network_ref: networkRef,
         });
       } else {
-        const name = `${plan.source.hardware_name}_segment_${segmentNumber}`;
+        const name = `${segment.gateway.hardware_name}_segment_${segmentNumber}`;
         additional.set(engineeringNameKey(name), {
-          hardwareName: plan.source.hardware_name,
+          hardwareName: segment.gateway.hardware_name,
           name,
           technology,
           networkRef,
           channelIndex: segmentNumber,
           purpose: "backbone",
+          maximumParticipants,
         });
       }
-      plan.destinations.forEach((processor) => {
-        const name = `${processor.hardware_name}_backbone_1`;
+      segment.participants.forEach((participant) => {
+        const participantKey = engineeringNameKey(participant.hardware_name);
+        const hasLocalInterface = localAssignments.has(participantKey);
+        if (!hasLocalInterface) {
+          overrides.set(participantKey, {
+            interface_type: technology,
+            transport_network_ref: networkRef,
+          });
+          return;
+        }
+        const name = `${participant.hardware_name}_backbone_1`;
         additional.set(engineeringNameKey(name), {
-          hardwareName: processor.hardware_name,
+          hardwareName: participant.hardware_name,
           name,
           technology,
           networkRef,
           channelIndex: 2,
           purpose: "backbone",
+          maximumParticipants,
         });
       });
     });
@@ -2250,9 +2318,9 @@ async function registerArchitectureHardwareInterfaces(
         network_ref: item.networkRef,
         capabilities: {
           source: "engineering-generation-plan",
-          architecture: "gateway_ecu_segments",
+          architecture: "shared_gateway_segment",
           shared_segment: true,
-          maximum_ecus: 6,
+          ...(item.maximumParticipants ? { maximum_ecus: item.maximumParticipants } : {}),
         },
       }, registrationIndex);
       canonicalObjects.push(...result.canonical_objects);
@@ -4084,6 +4152,12 @@ ecu_gateway fuer Sensor/Aktor -> fachliche ECU -> Gateway/BCM,
 gateway_ecu_segments fuer Gateway-Backbone-Segmente mit bis zu 6 ECUs pro
 Gateway-Leitung, gateway_direct fuer direkte Sensor/ECU/Aktor -> Gateway/BCM-
 Pfade und hybrid_ai fuer die freigegebene KI-Kombination. Bei
+allen gatewayhaltigen Varianten gilt: Eine direkte logische Route bedeutet
+nicht automatisch einen eigenen physischen Gateway-Port. Teilnehmer derselben
+Fachfamilie und Bustechnik teilen ein Mehrteilnehmer-Bussegment; nur eine
+explizit geforderte Punkt-zu-Punkt-Technik darf einen eigenen physischen Link
+erzeugen. Variante 4 begrenzt diese gemeinsamen ECU-Segmente zusaetzlich auf
+maximal sechs ECUs. Bei
 sensor_ecu_actuator bleiben Sensoren und Aktoren ausschliesslich an ihrer
 fachlichen ECU; lege keine Gateway-/BCM-Verbindungen fuer diese lokale Variante
 an. Bei gateway_ecu_segments bleiben Sensoren und Aktoren an ihrer fachlichen

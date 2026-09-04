@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -413,6 +413,22 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS engineering_topology_layouts (
+        project_id TEXT NOT NULL REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,
+        topology_key TEXT NOT NULL,
+        layout_version INTEGER NOT NULL CHECK (layout_version > 0),
+        node_id TEXT NOT NULL,
+        x DOUBLE PRECISION NOT NULL,
+        y DOUBLE PRECISION NOT NULL,
+        width DOUBLE PRECISION,
+        height DOUBLE PRECISION,
+        ports JSONB NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (project_id, topology_key, layout_version, node_id)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_topology_layouts_lookup ON engineering_topology_layouts(project_id, topology_key, layout_version)",
     """
     CREATE TABLE IF NOT EXISTS engineering_analysis_snapshots (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

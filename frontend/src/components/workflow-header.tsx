@@ -11,7 +11,7 @@ import {
   type WorkflowStep,
   type WorkflowStepId,
 } from "@/lib/workflow-api";
-import { SETTINGS_EVENT } from "@/lib/user-settings";
+import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
 
 const LINKS: Record<WorkflowStepId, string> = {
   engineering_model: "/studio/engineering",
@@ -80,12 +80,22 @@ export function notifyWorkflowDraftStatus(
   }));
 }
 
-export function WorkflowHeader({ variant = "engineering" }: { variant?: WorkflowHeaderVariant }) {
-  if (variant === "trace-analysis") return <TraceAnalysisHeader />;
-  return <Suspense fallback={<WorkflowHeaderSkeleton />}><WorkflowHeaderContent /></Suspense>;
+export function WorkflowHeader({
+  initialProjectId = "",
+  variant = "engineering",
+}: {
+  initialProjectId?: string;
+  variant?: WorkflowHeaderVariant;
+}) {
+  if (variant === "trace-analysis") return <TraceAnalysisHeader initialProjectId={initialProjectId} />;
+  return (
+    <Suspense fallback={<WorkflowHeaderSkeleton />}>
+      <WorkflowHeaderContent initialProjectId={initialProjectId} />
+    </Suspense>
+  );
 }
 
-function TraceAnalysisHeader() {
+function TraceAnalysisHeader({ initialProjectId = "" }: { initialProjectId?: string }) {
   const search = useSearchParams();
   const activeView = search.get("view") || "session";
   const jobId = search.get("job");
@@ -105,7 +115,7 @@ function TraceAnalysisHeader() {
           <Link
             aria-current={step.id === activeView ? "step" : undefined}
             className={`workflow-step ${step.id === activeView ? "active" : ""}`}
-            href={`/trace-analysis?view=${step.id}${jobId ? `&job=${encodeURIComponent(jobId)}` : ""}`}
+            href={withProjectParam(`/trace-analysis?view=${step.id}${jobId ? `&job=${encodeURIComponent(jobId)}` : ""}`, initialProjectId)}
             key={step.id}
             title={step.label}
           >
@@ -125,7 +135,7 @@ function WorkflowHeaderSkeleton() {
   return <section className="workflow-header"><nav className="workflow-steps">{FALLBACK_STEPS.map((step) => <span className="workflow-step" key={step.id}><span className="workflow-step-number">{step.position}</span><span className="workflow-step-copy"><strong>{step.label}</strong><small className="workflow-status"><i /> Status lädt</small></span></span>)}</nav></section>;
 }
 
-function WorkflowHeaderContent() {
+function WorkflowHeaderContent({ initialProjectId = "" }: { initialProjectId?: string }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
@@ -173,16 +183,23 @@ function WorkflowHeaderContent() {
         return next;
       });
     };
-    refresh();
-    const timer = window.setInterval(refresh, 10000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    refreshWhenVisible();
+    const timer = window.setInterval(refreshWhenVisible, 30000);
     window.addEventListener(WORKFLOW_CHANGED_EVENT, refresh);
     window.addEventListener(WORKFLOW_DRAFT_STATUS_EVENT, handleDraftStatusChanged);
     window.addEventListener(SETTINGS_EVENT, handleSettingsChanged);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, refresh);
       window.removeEventListener(WORKFLOW_DRAFT_STATUS_EVENT, handleDraftStatusChanged);
       window.removeEventListener(SETTINGS_EVENT, handleSettingsChanged);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [activeStep, refresh]);
 
@@ -197,6 +214,7 @@ function WorkflowHeaderContent() {
       : step;
   });
   const activeStepStatus = displayedSteps.find((step) => step.id === activeStep)?.status;
+  const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const activeStaleReason = activeStepStatus === "OUTDATED"
     ? displayedSteps.find((step) => step.id === activeStep)?.reason
     : undefined;
@@ -218,7 +236,7 @@ function WorkflowHeaderContent() {
           <Link
             aria-current={step.id === activeStep ? "step" : undefined}
             className={`workflow-step ${step.id === activeStep ? "active" : ""}`}
-            href={LINKS[step.id]}
+            href={withProjectParam(LINKS[step.id], projectIdForLinks)}
             key={step.id}
             title={step.reason || `${step.label}: ${STATUS_LABELS[step.status]}`}
           >

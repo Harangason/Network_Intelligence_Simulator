@@ -556,8 +556,8 @@ def _run_backend() -> int:
     return main()
 
 
-def _frontend_dev_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str]:
-    """Start Next.js from local dependencies instead of relying on global npm."""
+def _frontend_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str]:
+    """Start the prebuilt UI in production and keep local source work in dev mode."""
     node = shutil.which("node")
     if node is None:
         raise SystemExit("Node.js wurde nicht gefunden. Bitte Node.js installieren und erneut starten.")
@@ -569,7 +569,15 @@ def _frontend_dev_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str
             "`npm install` ausführen."
         )
 
+    production = os.environ.get("NETWORKIS_FRONTEND_MODE", "development").strip().lower() == "production"
+    if production:
+        return [node, str(next_cli), "start", "-p", str(port)]
     return [node, str(next_cli), "dev", "--webpack", "-p", str(port)]
+
+
+def _frontend_dev_command(frontend: Path, port: int = FRONTEND_PORT) -> list[str]:
+    """Backward-compatible entry point used by launcher integrations."""
+    return _frontend_command(frontend, port)
 
 
 def _ollama_api_root(environment: dict[str, str]) -> str:
@@ -794,7 +802,7 @@ def _run_web() -> int:
             "Frontend-Abhängigkeiten fehlen. Bitte zuerst im Ordner frontend `npm install` ausführen."
         )
     frontend_port = _port_from_environment("FRONTEND_PORT", FRONTEND_PORT)
-    frontend_command = _frontend_dev_command(frontend, frontend_port)
+    frontend_command = _frontend_command(frontend, frontend_port)
 
     backend_host = os.environ.get("FLASK_HOST", BACKEND_HOST)
     backend_port = _port_from_environment("FLASK_PORT", BACKEND_PORT)
@@ -880,7 +888,7 @@ def _run_web() -> int:
         if runtime_fallback is not None:
             print(f"Runtime-Fallback: {runtime_fallback}")
         if frontend_dist_dir is not None:
-            print(f"Next.js Dev-Ordner: frontend/{frontend_dist_dir}")
+            print(f"Next.js Build-Ordner: frontend/{frontend_dist_dir}")
         print("Beenden mit Strg+C")
         if os.environ.get("NETWORKIS_OPEN_BROWSER", "1").strip().lower() not in {
             "0",

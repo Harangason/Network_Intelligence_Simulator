@@ -167,3 +167,57 @@ def test_system_duplicate_analysis_recognizes_adas_synonym_but_not_airbag(monkey
 
     hardware[0]["lifecycle_state"] = "superseded"
     assert analyze_system_duplicates()["count"] == 0
+
+
+def test_controlled_industry_alias_never_displaces_the_canonical_system(monkeypatch):
+    hardware = [
+        {"id": "canonical", "object_type": "HardwareNode", "name": "Lenkung", "device_type": "ECU", "domain": "automotive"},
+        {"id": "alias", "object_type": "HardwareNode", "name": "Lenkungs", "device_type": "ECU", "domain": "automotive"},
+    ]
+    functions = [
+        {"id": "canonical-function", "object_type": "Function", "name": "Lenkregelung", "hardware_node_id": "canonical"},
+        {"id": "alias-function-1", "object_type": "Function", "name": "Lenkungsregelung", "hardware_node_id": "alias"},
+        {"id": "alias-function-2", "object_type": "Function", "name": "Lenkungsdiagnose", "hardware_node_id": "alias"},
+    ]
+    objects = {
+        "HardwareNode": hardware,
+        "Function": functions,
+        "Interface": [],
+        "Message": [],
+        "Signal": [],
+    }
+    by_id = {item["id"]: item for group in objects.values() for item in group}
+    children = {
+        ("Function", "canonical"): [functions[0]],
+        ("Function", "alias"): functions[1:],
+    }
+    monkeypatch.setattr(structure_transfer, "_load_graph", lambda: (objects, by_id, children))
+
+    result = analyze_system_duplicates()
+
+    assert result["count"] == 1
+    assert result["items"][0]["canonical_hardware"]["id"] == "canonical"
+    assert result["items"][0]["duplicate_hardware"]["id"] == "alias"
+
+
+def test_alias_family_targets_the_existing_canonical_system_without_alias_chains(monkeypatch):
+    hardware = [
+        {"id": "canonical", "object_type": "HardwareNode", "name": "Motorsteuerung", "device_type": "ECU", "domain": "automotive"},
+        {"id": "motor", "object_type": "HardwareNode", "name": "Motor", "device_type": "ECU", "domain": "automotive"},
+        {"id": "motion", "object_type": "HardwareNode", "name": "Motion", "device_type": "ECU", "domain": "automotive"},
+    ]
+    objects = {
+        "HardwareNode": hardware,
+        "Function": [],
+        "Interface": [],
+        "Message": [],
+        "Signal": [],
+    }
+    by_id = {item["id"]: item for item in hardware}
+    monkeypatch.setattr(structure_transfer, "_load_graph", lambda: (objects, by_id, {}))
+
+    result = analyze_system_duplicates()
+
+    assert result["count"] == 2
+    assert {item["canonical_hardware"]["id"] for item in result["items"]} == {"canonical"}
+    assert {item["duplicate_hardware"]["id"] for item in result["items"]} == {"motor", "motion"}

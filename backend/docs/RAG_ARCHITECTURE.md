@@ -20,6 +20,23 @@ domain, technology, and version are configurable in `HybridRetrievalService`.
 Released, approved, and validated knowledge receives more weight than raw,
 imported, or AI-generated material.
 
+## Industry Partitions
+
+Signal-generation evidence is routed through `IndustryRAGOrchestrator`.
+Industry-neutral semantic tags remain separate from profile-specific
+`industry_tags`. Signal-list imports do not persist raw signal names; they
+produce aggregate `SignalCorpusProfile` objects with counts, tag distributions,
+and namespace patterns only. Profiles carry a `rag_partition` such as
+`signal-generation:generic`, `signal-generation:automotive`,
+`signal-generation:industrial_automation`, `signal-generation:aerospace`,
+`signal-generation:rail`, `signal-generation:marine`, `signal-generation:energy`,
+`signal-generation:building_automation`, `signal-generation:embedded_systems`,
+`signal-generation:robotics_ros` or `signal-generation:generic_networking`.
+
+Generators may combine the selected industry partition with
+`signal-generation:generic` fallback evidence. RAG evidence remains advisory and
+cannot approve or complete generated engineering objects.
+
 ## Current State
 
 `backend/knowledge` contains provider-neutral graph, vector and transformer

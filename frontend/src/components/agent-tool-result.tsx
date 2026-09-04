@@ -10,6 +10,7 @@ import {
   engineeringObjectTypeLabel,
   normalizeEngineeringObjectType,
 } from "@/lib/engineering-object-style";
+import { withProjectParam } from "@/lib/user-settings";
 
 type DataRecord = Record<string, unknown>;
 
@@ -291,7 +292,7 @@ function ActionSuggestions({ actions }: { actions: DiagnosticAction[] }) {
   async function selectAction(action: DiagnosticAction) {
     setMessage("");
     if (action.kind === "navigate" && action.href) {
-      window.location.assign(action.href);
+      window.location.assign(withProjectParam(action.href));
       return;
     }
     if (action.kind === "create_optimization_proposal" && action.proposal) {

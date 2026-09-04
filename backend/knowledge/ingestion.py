@@ -106,6 +106,16 @@ class KnowledgeIngestionPipeline:
 
     def ingest(self, chunks: Iterable[EngineeringChunk]) -> list[dict[str, Any]]:
         indexed = []
+        document_fields = {
+            "domain",
+            "technology",
+            "version",
+            "approval_state",
+            "language",
+            "knowledge_level",
+            "source_quality",
+            "evidence",
+        }
         for chunk in chunks:
             metadata = chunk.metadata
             indexed.append(
@@ -123,6 +133,11 @@ class KnowledgeIngestionPipeline:
                         knowledge_level=str(metadata.get("knowledge_level") or "L1_IMPORTED"),
                         source_quality=float(metadata.get("source_quality") or 0.55),
                         evidence=tuple(metadata.get("evidence") or ()),
+                        extra_metadata={
+                            key: value
+                            for key, value in metadata.items()
+                            if key not in document_fields
+                        },
                     )
                 )
             )

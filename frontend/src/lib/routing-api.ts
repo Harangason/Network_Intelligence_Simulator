@@ -2,13 +2,8 @@ import type { RoutingEntry, RoutingProposal, RoutingSchema } from "./types";
 import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering/routing";
-const LOCAL_FRONTEND_PORT = "13500";
-const LOCAL_ROUTING_BASE = "http://127.0.0.1:15050/api/engineering/routing";
 
 function routingBaseUrl(): string {
-  if (typeof window !== "undefined" && window.location.port === LOCAL_FRONTEND_PORT) {
-    return LOCAL_ROUTING_BASE;
-  }
   return BASE;
 }
 

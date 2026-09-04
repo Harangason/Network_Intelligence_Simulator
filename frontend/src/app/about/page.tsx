@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Arrow, MarketingShell, PageHero } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
 
 const principles = [
   ["Observable", "Ein System ist erst verständlich, wenn seine Kommunikation sichtbar und untersuchbar wird."],
@@ -16,7 +15,7 @@ export default function AboutPage() {
         {principles.map(([title, text], index) => <article key={title}><span>0{index + 1}</span><h2>{title}</h2><p>{text}</p></article>)}
       </section>
       <section className="split-feature about-tech"><div><p className="section-label">How it is built</p><h2>Transparent from interface to engine.</h2></div><div className="about-facts"><div><span>Frontend</span><strong>Next.js / TypeScript</strong></div><div><span>Engine</span><strong>Python / Browser fallback</strong></div><div><span>Output</span><strong>JSONL / CSV / Native</strong></div><div><span>License model</span><strong>Open project</strong></div></div></section>
-      <section className="page-cta"><p className="section-label">See it in operation</p><h2>Build signals. Understand systems.</h2><Link className="primary-link" href="/studio">Launch simulator <Arrow /></Link></section>
+      <section className="page-cta"><p className="section-label">See it in operation</p><h2>Build signals. Understand systems.</h2><ProjectAwareLink className="primary-link" href="/studio">Launch simulator <Arrow /></ProjectAwareLink></section>
     </MarketingShell>
   );
 }

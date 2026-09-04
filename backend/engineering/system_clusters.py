@@ -64,6 +64,22 @@ def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> d
         if processor_owner.get(key, key) == key
     }
     nodes = {str(item.get("id")): item for item in topology.get("nodes", [])}
+    hardware_id_by_node_id = {
+        node_id: str(node.get("engineeringId") or node_id)
+        for node_id, node in nodes.items()
+    }
+    physical_owners: dict[str, set[str]] = {}
+    for edge in topology.get("edges", []):
+        if not isinstance(edge, dict):
+            continue
+        source_id = hardware_id_by_node_id.get(str(edge.get("source")), str(edge.get("source") or ""))
+        target_id = hardware_id_by_node_id.get(str(edge.get("target")), str(edge.get("target") or ""))
+        for endpoint_id, neighbor_id in ((source_id, target_id), (target_id, source_id)):
+            if endpoint_id not in by_id or neighbor_id not in processors:
+                continue
+            if by_id[endpoint_id].get("device_type") not in {"SensorController", "ActuatorController"}:
+                continue
+            physical_owners.setdefault(endpoint_id, set()).add(processor_owner.get(neighbor_id, neighbor_id))
     explicit = {}
     for node in nodes.values():
         owner = str(node.get("systemOwnerId") or "")
@@ -73,12 +89,21 @@ def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> d
             explicit[str(node.get("engineeringId") or node["id"])] = (owner_id, node.get("systemOwnerSource") or "explicit")
     owners = {}
     for key, item in by_id.items():
-        explicit_owner, basis = explicit.get(key, ("", "explicit"))
-        owner = str((item.get("identity") or {}).get("system_owner_id") or explicit_owner)
+        explicit_owner, basis = explicit.get(key, ("", "unassigned"))
+        physical_candidates = physical_owners.get(key, set())
+        physical_owner = next(iter(physical_candidates)) if len(physical_candidates) == 1 else ""
+        identity = item.get("identity") or {}
+        identity_owner = str(identity.get("system_owner_id") or "")
+        if identity_owner:
+            basis = str(identity.get("system_owner_source") or "explicit")
+        owner = identity_owner or explicit_owner
         owner = processor_owner.get(owner, owner)
         if key in processors:
             owner = processor_owner.get(key, key)
             basis = "explicit" if owner == key else "inferred"
+        elif physical_owner and basis in {"inferred", "unassigned"}:
+            owner = physical_owner
+            basis = "physical"
         elif owner not in processors:
             name = _key(str(item.get("name") or ""))
             candidates = []

@@ -1,4 +1,10 @@
 import type { ExtractedEngineeringChain, NetworkArchitectureMode } from "./engineering-specification";
+import {
+  compareTopologyClusterKeys,
+  inferTopologyClusterProfileFromText,
+  topologyClusterFamilyForKey,
+  topologyClusterForText,
+} from "../topology-cluster-knowledge.ts";
 
 type RouteRule = {
   source: string[];
@@ -8,6 +14,11 @@ type RouteRule = {
 export type SemanticRoutePlan = {
   source: ExtractedEngineeringChain;
   destinations: ExtractedEngineeringChain[];
+  networkSegment?: {
+    key: string;
+    label: string;
+    ordinal: number;
+  };
 };
 
 const ROUTE_RULES: RouteRule[] = [
@@ -142,15 +153,54 @@ function gatewayForProcessor(
 }
 
 function processorSegments(processors: ExtractedEngineeringChain[], size = GATEWAY_ECU_SEGMENT_SIZE) {
-  const ordered = [...processors].sort((left, right) => (
-    canonicalInterfaceKey(left.interface_type).localeCompare(canonicalInterfaceKey(right.interface_type))
-    || left.hardware_name.localeCompare(right.hardware_name, "de-DE", { numeric: true, sensitivity: "base" })
-  ));
-  const segments: ExtractedEngineeringChain[][] = [];
-  for (let index = 0; index < ordered.length; index += size) {
-    segments.push(ordered.slice(index, index + size));
+  const profile = inferTopologyClusterProfileFromText(
+    processors.map((processor) => chainText(processor)).join(" "),
+    processors[0]?.domain,
+  );
+  const families = new Map<string, {
+    key: string;
+    label: string;
+    clusterKey: string;
+    processors: ExtractedEngineeringChain[];
+  }>();
+  const processorCluster = (processor: ExtractedEngineeringChain) => topologyClusterForText(
+    `${processor.hardware_name} ${processor.function_name}`,
+    profile,
+  );
+  for (const processor of processors) {
+    const cluster = processorCluster(processor);
+    const family = topologyClusterFamilyForKey(cluster.key, profile);
+    const current = families.get(family.key) ?? {
+      key: family.key,
+      label: family.label,
+      clusterKey: cluster.key,
+      processors: [],
+    };
+    current.processors.push(processor);
+    families.set(family.key, current);
   }
-  return segments;
+  return [...families.values()]
+    .sort((left, right) => (
+      compareTopologyClusterKeys(left.clusterKey, right.clusterKey, profile)
+      || left.label.localeCompare(right.label, "de")
+    ))
+    .flatMap((family) => {
+      const ordered = [...family.processors].sort((left, right) => (
+        compareTopologyClusterKeys(processorCluster(left).key, processorCluster(right).key, profile)
+        || canonicalInterfaceKey(left.interface_type).localeCompare(canonicalInterfaceKey(right.interface_type))
+        || left.hardware_name.localeCompare(right.hardware_name, "de-DE", { numeric: true, sensitivity: "base" })
+      ));
+      const segments = [];
+      for (let index = 0; index < ordered.length; index += size) {
+        segments.push({
+          key: family.key,
+          label: family.label,
+          ordinal: index / size + 1,
+          processors: ordered.slice(index, index + size),
+        });
+      }
+      return segments;
+    });
 }
 
 export function semanticRoutePlans(
@@ -163,11 +213,30 @@ export function semanticRoutePlans(
   const endpoints = [...sensors, ...actuators];
   const processors = chains.filter((chain) => !endpoints.includes(chain) && !gateways.includes(chain));
   const plans: SemanticRoutePlan[] = [];
+  const sharedSegments = processorSegments(
+    architecture === "gateway_direct" || architecture === "hybrid_ai"
+      ? [...endpoints, ...processors]
+      : processors,
+    architecture === "gateway_ecu_segments" ? GATEWAY_ECU_SEGMENT_SIZE : Number.MAX_SAFE_INTEGER,
+  );
+  const segmentByParticipant = new Map(
+    sharedSegments.flatMap((segment) => segment.processors.map((participant) => [
+      semanticRouteKey(participant.hardware_name),
+      { key: segment.key, label: segment.label, ordinal: segment.ordinal },
+    ] as const)),
+  );
+  const segmentFor = (participant: ExtractedEngineeringChain) => (
+    segmentByParticipant.get(semanticRouteKey(participant.hardware_name))
+  );
 
   if (architecture === "gateway_direct") {
     for (const participant of [...endpoints, ...processors]) {
       const gateway = gatewayForProcessor(participant, gateways);
-      if (gateway) plans.push({ source: participant, destinations: [gateway] });
+      if (gateway) plans.push({
+        source: participant,
+        destinations: [gateway],
+        networkSegment: segmentFor(participant),
+      });
     }
   } else {
     for (const [endpointIndex, endpoint] of endpoints.entries()) {
@@ -179,20 +248,38 @@ export function semanticRoutePlans(
         && (canonicalInterfaceKey(endpoint.interface_type) === "ethernet" || !processor);
       if (actuator && processor) {
         if (processor) plans.push({ source: processor, destinations: [endpoint] });
-      } else if (directInHybrid && gateway) plans.push({ source: endpoint, destinations: [gateway] });
+      } else if (directInHybrid && gateway) plans.push({
+        source: endpoint,
+        destinations: [gateway],
+        networkSegment: segmentFor(endpoint),
+      });
       else if (processor) plans.push({ source: endpoint, destinations: [processor] });
     }
     if (architecture === "sensor_ecu_actuator") {
       // Pure local control loop: endpoint <-> ECU only, no Gateway/BCM route layer.
     } else if (architecture === "gateway_ecu_segments") {
       for (const segment of processorSegments(processors)) {
-        const gateway = gatewayForProcessor(segment[0], gateways);
-        if (gateway && segment.length) plans.push({ source: gateway, destinations: segment });
+        const gateway = gatewayForProcessor(segment.processors[0], gateways);
+        if (gateway && segment.processors.length) {
+          plans.push({
+            source: gateway,
+            destinations: segment.processors,
+            networkSegment: {
+              key: segment.key,
+              label: segment.label,
+              ordinal: segment.ordinal,
+            },
+          });
+        }
       }
     } else {
       for (const processor of processors) {
         const gateway = gatewayForProcessor(processor, gateways);
-        if (gateway) plans.push({ source: processor, destinations: [gateway] });
+        if (gateway) plans.push({
+          source: processor,
+          destinations: [gateway],
+          networkSegment: segmentFor(processor),
+        });
       }
     }
   }

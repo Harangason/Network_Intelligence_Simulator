@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDevJob } from "../../_dev-opt/store";
-import { proxyBackend } from "../../_backend";
+import { projectHeaders, projectIdFromRequest, proxyBackend } from "../../_backend";
 
 // DEV-OPT: local/v0 in-memory job lookup; production requests are handled by Flask.
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const backend = await proxyBackend(`/simulations/${encodeURIComponent(id)}`, {
-    headers: { "X-Project-ID": request.headers.get("X-Project-ID") ?? "default" },
+    headers: projectHeaders(projectIdFromRequest(request)),
   });
   if (backend && backend.status !== 404) return backend;
   const job = getDevJob(id);
@@ -26,7 +26,7 @@ export async function POST(
   const backend = await proxyBackend(`/simulations/${encodeURIComponent(id)}/cancel`, {
     method: "POST",
     body: "{}",
-    headers: { "X-Project-ID": request.headers.get("X-Project-ID") ?? "default" },
+    headers: projectHeaders(projectIdFromRequest(request)),
   });
   return backend ?? NextResponse.json({ error: "Simulationsdienst nicht erreichbar." }, { status: 503 });
 }

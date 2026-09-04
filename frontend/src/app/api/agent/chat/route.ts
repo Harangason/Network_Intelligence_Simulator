@@ -27,7 +27,11 @@ import {
   registerEngineeringSignalBatch,
 } from "@/lib/agent/engineering-workload-batch";
 import { runWithAgentProject, currentAgentProjectId, currentAgentRequestText } from "@/lib/agent/request-context";
-import { runExclusiveProjectBuild } from "@/lib/agent/project-execution";
+import {
+  isCompletedProjectWorkflowRun,
+  isCompletedProjectWorkflowTarget,
+  runExclusiveProjectBuild,
+} from "@/lib/agent/project-execution";
 import { recordAgentFeedback } from "@/lib/agent/feedback-store";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
 import type { AgentBuildProgress, AgentRunStatus } from "@/lib/agent-run-status";
@@ -632,6 +636,18 @@ function createWorkflowAutomationResponse(messages: UIMessage[], target: Automat
       const context = (workflow.context ?? {}) as Record<string, unknown>;
       const wizard = (context.agent_wizard_status ?? {}) as Record<string, unknown>;
       const runId = currentAgentRequestText().match(/Lauf-ID:\s*([\w-]+)/)?.[1] ?? String(wizard.run_id ?? "");
+      if (
+        isCompletedProjectWorkflowRun(workflow, runId)
+        || isCompletedProjectWorkflowTarget(workflow, target)
+      ) {
+        const textId = crypto.randomUUID();
+        const summary = "Dieser Engineering-Lauf ist bereits abgeschlossen; es wurden keine Schritte erneut ausgeführt.";
+        audit("duplicate workflow execution skipped", { runId, target });
+        writer.write({ type: "text-start", id: textId });
+        writer.write({ type: "text-delta", id: textId, delta: summary });
+        writer.write({ type: "text-end", id: textId });
+        return;
+      }
       let currentStep: AgentBuildProgress["step"] = "network_editor";
       let state: AgentRunStatus["state"] = "RUNNING";
       let statusMessage = "Der freigegebene Workflow wird fortgesetzt.";

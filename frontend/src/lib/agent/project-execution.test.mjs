@@ -1,6 +1,33 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { runExclusiveProjectBuild } from "./project-execution.ts";
+import {
+  isCompletedProjectWorkflowRun,
+  isCompletedProjectWorkflowTarget,
+  runExclusiveProjectBuild,
+} from "./project-execution.ts";
+
+test("completed workflow runs are idempotent per run id", () => {
+  const workflow = {
+    context: {
+      agent_execution: { run_id: "run-42", state: "COMPLETED" },
+    },
+  };
+
+  assert.equal(isCompletedProjectWorkflowRun(workflow, "run-42"), true);
+  assert.equal(isCompletedProjectWorkflowRun(workflow, "run-43"), false);
+  assert.equal(isCompletedProjectWorkflowRun({ context: {} }, "run-42"), false);
+});
+
+test("completed automatic targets are idempotent independent of a stale wizard run id", () => {
+  const workflow = {
+    context: {
+      agent_execution: { run_id: "historic-run", state: "COMPLETED", step: "data_science_intelligence" },
+    },
+  };
+
+  assert.equal(isCompletedProjectWorkflowTarget(workflow, "data_science_intelligence"), true);
+  assert.equal(isCompletedProjectWorkflowTarget(workflow, "simulation"), false);
+});
 
 test("parallel starts cannot rebuild the same project", async () => {
   let release;

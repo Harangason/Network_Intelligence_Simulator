@@ -21,7 +21,7 @@ import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 import { paginateCapacityItems } from "@/lib/capacity-pagination";
 import { buildNetworkInspection, type NetworkInspection } from "@/lib/capacity-network-inspection";
-import { readActiveProjectId } from "@/lib/user-settings";
+import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 
 type View = "overview" | "networks" | "messages" | "routes" | "timing" | "gateways" | "critical" | "recommendations";
 type ViewWarningInfo = Record<View, { count: number; reasons: string[] }>;
@@ -39,7 +39,7 @@ const CAPACITY_VIEW_LABELS: Record<View, string> = {
 
 const CAPACITY_VIEWS: View[] = ["overview", "networks", "messages", "routes", "timing", "gateways", "critical", "recommendations"];
 
-export function CapacityWorkbench() {
+export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [results, setResults] = useState<CapacityResults | null>(null);
   const [findings, setFindings] = useState<AnalysisFinding[]>([]);
   const [status, setStatus] = useState<WorkflowStatus | null>(null);
@@ -260,8 +260,8 @@ export function CapacityWorkbench() {
       )}
 
       <div className="analysis-footer-actions">
-        <Link className="button secondary" href="/studio?mode=parameters">Parameter öffnen</Link>
-        <Link className="button primary" href="/studio/validation">Weiter zum Preflight →</Link>
+        <Link className="button secondary" href={withProjectParam("/studio?mode=parameters", initialProjectId)}>Parameter öffnen</Link>
+        <Link className="button primary" href={withProjectParam("/studio/validation", initialProjectId)}>Weiter zum Preflight →</Link>
       </div>
     </section>
   );

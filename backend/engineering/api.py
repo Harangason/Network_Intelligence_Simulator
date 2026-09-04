@@ -85,7 +85,7 @@ from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_t
 from .intelligence import IntelligenceService
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
-from .project_context import activate_project
+from .project_context import activate_project, normalize_context_project_id
 from .workloads import EngineeringWorkloadOrchestrator
 from .simulation import (
     FAULTS_BY_SCOPE,
@@ -294,9 +294,13 @@ def _handle_workflow_conflict(error: WorkflowConflictError):
 
 def _project_id() -> str:
     payload = request.get_json(silent=True) if request.is_json else None
-    return str(
-        request.args.get("project_id")
+    return normalize_context_project_id(
+        request.args.get("project")
+        or request.args.get("project_id")
+        or request.args.get("projectId")
+        or (payload.get("project") if isinstance(payload, dict) else None)
         or (payload.get("project_id") if isinstance(payload, dict) else None)
+        or (payload.get("projectId") if isinstance(payload, dict) else None)
         or request.headers.get("X-Project-ID")
         or "default"
     )
@@ -653,7 +657,14 @@ def update_workflow_topology_route():
     project_id = _project_id()
     actor = str(payload.get("actor") or "network-editor")
     workflow = WorkflowStatusService(project_id)
-    if is_topology_layout_only_change(workflow.get()["topology"], topology):
+    current_state = workflow.get()
+    if current_state["topology"] == topology:
+        current_state["routing_sync"] = {
+            "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
+            "skipped": [],
+        }
+        return jsonify(current_state)
+    if is_topology_layout_only_change(current_state["topology"], topology):
         state = workflow.save_topology(topology, actor=actor)
         state["routing_sync"] = {
             "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
@@ -668,6 +679,30 @@ def update_workflow_topology_route():
     state = workflow.get()
     state["routing_sync"] = routing_sync
     return jsonify(state)
+
+
+@engineering_api.route("/workflow/topology-layout", methods=["GET"])
+def workflow_topology_layout_route():
+    topology_key = str(request.args.get("topology_key") or "").strip()
+    try:
+        layout_version = int(request.args.get("layout_version", 1))
+        return jsonify(WorkflowStatusService(_project_id()).get_topology_layout(topology_key, layout_version))
+    except (TypeError, ValueError) as error:
+        raise EngineeringValidationError(str(error)) from error
+
+
+@engineering_api.route("/workflow/topology-layout", methods=["PUT"])
+def update_workflow_topology_layout_route():
+    payload = _routing_payload()
+    try:
+        result = WorkflowStatusService(_project_id()).save_topology_layout(
+            str(payload.get("topology_key") or ""),
+            int(payload.get("layout_version", 1)),
+            payload.get("nodes"),
+        )
+    except (TypeError, ValueError) as error:
+        raise EngineeringValidationError(str(error)) from error
+    return jsonify(result)
 
 
 def _workflow_snapshot_summary(snapshot: dict | None, *, keep_overview: bool = False) -> dict | None:

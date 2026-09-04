@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSimulation, listSimulations } from "@/lib/api";
 import type { SimulationJob } from "@/lib/types";
+import { withProjectParam } from "@/lib/user-settings";
 
 type TraceView = "session" | "messages" | "sequence" | "signals" | "trace" | "findings" | "root-cause";
 type TraceEvent = {
@@ -194,7 +195,7 @@ export function TraceAnalysisWorkbench() {
     setView("messages");
     const parameters = new URLSearchParams(search.toString());
     parameters.set("view", "messages");
-    router.replace(`/trace-analysis?${parameters.toString()}`);
+    router.replace(withProjectParam(`/trace-analysis?${parameters.toString()}`));
   }
 
   return (
@@ -210,7 +211,7 @@ export function TraceAnalysisWorkbench() {
               <input ref={inputRef} type="file" accept={ACCEPTED} onChange={loadFiles} className="hidden-file" />
               <button className="button primary" type="button" onClick={() => inputRef.current?.click()}>Load Trace</button>
               <button className="button secondary" type="button" onClick={() => inputRef.current?.click()}>Change Session</button>
-              <button className="button secondary" type="button" onClick={() => { setEvents([]); setSourceName("Keine Trace Session"); setView("session"); router.replace("/trace-analysis?view=session"); }}>Close Session</button>
+              <button className="button secondary" type="button" onClick={() => { setEvents([]); setSourceName("Keine Trace Session"); setView("session"); router.replace(withProjectParam("/trace-analysis?view=session")); }}>Close Session</button>
             </div> : null}
             <div className="trace-toolbar">
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Globale Filter: ID, Quelle, Ziel, Payload, Finding ..." />

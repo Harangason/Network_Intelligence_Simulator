@@ -42,6 +42,30 @@ def test_segment_identity_is_stable_across_layout_labels_and_order():
     assert physical_port_networks(source) == physical_port_networks(changed)
 
 
+def test_visual_ports_for_the_same_hardware_interface_share_one_segment():
+    source = {
+        "nodes": [
+            {
+                "id": "gateway",
+                "ports": [
+                    {"id": "gateway-a", "bus": "can_fd", "hardwareInterfaceId": "gateway-can"},
+                    {"id": "gateway-b", "bus": "can_fd", "hardwareInterfaceId": "gateway-can"},
+                ],
+            },
+            {"id": "ecu-a", "ports": [{"id": "ecu-a-port", "bus": "can_fd", "hardwareInterfaceId": "ecu-a-can"}]},
+            {"id": "ecu-b", "ports": [{"id": "ecu-b-port", "bus": "can_fd", "hardwareInterfaceId": "ecu-b-can"}]},
+        ],
+        "edges": [
+            {"source": "gateway", "sourcePort": "gateway-a", "target": "ecu-a", "targetPort": "ecu-a-port", "bus": "can_fd"},
+            {"source": "gateway", "sourcePort": "gateway-b", "target": "ecu-b", "targetPort": "ecu-b-port", "bus": "can_fd"},
+        ],
+    }
+
+    segments = physical_port_networks(source)
+
+    assert len(set(segments.values())) == 1
+
+
 def test_routing_uses_the_physical_interface_and_segment():
     route = {"id": "r2", "source": {"node_id": "two", "protocol": "LIN"}, "destinations": [{"node_id": "gateway", "protocol": "LIN", "interface_id": "ia"}]}
     result = enrich_route_from_linked_topology(route, topology())
@@ -114,6 +138,56 @@ def test_airbag_cluster_survives_gateway_direct_routing_and_unknowns_stay_unassi
     assert {owners[key]["id"] for key in ("ecu", "airbag-controller", "s", "a")} == {"ecu"}
     assert owners["airbag-controller"]["basis"] == "inferred"
     assert owners["unknown"]["basis"] == "unassigned"
+
+
+def test_direct_physical_parent_replaces_stale_inferred_owner():
+    items = [
+        {"id": "motor", "name": "Motorsteuerung", "device_type": "ECU"},
+        {"id": "thermal", "name": "Thermomanagement", "device_type": "ECU"},
+        {"id": "temperature", "name": "MotorTemperature", "device_type": "SensorController"},
+    ]
+    physical = {
+        "nodes": [
+            {"id": "n-motor", "engineeringId": "motor"},
+            {"id": "n-thermal", "engineeringId": "thermal"},
+            {
+                "id": "n-temperature",
+                "engineeringId": "temperature",
+                "systemOwnerId": "thermal",
+                "systemOwnerSource": "inferred",
+            },
+        ],
+        "edges": [{"source": "n-temperature", "target": "n-motor"}],
+    }
+
+    owners = system_owners(items, physical)
+
+    assert owners["temperature"] == {"id": "motor", "name": "Motorsteuerung", "basis": "physical"}
+
+
+def test_explicit_owner_is_not_replaced_by_a_physical_hint():
+    items = [
+        {"id": "motor", "name": "Motorsteuerung", "device_type": "ECU"},
+        {"id": "thermal", "name": "Thermomanagement", "device_type": "ECU"},
+        {"id": "temperature", "name": "MotorTemperature", "device_type": "SensorController"},
+    ]
+    physical = {
+        "nodes": [
+            {"id": "n-motor", "engineeringId": "motor"},
+            {"id": "n-thermal", "engineeringId": "thermal"},
+            {
+                "id": "n-temperature",
+                "engineeringId": "temperature",
+                "systemOwnerId": "thermal",
+                "systemOwnerSource": "structure_tree",
+            },
+        ],
+        "edges": [{"source": "n-temperature", "target": "n-motor"}],
+    }
+
+    owners = system_owners(items, physical)
+
+    assert owners["temperature"] == {"id": "thermal", "name": "Thermomanagement", "basis": "structure_tree"}
 
 
 def test_overload_proposes_additional_buses_without_splitting_system_ownership():

@@ -8,6 +8,7 @@ from backend.engineering.intelligence.services import (
     correlation,
 )
 from backend.engineering.project_bundle import normalize_project_id
+from backend.engineering.project_context import compact_context_project_id, normalize_context_project_id
 from backend.engineering.workflow.models import default_statuses, default_versions, transition_state
 from backend.app import create_app
 from backend.engineering.intelligence.service import IntelligenceService
@@ -373,6 +374,16 @@ def test_project_ids_are_restricted_to_portable_file_safe_values():
     assert normalize_project_id("demo-01") == "demo-01"
 
 
+def test_generated_network_project_ids_can_use_short_browser_suffix():
+    suffix = "20260904065103044-913c8f1f"
+    full = f"network-project-{suffix}"
+
+    assert normalize_context_project_id(suffix) == full
+    assert normalize_context_project_id(full) == full
+    assert normalize_project_id(suffix) == full
+    assert compact_context_project_id(full) == suffix
+
+
 def test_intelligence_assessment_endpoint_uses_active_project(monkeypatch):
     class FakeIntelligenceService:
         def __init__(self, project_id):
@@ -392,6 +403,26 @@ def test_intelligence_assessment_endpoint_uses_active_project(monkeypatch):
 
     assert response.status_code == 200
     assert response.get_json()["project_id"] == "project-intelligence"
+
+
+def test_intelligence_assessment_endpoint_accepts_short_browser_project(monkeypatch):
+    class FakeIntelligenceService:
+        def __init__(self, project_id):
+            self.project_id = project_id
+
+        def assess(self):
+            return {"project_id": self.project_id, "status": "WARNING", "results": {"critical_issues": []}}
+
+    monkeypatch.setattr("backend.engineering.api.IntelligenceService", FakeIntelligenceService)
+    client = create_app(testing=True).test_client()
+
+    response = client.post(
+        "/api/engineering/intelligence/assess?project=20260904065103044-913c8f1f",
+        json={},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["project_id"] == "network-project-20260904065103044-913c8f1f"
 
 
 def test_intelligence_issue_approval_endpoint_uses_active_project(monkeypatch):

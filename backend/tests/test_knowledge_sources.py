@@ -6,6 +6,7 @@ import pytest
 
 from backend.knowledge import (
     HybridRetrievalService,
+    IndustryRAGOrchestrator,
     KnowledgeIngestionPipeline,
     LocalTransformerService,
     PostgresSourceAdapter,
@@ -55,9 +56,98 @@ def test_sqlite_adapter_reads_all_user_tables_without_mutating_source(tmp_path):
     assert staged[0].payload["name"] == "StateOfCharge"
 
 
+def test_signal_list_adapter_builds_rag_signal_generation_hints():
+    content = "\n".join(
+        [
+            "BV_Obj_01_LongitudinalDist",
+            "BV_Obj_02_LateralDist",
+            "VIN_1",
+            "BAP_LDW_FSG_01_Header",
+            "WFS_Schluessel_Fahrberecht",
+            "BV_Obj_02_LateralDist",
+            "not valid!",
+        ]
+    )
+    retrieval = HybridRetrievalService(transformer=LocalTransformerService(dimensions=64))
+    service = SourceIngestionService(KnowledgeIngestionPipeline(retrieval))
+
+    result = service.ingest(
+        "signal-list",
+        SourceRequest("vehicle-signals", content=content, options={"domain": "automotive"}),
+    )
+
+    assert result["raw_count"] == 1
+    profile = result["staged"][0]
+    assert profile.object_type == "SignalCorpusProfile"
+    assert profile.payload["observed_signal_count"] == 5
+    assert profile.payload["duplicate_count"] == 1
+    assert profile.payload["rejected_count"] == 1
+    assert profile.payload["raw_signal_names_persisted"] is False
+    assert profile.payload["industry"] == "automotive"
+    assert profile.payload["rag_partition"] == "signal-generation:automotive"
+    assert profile.payload["semantic_type_counts"] == {
+        "BYTE_ARRAY": 1,
+        "FLAG": 1,
+        "NUMERIC": 2,
+        "STRING": 1,
+    }
+    assert {"object_tracking", "position"}.issubset(
+        {item["value"] for item in profile.payload["semantic_tag_counts"]}
+    )
+    assert "object_perception" in {item["value"] for item in profile.payload["industry_tag_counts"]}
+    assert {"value": "BV_Obj_<n>", "count": 2} in profile.payload["namespace_pattern_counts"]
+
+    persisted_text = str(result["staged"]) + str(result["indexed"])
+    for raw_name in (
+        "BV_Obj_01_LongitudinalDist",
+        "BV_Obj_02_LateralDist",
+        "VIN_1",
+        "BAP_LDW_FSG_01_Header",
+        "WFS_Schluessel_Fahrberecht",
+    ):
+        assert raw_name not in persisted_text
+
+    retrieved = retrieval.retrieve(
+        "object tracking position automotive",
+        filters={"rag_partition": "signal-generation:automotive"},
+    )
+    assert retrieved[0]["object_type"] == "SignalCorpusProfile"
+    assert retrieved[0]["metadata"]["rag_schema"] == "rag-signal-generation.v1"
+    assert retrieved[0]["metadata"]["rag_partition"] == "signal-generation:automotive"
+    assert retrieved[0]["metadata"]["source_quality"] == 0.42
+    assert retrieved[0]["metadata"]["raw_signal_names_persisted"] is False
+    for raw_name in (
+        "BV_Obj_01_LongitudinalDist",
+        "BV_Obj_02_LateralDist",
+        "VIN_1",
+        "BAP_LDW_FSG_01_Header",
+        "WFS_Schluessel_Fahrberecht",
+    ):
+        assert raw_name not in str(retrieved)
+
+
+def test_industry_rag_orchestrator_keeps_neutral_semantics_and_separate_partitions():
+    orchestrator = IndustryRAGOrchestrator()
+
+    generic = orchestrator.signal_payload("System_Status", source_id="neutral", source_line=1)
+    robotics = orchestrator.signal_payload("JOINT_01_Position", source_id="robot", source_line=1)
+    aerospace = orchestrator.signal_payload("TM_PayloadTemperature", source_id="flight", source_line=1)
+
+    assert generic["industry"] == "generic"
+    assert generic["semantic_tags"] == ["status"]
+    assert generic["rag_partition"] == "signal-generation:generic"
+    assert robotics["industry"] == "robotics_ros"
+    assert "position" in robotics["semantic_tags"]
+    assert "joint_state" in robotics["industry_tags"]
+    assert robotics["rag_partition"] == "signal-generation:robotics_ros"
+    assert aerospace["industry"] == "aerospace"
+    assert "temperature" in aerospace["semantic_tags"]
+    assert "telemetry" in aerospace["industry_tags"]
+
+
 def test_registry_exposes_required_initial_sources_and_postgres_is_read_only():
     registry = SourceAdapterRegistry()
-    assert set(registry.supported_types) == {"csv", "json", "postgresql", "rest", "sqlite", "xml", "yaml"}
+    assert set(registry.supported_types) == {"csv", "json", "postgresql", "rest", "signal-list", "sqlite", "xml", "yaml"}
     with pytest.raises(ValueError, match="read-only SELECT"):
         PostgresSourceAdapter().load(
             SourceRequest(

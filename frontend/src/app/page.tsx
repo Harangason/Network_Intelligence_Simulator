@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Arrow, LogoMark, MarketingFooter, MarketingNav } from "@/components/marketing-shell";
+import { Arrow, LogoMark, MarketingFooter, MarketingNav, ProjectAwareLink } from "@/components/marketing-shell";
 
 const features = [
   {
@@ -44,9 +43,9 @@ export default function Home() {
             Eine offene Simulationsumgebung für moderne Kommunikation — vom ersten Knoten bis zum vollständigen Trace.
           </p>
           <div className="hero-actions">
-            <Link className="primary-link" href="/studio">Start simulating <Arrow /></Link>
-            <Link className="primary-link trace-link" href="/trace-analysis">Start Trace Analyse <Arrow /></Link>
-            <Link className="text-link" href="/platform">Explore the platform <Arrow /></Link>
+            <ProjectAwareLink className="primary-link" href="/studio">Start simulating <Arrow /></ProjectAwareLink>
+            <ProjectAwareLink className="primary-link trace-link" href="/trace-analysis">Start Trace Analyse <Arrow /></ProjectAwareLink>
+            <ProjectAwareLink className="text-link" href="/platform">Explore the platform <Arrow /></ProjectAwareLink>
           </div>
         </div>
         <div className="hero-coordinates" aria-hidden="true">
@@ -89,7 +88,7 @@ export default function Home() {
           <p className="section-label">Built for iteration</p>
           <h2 id="workflow-title">Go from an idea to a verified trace in minutes.</h2>
           <p>Choose a domain, tune the system, and let the simulation engine produce evidence you can work with.</p>
-          <Link className="text-link light" href="/studio">Enter the workspace <Arrow /></Link>
+          <ProjectAwareLink className="text-link light" href="/studio">Enter the workspace <Arrow /></ProjectAwareLink>
         </div>
         <div className="console-card" aria-label="Beispiel eines Simulationslaufs">
           <div className="console-top"><span>trace_run_021</span><span>● LIVE</span></div>
@@ -113,7 +112,7 @@ export default function Home() {
       <section className="landing-cta">
         <p className="section-label">Your system. In focus.</p>
         <h2>Ready to see what<br />your network is saying?</h2>
-        <Link className="primary-link dark" href="/studio">Launch simulator <Arrow /></Link>
+        <ProjectAwareLink className="primary-link dark" href="/studio">Launch simulator <Arrow /></ProjectAwareLink>
       </section>
 
       <MarketingFooter />

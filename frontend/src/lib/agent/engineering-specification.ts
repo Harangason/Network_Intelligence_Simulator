@@ -534,6 +534,10 @@ const GENERIC_HARDWARE_LABELS = new Set([
   "plc",
   "controller",
   "steuergeraet",
+  "funktion",
+  "funktions",
+  "funktions ecu",
+  "funktions ecus",
 ]);
 
 const PARAMETER_LABEL_PATTERN =
@@ -708,7 +712,9 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     hardwareName: template.hardwareName,
     deviceType: "SensorController" as const,
     signalName: template.signalName,
-    interfaceType: template.interfaceType,
+    interfaceType: /camera|kamera|vision|radar|lidar|scanner|ultrasonic/i.test(template.hardwareName)
+      ? template.interfaceType
+      : "LIN",
     cycleMs: template.cycleMs,
     unit: template.unit,
     minValue: template.minValue,
@@ -730,7 +736,7 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     };
   });
   const actuators = profile.systemVariants.flatMap((name) => ["Stellglied", "Schaltausgang"].map((kind) => {
-    const interfaceType = systemInterfaceType(name, domain);
+    const interfaceType = "LIN";
     return {
     hardwareName: `${baseName(name)}${kind}Actuator`,
     deviceType: "ActuatorController" as const,
@@ -819,6 +825,65 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
   };
 }
 
+function canonicalSystemName(name: string, domain: string) {
+  const profile = industryTemplateProfile(domain);
+  const sourceName = normalizeHardwareName(name);
+  const sourceKey = normalized(sourceName);
+  const ignored = new Set((profile.ignoredSystemNames ?? []).map((item) => normalized(normalizeHardwareName(item))));
+  if (ignored.has(sourceKey)) return null;
+  const alias = Object.entries(profile.systemAliases ?? {}).find(
+    ([candidate]) => normalized(normalizeHardwareName(candidate)) === sourceKey,
+  );
+  return alias?.[1] ?? sourceName;
+}
+
+function canonicalizeRecognizedSystems(chains: ExtractedEngineeringChain[], domain: string) {
+  const canonicalized = chains.flatMap((chain) => {
+    if (chain.device_type !== "ECU") return [chain];
+    const canonicalName = canonicalSystemName(chain.hardware_name, domain);
+    if (!canonicalName) return [];
+    if (canonicalName === chain.hardware_name) return [chain];
+    const oldIdentifier = identifier(chain.hardware_name);
+    const newIdentifier = identifier(canonicalName);
+    const replaceIdentifier = (value: string) => value.startsWith(oldIdentifier)
+      ? `${newIdentifier}${value.slice(oldIdentifier.length)}`
+      : value;
+    return [{
+      ...chain,
+      hardware_name: canonicalName,
+      function_name: replaceIdentifier(chain.function_name),
+      interface_name: `${newIdentifier}_${chain.interface_type}`,
+      message_name: replaceIdentifier(chain.message_name),
+      signal_name: replaceIdentifier(chain.signal_name),
+      signal_display_name: replaceIdentifier(chain.signal_display_name),
+      semantic: {
+        ...(chain.semantic ?? {}),
+        category: normalized(canonicalName),
+      },
+      communication: {
+        ...(chain.communication ?? {}),
+        producer: canonicalName,
+      },
+    }];
+  });
+
+  const byIdentity = new Map<string, ExtractedEngineeringChain>();
+  canonicalized.forEach((chain) => {
+    const key = `${chain.device_type}:${normalized(normalizeHardwareName(chain.hardware_name))}`;
+    const current = byIdentity.get(key);
+    if (!current) {
+      byIdentity.set(key, chain);
+      return;
+    }
+    const quality = (candidate: ExtractedEngineeringChain) => {
+      const descriptionLength = candidate.hardware_description.trim().length;
+      return (descriptionLength > 0 && descriptionLength <= 320 ? 1000 : 0) - descriptionLength;
+    };
+    if (quality(chain) > quality(current)) byIdentity.set(key, chain);
+  });
+  return [...byIdentity.values()];
+}
+
 function expandArchitectureChains(
   recognizedChains: ExtractedEngineeringChain[],
   requested: EngineeringTargetCounts,
@@ -826,7 +891,8 @@ function expandArchitectureChains(
   communicationSystems: string[],
   overrides: Partial<EngineeringHardwareCounts> = {},
 ) {
-  const recognizedCounts = chainCounts(recognizedChains);
+  const canonicalRecognizedChains = canonicalizeRecognizedSystems(recognizedChains, domain);
+  const recognizedCounts = chainCounts(canonicalRecognizedChains);
   const targets: EngineeringTargetCounts = {
     sensors: requested.sensors || recognizedCounts.sensors,
     actuators: requested.actuators || recognizedCounts.actuators,
@@ -837,7 +903,7 @@ function expandArchitectureChains(
   };
   const retainedCounts = { sensors: 0, actuators: 0, ecus: 0, gateways: 0 };
   const chains = targets.explicit
-    ? recognizedChains.filter((chain) => {
+    ? canonicalRecognizedChains.filter((chain) => {
       const category = chain.device_type === "SensorController"
         ? "sensors"
         : chain.device_type === "ActuatorController" ? "actuators"
@@ -851,7 +917,7 @@ function expandArchitectureChains(
       retainedCounts[category] += 1;
       return true;
     })
-    : [...recognizedChains];
+    : [...canonicalRecognizedChains];
   const names = new Set(chains.map((chain) => normalized(normalizeHardwareName(chain.hardware_name))));
   if (!targets.explicit) return { chains, targets };
 

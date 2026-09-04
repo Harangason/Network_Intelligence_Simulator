@@ -23,7 +23,7 @@ import {
 } from "@/lib/routing-approval";
 import type { RoutingEntry } from "@/lib/types";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
-import { getWorkflow } from "@/lib/workflow-api";
+import { getWorkflowSummary } from "@/lib/workflow-api";
 import { WORKFLOW_CHANGED_EVENT } from "@/components/workflow-header";
 
 type AgentPanelSize = {
@@ -149,7 +149,7 @@ export function GlobalAgentWidget() {
   }, [isLandingPage]);
 
   useEffect(() => {
-    if (isLandingPage || !settingsReady) {
+    if (isLandingPage || !settingsReady || !open) {
       setApprovalProgress(null);
       return;
     }
@@ -164,7 +164,7 @@ export function GlobalAgentWidget() {
         if (!active) return;
         setApprovalProgress(next);
         if (!next.complete) return;
-        const workflow = await getWorkflow();
+        const workflow = await getWorkflowSummary();
         if (!active) return;
         // The wizard owns its run and explicit review gates, including after reopening.
         if (workflow.context.agent_wizard_status) return;
@@ -185,7 +185,7 @@ export function GlobalAgentWidget() {
     const handleRoutingChange = () => void checkRoutingApprovals();
 
     void checkRoutingApprovals();
-    const interval = window.setInterval(checkRoutingApprovals, 5000);
+    const interval = window.setInterval(checkRoutingApprovals, 30_000);
     window.addEventListener(WORKFLOW_CHANGED_EVENT, handleRoutingChange);
     window.addEventListener("focus", handleRoutingChange);
     return () => {
@@ -194,7 +194,7 @@ export function GlobalAgentWidget() {
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, handleRoutingChange);
       window.removeEventListener("focus", handleRoutingChange);
     };
-  }, [activeProject, isLandingPage, settingsReady]);
+  }, [activeProject, isLandingPage, open, settingsReady]);
 
   useEffect(() => {
     const openAgent = () => setOpen(true);
@@ -257,12 +257,14 @@ export function GlobalAgentWidget() {
             </div>
 
             <div className="agent-widget-body">
-              <AgentChatCore
-                compact
-                key={activeProject}
-                projectId={activeProject}
-                routingApprovalComplete={approvalProgress?.complete === true}
-              />
+              {open && (
+                <AgentChatCore
+                  compact
+                  key={activeProject}
+                  projectId={activeProject}
+                  routingApprovalComplete={approvalProgress?.complete === true}
+                />
+              )}
             </div>
         </div>
         {!open && (

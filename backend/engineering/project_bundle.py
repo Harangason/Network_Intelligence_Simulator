@@ -12,6 +12,7 @@ from psycopg.types.json import Jsonb
 
 from .db import get_connection
 from .models import EngineeringValidationError
+from .project_context import normalize_context_project_id
 from .workflow.models import default_statuses, default_versions
 from .workflow.service import WorkflowStatusService
 
@@ -115,7 +116,7 @@ PROJECT_UUID_KEYS = {
 
 
 def normalize_project_id(value: Any) -> str:
-    project_id = str(value or "").strip()
+    project_id = normalize_context_project_id(value)
     if not PROJECT_ID_PATTERN.fullmatch(project_id):
         raise EngineeringValidationError(
             "project_id darf nur Buchstaben, Zahlen, Punkt, Unterstrich und Bindestrich enthalten."
