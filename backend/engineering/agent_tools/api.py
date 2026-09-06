@@ -24,7 +24,10 @@ from .runtime import ToolAuthority, DEFAULT_PERMISSIONS, execute
 from .services import TOOLS
 from . import proposal_service as proposals
 from . import conversation
-from .run_status import WizardExecutionTracker, extract_wizard_run_id
+from .run_status import WizardExecutionTracker, extract_wizard_run_id, reconcile_model_apply
+from .cancellation import RunCancellation, request_cancel
+from ..workflow.service import WorkflowStatusService
+from datetime import datetime, timezone
 from backend.agent_core.api.agent_response import validate_response
 
 agent_api = Blueprint("engineering_agent_api", __name__)
@@ -79,6 +82,9 @@ def proposal_apply(proposal_id):
     authority = ToolAuthority(_project(),"local-human",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
     result = execute(authority,"apply_approved_proposal",Permission.APPLY_APPROVED_PROPOSAL,{"proposal_id":proposal_id},
                      lambda a:proposals.apply(a["proposal_id"],actor=authority.actor,trace_id=a["_trace_id"]))
+    if result.success:
+        execute(authority, 'reconcile_model_apply', Permission.READ_MODEL, {},
+                lambda _: reconcile_model_apply(authority.project_id, result.data))
     return jsonify(result.model_dump(mode="json")),200 if result.success else 409
 
 
@@ -126,6 +132,42 @@ def proposal_revise(proposal_id):
     return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
 
 
+@agent_api.post('/runs/<wizard_run_id>/cancel')
+def cancel_wizard(wizard_run_id):
+    if (request.get_json(silent=True) or {}).get('confirmed') is not True:
+        return jsonify({'error': 'Bitte den Abbruch ausdrücklich bestätigen.'}), 400
+    project_id = _project()
+    def cancel(_):
+        service = WorkflowStatusService(project_id)
+        workflow = service.get(summary=True)
+        context = workflow.get('context') or {}
+        execution = context.get('agent_execution') or {}
+        wizard = context.get('agent_wizard_status') or {}
+        if wizard_run_id != (execution.get('run_id') or wizard.get('run_id')):
+            raise ValueError('Dieser Auftrag ist nicht mehr der aktuelle Projektauftrag.')
+        state = conversation.read()
+        if state.get('run_id') and extract_wizard_run_id(state.get('current_requirement', '')) != wizard_run_id:
+            raise ValueError('Ein anderer Auftrag läuft; dieser wird nicht abgebrochen.')
+        running_here = request_cancel(project_id, wizard_run_id)
+        if not running_here and state.get('run_id'):
+            conversation.finish(state['run_id'])
+        if state.get('active_workload') and extract_wizard_run_id(state.get('current_requirement', '')) == wizard_run_id:
+            from ..workloads import EngineeringWorkloadOrchestrator
+            workloads = EngineeringWorkloadOrchestrator(project_id)
+            if workloads.get_workload(state['active_workload'])['status'] not in {'COMPLETED', 'CANCELED'}:
+                workloads.cancel(state['active_workload'], actor='local-human')
+        now = datetime.now(timezone.utc).isoformat()
+        updated = {'agent_execution': {**execution, 'run_id': wizard_run_id, 'state': 'CANCELED',
+            'step': execution.get('step') or workflow['active_step'],
+            'completed': execution.get('completed', 0), 'total': execution.get('total', 0),
+            'message': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.', 'updated_at': now}}
+        if wizard.get('run_id') == wizard_run_id:
+            updated['agent_wizard_status'] = {**wizard, 'status': 'CANCELED', 'canceled_at': now}
+        return service.set_context(updated, summary=True)
+    result = execute(ToolAuthority(project_id, 'local-human'), 'cancel_wizard_run', Permission.READ_MODEL, {}, cancel)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
 @agent_api.post("/chat")
 def chat():
     payload = request.get_json(silent=True)
@@ -169,7 +211,9 @@ def chat():
             execute(authority, 'finish_conversation_turn', Permission.READ_MODEL, {}, lambda _: conversation.finish(run_id))
             _slots.release()
             return jsonify({"error":"Der serverseitige Laufstatus konnte nicht angelegt werden."}),503
+    cancellation = RunCancellation(project_id, wizard_run_id or run_id)
     def emit(event):
+        cancellation.check()
         if event['type'] != 'CONTEXT':
             event = validate_response(event)
             saved = execute(authority, 'record_conversation_response', Permission.READ_MODEL, {},
@@ -181,6 +225,11 @@ def chat():
                 tracker.event(event)
         queue.put(event)
     async def run():
+        cancellation.bind()
+        if tracker:
+            current = WorkflowStatusService(project_id).get(summary=True).get('context', {}).get('agent_execution', {})
+            if current.get('run_id') == wizard_run_id and current.get('state') == 'CANCELED':
+                raise asyncio.CancelledError()
         reasoner = LocalEngineeringReasoner()
         try:
             async with EngineeringMCPClient(create_server(ToolAuthority(project_id))) as client:
@@ -193,6 +242,8 @@ def chat():
         heartbeat_stop = threading.Event()
         def heartbeat():
             while not heartbeat_stop.wait(30):
+                if cancellation.cancelled.is_set():
+                    return
                 try:
                     conversation.renew(run_id)
                     if tracker:
@@ -206,6 +257,9 @@ def chat():
             result = asyncio.run(asyncio.wait_for(run(), timeout=max(300, min(int(os.environ.get('ENGINEERING_AGENT_RUN_TIMEOUT_SECONDS', '1800')), 7200))))
             if tracker:
                 tracker.finished(result)
+        except asyncio.CancelledError:
+            queue.put(validate_response({'type': 'RESULT', 'status': 'CANCELED',
+                'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'}))
         except Exception as error:
             import logging
             logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)
@@ -216,6 +270,7 @@ def chat():
                 tracker.failed(message)
             queue.put(validate_response({"type":"ERROR","status":"BLOCKED","text":message,"metadata":{"run_id":run_id},"actions":[{"type":"RETRY","label":"Erneut versuchen"}]}))
         finally:
+            cancellation.close()
             heartbeat_stop.set()
             heartbeat_thread.join(timeout=1)
             execute(authority, 'finish_conversation_turn', Permission.READ_MODEL, {}, lambda _: conversation.finish(run_id))

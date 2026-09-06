@@ -19,7 +19,7 @@ from ..workflow.service import WorkflowStatusService
 from ..workloads import EngineeringWorkloadOrchestrator
 from ..intelligence import IntelligenceService
 from backend.intelligence.ml import MLInferenceService
-from . import model as access, generation, proposal_service as proposals, analysis, audit
+from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
 from .catalog import TOOLS, register, ID, TEXT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
 
@@ -302,6 +302,7 @@ def register_tools():
     register("inspect_proposal","Gemeinsamen Proposal-Vertrag lesen.",P.READ_MODEL,lambda a:proposals.get(a["proposal_id"]),proposal_id=ID)
     register("validate_proposal","Proposal und referenzierten Modellstand validieren.",P.VALIDATE,lambda a:proposals.validate(a["proposal_id"]),proposal_id=ID)
     register("apply_approved_proposal","Ausschließlich menschlich freigegebenen, aktuellen Proposal atomar anwenden.",P.APPLY_APPROVED_PROPOSAL,lambda a:proposals.apply(a["proposal_id"],actor=a["_actor"],trace_id=a["_trace_id"]),proposal_id=ID)
+    register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=TEXT)
     register("create_workload","Messbaren Auftrag mit Sollzahlen planen und speichern.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload(a["request"]),request=OBJECT)
     register("generate_signals","Signalauftrag durch vorhandenen Workload-Generator planen.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload({**a["request"],"workload_type":"SIGNAL_GENERATION"}),request=OBJECT)
     for name,method in [("start_workload","start_workload"),("validate_workload","validate_workload"),("repair_workload","retry_invalid"),("generate_missing","generate_missing"),("inspect_workload","get_workload"),("get_workload_progress","progress")]:

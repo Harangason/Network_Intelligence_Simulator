@@ -721,6 +721,10 @@ def _runtime_environment() -> dict[str, str]:
     environment.setdefault("CLOUD_ESCALATION", _config_text(ai_config, "cloud_escalation", "on_failure"))
     environment.setdefault("NVIDIA_AI_MODEL", _config_text(nvidia, "model", "nvidia/nemotron-3-nano-30b-a3b"))
     environment.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
+    environment.setdefault(
+        "SIMULATOR_BACKEND_API_URL",
+        f"http://{BACKEND_HOST}:{BACKEND_PORT}/api",
+    )
     environment.setdefault("OLLAMA_MODELS", _config_text(paths, "ollama_models", r"I:\engineering-intelligence-platform\models\ollama"))
     environment.setdefault("OLLAMA_CONTEXT_LENGTH", str(_config_int(resources, "ollama_context_length", 8192)))
     environment.setdefault("OLLAMA_KEEP_ALIVE", _config_text(resources, "ollama_keep_alive", "10m"))

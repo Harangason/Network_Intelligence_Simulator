@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agentBuildProgressPercent, agentRunIsActive, readAgentRunStatus } from "./agent-run-status.ts";
+import { agentBuildProgressPercent, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep } from "./agent-run-status.ts";
 
 const run = {
   run_id: "wizard-run", state: "RUNNING", step: "routing", completed: 36, total: 150,
   message: "36 von 150 Routing-Pfaden vorbereitet.", updated_at: "2026-08-30T19:00:00Z",
 };
+
+test('routing continuation does not restart the completed model stage', () => {
+  const stale = { ...run, step: 'engineering_model', completed: 0, total: 0 };
+  assert.equal(resolveAgentRunStep(stale, { engineering_model: 'COMPLETE', routing: 'EMPTY' }).step, 'routing');
+  assert.equal(stale.step, 'engineering_model');
+  assert.equal(resolveAgentRunStep(stale, { engineering_model: 'OUTDATED', routing: 'EMPTY' }).step, 'engineering_model');
+  assert.equal(resolveAgentRunStep({ ...stale, state: 'CANCELED' }, { engineering_model: 'COMPLETE' }).state, 'CANCELED');
+});
 
 test("restores progress only for the matching wizard run", () => {
   assert.deepEqual(readAgentRunStatus(run, run.run_id), run);
@@ -27,6 +35,15 @@ test("derives progress from completed batches, including empty and finished work
   assert.equal(agentBuildProgressPercent({ ...run, completed: 0, total: 0 }), 0);
   assert.equal(agentBuildProgressPercent({ ...run, completed: 150 }), 100);
   assert.equal(agentBuildProgressPercent({ ...run, completed: 160 }), 100);
+});
+
+test("model review is distinct from routing review", () => {
+  const applied = { ...run, state: "READY_TO_CONTINUE" };
+  assert.equal(readAgentRunStatus(applied, run.run_id)?.state, "READY_TO_CONTINUE");
+  assert.equal(agentReviewStep(applied), null);
+  assert.equal(agentReviewStep({ ...run, state: "REVIEW_REQUIRED", step: "engineering_model" }), "engineering_model");
+  assert.equal(agentReviewStep({ ...run, state: "REVIEW_REQUIRED" }), "routing");
+  assert.equal(agentReviewStep(run), null);
 });
 
 test("heartbeats keep a restored run active but an interrupted run expires", () => {

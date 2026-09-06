@@ -590,7 +590,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             merged = _apply_hardware_classification_defaults({**existing, **updates})
             for field in ("device_class", "device_typing", "data_complexity", "classification_status", "capability_profile_ref", "hardware_information"):
                 updates[field] = merged[field]
-    parent_link = PARENT_LINKS.get(object_type)
+    parent_link = parent_link_for_payload(object_type, {**existing, **updates})
     parent = None
     if object_type == "Interface" and ("function_id" in updates or "hardware_node_id" in updates):
         next_function_id = updates.get("function_id", existing.get("function_id"))

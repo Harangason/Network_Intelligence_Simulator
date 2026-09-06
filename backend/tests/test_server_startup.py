@@ -200,6 +200,7 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
         "SIMULATION_EXECUTOR",
         "WORKFLOW_EVENT_LIMIT",
         "DATABASE_URL",
+        "SIMULATOR_BACKEND_API_URL",
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(LAUNCHER.os, "cpu_count", lambda: 32)
@@ -217,6 +218,7 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
     assert environment["WORKFLOW_EVENT_LIMIT"] == "100000"
     assert environment["OMP_NUM_THREADS"] == "1"
     assert environment["DATABASE_URL"] == LAUNCHER.DEFAULT_DATABASE_URL
+    assert environment["SIMULATOR_BACKEND_API_URL"] == "http://127.0.0.1:15050/api"
 
 
 def test_runtime_environment_uses_persisted_resource_config(

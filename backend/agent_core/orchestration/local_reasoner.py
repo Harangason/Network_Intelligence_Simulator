@@ -26,6 +26,43 @@ def _context_for_reasoning(context) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
+def _reasoning_messages(messages):
+    """Keep large tool snapshots from evicting the user query in local inference.
+
+    This is only a presentation view; full tool results remain in the audit/model.
+    Omitted data is explicitly marked and can be retrieved by focused tools.
+    """
+    def compact(value, depth=0):
+        if isinstance(value, str):
+            return value if len(value) <= 500 else value[:500] + ' [gekürzt]'
+        if isinstance(value, list):
+            items = [compact(item, depth + 1) for item in value[:5]]
+            return items + ([{'omitted_items': len(value) - 5}] if len(value) > 5 else [])
+        if isinstance(value, dict):
+            if depth > 6:
+                return {'omitted_keys': list(value)}
+            return {key: compact(item, depth + 1) for key, item in value.items()
+                    if key not in {'agent_prompt', 'ui_history'}}
+        return value
+    prepared = _no_think_messages(messages)
+    remaining = 9000
+    for message in reversed(prepared):
+        if message.get('role') != 'tool':
+            continue
+        content = str(message.get('content') or '')
+        limit = min(4500, max(0, remaining))
+        if len(content) > limit:
+            try:
+                summary = json.dumps(compact(json.loads(content)), ensure_ascii=False, separators=(',', ':'))
+            except (ValueError, TypeError):
+                summary = content
+            message['content'] = json.dumps({'truncated': True,
+                'notice': 'Nicht vollständig. Benötigte Details gezielt mit inspect/search nachladen.',
+                'summary': summary[:max(0, limit - 200)]}, ensure_ascii=False)
+        remaining -= len(str(message.get('content') or ''))
+    return prepared
+
+
 class LocalEngineeringReasoner:
     def __init__(self):
         base_url = os.environ.get("LOCAL_AI_BASE_URL", "http://127.0.0.1:11434/v1")
@@ -56,13 +93,18 @@ class LocalEngineeringReasoner:
         )
         response = await self.client.post(self.chat_url, json={
             "model": self.model,
-            "messages": [{"role":"system","content":system}, *_no_think_messages(messages)],
+            "messages": [{"role":"system","content":system}, *_reasoning_messages(messages)],
             "tools": [{"type":"function","function":{"name":t["name"],"description":t["description"],"parameters":t["input_schema"]}} for t in tools],
             "think": False,
             "stream": False,
             "options": {"temperature": 0.2, "num_predict": 1600},
         })
-        response.raise_for_status()
+        if response.is_error:
+            try:
+                detail = str(response.json().get('error', ''))[:500]
+            except ValueError:
+                detail = ''
+            raise RuntimeError(f'Lokaler KI-Dienst: HTTP {response.status_code}. {detail}')
         message = response.json().get("message") or {}
         calls = []
         for call in message.get("tool_calls") or []:

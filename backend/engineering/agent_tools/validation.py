@@ -4,6 +4,7 @@ from ..signal_audit import inspect_message_signals
 from ..message_packing import valid_payload_bytes
 from ..capacity.calculators import estimate_frame, utilization_percent
 from .model import objects, networks
+from ..device_classification import DeviceClassificationRegistry
 
 
 def validate_effective_model(changes):
@@ -46,6 +47,13 @@ def validate_effective_model(changes):
         if item is None:
             continue
         try:
+            if kind == 'Function' and item.get('lifecycle_state') not in {'deprecated', 'superseded'}:
+                hardware = parent('HardwareNode', item['hardware_node_id'])
+                profile = DeviceClassificationRegistry().resolve_profile(
+                    name=hardware.get('name', ''), device_type=hardware.get('device_type', ''),
+                    device_class=hardware.get('device_class'))
+                if not profile.requires_function_model:
+                    raise ValueError('Klasse 0–2: Interface direkt an Hardware anbinden; keine künstliche Funktion erzeugen.')
             if rules and kind in {'Interface', 'HardwareNetworkInterface'}:
                 if not communication_system_allows_interface(rules['communication_systems'], item.get('interface_type') or item.get('technology')):
                     raise ValueError('Die Kommunikationstechnologie ist durch die Projektregeln nicht zugelassen.')

@@ -16,6 +16,18 @@ from backend.agent_core.api.tool_contract import Permission
 from backend.engineering.agent_tools import conversation, proposal_service
 from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id
 from backend.engineering.workflow.service import WorkflowStatusService
+
+
+def test_large_tool_output_cannot_evict_the_user_query():
+    from backend.agent_core.orchestration.local_reasoner import _reasoning_messages
+    content = json.dumps({'success': True, 'data': {'signals': [{'id': str(i), 'name': 'Signal' * 100} for i in range(500)]}})
+    original = [{'role': 'user', 'content': 'Routing fortsetzen.'},
+                {'role': 'tool', 'tool_call_id': 'call-1', 'content': content}]
+    prepared = _reasoning_messages(original)
+    assert prepared[0]['content'].startswith('Routing fortsetzen.')
+    assert len(prepared[1]['content']) < 5000
+    assert json.loads(prepared[1]['content'])['truncated'] is True
+    assert original[1]['content'] == content
 from backend.simulator_engineering_mcp.server import create_server
 
 

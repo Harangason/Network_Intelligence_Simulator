@@ -73,10 +73,35 @@ class EngineeringAgent:
 
         if context.active_proposal and not context.current_workload:
             restored = await call('inspect_proposal', {'proposal_id':context.active_proposal})
-            if restored.success:
+            if restored.success and restored.data['status'] not in {'APPLIED', 'REJECTED'}:
                 event('APPROVAL', proposal=restored.data, text=restored.data['rationale'])
                 event('RESULT', status=restored.data['status'], text='Der gespeicherte Vorschlag ist wiederhergestellt. Bitte seinen aktuellen Prüfstatus beachten.')
                 return {'run_id':run_id, 'status':restored.data['status'], 'events':events, 'context':context.model_dump(), 'trace':traces, 'proposals':[restored.data]}
+            context.active_proposal = None
+
+        # Confirmed wizard creation precedes free-text heuristics: words such as
+        # "welche" in an attached specification must not turn it into a query.
+        confirmed_wizard = ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
+                and 'per Wizard-Uebernehmen bestaetigt' in prompt
+                and re.search(r'^- Hardware-Sollwerte:\s*\{', prompt, re.M))
+        if confirmed_wizard and not project.data.get('artifact_checks', {}).get('engineering_model', {}).get('complete'):
+            event('PROGRESS', status='PLANNING', text='Engineering-Modell aus den bestätigten Wizard-Vorgaben vorbereiten.')
+            result = await call('generate_wizard_model', {'prompt': prompt})
+            if result.success:
+                proposal = await validate_proposal(result.data)
+                valid = proposal.get('status') == 'VALIDATED'
+                event('PROGRESS', status='VALIDATING', text=f"{len(proposal['changes'])} Modelländerungen geprüft.",
+                      workload={'completed': len(proposal['changes']) if valid else 0, 'total': len(proposal['changes'])})
+                event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                text = ('Das Engineering-Modell ist als geprüfter Vorschlag vorbereitet. Bitte die Modelländerungen freigeben; die weiteren Workflow-Schritte sind noch offen.'
+                        if valid else 'Der Modellvorschlag benötigt Korrekturen. Die Validierung zeigt die konkreten Findings.')
+            else:
+                status = 'INCOMPLETE'
+                text = 'Der Wizard-Generator konnte den Modellvorschlag nicht vorbereiten. ' + '; '.join(str(f.get('message', '')) for f in result.findings)
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
 
         # Explicit structured decisions precede the existing proposal pipeline.
         if re.search(r'kamera|camera', prompt, re.I) and re.search(r'umfeld|umgebung|überwach|ueberwach|erkenn|vision|360', prompt, re.I) and not re.search(r'^\s*(zeige|liste|welche|inspect)|\d+\s+(?:Funktion(?:en)?|functions?|Signal(?:e)?|signals?)\b', prompt, re.I):
@@ -104,7 +129,7 @@ class EngineeringAgent:
         # Signal counts are interpreted and checked by the existing Python
         # workload planner behind MCP, not by the language model.
         signal_request = bool(re.search(r"\d+.*signal|signal.*\d+", prompt, re.I)) and not re.search(r"\b(welche|zeige|liste|list|inspect)\b", prompt, re.I)
-        if context.current_workload or signal_request:
+        if context.current_workload or (signal_request and not confirmed_wizard):
             workload_id = context.current_workload
             if not workload_id:
                 result = await call("create_workload", {"request":{"prompt":prompt,"workload_type":"SIGNAL_GENERATION",

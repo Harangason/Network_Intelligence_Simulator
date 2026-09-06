@@ -6,7 +6,7 @@ import type { AssistantGraphState } from "@/lib/assistant-graph";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { FormEvent, KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { EngineeringAgentUIMessage } from "@/lib/agent/engineering-agent";
+import type { EngineeringAgentUIMessage, EngineeringProposal } from "@/lib/agent/engineering-agent";
 import { getCatalog } from "@/lib/api";
 import {
   activateEngineeringAgentWizardSession,
@@ -26,7 +26,8 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunIsActive, readAgentRunStatus } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep } from "@/lib/agent-run-status";
+import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, symbolicProgressAt } from "@/lib/wizard-progress";
 import { extractEngineeringSpecification, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import {
@@ -43,10 +44,8 @@ import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, 
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import { topologyClusterKnowledgeSummary } from "@/lib/topology-cluster-knowledge";
 import {
-  cancelEngineeringWorkload,
   createOptimizationProposal,
   getWorkflowSummary,
-  listEngineeringWorkloads,
   setWorkflowContext,
   type IntelligenceRecommendation,
   type WorkflowState,
@@ -909,9 +908,10 @@ const WORKFLOW_STATUS_LABEL: Record<WorkflowStatus, string> = {
   OUTDATED: "Veraltet",
 };
 
-type WorkflowDisplayStatus = WorkflowStatus | "BLOCKED";
+type WorkflowDisplayStatus = WorkflowStatus | "BLOCKED" | "REVIEW_REQUIRED";
 
 const WORKFLOW_DISPLAY_STATUS_LABEL: Record<WorkflowDisplayStatus, string> = {
+  REVIEW_REQUIRED: "Vorschlag geprüft · Freigabe offen",
   ...WORKFLOW_STATUS_LABEL,
   BLOCKED: "Angehalten",
 };
@@ -1279,7 +1279,7 @@ export function EngineeringAgentWizard({
     ));
     return requestIndex >= 0 ? wizardMessages.slice(requestIndex) : [];
   }, [runId, wizardMessages]);
-  const execution = readAgentRunStatus(workflow?.context?.agent_execution, runId);
+  const execution = resolveAgentRunStep(readAgentRunStatus(workflow?.context?.agent_execution, runId), workflow?.statuses ?? {});
   const rawWizardStatus = workflow?.context?.agent_wizard_status;
   const resumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
     ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).resume_count) || 0)
@@ -1694,46 +1694,15 @@ export function EngineeringAgentWizard({
   async function cancelWizardRun() {
     if (cancelBusy) return;
     const activeRunId = runId || submittedContext?.run_id || "without-run-id";
-    setCancelBusy(true);
-    setStatusError("");
     try {
-      stopWizardMessage();
-      const workloadIds = collectWorkloadIds(currentRunMessages);
-      if (!workloadIds.length) {
-        const workloads = await listEngineeringWorkloads({ limit: 50 });
-        workloads.items
-          .filter((item) => ["QUEUED", "IN_PROGRESS", "PAUSED"].includes(String(item.status).toUpperCase()))
-          .forEach((item) => {
-            if (item.workload_id) workloadIds.push(item.workload_id);
-          });
-      }
-      await Promise.all([...new Set(workloadIds)].map((workloadId) => (
-        cancelEngineeringWorkload(workloadId).catch((error) => {
-          void writeWizardDiagnostic("error", {
-            projectId,
-            runId: activeRunId,
-            step: "status-overview",
-            event: "workload-cancel-failed",
-            details: error instanceof Error ? error.message : `Workload ${workloadId} konnte nicht abgebrochen werden.`,
-          }).catch(() => undefined);
-        })
-      )));
-      const canceledWorkflow = await setWorkflowContext({
-        agent_wizard_status: submittedContext ? {
-          ...submittedContext,
-          status: "CANCELED",
-          canceled_at: new Date().toISOString(),
-        } : null,
-        agent_execution: {
-          run_id: activeRunId,
-          state: "CANCELED",
-          step: execution?.step ?? "engineering_model",
-          completed: execution?.completed ?? 0,
-          total: execution?.total ?? 0,
-          message: "Der Engineering-Auftrag wurde durch den Nutzer abgebrochen.",
-          updated_at: new Date().toISOString(),
+      const canceledWorkflow = await requestWizardCancellation(projectId, activeRunId, {
+        onConfirmed: () => {
+          setCancelBusy(true);
+          setStatusError("");
+          stopWizardMessage();
         },
       });
+      if (!canceledWorkflow) return;
       setWorkflow(canceledWorkflow);
       finishEngineeringAgentWizardSession(projectId);
       void writeWizardDiagnostic("workflow", {
@@ -1806,13 +1775,13 @@ export function EngineeringAgentWizard({
   }
 
   async function retryPopupRun() {
-    if (agentPending || !runId || resumeCount >= 1) return;
+    if (agentPending || !runId || (resumeCount >= 1 && execution?.state !== "READY_TO_CONTINUE")) return;
     const originalPrompt = currentRunMessages
       .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
     const originalText = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
     const modelComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
-    const workflowTarget = modelComplete && routingReview.complete
-      ? [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
+    const workflowTarget = modelComplete
+      ? !routingReview.complete ? "routing" : [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
       : undefined;
     const prompt = workflowTarget
       ? `Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`
@@ -1953,21 +1922,23 @@ export function EngineeringAgentWizard({
   const persistedStatusRows = SCOPE_GROUP.options.map((option, index) => {
     const workflowStepId = option.id as WorkflowStepId;
     const workflowStep = workflow?.steps.find((item) => item.id === workflowStepId);
-    const blocked = execution?.step === workflowStepId && execution.state === "BLOCKED";
-    const staleRunning = execution?.step === workflowStepId && execution.state === "RUNNING" && executionStopped;
-    const building = execution?.step === workflowStepId && (execution.state === "RUNNING" || blocked);
-    const awaitingReview = execution?.step === workflowStepId && execution.state === "REVIEW_REQUIRED"
-      && workflowStep?.status === "IN_PROGRESS";
+    const artifactComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflowStep?.status ?? "EMPTY");
+    const blocked = !artifactComplete && execution?.step === workflowStepId && execution.state === "BLOCKED";
+    const staleRunning = !artifactComplete && execution?.step === workflowStepId && execution.state === "RUNNING" && executionStopped;
+    const building = !artifactComplete && execution?.step === workflowStepId && (execution.state === "RUNNING" || blocked);
+    const awaitingReview = !artifactComplete && agentReviewStep(execution) === workflowStepId;
     const workflowStatus: WorkflowStatus = staleRunning
       ? "ERROR"
       : workflowStep?.status ?? "EMPTY";
-    const displayStatus: WorkflowDisplayStatus = blocked ? "BLOCKED" : workflowStatus;
+    const displayStatus: WorkflowDisplayStatus = blocked ? "BLOCKED" : awaitingReview ? "REVIEW_REQUIRED" : workflowStatus;
     return {
       displayStatus,
       id: workflowStepId,
       label: option.label.replace(/^\d+\s+/, ""),
       position: index + 1,
-      progress: building ? Math.min(99, agentBuildProgressPercent(execution)) : awaitingReview ? 99 : wizardStepProgress(workflowStatus),
+      progress: building
+        ? Math.min(99, agentBuildProgressPercent(execution))
+        : awaitingReview ? 99 : wizardStepProgress(workflowStatus),
       selected: submittedContext?.scope_ids.includes(workflowStepId) ?? scope.includes(workflowStepId),
       status: workflowStatus,
     };
@@ -2003,12 +1974,14 @@ export function EngineeringAgentWizard({
     message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
   )) || Boolean(submittedContext?.agent_prompt?.trim());
   const routingReview = routingApprovalProgress(routingEntries);
+  const modelReviewPending = !agentPending && agentReviewStep(execution) === "engineering_model"
+    && !["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
   const routingReviewPending = !agentPending
     && !executionStopped && !routingReview.complete
-    && (routingReview.total > 0 || execution?.state === "REVIEW_REQUIRED");
-  const runPaused = !agentPending && !routingReviewPending
+    && !modelReviewPending && (routingReview.total > 0 || agentReviewStep(execution) === "routing");
+  const runPaused = !agentPending && !routingReviewPending && !modelReviewPending
     && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
-  const canRetryPopupRun = runPaused && hasResumablePrompt && resumeCount < 1 && execution?.state !== "CANCELED";
+  const canRetryPopupRun = runPaused && hasResumablePrompt && (resumeCount < 1 || execution?.state === "READY_TO_CONTINUE") && execution?.state !== "CANCELED";
   const lastAssistantText = [...currentRunMessages].reverse()
     .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
   const runMessage = execution?.state === "RUNNING" && executionStopped
@@ -2087,9 +2060,9 @@ export function EngineeringAgentWizard({
   ];
   const analysisHeading = agentPending
     ? "Erste Analyse läuft"
-    : routingReviewPending
+    : routingReviewPending || modelReviewPending
       ? "Analyse bereit zur Freigabe"
-      : runPaused ? "Auftrag angehalten" : "Analyseübersicht";
+      : execution?.state === "READY_TO_CONTINUE" ? "Modell übernommen · Fortsetzung bereit" : runPaused ? "Auftrag angehalten" : "Analyseübersicht";
 
   return (
     <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
@@ -2639,8 +2612,8 @@ export function EngineeringAgentWizard({
             ) : (
               <div>
                 <span className="eyebrow">Rückfragen</span>
-                <strong>{routingReviewPending ? "Routing-Review ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
-                <small>{routingReviewPending
+                <strong>{modelReviewPending ? "Modellfreigabe ausstehend" : routingReviewPending ? "Routing-Review ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
+                <small>{modelReviewPending ? runMessage : routingReviewPending
                   ? `${routingReview.total} Routing-Einträge vorbereitet · ${routingReview.awaitingValidation} noch zu validieren · ${approvableRoutingCount} valide und freigabebereit.`
                   : agentPending
                     ? execution?.state === "RUNNING" ? runMessage : "Der Agent verarbeitet den bestätigten Auftrag."
@@ -2661,6 +2634,8 @@ export function EngineeringAgentWizard({
             )}
           </section>
 
+          {execution?.state === "REVIEW_REQUIRED" && <WizardModelReview projectId={projectId} runId={runId} />}
+
           <div
             className="agent-wizard-runtime"
             aria-label={performance ? (performance.host_metrics_available ? "Aktuelle Rechnerauslastung" : "Aktuelle Containerauslastung") : "Laufzeitauslastung wird geladen"}
@@ -2678,10 +2653,10 @@ export function EngineeringAgentWizard({
           <footer className="agent-wizard-status-footer">
             <small className="agent-wizard-log-status">TXT-Protokolle aktiv: Workflow · Rückfragen · Performance · Fehler</small>
             <div className="agent-wizard-status-actions">
-              <button className="button secondary" disabled={cancelBusy || (!agentPending && execution?.state !== "RUNNING")} onClick={() => void cancelWizardRun()} type="button">
+              <button className="button secondary" disabled={cancelBusy} onClick={() => void cancelWizardRun()} type="button">
                 {cancelBusy ? "Breche ab..." : "Abbrechen"}
               </button>
-              <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused || cancelBusy} onClick={() => void finishWizard()} type="button">
+              <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || modelReviewPending || runPaused || cancelBusy} onClick={() => void finishWizard()} type="button">
                 Fertig stellen
               </button>
             </div>
@@ -3433,6 +3408,29 @@ function summarizeToolInput(input: unknown) {
   return hints.length ? `: ${hints.join(" · ")}.` : ".";
 }
 
+function WizardModelReview({ projectId, runId }: { projectId: string; runId: string }) {
+  const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    const options = { headers: { "X-Project-ID": projectId }, signal: controller.signal, cache: "no-store" as const };
+    void (async () => {
+      const response = await fetch("/api/engineering/agent/conversation", options);
+      const conversation = await response.json();
+      if (!response.ok || !conversation.success || !conversation.data.current_requirement?.includes(`Lauf-ID: ${runId}`)
+          || !conversation.data.active_proposal) throw new Error("Kein Modellvorschlag für diesen Lauf verfügbar.");
+      const result = await fetch(`/api/engineering/agent/proposals/${encodeURIComponent(conversation.data.active_proposal)}`, options);
+      const value = await result.json();
+      if (!result.ok || !value.success) throw new Error("Modellvorschlag konnte nicht geladen werden.");
+      setProposal(value.data);
+    })().catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
+    return () => controller.abort();
+  }, [projectId, runId]);
+  if (error) return <p role="alert">{error}</p>;
+  return proposal ? <EngineeringAgentEventCard event={{ type: "APPROVAL", proposal }} projectId={projectId} />
+    : <p>Modellvorschlag wird geladen …</p>;
+}
+
 function MessagePart({
   hideText = false,
   part,
@@ -3513,22 +3511,6 @@ function MessagePart({
   }
 
   return null;
-}
-
-function collectWorkloadIds(messages: EngineeringAgentUIMessage[]) {
-  const ids: string[] = [];
-  const visit = (value: unknown) => {
-    if (!value || typeof value !== "object") return;
-    if (Array.isArray(value)) {
-      value.forEach(visit);
-      return;
-    }
-    const item = value as Record<string, unknown>;
-    if (typeof item.workload_id === "string" && item.workload_id) ids.push(item.workload_id);
-    Object.values(item).forEach(visit);
-  };
-  messages.forEach(visit);
-  return ids;
 }
 
 function AgentMessageText({ text }: { text: string }) {
