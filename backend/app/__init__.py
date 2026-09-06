@@ -17,6 +17,8 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
     )
     app.register_blueprint(api, url_prefix=api_prefix)
     app.register_blueprint(engineering_api, url_prefix=f"{api_prefix}/engineering")
+    from ..engineering.agent_tools.api import agent_api
+    app.register_blueprint(agent_api, url_prefix=f"{api_prefix}/engineering/agent")
 
     @app.after_request
     def add_cors_headers(response):

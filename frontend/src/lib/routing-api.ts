@@ -21,14 +21,18 @@ async function request<T>(path = "", init?: RequestInit): Promise<T> {
   if (!response.ok) {
     throw new Error((payload as { error?: string }).error ?? `Routing-API-Fehler ${response.status}`);
   }
+  if (init?.method && !["GET", "HEAD"].includes(init.method) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("engineering:write-completed"));
+  }
   return payload as T;
 }
 
 export async function listRoutes(): Promise<RoutingEntry[]> {
+  const projectId = readActiveProjectId();
   const items: RoutingEntry[] = [];
   const pageSize = 500;
   for (let offset = 0; ; offset += pageSize) {
-    const page = await request<{ items: RoutingEntry[] }>(`?limit=${pageSize}&offset=${offset}`);
+    const page = await request<{ items: RoutingEntry[] }>(`?limit=${pageSize}&offset=${offset}`, { headers: { "X-Project-ID": projectId } });
     items.push(...page.items);
     if (page.items.length < pageSize) return items;
   }

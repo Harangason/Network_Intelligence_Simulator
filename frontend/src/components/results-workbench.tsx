@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSimulation, listSimulations } from "@/lib/api";
+import { mergeSimulationResult } from "@/lib/simulation-result";
 import type { RuntimeMetrics, SimulationJob } from "@/lib/types";
 import {
   getWorkflowSimulationSnapshot,
@@ -69,7 +70,7 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
   }, [compareId, loadedSnapshotDetails, selectedId, snapshots]);
 
   const job = selected?.job_id ? jobs[selected.job_id] : undefined;
-  const observed = job?.result ?? selected?.result;
+  const observed = mergeSimulationResult(job?.result, selected?.result);
   const predictionSource = selected?.calculated_metrics ?? capacity?.results;
   const predicted = predictionSource && "overview" in predictionSource
     ? (predictionSource.overview as {
@@ -82,7 +83,7 @@ export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?:
   const traceEvents = observed?.trace?.events;
   const runtime = observed?.runtime_metrics;
   const compareJob = compareSnapshot?.job_id ? jobs[compareSnapshot.job_id] : undefined;
-  const compareRuntime = (compareJob?.result ?? compareSnapshot?.result)?.runtime_metrics;
+  const compareRuntime = mergeSimulationResult(compareJob?.result, compareSnapshot?.result)?.runtime_metrics;
   const projectIdForLinks = initialProjectId;
   const runtimePeak = Math.max(0, ...(runtime?.networks ?? []).map((item) => item.peak_load_percent));
   const runtimeBurst = Math.max(0, ...(runtime?.networks ?? []).map((item) => item.burst_load_percent));

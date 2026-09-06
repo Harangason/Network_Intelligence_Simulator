@@ -10,7 +10,7 @@ from flask import Blueprint, jsonify, request, send_file
 from .job_service import JOBS
 from .runtime_config import runtime_status
 from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
-from ..engineering.workflow.service import WorkflowStatusService
+from ..engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
 from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
 
 
@@ -86,7 +86,20 @@ def create_simulation():
             return jsonify({"error": "SimulationSnapshot nicht gefunden."}), 404
         if snapshot["is_outdated"] or snapshot["status"] != "READY":
             return jsonify({"error": "Der SimulationSnapshot ist nicht mehr ausfuehrbar."}), 409
-    job = JOBS.submit(payload)
+    if snapshot_id:
+        try:
+            snapshot = WorkflowStatusService(project_id).claim_simulation_snapshot(str(snapshot_id))
+        except WorkflowConflictError as error:
+            return jsonify({"error": str(error)}), 409
+        configuration = snapshot["configuration"]
+        payload = {"config": configuration}
+        payload.update(project_id=project_id, workflow_snapshot_id=snapshot_id, workflow_managed=True)
+    try:
+        job = JOBS.submit(payload)
+    except Exception:
+        if snapshot_id:
+            WorkflowStatusService(project_id).update_simulation_snapshot(str(snapshot_id), status="FAILED")
+        raise
     return jsonify(job), 202
 
 

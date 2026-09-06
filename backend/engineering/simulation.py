@@ -12,7 +12,8 @@ from .db import get_connection
 from .models import EngineeringValidationError
 from .project_context import activate_project, current_project_id, reset_project
 from .repository import list_objects
-from .routing.repository import list_routes
+from .pagination import all_pages
+from .routing.repository import list_routes, _json_safe
 
 try:
     from simulator.signals.core.validation import validate_signal_emulation_model
@@ -52,12 +53,12 @@ def _list_behaviors() -> list[dict[str, Any]]:
 def load_engineering_simulation_model(project_id: str) -> dict[str, Any]:
     token = activate_project(project_id)
     try:
-        nodes = list_objects("HardwareNode", limit=500)
-        functions = list_objects("Function", limit=500)
-        interfaces = list_objects("Interface", limit=500)
-        messages = list_objects("Message", limit=500)
-        signals = list_objects("Signal", limit=2000)
-        routes = list_routes(limit=500)
+        nodes = all_pages(list_objects, "HardwareNode")
+        functions = all_pages(list_objects, "Function")
+        interfaces = all_pages(list_objects, "Interface")
+        messages = all_pages(list_objects, "Message")
+        signals = all_pages(list_objects, "Signal")
+        routes = all_pages(list_routes)
         return {
             "schema": "communication-simulator.engineering-model.v1",
             "project_id": project_id,
@@ -87,9 +88,46 @@ def _load_project_transport_config(project_id: str, routes: list[dict[str, Any]]
         reset_project(token)
 
 
-def enrich_simulation_config(config: dict[str, Any], project_id: str) -> dict[str, Any]:
-    enriched = deepcopy(config)
+def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) -> dict[str, Any]:
+    """Freeze canonical transport and signal data under the snapshot transaction."""
+    from .capacity.service import _payload_bytes, _requirement_value, parameters_for_protocol
+    from .workflow.service import WorkflowStatusService
+
+    state = WorkflowStatusService(project_id).get()
     model = load_engineering_simulation_model(project_id)
+    messages = {str(item["id"]): item for item in model["messages"]}
+    signals = {str(item["id"]): item for item in model["signals"]}
+    interfaces = {str(item["id"]): item for item in model["interfaces"]}
+    parameters = state["parameters"]
+    routes = deepcopy(model["routes"])
+    for route in routes:
+        payload = route.get("payload") or {}
+        message = messages.get(str(payload.get("message_id") or ""), {})
+        selected = [signals[str(item)] for item in payload.get("signal_ids") or [] if str(item) in signals]
+        cycle = _requirement_value(route.get("timing") or {}, message, selected, "cycle_time_ms", "cycle_time")
+        route.setdefault("timing", {})["cycle_time_ms"] = cycle or message.get("cycle_ms") or parameters.get("cycle_ms") or 100
+        route.setdefault("validation", {}).setdefault("metrics", {})["payload_bytes"] = _payload_bytes(route, messages, int(parameters.get("payload_bytes") or 8))
+    transport = _load_project_transport_config(project_id, routes)
+    if not transport.get("communications"):
+        raise EngineeringValidationError("Keine freigegebenen Kommunikationspfade für den SimulationSnapshot.")
+    for network in transport["networks"]:
+        communication = next(item for item in transport["communications"] if item["network_id"] == network["id"])
+        route = next(item for item in routes if str(item["id"]) == communication["routing_entry_id"])
+        source = route.get("source") or {}
+        interface = interfaces.get(str(source.get("interface_id") or ""), {})
+        resolved = parameters_for_protocol(str(source.get("protocol") or "CUSTOM"), parameters, interface.get("configuration"), str(network["id"]))
+        for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
+            if key in resolved:
+                network[key] = resolved[key]
+    frozen = {**config, "topology": state["topology"], "parameters": parameters}
+    for key in ("networks", "hardware", "communications", "routing_entry_ids"):
+        frozen[key] = transport[key]
+    return _json_safe(enrich_simulation_config(frozen, project_id, model=model))
+
+
+def enrich_simulation_config(config: dict[str, Any], project_id: str, *, model: dict[str, Any] | None = None) -> dict[str, Any]:
+    enriched = deepcopy(config)
+    model = model if model is not None else load_engineering_simulation_model(project_id)
     enriched["engineering_model"] = model
     if not enriched.get("communications"):
         transport = _load_project_transport_config(project_id, model["routes"])
@@ -326,7 +364,6 @@ def save_scenario(data: dict[str, Any]) -> dict[str, Any]:
                 "reviewed", "approved", scenario.get("created_by") or "simulation-user",
             ),
         ).fetchone()
-        connection.commit()
     return row
 
 
@@ -339,9 +376,9 @@ def list_fault_proposals() -> list[dict[str, Any]]:
 
 
 def propose_faults() -> list[dict[str, Any]]:
-    signals = list_objects("Signal", limit=500)
-    messages = list_objects("Message", limit=500)
-    routes = list_routes(limit=500)
+    signals = all_pages(list_objects, "Signal")
+    messages = all_pages(list_objects, "Message")
+    routes = all_pages(list_routes)
     candidates: list[dict[str, Any]] = []
     if signals:
         signals_by_id = {str(item.get("id")): item for item in signals}
@@ -414,7 +451,6 @@ def propose_faults() -> list[dict[str, Any]]:
                     "deterministic-engineering-agent-v1",
                 ),
             ).fetchone())
-        connection.commit()
     return created
 
 
@@ -438,7 +474,6 @@ def review_fault_proposal(proposal_id: str, action: str, actor: str | None = Non
         ).fetchone()
         if row is None:
             raise EngineeringValidationError("Fault-Vorschlag nicht gefunden.")
-        connection.commit()
     return row
 
 
@@ -472,7 +507,6 @@ def persist_trace_metadata(project_id: str, job_id: str, result: dict[str, Any],
                     Jsonb((config.get("scenario") or {}).get("faults") or []),
                 ),
             )
-            connection.commit()
     finally:
         reset_project(token)
 
@@ -517,7 +551,6 @@ def create_campaign_record(
                         Jsonb(run.get("scenario") or {}), str(run.get("status") or "queued"),
                     ),
                 )
-            connection.commit()
         return {**campaign, "runs": runs}
     finally:
         reset_project(token)
@@ -570,7 +603,6 @@ def update_campaign_record(project_id: str, campaign_id: str, statuses: dict[str
                 "WHERE project_id = %s AND campaign_id = %s",
                 (campaign_status, complete, project_id, campaign_id),
             )
-            connection.commit()
         return get_campaign_record(project_id, campaign_id)
     finally:
         reset_project(token)

@@ -233,14 +233,18 @@ def pack_signals(
         grouped.setdefault(key, []).append(signal)
 
     messages: list[PackedMessage] = []
+    message_counts: dict[tuple[str, str], int] = {}
     for group in grouped.values():
         group_messages: list[PackedMessage] = []
         for signal in sorted(group, key=lambda item: item.name.lower()):
             max_bits = _max_payload_bytes(signal.technology) * 8
             message = next((item for item in group_messages if item.payload_used_bits + signal.required_bits <= max_bits), None)
             if message is None:
+                identity = (signal.sender_hardware_ref, signal.producer_function_ref)
+                message_counts[identity] = message_counts.get(identity, 0) + 1
+                sequence = message_counts[identity]
                 message = PackedMessage(
-                    name=f"{signal.producer_function_ref}Data" if not group_messages else f"{signal.producer_function_ref}Data{len(group_messages) + 1}",
+                    name=f"{signal.producer_function_ref}Data" if sequence == 1 else f"{signal.producer_function_ref}Data{sequence}",
                     producer_function_ref=signal.producer_function_ref,
                     sender_hardware_ref=signal.sender_hardware_ref,
                     technology=signal.technology,

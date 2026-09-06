@@ -338,7 +338,7 @@ export function RoutingWorkbench({
             actor: "routing-ui",
           }), "Route dupliziert.").then(() => setEditor(null)) : undefined}
           onGenerate={(payload) => act("generate", () => generateRoutes(payload), "RoutingProposal erzeugt.").then(() => setEditor(null))}
-          onSave={(payload) => act("save", () => editor.route ? updateRoute(editor.route.id, payload) : createRoute(payload), editor.route ? "Route aktualisiert." : "Route als Draft gespeichert.").then(() => setEditor(null))}
+          onSave={(payload) => act("save", () => editor.route ? updateRoute(editor.route.id, { ...payload, expected_revision: editor.route.revision }) : createRoute(payload), editor.route ? "Route aktualisiert." : "Route als Draft gespeichert.").then((saved) => { if (saved) setEditor(null); })}
           route={editor.route}
           routes={routes}
           schema={schema}
@@ -354,9 +354,9 @@ export function RoutingWorkbench({
           onClose={() => setWizardRoute(null)}
           onDelete={() => act("delete", () => deleteRoute(wizardRoute.id), `${wizardRoute.route_code} gelöscht.`).then(() => setWizardRoute(null))}
           onSave={(payload) => act("route-wizard", async () => {
-            const updated = await updateRoute(wizardRoute.id, payload);
+            const updated = await updateRoute(wizardRoute.id, { ...payload, expected_revision: wizardRoute.revision });
             await validateRoute(updated.id);
-          }, "Route gespeichert und validiert.").then(() => setWizardRoute(null))}
+          }, "Route gespeichert und validiert.").then((saved) => { if (saved) setWizardRoute(null); })}
           route={wizardRoute}
           routes={routes}
           schema={schema}
@@ -1640,7 +1640,7 @@ function RoutingBulkEditDialog({ routes, schema, onClose, onSave }: {
     };
     setSaving(true);
     try {
-      await onSave(routes.map((route) => ({ id: route.id, payload: bulkRoutePayload(route, changes) })));
+      await onSave(routes.map((route) => ({ id: route.id, payload: { ...bulkRoutePayload(route, changes), expected_revision: route.revision } })));
     } finally {
       setSaving(false);
     }

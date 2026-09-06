@@ -17,6 +17,16 @@ export const runtime = "nodejs";
 
 const execFileAsync = promisify(execFile);
 type CpuTimes = { idle: number; total: number };
+type GpuSample = { utilization_percent: number; memory_used_mb: number; memory_total_mb: number };
+type HostPerformanceSample = {
+  source: "windows-host";
+  sampled_at: string;
+  cpu_percent: number;
+  memory_percent: number;
+  memory_used_mb: number;
+  memory_total_mb: number;
+  gpu: GpuSample | null;
+};
 
 function cpuTimes(): CpuTimes {
   return os.cpus().reduce(
@@ -56,6 +66,37 @@ async function gpuSample() {
   }
 }
 
+function finiteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+async function hostPerformanceSample(): Promise<HostPerformanceSample | null> {
+  const url = process.env.NETWORKIS_HOST_METRICS_URL?.trim();
+  if (!url) return null;
+  try {
+    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(1200) });
+    if (!response.ok) return null;
+    const payload = await response.json() as Partial<HostPerformanceSample>;
+    if (
+      payload.source !== "windows-host"
+      || typeof payload.sampled_at !== "string"
+      || !finiteNumber(payload.cpu_percent)
+      || !finiteNumber(payload.memory_percent)
+      || !finiteNumber(payload.memory_used_mb)
+      || !finiteNumber(payload.memory_total_mb)
+    ) return null;
+    const gpu = payload.gpu;
+    if (gpu !== null && gpu !== undefined && (
+      !finiteNumber(gpu.utilization_percent)
+      || !finiteNumber(gpu.memory_used_mb)
+      || !finiteNumber(gpu.memory_total_mb)
+    )) return null;
+    return { ...payload, gpu: gpu ?? null } as HostPerformanceSample;
+  } catch {
+    return null;
+  }
+}
+
 async function ollamaSample() {
   try {
     const baseUrl = (process.env.LOCAL_AI_BASE_URL ?? "http://127.0.0.1:11434/v1")
@@ -78,19 +119,25 @@ async function ollamaSample() {
 }
 
 async function performanceSample() {
-  const [cpu, gpu, ollama] = await Promise.all([cpuPercent(), gpuSample(), ollamaSample()]);
-  const totalMemory = os.totalmem();
-  const usedMemory = totalMemory - os.freemem();
+  const [host, ollama] = await Promise.all([hostPerformanceSample(), ollamaSample()]);
+  const [runtimeCpu, runtimeGpu] = host ? [null, null] : await Promise.all([cpuPercent(), gpuSample()]);
+  const runtimeTotalMemory = os.totalmem();
+  const runtimeUsedMemory = runtimeTotalMemory - os.freemem();
+  const totalMemory = host ? host.memory_total_mb * 1024 * 1024 : runtimeTotalMemory;
+  const usedMemory = host ? host.memory_used_mb * 1024 * 1024 : runtimeUsedMemory;
   const aiProvider = process.env.AI_PROVIDER ?? "hybrid-demand";
   const localAiModel = process.env.LOCAL_AI_MODEL ?? "qwen3.8:27b";
   const localAiFastModel = process.env.LOCAL_AI_FAST_MODEL ?? "llama3.1:8b";
   return {
-    cpu_percent: cpu,
-    memory_percent: Number((usedMemory / Math.max(1, totalMemory) * 100).toFixed(1)),
+    source: host ? "windows-host" : "container-runtime",
+    sampled_at: host?.sampled_at ?? new Date().toISOString(),
+    host_metrics_available: Boolean(host),
+    cpu_percent: host?.cpu_percent ?? runtimeCpu ?? 0,
+    memory_percent: host?.memory_percent ?? Number((usedMemory / Math.max(1, totalMemory) * 100).toFixed(1)),
     memory_used_mb: Math.round(usedMemory / 1024 / 1024),
     memory_total_mb: Math.round(totalMemory / 1024 / 1024),
     frontend_rss_mb: Math.round(process.memoryUsage().rss / 1024 / 1024),
-    gpu,
+    gpu: host?.gpu ?? runtimeGpu,
     ollama,
     ai: {
       provider: aiProvider,

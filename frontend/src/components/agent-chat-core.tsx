@@ -1,4 +1,7 @@
 "use client";
+import type { AgentInput } from "@/lib/agent/agent-response";
+import { readAssistantContext } from "@/lib/agent/assistant-context";
+import type { AssistantGraphState } from "@/lib/assistant-graph";
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -53,6 +56,7 @@ import {
 import { WORKFLOW_CHANGED_EVENT } from "./workflow-header";
 import { AgentToolResult } from "./agent-tool-result";
 import { WorkloadProgress } from "./workload-progress";
+import { EngineeringAgentEventCard } from "./engineering-agent-event";
 
 const EQUIPMENT_CATEGORIES = [
   { key: "gateways", label: "Gateways", type: "Gateway" },
@@ -89,16 +93,19 @@ export function AgentChatCore({
   compact = false,
   projectId,
   routingApprovalComplete = false,
+  onStateChange,
 }: {
   compact?: boolean;
   projectId?: string;
   routingApprovalComplete?: boolean;
+  onStateChange?: (state: AssistantGraphState) => void;
 }) {
   const activeProjectId = projectId?.trim() || readActiveProjectId();
   const transport = useMemo(
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
       headers: () => ({ "X-Project-ID": activeProjectId }),
+      body: () => ({ context: readAssistantContext() }),
     }),
     [activeProjectId],
   );
@@ -109,6 +116,9 @@ export function AgentChatCore({
   const [input, setInput] = useState("");
   const [historyReady, setHistoryReady] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
+  const followBottomRef = useRef(true);
+  const [newAnswer, setNewAnswer] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const publishedToolResultsRef = useRef(new Set<string>());
   const taskRunStartingRef = useRef(false);
@@ -136,6 +146,7 @@ export function AgentChatCore({
   }
 
   const busy = status === "submitted" || status === "streaming";
+  useEffect(() => { onStateChange?.(error ? 'error' : status === 'submitted' ? 'thinking' : status === 'streaming' ? 'responding' : 'idle'); }, [error, onStateChange, status]);
   const busyLabel = status === "submitted"
     ? "bereitet den Engineering-Auftrag vor …"
     : "führt Simulator-Schritte aus …";
@@ -243,8 +254,27 @@ export function AgentChatCore({
   }, [activeProjectId, historyReady, messages.length, setMessages, stableMessages, status]);
 
   useEffect(() => {
+    if (!historyReady || status !== 'ready') return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      void readEngineeringAgentHistory<EngineeringAgentUIMessage>(activeProjectId).then(remote => {
+        if (!active) return;
+        setMessages(current => {
+          const merged = new Map(remote.map(message => [message.id, message]));
+          current.forEach(message => { const saved = merged.get(message.id); if (!saved || message.parts.length > saved.parts.length) merged.set(message.id, message); });
+          const next = [...merged.values()].slice(-60);
+          return agentHistoryRevision(next) === agentHistoryRevision(current) ? current : next;
+        });
+      });
+    }, 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [activeProjectId, historyReady, setMessages, status]);
+
+  useEffect(() => {
     const thread = threadRef.current;
-    if (thread) thread.scrollTop = thread.scrollHeight;
+    if (thread && followBottomRef.current) thread.scrollTop = thread.scrollHeight;
+    else if (thread) setNewAnswer(true);
   }, [stableMessages, busy]);
 
   useEffect(() => {
@@ -380,7 +410,12 @@ export function AgentChatCore({
 
   return (
     <>
-      <div className="eng-agent-thread" aria-live="polite" ref={threadRef}>
+      <div className="eng-agent-thread" aria-label="Gesprächsverlauf" ref={threadRef} onScroll={() => {
+        const thread = threadRef.current;
+        if (!thread) return;
+        followBottomRef.current = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 72;
+        if (followBottomRef.current) setNewAnswer(false);
+      }}>
         {!historyReady && (
           <div className="empty-result" style={{ minHeight: compact ? 90 : 140 }}>
             <span className="spinner" />
@@ -391,24 +426,30 @@ export function AgentChatCore({
         {historyReady && stableMessages.length === 0 && (
           <div className="empty-result" style={{ minHeight: compact ? 90 : 140 }}>
             <span className="empty-icon">◇</span>
-            <strong>Noch keine Nachricht</strong>
-            <p>Frage nach Hardware, Interfaces, Signalen oder bitte um Vorschläge.</p>
+            <strong>Woran möchtest du arbeiten?</strong>
+            <p>Beschreibe dein Engineering-Ziel oder wähle einen Einstieg.</p>
+            <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { setInput(label); inputRef.current?.focus(); }}>{label}</button>)}</div>
           </div>
         )}
 
-        {stableMessages.map((message) => (
+        {stableMessages.length > visibleCount && <button type="button" onClick={() => setVisibleCount(count => count + 20)}>Ältere Nachrichten laden</button>}
+        {stableMessages.slice(-visibleCount).map((message) => (
           <div className={`eng-agent-message ${message.role}`} key={message.id}>
             <span aria-hidden="true" className="eng-agent-avatar">{message.role === "user" ? "DU" : "AI"}</span>
             <div className="eng-agent-message-content">
               <span className="eng-agent-role">{message.role === "user" ? "Du" : "Engineering-Agent"}</span>
               <div className="eng-agent-bubble">
-                {message.parts.map((part, index) => (
+                {message.parts.filter((part, index, parts) => part.type !== 'data-engineering' || part.data.type !== 'PROGRESS' ||
+                  (!parts.some(item => item.type === 'data-engineering' && !['PROGRESS', 'CONTEXT'].includes(item.data.type)) &&
+                  index === parts.findLastIndex(item => item.type === 'data-engineering' && item.data.type === 'PROGRESS'))).map((part, index) => (
                   <MessagePart
                     hideText={message.role === "assistant" && hasCompactEngineeringResult(message.parts)}
                     key={`${message.id}-${index}`}
                     part={part}
                     projectId={activeProjectId}
                     richText={message.role === "assistant"}
+                    onAnswer={status === "ready" ? answer => { followBottomRef.current = true; void sendMessage({ text: answer.type === 'SKIP_QUESTION' ? 'Optionale Frage übersprungen.' : answer.type === 'FINDING_ACTION' ? 'Maßnahme zum Finding angefordert.' : 'Auswahl bestätigt.' }, { body: { input: answer } }); } : undefined}
+                    onRetry={status === 'ready' ? () => { void regenerate({ body: { input: { type: 'RESUME' } } }); } : undefined}
                   />
                 ))}
               </div>
@@ -437,10 +478,12 @@ export function AgentChatCore({
         )}
       </div>
 
+      {newAnswer && <button type="button" className="engineering-new-answer" onClick={() => { const thread = threadRef.current; if (thread) thread.scrollTop = thread.scrollHeight; followBottomRef.current = true; setNewAnswer(false); }}>Neue Antwort anzeigen ↓</button>}
+
       {error && (
         <div className="notice error">
           {agentErrorText(error.message)}{" "}
-          <button className="button secondary tiny" onClick={() => regenerate()} type="button">
+          <button className="button secondary tiny" onClick={() => regenerate({ body: { input: { type: 'RESUME' } } })} type="button">
             Erneut versuchen
           </button>
         </div>
@@ -701,6 +744,7 @@ type AgentWizardContext = {
   parameters: string;
   process: string[];
   project_id: string;
+  resume_count?: number;
   run_id: string;
   scope: string[];
   scope_ids: string[];
@@ -756,6 +800,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     parameters: String(context.parameters ?? "Technologie-Defaults verwenden"),
     process: strings("process"),
     project_id: projectId,
+    resume_count: Number.isFinite(Number(context.resume_count)) ? Math.max(0, Number(context.resume_count)) : 0,
     run_id: String(context.run_id),
     scope: strings("scope"),
     scope_ids: strings("scope_ids"),
@@ -831,11 +876,14 @@ type AgentPerformanceSample = {
   };
   cpu_percent: number;
   frontend_rss_mb: number;
+  host_metrics_available: boolean;
   gpu: null | { utilization_percent: number; memory_used_mb: number; memory_total_mb: number };
   memory_percent: number;
   memory_total_mb: number;
   memory_used_mb: number;
   ollama: Array<{ name: string; size_mb: number; vram_mb: number }>;
+  sampled_at: string;
+  source: "windows-host" | "container-runtime";
 };
 
 type DetectedAgentQuestion = { key: string; text: string };
@@ -1031,6 +1079,7 @@ export function EngineeringAgentWizard({
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
       headers: () => ({ "X-Project-ID": projectId }),
+      body: () => ({ context: { active_view: window.location.pathname } }),
     }),
     [projectId],
   );
@@ -1172,6 +1221,17 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     if (phase !== "status" || !runId || !wizardAgentError) return;
+    const persistedExecution = readAgentRunStatus(workflow?.context?.agent_execution, runId);
+    if (agentRunIsActive(persistedExecution)) {
+      void writeWizardDiagnostic("workflow", {
+        projectId,
+        runId,
+        step: persistedExecution?.step ?? "popup-agent",
+        event: "popup-stream-disconnected-background-continues",
+        details: wizardAgentError.message || "Der Browserstream wurde getrennt; der Serverlauf arbeitet weiter.",
+      }).catch(() => undefined);
+      return;
+    }
     const rawMessage = wizardAgentError.message || "Der Popup-Agent konnte nicht antworten.";
     const signature = `${runId}:${rawMessage}`;
     if (wizardErrorRef.current === signature) return;
@@ -1185,7 +1245,7 @@ export function EngineeringAgentWizard({
       event: "popup-agent-failed",
       details: rawMessage,
     }).catch(() => undefined);
-  }, [phase, projectId, runId, wizardAgentError]);
+  }, [phase, projectId, runId, wizardAgentError, workflow]);
 
   useEffect(() => {
     if (phase !== "status" || !runId) return;
@@ -1201,7 +1261,7 @@ export function EngineeringAgentWizard({
       }
     };
     void refreshPerformance();
-    const interval = window.setInterval(refreshPerformance, 5000);
+    const interval = window.setInterval(refreshPerformance, 2000);
     return () => {
       active = false;
       window.clearInterval(interval);
@@ -1220,6 +1280,10 @@ export function EngineeringAgentWizard({
     return requestIndex >= 0 ? wizardMessages.slice(requestIndex) : [];
   }, [runId, wizardMessages]);
   const execution = readAgentRunStatus(workflow?.context?.agent_execution, runId);
+  const rawWizardStatus = workflow?.context?.agent_wizard_status;
+  const resumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
+    ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).resume_count) || 0)
+    : submittedContext?.resume_count ?? 0;
   const transportPending = wizardAgentStatus === "submitted" || wizardAgentStatus === "streaming";
   const agentPending = transportPending || agentRunIsActive(execution);
   const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
@@ -1742,7 +1806,7 @@ export function EngineeringAgentWizard({
   }
 
   async function retryPopupRun() {
-    if (agentPending || !runId) return;
+    if (agentPending || !runId || resumeCount >= 1) return;
     const originalPrompt = currentRunMessages
       .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
     const originalText = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
@@ -1761,14 +1825,26 @@ export function EngineeringAgentWizard({
       ].join("\n");
     if (!prompt) return;
     setStatusError("");
-    await writeWizardDiagnostic("workflow", {
-      projectId,
-      runId,
-      step: "agent-start",
-      event: "popup-agent-resumed",
-      details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
-    }).catch(() => undefined);
     try {
+      const resumedContext = submittedContext ? { ...submittedContext, resume_count: resumeCount + 1 } : null;
+      if (resumedContext) {
+        const nextWorkflow = await setWorkflowContext({
+          agent_wizard_status: {
+            ...resumedContext,
+            status: "RUNNING",
+            resumed_at: new Date().toISOString(),
+          },
+        });
+        setSubmittedContext(resumedContext);
+        setWorkflow(nextWorkflow);
+      }
+      await writeWizardDiagnostic("workflow", {
+        projectId,
+        runId,
+        step: "agent-start",
+        event: "popup-agent-resumed",
+        details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
+      }).catch(() => undefined);
       await sendWizardMessage({ text: prompt }, workflowTarget ? { body: { workflowTarget } } : undefined);
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Der Popup-Agent konnte nicht erneut gestartet werden.";
@@ -1932,7 +2008,7 @@ export function EngineeringAgentWizard({
     && (routingReview.total > 0 || execution?.state === "REVIEW_REQUIRED");
   const runPaused = !agentPending && !routingReviewPending
     && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
-  const canRetryPopupRun = runPaused && hasResumablePrompt;
+  const canRetryPopupRun = runPaused && hasResumablePrompt && resumeCount < 1 && execution?.state !== "CANCELED";
   const lastAssistantText = [...currentRunMessages].reverse()
     .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
   const runMessage = execution?.state === "RUNNING" && executionStopped
@@ -2585,11 +2661,15 @@ export function EngineeringAgentWizard({
             )}
           </section>
 
-          <div className="agent-wizard-runtime" aria-label="Lokale Laufzeitauslastung">
-            <span><small>CPU</small><strong>{performance ? `${performance.cpu_percent} %` : "..."}</strong></span>
-            <span><small>RAM</small><strong>{performance ? `${performance.memory_percent} %` : "..."}</strong></span>
-            <span><small>GPU</small><strong>{performance?.gpu ? `${performance.gpu.utilization_percent} %` : "n/a"}</strong></span>
-            <span><small>VRAM</small><strong>{performance?.gpu ? `${performance.gpu.memory_used_mb}/${performance.gpu.memory_total_mb} MB` : "n/a"}</strong></span>
+          <div
+            className="agent-wizard-runtime"
+            aria-label={performance ? (performance.host_metrics_available ? "Aktuelle Rechnerauslastung" : "Aktuelle Containerauslastung") : "Laufzeitauslastung wird geladen"}
+            title={performance ? `${performance.host_metrics_available ? "Windows-Rechner" : "Simulator-Container"} · Messung ${new Date(performance.sampled_at).toLocaleTimeString("de-DE")}` : undefined}
+          >
+            <span><small>CPU · {performance ? (performance.host_metrics_available ? "PC" : "Container") : "…"}</small><strong>{performance ? `${performance.cpu_percent} %` : "..."}</strong></span>
+            <span><small>RAM · {performance ? (performance.host_metrics_available ? "PC" : "Container") : "…"}</small><strong>{performance ? `${performance.memory_percent} %` : "..."}</strong></span>
+            <span><small>GPU · PC</small><strong>{performance?.gpu ? `${performance.gpu.utilization_percent} %` : "nicht verfügbar"}</strong></span>
+            <span><small>VRAM · PC</small><strong>{performance?.gpu ? `${performance.gpu.memory_used_mb}/${performance.gpu.memory_total_mb} MB` : "nicht verfügbar"}</strong></span>
             <span><small>Analyse</small><strong>{activeAnalysis}</strong></span>
             <span><small>LLM</small><strong>{activeModel}</strong></span>
           </div>
@@ -3259,14 +3339,14 @@ function inferAgentGoal(text: string) {
   if (lower.includes("interface") || lower.includes("schnittstelle") || lower.includes("can") || lower.includes("ethernet")) return "Schnittstellen und Bus-Technik im Engineering-Modell prüfen.";
   if (lower.includes("valid") || lower.includes("fehler") || lower.includes("konflikt") || lower.includes("preflight")) return "Technische Befunde finden, Ursache benennen und nächste Reparaturentscheidung ableiten.";
   if (lower.includes("kapaz") || lower.includes("latenz") || lower.includes("jitter") || lower.includes("timing")) return "Capacity- und Timing-Daten auswerten und Engpässe erklären.";
-  if (lower.includes("vorschlag") || lower.includes("erstelle") || lower.includes("schlage")) return "Engineering-Inhalte mit Auditspur erzeugen und valide Ergebnisse direkt im kanonischen Modell registrieren.";
+  if (lower.includes("vorschlag") || lower.includes("erstelle") || lower.includes("schlage")) return "Engineering-Inhalte mit Auditspur erzeugen und zur menschlichen Freigabe vorlegen.";
   return "Nutzerfrage im aktiven Projektkontext beantworten und dafür benötigte Engineering-Daten lesen.";
 }
 
 function inferAgentAssumption(text: string, goal: string) {
   const lower = text.toLowerCase();
   if (goal.includes("Proposal") || lower.includes("neu") || lower.includes("erstelle") || lower.includes("schlage")) {
-    return "Neue Engineering-Inhalte werden als Proposal auditiert, validiert und unmittelbar kanonisch registriert.";
+    return "Neue Engineering-Inhalte werden als Vorschlag geprüft und nach deiner Freigabe ins Modell übernommen.";
   }
   if (lower.includes("aktuell") || lower.includes("jetzt") || lower.includes("status")) {
     return "Der Agent nutzt den aktiven Projekt- und Workflow-Kontext als maßgebliche Quelle.";
@@ -3358,11 +3438,15 @@ function MessagePart({
   part,
   projectId,
   richText = false,
+  onAnswer,
+  onRetry,
 }: {
   hideText?: boolean;
   part: EngineeringAgentUIMessage["parts"][number];
   projectId: string;
   richText?: boolean;
+  onAnswer?: (answer: AgentInput) => void;
+  onRetry?: () => void;
 }) {
   const runtimePart = part as unknown as {
     errorText?: string;
@@ -3376,6 +3460,9 @@ function MessagePart({
     const text = inspectAgentText(part.text).displayText;
     if (hideText || !text) return null;
     return richText ? <AgentMessageText text={text} /> : <p className="eng-agent-text">{text}</p>;
+  }
+  if (part.type === "data-engineering") {
+    return <EngineeringAgentEventCard event={part.data} projectId={projectId} onAnswer={onAnswer} onRetry={onRetry} />;
   }
 
   if (part.type === "tool-listEngineeringObjects" || part.type === "tool-listEngineeringRelations") {

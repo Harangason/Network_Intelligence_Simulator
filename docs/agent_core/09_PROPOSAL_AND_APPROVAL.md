@@ -26,3 +26,7 @@ Human rejection preserves proposal and audit history. A revision returns to draf
 ## Human in the Loop
 
 The Agent Core may generate, validate, repair and prepare proposals. It cannot approve them. Workload `COMPLETED` is derived only after approved canonical IDs are visible in persisted workload objects.
+
+## Active MCP review path (2026-09-06)
+
+The Engineering Chat uses the common `EngineeringProposal` contract: `PROPOSED → VALIDATED → APPROVED → APPLIED`. Review and apply are separate local UI actions protected by CSRF and an explicit intent header. No MCP tool grants human approval. Legacy approval endpoints reject proposals governed by this contract. Existing workbench review flows remain available for legacy proposals only. See [MCP implementation](14_MCP_IMPLEMENTATION.md).

@@ -62,3 +62,9 @@ Generated objects are drafts/proposals. Deterministic validation may move them t
 ## EIP Reuse
 
 EIP can reuse the complete `agent_core` package and provide different repositories, context providers, handlers, generators and validators. Signal, routing, simulation and trace implementations stay simulator-specific.
+
+## MCP Engineering Agent
+
+The active chat now uses `EngineeringAgent` and `EngineeringMCPClient` in this package. The previous TypeScript agent contains transport types only. See [active MCP architecture and acceptance](14_MCP_IMPLEMENTATION.md).
+
+Die Chat-Oberfläche, strukturierten Antworten, interaktiven Entscheidungen und der dauerhafte Gesprächszustand sind in [15_CHAT_RESPONSE_CONTRACT.md](15_CHAT_RESPONSE_CONTRACT.md) beschrieben. Der Python-Agent bleibt der einzige Orchestrator; die UI führt keine Fachgeneratoren aus.

@@ -1,0 +1,311 @@
+{
+  "$defs": {
+    "InteractiveOption": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 300,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "recommended": {
+          "default": false,
+          "title": "Recommended",
+          "type": "boolean"
+        },
+        "disabled": {
+          "default": false,
+          "title": "Disabled",
+          "type": "boolean"
+        },
+        "reason": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Reason",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "title": "Metadata",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "InteractiveOption",
+      "type": "object"
+    },
+    "InteractiveQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "selection_mode": {
+          "default": "SINGLE",
+          "enum": [
+            "SINGLE",
+            "MULTI"
+          ],
+          "title": "Selection Mode",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/InteractiveOption"
+          },
+          "maxItems": 8,
+          "minItems": 2,
+          "title": "Options",
+          "type": "array"
+        },
+        "recommended_options": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recommended Options",
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "engineering_impact": {
+          "default": "REQUIRED",
+          "enum": [
+            "OPTIONAL",
+            "REQUIRED",
+            "CRITICAL"
+          ],
+          "title": "Engineering Impact",
+          "type": "string"
+        },
+        "context_refs": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Context Refs",
+          "type": "array"
+        },
+        "status": {
+          "default": "OPEN",
+          "enum": [
+            "OPEN",
+            "ANSWERED",
+            "SKIPPED",
+            "EXPIRED",
+            "OUTDATED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "options"
+      ],
+      "title": "InteractiveQuestion",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "TEXT",
+        "QUESTION",
+        "MULTI_SELECT",
+        "SINGLE_SELECT",
+        "RECOMMENDATION",
+        "FINDING",
+        "PROGRESS",
+        "RESULT",
+        "APPROVAL",
+        "ERROR"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "text": {
+      "default": "",
+      "maxLength": 30000,
+      "title": "Text",
+      "type": "string"
+    },
+    "title": {
+      "default": "",
+      "maxLength": 300,
+      "title": "Title",
+      "type": "string"
+    },
+    "context_refs": {
+      "items": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "maxItems": 100,
+      "title": "Context Refs",
+      "type": "array"
+    },
+    "question": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/InteractiveQuestion"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "options": {
+      "items": {
+        "$ref": "#/$defs/InteractiveOption"
+      },
+      "title": "Options",
+      "type": "array"
+    },
+    "actions": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "maxItems": 12,
+      "title": "Actions",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "maxItems": 100,
+      "title": "Findings",
+      "type": "array"
+    },
+    "progress": {
+      "items": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "maxItems": 20,
+      "title": "Progress",
+      "type": "array"
+    },
+    "recommendation": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommendation"
+    },
+    "approval": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approval"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "proposal": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposal"
+    },
+    "workload": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Workload"
+    },
+    "status": {
+      "default": "",
+      "title": "Status",
+      "type": "string"
+    },
+    "severity": {
+      "default": "",
+      "title": "Severity",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "title": "AgentResponse",
+  "type": "object"
+}

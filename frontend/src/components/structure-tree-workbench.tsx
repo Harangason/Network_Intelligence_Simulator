@@ -233,7 +233,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const [hardwareOrder, setHardwareOrder] = useState<string[]>([]);
   const draggedTypeRef = useRef<EngineeringObjectType | null>(null);
   const draggedIdRef = useRef<string | null>(null);
-  const [renaming, setRenaming] = useState<{ type: EngineeringObjectType; id: string; value: string } | null>(null);
+  const [renaming, setRenaming] = useState<{ type: EngineeringObjectType; id: string; value: string; version: number } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [systemDuplicates, setSystemDuplicates] = useState<SystemDuplicateCandidate[]>([]);
@@ -408,6 +408,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     setError("");
     try {
       await updateEngineeringObject("hardware-nodes", child.id, {
+        expected_version: child.version,
         identity: {
           ...(child.identity ?? {}),
           system_owner_id: owner.id,
@@ -473,6 +474,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     setError("");
     try {
       await updateEngineeringObject(level.resource, renaming.id, {
+        expected_version: renaming.version,
         name: renaming.value.trim(),
         actor: "structure-tree-reviewer",
         change_summary: "structure tree rename",
@@ -597,7 +599,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
             </>
           )}
           {renaming?.id !== item.id && (
-            <button className="button secondary tiny structure-rename" onClick={() => setRenaming({ type: item.object_type, id: item.id, value: displayName })} type="button">Name ändern</button>
+            <button className="button secondary tiny structure-rename" onClick={() => setRenaming({ type: item.object_type, id: item.id, value: displayName, version: item.version })} type="button">Name ändern</button>
           )}
         </div>
         {isExpanded && nodeChildren.length > 0 && <ul>{nodeChildren.map((child) => renderNode(child, depth + 1))}</ul>}

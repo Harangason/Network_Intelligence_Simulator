@@ -78,7 +78,7 @@ type InitialWorkloadResult = Partial<{
   valid: number;
 }>;
 
-const ACTIVE_STATUSES = new Set(["RECEIVED", "PLANNING", "IN_PROGRESS", "VALIDATING"]);
+const ACTIVE_STATUSES = new Set(["RECEIVED", "PLANNING", "IN_PROGRESS", "VALIDATING", "REPAIRING"]);
 
 const STATUS_LABELS: Record<string, string> = {
   BLOCKED: "Blockiert",
@@ -91,6 +91,7 @@ const STATUS_LABELS: Record<string, string> = {
   PLANNING: "Planung",
   READY_FOR_REVIEW: "Bereit zur Prüfung",
   RECEIVED: "Angenommen",
+  REPAIRING: "Nachbearbeitung",
   VALIDATING: "Validierung",
 };
 
@@ -126,10 +127,12 @@ export function WorkloadProgress({
   initial,
   projectId,
   workloadId,
+  reviewViaAgent = false,
 }: {
   initial?: InitialWorkloadResult;
   projectId: string;
   workloadId: string;
+  reviewViaAgent?: boolean;
 }) {
   const [progress, setProgress] = useState<WorkloadProgressData>(() => initialProgress(workloadId, initial));
   const [objects, setObjects] = useState<WorkloadObject[]>([]);
@@ -181,12 +184,12 @@ export function WorkloadProgress({
   }, [refresh]);
 
   useEffect(() => {
-    if (!ACTIVE_STATUSES.has(progress.status)) return;
+    if (!ACTIVE_STATUSES.has(progress.status) && !(reviewViaAgent && progress.status === "READY_FOR_REVIEW")) return;
     const timer = window.setInterval(() => {
       void refresh().catch(() => undefined);
     }, 1500);
     return () => window.clearInterval(timer);
-  }, [progress.status, refresh]);
+  }, [progress.status, refresh, reviewViaAgent]);
 
   const categories = useMemo(
     () => [...new Set(objects.map((item) => item.category))].sort(),
@@ -419,8 +422,9 @@ export function WorkloadProgress({
                 <option value="APPROVED">Freigegeben</option>
               </select>
             </label>
-            <button className="button secondary tiny" disabled={!selected.size || Boolean(busyAction)} onClick={() => void approveSelected()} type="button">✓ Auswahl freigeben ({selected.size})</button>
-            <button className="button primary tiny" disabled={!reviewable.length || Boolean(busyAction)} onClick={() => void approveAll()} type="button">✓ Alle validen freigeben</button>
+            {!reviewViaAgent && <button className="button secondary tiny" disabled={!selected.size || Boolean(busyAction)} onClick={() => void approveSelected()} type="button">✓ Auswahl freigeben ({selected.size})</button>}
+            {!reviewViaAgent && <button className="button primary tiny" disabled={!reviewable.length || Boolean(busyAction)} onClick={() => void approveAll()} type="button">✓ Alle validen freigeben</button>}
+            {reviewViaAgent && <span>Freigabe und Übernahme erfolgen am geprüften Vorschlag im Chat.</span>}
           </div>
           <div className="workload-review-table-wrap">
             <table className="workload-review-table">

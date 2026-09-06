@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import threading
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Iterator
 
 from psycopg import Connection
@@ -23,6 +24,72 @@ _pool: ConnectionPool | None = None
 _pool_pid: int | None = None
 _pool_lock = threading.Lock()
 DEFAULT_CONNECT_TIMEOUT_SECONDS = 2.0
+_request_unit: ContextVar["RequestUnit | None"] = ContextVar("engineering_request_unit", default=None)
+
+
+class ConcurrentUpdateError(RuntimeError):
+    """The editor's source data no longer matches the persisted data."""
+
+
+def check_revision(expected, actual) -> None:
+    if expected is not None and (type(expected) is not int or expected != actual):
+        raise ConcurrentUpdateError(
+            "Dieses Objekt wurde inzwischen geändert. Bitte neu laden und die Änderungen vergleichen."
+        )
+
+
+def mark_model_changed() -> None:
+    unit = _request_unit.get()
+    if unit is not None:
+        unit.model_changed = True
+
+
+class RequestUnit:
+    """One lazy transaction for a complete API mutation, including invalidation.
+
+    The database lock works across browser sessions and backend processes.
+    Nested repository contexts use savepoints, so caught constraint errors do
+    not poison the outer transaction. No connection is opened for pure tools.
+    """
+
+    def __init__(self, project_id: str):
+        self.project_id = project_id
+        self.model_changed = False
+        self.connection = None
+        self.pool_context = None
+        self.token = _request_unit.set(self)
+
+    def acquire(self):
+        if self.connection is None:
+            context = get_pool().connection()
+            connection = context.__enter__()
+            self.pool_context = context
+            self.connection = connection
+            self.connection.execute("SET LOCAL lock_timeout = '5s'")
+            self.connection.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (f"engineering-project:{self.project_id}",),
+            )
+        return self.connection
+
+    def finish(self, success: bool) -> None:
+        context, self.pool_context = self.pool_context, None
+        self.connection = None
+        if context is None:
+            return
+        if success:
+            context.__exit__(None, None, None)
+        else:
+            error = RuntimeError("Engineering request rolled back")
+            context.__exit__(type(error), error, error.__traceback__)
+
+    def close(self) -> None:
+        try:
+            self.finish(False)
+        finally:
+            if self.token is not None:
+                _request_unit.reset(self.token)
+                self.token = None
 
 
 def _database_url() -> str:
@@ -89,6 +156,12 @@ def get_connection() -> Iterator[Connection]:
     Committet automatisch bei erfolgreichem Verlassen des Blocks und rollt bei
     Exceptions zurück.
     """
+    unit = _request_unit.get()
+    if unit is not None:
+        conn = unit.acquire()
+        with conn.transaction():
+            yield conn
+        return
     pool = get_pool()
     with pool.connection() as conn:
         yield conn

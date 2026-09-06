@@ -45,9 +45,9 @@ export function expandBrowserProjectId(value: unknown): string {
 
 export function compactProjectId(value: unknown): string {
   const normalized = normalizeProjectId(value);
-  return normalized.startsWith(NETWORK_PROJECT_PREFIX)
-    ? normalized.slice(NETWORK_PROJECT_PREFIX.length)
-    : normalized;
+  const suffix = normalized.slice(NETWORK_PROJECT_PREFIX.length);
+  return normalized.startsWith(NETWORK_PROJECT_PREFIX) && COMPACT_NETWORK_PROJECT_PATTERN.test(suffix)
+    ? suffix : normalized;
 }
 
 export function withProjectParam(href: string, projectId?: string): string {

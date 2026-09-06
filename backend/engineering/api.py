@@ -12,7 +12,7 @@ import logging
 import json
 
 import psycopg
-from flask import Blueprint, Response, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request, make_response
 from psycopg_pool import PoolTimeout
 
 from .models import (
@@ -25,7 +25,7 @@ from .models import (
     MESSAGE_DIRECTIONS,
 )
 from .device_classification import DeviceClassificationRegistry
-from .db import get_connection
+from .db import get_connection, RequestUnit, ConcurrentUpdateError, check_revision
 from .performance_governance import assert_within_budget, performance_governance_summary
 from .proposals import (
     approve_all_valid_proposals,
@@ -81,11 +81,11 @@ from .routing.repository import (
 from .routing.validation import RoutingValidator, detect_routing_loop
 from .capacity.service import CapacityTimingService, PreflightService
 from .workflow.models import WORKFLOW_STEPS
-from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change
+from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change, check_edit_token
 from .intelligence import IntelligenceService
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
-from .project_context import activate_project, normalize_context_project_id
+from .project_context import activate_project, normalize_context_project_id, reset_project
 from .workloads import EngineeringWorkloadOrchestrator
 from .simulation import (
     FAULTS_BY_SCOPE,
@@ -288,6 +288,8 @@ def _handle_database_unavailable(error: Exception):
 
 
 @engineering_api.errorhandler(WorkflowConflictError)
+@engineering_api.errorhandler(ConcurrentUpdateError)
+@engineering_api.errorhandler(psycopg.errors.LockNotAvailable)
 def _handle_workflow_conflict(error: WorkflowConflictError):
     return jsonify({"error": str(error)}), 409
 
@@ -308,7 +310,33 @@ def _project_id() -> str:
 
 @engineering_api.before_request
 def _activate_request_project() -> None:
-    activate_project(_project_id())
+    g.engineering_project_token = activate_project(_project_id())
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        g.engineering_unit = RequestUnit(_project_id())
+
+
+# Registered before propagation: Flask runs after_request hooks in reverse order.
+@engineering_api.after_request
+def _finish_engineering_transaction(response):
+    unit = getattr(g, "engineering_unit", None)
+    if unit is not None:
+        try:
+            unit.finish(response.status_code < 400)
+        except Exception:
+            logger.exception("Engineering transaction could not be committed")
+            return make_response(jsonify({"error": "Änderung konnte nicht vollständig gespeichert werden. Bitte neu laden."}), 503)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@engineering_api.teardown_request
+def _close_engineering_transaction(error=None):
+    unit = g.pop("engineering_unit", None)
+    if unit is not None:
+        unit.close()
+    token = g.pop("engineering_project_token", None)
+    if token is not None:
+        reset_project(token)
 
 
 def _auto_recalculate_capacity(project_id: str) -> None:
@@ -406,9 +434,13 @@ def _propagate_source_changes(response):
                 reason or "Quelldaten geaendert.",
                 status=status,
             )
-            _auto_recalculate_capacity(project_id)
         except Exception:
             logger.exception("Workflow-Invalidierung konnte nicht persistiert werden")
+            return make_response(jsonify({"error": "Workflow konnte nicht aktualisiert werden. Die Änderung wurde zurückgerollt."}), 503)
+        try:
+            _auto_recalculate_capacity(project_id)
+        except Exception:
+            logger.exception("Automatische Neuberechnung fehlgeschlagen; Ergebnisse bleiben veraltet")
     return response
 
 
@@ -550,13 +582,25 @@ def simulation_trace_metadata_route():
     return jsonify({"items": items, "count": len(items)})
 
 
+def _sync_topology_with_invalidation(topology: dict, project_id: str):
+    result = sync_topology(topology)
+    unit = getattr(g, "engineering_unit", None)
+    if unit is not None and unit.model_changed:
+        WorkflowStatusService(project_id).mark_changed(
+            "engineering_model", "Netzwerkabgleich hat kanonische Objekte geändert."
+        )
+        unit.model_changed = False
+    return result
+
+
 @engineering_api.route("/topology/sync", methods=["POST"])
 def sync_topology_route():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     project_id = _project_id()
-    result = sync_topology(payload)
+    check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["topology"])
+    result = _sync_topology_with_invalidation(payload, project_id)
     if payload.get("persist_workflow", True) is not False:
         topology = _topology_with_engineering_links(payload, result)
         WorkflowStatusService(project_id).save_topology(
@@ -601,6 +645,19 @@ def workflow_status_route():
     return _budgeted_json("workflow_state_response", state)
 
 
+@engineering_api.route("/workflow/revision", methods=["GET"])
+def workflow_revision_route():
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT project_id, active_step, versions, parameters, topology FROM engineering_workflow_projects WHERE project_id = %s",
+            (_project_id(),),
+        ).fetchone()
+    if row is None:
+        return jsonify({"project_id": _project_id(), "versions": {}, "edit_tokens": {}})
+    state = WorkflowStatusService._state(row)
+    return jsonify({key: state[key] for key in ("project_id", "versions", "edit_tokens")})
+
+
 @engineering_api.route("/workflow/context", methods=["PATCH"])
 def workflow_context_route():
     payload = _routing_payload()
@@ -639,6 +696,7 @@ def update_workflow_parameters_route():
     payload = _routing_payload()
     parameters = payload.get("parameters") if isinstance(payload.get("parameters"), dict) else payload
     project_id = _project_id()
+    check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["parameters"])
     WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
     _auto_recalculate_capacity(project_id)
     return jsonify(WorkflowStatusService(project_id).get())
@@ -658,7 +716,9 @@ def update_workflow_topology_route():
     actor = str(payload.get("actor") or "network-editor")
     workflow = WorkflowStatusService(project_id)
     current_state = workflow.get()
+    check_edit_token(payload.get("expected_token"), current_state["topology"])
     if current_state["topology"] == topology:
+        current_state = workflow.save_topology(topology, actor=actor)
         current_state["routing_sync"] = {
             "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
             "skipped": [],
@@ -671,7 +731,7 @@ def update_workflow_topology_route():
             "skipped": [],
         }
         return jsonify(state)
-    sync_result = sync_topology(topology)
+    sync_result = _sync_topology_with_invalidation(topology, project_id)
     topology = _topology_with_engineering_links(topology, sync_result)
     workflow.save_topology(topology, actor=actor)
     routing_sync = synchronize_network_routes(project_id, topology, actor=actor)
@@ -749,6 +809,8 @@ def create_simulation_snapshot_route():
     configuration = payload.get("configuration")
     if not isinstance(configuration, dict):
         raise EngineeringValidationError("configuration muss ein Objekt sein.")
+    from .simulation import prepare_workflow_simulation_config
+    configuration = prepare_workflow_simulation_config(configuration, _project_id())
     return jsonify(
         WorkflowStatusService(_project_id()).create_simulation_snapshot(configuration)
     ), 201

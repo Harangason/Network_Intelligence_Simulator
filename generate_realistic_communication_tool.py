@@ -96,7 +96,10 @@ def _configured_path(section: dict[str, object], name: str) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
-    return text if text and Path(text).is_file() else None
+    try:
+        return text if text and Path(text).is_file() else None
+    except OSError:
+        return None
 
 
 def _configured_docker_executable(config: dict[str, object] | None = None) -> str | None:

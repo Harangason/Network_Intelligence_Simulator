@@ -20,9 +20,6 @@ import { readActiveProjectId } from "./user-settings";
 const BASE = "/api/engineering";
 
 function importBaseUrl(): string {
-  if (typeof window !== "undefined" && window.location.port === "13500") {
-    return "http://127.0.0.1:15050/api/engineering";
-  }
   return BASE;
 }
 
@@ -41,10 +38,14 @@ async function importRequest<T>(path: string, init: RequestInit): Promise<T> {
   if (!response.ok) {
     throw new Error((payload as { error?: string }).error ?? `Import-Fehler ${response.status}`);
   }
+  if (init?.method && !["GET", "HEAD"].includes(init.method) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("engineering:write-completed"));
+  }
   return payload as T;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const timeout = init?.method && !["GET", "HEAD"].includes(init.method) ? 180000 : 5000;
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {
@@ -55,18 +56,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         ...init?.headers,
       },
       cache: "no-store",
-      signal: init && "signal" in init ? init.signal : AbortSignal.timeout(5000),
+      signal: init && "signal" in init ? init.signal : AbortSignal.timeout(timeout),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new Error("Die Engineering-API antwortet nicht innerhalb von 5 Sekunden.");
+      throw new Error(`Die Engineering-API antwortet nicht innerhalb von ${timeout / 1000} Sekunden. Bitte vor erneutem Speichern den Projektstand prüfen.`);
     }
     throw new Error("Die Engineering-API ist nicht erreichbar.", { cause: error });
   }
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204) {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("engineering:write-completed"));
+    return undefined as T;
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
+  }
+  if (init?.method && !["GET", "HEAD"].includes(init.method) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("engineering:write-completed"));
   }
   return payload as T;
 }
@@ -93,11 +100,13 @@ export async function listEngineeringTools(filters: {
 
 export function syncEngineeringTopology(
   topology: Pick<NetworkTopology, "nodes" | "edges">,
+  expectedToken?: string,
 ): Promise<TopologySyncResult> {
   return request<TopologySyncResult>("/topology/sync", {
     method: "POST",
     body: JSON.stringify({
       topology_id: "studio-network",
+      expected_token: expectedToken,
       ...topology,
       // This call enriches the editor with canonical Engineering IDs. Only the
       // explicit workflow topology endpoint may persist and invalidate builds.
@@ -126,6 +135,7 @@ export function commitEngineeringImport(
 export async function listEngineeringObjects(
   resource: EngineeringResource,
   filters: Record<string, string | undefined> = {},
+  projectId = readActiveProjectId(),
 ): Promise<EngineeringObject[]> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
@@ -134,6 +144,7 @@ export async function listEngineeringObjects(
   const query = params.toString();
   const { items } = await request<{ items: EngineeringObject[]; count: number }>(
     `/${resource}${query ? `?${query}` : ""}`,
+    { headers: { "X-Project-ID": projectId } },
   );
   return items;
 }
@@ -141,13 +152,14 @@ export async function listEngineeringObjects(
 export async function listAllEngineeringObjects(
   resource: EngineeringResource,
 ): Promise<EngineeringObject[]> {
+  const projectId = readActiveProjectId();
   const items: EngineeringObject[] = [];
   const pageSize = 500;
   for (let offset = 0; ; offset += pageSize) {
     const page = await listEngineeringObjects(resource, {
       limit: String(pageSize),
       offset: String(offset),
-    });
+    }, projectId);
     items.push(...page);
     if (page.length < pageSize) return items;
   }

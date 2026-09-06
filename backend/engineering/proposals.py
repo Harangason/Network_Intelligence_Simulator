@@ -77,7 +77,6 @@ def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
                 data.get("created_by") or data.get("actor"),
             ),
         ).fetchone()
-        conn.commit()
     return row
 
 
@@ -239,7 +238,6 @@ def _update_proposal_row(
             f"UPDATE engineering_ai_proposals SET {', '.join(assignments)} WHERE proposal_id = %s AND project_id = %s RETURNING *",
             values,
         ).fetchone()
-        conn.commit()
     if row is None:
         raise NotFoundError(f"AIProposal {proposal_id} nicht gefunden.")
     return row
@@ -266,6 +264,8 @@ def _resolve_or_create_object(
 
 def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
+    if proposal.get("engineering_contract"):
+        raise EngineeringValidationError("Dieser Vorschlag wird über den Engineering-Agent-Review verwaltet.")
     if proposal["status"] in {"APPROVED", "SUPERSEDED"}:
         raise EngineeringValidationError("Freigegebene oder abgeloeste Vorschlaege sind unveraenderlich.")
     proposed_objects = data.get("proposed_objects", proposal.get("proposed_objects") or [])
@@ -282,6 +282,8 @@ def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
 
 def validate_proposal(proposal_id: str, *, actor: str | None = None) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
+    if proposal.get("engineering_contract"):
+        raise EngineeringValidationError("Dieser Vorschlag wird über den Engineering-Agent-Review validiert.")
     proposal, changed = _normalize_proposal_references(proposal)
     results = validate_proposed_items(proposal)
     status = "READY_FOR_REVIEW" if results and all(item["valid"] for item in results) else "DRAFT"
@@ -301,6 +303,8 @@ def approve_proposal(
     actor: str | None = None,
 ) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
+    if proposal.get("engineering_contract"):
+        raise EngineeringValidationError("Dieser Vorschlag benötigt die getrennte menschliche Freigabe und Übernahme.")
     if proposal["status"] in {"REJECTED", "SUPERSEDED"}:
         raise EngineeringValidationError("Abgelehnte oder abgeloeste Vorschlaege koennen nicht freigegeben werden.")
     proposal, changed = _normalize_proposal_references(proposal)
@@ -434,6 +438,8 @@ def approve_all_valid_proposals(*, actor: str | None = None) -> list[dict[str, A
         progressed = False
         proposals = list_proposals(limit=1000)
         for proposal in proposals:
+            if proposal.get("engineering_contract"):
+                continue
             if proposal["status"] in {"AI_GENERATED", "DRAFT", "READY_FOR_REVIEW", "PARTIALLY_APPROVED"}:
                 proposal, changed = _normalize_proposal_references(proposal)
                 if changed:
@@ -457,6 +463,8 @@ def approve_all_valid_proposals(*, actor: str | None = None) -> list[dict[str, A
 
 def reject_proposal(proposal_id: str, *, actor: str | None = None) -> dict[str, Any]:
     proposal = get_proposal(proposal_id)
+    if proposal.get("engineering_contract"):
+        raise EngineeringValidationError("Dieser Vorschlag benötigt den gemeinsamen Engineering-Review.")
     if proposal["status"] == "APPROVED":
         raise EngineeringValidationError("Freigegebene Vorschlaege koennen nicht nachtraeglich abgelehnt werden.")
     return _update_proposal_row(proposal_id, status="REJECTED", actor=actor)
@@ -472,6 +480,8 @@ def record_proposal_decision(
     """Persist review feedback for proposals applied by a domain-specific workflow."""
 
     proposal = get_proposal(proposal_id)
+    if proposal.get("engineering_contract"):
+        raise EngineeringValidationError("Dieser Vorschlag benötigt den gemeinsamen Engineering-Review.")
     if proposal["status"] in {"APPROVED", "REJECTED", "SUPERSEDED"}:
         return proposal
     return _update_proposal_row(

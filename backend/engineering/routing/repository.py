@@ -9,7 +9,7 @@ from typing import Any
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from ..db import get_connection
+from ..db import get_connection, ConcurrentUpdateError, check_revision
 from ..models import EngineeringValidationError, validate_uuid
 from ..project_context import current_project_id
 from ..repository import NotFoundError
@@ -120,7 +120,6 @@ def create_route(data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as connection:
         row = _insert_route(connection, normalized, route_code=_route_code(), revision=1)
         _audit(connection, str(row["id"]), "ROUTE_CREATED", actor=normalized.get("created_by"), after=row)
-        connection.commit()
     return row
 
 
@@ -167,6 +166,7 @@ def list_routes(
 
 def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
     current = get_route(route_id)
+    check_revision(data.get("expected_revision"), current["revision"])
     if "approval_state" in data:
         raise EngineeringValidationError("Freigaben sind nur über den Approval-Endpunkt zulässig.")
     normalized = normalize_route(data, current)
@@ -196,7 +196,7 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
     if governance_locked:
         assignments.extend((sql.SQL("approved_at = NULL"), sql.SQL("approved_by = NULL")))
     values = [Jsonb(value) if field in JSON_FIELDS else value for field, value in updates.items()]
-    values.extend((actor, route_id, current_project_id()))
+    values.extend((actor, route_id, current_project_id(), current["revision"]))
     query = sql.SQL(
         "UPDATE engineering_routing_entries SET {}, revision = ("
         "SELECT COALESCE(MAX(history.revision), 0) + 1 "
@@ -204,12 +204,13 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
         "WHERE history.project_id = engineering_routing_entries.project_id "
         "AND history.route_code = engineering_routing_entries.route_code"
         "), "
-        "modified_by = %s, modified_at = now() WHERE id = %s AND project_id = %s RETURNING *"
+        "modified_by = %s, modified_at = now() WHERE id = %s AND project_id = %s AND revision = %s RETURNING *"
     ).format(sql.SQL(", ").join(assignments))
     with get_connection() as connection:
         row = connection.execute(query, values).fetchone()
+        if row is None:
+            raise ConcurrentUpdateError("Route wurde parallel geändert. Bitte neu laden.")
         _audit(connection, route_id, "ROUTE_EDITED", actor=actor, before=current, after=row, reason=data.get("reason"))
-        connection.commit()
     return row
 
 
@@ -235,7 +236,6 @@ def save_validation(route_id: str, validation: dict[str, Any], actor: str | None
             ),
         ).fetchone()
         _audit(connection, route_id, "ROUTE_VALIDATED", actor=actor, before=current, after=row, evidence=validation.get("evidence"))
-        connection.commit()
     return row
 
 
@@ -321,7 +321,6 @@ def approve_routes(route_ids: list[str], *, actor: str | None = None, approve_al
             _publish_graph(connection, row, actor)
             _audit(connection, route_id, "ROUTE_APPROVED", actor=actor, before=current, after=row)
             approved.append(row)
-        connection.commit()
     return approved
 
 
@@ -344,7 +343,6 @@ def reject_routes(route_ids: list[str], *, actor: str | None = None, reason: str
             ).fetchone()
             _audit(connection, route_id, "ROUTE_REJECTED", actor=actor, before=current, after=row, reason=reason)
             rejected.append(row)
-        connection.commit()
     return rejected
 
 
@@ -360,7 +358,6 @@ def delete_route(route_id: str, *, actor: str | None = None) -> None:
             "DELETE FROM engineering_routing_entries WHERE id = %s AND project_id = %s",
             (route_id, current_project_id()),
         )
-        connection.commit()
 
 
 def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
@@ -398,7 +395,6 @@ def create_proposal(data: dict[str, Any]) -> dict[str, Any]:
             agent="routing-generation-service",
             model=data.get("model"),
         )
-        connection.commit()
     return row
 
 
@@ -444,7 +440,6 @@ def update_proposal(proposal_id: str, data: dict[str, Any]) -> dict[str, Any]:
             "WHERE proposal_id = %s AND project_id = %s RETURNING *",
             (Jsonb(generated_routes), status, data.get("actor"), proposal_id, current_project_id()),
         ).fetchone()
-        connection.commit()
     return row
 
 
@@ -464,7 +459,6 @@ def delete_proposal(proposal_id: str, *, actor: str | None = None) -> None:
             actor=actor,
             before={"proposal_id": proposal_id, "status": current["status"]},
         )
-        connection.commit()
 
 
 def accept_proposal_routes(proposal_id: str, indexes: list[int], *, actor: str | None = None) -> list[dict[str, Any]]:
@@ -482,7 +476,6 @@ def accept_proposal_routes(proposal_id: str, indexes: list[int], *, actor: str |
         with get_connection() as connection:
             row = _insert_route(connection, normalized, route_code=_route_code(), revision=1)
             _audit(connection, str(row["id"]), "ROUTE_PROPOSAL_ACCEPTED_AS_DRAFT", actor=actor, after=row)
-            connection.commit()
         created.append(row)
     update_proposal(
         proposal_id,
@@ -549,7 +542,6 @@ def create_rule(data: dict[str, Any]) -> dict[str, Any]:
             ),
         ).fetchone()
         _audit(connection, None, "ROUTING_RULE_CREATED", actor=data.get("actor"), after=row)
-        connection.commit()
     return row
 
 
@@ -594,7 +586,6 @@ def update_rule(rule_id: str, data: dict[str, Any]) -> dict[str, Any]:
             ),
         ).fetchone()
         _audit(connection, None, "ROUTING_RULE_EDITED", actor=data.get("actor"), before=current, after=row)
-        connection.commit()
     return row
 
 
@@ -608,7 +599,6 @@ def delete_rule(rule_id: str, *, actor: str | None = None) -> None:
             (rule_id, current_project_id()),
         )
         _audit(connection, None, "ROUTING_RULE_DELETED", actor=actor, before=current)
-        connection.commit()
 
 
 def record_simulation_results(
@@ -656,4 +646,3 @@ def record_simulation_results(
                 after={"job_id": job_id, "observation": observation},
                 evidence=[observation],
             )
-        connection.commit()

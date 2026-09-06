@@ -19,6 +19,7 @@ WORKLOAD_STATUSES = (
     "PLANNING",
     "IN_PROGRESS",
     "VALIDATING",
+    "REPAIRING",
     "INCOMPLETE",
     "READY_FOR_REVIEW",
     "COMPLETED",
@@ -148,7 +149,7 @@ def _prompt_packages(prompt: str) -> list[dict[str, Any]]:
     categories = "temperatur|temperature|thermal|motion|bewegung|dynamik|golden|fault|fehler|stress"
     patterns = (
         rf"(\d{{1,5}})\s*(?:weitere\s+)?(?:signale?|messages?|nachrichten?|szenarien?|scenarios?)?\s*f(?:u|ue|ü)r\s+(?:die\s+|den\s+|das\s+)?({categories})\b",
-        rf"(\d{{1,5}})\s+(?:signale?|messages?|nachrichten?|szenarien?|scenarios?)?\s*({categories})\b",
+        rf"(\d{{1,5}})\s+(?:signale?|messages?|nachrichten?|szenarien?|scenarios?)?\s*({categories})(?:s?signale?|\s+signals?)?\b",
         rf"({categories})\s*[:=]\s*(\d{{1,5}})\b",
     )
     found: dict[str, int] = {}

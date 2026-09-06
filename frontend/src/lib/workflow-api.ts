@@ -1,6 +1,6 @@
 import type { NetworkTopology } from "./topology";
 import type { SimulationResultPayload } from "./types";
-import { compactProjectId, readActiveProjectId } from "./user-settings";
+import { compactProjectId, readActiveProjectId } from "./user-settings.ts";
 import type { InspectionObject, InspectionSources } from "./capacity-network-inspection";
 
 const BASE = "/api/engineering";
@@ -40,6 +40,7 @@ export type WorkflowStep = {
 
 export type WorkflowState = {
   project_id: string;
+  edit_tokens?: { topology: string; parameters: string };
   active_step: WorkflowStepId;
   versions: Record<WorkflowStepId, number>;
   statuses: Record<WorkflowStepId, WorkflowStatus>;
@@ -323,23 +324,29 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     throw Object.assign(new Error((payload as { error?: string }).error ?? `Workflow-Fehler ${response.status}`), { status: response.status });
   }
+  if (init?.method && !["GET", "HEAD"].includes(init.method) && !path.startsWith("/workflow/context") && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("engineering:write-completed"));
+  }
   return payload as T;
 }
 
 export const getWorkflow = () =>
   request<WorkflowState>("/workflow", { signal: AbortSignal.timeout(180000) }).then(normalizeWorkflowState);
 
-let workflowSummaryRequest: Promise<WorkflowState> | null = null;
+const workflowSummaryRequests = new Map<string, Promise<WorkflowState>>();
 
 export const getWorkflowSummary = () => {
-  if (!workflowSummaryRequest) {
-    workflowSummaryRequest = request<WorkflowState>("/workflow?view=summary")
+  const projectId = readActiveProjectId();
+  let pending = workflowSummaryRequests.get(projectId);
+  if (!pending) {
+    pending = request<WorkflowState>("/workflow?view=summary", { headers: { "X-Project-ID": projectId } })
       .then(normalizeWorkflowState)
       .finally(() => {
-        workflowSummaryRequest = null;
+        workflowSummaryRequests.delete(projectId);
       });
+    workflowSummaryRequests.set(projectId, pending);
   }
-  return workflowSummaryRequest;
+  return pending;
 };
 
 export const setWorkflowContext = (context: Record<string, unknown>) =>
@@ -371,16 +378,17 @@ export const cancelEngineeringWorkload = (workloadId: string, actor = "engineeri
     body: JSON.stringify({ actor }),
   });
 
-export const saveWorkflowParameters = (parameters: Record<string, unknown>) =>
+export const saveWorkflowParameters = (parameters: Record<string, unknown>, expectedToken?: string) =>
   request<WorkflowState>("/workflow/parameters", {
     method: "PATCH",
-    body: JSON.stringify({ parameters }),
+    body: JSON.stringify({ parameters, expected_token: expectedToken }),
+    signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
 
-export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "edges">) =>
+export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "edges">, expectedToken?: string) =>
   request<WorkflowState>("/workflow/topology", {
     method: "PUT",
-    body: JSON.stringify({ topology }),
+    body: JSON.stringify({ topology, expected_token: expectedToken }),
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
 

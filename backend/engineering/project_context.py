@@ -35,6 +35,7 @@ def compact_context_project_id(value: object) -> str:
     return (
         project_id[len(NETWORK_PROJECT_PREFIX):]
         if project_id.startswith(NETWORK_PROJECT_PREFIX)
+        and COMPACT_NETWORK_PROJECT_PATTERN.fullmatch(project_id[len(NETWORK_PROJECT_PREFIX):])
         else project_id
     )
 

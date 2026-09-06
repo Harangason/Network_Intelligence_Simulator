@@ -192,7 +192,6 @@ class EngineeringWorkloadOrchestrator:
                 {"requested_total": plan["requested_total"], "packages": plan["work_packages"]},
                 actor=plan.get("created_by"),
             )
-            connection.commit()
         return self.get_workload(str(workload["workload_id"]))
 
     def _validate_dependency(self, connection, workload_id: str) -> None:
@@ -314,7 +313,6 @@ class EngineeringWorkloadOrchestrator:
     ) -> None:
         with get_connection() as connection:
             self._audit_with_connection(connection, workload, event_type, details, package_id=package_id, actor=actor)
-            connection.commit()
 
     # ------------------------------------------------------------------
     # Orchestration and completion loop
@@ -384,7 +382,6 @@ class EngineeringWorkloadOrchestrator:
                     {"attempt": workload["attempts"], "reason": "WORKLOAD_INCOMPLETE"},
                     actor=actor,
                 )
-            connection.commit()
 
     def _begin_package_attempt(self, package: dict[str, Any]) -> None:
         with get_connection() as connection:
@@ -393,7 +390,6 @@ class EngineeringWorkloadOrchestrator:
                 "started_at = COALESCE(started_at, now()), updated_at = now() WHERE work_package_id = %s",
                 (package["work_package_id"],),
             )
-            connection.commit()
 
     def _set_workload_status(
         self,
@@ -416,7 +412,6 @@ class EngineeringWorkloadOrchestrator:
             if workload is None:
                 raise EngineeringValidationError(f"Workload {workload_id} wurde nicht gefunden.")
             self._audit_with_connection(connection, workload, "WORKLOAD_STATUS_CHANGED", {"status": status}, actor=actor)
-            connection.commit()
         return workload
 
     def evaluate_workload_completion(self, workload_id: str, *, actor: str | None = None) -> dict[str, Any]:
@@ -466,7 +461,6 @@ class EngineeringWorkloadOrchestrator:
             event = "READY_FOR_REVIEW" if decision["status"] == "READY_FOR_REVIEW" else "COMPLETION_EVALUATED"
             self._audit_with_connection(connection, updated, event, decision, actor=actor)
             self._audit_with_connection(connection, updated, "PROGRESS_UPDATED", decision["metrics"], actor=actor)
-            connection.commit()
         return {**self.get_workload(workload_id), "completion": decision}
 
     def validate_workload(self, workload_id: str, *, actor: str | None = None) -> dict[str, Any]:
@@ -489,6 +483,7 @@ class EngineeringWorkloadOrchestrator:
         if int(workload["attempts"]) >= int(workload["max_generation_attempts"]):
             return self.evaluate_workload_completion(workload_id, actor=actor)
         handler = self.registry.get(str(workload["workload_type"]))
+        self._set_workload_status(workload_id, "REPAIRING", actor=actor)
         repair = handler.repair(self, workload)
         self.audit(workload, "REPAIR_ATTEMPTED", repair, actor=actor)
         handler.validate(self, self.get_workload(workload_id))
@@ -573,7 +568,12 @@ class EngineeringWorkloadOrchestrator:
     # ------------------------------------------------------------------
 
     def list_canonical_objects(self, object_type: str) -> list[dict[str, Any]]:
-        return list_objects(object_type, limit=500)
+        rows: list[dict[str, Any]] = []
+        while True:
+            page = list_objects(object_type, limit=500, offset=len(rows))
+            rows.extend(page)
+            if len(page) < 500:
+                return rows
 
     def _engineering_context_provider(
         self,
@@ -603,6 +603,8 @@ class EngineeringWorkloadOrchestrator:
                     return 100
                 if "thermal" in name and "ecu" in name:
                     return 90
+                if "thermal" in name:
+                    return 80
                 if "temperatur" in name:
                     return 70
             if category == "motion":
@@ -710,7 +712,6 @@ class EngineeringWorkloadOrchestrator:
                 {"dependency_workload_id": str(child["workload_id"]), "category": category},
                 package_id=str(package["work_package_id"]),
             )
-            connection.commit()
 
     def dependencies(self, workload_id: str) -> list[dict[str, Any]]:
         with get_connection() as connection:
@@ -741,7 +742,6 @@ class EngineeringWorkloadOrchestrator:
                 "WHERE work_package_id = %s",
                 (Jsonb(findings), package["work_package_id"]),
             )
-            connection.commit()
 
     def unblock_package(self, package: dict[str, Any]) -> None:
         if package.get("status") != "BLOCKED":
@@ -752,7 +752,6 @@ class EngineeringWorkloadOrchestrator:
                 "WHERE work_package_id = %s",
                 (package["work_package_id"],),
             )
-            connection.commit()
 
     def create_validated_proposal(
         self,
@@ -844,7 +843,6 @@ class EngineeringWorkloadOrchestrator:
                 {"workload_object_id": str(row["workload_object_id"]), "object_key": object_key},
                 package_id=str(package["work_package_id"]),
             )
-            connection.commit()
         return row
 
     def update_workload_object_validation(
@@ -870,7 +868,6 @@ class EngineeringWorkloadOrchestrator:
                     item["workload_object_id"],
                 ),
             )
-            connection.commit()
 
     def replace_workload_object_definition(self, item: dict[str, Any], definition: dict[str, Any]) -> None:
         with get_connection() as connection:
@@ -879,7 +876,6 @@ class EngineeringWorkloadOrchestrator:
                 "is_valid = FALSE, updated_at = now() WHERE workload_object_id = %s",
                 (Jsonb(definition), item["workload_object_id"]),
             )
-            connection.commit()
 
     def sync_workload_proposals(self, workload_id: str) -> None:
         objects = self.list_workload_objects(workload_id)
@@ -889,6 +885,8 @@ class EngineeringWorkloadOrchestrator:
                 grouped[str(item["proposal_id"])].append(item)
         for proposal_id, items in grouped.items():
             proposal = get_proposal(proposal_id)
+            if proposal.get("engineering_contract"):
+                continue
             if proposal["status"] in {"APPROVED", "SUPERSEDED", "REJECTED"}:
                 continue
             proposed = [dict(item) for item in proposal.get("proposed_objects") or []]
@@ -961,7 +959,6 @@ class EngineeringWorkloadOrchestrator:
                     item["workload_object_id"],
                 ),
             )
-            connection.commit()
 
     def sync_workload_approvals(self, workload_id: str) -> None:
         objects = self.list_workload_objects(workload_id)
@@ -985,7 +982,6 @@ class EngineeringWorkloadOrchestrator:
                     "review_state = %s, approval_state = %s, updated_at = now() WHERE workload_object_id = %s",
                     (canonical_id, review_state, approval_state, item["workload_object_id"]),
                 )
-                connection.commit()
 
     def recount_packages(self, workload_id: str) -> None:
         workload = self.get_workload(workload_id)
@@ -1040,7 +1036,6 @@ class EngineeringWorkloadOrchestrator:
                         },
                         package_id=str(package["work_package_id"]),
                     )
-                connection.commit()
 
     def progress(self, workload_id: str) -> dict[str, Any]:
         workload = self.get_workload(workload_id)

@@ -169,22 +169,22 @@ class RoutingValidator:
         destinations: list[dict[str, Any]],
         exclude_route_id: str | None,
     ) -> list[dict[str, Any]]:
+        def key(content, endpoints):
+            selected = {field: sorted({str(item) for item in [*(content.get(field) or []), *([content.get(single)] if content.get(single) else [])] if item})
+                        for field, single in (("message_ids", "message_id"), ("interface_definition_ids", "interface_definition_id"), ("signal_ids", "signal_id"))}
+            selected.update({field: value for field, value in content.items() if field not in {"message_ids", "message_id", "interface_definition_ids", "interface_definition_id", "signal_ids", "signal_id"} and value not in (None, "", [], {})})
+            destinations_key = sorted(tuple(str(item.get(field) or "") for field in ("node_id", "interface_id", "port_id", "network_id")) for item in endpoints)
+            return selected, destinations_key
         with get_connection() as connection:
-            return connection.execute(
-                "SELECT id, route_code FROM engineering_routing_entries "
-                "WHERE source ->> 'node_id' = %s AND payload = %s AND destinations = %s "
+            rows = connection.execute(
+                "SELECT id, route_code, payload, destinations FROM engineering_routing_entries "
+                "WHERE source ->> 'node_id' = %s "
                 "AND (%s::uuid IS NULL OR id <> %s::uuid) "
-                "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED') "
-                "AND project_id = %s",
-                (
-                    source_node_id,
-                    Jsonb(payload),
-                    Jsonb(destinations),
-                    exclude_route_id,
-                    exclude_route_id,
-                    self.project_id,
-                ),
+                "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED', 'DEPRECATED') AND project_id = %s",
+                (source_node_id, exclude_route_id, exclude_route_id, self.project_id),
             ).fetchall()
+        expected = key(payload, destinations)
+        return [row for row in rows if key(row["payload"], row["destinations"]) == expected]
 
     def validate(self, route: dict[str, Any], *, exclude_route_id: str | None = None) -> dict[str, Any]:
         errors: list[dict[str, str]] = []

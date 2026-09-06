@@ -26,6 +26,19 @@ Läufe als `OUTDATED`, ohne sie zu löschen. Simulationen starten nur aus einem
 aktuellen Preflight und einem unveränderlichen SimulationSnapshot. Details
 stehen in `backend/docs/WORKFLOW_ARCHITECTURE.md`.
 
+### Gemeinsam in mehreren Browsern arbeiten
+
+Über **Projektlink** denselben Link in Chrome, Edge oder einem weiteren Browser
+öffnen. Alle Browser müssen dieselbe Simulator-Instanz mit derselben Datenbank
+verwenden; die Projekt-ID steht im Link. Änderungen anderer Browser werden
+spätestens beim nächsten erfolgreichen 5-Sekunden-Abgleich angezeigt. Offene
+Entwürfe bleiben erhalten. Veraltete Objekt-, Routing-, Parameter- und
+Topologieänderungen werden mit einem Konflikthinweis abgewiesen; anschließend
+den aktuellen Stand laden und die Änderungen vergleichen.
+
+Prüfumfang, bekannte Grenzen und reproduzierbare Tests:
+[Konsistenz- und Mehrbrowserprüfung](docs/implementation_audit/2026-09-06_consistency_multibrowser.md).
+
 ### Aktueller Engineering-Funktionsumfang
 
 - Der geführte Engineering-Wizard erfasst Geräteklassen, Teilnehmer,
@@ -89,22 +102,20 @@ weil sonst Workflow, "Neu" und Engineering-Daten ohne Backend/DB instabil
 werden.
 
 Der Launcher prüft, ob Ollama unter `http://127.0.0.1:11434` erreichbar und das
-Modell `qwen3.8:27b` installiert ist. Für Standardfragen nutzt der Agent das
-GPU-taugliche `llama3.1:8b`; das größere Modell bleibt für ausdrücklich tiefe
-Analysen verfügbar. Die empfohlenen Variablen stehen in
+Modell `qwen3.8:27b` installiert ist. Der Engineering-Chat läuft über den Python
+Agent Core und echte MCP-Aufrufe. Das lokale Modell wird durch `LOCAL_AI_MODEL`
+bestimmt. Die empfohlenen Ressourcenvariablen stehen in
 `runtime-performance.env.example`. Standardmäßig nutzt das Backend 16
 Waitress-Threads und 12 Simulations-Worker im Thread-Modus. Der optionale
 Prozessmodus besitzt zusätzliche Spawn- und PID-Sicherungen. NumPy-/BLAS-Threads
 sind pro Worker auf eins begrenzt, damit die CPU-Kerne nicht mehrfach
 überbucht werden.
 
-Der Agent läuft standardmäßig im Modus `hybrid-demand`: Llama 3.1 8B übernimmt
-Unterhaltung, Analyse und Werkzeugsteuerung lokal über Ollama. OpenAI und
-NVIDIA NIM/Nemotron werden nur auf ausdrücklichen Wunsch oder bei einer
-angeforderten Wiederaufnahme nach lokalem Fehlschlag verwendet. Strukturierte
-Engineering-Spezifikationen durchlaufen zuerst den deterministischen Parser.
-Werte aus `.env.local` und der explizit konfigurierten gemeinsamen `.env` werden
-beim Start geladen; Prozessvariablen haben Vorrang.
+Der Python-Agent verwendet den lokalen Modelldienst. Die bisherigen
+TypeScript-Schalter für Hybrid-/Cloud-Eskalation steuern diesen Chat nicht.
+Änderungen entstehen als validierte Vorschläge und benötigen eine menschliche
+Freigabe sowie eine getrennte Übernahme. Details und externe MCP-Konfiguration:
+[Engineering Agent und MCP](docs/agent_core/14_MCP_IMPLEMENTATION.md).
 
 ### Persistierte Ressourcen- und KI-Konfiguration
 
@@ -155,8 +166,8 @@ werden getrennt gespeichert und verändern das kanonische Modell nicht direkt.
 Der serverseitige KI-Agent verwendet standardmäßig
 `http://127.0.0.1:15050/api/engineering`. Für abweichende Deployments kann der
 vollständige Engineering-Pfad über `SIMULATOR_ENGINEERING_API_URL` gesetzt
-werden. Eine generische `ENGINEERING_API_URL` wird aus Kollisionsschutz nur
-übernommen, wenn sie bereits `/api/engineering` enthält.
+werden. Externe MCP-Clients verwenden für Simulationsjobs dieselbe Anwendungs-API über
+`SIMULATOR_JOB_API_URL` (Standard `http://127.0.0.1:15050/api`).
 
 Vor dem Webstart kann der lokale Start-Doctor ohne Nebenwirkungen ausgeführt
 werden:
@@ -204,6 +215,13 @@ docker compose -f docker-compose.networkis.yml up -d --build
 
 Wenn `docker` nicht im `PATH` liegt, verwendet `start-networkis.bat` die in
 `config/networkis.resources.json` gespeicherten ausführbaren Dateien. Der
+Launcher startet außerdem die nur lokal erreichbare Windows-Hosttelemetrie auf
+Port `13502`. Dadurch zeigt der Engineering-Auftrag die aktuelle CPU-, RAM-,
+GPU- und VRAM-Auslastung des Rechners statt der Ressourcen des Docker-Containers.
+Ist die Hosttelemetrie nicht erreichbar, kennzeichnet die Oberfläche die
+Ersatzmessung ausdrücklich als `Container`.
+
+Der
 direkte Aufruf des hinterlegten Compose-Plugins ist ebenfalls möglich:
 
 ```powershell
@@ -324,7 +342,7 @@ Dateiformate sind technologieabhängig:
 
 Voraussetzungen:
 
-- Python 3.14 oder neuer
+- Python 3.12 oder 3.13 (siehe `backend/pyproject.toml`)
 - `uv` empfohlen
 
 ```powershell
@@ -334,7 +352,7 @@ uv sync --project backend
 Alternativ:
 
 ```powershell
-py -3.14 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install python-can openai
 ```

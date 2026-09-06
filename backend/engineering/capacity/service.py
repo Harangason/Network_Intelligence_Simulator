@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..repository import list_objects
+from ..pagination import all_pages
 from ..routing.repository import list_routes
 from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
 from ..signal_audit import build_generation_signal_audit
@@ -49,6 +50,7 @@ def _number(value: Any, default: float) -> float:
 
 def parameters_for_protocol(
     protocol: str, parameters: dict[str, Any], configuration: dict[str, Any] | None = None,
+    network_id: str | None = None,
 ) -> dict[str, Any]:
     aliases = {"AUTOMOTIVE_ETHERNET": "ETHERNET", "CANFD": "CAN_FD", "CAN_CLASSIC": "CAN", "SOMEIP": "SOME_IP"}
 
@@ -65,8 +67,10 @@ def parameters_for_protocol(
             resolved.pop(key, None)
         resolved["bitrate"] = PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0]
     resolved.setdefault("bitrate", PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0])
+    declared = next((item for item in parameters.get("networks", []) if str(item.get("id")) == str(network_id)), {}) if network_id else {}
+    effective_configuration = {**(configuration or {}), **declared}
     for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
-        value = (configuration or {}).get(key)
+        value = effective_configuration.get(key)
         if _number(value, 0) > 0:
             resolved[key] = value
     return resolved
@@ -185,14 +189,14 @@ class CapacityTimingService:
         target_bus_load = min(max(_number(parameters.get("target_bus_load_percent"), 60.0), 0.0), 100.0)
         routes = [
             route
-            for route in list_routes(limit=500)
+            for route in all_pages(list_routes)
             if route.get("approval_state") == "APPROVED"
             and route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
         ]
-        messages = {str(item["id"]): item for item in list_objects("Message", limit=500)}
-        signals = {str(item["id"]): item for item in list_objects("Signal", limit=2000)}
-        interfaces = {str(item["id"]): item for item in list_objects("Interface", limit=500)}
-        hardware = {str(item["id"]): item for item in list_objects("HardwareNode", limit=500)}
+        messages = {str(item["id"]): item for item in all_pages(list_objects, "Message")}
+        signals = {str(item["id"]): item for item in all_pages(list_objects, "Signal")}
+        interfaces = {str(item["id"]): item for item in all_pages(list_objects, "Interface")}
+        hardware = {str(item["id"]): item for item in all_pages(list_objects, "HardwareNode")}
         route_metrics: list[dict[str, Any]] = []
         logical_route_metrics: list[dict[str, Any]] = []
         network_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -248,7 +252,7 @@ class CapacityTimingService:
             )
             cycle_ms = cycle_requirement or _number(message.get("cycle_ms"), default_cycle)
             interface = interfaces.get(str(source.get("interface_id") or ""), {})
-            route_parameters = parameters_for_protocol(protocol, parameters, interface.get("configuration"))
+            route_parameters = parameters_for_protocol(protocol, parameters, interface.get("configuration"), network_id)
             estimate = estimate_frame(protocol, payload_bytes, route_parameters)
             average = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
             peak = average * peak_factor
@@ -603,7 +607,7 @@ class CapacityTimingService:
             protocol = str(interface.get("interface_type") or default_protocol)
             payload_bytes = max(0, int(_number(message.get("dlc"), default_payload)))
             cycle_ms = _number(message.get("cycle_ms"), default_cycle)
-            estimate = estimate_frame(protocol, payload_bytes, parameters_for_protocol(protocol, parameters, configuration))
+            estimate = estimate_frame(protocol, payload_bytes, parameters_for_protocol(protocol, parameters, configuration, configuration.get("network_id") or configuration.get("network")))
             load = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
             requirements = message.get("configuration") or {}
             message_metrics.append(
@@ -953,7 +957,7 @@ class PreflightService:
 
         hardware = list_objects("HardwareNode", limit=1000)
         functions = list_objects("Function", limit=1000)
-        interfaces = list_objects("Interface", limit=2000)
+        interfaces = all_pages(list_objects, "Interface")
         messages = list_objects("Message", limit=5000)
         signals = list_objects("Signal", limit=10000)
         if not hardware:

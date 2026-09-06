@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from .file_store import registry_lock, atomic_json
 
 
 @dataclass
@@ -33,16 +34,17 @@ class ModelRegistry:
         self.index_path = self.root / "models.json"
 
     def list(self, task: str | None = None) -> list[dict[str, Any]]:
-        if not self.index_path.exists():
-            return []
-        items = json.loads(self.index_path.read_text(encoding="utf-8"))
+        with registry_lock(self.root / "registry.lock"):
+            items = self._read()
         if task:
             return [item for item in items if item.get("task") == task]
         return items
 
+    def _read(self):
+        return json.loads(self.index_path.read_text(encoding="utf-8")) if self.index_path.exists() else []
+
     def save_model(self, model: Any, dataset_version: str, metrics: dict[str, Any], status: str = "CANDIDATE") -> ModelRegistryEntry:
         artifact = self.root / f"{model.model_id}.json"
-        artifact.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
         entry = ModelRegistryEntry(
             model_id=model.model_id,
             model_type=model.model_type,
@@ -54,9 +56,11 @@ class ModelRegistry:
             status=status,
             artifact_location=str(artifact),
         )
-        items = [item for item in self.list() if item.get("model_id") != model.model_id]
-        items.append(entry.to_dict())
-        self.index_path.write_text(json.dumps(items, indent=2, sort_keys=True), encoding="utf-8")
+        with registry_lock(self.root / "registry.lock"):
+            atomic_json(artifact, model.to_dict())
+            items = [item for item in self._read() if item.get("model_id") != model.model_id]
+            items.append(entry.to_dict())
+            atomic_json(self.index_path, items)
         return entry
 
     def preferred(self, task: str) -> dict[str, Any] | None:

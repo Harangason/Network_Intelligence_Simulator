@@ -290,7 +290,8 @@ class SimulationService:
         if payload.get("workflow_managed") or project_id != "default":
             from ..engineering.simulation import enrich_simulation_config, validate_scenario
 
-            config = enrich_simulation_config(config, project_id)
+            frozen_model = config.get("engineering_model") if payload.get("workflow_snapshot_id") else None
+            config = enrich_simulation_config(config, project_id, model=frozen_model)
             config["scenario"] = validate_scenario(
                 config.get("scenario") if isinstance(config.get("scenario"), dict) else {},
                 config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {},

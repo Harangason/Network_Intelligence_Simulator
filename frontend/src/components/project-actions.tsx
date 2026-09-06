@@ -32,6 +32,16 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     notifyWorkflowChanged();
   }
 
+  async function copyProjectLink() {
+    const url = new URL(withProjectParam("/studio", readUserSettings().activeProject), window.location.origin).href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage("Projektlink kopiert – in einem weiteren Browser öffnen.");
+    } catch {
+      setMessage(`Projektlink: ${url}`);
+    }
+  }
+
   function createProjectId() {
     const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
     return `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
@@ -151,6 +161,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
         <button className="topbar-command danger" disabled={Boolean(busy)} onClick={() => setClearDialogOpen(true)} type="button">Clear</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleSave()} type="button">Speichern</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleOpen()} type="button">Öffnen</button>
+        <button className="topbar-command" onClick={() => void copyProjectLink()} type="button">Projektlink</button>
       </div>
 
       {clearDialogOpen && (

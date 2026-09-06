@@ -8,7 +8,7 @@ from typing import Any
 
 from psycopg.types.json import Jsonb
 
-from .db import get_connection
+from .db import get_connection, _request_unit
 from .models import EngineeringValidationError
 from .project_context import current_project_id
 from .relations import create_relation
@@ -39,8 +39,9 @@ _sync_locks_guard = threading.Lock()
 
 def _sync_lock(topology_id: str) -> threading.Lock:
     with _sync_locks_guard:
+        # Never evict a lock that another caller may already hold or await.
         if topology_id not in _sync_locks and len(_sync_locks) >= MAX_SYNC_LOCKS:
-            _sync_locks.pop(next(iter(_sync_locks)))
+            return _sync_locks[sorted(_sync_locks)[hash(topology_id) % MAX_SYNC_LOCKS]]
         return _sync_locks.setdefault(topology_id, threading.Lock())
 
 
@@ -174,7 +175,6 @@ def _update_connection_if_changed(
                 current_project_id(),
             ),
         ).fetchone()
-        connection.commit()
     return row
 
 
@@ -197,6 +197,10 @@ def _update_if_changed(
 
 def sync_topology(data: dict[str, Any]) -> dict[str, Any]:
     topology_id = _text(data.get("topology_id") or "studio-network", "topology_id")
+    if _request_unit.get() is not None:
+        # The request-wide database lock also covers route synchronization.
+        # Taking a process lock first could invert the database lock order.
+        return _sync_topology(data, topology_id)
     with _sync_lock(f"{current_project_id()}:{topology_id}"):
         return _sync_topology(data, topology_id)
 
@@ -459,6 +463,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 and _is_generated_interface(interface, topology_id)
                 and preferred_interface is not None
                 and str(preferred_interface["id"]) != str(interface["id"])
+                and not _is_generated_interface(preferred_interface, topology_id)
             ):
                 interface = preferred_interface
                 reused_interface = True

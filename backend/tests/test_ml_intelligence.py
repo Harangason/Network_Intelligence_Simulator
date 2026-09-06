@@ -92,3 +92,15 @@ def test_schema_mismatch_is_rejected(tmp_path):
 
     with pytest.raises(ValueError, match="Feature-Schema mismatch"):
         service.classify_signal({"name": "MotorTemperature", "unit": "degC"})
+
+
+def test_registry_concurrent_writes_preserve_all_models(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from backend.intelligence.ml.core.registry import ModelRegistry
+    from backend.intelligence.ml.core.model import EnsembleModel
+    def save(index):
+        model = EnsembleModel(model_id=f"parallel-{index}", model_type="TEST", task="TEST", version="1", feature_schema_version="1", labels=("OK",), class_priors={"OK": 1}, feature_weights={})
+        ModelRegistry(tmp_path).save_model(model, "test", {})
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(save, range(12)))
+    assert len(ModelRegistry(tmp_path).list()) == 12

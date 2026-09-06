@@ -1,0 +1,43 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+const base=process.env.SIMULATOR_TEST_URL;if(!base)throw new Error('Isolated SIMULATOR_TEST_URL required');
+const out=fileURLToPath(new URL('../../backend/test-output/',import.meta.url));
+const project='network-project-chat-ui-fixture';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[],checks=[];
+const stamp=new Date().toISOString();
+const event=(type,extras={})=>({id:crypto.randomUUID(),type,text:`${type} Kartentext`,title:`${type} Karte`,created_at:stamp,...extras});
+const q=(id,selection_mode,status='OPEN')=>({id,question:`Frage ${id}`,description:'Fachliche Auswirkung',selection_mode,status,required:true,engineering_impact:'CRITICAL',context_refs:[],recommended_options:['a'],options:[{id:'a',label:'Option A',recommended:true,reason:'Begründete Empfehlung',disabled:false},{id:'b',label:'Option B',disabled:false},{id:'c',label:'Nicht verfügbar',disabled:true}]});
+const questions={q:q('q','SINGLE'),single:q('single','SINGLE'),multi:q('multi','MULTI'),expired:q('expired','SINGLE','EXPIRED')};
+const finding=event('FINDING',{severity:'WARNING',text:'Bandbreite ist noch offen.'});
+const events=[event('TEXT',{text:'<script>window.unwanted=true</script>'}),event('QUESTION',{question:questions.q}),event('SINGLE_SELECT',{question:questions.single}),event('MULTI_SELECT',{question:questions.multi}),event('QUESTION',{question:questions.expired}),event('RECOMMENDATION',{recommendation:{Reserve:'33%',Technologie:'Ethernet'}}),finding,event('PROGRESS',{progress:[{label:'Modell lesen',status:'done'},{label:'Validieren',status:'active'},{label:'Review',status:'pending'}]}),event('RESULT',{actions:[{type:'NAVIGATE',object_type:'Interface',object_id:'interface-fixture',label:'Interface öffnen'}]}),event('ERROR',{text:'Der Dienst ist vorübergehend nicht verfügbar.'})];
+let history=[...Array.from({length:22},(_,i)=>({id:`old-${i}`,role:'user',parts:[{type:'text',text:`Frühere Nachricht ${i}`}]})),...events.map(e=>({id:`message-${e.id}`,role:'assistant',parts:[{type:'data-engineering',data:e}]}))];
+const decisions={};const sent=[];
+await page.route('**/api/agent/history**',r=>r.fulfill({json:r.request().method()==='GET'?{messages:history,updatedAt:Date.now()}:{ok:true}}));
+await page.route('**/api/engineering/agent/conversation',r=>r.fulfill({json:{success:true,data:{questions,decisions,selected_context:{active_view:'/studio/engineering',selected_object_refs:[]}}}}));
+await page.route('**/api/engineering/agent/review-session',r=>r.fulfill({json:{csrf_token:'fixture-token'}}));
+await page.route('**/api/engineering/agent/findings/*/decision',async r=>{const data=r.request().postDataJSON();decisions[finding.id]={status:data.decision,...data};await r.fulfill({json:{success:true,data:decisions[finding.id]}});});
+await page.route('**/api/agent/chat',async r=>{sent.push(r.request().postDataJSON());await r.fulfill({status:200,contentType:'text/event-stream',headers:{'x-vercel-ai-ui-message-stream':'v1'},body:'data: '+JSON.stringify({type:'start',messageId:'fixture-response'})+'\n\ndata: '+JSON.stringify({type:'data-engineering',data:event('RESULT',{text:'Strukturierte Aktion empfangen.'})})+'\n\ndata: {"type":"finish"}\n\ndata: [DONE]\n\n'});});
+page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto(`${base}/studio/engineering?project=${project}`);await page.getByRole('button',{name:'AI Assistant öffnen',exact:true}).click();const panel=page.locator('.agent-widget-panel');
+ await panel.getByText('ERROR Karte',{exact:true}).waitFor();
+ for(const type of ['TEXT','QUESTION','SINGLE_SELECT','MULTI_SELECT','RECOMMENDATION','FINDING','PROGRESS','RESULT','ERROR'])assert.ok(await panel.locator(`[data-response-type="${type}"]`).count()>0,type);
+ assert.equal(await page.evaluate(()=>window.unwanted),undefined);checks.push('All non-approval response types render; markup remains inert text (approval covered by real E2E)');
+ const multi=panel.locator('.engineering-question-card').filter({has:page.getByText('Frage multi',{exact:true})});
+ await multi.getByRole('checkbox',{name:/Option A/}).waitFor();assert.equal(await multi.getByRole('checkbox',{name:/Option A/}).isChecked(),true);assert.equal(await multi.getByRole('checkbox',{name:'Nicht verfügbar',exact:true}).isDisabled(),true);
+ const expired=panel.locator('.engineering-question-card').filter({has:page.getByText('Frage expired',{exact:true})});assert.equal(await expired.getByRole('button',{name:'Auswahl übernehmen'}).isDisabled(),true);
+ const findingCard=panel.locator('[data-response-type=FINDING]');await findingCard.getByText('Entscheidung: Offen',{exact:true}).click();await findingCard.getByLabel('Umgang mit dem Finding').selectOption('ACCEPTED_RISK');assert.equal(await findingCard.getByRole('button',{name:'Entscheidung speichern'}).isDisabled(),true);
+ await findingCard.getByLabel('Begründung',{exact:true}).fill('Im Strukturentwurf geprüft und bewusst akzeptiert.');await findingCard.getByRole('button',{name:'Entscheidung speichern'}).click();await findingCard.getByText('Entscheidung: Risiko akzeptiert',{exact:true}).waitFor();assert.equal(decisions[finding.id].review_on_change,true);checks.push('Finding risk acceptance requires rationale and persists chosen architecture-change review flag');
+ const link=panel.getByRole('link',{name:'Interface öffnen',exact:true});assert.ok((await link.getAttribute('href')).includes('resource=interfaces'));checks.push('Typed navigation action links to the selected object and project');
+ await panel.getByRole('button',{name:'Ältere Nachrichten laden',exact:true}).click();assert.equal(await panel.locator('.eng-agent-message').count(),32);
+ const thread=panel.locator('.eng-agent-thread');await thread.evaluate(el=>{el.scrollTop=0;el.dispatchEvent(new Event('scroll'));});
+ history.push({id:'remote-new',role:'assistant',parts:[{type:'data-engineering',data:event('TEXT',{text:'Neue Antwort aus anderer Sitzung.'})}]});
+ await panel.getByRole('button',{name:'Neue Antwort anzeigen ↓',exact:true}).waitFor({timeout:12000});assert.equal(await thread.evaluate(el=>el.scrollTop),0);checks.push('Windowed history expands explicitly; remote new response does not move the reader');
+ await panel.getByRole('button',{name:'Neue Antwort anzeigen ↓',exact:true}).click();
+ await panel.locator('[data-response-type=ERROR]').getByRole('button',{name:'Erneut versuchen',exact:true}).click();await page.waitForTimeout(500);assert.equal(sent.at(-1).input.type,'RESUME');checks.push('Error retry sends a structured RESUME request, without automatic retry loops');
+ assert.deepEqual(errors,[]);await page.screenshot({path:out+'chat-ux-cards.png'});await fs.writeFile(out+'chat-ux-ui-report.json',JSON.stringify({checks,errors,fixture:true},null,2));console.log(JSON.stringify({checks,errors,fixture:true}));
+}catch(e){console.error(e);await page.screenshot({path:out+'chat-ux-ui-failure.png'});process.exitCode=1;}
+finally{await Promise.race([browser.close(),new Promise(r=>setTimeout(r,5000))]);process.exit(process.exitCode??0);}

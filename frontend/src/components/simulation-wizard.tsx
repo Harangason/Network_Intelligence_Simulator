@@ -558,6 +558,7 @@ export function SimulationWizard({
   const [routingLinkRevision, setRoutingLinkRevision] = useState("");
   const localWorkflowChangeRef = useRef(false);
   const topologyRef = useRef(topology);
+  const editTokensRef = useRef<{ topology?: string; parameters?: string }>({});
   const projectIdForLinks = initialProjectId;
 
   useEffect(() => {
@@ -579,7 +580,8 @@ export function SimulationWizard({
     setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));
     setRoutingSyncMessage("Routing-Vorschläge werden abgeglichen …");
     try {
-      const state = await saveWorkflowTopology(normalizePhysicalTopology(next));
+      const state = await saveWorkflowTopology(normalizePhysicalTopology(next), editTokensRef.current.topology);
+      editTokensRef.current = state.edit_tokens ?? {};
       if (Array.isArray(state.topology.nodes) && Array.isArray(state.topology.edges)) {
         const savedTopology = normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
         setRoutingLinkRevision(topologyRoutingLinkRevision(savedTopology));
@@ -634,6 +636,7 @@ export function SimulationWizard({
   useEffect(() => {
     getWorkflow()
       .then((state) => {
+        editTokensRef.current = state.edit_tokens ?? {};
         setStoredParameters(state.parameters ?? {});
         const storedTopology = state.topology;
         if (Array.isArray(storedTopology.nodes) && Array.isArray(storedTopology.edges)) {
@@ -739,7 +742,7 @@ export function SimulationWizard({
       Promise.all([
         listAllEngineeringObjects("hardware-nodes"),
         listAllEngineeringObjects("functions"),
-        syncEngineeringTopology(topologyForSync),
+        syncEngineeringTopology(topologyForSync, editTokensRef.current.topology),
       ])
         .then(([items, functionItems, result]) => {
           if (cancelled) return;
@@ -900,11 +903,13 @@ export function SimulationWizard({
     setSavedMessage("");
     try {
       if (mode === "network") {
-        await saveWorkflowTopology(topology);
+        const saved = await saveWorkflowTopology(topology, editTokensRef.current.topology);
+        editTokensRef.current = saved.edit_tokens ?? {};
         setSavedMessage("Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.");
       } else if (advanced) {
         const parsed = JSON.parse(advancedConfig) as Record<string, unknown>;
-        await saveWorkflowParameters(parsed);
+        const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters);
+        editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(parsed);
         setSavedMessage("Parameterkonfiguration gespeichert.");
       } else {
@@ -941,7 +946,8 @@ export function SimulationWizard({
           ...dynamicParameters,
           formats,
         };
-        await saveWorkflowParameters(parameters);
+        const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters);
+        editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(parameters);
         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
       }

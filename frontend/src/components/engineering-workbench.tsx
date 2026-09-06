@@ -20,6 +20,7 @@ import {
   validateEngineeringProposal,
 } from "@/lib/engineering-api";
 import { ENGINEERING_MODEL_CHANGED_EVENT } from "@/lib/engineering-events";
+import { setAssistantSelection } from "@/lib/agent/assistant-context";
 import {
   engineeringDeviceTypeLabel,
   engineeringObjectTypeClass,
@@ -752,6 +753,7 @@ export function EngineeringWorkbench() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError("");
     Promise.all([
@@ -759,6 +761,7 @@ export function EngineeringWorkbench() {
       Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listAllEngineeringObjects(reference))),
     ])
       .then(([nextItems, referenceGroups]) => {
+        if (cancelled) return;
         const nextReferences = referenceGroups.flat();
         setItems(nextItems);
         setReferenceObjects(nextReferences);
@@ -766,8 +769,9 @@ export function EngineeringWorkbench() {
           Object.fromEntries(nextReferences.map((reference) => [reference.id, reference.name])),
         );
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Backend nicht erreichbar."))
-      .finally(() => setLoading(false));
+      .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Backend nicht erreichbar."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [resource, refreshKey]);
 
   useEffect(() => {
@@ -889,11 +893,14 @@ export function EngineeringWorkbench() {
   }, [totalPages]);
 
   useEffect(() => {
+    setAssistantSelection(selected ? { id: selected.id, object_type: RESOURCE_TO_OBJECT_TYPE[resource], name: selected.name } : null);
     void setWorkflowContext({
       selected_object: selected ? { id: selected.id, type: RESOURCE_TO_OBJECT_TYPE[resource], name: selected.name } : null,
       selected_signal: resource === "signals" && selected ? selected.id : null,
     }).catch(() => undefined);
   }, [resource, selected]);
+
+  useEffect(() => () => setAssistantSelection(null), []);
 
   useEffect(() => {
     if (!selected) {
@@ -1786,7 +1793,7 @@ function ProposalObjectWizard({
           {!isLastStep ? (
             <button className="button primary" onClick={() => setStep((current) => Math.min(WIZARD_STEPS.length - 1, current + 1))} type="button">Weiter</button>
           ) : (
-            <button className="button primary" disabled={busy || missing.length > 0} type="submit">{busy ? "Speichert ..." : "Speichern & validieren"}</button>
+            <button key="save-proposal" className="button primary" disabled={busy || missing.length > 0} type="submit">{busy ? "Speichert ..." : "Speichern & validieren"}</button>
           )}
         </footer>
       </form>
@@ -2108,6 +2115,10 @@ function CreateForm({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (step < WIZARD_STEPS.length - 1) {
+      openStep(step + 1);
+      return;
+    }
     setSubmitting(true);
     setFormError("");
     const form = new FormData(event.currentTarget);
@@ -2367,9 +2378,9 @@ function CreateForm({
       <footer>
         <button className="button secondary" disabled={step === 0 || submitting} onClick={() => openStep(Math.max(0, step - 1))} type="button">Zurück</button>
         {step < WIZARD_STEPS.length - 1 ? (
-          <button className="button primary" disabled={loadingParents} onClick={() => openStep(Math.min(WIZARD_STEPS.length - 1, step + 1))} type="button">Weiter</button>
+          <button key="next" className="button primary" disabled={loadingParents} onClick={() => openStep(Math.min(WIZARD_STEPS.length - 1, step + 1))} type="button">Weiter</button>
         ) : (
-          <button className="button primary" disabled={submitting || missing.length > 0 || Boolean(hierarchy && !parentId)} type="submit">{submitting ? "Wird angelegt …" : "Objekt anlegen"}</button>
+          <button key="create" className="button primary" disabled={submitting || missing.length > 0 || Boolean(hierarchy && !parentId)} type="submit">{submitting ? "Wird angelegt …" : "Objekt anlegen"}</button>
         )}
       </footer>
     </form>
@@ -2416,7 +2427,7 @@ function DetailPanel({
     setBusy(true);
     setNotice("");
     try {
-      await updateEngineeringObject(resource, item.id, { lifecycle_state: next });
+      await updateEngineeringObject(resource, item.id, { lifecycle_state: next, expected_version: item.version });
       onChanged();
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Aktualisierung fehlgeschlagen.");
@@ -2429,7 +2440,7 @@ function DetailPanel({
     setBusy(true);
     setNotice("");
     try {
-      await updateEngineeringObject(resource, item.id, { review_state: next });
+      await updateEngineeringObject(resource, item.id, { review_state: next, expected_version: item.version });
       onChanged();
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Aktualisierung fehlgeschlagen.");
@@ -3240,7 +3251,7 @@ function SignalValueDomainFields({ item }: { item: EngSignal }) {
 }
 
 function EditObjectForm({
-  item,
+  item: sourceItem,
   referenceObjects,
   referenceNames,
   resource,
@@ -3256,6 +3267,9 @@ function EditObjectForm({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Keep the draft and its revision together while other views refresh.
+  const [item] = useState(sourceItem);
 
   function optionalNumber(form: FormData, name: string) {
     const value = form.get(name);
@@ -3347,7 +3361,7 @@ function EditObjectForm({
       };
     }
     try {
-      await updateEngineeringObject(resource, item.id, payload);
+      await updateEngineeringObject(resource, item.id, { ...payload, expected_version: item.version });
       onSaved();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Änderungen konnten nicht gespeichert werden.");

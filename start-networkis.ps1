@@ -14,6 +14,7 @@ $DockerDesktop = [string]$Config.paths.docker_desktop
 $Ollama = [string]$Config.paths.ollama_cli
 $FrontendPort = [int]$Config.docker.frontend_port
 $BackendPort = [int]$Config.docker.backend_port
+$HostMetricsPort = if ($Config.docker.host_metrics_port) { [int]$Config.docker.host_metrics_port } else { 13502 }
 $DockerDiag = Join-Path $env:TEMP "networkis-docker-info.log"
 
 function Test-ReadablePath($Path) {
@@ -86,6 +87,38 @@ function Wait-DockerEngine {
 Write-Host "Pruefe Docker Engine..."
 Wait-DockerEngine
 Write-Host "Docker Engine ist bereit."
+
+$HostMetricsScript = Join-Path $Root "host_metrics_bridge.py"
+$HostMetricsHealthUrl = "http://127.0.0.1:$HostMetricsPort/health"
+$HostMetricsReady = $false
+try {
+  $HostMetricsReady = (Invoke-RestMethod -Uri $HostMetricsHealthUrl -TimeoutSec 1).ok -eq $true
+} catch {}
+if (-not $HostMetricsReady) {
+  $HostPython = Join-Path $Root "backend\.venv\Scripts\python.exe"
+  if (-not (Test-ReadablePath $HostPython)) {
+    $HostPython = (Get-Command python -ErrorAction SilentlyContinue).Source
+  }
+  if (-not $HostPython) {
+    throw "Python fuer die Windows-Hosttelemetrie wurde nicht gefunden."
+  }
+  Write-Host "Starte Windows-Hosttelemetrie..."
+  Start-Process -FilePath $HostPython -ArgumentList @($HostMetricsScript, "--port", $HostMetricsPort) -WorkingDirectory $Root -WindowStyle Hidden
+  for ($i = 0; $i -lt 20; $i++) {
+    Start-Sleep -Milliseconds 250
+    try {
+      if ((Invoke-RestMethod -Uri $HostMetricsHealthUrl -TimeoutSec 1).ok -eq $true) {
+        $HostMetricsReady = $true
+        break
+      }
+    } catch {}
+  }
+}
+if (-not $HostMetricsReady) {
+  throw "Windows-Hosttelemetrie ist auf Port $HostMetricsPort nicht erreichbar."
+}
+$env:NETWORKIS_HOST_METRICS_URL = "http://host.docker.internal:$HostMetricsPort/metrics"
+Write-Host "Windows-Hosttelemetrie ist bereit."
 
 if (Test-ReadablePath $Ollama) {
   try {

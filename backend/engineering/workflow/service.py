@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from datetime import datetime, timezone
 from typing import Any
@@ -30,6 +31,15 @@ def _json(value: Any) -> str:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def edit_token(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
+
+
+def check_edit_token(expected: Any, value: Any) -> None:
+    if expected is not None and expected != edit_token(value):
+        raise WorkflowConflictError("Dieser Projektstand wurde in einem anderen Browser geändert. Deine Eingaben bleiben erhalten. Bitte den aktuellen Stand laden und vergleichen.")
 
 
 def is_topology_layout_only_change(current: Any, candidate: Any) -> bool:
@@ -117,6 +127,7 @@ class WorkflowStatusService:
             "context": context,
             "parameters": row.get("parameters") or {},
             "topology": row.get("topology") or {},
+            "edit_tokens": {key: edit_token(row.get(key) or {}) for key in ("topology", "parameters")},
             "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else None,
         }
 
@@ -132,7 +143,7 @@ class WorkflowStatusService:
         with get_connection() as connection:
             self._ensure(connection)
             row = connection.execute(
-                "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
+                "SELECT * FROM engineering_workflow_projects WHERE project_id = %s FOR UPDATE",
                 (self.project_id,),
             ).fetchone()
             state = self._state(row)
@@ -308,7 +319,7 @@ class WorkflowStatusService:
                     SELECT f.hardware_node_id, COUNT(*) AS count
                     FROM engineering_functions f
                     WHERE f.project_id = %s AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
-                    GROUP BY f.hardware_node_id HAVING COUNT(*) > 1
+                    GROUP BY f.hardware_node_id, lower(trim(f.name)) HAVING COUNT(*) > 1
                 ) grouped) AS functions_duplicate,
                 (SELECT COUNT(*) FROM engineering_hardware_nodes h
                  WHERE h.project_id = %s AND h.lifecycle_state NOT IN ('deprecated', 'superseded')
@@ -855,8 +866,8 @@ class WorkflowStatusService:
         with get_connection() as connection:
             self._ensure(connection)
             connection.execute(
-                "DELETE FROM engineering_topology_layouts WHERE project_id = %s AND layout_version = %s",
-                (self.project_id, version),
+                "DELETE FROM engineering_topology_layouts WHERE project_id = %s AND topology_key = %s AND layout_version = %s",
+                (self.project_id, key, version),
             )
             for node in normalized.values():
                 connection.execute(
@@ -1045,6 +1056,19 @@ class WorkflowStatusService:
             ).fetchone()
         return self._serialize_row(row) if row else None
 
+    def claim_simulation_snapshot(self, snapshot_id: str) -> dict[str, Any]:
+        """Atomically reserve a validated snapshot for exactly one submission."""
+        with get_connection() as connection:
+            self._get_locked(connection)
+            row = connection.execute(
+                "UPDATE engineering_simulation_snapshots SET status = 'RUNNING', updated_at = now() "
+                "WHERE id = %s AND project_id = %s AND status = 'READY' AND is_outdated = FALSE RETURNING *",
+                (snapshot_id, self.project_id),
+            ).fetchone()
+            if row is None:
+                raise WorkflowConflictError("Der SimulationSnapshot wurde bereits gestartet oder ist veraltet.")
+        return self._serialize_row(row)
+
     def update_simulation_snapshot(
         self,
         snapshot_id: str,
@@ -1054,7 +1078,7 @@ class WorkflowStatusService:
         result: dict[str, Any] | None = None,
     ) -> None:
         with get_connection() as connection:
-            self._ensure(connection)
+            state = self._get_locked(connection)
             updated = connection.execute(
                 """
                 UPDATE engineering_simulation_snapshots
@@ -1069,7 +1093,6 @@ class WorkflowStatusService:
             ).fetchone()
             if not updated or updated["is_outdated"]:
                 return
-            state = self._get_locked(connection)
             snapshot_versions = updated.get("source_versions") or {}
             if snapshot_versions.get("simulation") != state["versions"].get("simulation"):
                 return

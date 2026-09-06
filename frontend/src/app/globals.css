@@ -3482,7 +3482,7 @@ a {
 
 .agent-widget.is-open .agent-widget-panel {
   --agent-widget-content-height: clamp(620px, 78vh, 900px);
-  --agent-widget-content-width: clamp(620px, 56vw, 980px);
+  --agent-widget-content-width: 420px;
   position: fixed;
   right: 28px;
   bottom: 28px;
@@ -3490,7 +3490,7 @@ a {
     var(--agent-widget-user-width, var(--agent-widget-content-width)),
     calc(100vw - 56px)
   );
-  min-width: min(520px, calc(100vw - 56px));
+  min-width: min(380px, calc(100vw - 56px));
   max-width: calc(100vw - 56px);
   height: min(
     var(--agent-widget-user-height, var(--agent-widget-content-height)),
@@ -3503,7 +3503,7 @@ a {
 .agent-widget.is-open .agent-widget-panel:has(.workload-review-table-wrap),
 .agent-widget.is-open .agent-widget-panel:has(.analysis-table) {
   --agent-widget-content-height: min(86vh, 980px);
-  --agent-widget-content-width: min(86vw, 1200px);
+  --agent-widget-content-width: 440px;
 }
 
 .agent-widget-panel,
@@ -3956,8 +3956,8 @@ a {
 }
 
 .agent-widget-body .eng-agent-message.assistant .eng-agent-message-content {
-  width: calc(100% - 39px);
-  max-width: calc(100% - 39px);
+  width: 100%;
+  max-width: 100%;
 }
 
 .agent-widget-body .eng-agent-message.assistant .eng-agent-bubble {
@@ -13672,3 +13672,73 @@ a {
     grid-column: 1;
   }
 }
+
+/* Structured Python Agent / MCP review cards. */
+.engineering-proposal-review { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); overflow-wrap: anywhere; }
+.engineering-proposal-review > strong { color: var(--text); font-size: 12px; }
+.engineering-proposal-review p { margin: 8px 0; font-size: 13px; line-height: 1.5; }
+.engineering-proposal-review details { margin: 10px 0; }
+.engineering-proposal-review summary { cursor: pointer; font-size: 12px; }
+.engineering-proposal-review article { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.engineering-proposal-review h4 { font-size: 12px; margin: 6px 0; }
+.engineering-proposal-review dl { margin: 6px 0; font-size: 11px; }
+.engineering-proposal-review dt { color: var(--muted); }
+.engineering-proposal-review dd { margin: 2px 0 6px 12px; }
+.engineering-proposal-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.engineering-proposal-actions button:disabled { opacity: .5; cursor: wait; }
+
+/* Engineering Assistant: compact, theme-aware review surface. Graph bubble stays unchanged. */
+.agent-widget.is-open .agent-widget-panel {
+  max-width: min(440px, calc(100vw - 56px));
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--text) 12%, transparent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.agent-widget-header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.agent-widget-header strong { font-size: 15px; }
+.agent-widget-context { font-size: 12px; color: var(--muted); margin: 4px 0 0; overflow-wrap: anywhere; }
+.agent-widget-body, .engineering-assistant-workspace { font-size: 14px; line-height: 1.5; }
+.agent-widget-body .eng-agent-bubble, .engineering-assistant-workspace .eng-agent-bubble {
+  background: var(--surface); color: var(--text); border: 0; box-shadow: none; border-radius: 4px; padding: 6px 0;
+}
+.agent-widget-body .eng-agent-message.user .eng-agent-bubble { background: var(--surface-raised); padding: 8px 10px; }
+.agent-widget-body .eng-agent-avatar { display: none; }
+.agent-widget-body .eng-agent-message { display: block; border-bottom: 1px solid var(--border); padding: 12px 0; }
+.agent-widget-body .eng-agent-role { font-size: 12px; color: var(--muted); font-family: inherit; text-transform: none; letter-spacing: normal; }
+.engineering-response, .engineering-question-card, .engineering-proposal-review { margin: 8px 0; overflow-wrap: anywhere; }
+.engineering-response p { white-space: pre-wrap; }
+.engineering-response h4 { font-size: 14px; margin: 4px 0; }
+.engineering-agent-question { border: 0; margin: 0; padding: 0; min-width: 0; }
+.engineering-agent-question legend { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.engineering-agent-question .engineering-option { padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin: 6px 0; }
+.engineering-option label { display: flex; align-items: flex-start; gap: 8px; }
+.engineering-option p, .engineering-option details { font-size: 12px; color: var(--muted); margin: 4px 0 0 24px; }
+.engineering-recommended { display: inline-block; font-size: 11px; background: var(--surface-raised); color: var(--muted); padding: 1px 5px; margin-left: 5px; border-radius: 3px; }
+.engineering-question-card button, .engineering-response button, .engineering-quick-prompts button, .engineering-proposal-actions button {
+  background: var(--surface-raised); color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 7px 10px; font: inherit; margin: 4px 4px 4px 0; cursor: pointer; box-shadow: none;
+}
+.engineering-question-card button:disabled { opacity: .5; cursor: default; }
+.engineering-context-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.engineering-context-links a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; font-size: 12px; }
+.engineering-quick-prompts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.engineering-progress { list-style: none; padding: 0; font-size: 12px; color: var(--muted); }
+.engineering-progress [data-status=active] { color: var(--text); font-weight: 600; }
+.engineering-response textarea, .engineering-response select { width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.engineering-response label { display: block; margin: 8px 0; }
+.engineering-assistant-workspace { max-width: 1000px; margin: 24px auto; }
+.engineering-assistant-workspace .eng-agent-thread { height: 65vh; max-height: none; }
+.agent-widget-panel :is(button, input, textarea, summary, a):focus-visible, .engineering-assistant-workspace :focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+@media (max-width: 720px) {
+  .agent-widget.is-open { z-index: 100; }
+  .agent-widget.is-open .agent-widget-panel { inset: 0; width: 100vw; min-width: 100vw; max-width: 100vw; height: 100dvh; min-height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .agent-widget .agent-widget-resize-handle { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .agent-widget * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+.agent-widget-body .eng-agent-activity summary { color: var(--muted); font-family: inherit; text-transform: none; letter-spacing: normal; }
+.agent-widget-body .eng-agent-activity summary span { color: var(--muted); font-family: inherit; text-transform: none; letter-spacing: normal; }
+.agent-widget-body .eng-agent-form textarea, .engineering-assistant-workspace .eng-agent-form textarea { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.agent-widget-body .eng-agent-form textarea:focus { border-color: var(--text); box-shadow: none; }
+.agent-widget-body .eng-agent-form .button.primary { color: var(--text); background: var(--surface-raised); border: 1px solid var(--border); box-shadow: none; }
+.engineering-agent-question input { accent-color: var(--text); }
+.engineering-proposal-editor label { display: block; margin: 8px 0; font-size: 12px; }
+.engineering-proposal-editor :is(input, textarea) { display: block; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 6px; }

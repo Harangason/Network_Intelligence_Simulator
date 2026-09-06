@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 
 import pytest
 
@@ -17,7 +18,9 @@ pytestmark = pytest.mark.skipif(
 def _client():
     os.environ["DATABASE_URL"] = os.environ["ENGINEERING_TEST_DATABASE_URL"]
     close_pool()
-    return create_app(testing=True).test_client()
+    client = create_app(testing=True).test_client()
+    client.environ_base["HTTP_X_PROJECT_ID"] = f"pytest-{uuid.uuid4()}"
+    return client
 
 
 def test_create_get_update_list_delete_hardware_node() -> None:
@@ -180,11 +183,11 @@ def test_hierarchy_relations_are_created_automatically() -> None:
 
 def test_direct_hardware_interface_proposal_creates_hardware_relation() -> None:
     client = _client()
-    headers = {"X-Project-ID": "pytest-direct-interface-proposal"}
+    headers = {"X-Project-ID": f"pytest-direct-interface-proposal-{uuid.uuid4()}"}
     node = client.post(
         "/api/engineering/hardware-nodes",
         headers=headers,
-        json={"name": "TemperatureSensor", "device_type": "TemperatureSensor", "actor": "pytest"},
+        json={"name": "TemperatureSensor", "device_type": "SensorController", "device_class": 1, "actor": "pytest"},
     ).get_json()
     proposal = client.post(
         "/api/engineering/proposals",
@@ -230,7 +233,7 @@ def test_direct_hardware_interface_proposal_creates_hardware_relation() -> None:
 
 def test_approved_engineering_proposal_invalidates_workflow() -> None:
     client = _client()
-    headers = {"X-Project-ID": "pytest-proposal-workflow-invalidation"}
+    headers = {"X-Project-ID": f"pytest-proposal-workflow-invalidation-{uuid.uuid4()}"}
     before = client.get("/api/engineering/workflow", headers=headers).get_json()
 
     proposal_response = client.post(
@@ -288,7 +291,7 @@ def test_approved_engineering_proposal_invalidates_workflow() -> None:
 
 def test_new_project_proposal_reuses_semantic_hardware_synonym() -> None:
     client = _client()
-    headers = {"X-Project-ID": "pytest-new-project-system-canonicalization"}
+    headers = {"X-Project-ID": f"pytest-new-project-system-canonicalization-{uuid.uuid4()}"}
     existing = client.post(
         "/api/engineering/hardware-nodes",
         headers=headers,

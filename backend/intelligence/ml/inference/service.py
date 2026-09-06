@@ -106,7 +106,7 @@ class MLInferenceService:
         ranked.sort(key=lambda item: item["route_score"], reverse=True)
         return {
             "task": "ROUTE_CANDIDATE_RANKING",
-            "model_type": "GRADIENT_BOOSTING",
+            "model_type": "DETERMINISTIC_FEATURE_SCORER",
             "ranking": ranked,
             "note": "Nur validierte Routen wurden bewertet.",
             "deployment_policy": "REVIEW_GATE_REQUIRED",
@@ -129,7 +129,7 @@ class MLInferenceService:
             "label": label,
             "confidence": confidence,
             "confidence_policy": confidence_band(confidence),
-            "model_type": "GRADIENT_BOOSTING",
+            "model_type": "DETERMINISTIC_FEATURE_SCORER",
             "features": features,
             "proposal_only": True,
             "may_mutate_payload": False,
@@ -158,7 +158,7 @@ class MLInferenceService:
             "label": label,
             "confidence": confidence,
             "confidence_policy": confidence_band(confidence),
-            "model_type": "RANDOM_FOREST",
+            "model_type": "DETERMINISTIC_FEATURE_SCORER",
             "features": features,
             "classification_not_truth": True,
             "deployment_policy": "REVIEW_GATE_REQUIRED",
@@ -191,6 +191,8 @@ class MLInferenceService:
             important_features=important,
             policy="REVIEW_GATE_REQUIRED",
         ).to_dict()
+        result["implementation"] = "TOKEN_WEIGHT_FALLBACK"
+        result["training_source"] = "SimulatorMLGoldenSet-v1 (synthetic)"
         result["features"] = features
         result["classification_not_truth"] = True
         return result

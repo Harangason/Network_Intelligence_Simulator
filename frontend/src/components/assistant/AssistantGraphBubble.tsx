@@ -60,6 +60,7 @@ export function AssistantGraphBubble({
   });
 
   useEffect(() => {
+    const update = () => {
     const styles = getComputedStyle(document.documentElement);
     const token = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
     setColors({
@@ -72,6 +73,11 @@ export function AssistantGraphBubble({
       error: token("--danger", "#ff6b6b"),
       text: token("--background", "#080b0f"),
     });
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] });
+    return () => observer.disconnect();
   }, []);
 
   return (

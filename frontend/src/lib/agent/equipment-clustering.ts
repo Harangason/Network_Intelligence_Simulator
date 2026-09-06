@@ -33,7 +33,7 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "climate",
     label: "Klima",
-    terms: ["klima", "klimatisierung", "climate", "hvac", "heizung", "heater", "ventilation", "blower", "cabin", "innenraum", "ambient", "aussen", "thermo", "thermal", "thermomanagement", "coolant", "kuehlmittel", "compressor", "kompressor", "refrigerant", "kaeltemittel"],
+    terms: ["klima", "klimatisierung", "climate", "kuehlkreislauf", "hvac", "heizung", "heater", "ventilation", "blower", "cabin", "innenraum", "ambient", "aussen", "thermo", "thermal", "thermomanagement", "coolant", "kuehlmittel", "compressor", "kompressor", "refrigerant", "kaeltemittel"],
     preferredNetworks: ["canfd", "can"],
     recommendation: "Thermik, Regelung und Komfortsignale gemeinsam bewerten.",
   },
@@ -82,7 +82,7 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
   {
     id: "motion",
     label: "Antrieb",
-    terms: ["drive", "motion", "antrieb", "engine", "motor", "elektromotor", "gear", "getriebe", "transmission", "traction", "steering", "lenkung", "hinterachslenkung", "accelerator", "fahrpedal", "clutch", "kupplung", "throttle", "drossel", "boost", "intake", "ansaugluft", "turbo", "oil", "oel", "kraftstoff", "fuel", "exhaust", "abgas", "abgasnachbehandlung", "egr", "agrventil", "urea", "harnstoff"],
+    terms: ["drive", "motion", "antrieb", "drehmoment", "engine", "motor", "elektromotor", "gear", "getriebe", "transmission", "traction", "steering", "lenkung", "hinterachslenkung", "accelerator", "fahrpedal", "clutch", "kupplung", "throttle", "drossel", "boost", "intake", "ansaugluft", "turbo", "oil", "oel", "kraftstoff", "fuel", "exhaust", "abgas", "abgasnachbehandlung", "egr", "agrventil", "urea", "harnstoff"],
     preferredNetworks: ["canfd", "ethernet", "can"],
     recommendation: "Antriebsnahe Regelungsdaten mit Latenz- und Lastreserve behandeln.",
   },

@@ -617,11 +617,11 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
     service = CapacityTimingService("analysis-project")
     monkeypatch.setattr(service.workflow, "get", lambda: state)
     monkeypatch.setattr(service, "latest", lambda: None)
-    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500: [route])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [route])
     monkeypatch.setattr(
         capacity_service_module,
         "list_objects",
-        lambda object_type, limit=500: objects.get(object_type, []),
+        lambda object_type, limit=500, offset=0: objects.get(object_type, []),
     )
 
     response = service.calculate(persist=False)
@@ -687,8 +687,8 @@ def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch)
     service = CapacityTimingService("analysis-project")
     monkeypatch.setattr(service.workflow, "get", lambda: state)
     monkeypatch.setattr(service, "latest", lambda: None)
-    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500: [shared_route, split_route])
-    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [shared_route, split_route])
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500, offset=0: [])
 
     response = service.calculate(persist=False)
     results = response["results"]

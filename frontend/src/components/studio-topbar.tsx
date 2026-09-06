@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { EngineeringImportWizard } from "@/components/engineering-import-wizard";
+import { ProjectSyncNotice } from "@/components/project-sync-notice";
 import { ProjectActions } from "@/components/project-actions";
 import { RuntimeStatus } from "@/components/runtime-status";
 import {
@@ -100,6 +101,7 @@ export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: str
 
   return (
     <>
+      <ProjectSyncNotice />
       <header className="topbar">
         <Link className="brand" href={withProjectParam("/", activeProjectId)}>
           <span className="brand-mark" aria-hidden="true">CS</span>

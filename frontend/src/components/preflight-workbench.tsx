@@ -81,6 +81,7 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
       const route = routes.find((item) => item.id === selectedFinding.object_id);
       if (!route) throw new Error("Die betroffene Route wurde nicht gefunden.");
       await updateRoute(route.id, {
+        expected_revision: route.revision,
         payload: {
           ...route.payload,
           data_object: payloadDraft.trim(),

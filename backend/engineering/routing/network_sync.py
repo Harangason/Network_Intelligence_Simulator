@@ -183,7 +183,10 @@ def reconcile_linked_routes(
                 continue
             updated = connection.execute(
                 "UPDATE engineering_routing_entries "
-                "SET source = %s, destinations = %s, validation = %s, modified_by = %s, modified_at = now() "
+                "SET source = %s, destinations = %s, validation = %s, modified_by = %s, modified_at = now(), "
+                "revision = (SELECT MAX(history.revision) + 1 FROM engineering_routing_entries history "
+                "WHERE history.project_id = engineering_routing_entries.project_id "
+                "AND history.route_code = engineering_routing_entries.route_code) "
                 "WHERE id = %s AND project_id = %s RETURNING *",
                 (
                     Jsonb(enriched["source"]),
@@ -204,7 +207,6 @@ def reconcile_linked_routes(
                 reason="Physical topology was projected back into the logical route.",
             )
             reconciled.append(updated)
-        connection.commit()
     return reconciled
 
 
@@ -499,7 +501,6 @@ def synchronize_network_routes(
                 ],
             )
             created.append(row)
-        connection.commit()
 
     return {
         "created": created,

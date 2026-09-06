@@ -13,6 +13,7 @@ import {
   normalizeProjectId,
   readUserSettings,
   writeUserSettings,
+  withProjectParam,
   type UserSettings,
 } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters } from "@/lib/workflow-api";
@@ -22,6 +23,7 @@ export function SettingsPanel() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [projectDraft, setProjectDraft] = useState(DEFAULT_USER_SETTINGS.activeProject);
   const [workflowParameters, setWorkflowParameters] = useState<Record<string, unknown>>({});
+  const [parameterToken, setParameterToken] = useState<string>();
   const [catalog, setCatalog] = useState(localCatalog);
   const [formatsSaving, setFormatsSaving] = useState(false);
   const [formatsMessage, setFormatsMessage] = useState("");
@@ -32,11 +34,12 @@ export function SettingsPanel() {
     setProjectDraft(stored.activeProject);
     void Promise.all([
       getCatalog().catch(() => localCatalog),
-      getWorkflow().catch(() => ({ parameters: {} })),
+      getWorkflow(),
     ]).then(([nextCatalog, workflow]) => {
       setCatalog(nextCatalog);
       setWorkflowParameters(workflow.parameters ?? {});
-    });
+      setParameterToken(workflow.edit_tokens?.parameters);
+    }).catch((error) => setFormatsMessage(error instanceof Error ? error.message : "Projekt konnte nicht geladen werden."));
   }, []);
 
   const selectedTechnology = useMemo(() => {
@@ -71,12 +74,14 @@ export function SettingsPanel() {
     setProjectDraft(activeProject);
     setSettings(next);
     writeUserSettings(next);
+    window.location.assign(withProjectParam("/studio/settings", activeProject));
   }
 
   function reset() {
     setSettings(DEFAULT_USER_SETTINGS);
     setProjectDraft(DEFAULT_USER_SETTINGS.activeProject);
     writeUserSettings(DEFAULT_USER_SETTINGS);
+    window.location.assign(withProjectParam("/studio/settings", DEFAULT_USER_SETTINGS.activeProject));
   }
 
   async function toggleFormat(format: string) {
@@ -88,11 +93,12 @@ export function SettingsPanel() {
       return;
     }
     const nextParameters = { ...workflowParameters, formats: nextFormats };
-    setWorkflowParameters(nextParameters);
     setFormatsSaving(true);
     setFormatsMessage("");
     try {
-      await saveWorkflowParameters(nextParameters);
+      const saved = await saveWorkflowParameters(nextParameters, parameterToken);
+      setWorkflowParameters(saved.parameters);
+      setParameterToken(saved.edit_tokens?.parameters);
       notifyWorkflowChanged();
       setFormatsMessage(`${nextFormats.length} Ausgabeformat${nextFormats.length === 1 ? "" : "e"} gespeichert.`);
     } catch (error) {

@@ -34,7 +34,11 @@ PROTOCOL_TO_TECHNOLOGY = {
 
 class CommunicationConfigBuilder:
     def build(self, routes: list[dict[str, Any]]) -> dict[str, Any]:
-        approved = [route for route in routes if route.get("approval_state") == "APPROVED"]
+        approved = [
+            route for route in routes
+            if route.get("approval_state") == "APPROVED"
+            and route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
+        ]
         node_ids = sorted(
             {
                 str(route["source"].get("node_id"))
@@ -60,7 +64,7 @@ class CommunicationConfigBuilder:
             interface_rows = connection.execute(
                 "SELECT id, name, hardware_node_id, interface_type, configuration "
                 "FROM engineering_interfaces WHERE hardware_node_id = ANY(%s::uuid[]) "
-                "AND project_id = %s AND approval_state = 'approved'",
+                "AND project_id = %s",
                 (node_ids, current_project_id()),
             ).fetchall() if node_ids else []
         interfaces_by_node: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -88,15 +92,28 @@ class CommunicationConfigBuilder:
             technology = PROTOCOL_TO_TECHNOLOGY.get(protocol, "generic")
             network_id = str(route["source"].get("network_id") or f"network-{technology}")
             grouped[(network_id, technology, protocol)].append(route)
+            # The approved route owns the physical network assignment. Its
+            # endpoint may be a logical or a directly connected hardware port.
+            endpoints = [route["source"], *route.get("destinations", [])]
+            def endpoint_id(endpoint):
+                return str(endpoint.get("interface_id") or endpoint.get("port_id") or f"{endpoint.get('node_id')}-{network_id}")
+            for endpoint in endpoints:
+                node_id = str(endpoint.get("node_id"))
+                interface_id = endpoint_id(endpoint)
+                existing = next((item for item in interfaces_by_node[node_id] if item["id"] == interface_id), None)
+                if existing is None:
+                    interfaces_by_node[node_id].append({"id": interface_id, "name": interface_id, "technology": technology, "network": network_id})
+                else:
+                    existing["network"] = network_id
             for destination in route.get("destinations", []):
                 communications.append(
                     {
                         "id": f"route-{route['route_code']}-{str(destination.get('node_id'))[:8]}",
                         "routing_entry_id": str(route["id"]),
                         "source": str(route["source"].get("node_id")),
-                        "source_interface": route["source"].get("interface_id"),
+                        "source_interface": endpoint_id(route["source"]),
                         "target": str(destination.get("node_id")),
-                        "target_interface": destination.get("interface_id"),
+                        "target_interface": endpoint_id(destination),
                         "network_id": route["source"].get("network_id") or f"network-{technology}",
                         "technology": technology,
                         "cycle_ms": route.get("timing", {}).get("cycle_time_ms") or 100,

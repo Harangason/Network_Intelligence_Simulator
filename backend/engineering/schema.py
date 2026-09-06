@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 18
+SCHEMA_VERSION = 23
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -841,6 +841,28 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "ALTER TABLE engineering_trace_metadata ADD COLUMN IF NOT EXISTS duration_s DOUBLE PRECISION",
     "ALTER TABLE engineering_trace_metadata ADD COLUMN IF NOT EXISTS networks JSONB NOT NULL DEFAULT '[]'::jsonb",
     "ALTER TABLE engineering_trace_metadata ADD COLUMN IF NOT EXISTS faults JSONB NOT NULL DEFAULT '[]'::jsonb",
+    "ALTER TABLE engineering_ai_proposals ADD COLUMN IF NOT EXISTS engineering_contract JSONB NOT NULL DEFAULT '{}'::jsonb",
+    """
+    CREATE TABLE IF NOT EXISTS engineering_agent_audit (
+        event_id BIGSERIAL PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        trace_id UUID NOT NULL,
+        actor TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        tool_name TEXT NOT NULL,
+        status TEXT NOT NULL,
+        details JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_agent_audit_project ON engineering_agent_audit(project_id, event_id DESC)",
+    "CREATE TABLE IF NOT EXISTS engineering_agent_conversations (project_id TEXT PRIMARY KEY, state JSONB NOT NULL DEFAULT '{}'::jsonb, modified_at TIMESTAMPTZ NOT NULL DEFAULT now())",
+    "CREATE TABLE IF NOT EXISTS engineering_agent_responses (project_id TEXT NOT NULL, response_id TEXT NOT NULL, body JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY(project_id, response_id))",
+    "CREATE INDEX IF NOT EXISTS idx_agent_responses_project_time ON engineering_agent_responses(project_id, created_at DESC)",
+    "ALTER TABLE engineering_workloads DROP CONSTRAINT IF EXISTS engineering_workloads_status_check",
+    "ALTER TABLE engineering_workloads ADD CONSTRAINT engineering_workloads_status_check CHECK (status IN ('RECEIVED','PLANNING','IN_PROGRESS','VALIDATING','REPAIRING','INCOMPLETE','READY_FOR_REVIEW','COMPLETED','FAILED','BLOCKED','NEEDS_REVIEW','PAUSED','CANCELED'))",
+    "ALTER TABLE engineering_signal_behaviors DROP CONSTRAINT IF EXISTS engineering_signal_behaviors_behavior_type_check",
+    "ALTER TABLE engineering_signal_behaviors ADD CONSTRAINT engineering_signal_behaviors_behavior_type_check CHECK (behavior_type IN ('CONSTANT','STEP','RAMP','LINEAR','SINE','TRIANGLE','SAWTOOTH','PULSE','RANDOM_WALK','BOUNDED_RANDOM','STATE_DEPENDENT','FORMULA','LOOKUP_TABLE','EXTERNAL_SERIES','PHYSICS_MODEL','STATE_MACHINE','STATUS_MODEL'))",
 )
 
 

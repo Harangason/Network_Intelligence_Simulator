@@ -1,0 +1,158 @@
+"""Compose existing Python generators into reviewable engineering changes."""
+from __future__ import annotations
+
+from uuid import uuid4
+import re
+from ..requirement_expansion_modules.engine import expand_requirement
+from ..message_packing import SignalCandidate, pack_signals
+from ..signal_audit import required_signal_bits
+from ..device_classification import DeviceClassificationRegistry
+from ..repository import get_object
+from . import proposal_service as proposals
+
+
+def expand(arguments: dict) -> dict:
+    return expand_requirement(arguments["prompt"], domain=arguments.get("domain", "automotive"))
+
+
+def functions(arguments: dict) -> dict:
+    expansion = expand(arguments)
+    changes = []
+    hardware_id = arguments.get("hardware_id")
+    if hardware_id:
+        get_object("HardwareNode", hardware_id)
+    else:
+        hardware = expansion["hardware"][0]
+        profile = DeviceClassificationRegistry().resolve_profile(name=hardware["name"], device_type="ECU").to_dict()
+        changes.append({"object_type": "HardwareNode", "local_ref": "hardware", "data": {
+            "name": hardware["name"], "device_type": "ECU", "device_class": max(3, profile["device_class"]),
+            "description": "Hardwarezuordnung als Annahme; vor Übernahme prüfen."}})
+        hardware_id = "$hardware"
+    requested = arguments.get("count")
+    count_match = re.search(r"(\d+)\s*(?!(?:Grad|degrees?)\b)(?:[A-Za-zÄÖÜäöüß_-]+\s+){0,2}(?:Funktion(?:en)?|functions?)\b",arguments["prompt"],re.I)
+    if requested is None and count_match:
+        requested = int(count_match.group(1))
+    if requested is not None and not 1 <= requested <= 100:
+        raise ValueError("Funktionsanzahl muss zwischen 1 und 100 liegen.")
+    candidates = [dict(item) for item in expansion["functions"]]
+    if arguments.get("decompose"):
+        candidates = [{"name": sub} for item in candidates for sub in item.get("subfunctions", [])] or candidates
+    if requested and requested > len(candidates):
+        candidates += [{"name":sub} for item in expansion["functions"] for sub in item.get("subfunctions",[]) if sub not in {c["name"] for c in candidates}]
+    if requested and requested > len(candidates):
+        raise ValueError(f"Fachlich begründete Funktionen: {len(candidates)}, angefordert: {requested}. Anforderung präzisieren.")
+    for index, function in enumerate(candidates[:requested] if requested else candidates):
+        changes.append({"object_type": "Function", "local_ref": f"function-{index}", "data": {
+            "name": function["name"], "hardware_node_id": hardware_id, "domain": arguments.get("domain", "automotive"),
+            "description": ", ".join(function.get("subfunctions") or [])}})
+    return proposals.create("FUNCTION_STRUCTURE", changes, arguments["prompt"],
+                            assumptions=[str(item) for item in expansion["assumptions"]],
+                            evidence=[{"source": "requirement_expansion", "interpretation": expansion["interpretation"]}])
+
+
+def interfaces(arguments: dict, *, physical: bool = False) -> dict:
+    count = int(arguments.get("count", 1))
+    technology = arguments.get("technology", "CAN_FD")
+    parent = arguments["hardware_id" if physical else "function_id"]
+    get_object("HardwareNode" if physical else "Function", parent)
+    changes = [{"object_type": "HardwareNetworkInterface" if physical else "Interface", "data": {
+        "name": f"{arguments.get('name', technology)}_{index+1}",
+        **({"hardware_node_id": parent, "technology": technology, "channel_index": index+1}
+           if physical else {"function_id": parent, "interface_type": technology})}} for index in range(count)]
+    return proposals.create("HARDWARE_INTERFACES" if physical else "FUNCTION_INTERFACES", changes,
+                            arguments.get("prompt") or "Schnittstellen für das gewählte Objekt vorschlagen.")
+
+
+def data_models(arguments: dict, kind: str) -> dict:
+    result = expand(arguments)
+    key = "status_models" if kind == "StatusModel" else "data_objects"
+    return proposals.create(kind.upper(), [{"object_type": kind, "data": item} for item in result[key]], arguments["prompt"],
+                            assumptions=[str(item) for item in result["assumptions"]])
+
+
+def packed(arguments: dict) -> list[dict]:
+    candidates = []
+    for signal in arguments["signals"]:
+        bits = required_signal_bits(signal) or signal.get("length_bits")
+        if not bits:
+            raise ValueError(f"Bitbedarf für {signal.get('name')} ist nicht bestimmt.")
+        candidates.append(SignalCandidate(name=signal["name"], required_bits=int(bits),
+            producer_function_ref=str(signal.get("producer_function_ref") or arguments.get("function_id") or "unassigned"),
+            sender_hardware_ref=str(signal.get("sender_hardware_ref") or arguments.get("hardware_id") or "unassigned"),
+            technology=arguments.get("technology", "CAN_FD"), cycle_ms=float(signal.get("cycle_ms", arguments.get("cycle_ms", 10))),
+            receiver_set=tuple(sorted(signal.get("receiver_set") or [])), priority=str(signal.get("priority", "NORMAL")), data=signal))
+    return [message.to_dict() for message in pack_signals(candidates)]
+
+
+def messages(arguments: dict) -> dict:
+    interface = get_object("Interface", arguments["interface_id"])
+    function_name = get_object("Function",str(interface["function_id"]))["name"] if interface.get("function_id") else interface["name"]
+    packed_messages = packed({**arguments, "technology": interface["interface_type"], "function_id": function_name})
+    changes = []
+    for index, message in enumerate(packed_messages):
+        ref = f"message-{index}"
+        changes.append({"object_type": "Message", "local_ref": ref, "data": {
+            "name": message["name"], "interface_id": str(interface["id"]), "cycle_ms": message["cycle_ms"], "dlc": message["dlc"]}})
+        for signal in message["signals"]:
+            data = signal["data"]
+            changes.append({"object_type": "Signal", "data": {
+                **{key: value for key, value in data.items() if key in
+                   {"name", "display_name", "description", "domain", "data_type", "factor", "offset_value", "unit", "min_value", "max_value", "semantic", "data", "communication", "quality", "configuration"}},
+                "name": signal["name"], "message_id": f"${ref}", "start_bit": signal["start_bit"], "length_bits": signal["length_bits"],
+                "byte_order": data.get("byte_order", "little_endian")}})
+    return proposals.create("MESSAGE_PACKING", changes, arguments.get("prompt") or "Signale nach Funktion, Technologie, Zyklus und Empfängern packen.",
+                            evidence=[{"source": "message_packing", "messages": packed_messages}])
+
+
+def mapping(arguments: dict) -> dict:
+    function = get_object("Function", arguments["function_id"])
+    get_object("HardwareNode", arguments["hardware_id"])
+    return proposals.create("FUNCTION_MAPPING", [{"object_type": "Function", "object_id": str(function["id"]),
+        "action": "UPDATE", "data": {"hardware_node_id": arguments["hardware_id"]}}], "Funktion der gewählten Hardware zuordnen.")
+
+
+def network(arguments: dict) -> dict:
+    data = {**(arguments.get("configuration") or {}), "id": arguments.get("network_id") or str(uuid4()), "name": arguments["name"],
+            "technology": arguments.get("technology", "CAN_FD")}
+    return proposals.create("NETWORK", [{"object_type": "Network", "data": data}], arguments.get("prompt") or "Netzwerk vorschlagen.")
+
+
+def scenario(arguments: dict) -> dict:
+    data = arguments["scenario"]
+    return proposals.create("SIMULATION_SCENARIO", [{"object_type": "SimulationScenario", "data": data}],
+                            arguments.get("prompt") or "Simulations- oder Fehlerszenario zur Prüfung vorschlagen.")
+
+
+def camera_architecture(arguments: dict) -> dict:
+    coverage, profile, outputs = arguments['coverage'], arguments['profile'], arguments['outputs']
+    if coverage not in {'front', 'front_rear', 'surround'} or profile not in {'four_wide', 'directional', 'two_fisheye'}:
+        raise ValueError('Abdeckung und Sensorprofil müssen ausdrücklich festgelegt sein.')
+    if not outputs or not set(outputs) <= {'objects', 'free_space', 'status', 'raw_image'}:
+        raise ValueError('Ungültige Kamera-Ausgaben.')
+    if (coverage == 'surround') != (profile in {'four_wide', 'two_fisheye'}):
+        raise ValueError('Sensorprofil passt nicht zur Abdeckung.')
+    directions = ['Front', 'Heck', 'Links', 'Rechts'] if profile == 'four_wide' else ['Front', 'Heck'] if coverage != 'front' else ['Front']
+    changes = []
+    for index, direction in enumerate([*directions, 'Vision Controller']):
+        ref = f'camera-{index}' if index < len(directions) else 'vision-controller'
+        changes.extend([
+            {'object_type':'HardwareNode', 'local_ref':ref, 'data':{'name':f'Kamera {direction}' if index < len(directions) else direction,
+                'device_type':'ECU', 'device_class':3, 'description':'Explizit gewählte Kamera-Planungsarchitektur.'}},
+            {'object_type':'Function', 'local_ref':f'{ref}-function', 'data':{'name':f'Bilderfassung {direction}' if index < len(directions) else 'Visuelle Umfeldinterpretation', 'hardware_node_id':f'${ref}', 'domain':'automotive'}},
+            {'object_type':'Interface', 'local_ref':f'{ref}-logical', 'data':{'name':f'{direction} Daten', 'function_id':f'${ref}-function', 'interface_type':'Ethernet'}},
+            {'object_type':'HardwareNetworkInterface', 'local_ref':f'{ref}-port', 'data':{'name':f'{direction} Ethernet', 'hardware_node_id':f'${ref}', 'technology':'Ethernet', 'channel_index':1}},
+        ])
+    labels = {'objects':'Objektliste', 'free_space':'Freiraum', 'status':'Status und Diagnose', 'raw_image':'Rohbilder'}
+    for output in outputs:
+        changes.append({'object_type':'StatusModel' if output == 'status' else 'DataObject', 'data':{
+            'name':labels[output], 'producer_function_ref':'$vision-controller-function',
+            'description':'Strukturvorschlag; Dimensionierung und konkrete Datentypen vor Kommunikationsgenerierung prüfen.',
+            'states':['AVAILABLE','DEGRADED','UNAVAILABLE'] if output == 'status' else [],
+            'fields': [{'name':'timestamp', 'data_type':'uint64', 'unit':'us'},
+                {'name': {'objects':'objects','free_space':'regions','raw_image':'pixels','status':'state'}[output],
+                 'data_type':'uint8' if output == 'status' else 'array', 'dimension_status':'UNSPECIFIED'}]}})
+    return proposals.create('CAMERA_ARCHITECTURE', changes, arguments.get('prompt') or 'Kameraarchitektur',
+        assumptions=[f'Explizite Auswahl: {coverage}, Sensorprofil {profile}, Ausgaben {", ".join(outputs)}.',
+            '100° horizontale Sicht bei vier Weitwinkelkameras bzw. 190° bei zwei Fisheye-Kameras sind Planungsannahmen; Montage und Überlappung validieren.',
+            'Ethernet-Datenpfade sind strukturell vorbereitet. Auflösung, Bildrate, Kodierung, Netzwerktopologie und Timing müssen vor Routing und Simulation dimensioniert werden.'],
+        evidence=[{'source':'structured_camera_decisions','coverage':coverage,'profile':profile,'outputs':outputs}])

@@ -25,6 +25,8 @@ import type { RoutingEntry } from "@/lib/types";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
 import { getWorkflowSummary } from "@/lib/workflow-api";
 import { WORKFLOW_CHANGED_EVENT } from "@/components/workflow-header";
+import { ASSISTANT_CONTEXT_EVENT, readAssistantContext } from "@/lib/agent/assistant-context";
+import type { AssistantGraphState } from "@/lib/assistant-graph";
 
 type AgentPanelSize = {
   height: number;
@@ -43,9 +45,9 @@ type AgentPanelResizeState = AgentPanelSize & {
 function clampAgentPanelSize(size: AgentPanelSize): AgentPanelSize {
   const mobile = window.innerWidth <= 720;
   const gutter = mobile ? 16 : 28;
-  const maxWidth = Math.max(280, window.innerWidth - gutter * 2);
+  const maxWidth = mobile ? window.innerWidth : Math.min(440, Math.max(280, window.innerWidth - gutter * 2));
   const maxHeight = Math.max(360, window.innerHeight - gutter * 2);
-  const minWidth = Math.min(mobile ? 280 : 520, maxWidth);
+  const minWidth = Math.min(mobile ? 280 : 380, maxWidth);
   const minHeight = Math.min(mobile ? 360 : 440, maxHeight);
 
   return {
@@ -55,9 +57,18 @@ function clampAgentPanelSize(size: AgentPanelSize): AgentPanelSize {
 }
 
 export function GlobalAgentWidget() {
+  const [selectedName, setSelectedName] = useState('');
+  useEffect(() => {
+    const update = () => setSelectedName(readAssistantContext().selected_object_refs[0]?.name ?? '');
+    update(); window.addEventListener(ASSISTANT_CONTEXT_EVENT, update);
+    return () => window.removeEventListener(ASSISTANT_CONTEXT_EVENT, update);
+  }, []);
   const [activeProject, setActiveProject] = useState("default");
   const [settingsReady, setSettingsReady] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  const [agentState, setAgentState] = useState<AssistantGraphState>('idle');
+  useEffect(() => { if (open) setHasOpened(true); }, [open]);
   const [approvalProgress, setApprovalProgress] = useState<RoutingApprovalProgress<RoutingEntry> | null>(null);
   const [panelSize, setPanelSize] = useState<AgentPanelSize | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -242,8 +253,8 @@ export function GlobalAgentWidget() {
             />
             <div className="agent-widget-header">
               <div>
-                <p className="agent-widget-eyebrow">Engineering-Assistent</p>
-                <strong>Agent</strong>
+                <strong>Engineering Assistant</strong>
+                <p className="agent-widget-context">{activeProject} · {pathname.split('/').filter(Boolean).at(-1) || 'Projekt'}{selectedName ? ` · ${selectedName}` : ''}</p>
               </div>
               <button
                 aria-label="Engineering-Assistent schließen"
@@ -257,22 +268,23 @@ export function GlobalAgentWidget() {
             </div>
 
             <div className="agent-widget-body">
-              {open && (
+              {(open || hasOpened) && (
                 <AgentChatCore
                   compact
                   key={activeProject}
                   projectId={activeProject}
                   routingApprovalComplete={approvalProgress?.complete === true}
+                  onStateChange={setAgentState}
                 />
               )}
             </div>
         </div>
         {!open && (
           <AssistantGraphBubble
-            active={false}
+            active={agentState === 'thinking' || agentState === 'responding'}
             onClick={() => setOpen(true)}
             size={64}
-            state="idle"
+            state={agentState}
             title="AI Assistant öffnen"
           />
         )}

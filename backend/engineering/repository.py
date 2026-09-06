@@ -19,7 +19,7 @@ from typing import Any
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from .db import get_connection
+from .db import get_connection, ConcurrentUpdateError, check_revision, mark_model_changed
 from .project_context import current_project_id
 from .models import (
     APPROVAL_STATES,
@@ -376,7 +376,7 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     spec.validate(data)
 
     columns = list(BASE_COLUMNS) + list(spec.own_columns)
-    payload = {col: data.get(col) for col in columns}
+    payload = {col: data[col] for col in columns if col in data}
     payload.update(_governance_defaults(data))
     project_id = current_project_id()
     parent_link = parent_link_for_payload(object_type, payload)
@@ -424,7 +424,7 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
                     payload.get("created_by"),
                 ),
             )
-        conn.commit()
+    mark_model_changed()
     return row
 
 
@@ -566,6 +566,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     spec = get_spec(object_type)
     _validate_uuid(object_id)
     existing = get_object(object_type, object_id)
+    check_revision(data.get("expected_version"), existing["version"])
 
     editable_columns = list(BASE_COLUMNS) + list(spec.own_columns) + [
         "source",
@@ -652,11 +653,13 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     ]
 
     query = sql.SQL(
-        "UPDATE {table} SET {set_sql}, modified_at = now() WHERE id = %s AND project_id = %s RETURNING *"
+        "UPDATE {table} SET {set_sql}, modified_at = now() WHERE id = %s AND project_id = %s AND version = %s RETURNING *"
     ).format(table=sql.Identifier(spec.table), set_sql=set_sql)
 
     with get_connection() as conn:
-        row = conn.execute(query, [*values, object_id, current_project_id()]).fetchone()
+        row = conn.execute(query, [*values, object_id, current_project_id(), existing["version"]]).fetchone()
+        if row is None:
+            raise ConcurrentUpdateError("Objekt wurde parallel geändert. Bitte neu laden.")
         row = _decorate_row(spec, row)
         if parent_link and parent_link[0] in updates:
             parent_field, parent_type, relation_type = parent_link
@@ -696,7 +699,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
         _write_version_snapshot(
             conn, spec, row, changed_by=actor, summary=data.get("change_summary", "updated")
         )
-        conn.commit()
+    mark_model_changed()
     return row
 
 
@@ -728,7 +731,8 @@ def delete_object(object_type: str, object_id: str) -> None:
             "DELETE FROM engineering_object_versions WHERE project_id = %s AND object_type = %s AND object_id = %s",
             (project_id, object_type, object_id),
         )
-        conn.commit()
+
+    mark_model_changed()
 
 
 def list_versions(object_type: str, object_id: str) -> list[dict[str, Any]]:

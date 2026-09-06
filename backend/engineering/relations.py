@@ -77,7 +77,6 @@ def create_relation(data: dict[str, Any]) -> dict[str, Any]:
                 data.get("created_by") or data.get("actor"),
             ),
         ).fetchone()
-        conn.commit()
     return row
 
 
@@ -134,4 +133,3 @@ def delete_relation(relation_id: str) -> None:
             "DELETE FROM engineering_relations WHERE id = %s AND project_id = %s",
             (relation_id, current_project_id()),
         )
-        conn.commit()
