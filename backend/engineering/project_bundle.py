@@ -16,7 +16,7 @@ from .project_context import normalize_context_project_id
 from .workflow.models import default_statuses, default_versions
 from .workflow.service import WorkflowStatusService
 
-BUNDLE_VERSION = 2
+BUNDLE_VERSION = 3
 PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 SOURCE_TABLES = (
@@ -33,6 +33,9 @@ SOURCE_TABLES = (
     "engineering_routing_proposals",
     "engineering_routing_rules",
     "engineering_routing_audit",
+    "engineering_address_policies",
+    "engineering_technology_address_bindings",
+    "engineering_address_audit",
 )
 
 PROJECT_TABLES = (
@@ -71,6 +74,9 @@ PROJECT_TABLES_WITH_PROJECT_ID = {
 
 WORKSPACE_RESET_TABLES = (
     "engineering_routing_audit",
+    "engineering_address_audit",
+    "engineering_technology_address_bindings",
+    "engineering_address_policies",
     "engineering_routing_rules",
     "engineering_routing_proposals",
     "engineering_routing_entries",
@@ -97,6 +103,7 @@ SOURCE_UUID_KEYS = {
     "engineering_routing_entries": "id",
     "engineering_routing_proposals": "proposal_id",
     "engineering_routing_rules": "id",
+    "engineering_technology_address_bindings": "id",
 }
 
 PROJECT_UUID_KEYS = {
@@ -202,7 +209,7 @@ def _clone_source_data(
 
     cloned: dict[str, list[dict[str, Any]]] = {}
     for table in SOURCE_TABLES:
-        if table == "engineering_routing_audit":
+        if table in {"engineering_routing_audit", "engineering_address_audit"}:
             cloned[table] = []
             continue
         rows: list[dict[str, Any]] = []
@@ -243,6 +250,38 @@ def _clone_project_data(
             rows.append(row)
         cloned[table] = rows
     return cloned, combined_map
+
+
+def _record_imported_address_audit(
+    connection,
+    project_id: str,
+    hardware_rows: list[dict[str, Any]],
+) -> int:
+    """Start a target-local audit trail without copying the source history."""
+    recorded = 0
+    for row in hardware_rows:
+        node_id = row.get("id")
+        address = row.get("logical_node_address")
+        if not node_id or address is None:
+            continue
+        created = connection.execute(
+            "INSERT INTO engineering_address_audit "
+            "(project_id, hardware_node_id, event_type, actor, before_state, after_state, details) "
+            "SELECT %s,%s,'ADDRESS_ASSIGNED','project-bundle-import',NULL,%s,%s "
+            "WHERE NOT EXISTS (SELECT 1 FROM engineering_address_audit "
+            "WHERE project_id=%s AND hardware_node_id=%s AND event_type='ADDRESS_ASSIGNED') "
+            "RETURNING event_id",
+            (
+                project_id,
+                node_id,
+                Jsonb(_json_safe(row)),
+                Jsonb({"source": "project_bundle", "assignment_mode": "IMPORTED"}),
+                project_id,
+                node_id,
+            ),
+        ).fetchone()
+        recorded += int(created is not None)
+    return recorded
 
 
 class ProjectBundleService:
@@ -327,6 +366,14 @@ class ProjectBundleService:
         project_data = bundle.get("project_data") or {}
         if not isinstance(source_data, dict) or not isinstance(project_data, dict):
             raise EngineeringValidationError("source_data und project_data muessen Objekte sein.")
+        needs_import_address_audit = (
+            not bool(source_data.get("engineering_address_audit"))
+            and any(
+                row.get("logical_node_address") is not None
+                for row in (source_data.get("engineering_hardware_nodes") or [])
+                if isinstance(row, dict)
+            )
+        )
         if target != source_project_id:
             source_data, identifier_map = _clone_source_data(source_data, target)
             project_data, identifier_map = _clone_project_data(project_data, target, identifier_map)
@@ -352,6 +399,18 @@ class ProjectBundleService:
                 report["inserted"] += inserted
                 report["existing"] += existing
                 report["tables"][table] = {"inserted": inserted, "existing": existing}
+
+            if needs_import_address_audit:
+                recorded = _record_imported_address_audit(
+                    connection,
+                    target,
+                    source_data.get("engineering_hardware_nodes") or [],
+                )
+                report["inserted"] += recorded
+                audit_report = report["tables"].setdefault(
+                    "engineering_address_audit", {"inserted": 0, "existing": 0}
+                )
+                audit_report["inserted"] += recorded
 
             preserve_ids = target == source_project_id
             analysis_map: dict[str, str] = {}

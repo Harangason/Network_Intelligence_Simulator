@@ -23,6 +23,8 @@ from .schema import ensure_schema
 _pool: ConnectionPool | None = None
 _pool_pid: int | None = None
 _pool_lock = threading.Lock()
+_project_locks_guard = threading.Lock()
+_project_locks: dict[str, threading.RLock] = {}
 DEFAULT_CONNECT_TIMEOUT_SECONDS = 2.0
 _request_unit: ContextVar["RequestUnit | None"] = ContextVar("engineering_request_unit", default=None)
 
@@ -57,31 +59,49 @@ class RequestUnit:
         self.model_changed = False
         self.connection = None
         self.pool_context = None
+        self.local_project_lock: threading.RLock | None = None
         self.token = _request_unit.set(self)
 
     def acquire(self):
         if self.connection is None:
-            context = get_pool().connection()
-            connection = context.__enter__()
-            self.pool_context = context
-            self.connection = connection
-            self.connection.execute("SET LOCAL lock_timeout = '5s'")
-            self.connection.execute(
-                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                (f"engineering-project:{self.project_id}",),
-            )
+            timeout = _timeout_seconds("ENGINEERING_PROJECT_LOCK_TIMEOUT", 60.0)
+            with _project_locks_guard:
+                project_lock = _project_locks.setdefault(self.project_id, threading.RLock())
+            if not project_lock.acquire(timeout=timeout):
+                raise ConcurrentUpdateError(
+                    "Eine andere Änderung dieses Projekts wird noch gespeichert. Bitte den Vorgang erneut ausführen."
+                )
+            self.local_project_lock = project_lock
+            try:
+                context = get_pool().connection()
+                connection = context.__enter__()
+                self.pool_context = context
+                self.connection = connection
+                self.connection.execute("SELECT set_config('lock_timeout', %s, true)", (f"{timeout:g}s",))
+                self.connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (f"engineering-project:{self.project_id}",),
+                )
+            except Exception:
+                self.local_project_lock = None
+                project_lock.release()
+                raise
         return self.connection
 
     def finish(self, success: bool) -> None:
         context, self.pool_context = self.pool_context, None
         self.connection = None
-        if context is None:
-            return
-        if success:
-            context.__exit__(None, None, None)
-        else:
-            error = RuntimeError("Engineering request rolled back")
-            context.__exit__(type(error), error, error.__traceback__)
+        try:
+            if context is not None:
+                if success:
+                    context.__exit__(None, None, None)
+                else:
+                    error = RuntimeError("Engineering request rolled back")
+                    context.__exit__(type(error), error, error.__traceback__)
+        finally:
+            project_lock, self.local_project_lock = self.local_project_lock, None
+            if project_lock is not None:
+                project_lock.release()
 
     def close(self) -> None:
         try:

@@ -194,6 +194,9 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
         "OLLAMA_MODELS",
         "OLLAMA_CONTEXT_LENGTH",
         "OLLAMA_KEEP_ALIVE",
+        "OLLAMA_FAST_KEEP_ALIVE",
+        "NUMERIC_ACCELERATOR",
+        "NUMERIC_ACCELERATOR_MIN_ITEMS",
         "NETWORKIS_SHARED_ENV_FILE",
         "WAITRESS_THREADS",
         "SIMULATION_WORKERS",
@@ -212,6 +215,9 @@ def test_runtime_environment_uses_hybrid_demand_ai_and_thread_workers(
     assert environment["LOCAL_AI_FAST_MODEL"] == "llama3.1:8b"
     assert environment["CLOUD_ESCALATION"] == "on_failure"
     assert environment["OLLAMA_CONTEXT_LENGTH"] == "8192"
+    assert environment["OLLAMA_FAST_KEEP_ALIVE"] == "30m"
+    assert environment["NUMERIC_ACCELERATOR"] == "auto"
+    assert environment["NUMERIC_ACCELERATOR_MIN_ITEMS"] == "256"
     assert environment["WAITRESS_THREADS"] == "16"
     assert environment["SIMULATION_WORKERS"] == "12"
     assert environment["SIMULATION_EXECUTOR"] == "thread"
@@ -272,6 +278,9 @@ def test_runtime_environment_uses_persisted_resource_config(
         "OLLAMA_MODELS",
         "OLLAMA_CONTEXT_LENGTH",
         "OLLAMA_KEEP_ALIVE",
+        "OLLAMA_FAST_KEEP_ALIVE",
+        "NUMERIC_ACCELERATOR",
+        "NUMERIC_ACCELERATOR_MIN_ITEMS",
         "WAITRESS_THREADS",
         "SIMULATION_WORKERS",
         "SIMULATION_EXECUTOR",

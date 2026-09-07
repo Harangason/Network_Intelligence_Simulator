@@ -13,6 +13,8 @@ from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
 from ..signal_audit import build_generation_signal_audit
 from ..workflow.models import WORKFLOW_LABELS, WORKFLOW_STEPS
 from ..workflow.service import WorkflowStatusService
+from ..addressing import LogicalNodeAddressAllocator
+from backend.simulator.numeric_acceleration import grouped_route_statistics
 from .calculators import (
     classify_load,
     clock_drift_ms,
@@ -375,11 +377,13 @@ class CapacityTimingService:
                 route_metrics.append(segment_metric)
                 network_groups[segment_network_id].append(segment_metric)
 
+        grouped_statistics, numeric_acceleration = grouped_route_statistics(network_groups)
         network_metrics: list[dict[str, Any]] = []
         for network_id, items in network_groups.items():
-            average = sum(item["average_load_percent"] for item in items)
-            peak = sum(item["peak_load_percent"] for item in items)
-            burst = sum(item["burst_load_percent"] for item in items)
+            statistics = grouped_statistics[network_id]
+            average = statistics["average_load_percent"]
+            peak = statistics["peak_load_percent"]
+            burst = statistics["burst_load_percent"]
             governing_load = max(average, peak, burst)
             network_metrics.append(
                 {
@@ -397,9 +401,7 @@ class CapacityTimingService:
                     "target_margin_percent": round(target_bus_load - governing_load, 4),
                     "target_status": "PASS" if governing_load <= target_bus_load else "EXCEEDED",
                     "status": classify_load(governing_load, thresholds),
-                    "worst_end_to_end_latency_ms": round(
-                        max((item["end_to_end_latency_ms"] for item in items), default=0.0), 6
-                    ),
+                    "worst_end_to_end_latency_ms": round(statistics["worst_end_to_end_latency_ms"], 6),
                     "top_contributors": [
                         {"route_id": item["route_id"], "name": item["name"], "load_percent": item["average_load_percent"]}
                         for item in sorted(items, key=lambda entry: entry["average_load_percent"], reverse=True)[:5]
@@ -766,6 +768,7 @@ class CapacityTimingService:
             "gateways": gateway_metrics,
             "critical_paths": critical_paths,
             "bottlenecks": bottlenecks,
+            "numeric_acceleration": numeric_acceleration,
             "thresholds": thresholds,
             "timing": {
                 "worst_end_to_end_latency_ms": max((item["end_to_end_latency_ms"] for item in logical_route_metrics), default=0.0),
@@ -817,6 +820,7 @@ class CapacityTimingService:
                 "thresholds": thresholds,
                 "target_bus_load_percent": target_bus_load,
                 "generic_models": sorted(generic_models),
+                "numeric_acceleration": numeric_acceleration,
             },
             "timestamp": _now(),
         }
@@ -887,6 +891,7 @@ class CapacityTimingService:
 
 class PreflightService:
     def __init__(self, project_id: str = "default") -> None:
+        self.project_id = project_id
         self.workflow = WorkflowStatusService(project_id)
 
     def run(self) -> dict[str, Any]:
@@ -904,6 +909,7 @@ class PreflightService:
                 "timing",
                 "reliability",
                 "synchronization",
+                "addressing",
             )
         }
 
@@ -960,6 +966,15 @@ class PreflightService:
         interfaces = all_pages(list_objects, "Interface")
         messages = list_objects("Message", limit=5000)
         signals = list_objects("Signal", limit=10000)
+        for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
+            add(
+                "addressing",
+                str(address_finding.get("severity") or "ERROR"),
+                str(address_finding.get("code") or "DIAGNOSTIC_ADDRESS_INVALID"),
+                str(address_finding.get("message") or "Diagnoseadressierung ist unvollständig."),
+                object_type=address_finding.get("object_type"),
+                object_id=address_finding.get("object_id"),
+            )
         if not hardware:
             add("engineering_model", "ERROR", "MODEL_NODES_MISSING", "Das Engineering-Modell enthaelt keine Hardware Nodes.")
         if not interfaces:

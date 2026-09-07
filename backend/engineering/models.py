@@ -49,6 +49,12 @@ DEVICE_TYPES = (
     "CustomDevice",
 )
 
+ADDRESS_ASSIGNMENT_MODES = ("AUTO", "MANUAL", "IMPORTED", "RESERVED")
+ADDRESS_STATUSES = ("UNASSIGNED", "PROPOSED", "ASSIGNED", "CONFLICT", "RESERVED", "OUTDATED", "INVALID")
+
+ADDRESS_ASSIGNMENT_MODES = ("AUTO", "MANUAL", "IMPORTED", "RESERVED")
+ADDRESS_STATUSES = ("UNASSIGNED", "PROPOSED", "ASSIGNED", "CONFLICT", "RESERVED", "OUTDATED", "INVALID")
+
 # ---------------------------------------------------------------------------
 # Interface: protokoll-agnostisch, Signal wird separat modelliert.
 # ---------------------------------------------------------------------------
@@ -83,6 +89,9 @@ INTERFACE_TYPES = (
     "TRDP",
     "Other",
 )
+
+ADDRESS_ASSIGNMENT_MODES = ("AUTO", "MANUAL", "IMPORTED", "RESERVED")
+ADDRESS_STATUSES = ("UNASSIGNED", "PROPOSED", "ASSIGNED", "CONFLICT", "RESERVED", "OUTDATED", "INVALID")
 
 DEVICE_TYPINGS = tuple(
     typing

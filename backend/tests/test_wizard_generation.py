@@ -19,6 +19,18 @@ from backend.engineering.agent_tools.run_status import reconcile_model_apply
 import pytest
 
 
+def test_semantic_network_assignment_keeps_powertrain_on_one_named_can():
+    motor = {'name': 'Motorsteuerung', 'device_type': 'ECU'}
+    fuel = {'name': 'Kraftstoffsystem', 'device_type': 'ECU'}
+    brake = {'name': 'Bremsensteuerung', 'device_type': 'ECU'}
+
+    assert wizard_generation._semantic_physical_network('can_fd', motor, fuel) == (
+        'antriebsstrang-can-fd-bus', 'Antriebsstrang-CAN')
+    assert wizard_generation._semantic_physical_network('can_fd', motor, fuel) != (
+        wizard_generation._semantic_physical_network('can_fd', brake, brake)
+    )
+
+
 def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch):
     authority = ToolAuthority(f'pytest-wizard-generator-{uuid4()}')
     prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:

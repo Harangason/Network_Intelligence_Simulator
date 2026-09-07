@@ -20,15 +20,15 @@ PhysicalHandler = Callable[[Any, float, Any, Any], float]
 class PhysicalModelRegistry:
     def __init__(self) -> None:
         self._handlers: list[tuple[tuple[str, ...], PhysicalHandler]] = [
-            (("temperature", "temp"), temperature),
-            (("rpm", "rotational", "rotation", "speed"), rotational_speed),
-            (("torque",), torque),
-            (("pressure", "press"), pressure),
-            (("voltage", "volt"), voltage),
-            (("current", "amp"), current),
-            (("position", "angle"), position),
-            (("velocity",), velocity),
-            (("acceleration", "accel"), acceleration),
+            (("temperature", "temperatur", "temp"), temperature),
+            (("rpm", "rotational", "rotation", "speed", "drehzahl"), rotational_speed),
+            (("torque", "drehmoment"), torque),
+            (("pressure", "press", "druck"), pressure),
+            (("voltage", "volt", "spannung"), voltage),
+            (("current", "amp", "strom"), current),
+            (("position", "angle", "winkel", "federweg", "daempfer", "dämpfer"), position),
+            (("velocity", "geschwindigkeit"), velocity),
+            (("acceleration", "accel", "beschleunigung"), acceleration),
         ]
 
     def resolve(self, signal: Any) -> PhysicalHandler:

@@ -240,6 +240,8 @@ type ArchitectureTemplate = {
   minValue?: number;
   maxValue?: number;
   factor?: number;
+  functionalOwner?: string;
+  coverageRole?: string;
 };
 
 type HardwareOccurrence = {
@@ -453,7 +455,7 @@ type SignalArchitectureInput = {
 };
 
 function generatedSignalSemanticType(input: SignalArchitectureInput) {
-  const key = normalized(`${input.signalName} ${input.unit ?? ""}`);
+  const key = normalized(`${input.signalName} ${input.hardwareName} ${input.unit ?? ""}`);
   if ((input.lengthBits === 1 || (input.minValue === 0 && input.maxValue === 1)) && /status|flag|schaltausgang|stellglied|aktiv|enable|boolean/.test(key)) {
     return "BOOLEAN";
   }
@@ -462,6 +464,26 @@ function generatedSignalSemanticType(input: SignalArchitectureInput) {
   }
   if (/status|state|mode|zustand|diagnose|fehler|code/.test(key) || input.unit === "code") return "STATE";
   return "NUMERIC";
+}
+
+function generatedArchitectureBitLength(input: Omit<SignalArchitectureInput, "lengthBits" | "startBit" | "byteOrder">) {
+  const calculated = generatedSignalBitLength({
+    minValue: input.minValue,
+    maxValue: input.maxValue,
+    factor: input.factor,
+    offsetValue: input.offset,
+    dataType: input.dataType,
+  });
+  const semanticType = generatedSignalSemanticType({
+    ...input,
+    lengthBits: calculated,
+    startBit: 0,
+    byteOrder: "little_endian",
+  });
+  // The canonical state domain reserves four additional codes. Its eight
+  // addressable values therefore require three bits even when min/max only
+  // describe the four nominal states.
+  return semanticType === "STATE" ? Math.max(3, calculated) : calculated;
 }
 
 function stateDomain(input: SignalArchitectureInput) {
@@ -757,6 +779,31 @@ function systemInterfaceType(name: string, domain: string) {
 
 function architectureTemplates(domain: string): ArchitectureTemplate[] {
   const profile = industryTemplateProfile(domain);
+  const automotiveSensorOwner = (name: string) => {
+    if (domain !== "automotive") return undefined;
+    const rules: Array<[RegExp, string]> = [
+      [/brake/i, "Bremsregelung"],
+      [/suspension|damper/i, "Daempferregelung"],
+      [/tirepressure|tiretemperature|tirewear/i, "Reifendruckkontrolle"],
+      [/wheelangle|steering/i, "Lenkung"],
+      [/wheelspeed|wheelacceleration|wheelload|wheeltorque|longitudinal|lateral|vertical|yaw|pitch|roll/i, "Stabilitaetsregelung"],
+      [/transmission|clutch|gearselector/i, "Getriebesteuerung"],
+      [/fuel/i, "Kraftstoffsystem"],
+      [/urea|exhaust|egr/i, "Abgasnachbehandlung"],
+      [/battery|cellvoltage/i, "Batteriemanagement"],
+      [/dclink|inverter/i, "Invertersteuerung"],
+      [/motorspeed|motorcurrent|motortemperature/i, "Elektromotorsteuerung"],
+      [/alternator|accessory|lowvoltage/i, "Bordnetzmanagement"],
+      [/cabin|ambienttemperature|refrigerant/i, "Klimatisierung"],
+      [/camera/i, "Kameraverarbeitung"],
+      [/radar/i, "Radarverarbeitung"],
+      [/ultrasonic/i, "Ultraschallverarbeitung"],
+      [/washer|rain/i, "Wischersteuerung"],
+      [/ambientlight/i, "Aussenlicht"],
+      [/coolant|oil|enginespeed|boost|accelerator|throttle|turbo/i, "Motorsteuerung"],
+    ];
+    return rules.find(([pattern]) => pattern.test(name))?.[1] ?? "Fahrerassistenz";
+  };
   const sensorTemplates = profile.sensorTemplates.map((template) => ({
     hardwareName: template.hardwareName,
     deviceType: "SensorController" as const,
@@ -768,7 +815,9 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     unit: template.unit,
     minValue: template.minValue,
     maxValue: template.maxValue,
-    factor: template.factor,
+    factor: template.factor ?? 1,
+    functionalOwner: automotiveSensorOwner(template.hardwareName),
+    coverageRole: "DomainMeasurement",
   }));
   const controllers = profile.systemVariants.map((name) => {
     const interfaceType = systemInterfaceType(name, domain);
@@ -796,6 +845,8 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     minValue: 0,
     maxValue: kind === "Stellglied" ? 100 : 1,
     factor: kind === "Stellglied" ? 0.1 : 1,
+    functionalOwner: name,
+    coverageRole: kind,
     };
   }));
   return [
@@ -820,10 +871,16 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
   const hardwareId = identifier(template.hardwareName);
   const industryLabel = industryTemplateLabel(domain);
   const dataType = (template.minValue ?? 0) < 0 ? "signed" : "unsigned";
-  const lengthBits = generatedSignalBitLength({
+  const lengthBits = generatedArchitectureBitLength({
+    signalName: template.signalName,
+    hardwareName: template.hardwareName,
+    interfaceType: template.interfaceType,
+    cycleMs: template.cycleMs,
     minValue: template.minValue,
     maxValue: template.maxValue,
-    factor: template.factor,
+    factor: template.factor ?? 1,
+    offset: 0,
+    unit: template.unit,
     dataType,
   });
   const functionSuffix = template.deviceType === "SensorController"
@@ -870,7 +927,87 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
       minValue: template.minValue,
       maxValue: template.maxValue,
     }),
+    ...(template.functionalOwner || template.coverageRole ? {
+      configuration: {
+        ...(template.functionalOwner ? { functional_owner: template.functionalOwner } : {}),
+        ...(template.coverageRole ? { coverage_role: template.coverageRole } : {}),
+      },
+    } : {}),
     domain,
+  };
+}
+
+const SENSOR_COVERAGE_ROLES = [
+  ["PrimaryFeedback", "Rueckmeldung", "%", 0, 100, 0.1],
+  ["OperatingState", "Betriebszustand", "code", 0, 15, 1],
+  ["HealthFeedback", "Zustandsdiagnose", "%", 0, 100, 1],
+  ["DemandInput", "Sollwertvorgabe", "%", 0, 100, 0.1],
+  ["SafetyFeedback", "Sicherheitsrueckmeldung", "code", 0, 7, 1],
+] as const;
+
+const ACTUATOR_COVERAGE_ROLES = [
+  ["PrimaryCommand", "Stellbefehl", "%", 0, 100, 0.1],
+  ["EnableCommand", "Freigabebefehl", "code", 0, 1, 1],
+  ["SafetyCommand", "Sicherheitsbefehl", "code", 0, 3, 1],
+  ["FallbackCommand", "Rueckfallbefehl", "%", 0, 100, 0.1],
+  ["DiagnosticCommand", "Diagnosebefehl", "code", 0, 15, 1],
+] as const;
+
+function alphabeticOrdinal(value: number) {
+  let remaining = value;
+  let result = "";
+  do {
+    result = String.fromCharCode(65 + (remaining % 26)) + result;
+    remaining = Math.floor(remaining / 26) - 1;
+  } while (remaining >= 0);
+  return result;
+}
+
+function supplementalEndpointTemplate(
+  deviceType: "SensorController" | "ActuatorController",
+  controller: ExtractedEngineeringChain,
+  ordinal: number,
+): ArchitectureTemplate {
+  const roles = deviceType === "SensorController" ? SENSOR_COVERAGE_ROLES : ACTUATOR_COVERAGE_ROLES;
+  const [role, signalRole, unit, minValue, maxValue, factor] = roles[ordinal % roles.length];
+  const generation = Math.floor(ordinal / roles.length);
+  const semanticRole = generation ? `${role}${alphabeticOrdinal(generation - 1)}` : role;
+  const controllerName = normalizeHardwareName(controller.hardware_name);
+  return {
+    hardwareName: `${controllerName}${semanticRole}`,
+    deviceType,
+    signalName: `${identifier(controllerName)}${signalRole}${generation ? alphabeticOrdinal(generation - 1) : ""}`,
+    interfaceType: controller.interface_type,
+    cycleMs: controller.cycle_ms,
+    unit,
+    minValue,
+    maxValue,
+    factor,
+    functionalOwner: controller.hardware_name,
+    coverageRole: semanticRole,
+  };
+}
+
+function supplementalInfrastructureTemplate(
+  deviceType: EngineeringControllerDeviceType | "Gateway",
+  ordinal: number,
+  domain: string,
+): ArchitectureTemplate {
+  const role = ["SafetySupervisor", "ServiceCoordinator", "DiagnosticsCoordinator", "FallbackCoordinator", "ZoneCoordinator"][ordinal % 5];
+  const generation = Math.floor(ordinal / 5);
+  const qualifier = generation ? alphabeticOrdinal(generation - 1) : "";
+  const hardwareName = deviceType === "Gateway" ? `${role}${qualifier}Gateway` : `${role}${qualifier}`;
+  return {
+    hardwareName,
+    deviceType,
+    signalName: `${identifier(hardwareName)}Status`,
+    interfaceType: systemInterfaceType(role, domain),
+    cycleMs: 20,
+    unit: "code",
+    minValue: 0,
+    maxValue: 255,
+    factor: 1,
+    coverageRole: role,
   };
 }
 
@@ -998,20 +1135,28 @@ function expandArchitectureChains(
     ));
     names.add(key);
   }
-  // Additional instances keep the same technical template and a stable unique name.
+  // Once the finite catalogue is exhausted, create semantically distinct roles.
+  // Numeric copies of identical hardware/signals made ownership ambiguous.
   const targetControllerType = controllerDeviceTypeForModel(domain);
-  for (const deviceType of ["SensorController", "ActuatorController", targetControllerType, "Gateway"] as const) {
-    const candidates = templates.filter((template) => template.deviceType === deviceType);
+  for (const deviceType of [targetControllerType, "Gateway", "SensorController", "ActuatorController"] as const) {
     let current = chains.filter((chain) => chain.device_type === deviceType).length;
-    for (let instance = 0; current < targetFor(deviceType); instance += 1) {
-      const template = candidates[instance % candidates.length];
-      const hardwareName = `${template.hardwareName}-${2 + Math.floor(instance / candidates.length)}`;
-      if (names.has(normalized(normalizeHardwareName(hardwareName)))) continue;
+    let instance = 0;
+    while (current < targetFor(deviceType)) {
+      const controllers = chains.filter((chain) => isEngineeringControllerDevice(chain.device_type));
+      const template = (deviceType === "SensorController" || deviceType === "ActuatorController") && controllers.length
+        ? supplementalEndpointTemplate(deviceType, controllers[instance % controllers.length], Math.floor(instance / controllers.length))
+        : supplementalInfrastructureTemplate(deviceType as EngineeringControllerDeviceType | "Gateway", instance, domain);
+      const hardwareName = template.hardwareName;
+      if (names.has(normalized(normalizeHardwareName(hardwareName)))) {
+        instance += 1;
+        continue;
+      }
       const interfaceType = communicationSystems.some((system) => communicationSystemAllowsTemplateInterface(system, template.interfaceType)) || !communicationSystems.length
         ? template.interfaceType : communicationSystems[instance % communicationSystems.length];
       chains.push(chainFromTemplate({ ...template, hardwareName, interfaceType }, chains.length, domain));
       names.add(normalized(normalizeHardwareName(hardwareName)));
       current += 1;
+      instance += 1;
     }
   }
   if (domain === "automotive" && completenessFirst) {
@@ -1395,6 +1540,7 @@ export function extractEngineeringSpecification(
   text: string,
   overrides: Partial<EngineeringHardwareCounts> = {},
   domainOverride?: string,
+  completenessFirst = false,
 ): ExtractedEngineeringSpecification {
   const lines = specificationBody(text).split(/\r?\n/);
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
@@ -1434,10 +1580,16 @@ export function extractEngineeringSpecification(
       ? "Ethernet"
       : interfaceType;
     const dataType = (minValue ?? 0) < 0 ? "signed" : "unsigned";
-    const lengthBits = generatedSignalBitLength({
+    const lengthBits = generatedArchitectureBitLength({
+      signalName: signal,
+      hardwareName,
+      interfaceType: chainInterfaceType,
+      cycleMs: 10,
       minValue,
       maxValue,
       factor,
+      offset: 0,
+      unit,
       dataType,
     });
     return {
@@ -1490,7 +1642,7 @@ export function extractEngineeringSpecification(
     domain,
     communicationSystems,
     { ...confirmedHardwareCounts(text), ...overrides },
-    /System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten/i.test(text),
+    completenessFirst || /System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten/i.test(text),
   );
 
   return {

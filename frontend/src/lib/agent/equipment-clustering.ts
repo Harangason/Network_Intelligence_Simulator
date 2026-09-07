@@ -1,4 +1,5 @@
 import { isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import type { EquipmentAssignmentLearningSuggestion } from "../engineering-api.ts";
 import {
   compareTopologyClusterKeys,
   resolveTopologyClusterProfile,
@@ -395,7 +396,11 @@ function deviceLeaf(chain: ExtractedEngineeringChain, confidence: number, reason
   };
 }
 
-function controllerBranches(devices: ExtractedEngineeringChain[], industry?: string) {
+function controllerBranches(
+  devices: ExtractedEngineeringChain[],
+  industry?: string,
+  learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
+) {
   const controllers = devices.filter((chain) => isEngineeringControllerDevice(chain.device_type));
   const endpoints = devices.filter((chain) => chain.device_type === "SensorController" || chain.device_type === "ActuatorController");
   const branches = controllers.map((controller) => ({
@@ -407,6 +412,23 @@ function controllerBranches(devices: ExtractedEngineeringChain[], industry?: str
   const unassigned: EquipmentDeviceLeaf[] = [];
 
   for (const endpoint of endpoints) {
+    const configuredOwner = typeof endpoint.configuration?.functional_owner === "string"
+      ? endpoint.configuration.functional_owner
+      : "";
+    const learned = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(endpoint.hardware_name));
+    const explicitOwnerName = configuredOwner || learned?.controller_name || "";
+    const explicitOwner = controllers.find((controller) => compactKey(controller.hardware_name) === compactKey(explicitOwnerName));
+    if (explicitOwner) {
+      const branch = branches.find((candidate) => candidate.name === explicitOwner.hardware_name)!;
+      const leaf = deviceLeaf(
+        endpoint,
+        learned?.confidence ?? 1,
+        learned?.reason ?? "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden.",
+      );
+      if (endpoint.device_type === "SensorController") branch.sensors.push(leaf);
+      else branch.actuators.push(leaf);
+      continue;
+    }
     const endpointStem = ownershipStem(endpoint.hardware_name);
     const endpointCluster = topologyClusterForText(chainCorpus(endpoint), industry);
     const ranked = controllers
@@ -488,6 +510,7 @@ export function buildEquipmentClusters(
   chains: ExtractedEngineeringChain[],
   networkOptions: EquipmentNetworkOption[],
   industry?: string,
+  learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
 ): EquipmentCluster[] {
   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
   const graphMode = Boolean(industry);
@@ -495,15 +518,19 @@ export function buildEquipmentClusters(
   const controllerGraphs = graphMode
     ? uniqueDevices(chains)
       .filter((chain) => isEngineeringControllerDevice(chain.device_type))
-      .map((chain) => ({ stem: ownershipStem(chain.hardware_name), graph: graphClusterFor(chain, profile) }))
+      .map((chain) => ({ name: chain.hardware_name, stem: ownershipStem(chain.hardware_name), graph: graphClusterFor(chain, profile) }))
     : [];
 
   chains
     .filter((chain) => chain.device_type !== "Gateway")
     .forEach((chain) => {
       const stem = ownershipStem(chain.hardware_name);
+      const configuredOwner = typeof chain.configuration?.functional_owner === "string" ? chain.configuration.functional_owner : "";
+      const learnedOwner = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(chain.hardware_name))?.controller_name ?? "";
+      const ownerName = configuredOwner || learnedOwner;
       const inheritedGraph = (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
-        ? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
+        ? controllerGraphs.find((candidate) => ownerName && compactKey(candidate.name) === compactKey(ownerName))?.graph
+          ?? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
           ?? (controllerGraphs.length === 1 ? controllerGraphs[0].graph : undefined)
         : undefined;
       const graph = graphMode ? inheritedGraph ?? graphClusterFor(chain, profile) : null;
@@ -528,7 +555,7 @@ export function buildEquipmentClusters(
       const sortedDevices = uniqueDevices(bucket.devices).sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de"));
       const preferences = graphMode ? profilePreferences(profile, id, sortedDevices) : bucket.preferredNetworks;
       const network = recommendedNetwork(networkOptions, preferences);
-      const ownership = controllerBranches(sortedDevices, profile);
+      const ownership = controllerBranches(sortedDevices, profile, learnedAssignments);
       return {
         id,
         label: bucket.label,

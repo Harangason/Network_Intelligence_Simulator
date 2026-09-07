@@ -1,5 +1,6 @@
 import type { HardwareNode } from "./types";
 import {
+  inferTopologyClusterProfileFromText,
   topologyClusterForText,
   topologyClusterFamilyForKey,
 } from "./topology-cluster-knowledge.ts";
@@ -16,6 +17,8 @@ export type TopologyPort = {
   offset: number;
   engineeringId?: string;
   hardwareInterfaceId?: string;
+  physicalNetworkId?: string;
+  physicalNetworkName?: string;
 };
 
 export type TopologyNode = {
@@ -63,7 +66,9 @@ export type TopologyEdge = {
   routingEntryId?: string;
   routingEntryIds?: string[];
   routingMetadata?: Record<string, TopologyRouteMetadata>;
-  origin?: "ROUTING_TABLE";
+  physicalNetworkId?: string;
+  physicalNetworkName?: string;
+  origin?: "ROUTING_TABLE" | "WIZARD_PHYSICAL_COMPLETENESS";
 };
 
 export type TopologySyncResult = {
@@ -143,7 +148,7 @@ function collapseSharedHardwareInterfacePorts(topology: NetworkTopology): Networ
         ports.push({ ...port });
         continue;
       }
-      const key = `${interfaceId}\u0000${port.bus}`;
+      const key = `${interfaceId}\u0000${port.bus}\u0000${port.physicalNetworkId ?? ""}`;
       const canonical = canonicalByInterface.get(key);
       if (canonical) {
         replacements.set(`${node.id}\u0000${port.id}`, canonical.id);
@@ -208,7 +213,10 @@ export function expandSharedPhysicalPorts(topology: NetworkTopology): NetworkTop
 
 export function normalizePhysicalTopology(topology: NetworkTopology): NetworkTopology {
   const collapsed = collapseSharedHardwareInterfacePorts(topology);
-  return expandSharedPhysicalPorts({ ...collapsed, edges: collapsePhysicalEdges(collapsed.edges) });
+  const physical = assignSemanticPhysicalNetworks({ ...collapsed, edges: collapsePhysicalEdges(collapsed.edges) });
+  const split = splitPortsByPhysicalNetwork(physical);
+  const recollapsed = collapseSharedHardwareInterfacePorts(split);
+  return expandSharedPhysicalPorts({ ...recollapsed, edges: collapsePhysicalEdges(recollapsed.edges) });
 }
 
 export function engineeringHardwareKind(
@@ -243,8 +251,14 @@ function busDisplayName(bus: BusType) {
 
 /** Keep distinct physical buses distinct, while joining a complete semantic
  * system (for example motor, fuel, exhaust and transmission) on one domain bus. */
-export function physicalNetworkAssignments(topology: NetworkTopology) {
+function inferredPhysicalNetworkAssignments(topology: NetworkTopology) {
   const nodes = new Map(topology.nodes.map((node) => [node.id, node]));
+  const inferredProfile = inferTopologyClusterProfileFromText(
+    topology.nodes.map((node) => `${node.name} ${node.kind}`).join(" "),
+  );
+  const profile = inferredProfile === "generic" && topology.edges.some((edge) => edge.bus === "can_fd")
+    ? "automotive"
+    : inferredProfile;
   const unknownComponents = new Map<string, number>();
   const componentByNode = new Map<string, number>();
   let nextComponent = 1;
@@ -275,10 +289,15 @@ export function physicalNetworkAssignments(topology: NetworkTopology) {
     const candidates = [nodes.get(edge.source), nodes.get(edge.target)]
       .filter((node): node is TopologyNode => Boolean(node && node.kind !== "gateway"));
     const families = candidates.map((node) => {
-      const cluster = topologyClusterForText(`${node.name} ${node.systemOwnerSource ?? ""}`, "automotive");
-      return topologyClusterFamilyForKey(cluster.key, "automotive");
-    }).filter((family) => family.key !== "unassigned");
-    const family = families[0];
+      const cluster = topologyClusterForText(`${node.name} ${node.systemOwnerSource ?? ""}`, profile);
+      return {
+        controller: node.kind === "ecu" ? 1 : 0,
+        profileSpecific: profile === "generic" || !["control", "sensorics", "actuation"].includes(cluster.key) ? 1 : 0,
+        family: topologyClusterFamilyForKey(cluster.key, profile),
+      };
+    }).filter((candidate) => !candidate.family.key.startsWith("system:"))
+      .sort((left, right) => right.profileSpecific - left.profileSpecific || right.controller - left.controller);
+    const family = families[0]?.family;
     const component = componentByNode.get(`${edge.bus}:${edge.source}`) ?? 0;
     const semanticKey = family?.key || `segment-${component}`;
     const label = family?.label || `Netzsegment ${component}`;
@@ -295,6 +314,106 @@ export function physicalNetworkAssignments(topology: NetworkTopology) {
     });
   });
   return result;
+}
+
+export function physicalNetworkAssignments(topology: NetworkTopology) {
+  const inferred = inferredPhysicalNetworkAssignments(topology);
+  const result = new Map<string, PhysicalNetworkAssignment>();
+  topology.edges.forEach((edge) => {
+    const fallback = inferred.get(edge.id) ?? {
+      id: `network-${edge.bus}`,
+      name: busProfiles[edge.bus].label,
+      technology: edge.bus,
+    };
+    result.set(edge.id, {
+      id: edge.physicalNetworkId || fallback.id,
+      name: edge.physicalNetworkName || fallback.name,
+      technology: edge.bus,
+    });
+  });
+  return result;
+}
+
+export function assignSemanticPhysicalNetworks(topology: NetworkTopology): NetworkTopology {
+  const inferred = inferredPhysicalNetworkAssignments(topology);
+  const isGenericPlaceholder = (id?: string) => !id || [
+    "systemgruppe", "regelung", "aktorik", "sensorik", "netsegment", "system-",
+  ].some((part) => id.includes(part));
+  return {
+    ...topology,
+    edges: topology.edges.map((edge) => {
+      const assignment = inferred.get(edge.id);
+      if (!assignment) return edge;
+      const replace = isGenericPlaceholder(edge.physicalNetworkId) && !isGenericPlaceholder(assignment.id);
+      return {
+        ...edge,
+        physicalNetworkId: replace ? assignment.id : edge.physicalNetworkId || assignment.id,
+        physicalNetworkName: replace ? assignment.name : edge.physicalNetworkName || assignment.name,
+      };
+    }),
+  };
+}
+
+function splitPortsByPhysicalNetwork(topology: NetworkTopology): NetworkTopology {
+  const uses = new Map<string, Array<{ edgeId: string; endpoint: "source" | "target"; networkId: string; networkName: string }>>();
+  const addUse = (
+    nodeId: string,
+    portId: string,
+    edgeId: string,
+    endpoint: "source" | "target",
+    networkId: string,
+    networkName: string,
+  ) => {
+    const key = `${nodeId}\u0000${portId}`;
+    uses.set(key, [...(uses.get(key) ?? []), { edgeId, endpoint, networkId, networkName }]);
+  };
+  topology.edges.forEach((edge) => {
+    const networkId = edge.physicalNetworkId ?? `network-${edge.bus}`;
+    const networkName = edge.physicalNetworkName ?? busProfiles[edge.bus].label;
+    addUse(edge.source, edge.sourcePort, edge.id, "source", networkId, networkName);
+    addUse(edge.target, edge.targetPort, edge.id, "target", networkId, networkName);
+  });
+
+  const replacement = new Map<string, string>();
+  const nodes = topology.nodes.map((node) => ({
+    ...node,
+    ports: node.ports.flatMap((port) => {
+      const portUses = uses.get(`${node.id}\u0000${port.id}`) ?? [];
+      const networks = [...new Map(portUses.map((use) => [use.networkId, use])).values()]
+        .sort((left, right) => left.networkId.localeCompare(right.networkId));
+      if (networks.length === 0) return [{ ...port }];
+      if (networks.length === 1) {
+        return [{
+          ...port,
+          name: port.physicalNetworkId ? networks[0].networkName : port.name,
+          physicalNetworkId: networks[0].networkId,
+          physicalNetworkName: networks[0].networkName,
+        }];
+      }
+      return networks.map((network, index) => {
+        const id = `${port.id}--network-${slug(network.networkId)}`;
+        portUses.filter((use) => use.networkId === network.networkId).forEach((use) => {
+          replacement.set(`${use.edgeId}\u0000${use.endpoint}`, id);
+        });
+        return {
+          ...port,
+          id,
+          name: network.networkName,
+          physicalNetworkId: network.networkId,
+          physicalNetworkName: network.networkName,
+          offset: (index + 1) / (networks.length + 1),
+        };
+      });
+    }),
+  }));
+  return {
+    nodes,
+    edges: topology.edges.map((edge) => ({
+      ...edge,
+      sourcePort: replacement.get(`${edge.id}\u0000source`) ?? edge.sourcePort,
+      targetPort: replacement.get(`${edge.id}\u0000target`) ?? edge.targetPort,
+    })),
+  };
 }
 
 export function topologyToConfig(topology: NetworkTopology, formats: string[] = ["universal-jsonl", "universal-csv"]) {

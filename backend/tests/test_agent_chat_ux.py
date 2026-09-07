@@ -9,7 +9,7 @@ import pytest
 from backend.agent_core.api.agent_response import AgentResponse, InteractiveQuestion, validate_response
 from backend.agent_core.context.agent_context import AgentContext
 from backend.agent_core.core.engineering_agent import EngineeringAgent, reasoning_workload_progress
-from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _is_structured_wizard_request, _no_think_messages
+from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _is_semantic_fast_request, _is_structured_wizard_request, _no_think_messages
 from backend.agent_core.api.mcp_client import EngineeringMCPClient
 from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
@@ -64,6 +64,8 @@ def test_structured_wizard_request_uses_fast_orchestration_path():
     )}]
     assert _is_structured_wizard_request(messages) is True
     assert _is_structured_wizard_request([{'role': 'user', 'content': 'Analysiere das Routing'}]) is False
+    assert _is_semantic_fast_request([{'role': 'user', 'content': 'Ordne Sensoren den ECU-Controllern semantisch zu'}]) is True
+    assert _is_semantic_fast_request([{'role': 'user', 'content': 'Schreibe eine umfassende Systemarchitektur'}]) is False
 
 
 def test_local_reasoner_does_not_duplicate_the_full_requirement_in_system_context():
@@ -98,8 +100,36 @@ def test_local_reasoner_uses_native_non_thinking_tool_contract():
 
     result = asyncio.run(invoke())
     assert captured['think'] is False and captured['stream'] is False
+    assert captured['keep_alive'] == '10m'
     assert captured['messages'][-1]['content'].endswith('/no_think')
     assert result['calls'] == [{'id':'call-1', 'name':'inspect_project', 'arguments':{}}]
+
+
+def test_local_reasoner_keeps_fast_semantic_model_warm(monkeypatch):
+    captured = {}
+    monkeypatch.setenv('OLLAMA_FAST_KEEP_ALIVE', '45m')
+
+    def handler(request):
+        captured.update(json.loads(request.content))
+        return httpx.Response(200, json={'message': {'content': 'ok'}})
+
+    async def invoke():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        reasoner.chat_url = 'http://local.test/api/chat'
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        try:
+            await reasoner.next(
+                [{'role': 'user', 'content': 'Sensoren semantisch zuordnen'}],
+                AgentContext(active_project_id='semantic-fast-model'),
+                [],
+            )
+        finally:
+            await reasoner.close()
+
+    asyncio.run(invoke())
+    assert captured['model'] == 'llama3.1:8b'
+    assert captured['keep_alive'] == '45m'
 
 
 def test_wizard_execution_status_is_durable_and_uses_the_external_run_id():

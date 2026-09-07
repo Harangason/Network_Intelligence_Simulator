@@ -56,7 +56,12 @@ class PlausibleSignalEmulationService(SignalEmulator):
         quantized = self.encoding.quantize(definition, noisy)
         raw = self.encoding.raw_value(definition, quantized)
         quality = self.quality.evaluate(definition, quantized)
-        self.state.update(definition.id, time_s, quantized)
+        # Keep the physical model's continuous value as its feedback state.
+        # Feeding the quantized bus value back into a rate-limited model can
+        # deadlock coarse signals forever (for example a 50-rpm resolution
+        # with a 10-rpm integration step repeatedly rounds back to zero).
+        # Quantization remains part of the emitted sample and raw encoding.
+        self.state.update(definition.id, time_s, noisy)
         model_type = normalize_model_type(definition.model_label, behavior_type=definition.behavior_type, semantic_type=semantic_type)
         state_label = _state_label(definition, quantized, context) if semantic_type in {"ENUM", "STATE", "BOOLEAN", "COUNTER", "BITFIELD", "EVENT", "QUALITY"} else None
         return SignalSample(
@@ -102,7 +107,7 @@ class PlausibleSignalEmulationService(SignalEmulator):
 def infer_semantic_type(definition: Any) -> str:
     configured = str(definition.parameters.get("semantic_type") or definition.parameters.get("signal_type") or "").upper()
     if configured:
-        return configured
+        return "STATE" if configured in {"STATE_MACHINE", "OPERATING_STATE", "MODE"} else configured
     name = str(definition.name).lower()
     data_type = str(definition.data_type).lower()
     if definition.enum_values or "enum" in data_type:
@@ -119,6 +124,8 @@ def infer_semantic_type(definition: Any) -> str:
         return "COMMAND"
     if "event" in name:
         return "EVENT"
+    if "mode" in name or "zustand" in name:
+        return "STATE"
     if definition.dependencies or str(definition.behavior_type).upper() in {"FORMULA", "STATE_DEPENDENT"}:
         return "DERIVED"
     if "quality" in name:
@@ -139,7 +146,7 @@ def _state_label(definition: Any, value: float | None, context: SimulationContex
     system_state = getattr(context, "system_state", {})
     if isinstance(system_state, dict):
         state_name = system_state.get("operating_state")
-        if state_name and ("state" in str(definition.name).lower() or "status" in str(definition.name).lower()):
+        if state_name and any(token in str(definition.name).lower() for token in ("state", "status", "mode", "zustand")):
             return str(state_name)
     if "bool" in str(definition.data_type).lower() or getattr(definition, "length_bits", 0) == 1:
         return "TRUE" if rounded else "FALSE"
@@ -151,7 +158,7 @@ def _initial_default(definition: Any, context: SimulationContext) -> float:
     semantic_type = infer_semantic_type(definition)
     if semantic_type in {"ENUM", "STATE", "BOOLEAN", "COUNTER", "BITFIELD", "EVENT", "QUALITY"}:
         return float(definition.minimum)
-    if "temperature" in name or "temp" in name:
+    if "temperature" in name or "temperatur" in name or "temp" in name:
         ambient = number(getattr(context, "environment", {}).get("ambient_temperature"), 22.0)
         if any(token in name for token in ("exhaust", "abgas", "catalyst", "katalys")):
             return min(definition.maximum, max(definition.minimum, ambient + 70.0))
@@ -160,6 +167,9 @@ def _initial_default(definition: Any, context: SimulationContext) -> float:
         if "battery" in name or "batterie" in name:
             return min(definition.maximum, max(definition.minimum, ambient + 3.0))
         return ambient
-    if any(token in name for token in ("rpm", "speed", "torque", "current", "velocity", "acceleration")) and definition.minimum <= 0:
+    if any(token in name for token in (
+        "rpm", "speed", "drehzahl", "torque", "drehmoment", "current", "strom",
+        "velocity", "geschwindigkeit", "acceleration", "beschleunigung",
+    )) and definition.minimum <= 0:
         return 0.0
     return (definition.minimum + definition.maximum) / 2.0

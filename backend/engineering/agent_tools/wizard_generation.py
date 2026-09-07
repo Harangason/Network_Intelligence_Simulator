@@ -303,6 +303,50 @@ def _topology_bus(value: str | None) -> str:
     return _TOPOLOGY_BUS_BY_PROTOCOL.get(key, 'automotive_ethernet')
 
 
+_SEMANTIC_NETWORK_FAMILIES = (
+    ('powertrain', 'Antriebsstrang', ('motor', 'engine', 'antrieb', 'powertrain', 'kraftstoff', 'fuel', 'abgas', 'exhaust', 'getriebe', 'transmission', 'kupplung', 'clutch', 'drehmoment', 'torque', 'elektromotor', 'inverter', 'ladesteuerung')),
+    ('energy', 'Energieversorgung', ('energie', 'energy', 'batterie', 'battery', 'bms', 'bordnetz', 'alternator', 'generator', 'spannung', 'voltage', 'strom', 'current')),
+    ('chassis', 'Fahrwerk / Fahrdynamik', ('fahrwerk', 'fahrdynamik', 'bremse', 'brems', 'brake', 'lenkung', 'steering', 'suspension', 'daempfer', 'damper', 'reifen', 'tire', 'wheel', 'stabilitaet', 'allrad', 'anhaenger')),
+    ('safety', 'Passive Sicherheit', ('airbag', 'restraint', 'rueckhalt', 'crash', 'impact', 'seatbelt', 'gurt')),
+    ('driver-assistance', 'Fahrerassistenz', ('adas', 'fahrerassistenz', 'radar', 'kamera', 'camera', 'lidar', 'park', 'parking', 'spur', 'lane', 'ultraschall')),
+    ('body-comfort', 'Karosserie / Komfort', ('karosserie', 'body', 'komfort', 'comfort', 'wischer', 'wiper', 'tuer', 'door', 'fenster', 'window', 'sitz', 'seat', 'keyless', 'heckklappe', 'tailgate', 'licht', 'light')),
+    ('climate', 'Klima / Thermik', ('klima', 'climate', 'hvac', 'thermal', 'thermo', 'kuehlung', 'kuehl', 'kuehlkreislauf', 'cooling', 'kompressor', 'compressor', 'innenraum', 'cabin', 'refrigerant')),
+    ('infotainment', 'Infotainment', ('infotainment', 'display', 'kombiinstrument', 'headup', 'audio', 'sound', 'telematik', 'navigation', 'connectivity', 'konnektivitaet')),
+    ('diagnostics', 'Diagnose', ('diagnose', 'diagnostic', 'service', 'uds', 'obd', 'logging', 'trace')),
+)
+
+
+def _semantic_text(value: object) -> str:
+    text = str(value or '').casefold()
+    for source, target in (('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('ß', 'ss')):
+        text = text.replace(source, target)
+    return re.sub(r'[^a-z0-9]+', '', text)
+
+
+def _semantic_slug(value: object) -> str:
+    text = str(value or '').casefold()
+    for source, target in (('ä', 'ae'), ('ö', 'oe'), ('ü', 'ue'), ('ß', 'ss')):
+        text = text.replace(source, target)
+    return re.sub(r'(^-|-$)', '', re.sub(r'[^a-z0-9]+', '-', text))
+
+
+def _semantic_physical_network(bus: str, *items: dict) -> tuple[str, str] | None:
+    candidates = []
+    for item_index, item in enumerate(items):
+        name = _semantic_text(item.get('name'))
+        is_controller = str(item.get('device_type') or '') not in {'SensorController', 'ActuatorController', 'Gateway'}
+        for family_index, (key, label, terms) in enumerate(_SEMANTIC_NETWORK_FAMILIES):
+            specificity = max((len(_semantic_text(term)) for term in terms if _semantic_text(term) in name), default=0)
+            if specificity:
+                candidates.append((10_000 if is_controller else 0, specificity, -family_index, -item_index, key, label))
+    if not candidates:
+        return None
+    _controller, _specificity, _family_index, _item_index, _key, label = max(candidates)
+    technology = bus.replace('_', '-')
+    display = 'CAN' if bus == 'can_fd' else 'Ethernet' if bus == 'automotive_ethernet' else bus.upper()
+    return f'{_semantic_slug(label)}-{technology}-bus', f'{label}-{display}'
+
+
 def generate_network_topology(arguments: dict) -> dict:
     """Materialize approved logical routes as a reviewable physical topology.
 
@@ -334,23 +378,27 @@ def generate_network_topology(arguments: dict) -> dict:
         'ActuatorController': 'actuator',
     }
     node_data: dict[str, dict] = {}
-    port_refs: dict[tuple[str, str], str] = {}
+    port_refs: dict[tuple[str, str, str], str] = {}
 
-    def ensure_port(node_id: str, bus: str) -> str:
-        key = (node_id, bus)
+    def ensure_port(node_id: str, bus: str, network_id: str = '', network_name: str = '') -> str:
+        key = (node_id, bus, network_id)
         if key in port_refs:
             return port_refs[key]
         candidates = interfaces_by_node.get(node_id, [])
         matching = [item for item in candidates if _topology_bus(item.get('technology')) == bus]
         interface = matching[0] if matching else (candidates[0] if candidates else None)
-        port_id = f'topology-port-{node_id}-{bus}'
+        network_suffix = f'-{network_id}' if network_id else ''
+        port_id = f'topology-port-{node_id}-{bus}{network_suffix}'
         port = {
             'id': port_id,
-            'name': str(interface.get('name') if interface else f'{bus}-Port'),
+            'name': network_name or str(interface.get('name') if interface else f'{bus}-Port'),
             'bus': bus,
             'side': 'right',
             'offset': 0.5,
         }
+        if network_id:
+            port['physicalNetworkId'] = network_id
+            port['physicalNetworkName'] = network_name
         if interface is not None:
             port.update({
                 'engineeringId': str(interface['id']),
@@ -374,7 +422,7 @@ def generate_network_topology(arguments: dict) -> dict:
             'engineeringId': identifier,
         }
 
-    segments: dict[tuple[str, str, str], dict] = {}
+    segments: dict[tuple[str, str, str, str], dict] = {}
     for route in sorted(routes, key=lambda item: (str(item.get('route_code', '')), str(item['id']))):
         source = str((route.get('source') or {}).get('node_id') or '')
         destinations = [str(item.get('node_id') or '') for item in route.get('destinations') or [] if isinstance(item, dict)]
@@ -389,8 +437,10 @@ def generate_network_topology(arguments: dict) -> dict:
                 path = [source, destination]
             for segment_index, (left, right) in enumerate(zip(path, path[1:])):
                 bus = source_bus if segment_index == 0 else destination_bus
-                key = (left, right, bus)
-                reverse_key = (right, left, bus)
+                network = _semantic_physical_network(bus, hardware_by_id[left], hardware_by_id[right])
+                network_id, network_name = network or ('', '')
+                key = (left, right, bus, network_id)
+                reverse_key = (right, left, bus, network_id)
                 segment = segments.get(key) or segments.get(reverse_key)
                 route_id = str(route['id'])
                 if segment:
@@ -405,8 +455,8 @@ def generate_network_topology(arguments: dict) -> dict:
                         'approvalState': 'APPROVED',
                     }
                     continue
-                source_port = ensure_port(left, bus)
-                target_port = ensure_port(right, bus)
+                source_port = ensure_port(left, bus, network_id, network_name)
+                target_port = ensure_port(right, bus, network_id, network_name)
                 edge_id = f'topology-edge-{len(segments) + 1:04d}'
                 segments[key] = {
                     'id': edge_id,
@@ -416,6 +466,7 @@ def generate_network_topology(arguments: dict) -> dict:
                     'target': node_data[right]['id'],
                     'targetPort': target_port,
                     'bus': bus,
+                    **({'physicalNetworkId': network_id, 'physicalNetworkName': network_name} if network_id else {}),
                     'direction': 'BIDIRECTIONAL',
                     'relationType': 'CONNECTED_VIA',
                     'engineeringRelationId': f'{route_id}:segment:{segment_index}',
@@ -439,7 +490,7 @@ def generate_network_topology(arguments: dict) -> dict:
     # because they have no dedicated logical route. Attach such nodes to the
     # closest already connected peer on the same bus. These edges deliberately
     # remain distinguishable from route-derived segments.
-    connected = {node_id for left, right, _bus in segments for node_id in (left, right)}
+    connected = {node_id for left, right, _bus, _network in segments for node_id in (left, right)}
     fallback_count = 0
     for node_id, node in node_data.items():
         if node_id in connected:
@@ -460,12 +511,14 @@ def generate_network_topology(arguments: dict) -> dict:
             1 if hardware_by_id[other_id].get('device_type') in {'ECU', 'Gateway'} else 0,
             str(hardware_by_id[other_id].get('name') or ''),
         ))
-        source_port = ensure_port(node_id, bus)
-        target_port = ensure_port(anchor, bus)
+        network = _semantic_physical_network(bus, hardware_by_id[node_id], hardware_by_id[anchor])
+        network_id, network_name = network or ('', '')
+        source_port = ensure_port(node_id, bus, network_id, network_name)
+        target_port = ensure_port(anchor, bus, network_id, network_name)
         fallback_count += 1
         edge_id = f'topology-edge-{len(segments) + 1:04d}'
         relation_id = f'physical-completeness:{node_id}:{anchor}:{bus}'
-        segments[(node_id, anchor, bus)] = {
+        segments[(node_id, anchor, bus, network_id)] = {
             'id': edge_id,
             'name': f'{hardware_by_id[node_id]["name"]} — {hardware_by_id[anchor]["name"]}',
             'source': node_data[node_id]['id'],
@@ -473,6 +526,7 @@ def generate_network_topology(arguments: dict) -> dict:
             'target': node_data[anchor]['id'],
             'targetPort': target_port,
             'bus': bus,
+            **({'physicalNetworkId': network_id, 'physicalNetworkName': network_name} if network_id else {}),
             'direction': 'BIDIRECTIONAL',
             'relationType': 'CONNECTED_VIA',
             'engineeringRelationId': relation_id,
@@ -487,7 +541,7 @@ def generate_network_topology(arguments: dict) -> dict:
         'interfaces': [(item['id'], item.get('version'), item.get('technology')) for item in interfaces],
         'routes': [(item['id'], item.get('revision'), item.get('approval_state')) for item in routes],
     }, sort_keys=True).encode('utf-8')).hexdigest()
-    fingerprint = hashlib.sha256(('wizard-network-v2-connected-participants\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-network-v3-semantic-shared-buses\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'

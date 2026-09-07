@@ -8,6 +8,7 @@ if (-not (Test-Path -LiteralPath $ConfigFile)) {
 
 $Config = Get-Content -LiteralPath $ConfigFile -Raw | ConvertFrom-Json
 $ComposeFile = Join-Path $Root $Config.docker.compose_file
+$GpuComposeFile = if ($Config.docker.gpu_compose_file) { Join-Path $Root $Config.docker.gpu_compose_file } else { $null }
 $Docker = [string]$Config.paths.docker_cli
 $Compose = [string]$Config.paths.docker_compose
 $DockerDesktop = [string]$Config.paths.docker_desktop
@@ -45,6 +46,9 @@ $env:NVIDIA_AI_MODEL = [string]$Config.ai.providers.nvidia.model
 $env:OLLAMA_MODELS = [string]$Config.paths.ollama_models
 $env:OLLAMA_CONTEXT_LENGTH = [string]$Config.resources.ollama_context_length
 $env:OLLAMA_KEEP_ALIVE = [string]$Config.resources.ollama_keep_alive
+$env:OLLAMA_FAST_KEEP_ALIVE = [string]$Config.resources.ollama_fast_keep_alive
+$env:NUMERIC_ACCELERATOR = [string]$Config.resources.numeric_accelerator
+$env:NUMERIC_ACCELERATOR_MIN_ITEMS = [string]$Config.resources.numeric_accelerator_min_items
 $env:WAITRESS_THREADS = [string]$Config.resources.waitress_threads
 $env:SIMULATION_EXECUTOR = [string]$Config.resources.simulation_executor
 $env:SIMULATION_WORKERS = [string]$Config.resources.simulation_workers
@@ -128,6 +132,18 @@ if (Test-ReadablePath $Ollama) {
     Start-Process -FilePath $Ollama -ArgumentList "serve" -WindowStyle Hidden
     Start-Sleep -Seconds 3
   }
+  try {
+    $WarmPayload = @{
+      model = [string]$Config.ai.providers.ollama.fast_model
+      prompt = ""
+      stream = $false
+      keep_alive = [string]$Config.resources.ollama_fast_keep_alive
+    } | ConvertTo-Json -Compress
+    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:11434/api/generate" -ContentType "application/json" -Body $WarmPayload -TimeoutSec 180 | Out-Null
+    Write-Host "Lokales Semantikmodell ist vorgewärmt ($($Config.ai.providers.ollama.fast_model))."
+  } catch {
+    Write-Warning "Semantikmodell konnte nicht vorgewärmt werden: $($_.Exception.Message)"
+  }
 }
 
 $networkisRunning = (& $Docker ps --filter "name=^/NetworkIS$" --format "{{.Names}}") -contains "NetworkIS"
@@ -143,7 +159,16 @@ if (-not $networkisRunning) {
 Write-Host "Starte NetworkIS inklusive Engineering-Datenbank..."
 Push-Location $Root
 try {
-  & $Compose -f $ComposeFile up -d --build
+  $ComposeArguments = @("-f", $ComposeFile)
+  $GpuRuntimeAvailable = ((& $Docker info --format "{{json .Runtimes}}" 2>$null) -match '"nvidia"')
+  if ($GpuRuntimeAvailable -and $GpuComposeFile -and (Test-ReadablePath $GpuComposeFile)) {
+    $ComposeArguments += @("-f", $GpuComposeFile)
+    Write-Host "CUDA-Rechenpfad wird für NetworkIS aktiviert."
+  } else {
+    $env:NUMERIC_ACCELERATOR = "cpu"
+    Write-Host "Keine Docker-CUDA-Runtime verfügbar; CPU-Fallback bleibt aktiv."
+  }
+  & $Compose @ComposeArguments up -d --build
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
   }

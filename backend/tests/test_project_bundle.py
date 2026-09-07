@@ -21,6 +21,20 @@ class FakeConnection:
         return self
 
 
+class ReturningConnection(FakeConnection):
+    def __init__(self) -> None:
+        super().__init__()
+        self._result = None
+
+    def execute(self, query, params=None):
+        super().execute(query, params)
+        self._result = {"event_id": len(self.calls)}
+        return self
+
+    def fetchone(self):
+        return self._result
+
+
 def test_reset_workspace_clears_project_scoped_data(monkeypatch) -> None:
     connection = FakeConnection()
     monkeypatch.setattr(project_bundle, "get_connection", lambda: connection)
@@ -119,3 +133,29 @@ def test_clone_project_data_preserves_child_table_contracts() -> None:
     assert "project_id" not in cloned_object
     assert "event_id" not in cloned_event
     assert cloned_event["project_id"] == "target"
+
+
+def test_cloned_import_starts_target_local_address_audit() -> None:
+    connection = ReturningConnection()
+    rows = [
+        {
+            "id": "11111111-1111-1111-1111-111111111111",
+            "name": "CentralGateway",
+            "logical_node_address": 0x0101,
+            "address_assignment_mode": "IMPORTED",
+        },
+        {
+            "id": "22222222-2222-2222-2222-222222222222",
+            "name": "BasicTemperatureSensor",
+            "logical_node_address": None,
+        },
+    ]
+
+    recorded = project_bundle._record_imported_address_audit(connection, "target", rows)
+
+    assert recorded == 1
+    query, params = connection.calls[0]
+    assert "ADDRESS_ASSIGNED" in str(query)
+    assert params[0] == "target"
+    assert params[1] == rows[0]["id"]
+    assert params[4:] == ("target", rows[0]["id"])

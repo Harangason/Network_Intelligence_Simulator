@@ -7,6 +7,7 @@ from backend.engineering.intelligence.network_planning import plan_network_distr
 from backend.engineering.routing.network_sync import enrich_route_from_linked_topology
 from backend.engineering.structure_rules import normalize_hardware_name
 from backend.engineering.routing.config_builder import CommunicationConfigBuilder
+from backend.engineering import api as engineering_api
 
 
 def topology(shared=False):
@@ -30,6 +31,42 @@ def test_separate_gateway_ports_are_separate_segments_and_shared_ports_are_one_b
     assert separate["a"] != separate["b"]
     shared = physical_port_networks(topology(True))
     assert shared["a"] == shared["c"] == shared["d"]
+
+
+def test_network_route_sync_refreshes_the_workflow_source_status(monkeypatch):
+    calls = []
+    expected = {"counts": {"created": 0, "outdated": 0, "unchanged": 2}}
+
+    class WorkflowProbe:
+        def __init__(self, project_id):
+            calls.append(("workflow", project_id))
+
+        def refresh_source_status(self, step, *, actor=None, reason=None):
+            calls.append(("refresh_source_status", step, reason, actor))
+
+    monkeypatch.setattr(engineering_api, "WorkflowStatusService", WorkflowProbe)
+    monkeypatch.setattr(
+        engineering_api,
+        "synchronize_network_routes",
+        lambda project_id, topology, *, actor=None: expected,
+    )
+
+    result = engineering_api._synchronize_network_routes_with_workflow(
+        "project-1",
+        {"nodes": [], "edges": []},
+        actor="network-editor",
+    )
+
+    assert result is expected
+    assert calls == [
+        ("workflow", "project-1"),
+        (
+            "refresh_source_status",
+            "routing",
+            "Routing-Tabelle wurde mit der physischen Netzwerktopologie synchronisiert.",
+            "network-editor",
+        ),
+    ]
 
 
 def test_segment_identity_is_stable_across_layout_labels_and_order():
@@ -64,6 +101,31 @@ def test_visual_ports_for_the_same_hardware_interface_share_one_segment():
     segments = physical_port_networks(source)
 
     assert len(set(segments.values())) == 1
+
+
+def test_explicit_semantic_bus_joins_disconnected_drops_without_merging_other_domains():
+    source = {
+        "nodes": [
+            {"id": "gateway", "ports": [
+                {"id": "gateway-drive", "bus": "can_fd", "hardwareInterfaceId": "gateway-can", "physicalNetworkId": "powertrain-can-fd-bus"},
+                {"id": "gateway-chassis", "bus": "can_fd", "hardwareInterfaceId": "gateway-can", "physicalNetworkId": "chassis-can-fd-bus"},
+            ]},
+            {"id": "motor", "ports": [{"id": "motor-can", "bus": "can_fd", "physicalNetworkId": "powertrain-can-fd-bus"}]},
+            {"id": "fuel", "ports": [{"id": "fuel-can", "bus": "can_fd", "physicalNetworkId": "powertrain-can-fd-bus"}]},
+            {"id": "brake", "ports": [{"id": "brake-can", "bus": "can_fd", "physicalNetworkId": "chassis-can-fd-bus"}]},
+        ],
+        "edges": [
+            {"source": "gateway", "sourcePort": "gateway-drive", "target": "motor", "targetPort": "motor-can", "bus": "can_fd", "physicalNetworkId": "powertrain-can-fd-bus"},
+            {"source": "fuel", "sourcePort": "fuel-can", "target": "motor", "targetPort": "motor-can", "bus": "can_fd", "physicalNetworkId": "powertrain-can-fd-bus"},
+            {"source": "gateway", "sourcePort": "gateway-chassis", "target": "brake", "targetPort": "brake-can", "bus": "can_fd", "physicalNetworkId": "chassis-can-fd-bus"},
+        ],
+    }
+
+    segments = physical_port_networks(source)
+
+    assert segments["gateway-drive"] == segments["motor-can"] == segments["fuel-can"] == "powertrain-can-fd-bus"
+    assert segments["gateway-chassis"] == segments["brake-can"] == "chassis-can-fd-bus"
+    assert segments["gateway-drive"] != segments["gateway-chassis"]
 
 
 def test_routing_uses_the_physical_interface_and_segment():
@@ -265,3 +327,47 @@ def test_simulator_export_preserves_physical_segments_and_protocol_speed(monkeyp
     assert {item["id"] for item in config["networks"]} == {"lin-port-a", "lin-port-b"}
     assert all(item["bitrate"] == 19_200 for item in config["networks"])
     assert {item["network_id"] for item in config["communications"]} == {"lin-port-a", "lin-port-b"}
+
+
+def test_simulator_export_updates_interface_technology_with_route_network(monkeypatch):
+    class Connection:
+        def execute(self, query, _values):
+            self.hardware = "FROM engineering_hardware_nodes" in query
+            return self
+
+        def fetchall(self):
+            if self.hardware:
+                return [
+                    {"id": "source", "name": "Source", "device_type": "ECU"},
+                    {"id": "target", "name": "Target", "device_type": "ECU"},
+                ]
+            return [{
+                "id": "target-interface",
+                "name": "Target Ethernet",
+                "hardware_node_id": "target",
+                "interface_type": "ETHERNET",
+                "configuration": {"network_id": "ethernet-old"},
+            }]
+
+    @contextmanager
+    def connection():
+        yield Connection()
+
+    monkeypatch.setattr("backend.engineering.routing.config_builder.get_connection", connection)
+    route = {
+        "id": "route-1",
+        "route_code": "RT-1",
+        "approval_state": "APPROVED",
+        "source": {"node_id": "source", "network_id": "powertrain-can", "protocol": "CAN_FD"},
+        "destinations": [{"node_id": "target", "interface_id": "target-interface"}],
+        "timing": {"cycle_time_ms": 10},
+    }
+
+    config = CommunicationConfigBuilder().build([route])["config"]
+    target = next(item for item in config["hardware"]["devices"] if item["id"] == "target")
+    assert target["interfaces"] == [{
+        "id": "target-interface",
+        "name": "Target Ethernet",
+        "technology": "can_fd",
+        "network": "powertrain-can",
+    }]

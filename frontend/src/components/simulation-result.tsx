@@ -96,11 +96,17 @@ export function SimulationResult({
           <div className="metric-grid">
             <div className="metric">
               <span>Trace events</span>
-              <strong>{result.trace.events.toLocaleString("de-DE")}</strong>
+              <strong>{result.trace?.events?.toLocaleString("de-DE") ?? "—"}</strong>
             </div>
             <div className="metric">
               <span>Validierung</span>
-              <strong>{result.hardware_validation.valid ? "Bestanden" : "Fehler"}</strong>
+              <strong>
+                {result.hardware_validation
+                  ? result.hardware_validation.valid
+                    ? "Bestanden"
+                    : "Fehler"
+                  : "—"}
+              </strong>
             </div>
             <div className="metric">
               <span>Artefakte</span>

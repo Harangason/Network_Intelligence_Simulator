@@ -142,7 +142,7 @@ const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = 
 };
 
 const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
-  "hardware-nodes": ["Name", "Gerätetyp", "Class", "Typisierung", "Domäne"],
+  "hardware-nodes": ["Name", "Gerätetyp", "Diagnoseadresse", "Class", "Typisierung", "Domäne"],
   "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status"],
   functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung"],
   interfaces: ["Name", "Funktion", "Interface-Typ", "Hardware"],
@@ -359,6 +359,7 @@ function resourceTableValues(
       return [
         item.name,
         "device_type" in item ? engineeringDeviceTypeLabel(item.device_type) : "—",
+        "formatted_logical_node_address" in item ? item.formatted_logical_node_address ?? (item.diagnostic_addressable ? "nicht zugewiesen" : "nicht adressierbar") : "—",
         hardwareClassValue(item),
         hardwareTypingValue(item),
         item.domain ?? "—",
@@ -1485,6 +1486,7 @@ function ProposalObjectWizard({
           ...(objectType === "HardwareNode" && !current.device_class ? { device_class: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.deviceClass ?? 1 } : {}),
           ...(objectType === "HardwareNode" && !current.device_typing ? { device_typing: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.typing ?? "Basic Communication Device" } : {}),
           ...(objectType === "HardwareNode" && !current.data_complexity ? { data_complexity: DEFAULT_TYPING_BY_DEVICE_TYPE[String(current.device_type ?? "ECU")]?.complexity ?? "SERVICE_DATA" } : {}),
+          ...(objectType === "HardwareNode" && current.diagnostic_addressable === undefined ? { diagnostic_addressable: Number(current.device_class ?? 1) === 4, address_namespace: "PROJECT" } : {}),
           ...(objectType === "Interface" && !current.interface_type ? { interface_type: nextSchema.interface_types[0] ?? "CAN" } : {}),
         }));
       })
@@ -1567,6 +1569,8 @@ function ProposalObjectWizard({
       if (!next.device_typing) next.device_typing = defaults.typing;
       if (!next.data_complexity) next.data_complexity = defaults.complexity;
       next.classification_status = next.classification_status || "CONFIRMED";
+      next.address_namespace = next.address_namespace || "PROJECT";
+      if (fieldValue(next.logical_node_address).trim() === "") next.logical_node_address = null;
     }
     if (objectType === "Interface" && !next.interface_type) next.interface_type = schema?.interface_types[0] ?? "CAN";
     return next;
@@ -1656,6 +1660,7 @@ function ProposalObjectWizard({
                     updateField("device_type", event.target.value);
                     if (defaults) {
                       updateField("device_class", defaults.deviceClass);
+                      updateField("diagnostic_addressable", defaults.deviceClass === 4);
                       updateField("device_typing", defaults.typing);
                       updateField("data_complexity", defaults.complexity);
                     }
@@ -1681,6 +1686,12 @@ function ProposalObjectWizard({
                     {(schema?.data_complexities ?? ["SERVICE_DATA"]).map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
                 </label>
+                <label className="field eng-checkbox-field">
+                  <span>Diagnoseadressierbar</span>
+                  <input checked={Boolean(draft.diagnostic_addressable)} onChange={(event) => updateField("diagnostic_addressable", event.target.checked)} type="checkbox" />
+                </label>
+                <WizardField label="Logische Diagnoseadresse" value={fieldValue(draft.logical_node_address)} onChange={(value) => updateField("logical_node_address", value)} placeholder="automatisch oder 0x0012" />
+                <WizardField label="Adress-Namespace" value={fieldValue(draft.address_namespace || "PROJECT")} onChange={(value) => updateField("address_namespace", value)} />
               </>
             )}
             {objectType === "Function" && (
@@ -1815,7 +1826,7 @@ function ProposalWizardSummary({
     ? ["relation_type", "source_type", "source_id", "target_type", "target_id"]
     : [];
   const assignmentFields = {
-    HardwareNode: ["device_type", "device_class", "device_typing", "data_complexity", "classification_status"],
+    HardwareNode: ["device_type", "device_class", "device_typing", "data_complexity", "classification_status", "diagnostic_addressable", "logical_node_address", "address_namespace"],
     HardwareNetworkInterface: ["hardware_node_id", "technology", "network_ref"],
     Function: ["hardware_node_id"],
     Interface: ["function_id", "hardware_node_id", "interface_type"],
@@ -1962,6 +1973,7 @@ function CreateForm({
   const [deviceClass, setDeviceClass] = useState(initialHardwareDefaults.deviceClass);
   const [deviceTyping, setDeviceTyping] = useState(initialHardwareDefaults.typing);
   const [dataComplexity, setDataComplexity] = useState(initialHardwareDefaults.complexity);
+  const [diagnosticAddressable, setDiagnosticAddressable] = useState(initialHardwareDefaults.deviceClass === 4);
   const [parents, setParents] = useState<EngineeringObject[]>([]);
   const [hardwareInterfaces, setHardwareInterfaces] = useState<EngineeringObject[]>([]);
   const [parentId, setParentId] = useState("");
@@ -2051,6 +2063,9 @@ function CreateForm({
       payload.device_typing = form.get("device_typing") || null;
       payload.data_complexity = form.get("data_complexity") || null;
       payload.classification_status = "CONFIRMED";
+      payload.diagnostic_addressable = form.get("diagnostic_addressable") === "on";
+      payload.logical_node_address = form.get("logical_node_address") || null;
+      payload.address_namespace = form.get("address_namespace") || "PROJECT";
     }
     if (resource === "hardware-interfaces") {
       payload.hardware_node_id = parentId;
@@ -2208,6 +2223,7 @@ function CreateForm({
               setDeviceType(next);
               if (defaults) {
                 setDeviceClass(defaults.deviceClass);
+                setDiagnosticAddressable(defaults.deviceClass === 4);
                 setDeviceTyping(defaults.typing);
                 setDataComplexity(defaults.complexity);
               }
@@ -2244,6 +2260,18 @@ function CreateForm({
             <select id="data_complexity" name="data_complexity" onChange={(event) => setDataComplexity(event.target.value)} required value={dataComplexity}>
               {(schema?.data_complexities ?? ["SERVICE_DATA"]).map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
+          </div>
+          <label className="field eng-checkbox-field" htmlFor="diagnostic_addressable">
+            <span>Diagnoseadressierbar</span>
+            <input checked={diagnosticAddressable} id="diagnostic_addressable" name="diagnostic_addressable" onChange={(event) => setDiagnosticAddressable(event.target.checked)} type="checkbox" />
+          </label>
+          <div className="field">
+            <label htmlFor="logical_node_address">Logische Diagnoseadresse</label>
+            <input disabled={!diagnosticAddressable} id="logical_node_address" name="logical_node_address" pattern="(?:0x)?[0-9a-fA-F]{1,4}" placeholder="automatisch oder 0x0012" type="text" />
+          </div>
+          <div className="field">
+            <label htmlFor="address_namespace">Adress-Namespace</label>
+            <input defaultValue="PROJECT" id="address_namespace" name="address_namespace" type="text" />
           </div>
         </>
       )}
@@ -2532,6 +2560,9 @@ function DetailPanel({
           )}
           {resource === "hardware-nodes" && "device_type" in item && (
             <HardwareClassificationOverview item={item} />
+          )}
+          {resource === "functions" && isEngFunction(item) && (
+            <FunctionHardwareAddressOverview item={item} referenceObjects={referenceObjects} referenceNames={referenceNames} onNavigate={onNavigate} />
           )}
           {resource === "signals" && "start_bit" in item && (
             <SignalParameterOverview item={item} referenceNames={referenceNames} />
@@ -2893,6 +2924,9 @@ function HardwareClassificationOverview({ item }: { item: Extract<EngineeringObj
         <div><dt>Data Complexity</dt><dd>{"data_complexity" in item ? item.data_complexity : "—"}</dd></div>
         <div><dt>Klassifikation</dt><dd>{"classification_status" in item ? item.classification_status : "—"}</dd></div>
         <div><dt>Profil</dt><dd>{"capability_profile_ref" in item ? item.capability_profile_ref ?? "—" : "—"}</dd></div>
+        <div><dt>Diagnoseadresse</dt><dd>{"formatted_logical_node_address" in item ? item.formatted_logical_node_address ?? (item.diagnostic_addressable ? "nicht zugewiesen" : "nicht adressierbar") : "—"}</dd></div>
+        <div><dt>Adressstatus</dt><dd>{"address_status" in item ? `${item.address_status} · ${item.address_assignment_mode}` : "—"}</dd></div>
+        <div><dt>Namespace</dt><dd>{"address_namespace" in item ? item.address_namespace : "—"}</dd></div>
       </dl>
       {visibleCapabilities.length > 0 && (
         <div className="hardware-capability-list" aria-label="Device Capabilities">
@@ -2910,6 +2944,35 @@ function HardwareClassificationOverview({ item }: { item: Extract<EngineeringObj
             <span key={key}><b>{key.replace(/_/g, " ")}</b><i>{signalValueText(value)}</i></span>
           ))}
         </div>
+      )}
+    </>
+  );
+}
+
+function FunctionHardwareAddressOverview({
+  item,
+  referenceObjects,
+  referenceNames,
+  onNavigate,
+}: {
+  item: Extract<EngineeringObject, { hardware_node_id: string | null }>;
+  referenceObjects: EngineeringObject[];
+  referenceNames: Record<string, string>;
+  onNavigate: (targetResource: EngineeringResource, targetId: string) => void;
+}) {
+  const hardware = item.hardware_node_id
+    ? referenceObjects.find((candidate) => candidate.id === item.hardware_node_id && "device_type" in candidate)
+    : undefined;
+  return (
+    <>
+      <div className="section-title signal-parameter-heading"><span>Hardware-Zuordnung &amp; Diagnose</span></div>
+      <dl className="overview-list eng-signal-parameter-list">
+        <div><dt>Hardware Node</dt><dd>{item.hardware_node_id ? referenceName(referenceNames, item.hardware_node_id) : "nicht zugeordnet"}</dd></div>
+        <div><dt>Diagnoseadresse</dt><dd>{hardware && "formatted_logical_node_address" in hardware ? hardware.formatted_logical_node_address ?? (hardware.diagnostic_addressable ? "nicht zugewiesen" : "nicht adressierbar") : "—"}</dd></div>
+        <div><dt>Namespace</dt><dd>{hardware && "address_namespace" in hardware ? hardware.address_namespace : "—"}</dd></div>
+      </dl>
+      {item.hardware_node_id && (
+        <button className="button secondary tiny" onClick={() => onNavigate("hardware-nodes", item.hardware_node_id!)} type="button">Hardware öffnen</button>
       )}
     </>
   );
@@ -2939,6 +3002,9 @@ function HardwareInterfaceOverview({
         : "";
     })
     .filter(Boolean))];
+  const parentHardware = "hardware_node_id" in hardwareInterface
+    ? referenceObjects.find((candidate) => candidate.id === hardwareInterface.hardware_node_id)
+    : undefined;
 
   return (
     <>
@@ -2947,6 +3013,7 @@ function HardwareInterfaceOverview({
       </div>
       <dl className="overview-list eng-signal-parameter-list">
         <div><dt>Hardware Node</dt><dd>{"hardware_node_id" in hardwareInterface ? referenceName(referenceNames, hardwareInterface.hardware_node_id) : "—"}</dd></div>
+        <div><dt>Diagnoseadresse</dt><dd>{parentHardware && "formatted_logical_node_address" in parentHardware ? parentHardware.formatted_logical_node_address ?? "nicht zugewiesen" : "—"}</dd></div>
         <div><dt>Technologie</dt><dd>{signalParameterValue(hardwareInterface.technology)}</dd></div>
         <div><dt>Controller / Channel</dt><dd>{signalParameterValue("controller_ref" in hardwareInterface ? hardwareInterface.controller_ref : null)} / {signalParameterValue("channel_index" in hardwareInterface ? hardwareInterface.channel_index : null)}</dd></div>
         <div><dt>Physical Port</dt><dd>{signalParameterValue("physical_port_ref" in hardwareInterface ? hardwareInterface.physical_port_ref : null)}</dd></div>
@@ -3298,6 +3365,9 @@ function EditObjectForm({
       payload.device_typing = form.get("edit_device_typing") || null;
       payload.data_complexity = form.get("edit_data_complexity") || null;
       payload.classification_status = form.get("edit_classification_status") || "CONFIRMED";
+      payload.diagnostic_addressable = form.get("edit_diagnostic_addressable") === "on";
+      payload.logical_node_address = form.get("edit_logical_node_address") || null;
+      payload.address_namespace = form.get("edit_address_namespace") || "PROJECT";
     }
     if (resource === "hardware-interfaces") {
       payload.technology = form.get("edit_technology") || null;
@@ -3360,6 +3430,17 @@ function EditObjectForm({
         quantity: normalizedName,
       };
     }
+    if (resource === "hardware-nodes" && "formatted_logical_node_address" in item) {
+      const nextAddress = String(payload.logical_node_address ?? "").toUpperCase();
+      const currentAddress = String(item.formatted_logical_node_address ?? "").toUpperCase();
+      if (nextAddress !== currentAddress && !window.confirm(
+        "Diagnoseadresse ändern? Abhängige Routen, Technologie-Bindings, Simulationen und Traces werden als veraltet markiert.",
+      )) {
+        setSubmitting(false);
+        return;
+      }
+      if (nextAddress !== currentAddress) payload.confirm_address_change = true;
+    }
     try {
       await updateEngineeringObject(resource, item.id, { ...payload, expected_version: item.version });
       onSaved();
@@ -3416,6 +3497,18 @@ function EditObjectForm({
               <select defaultValue={item.classification_status ?? "CONFIRMED"} id="edit_classification_status" name="edit_classification_status" required>
                 {(schema?.classification_statuses ?? ["UNKNOWN", "PROPOSED", "CONFIRMED", "REVIEW_REQUIRED"]).map((type) => <option key={type} value={type}>{type}</option>)}
               </select>
+            </div>
+            <label className="field eng-checkbox-field" htmlFor="edit_diagnostic_addressable">
+              <span>Diagnoseadressierbar</span>
+              <input defaultChecked={item.diagnostic_addressable} id="edit_diagnostic_addressable" name="edit_diagnostic_addressable" type="checkbox" />
+            </label>
+            <div className="field">
+              <label htmlFor="edit_logical_node_address">Logische Diagnoseadresse</label>
+              <input defaultValue={item.formatted_logical_node_address ?? ""} id="edit_logical_node_address" name="edit_logical_node_address" pattern="(?:0x)?[0-9a-fA-F]{1,4}" placeholder="0x0012 oder leer zum Freigeben" type="text" />
+            </div>
+            <div className="field">
+              <label htmlFor="edit_address_namespace">Adress-Namespace</label>
+              <input defaultValue={item.address_namespace ?? "PROJECT"} id="edit_address_namespace" name="edit_address_namespace" type="text" />
             </div>
           </div>
         </fieldset>

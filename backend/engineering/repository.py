@@ -22,6 +22,8 @@ from psycopg.types.json import Jsonb
 from .db import get_connection, ConcurrentUpdateError, check_revision, mark_model_changed
 from .project_context import current_project_id
 from .models import (
+    ADDRESS_ASSIGNMENT_MODES,
+    ADDRESS_STATUSES,
     APPROVAL_STATES,
     CLASSIFICATION_STATUSES,
     DATA_COMPLEXITIES,
@@ -111,15 +113,23 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
             "product_information",
             "hardware_information",
             "software_information",
+            "diagnostic_addressable",
+            "logical_node_address",
+            "address_assignment_mode",
+            "address_status",
+            "address_namespace",
+            "address_provenance",
         ),
         json_columns=frozenset(
-            {"identity", "product_information", "hardware_information", "software_information"}
+            {"identity", "product_information", "hardware_information", "software_information", "address_provenance"}
         ),
         enum_fields={
             "device_type": DEVICE_TYPES,
             "device_typing": DEVICE_TYPINGS,
             "data_complexity": DATA_COMPLEXITIES,
             "classification_status": CLASSIFICATION_STATUSES,
+            "address_assignment_mode": ADDRESS_ASSIGNMENT_MODES,
+            "address_status": ADDRESS_STATUSES,
         },
     ),
     "Function": EntitySpec(
@@ -304,6 +314,38 @@ def _apply_hardware_classification_defaults(data: dict[str, Any]) -> dict[str, A
     hardware_information["device_capability_profile"] = profile.to_dict()
     hardware_information["generator_policy"] = profile.generator_policy
     payload["hardware_information"] = hardware_information
+    from .addressing import default_addressability_for_class, parse_logical_node_address
+    address_provenance = dict(payload.get("address_provenance") or {})
+    if "diagnostic_addressable" in data and data.get("diagnostic_addressable") is not None:
+        payload["diagnostic_addressable"] = bool(data["diagnostic_addressable"])
+        address_provenance["addressability_source"] = "explicit"
+    else:
+        payload["diagnostic_addressable"] = default_addressability_for_class(profile.device_class)
+        address_provenance["addressability_source"] = "policy"
+    payload["address_namespace"] = str(payload.get("address_namespace") or "PROJECT").upper()
+    # A proposal may decide that a node is diagnostically addressable, but it
+    # must never manufacture the identifier itself.  Imported data and manual
+    # UI/API edits remain explicit; AI-created nodes always pass through the
+    # single authoritative allocator after the INSERT.
+    if str(payload.get("source") or "").lower() == "ai_generated":
+        payload["logical_node_address"] = None
+        payload["address_assignment_mode"] = "AUTO"
+        address_provenance["ignored_ai_address"] = data.get("logical_node_address")
+    if payload.get("logical_node_address") not in (None, ""):
+        payload["logical_node_address"] = parse_logical_node_address(payload["logical_node_address"])
+        payload["diagnostic_addressable"] = True
+        address_provenance["addressability_source"] = (
+            "import" if payload.get("source") == "import" else "explicit"
+        )
+        payload["address_assignment_mode"] = str(
+            payload.get("address_assignment_mode") or ("IMPORTED" if payload.get("source") == "import" else "MANUAL")
+        ).upper()
+        payload["address_status"] = "ASSIGNED"
+    else:
+        payload["logical_node_address"] = None
+        payload["address_assignment_mode"] = str(payload.get("address_assignment_mode") or "AUTO").upper()
+        payload["address_status"] = "UNASSIGNED"
+    payload["address_provenance"] = address_provenance
     return payload
 
 
@@ -379,6 +421,13 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     payload = {col: data[col] for col in columns if col in data}
     payload.update(_governance_defaults(data))
     project_id = current_project_id()
+    if object_type == "HardwareNode" and payload.get("logical_node_address") is not None:
+        from .addressing import LogicalNodeAddressAllocator
+        validation = LogicalNodeAddressAllocator(project_id, str(payload.get("address_namespace") or "PROJECT")).validate_address(
+            payload["logical_node_address"]
+        )
+        if not validation["valid"]:
+            raise EngineeringValidationError(validation["errors"][0]["message"])
     parent_link = parent_link_for_payload(object_type, payload)
     if parent_link and payload.get(parent_link[0]):
         get_object(parent_link[1], str(payload[parent_link[0]]))
@@ -401,6 +450,15 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     with get_connection() as conn:
         _enforce_engineering_scope_rules(conn, object_type, payload, project_id)
         row = conn.execute(query, values).fetchone()
+        if object_type == "HardwareNode":
+            from .addressing import LogicalNodeAddressAllocator
+            allocator = LogicalNodeAddressAllocator(project_id, str(row.get("address_namespace") or "PROJECT"))
+            if row.get("logical_node_address") is None:
+                row = allocator.assign_address(
+                    str(row["id"]), assignment_mode="AUTO", actor=payload.get("created_by"), connection=conn,
+                )
+            elif row.get("diagnostic_addressable"):
+                allocator._audit(conn, str(row["id"]), "ADDRESS_ASSIGNED", payload.get("created_by"), None, row)
         row = _decorate_row(spec, row)
         _write_version_snapshot(conn, spec, row, changed_by=payload.get("created_by"), summary="created")
         if parent_link:
@@ -578,6 +636,9 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     ]
     updates = {col: data[col] for col in editable_columns if col in data}
     if object_type == "HardwareNode":
+        if str(data.get("source") or "").lower() == "ai_generated":
+            for field in ("logical_node_address", "address_assignment_mode", "address_namespace"):
+                updates.pop(field, None)
         requested_name = str(updates.get("name", existing.get("name") or ""))
         if "name" in updates and "device_type" not in updates:
             updates["device_type"] = infer_device_type(
@@ -590,6 +651,39 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             merged = _apply_hardware_classification_defaults({**existing, **updates})
             for field in ("device_class", "device_typing", "data_complexity", "classification_status", "capability_profile_ref", "hardware_information"):
                 updates[field] = merged[field]
+        address_fields = {"diagnostic_addressable", "logical_node_address", "address_assignment_mode", "address_namespace"}
+        if address_fields & updates.keys():
+            from .addressing import LogicalNodeAddressAllocator, parse_logical_node_address
+            requested_address = updates.get("logical_node_address", existing.get("logical_node_address"))
+            requested_address = (
+                parse_logical_node_address(requested_address) if requested_address not in (None, "") else None
+            )
+            address_will_change = (
+                requested_address != existing.get("logical_node_address")
+                or bool(updates.get("diagnostic_addressable", existing.get("diagnostic_addressable")))
+                != bool(existing.get("diagnostic_addressable"))
+            )
+            if address_will_change and not bool(data.get("confirm_address_change")):
+                raise EngineeringValidationError(
+                    "Adressänderung erfordert confirm_address_change=true; zuvor die Impact-Analyse aufrufen."
+                )
+            addressable = bool(updates.get("diagnostic_addressable", existing.get("diagnostic_addressable")))
+            address_provenance = dict(existing.get("address_provenance") or {})
+            address_provenance.update({"addressability_source": "explicit", "actor": data.get("actor") or data.get("modified_by")})
+            updates["diagnostic_addressable"] = addressable
+            updates["address_namespace"] = str(updates.get("address_namespace") or existing.get("address_namespace") or "PROJECT").upper()
+            if not addressable or updates.get("logical_node_address", existing.get("logical_node_address")) in (None, ""):
+                updates["logical_node_address"] = None
+                updates["address_status"] = "UNASSIGNED"
+            else:
+                parsed = requested_address
+                validation = LogicalNodeAddressAllocator(current_project_id(), updates["address_namespace"]).validate_address(parsed, node_id=object_id)
+                if not validation["valid"]:
+                    raise EngineeringValidationError(validation["errors"][0]["message"])
+                updates["logical_node_address"] = parsed
+                updates["address_assignment_mode"] = str(updates.get("address_assignment_mode") or "MANUAL").upper()
+                updates["address_status"] = "ASSIGNED"
+            updates["address_provenance"] = address_provenance
     parent_link = parent_link_for_payload(object_type, {**existing, **updates})
     parent = None
     if object_type == "Interface" and ("function_id" in updates or "hardware_node_id" in updates):
@@ -661,6 +755,15 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
         if row is None:
             raise ConcurrentUpdateError("Objekt wurde parallel geändert. Bitte neu laden.")
         row = _decorate_row(spec, row)
+        if object_type == "HardwareNode" and (
+            existing.get("logical_node_address") != row.get("logical_node_address")
+            or existing.get("diagnostic_addressable") != row.get("diagnostic_addressable")
+        ):
+            from .addressing import LogicalNodeAddressAllocator
+            allocator = LogicalNodeAddressAllocator(current_project_id(), str(row.get("address_namespace") or "PROJECT"))
+            event = "ADDRESS_RELEASED" if row.get("logical_node_address") is None else "ADDRESS_CHANGED"
+            allocator._audit(conn, object_id, event, actor, existing, row)
+            allocator._mark_dependents_outdated(conn, object_id, existing, row, actor)
         if parent_link and parent_link[0] in updates:
             parent_field, parent_type, relation_type = parent_link
             project_id = current_project_id()
@@ -777,4 +880,16 @@ def _json_safe(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def _decorate_row(spec: EntitySpec, row: dict[str, Any]) -> dict[str, Any]:
-    return {**row, "object_type": spec.object_type}
+    decorated = {**row, "object_type": spec.object_type}
+    if spec.object_type == "HardwareNode":
+        from .addressing import LogicalNodeAddress, format_logical_node_address
+        value = decorated.get("logical_node_address")
+        decorated["formatted_logical_node_address"] = format_logical_node_address(int(value)) if value is not None else None
+        decorated["logical_node_address_object"] = (
+            LogicalNodeAddress(
+                int(value), decorated.get("address_namespace") or "PROJECT",
+                decorated.get("address_assignment_mode") or "AUTO", decorated.get("address_status") or "ASSIGNED",
+                dict(decorated.get("address_provenance") or {}),
+            ).to_dict() if value is not None else None
+        )
+    return decorated

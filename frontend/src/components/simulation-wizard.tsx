@@ -324,6 +324,8 @@ function engineeringTopologySignature(topology: NetworkTopology) {
           name: port.name,
           bus: port.bus,
           engineeringId: port.engineeringId,
+          physicalNetworkId: port.physicalNetworkId,
+          physicalNetworkName: port.physicalNetworkName,
         })),
     })),
     edges: topology.edges.map((edge) => ({
@@ -339,6 +341,8 @@ function engineeringTopologySignature(topology: NetworkTopology) {
       target: edge.target,
       targetPort: edge.targetPort,
       bus: edge.bus,
+      physicalNetworkId: edge.physicalNetworkId,
+      physicalNetworkName: edge.physicalNetworkName,
       routingMetadata: edge.routingMetadata,
     })),
   });
@@ -1051,15 +1055,17 @@ export function SimulationWizard({
                 <span aria-hidden="true" className="net-model-sync-dot" />
                 <div>
                   <span>Engineering-Modell</span>
-                  <strong>
+                  <strong
+                    title={engineeringSync.error || undefined}
+                  >
                     {modelRefreshPending
-                      ? "Modelländerung wartet auf Aktualisierung"
+                      ? `Modelländerung wartet auf Aktualisierung${engineeringSync.error ? `: ${engineeringSync.error}` : ""}`
                       : engineeringSync.status === "syncing"
                       ? "Wird synchronisiert …"
                       : engineeringSync.status === "synced"
                         ? `${engineeringSync.linked}/${topology.nodes.length} Geräte verknüpft`
                       : engineeringSync.status === "error"
-                          ? "Synchronisierung fehlgeschlagen"
+                          ? `Synchronisierung fehlgeschlagen: ${engineeringSync.error || "Unbekannter Fehler"}`
                           : topology.nodes.length === 0
                             ? "Keine Geräte vorhanden"
                             : "Noch nicht synchronisiert"}
@@ -1078,7 +1084,6 @@ export function SimulationWizard({
                   {modelRefreshPending ? "Aktualisieren" : "Synchronisieren"}
                 </button>
               </div>
-              {engineeringSync.error && <p>{engineeringSync.error}</p>}
             </div>
             {networkView === "editor" ? (
               <NetworkEditor

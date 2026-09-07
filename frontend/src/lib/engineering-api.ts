@@ -78,6 +78,61 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+async function quietRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Project-ID": readActiveProjectId(),
+      ...init?.headers,
+    },
+    cache: "no-store",
+    signal: init && "signal" in init ? init.signal : AbortSignal.timeout(10000),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error((payload as { error?: string }).error ?? `API-Fehler ${response.status}`);
+  return payload as T;
+}
+
+export type EquipmentAssignmentLearningSuggestion = {
+  endpoint_name: string;
+  controller_name: string;
+  confidence: number;
+  reason: string;
+  evidence_count: number;
+  source_projects: string[];
+  retrieval_sources: string[];
+};
+
+export function retrieveEquipmentAssignmentLearning(payload: {
+  domain: string;
+  endpoints: Array<{ name: string; device_type: string; interface_type: string }>;
+  candidate_controllers: string[];
+}, signal?: AbortSignal): Promise<{ suggestions: EquipmentAssignmentLearningSuggestion[]; corpus_projects: number }> {
+  return quietRequest("/equipment-assignment-learning/retrieve", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    signal,
+  });
+}
+
+export function recordEquipmentAssignmentLearning(payload: {
+  domain: string;
+  source: string;
+  records: Array<{
+    endpoint_name: string;
+    controller_name: string;
+    device_type?: string;
+    accepted: boolean;
+    source?: string;
+  }>;
+}): Promise<{ recorded: number; stored: number }> {
+  return quietRequest("/equipment-assignment-learning/feedback", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getEngineeringSchema(): Promise<EngineeringSchema> {
   return request<EngineeringSchema>("/schema");
 }

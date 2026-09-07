@@ -40,7 +40,12 @@ import {
 } from "@/lib/agent/equipment-clustering";
 import { inspectAgentText } from "@/lib/agent/agent-output-safety";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
-import { listAllEngineeringObjects } from "@/lib/engineering-api";
+import {
+  listAllEngineeringObjects,
+  recordEquipmentAssignmentLearning,
+  retrieveEquipmentAssignmentLearning,
+  type EquipmentAssignmentLearningSuggestion,
+} from "@/lib/engineering-api";
 import { approveRoutes, listRoutes } from "@/lib/routing-api";
 import { routingApprovalProgress } from "@/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
@@ -1206,10 +1211,12 @@ export function EngineeringAgentWizard({
     && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
   const equipmentCounts = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key, Number(equipmentValues[key])])) as EngineeringHardwareCounts;
   const plannedEquipment = useMemo(
-    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain),
+    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain, true),
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
   );
   const [projectId] = useState(() => readActiveProjectId());
+  const [learnedEquipmentAssignments, setLearnedEquipmentAssignments] = useState<EquipmentAssignmentLearningSuggestion[]>([]);
+  const [assignmentLearningCorpusSize, setAssignmentLearningCorpusSize] = useState(0);
   const wizardTransport = useMemo(
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
@@ -1572,11 +1579,39 @@ export function EngineeringAgentWizard({
     communicationSystemCounts.map((item) => `${item.id}:${item.label}:${item.count}`).join("|"),
     plannedEquipment.chains.map((chain) => `${chain.device_type}:${chain.hardware_name}:${chain.interface_type}`).join("|"),
   ].join("\n");
+  useEffect(() => {
+    const controller = new AbortController();
+    const endpoints = plannedEquipment.chains
+      .filter((chain) => chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
+      .map((chain) => ({ name: chain.hardware_name, device_type: chain.device_type, interface_type: chain.interface_type }));
+    const candidateControllers = plannedEquipment.chains
+      .filter((chain) => isEngineeringControllerDevice(chain.device_type))
+      .map((chain) => chain.hardware_name);
+    if (!endpoints.length || !candidateControllers.length) {
+      setLearnedEquipmentAssignments([]);
+      setAssignmentLearningCorpusSize(0);
+      return () => controller.abort();
+    }
+    void retrieveEquipmentAssignmentLearning({
+      domain: previewDomain,
+      endpoints,
+      candidate_controllers: candidateControllers,
+    }, controller.signal).then((result) => {
+      setLearnedEquipmentAssignments(result.suggestions);
+      setAssignmentLearningCorpusSize(result.corpus_projects);
+    }).catch((error) => {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setLearnedEquipmentAssignments([]);
+      }
+    });
+    return () => controller.abort();
+  }, [plannedEquipment.chains, previewDomain]);
   const equipmentClusters = useMemo(() => buildEquipmentClusters(
     plannedEquipment.chains,
     communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
     previewDomain,
-  ), [communicationSystemCounts, plannedEquipment.chains, previewDomain]);
+    learnedEquipmentAssignments,
+  ), [communicationSystemCounts, learnedEquipmentAssignments, plannedEquipment.chains, previewDomain]);
   const ecuOwnerOptions = useMemo(() => [...new Map(
     plannedEquipment.chains
       .filter((chain) => isEngineeringControllerDevice(chain.device_type))
@@ -1778,6 +1813,22 @@ export function EngineeringAgentWizard({
     });
   }
 
+  function persistEquipmentLearning(
+    records: Array<{ endpoint_name: string; controller_name: string; device_type?: string; accepted: boolean }>,
+    source: string,
+  ) {
+    if (!records.length) return;
+    void recordEquipmentAssignmentLearning({ domain: previewDomain, source, records }).catch((error) => {
+      void writeWizardDiagnostic("error", {
+        projectId,
+        runId,
+        step: "equipment-clustering",
+        event: "assignment-learning-persistence-failed",
+        details: error instanceof Error ? error.message : String(error),
+      }).catch(() => undefined);
+    });
+  }
+
   async function handleTaskFiles(files: FileList | null, source: TaskAttachment["source"] = "task") {
     const selected = Array.from(files ?? []).slice(0, MAX_TASK_ATTACHMENTS);
     const attachments = await Promise.all(selected.map((file) => readTaskAttachment(file, source)));
@@ -1871,6 +1922,7 @@ export function EngineeringAgentWizard({
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
         `- Gelernte Topologie-Nachbarschaften: ${topologyKnowledge.lessonSummary.join("; ") || "noch keine Projektkorrekturen gelernt"}\n` +
+        `- RAG-Controller-Zuordnungen: ${learnedEquipmentAssignments.length} wiederverwendet aus ${assignmentLearningCorpusSize} Projekt(en)\n` +
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
@@ -1901,6 +1953,17 @@ export function EngineeringAgentWizard({
     missingQuestionSignatureRef.current = "";
 
     try {
+      const acceptedAssignments = equipmentClusterAssignments.flatMap((assignment) => (assignment.selected ? (assignment.tree ?? []).flatMap((controller) => [
+        ...controller.sensors.map((leaf) => ({ endpoint_name: leaf.name, controller_name: controller.name, device_type: leaf.deviceType, accepted: true })),
+        ...controller.actuators.map((leaf) => ({ endpoint_name: leaf.name, controller_name: controller.name, device_type: leaf.deviceType, accepted: true })),
+      ]) : []));
+      if (acceptedAssignments.length) {
+        await recordEquipmentAssignmentLearning({
+          domain: previewDomain,
+          source: "wizard-submission",
+          records: acceptedAssignments,
+        });
+      }
       await setWorkflowContext({
         agent_wizard_status: {
           ...nextContext,
@@ -2738,6 +2801,9 @@ export function EngineeringAgentWizard({
                 </div>
                 <small>{equipmentClusterAssignments.filter((item) => item.selected).length}/{equipmentClusterAssignments.length} aktiv</small>
               </div>
+              <p className="agent-cluster-valid">
+                RAG: {learnedEquipmentAssignments.length} bestätigte Zuordnung(en) aus {assignmentLearningCorpusSize} früheren Projekt(en) wiederverwendet.
+              </p>
               <label className="agent-cluster-selector">
                 <span>Cluster</span>
                 <select disabled={effectiveBusy} onChange={(event) => setActiveEquipmentClusterId(event.target.value)} value={activeEquipmentCluster?.id ?? ""}>
@@ -2812,7 +2878,15 @@ export function EngineeringAgentWizard({
                         controllerOptions={ecuOwnerOptions}
                         key={cluster.id}
                         leaves={unresolved}
-                        onAssign={(batchOwners) => updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, ...batchOwners } })}
+                        onAssign={(batchOwners) => {
+                          updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, ...batchOwners } });
+                          persistEquipmentLearning(Object.entries(batchOwners).map(([endpointName, controllerName]) => ({
+                            endpoint_name: endpointName,
+                            controller_name: controllerName,
+                            device_type: plannedEquipment.chains.find((chain) => chain.hardware_name === endpointName)?.device_type,
+                            accepted: true,
+                          })), "wizard-batch-review");
+                        }}
                         onOpenLeaf={(name, target) => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name, target })}
                         ownerSelections={ownerSelections}
                       />
@@ -2843,7 +2917,14 @@ export function EngineeringAgentWizard({
                             </select>
                           </label>
                           <footer><button onClick={() => setClusterReviewDialog(null)} type="button">Abbrechen</button><button disabled={!clusterReviewDialog.target} onClick={() => {
-                            if (clusterReviewDialog.kind === "leaf") updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, [clusterReviewDialog.name]: clusterReviewDialog.target }, verdicts: { ...verdicts, [clusterReviewDialog.name]: false } });
+                            if (clusterReviewDialog.kind === "leaf") {
+                              const previousOwner = controllerTree.find((candidate) => [...candidate.sensors, ...candidate.actuators].some((leaf) => leaf.name === clusterReviewDialog.name))?.name;
+                              updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, [clusterReviewDialog.name]: clusterReviewDialog.target }, verdicts: { ...verdicts, [clusterReviewDialog.name]: false } });
+                              persistEquipmentLearning([
+                                ...(previousOwner && previousOwner !== clusterReviewDialog.target ? [{ endpoint_name: clusterReviewDialog.name, controller_name: previousOwner, accepted: false }] : []),
+                                { endpoint_name: clusterReviewDialog.name, controller_name: clusterReviewDialog.target, accepted: true },
+                              ], "wizard-manual-correction");
+                            }
                             else updateEquipmentCluster(cluster.id, { branchTargets: { ...branchTargets, [clusterReviewDialog.name]: clusterReviewDialog.target } });
                             setClusterReviewDialog(null);
                           }} type="button">Neue Zuordnung übernehmen</button></footer>

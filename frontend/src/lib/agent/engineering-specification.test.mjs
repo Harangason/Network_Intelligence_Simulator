@@ -253,6 +253,24 @@ test("corrected quantities can exceed the initial template catalog", () => {
   assert.equal(new Set(result.chains.map((chain) => chain.hardware_name)).size, 272);
 });
 
+test("250 endpoints expand into unique semantic roles instead of numbered clones", () => {
+  const result = extractEngineeringSpecification(
+    "Industrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
+    { sensors: 250, actuators: 250, ecus: 50, gateways: 1 },
+    "automotive",
+    true,
+  );
+  const endpoints = result.chains.filter((chain) => chain.device_type === "SensorController" || chain.device_type === "ActuatorController");
+
+  assert.equal(endpoints.length, 500);
+  assert.equal(new Set(endpoints.map((chain) => chain.hardware_name)).size, 500);
+  assert.equal(new Set(endpoints.map((chain) => chain.signal_name)).size, 500);
+  assert.equal(endpoints.some((chain) => /[-_]\d+$/.test(chain.hardware_name)), false);
+  assert.equal(endpoints.filter((chain) => chain.configuration?.functional_owner).length, 500);
+  assert.equal(endpoints.filter((chain) => chain.semantic?.semantic_type === "STATE").every((chain) => chain.length_bits >= 3), true);
+  assert.equal(endpoints.filter((chain) => chain.configuration?.coverage_role === "EnableCommand").every((chain) => chain.length_bits === 1), true);
+});
+
 test("system completeness supplements an underspecified ADAS low-level scope", () => {
   const result = extractEngineeringSpecification(`
 Industrie: Automotive

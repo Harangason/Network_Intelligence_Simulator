@@ -77,6 +77,8 @@ export type SimulationResultPayload = {
   };
   runtime_metrics?: RuntimeMetrics;
   model_simulation?: ModelSimulationTrace;
+  registry_truncated?: boolean;
+  artifact_count?: number;
 };
 
 export type ModelSignalPoint = {
@@ -113,7 +115,7 @@ export type ModelSimulationTrace = {
   scenario: { name: string; mode: string; duration_s: number; speed: number; seed: number; trace_formats: string[] };
   signals: ModelSignalSeries[];
   events: Array<{ time_s: number; severity: string; event_type: string; scope: string; target: string; node?: string; message?: string; signal?: string; network?: string; description: string; faults: string[] }>;
-  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; status: string; sender: string; receivers: string[] }>;
+  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; status: string; sender: string; receivers: string[]; source_name?: string; source_logical_address?: string | null; destination_names?: string[]; destination_logical_addresses?: Array<string | null> }>;
   bus_load: Array<{ network_id: string; time_s: number; load_percent: number; window_ms: number }>;
   comparison: { available: boolean; changed_samples: number; rmse: number; baseline: string; candidate: string };
   model_labels: string[];
@@ -122,7 +124,10 @@ export type ModelSimulationTrace = {
 
 export type RuntimeNetworkMetric = {
   network_id: string;
+  network_name?: string;
   technology: string;
+  senders?: string[];
+  receivers?: string[];
   event_count: number;
   transmitted_count: number;
   dropped_count: number;
@@ -140,6 +145,10 @@ export type RuntimeRouteMetric = {
   route_id: string;
   route_name: string;
   network_id: string;
+  sender_id?: string;
+  sender?: string;
+  receiver_ids?: string[];
+  receivers?: string[];
   event_count: number;
   drop_rate: number;
   corruption_rate: number;
@@ -314,6 +323,14 @@ export type HardwareNode = GovernanceFields & {
   product_information: Record<string, unknown>;
   hardware_information: Record<string, unknown>;
   software_information: Record<string, unknown>;
+  diagnostic_addressable: boolean;
+  logical_node_address: number | null;
+  formatted_logical_node_address: string | null;
+  address_assignment_mode: "AUTO" | "MANUAL" | "IMPORTED" | "RESERVED";
+  address_status: "UNASSIGNED" | "PROPOSED" | "ASSIGNED" | "CONFLICT" | "RESERVED" | "OUTDATED" | "INVALID";
+  address_namespace: string;
+  address_provenance: Record<string, unknown>;
+  logical_node_address_object: { value: number; formatted_value: string; namespace: string; assignment_mode: string; status: string; provenance: Record<string, unknown> } | null;
 };
 
 export type EngFunction = GovernanceFields & {

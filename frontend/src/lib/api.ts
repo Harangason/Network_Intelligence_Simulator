@@ -1,5 +1,6 @@
-import type { Catalog, SimulationJob } from "./types";
+import type { Catalog, SimulationJob, SimulationResultPayload } from "./types";
 import { createLocalSimulation, getLocalSimulation, localCatalog } from "./local-simulator";
+import { mergeSimulationResult } from "./simulation-result";
 import { compactProjectId, readActiveProjectId } from "./user-settings";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
@@ -77,7 +78,19 @@ export async function getSimulation(id: string): Promise<SimulationJob> {
     announceMode("browser");
     return getLocalSimulation(id);
   }
-  return apiRequest<SimulationJob>(`/api/simulations/${id}`);
+  const job = await apiRequest<SimulationJob>(`/api/simulations/${id}`);
+  if (!job.result?.registry_truncated || !job.artifact_downloads?.length) return job;
+  const fullResult = job.artifact_downloads.find(
+    (artifact) => artifact.name === "simulation_result.json",
+  );
+  if (!fullResult) return job;
+  try {
+    const persisted = await apiRequest<SimulationResultPayload>(fullResult.url);
+    return { ...job, result: mergeSimulationResult(job.result, persisted) ?? job.result };
+  } catch {
+    // The compact registry result remains usable while an artifact is moved or unavailable.
+    return job;
+  }
 }
 
 export async function cancelSimulation(id: string): Promise<SimulationJob> {

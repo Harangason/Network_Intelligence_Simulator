@@ -63,6 +63,49 @@ test("industrial clusters assign endpoints to PLC controllers", () => {
   assert.equal(cluster.unassigned.length, 0);
 });
 
+test("learned cross-project ownership overrides the heuristic and keeps the endpoint with its ECU", () => {
+  const endpoint = chain("EngineSpeed", "SensorController", "CAN_FD");
+  const clusters = buildEquipmentClusters([
+    chain("Motorsteuerung", "ECU", "CAN_FD"),
+    chain("Diagnose", "ECU", "CAN_FD"),
+    endpoint,
+  ], [{ id: "automotive-can_fd", label: "Automotive CAN-FD", count: 1 }], "automotive", [{
+    endpoint_name: "EngineSpeed",
+    controller_name: "Motorsteuerung",
+    confidence: 0.96,
+    reason: "Projektübergreifend bestätigte Controller-Zuordnung (RAG).",
+    evidence_count: 2,
+    source_projects: ["previous-project"],
+    retrieval_sources: ["wizard-review-history", "system-cluster-graph"],
+  }]);
+  const owner = clusters.flatMap((cluster) => cluster.controllers).find((controller) => controller.name === "Motorsteuerung");
+
+  assert.ok(owner);
+  assert.equal(owner.sensors.some((sensor) => sensor.name === "EngineSpeed"), true);
+  assert.match(owner.sensors.find((sensor) => sensor.name === "EngineSpeed").reason, /RAG/);
+  assert.equal(clusters.reduce((count, cluster) => count + cluster.unassigned.length, 0), 0);
+});
+
+test("the raised endpoint budget closes every automotive controller branch", () => {
+  const extracted = extractEngineeringSpecification(
+    "Industrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
+    { sensors: 250, actuators: 250, ecus: 50, gateways: 1 },
+    "automotive",
+    true,
+  );
+  const clusters = buildEquipmentClusters(extracted.chains, [
+    { id: "automotive-can_fd", label: "Automotive CAN-FD", count: 15 },
+    { id: "automotive-lin", label: "Automotive LIN", count: 50 },
+    { id: "automotive-ethernet", label: "Automotive Ethernet", count: 10 },
+  ], "automotive");
+  const controllers = clusters.flatMap((cluster) => cluster.controllers);
+
+  assert.equal(controllers.length, 50);
+  assert.equal(controllers.every((controller) => controller.sensors.length > 0), true);
+  assert.equal(controllers.every((controller) => controller.actuators.length > 0), true);
+  assert.equal(clusters.reduce((count, cluster) => count + cluster.unassigned.length, 0), 0);
+});
+
 test("cluster summaries keep the user network choice visible for the agent prompt", () => {
   const summary = equipmentClusterSummary([{
     cluster_id: "rule:climate",

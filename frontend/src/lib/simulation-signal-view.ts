@@ -17,6 +17,7 @@ export function signalIsDynamic(series: ModelSignalSeries) {
 
 export function signalKind(series: ModelSignalSeries): Exclude<SignalKindFilter, "ALL"> {
   const semantic = String(series.semantic_type ?? "").toUpperCase();
+  if (/counter|alive/i.test(series.signal) || series.trace_kind === "counter") return "OTHER";
   if (["ENUM", "STATE", "BOOLEAN", "BITFIELD", "EVENT"].includes(semantic) || series.behavior_type === "STATE_MACHINE") return "STATE";
   if (series.behavior_type === "PHYSICS_MODEL" || series.model_label === "PHYSICS_BASED") return "PHYSICAL";
   return "OTHER";
@@ -29,6 +30,7 @@ export function formatSignalValue(series: ModelSignalSeries, point?: ModelSignal
   if (display !== null && display !== undefined && String(display).trim() && String(display) !== raw) {
     return `${display} (${raw})${series.unit ? ` ${series.unit}` : ""}`;
   }
+  if (/counter|alive/i.test(series.signal) || series.trace_kind === "counter") return `${raw} ${series.unit && series.unit !== "code" ? series.unit : "count"}`;
   if (signalKind(series) === "STATE") return `Zustand ${raw} · Bezeichnung fehlt`;
   return `${raw}${series.unit ? ` ${series.unit}` : ""}`;
 }

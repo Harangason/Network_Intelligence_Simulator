@@ -13,6 +13,7 @@ from ..db import get_connection, ConcurrentUpdateError, check_revision
 from ..models import EngineeringValidationError, validate_uuid
 from ..project_context import current_project_id
 from ..repository import NotFoundError
+from ..addressing import format_logical_node_address
 from .models import PRIORITIES, PROPOSAL_STATUSES, ROUTE_STATUSES, normalize_route
 
 JSON_FIELDS = ("source", "payload", "destinations", "route", "timing", "routing_policy", "validation")
@@ -28,6 +29,41 @@ EDITABLE_FIELDS = (
     "source_id",
     "source_version",
 )
+
+
+def _enrich_endpoint_addresses(connection, data: dict[str, Any]) -> dict[str, Any]:
+    """Snapshot readable endpoint identity while keeping HardwareNode refs authoritative."""
+    enriched = dict(data)
+    source = dict(enriched.get("source") or {})
+    destinations = [dict(item) for item in enriched.get("destinations") or []]
+    node_ids = sorted({
+        str(endpoint.get("node_id"))
+        for endpoint in (source, *destinations)
+        if endpoint.get("node_id")
+    })
+    rows = connection.execute(
+        "SELECT id, name, logical_node_address, address_namespace FROM engineering_hardware_nodes "
+        "WHERE project_id=%s AND id=ANY(%s::uuid[])",
+        (current_project_id(), node_ids),
+    ).fetchall() if node_ids else []
+    nodes = {str(row["id"]): row for row in rows}
+
+    def decorate(endpoint: dict[str, Any]) -> dict[str, Any]:
+        node = nodes.get(str(endpoint.get("node_id")))
+        if not node:
+            return endpoint
+        value = node.get("logical_node_address")
+        endpoint.update({
+            "node_name": node.get("name"),
+            "logical_node_address": value,
+            "formatted_logical_node_address": format_logical_node_address(int(value)) if value is not None else None,
+            "address_namespace": node.get("address_namespace") or "PROJECT",
+        })
+        return endpoint
+
+    enriched["source"] = decorate(source)
+    enriched["destinations"] = [decorate(item) for item in destinations]
+    return enriched
 
 
 def _route_code() -> str:
@@ -86,6 +122,7 @@ def _insert_route(
     revision: int,
     supersedes_id: str | None = None,
 ) -> dict[str, Any]:
+    data = _enrich_endpoint_addresses(connection, data)
     columns = [
         "project_id",
         "route_code",
@@ -207,6 +244,12 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
         "modified_by = %s, modified_at = now() WHERE id = %s AND project_id = %s AND revision = %s RETURNING *"
     ).format(sql.SQL(", ").join(assignments))
     with get_connection() as connection:
+        if route_changed:
+            enriched = _enrich_endpoint_addresses(connection, normalized)
+            updates["source"] = enriched["source"]
+            updates["destinations"] = enriched["destinations"]
+            values = [Jsonb(value) if field in JSON_FIELDS else value for field, value in updates.items()]
+            values.extend((actor, route_id, current_project_id(), current["revision"]))
         row = connection.execute(query, values).fetchone()
         if row is None:
             raise ConcurrentUpdateError("Route wurde parallel geändert. Bitte neu laden.")

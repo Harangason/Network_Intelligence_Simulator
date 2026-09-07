@@ -15,6 +15,11 @@ test("state values expose meaning and keep their raw code", () => {
   assert.equal(formatSignalValue(unlabeled, unlabeled.points[0]), "Zustand 1 · Bezeichnung fehlt");
 });
 
+test("alive counters remain numeric instead of pretending to be unnamed states", () => {
+  const counter = series({ signal: "GatewayAliveCounter", trace_kind: "counter", points: [{ time_s: 0, value: 7, golden_value: 7, faults: [], state: "7" }] });
+  assert.equal(formatSignalValue(counter, counter.points[0]), "7 count");
+});
+
 test("dynamic filtering and bounded initial selection reduce rendered work", () => {
   const dynamic = series({ signal_id: "dynamic", signal: "DamperPosition", behavior_type: "PHYSICS_MODEL", model_label: "PHYSICS_BASED", semantic_type: "POSITION", points: [{ time_s: 0, value: 50, golden_value: 50, faults: [] }, { time_s: 1, value: 54, golden_value: 54, faults: [] }] });
   const staticSignal = series({ signal_id: "static", signal: "Static", points: [{ time_s: 0, value: 1, golden_value: 1, faults: [] }, { time_s: 1, value: 1, golden_value: 1, faults: [] }] });

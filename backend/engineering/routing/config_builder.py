@@ -7,6 +7,7 @@ from typing import Any
 
 from ..db import get_connection
 from ..project_context import current_project_id
+from ..addressing import format_logical_node_address
 from .validation import PROTOCOL_CAPACITY
 
 PROTOCOL_TO_TECHNOLOGY = {
@@ -60,7 +61,7 @@ class CommunicationConfigBuilder:
             nodes = {
                 str(row["id"]): row
                 for row in connection.execute(
-                    "SELECT id, name, device_type FROM engineering_hardware_nodes "
+                    "SELECT id, name, device_type, logical_node_address, address_namespace FROM engineering_hardware_nodes "
                     "WHERE id = ANY(%s::uuid[]) AND project_id = %s",
                     (node_ids, current_project_id()),
                 ).fetchall()
@@ -108,17 +109,36 @@ class CommunicationConfigBuilder:
                 if existing is None:
                     interfaces_by_node[node_id].append({"id": interface_id, "name": interface_id, "technology": technology, "network": network_id})
                 else:
+                    # The executable snapshot describes this concrete route
+                    # segment, not every physical capability of the canonical
+                    # interface. Keep technology and network atomic so an old
+                    # interface capability cannot appear on the newly assigned
+                    # route network (for example Ethernet on a CAN-FD segment).
+                    existing["technology"] = technology
                     existing["network"] = network_id
             for destination in route.get("destinations", []):
+                source_node = nodes.get(str(route["source"].get("node_id")), {})
+                destination_node = nodes.get(str(destination.get("node_id")), {})
                 communications.append(
                     {
                         "id": f"route-{route['route_code']}-{str(destination.get('node_id'))[:8]}",
                         "routing_entry_id": str(route["id"]),
                         "source": str(route["source"].get("node_id")),
+                        "source_name": nodes.get(str(route["source"].get("node_id")), {}).get("name"),
+                        "source_logical_address": (
+                            format_logical_node_address(int(source_node["logical_node_address"]))
+                            if source_node.get("logical_node_address") is not None else None
+                        ),
                         "source_interface": endpoint_id(route["source"]),
                         "target": str(destination.get("node_id")),
+                        "target_name": nodes.get(str(destination.get("node_id")), {}).get("name"),
+                        "destination_logical_address": (
+                            format_logical_node_address(int(destination_node["logical_node_address"]))
+                            if destination_node.get("logical_node_address") is not None else None
+                        ),
                         "target_interface": endpoint_id(destination),
                         "network_id": route["source"].get("network_id") or f"network-{technology}",
+                        "network_name": route["source"].get("network_name") or network_id,
                         "technology": technology,
                         "cycle_ms": route.get("timing", {}).get("cycle_time_ms") or 100,
                         "payload_bytes": route.get("validation", {}).get("metrics", {}).get("payload_bytes") or 8,
@@ -129,6 +149,9 @@ class CommunicationConfigBuilder:
         networks = [
             {
                 "id": network_id,
+                "name": next((str(route.get("source", {}).get("network_name") or "").strip()
+                              for route in grouped_routes
+                              if str(route.get("source", {}).get("network_name") or "").strip()), network_id),
                 "technology": technology,
                 "bitrate": PROTOCOL_CAPACITY.get(protocol, (100_000_000, 1500))[0],
                 "cycle_ms": min(float(route.get("timing", {}).get("cycle_time_ms") or 100) for route in grouped_routes),
@@ -160,6 +183,12 @@ class CommunicationConfigBuilder:
                             "id": node_id,
                             "name": nodes.get(node_id, {}).get("name", node_id),
                             "type": nodes.get(node_id, {}).get("device_type", "GenericDevice"),
+                            "logical_node_address": nodes.get(node_id, {}).get("logical_node_address"),
+                            "formatted_logical_node_address": (
+                                format_logical_node_address(int(nodes[node_id]["logical_node_address"]))
+                                if nodes.get(node_id, {}).get("logical_node_address") is not None else None
+                            ),
+                            "address_namespace": nodes.get(node_id, {}).get("address_namespace") or "PROJECT",
                             "interfaces": interfaces_by_node.get(node_id, []),
                         }
                         for node_id in node_ids

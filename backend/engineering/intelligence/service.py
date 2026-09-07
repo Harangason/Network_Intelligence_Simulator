@@ -16,6 +16,7 @@ from ..repository import list_objects
 from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
 from ..workflow.service import WorkflowStatusService
+from ..addressing import LogicalNodeAddressAllocator
 from .network_planning import plan_network_distribution, distribution_recommendations
 from .review_learning import enrich_with_review_history
 from .repository import (
@@ -413,6 +414,7 @@ class IntelligenceService:
             *data_quality["issues"],
             *self._convert_findings(data["capacity"].get("findings") or []),
             *self._convert_findings(data["preflight"].get("findings") or []),
+            *self._convert_findings(LogicalNodeAddressAllocator(self.project_id).findings()),
         ]
         issues = self._apply_issue_reviews(issues, self._issue_reviews())
         issues.sort(key=lambda item: {"ERROR": 0, "WARNING": 1, "INFO": 2}.get(item["severity"], 3))

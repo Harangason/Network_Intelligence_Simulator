@@ -38,6 +38,22 @@ def _behavior_for(signal: dict[str, Any], behaviors_by_signal: dict[str, dict[st
     return _mapping(signal.get("behavior")) or behaviors_by_signal.get(str(signal.get("id")), {}) or _mapping(configuration.get("behavior"))
 
 
+def _inferred_behavior_type(signal: dict[str, Any]) -> str:
+    name = str(signal.get("name") or signal.get("display_name") or "").lower()
+    configuration = _mapping(signal.get("configuration"))
+    semantic = str(
+        _mapping(signal.get("semantic")).get("semantic_type")
+        or configuration.get("semantic_type")
+        or configuration.get("signal_type")
+        or ""
+    ).upper()
+    if semantic in {"ENUM", "STATE", "STATE_MACHINE", "OPERATING_STATE", "MODE", "BOOLEAN", "COUNTER", "BITFIELD", "EVENT", "QUALITY"}:
+        return "STATE_MACHINE"
+    if any(token in name for token in ("state", "status", "health", "quality", "counter", "alive", "mode", "zustand", "enabled", "valid")):
+        return "STATE_MACHINE"
+    return "PHYSICS_MODEL"
+
+
 def validate_signal_emulation_model(config: dict[str, Any]) -> dict[str, Any]:
     """Validate the Python signal emulation contract before trace generation."""
 
@@ -70,6 +86,7 @@ def validate_signal_emulation_model(config: dict[str, Any]) -> dict[str, Any]:
     derived_count = 0
     generic_count = 0
     physics_count = 0
+    inferred_count = 0
 
     def add_issue(target: list[dict[str, str]], code: str, message: str, signal: dict[str, Any] | None = None) -> None:
         target.append({
@@ -83,8 +100,8 @@ def validate_signal_emulation_model(config: dict[str, Any]) -> dict[str, Any]:
         parameters = {**_mapping(signal.get("configuration")), **_mapping(behavior.get("parameters")), **behavior}
         behavior_type = str(behavior.get("behavior_type") or behavior.get("type") or "").upper()
         if not behavior_type:
-            generic_count += 1
-            add_issue(warnings, "SIGNAL_BEHAVIOR_MISSING", "Signal nutzt generische Fallback-Emulation.", signal)
+            behavior_type = _inferred_behavior_type(signal)
+            inferred_count += 1
         elif behavior_type not in SUPPORTED_BEHAVIOR_TYPES:
             add_issue(errors, "SIGNAL_BEHAVIOR_UNSUPPORTED", f"Behavior-Modell wird nicht unterstuetzt: {behavior_type}", signal)
         if behavior_type == "PHYSICS_MODEL":
@@ -135,6 +152,7 @@ def validate_signal_emulation_model(config: dict[str, Any]) -> dict[str, Any]:
             "formulas": formula_count,
             "derived_signals": derived_count,
             "physics_models": physics_count,
+            "inferred_behaviors": inferred_count,
             "generic_fallbacks": generic_count,
         },
     }

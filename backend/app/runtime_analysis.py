@@ -47,6 +47,52 @@ def _route_requirements(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     }
 
 
+def _network_definitions(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        str(item.get("id") or item.get("network_id")): item
+        for item in config.get("networks") or []
+        if isinstance(item, dict) and (item.get("id") or item.get("network_id"))
+    }
+
+
+def _hardware_names(config: dict[str, Any]) -> dict[str, str]:
+    hardware = config.get("hardware") if isinstance(config.get("hardware"), dict) else {}
+    devices = hardware.get("devices") or hardware.get("nodes") or []
+    return {
+        str(item.get("id")): str(item.get("name") or item.get("id"))
+        for item in devices
+        if isinstance(item, dict) and item.get("id")
+    }
+
+
+def _participant_names(values: Any, names: dict[str, str]) -> list[str]:
+    items = values if isinstance(values, list) else [values]
+    return sorted({names.get(str(item), str(item)) for item in items if item})
+
+
+def _network_definitions(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        str(item.get("id") or item.get("network_id")): item
+        for item in config.get("networks") or []
+        if isinstance(item, dict) and (item.get("id") or item.get("network_id"))
+    }
+
+
+def _hardware_names(config: dict[str, Any]) -> dict[str, str]:
+    hardware = config.get("hardware") if isinstance(config.get("hardware"), dict) else {}
+    devices = hardware.get("devices") or hardware.get("nodes") or []
+    return {
+        str(item.get("id")): str(item.get("name") or item.get("id"))
+        for item in devices
+        if isinstance(item, dict) and item.get("id")
+    }
+
+
+def _participant_names(values: Any, names: dict[str, str]) -> list[str]:
+    items = values if isinstance(values, list) else [values]
+    return sorted({names.get(str(item), str(item)) for item in items if item})
+
+
 def analyze_runtime_trace(
     result: dict[str, Any],
     config: dict[str, Any],
@@ -76,6 +122,8 @@ def analyze_runtime_trace(
     configured_duration = max(0.001, _number(config.get("duration_s") or config.get("duration"), 1.0))
     observed_duration = max(configured_duration, max(_number(item.get("time_s")) for item in events))
     route_requirements = _route_requirements(config)
+    network_definitions = _network_definitions(config)
+    hardware_names = _hardware_names(config)
     by_network: dict[str, list[dict[str, Any]]] = defaultdict(list)
     by_route: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
@@ -84,6 +132,12 @@ def analyze_runtime_trace(
 
     network_metrics: list[dict[str, Any]] = []
     for network_id, items in by_network.items():
+        network_definition = network_definitions.get(network_id, {})
+        senders = _participant_names([item.get("sender_hardware") or item.get("sender") for item in items], hardware_names)
+        receivers = _participant_names(
+            [receiver for item in items for receiver in (item.get("receiver_hardware") or item.get("receivers") or [])],
+            hardware_names,
+        )
         transmitted = [item for item in items if item.get("status") != "dropped"]
         busy_s = sum(_number(item.get("transmission_latency_ms")) / 1000.0 for item in transmitted)
         average = busy_s / observed_duration * 100.0
@@ -92,7 +146,10 @@ def analyze_runtime_trace(
         network_metrics.append(
             {
                 "network_id": network_id,
+                "network_name": str(network_definition.get("name") or network_id),
                 "technology": str(items[0].get("technology") or "unknown"),
+                "senders": senders,
+                "receivers": receivers,
                 "event_count": len(items),
                 "transmitted_count": sum(item.get("status") == "transmitted" for item in items),
                 "dropped_count": sum(item.get("status") == "dropped" for item in items),
@@ -163,11 +220,17 @@ def analyze_runtime_trace(
         )
         latency_violation_total += latency_violations
         freshness_violation_total += freshness_violations
+        sender_id = str(items[0].get("sender_hardware") or items[0].get("sender") or "")
+        receiver_ids = [str(item) for item in (items[0].get("receiver_hardware") or items[0].get("receivers") or []) if item]
         route_metrics.append(
             {
                 "route_id": route_id,
                 "route_name": str(items[0].get("route_name") or route_id),
                 "network_id": str(items[0].get("network") or "unknown"),
+                "sender_id": sender_id,
+                "sender": hardware_names.get(sender_id, sender_id),
+                "receiver_ids": receiver_ids,
+                "receivers": [hardware_names.get(item, item) for item in receiver_ids],
                 "event_count": len(items),
                 "drop_rate": round(sum(item.get("status") == "dropped" for item in items) / len(items), 6),
                 "corruption_rate": round(sum(item.get("status") == "corrupted" for item in items) / len(items), 6),

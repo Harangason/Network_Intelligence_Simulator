@@ -21,6 +21,7 @@ from .model import model, model_revision, json_safe, networks
 from .audit import record
 
 ARTIFACT_TYPES = {"StatusModel", "DataObject", "SignalBehavior"}
+MAX_PROPOSAL_CHANGES = 10_000
 
 
 def _write(proposal_id: str, contract: dict, *, legacy_status: str | None = None) -> dict:
@@ -72,8 +73,8 @@ def get(proposal_id: str) -> dict:
 
 def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptions: list[str] | None = None,
            evidence: list[dict] | None = None, confidence: float = 0.5, workload_id: str | None = None) -> dict:
-    if not changes or len(changes) > 2000:
-        raise EngineeringValidationError("Ein Vorschlag benötigt 1 bis 2000 Änderungen.")
+    if not changes or len(changes) > MAX_PROPOSAL_CHANGES:
+        raise EngineeringValidationError(f"Ein Vorschlag benötigt 1 bis {MAX_PROPOSAL_CHANGES} Änderungen.")
     normalized = deepcopy(changes)
     for index, change in enumerate(normalized):
         if change.get("object_type") == "HardwareNode" and (change.get("data") or {}).get("name"):

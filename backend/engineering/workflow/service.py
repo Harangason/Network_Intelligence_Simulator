@@ -143,7 +143,7 @@ class WorkflowStatusService:
         with get_connection() as connection:
             self._ensure(connection)
             row = connection.execute(
-                "SELECT * FROM engineering_workflow_projects WHERE project_id = %s FOR UPDATE",
+                "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
                 (self.project_id,),
             ).fetchone()
             state = self._state(row)
@@ -608,6 +608,56 @@ class WorkflowStatusService:
         with get_connection() as connection:
             state = self._get_locked(connection)
             return self._source_artifact_check(connection, step, state)
+
+    def refresh_source_status(
+        self,
+        step: str,
+        *,
+        actor: str | None = None,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Refresh one source status without invalidating an already aligned successor.
+
+        This is intentionally narrower than ``mark_changed``: reconciliation can
+        update route metadata to match the current topology without constituting a
+        new upstream edit. In that case, bumping the routing version would make the
+        topology stale again and create an invalidation loop.
+        """
+        if step not in WORKFLOW_STEPS[:4]:
+            raise ValueError("refresh_source_status ist nur fuer Quellschritte verfuegbar.")
+        with get_connection() as connection:
+            state = self._get_locked(connection)
+            status = self._source_artifact_check(connection, step, state)["status"]
+            statuses = dict(state["statuses"])
+            stale_reasons = dict(state["stale_reasons"])
+            statuses[step] = status
+            if status in {"OUTDATED", "ERROR"}:
+                stale_reasons[step] = str(reason or f"{WORKFLOW_LABELS[step]} ist nicht aktuell.")
+            else:
+                stale_reasons.pop(step, None)
+            connection.execute(
+                """
+                UPDATE engineering_workflow_projects
+                SET statuses = %s::jsonb, stale_reasons = %s::jsonb, updated_at = now()
+                WHERE project_id = %s
+                """,
+                (_json(statuses), _json(stale_reasons), self.project_id),
+            )
+            connection.execute(
+                """
+                INSERT INTO engineering_workflow_events
+                    (project_id, step, event_type, reason, source_versions, actor)
+                VALUES (%s, %s, 'STATUS_REFRESHED', %s, %s::jsonb, %s)
+                """,
+                (
+                    self.project_id,
+                    step,
+                    str(reason or f"{WORKFLOW_LABELS[step]}-Status neu bewertet."),
+                    _json(state["versions"]),
+                    actor,
+                ),
+            )
+        return self.get()
 
     def mark_changed(
         self,

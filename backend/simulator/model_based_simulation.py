@@ -21,6 +21,11 @@ except ImportError:  # pragma: no cover - package import fallback
     from .signals.quality import SignalQualityEngine
     from .signals.faults import SignalFaultOverlayRegistry
 
+try:
+    from numeric_acceleration import trace_statistics
+except ImportError:  # pragma: no cover - package import fallback
+    from .numeric_acceleration import trace_statistics
+
 
 BEHAVIOR_TYPES = (
     "CONSTANT", "STEP", "RAMP", "LINEAR", "SINE", "TRIANGLE", "SAWTOOTH",
@@ -105,7 +110,7 @@ def _raw_semantic_type(raw: dict[str, Any], name: str, data_type: str, length_bi
         or ""
     ).upper()
     if configured:
-        return configured
+        return "STATE" if configured in {"STATE_MACHINE", "OPERATING_STATE", "MODE"} else configured
     lowered = name.lower()
     type_name = data_type.lower()
     if _mapping(data.get("enum") or configuration.get("enum")) or "enum" in type_name:
@@ -118,6 +123,8 @@ def _raw_semantic_type(raw: dict[str, Any], name: str, data_type: str, length_bi
         return "COUNTER"
     if "event" in lowered:
         return "EVENT"
+    if "mode" in lowered or "zustand" in lowered:
+        return "STATE"
     if any(token in lowered for token in ("temperature", "temp")):
         return "TEMPERATURE"
     if "rpm" in lowered or "speed" in lowered:
@@ -610,6 +617,10 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
                 "status": event.get("status"),
                 "sender": event.get("sender_hardware"),
                 "receivers": event.get("receiver_hardware") or [],
+                "source_name": event.get("source_name"),
+                "source_logical_address": event.get("source_logical_address"),
+                "destination_names": event.get("destination_names") or [],
+                "destination_logical_addresses": event.get("destination_logical_addresses") or [],
                 "payload_bytes": event.get("payload_bytes"),
                 "transmission_latency_ms": event.get("transmission_latency_ms"),
                 "end_to_end_latency_ms": event.get("end_to_end_latency_ms"),
@@ -704,7 +715,6 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
                 series["points"].append(last_point)
                 stored_signal_samples += 1
             series["stored_sample_count"] = len(series["points"])
-    changed_samples = sum(1 for delta in deltas if abs(delta) > 1e-12)
     affected_signals = sorted({
         str(item.get("signal"))
         for item in ordered_events
@@ -729,11 +739,12 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         }
         for (network_id, bucket), busy_s in sorted(load_buckets.items(), key=lambda item: (item[0][1], item[0][0]))
     ]
-    load_values = [float(item["load_percent"]) for item in bus_load]
     load_by_network = {
         network_id: [float(item["load_percent"]) for item in bus_load if item["network_id"] == network_id]
         for network_id in sorted({str(item["network_id"]) for item in bus_load})
     }
+    numeric_summary, numeric_acceleration = trace_statistics(deltas, load_by_network)
+    changed_samples = int(numeric_summary["changed_samples"])
     return {
         "schema": "communication-simulator.model-trace.v1",
         "signal_emulation_validation": config.get("signal_emulation_validation") or {
@@ -756,7 +767,7 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
         "comparison": {
             "available": bool(deltas),
             "changed_samples": changed_samples,
-            "rmse": math.sqrt(sum(delta * delta for delta in deltas) / len(deltas)) if deltas else 0.0,
+            "rmse": numeric_summary["rmse"],
             "baseline": "golden",
             "candidate": "fault" if _sequence(scenario.get("faults")) else "normal",
         },
@@ -783,20 +794,12 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
             "load_window_ms": load_window_s * 1000.0,
         },
         "network_load_summary": {
-            "average_percent": sum(load_values) / len(load_values) if load_values else 0.0,
-            "peak_percent": max(load_values, default=0.0),
-            "burst_percent": max(
-                (sum(values[index:index + 3]) / len(values[index:index + 3]) for values in load_by_network.values() for index in range(len(values))),
-                default=0.0,
-            ),
-            "networks": {
-                network_id: {
-                    "average_percent": sum(values) / len(values),
-                    "peak_percent": max(values),
-                }
-                for network_id, values in load_by_network.items()
-            },
+            "average_percent": numeric_summary["average_percent"],
+            "peak_percent": numeric_summary["peak_percent"],
+            "burst_percent": numeric_summary["burst_percent"],
+            "networks": numeric_summary["networks"],
         },
+        "numeric_acceleration": numeric_acceleration,
         "first_anomaly": ordered_events[0] if ordered_events else None,
         "affected_routes": affected_routes,
         "affected_signals": affected_signals,

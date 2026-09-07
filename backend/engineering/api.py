@@ -85,7 +85,7 @@ from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_t
 from .intelligence import IntelligenceService
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
-from .project_context import activate_project, normalize_context_project_id, reset_project
+from .project_context import activate_project, current_project_id, normalize_context_project_id, reset_project
 from .workloads import EngineeringWorkloadOrchestrator
 from .simulation import (
     FAULTS_BY_SCOPE,
@@ -101,6 +101,12 @@ from .structure_transfer import analyze_ecu_transfer, analyze_system_duplicates,
 from .system_merge import merge_system_duplicate
 from .system_clusters import system_owners
 from .tool_registry import get_engineering_tool, list_engineering_tools
+from .addressing import (
+    AddressResolutionService,
+    LogicalNodeAddressAllocator,
+    create_technology_address_binding,
+)
+from .assignment_learning import EquipmentAssignmentLearningService
 
 engineering_api = Blueprint("engineering_api", __name__)
 logger = logging.getLogger(__name__)
@@ -593,6 +599,29 @@ def _sync_topology_with_invalidation(topology: dict, project_id: str):
     return result
 
 
+def _synchronize_network_routes_with_workflow(
+    project_id: str,
+    topology: dict,
+    *,
+    actor: str,
+):
+    """Synchronize route revisions and immediately publish their real source status.
+
+    ``save_topology`` invalidates routing before the route records are reconciled.
+    Without this second transition, already approved and still valid routes remain
+    marked OUTDATED in the workflow and block Capacity & Timing even though the
+    routing repository is fully synchronized.
+    """
+    workflow = WorkflowStatusService(project_id)
+    result = synchronize_network_routes(project_id, topology, actor=actor)
+    workflow.refresh_source_status(
+        "routing",
+        actor=actor,
+        reason="Routing-Tabelle wurde mit der physischen Netzwerktopologie synchronisiert.",
+    )
+    return result
+
+
 @engineering_api.route("/topology/sync", methods=["POST"])
 def sync_topology_route():
     payload = request.get_json(silent=True)
@@ -607,7 +636,7 @@ def sync_topology_route():
             topology,
             actor=str(payload.get("actor") or "network-editor"),
         )
-        result["routing_sync"] = synchronize_network_routes(
+        result["routing_sync"] = _synchronize_network_routes_with_workflow(
             project_id,
             topology,
             actor=str(payload.get("actor") or "network-editor"),
@@ -734,7 +763,11 @@ def update_workflow_topology_route():
     sync_result = _sync_topology_with_invalidation(topology, project_id)
     topology = _topology_with_engineering_links(topology, sync_result)
     workflow.save_topology(topology, actor=actor)
-    routing_sync = synchronize_network_routes(project_id, topology, actor=actor)
+    routing_sync = _synchronize_network_routes_with_workflow(
+        project_id,
+        topology,
+        actor=actor,
+    )
     _auto_recalculate_capacity(project_id)
     state = workflow.get()
     state["routing_sync"] = routing_sync
@@ -1180,6 +1213,16 @@ def knowledge_subgraph_route():
         raise EngineeringValidationError("object_ids muss eine nicht-leere Liste sein.")
     depth = min(max(int(payload.get("depth") or 2), 0), 5)
     return jsonify(CanonicalKnowledgeService().subgraph([str(value) for value in object_ids], depth=depth))
+
+
+@engineering_api.route("/equipment-assignment-learning/retrieve", methods=["POST"])
+def retrieve_equipment_assignment_learning_route():
+    return jsonify(EquipmentAssignmentLearningService(_project_id()).retrieve(_routing_payload()))
+
+
+@engineering_api.route("/equipment-assignment-learning/feedback", methods=["POST"])
+def record_equipment_assignment_learning_route():
+    return jsonify(EquipmentAssignmentLearningService(_project_id()).record(_routing_payload())), 201
 
 
 # ---------------------------------------------------------------------------
@@ -1693,6 +1736,118 @@ def list_resource(resource: str):
     filters = {key: request.args.get(key) for key in FILTERABLE_QUERY_PARAMS if request.args.get(key)}
     items = list_objects(object_type, filters=filters, limit=limit, offset=offset)
     return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/addressing/policy", methods=["GET", "PATCH"])
+def logical_address_policy_route():
+    allocator = LogicalNodeAddressAllocator(namespace=request.args.get("namespace") or "PROJECT")
+    if request.method == "GET":
+        return jsonify(allocator.policy().to_dict())
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    return jsonify(allocator.update_policy(payload, actor=str(payload.get("actor") or "address-policy-editor")))
+
+
+@engineering_api.route("/addressing/conflicts", methods=["GET"])
+def logical_address_conflicts_route():
+    allocator = LogicalNodeAddressAllocator(namespace=request.args.get("namespace") or "PROJECT")
+    items = allocator.detect_conflicts()
+    return jsonify({"items": items, "count": len(items), "findings": allocator.findings()})
+
+
+@engineering_api.route("/addressing/resolve/<address>", methods=["GET"])
+def resolve_logical_address_route(address: str):
+    return jsonify(AddressResolutionService(namespace=request.args.get("namespace") or "PROJECT").resolve(address))
+
+
+@engineering_api.route("/addressing/routes/resolve", methods=["GET"])
+def resolve_route_by_logical_address_route():
+    source = request.args.get("source")
+    destination = request.args.get("destination")
+    if not source or not destination:
+        return jsonify({"error": "source und destination sind erforderlich."}), 400
+    items = AddressResolutionService(namespace=request.args.get("namespace") or "PROJECT").resolve_routes(source, destination)
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/addressing/technology-bindings", methods=["GET", "POST"])
+def create_technology_address_binding_route():
+    if request.method == "GET":
+        clauses = ["project_id=%s"]
+        values: list[Any] = [current_project_id()]
+        for column, value in (
+            ("hardware_node_id", request.args.get("hardware_node_id")),
+            ("technology", request.args.get("technology")),
+            ("network_ref", request.args.get("network_ref")),
+        ):
+            if value:
+                clauses.append(f"{column}=%s")
+                values.append(value.upper() if column == "technology" else value)
+        with get_connection() as conn:
+            items = conn.execute(
+                "SELECT * FROM engineering_technology_address_bindings WHERE " + " AND ".join(clauses) + " ORDER BY technology, technology_address",
+                values,
+            ).fetchall()
+        return jsonify({"items": items, "count": len(items)})
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
+    return jsonify(create_technology_address_binding(payload, actor=str(payload.get("actor") or "technology-binding-editor"))), 201
+
+
+@engineering_api.route("/addressing/audit", methods=["GET"])
+def logical_address_audit_route():
+    limit = min(max(int(request.args.get("limit") or 200), 1), 1000)
+    with get_connection() as conn:
+        items = conn.execute(
+            "SELECT * FROM engineering_address_audit WHERE project_id=%s ORDER BY event_id DESC LIMIT %s",
+            (current_project_id(), limit),
+        ).fetchall()
+    return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/hardware-nodes/<object_id>/address", methods=["GET", "PATCH", "DELETE"])
+def hardware_node_logical_address_route(object_id: str):
+    resolver = AddressResolutionService(namespace=request.args.get("namespace") or "PROJECT")
+    allocator = resolver.allocator
+    if request.method == "GET":
+        return jsonify(resolver.resolve_address(object_id))
+    payload = request.get_json(silent=True) or {}
+    actor = str(payload.get("actor") or "address-editor")
+    if request.method == "DELETE":
+        return jsonify(allocator.release_address(object_id, actor=actor))
+    if "logical_node_address" not in payload:
+        return jsonify({"error": "logical_node_address ist erforderlich."}), 400
+    impact = allocator.impact_analysis(object_id, payload["logical_node_address"])
+    if not bool(payload.get("confirm")):
+        return jsonify({
+            "error": "Manuelle Adressänderung muss nach der Impact-Analyse bestätigt werden.",
+            "impact": impact,
+        }), 409
+    return jsonify(allocator.assign_address(
+        object_id,
+        payload["logical_node_address"],
+        assignment_mode="MANUAL",
+        actor=actor,
+    ))
+
+
+@engineering_api.route("/hardware-nodes/<object_id>/address/allocate", methods=["POST"])
+def allocate_hardware_node_logical_address_route(object_id: str):
+    payload = request.get_json(silent=True) or {}
+    return jsonify(LogicalNodeAddressAllocator(namespace=str(payload.get("namespace") or "PROJECT")).assign_address(
+        object_id,
+        assignment_mode="AUTO",
+        actor=str(payload.get("actor") or "address-allocator"),
+    ))
+
+
+@engineering_api.route("/hardware-nodes/<object_id>/address/impact", methods=["GET"])
+def hardware_node_logical_address_impact_route(object_id: str):
+    return jsonify(LogicalNodeAddressAllocator(namespace=request.args.get("namespace") or "PROJECT").impact_analysis(
+        object_id, request.args.get("address")
+    ))
 
 
 @engineering_api.route("/<resource>", methods=["POST"])

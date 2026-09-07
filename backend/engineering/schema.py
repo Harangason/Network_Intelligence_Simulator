@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 23
+SCHEMA_VERSION = 24
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -863,6 +863,63 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "ALTER TABLE engineering_workloads ADD CONSTRAINT engineering_workloads_status_check CHECK (status IN ('RECEIVED','PLANNING','IN_PROGRESS','VALIDATING','REPAIRING','INCOMPLETE','READY_FOR_REVIEW','COMPLETED','FAILED','BLOCKED','NEEDS_REVIEW','PAUSED','CANCELED'))",
     "ALTER TABLE engineering_signal_behaviors DROP CONSTRAINT IF EXISTS engineering_signal_behaviors_behavior_type_check",
     "ALTER TABLE engineering_signal_behaviors ADD CONSTRAINT engineering_signal_behaviors_behavior_type_check CHECK (behavior_type IN ('CONSTANT','STEP','RAMP','LINEAR','SINE','TRIANGLE','SAWTOOTH','PULSE','RANDOM_WALK','BOUNDED_RANDOM','STATE_DEPENDENT','FORMULA','LOOKUP_TABLE','EXTERNAL_SERIES','PHYSICS_MODEL','STATE_MACHINE','STATUS_MODEL'))",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS diagnostic_addressable BOOLEAN NOT NULL DEFAULT FALSE",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS logical_node_address INTEGER CHECK (logical_node_address BETWEEN 0 AND 65535)",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS address_assignment_mode TEXT NOT NULL DEFAULT 'AUTO' CHECK (address_assignment_mode IN ('AUTO','MANUAL','IMPORTED','RESERVED'))",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS address_status TEXT NOT NULL DEFAULT 'UNASSIGNED' CHECK (address_status IN ('UNASSIGNED','PROPOSED','ASSIGNED','CONFLICT','RESERVED','OUTDATED','INVALID'))",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS address_namespace TEXT NOT NULL DEFAULT 'PROJECT'",
+    "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS address_provenance JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_hardware_logical_address ON engineering_hardware_nodes(project_id, address_namespace, logical_node_address) WHERE logical_node_address BETWEEN 1 AND 65534 AND address_status NOT IN ('UNASSIGNED','INVALID')",
+    """
+    CREATE TABLE IF NOT EXISTS engineering_address_policies (
+        project_id TEXT PRIMARY KEY REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,
+        minimum_assignable INTEGER NOT NULL DEFAULT 1 CHECK (minimum_assignable BETWEEN 1 AND 65534),
+        maximum_assignable INTEGER NOT NULL DEFAULT 65534 CHECK (maximum_assignable BETWEEN 1 AND 65534),
+        reserved_ranges JSONB NOT NULL DEFAULT '[]'::jsonb,
+        assignment_strategy TEXT NOT NULL DEFAULT 'LOWEST_FREE' CHECK (assignment_strategy IN ('SEQUENTIAL','LOWEST_FREE','DOMAIN_RANGE','DEVICE_CLASS_RANGE','MANUAL')),
+        reuse_policy TEXT NOT NULL DEFAULT 'REUSE_RELEASED',
+        domain_ranges JSONB NOT NULL DEFAULT '{}'::jsonb,
+        device_class_ranges JSONB NOT NULL DEFAULT '{}'::jsonb,
+        device_class_policy JSONB NOT NULL DEFAULT '{"0": false, "1": false, "2": false, "3": false, "4": true}'::jsonb,
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        modified_by TEXT,
+        CHECK (minimum_assignable <= maximum_assignable)
+    )
+    """,
+    "ALTER TABLE engineering_address_policies ADD COLUMN IF NOT EXISTS domain_ranges JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "ALTER TABLE engineering_address_policies ADD COLUMN IF NOT EXISTS device_class_ranges JSONB NOT NULL DEFAULT '{}'::jsonb",
+    """
+    CREATE TABLE IF NOT EXISTS engineering_technology_address_bindings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        project_id TEXT NOT NULL REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,
+        hardware_node_id UUID NOT NULL REFERENCES engineering_hardware_nodes(id) ON DELETE CASCADE,
+        logical_node_address INTEGER NOT NULL CHECK (logical_node_address BETWEEN 1 AND 65534),
+        technology TEXT NOT NULL,
+        technology_address TEXT NOT NULL,
+        hardware_interface_ref UUID REFERENCES engineering_hardware_interfaces(id) ON DELETE CASCADE,
+        network_ref TEXT,
+        status TEXT NOT NULL DEFAULT 'ASSIGNED' CHECK (status IN ('PROPOSED','ASSIGNED','CONFLICT','OUTDATED','INVALID')),
+        provenance JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE(project_id, technology, technology_address, hardware_interface_ref, network_ref)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_technology_address_binding_logical ON engineering_technology_address_bindings(project_id, logical_node_address)",
+    """
+    CREATE TABLE IF NOT EXISTS engineering_address_audit (
+        event_id BIGSERIAL PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,
+        hardware_node_id UUID REFERENCES engineering_hardware_nodes(id) ON DELETE SET NULL,
+        event_type TEXT NOT NULL,
+        actor TEXT,
+        before_state JSONB,
+        after_state JSONB,
+        details JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_address_audit_project ON engineering_address_audit(project_id, event_id DESC)",
 )
 
 

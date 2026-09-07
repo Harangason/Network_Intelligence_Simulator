@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from ..addressing import LogicalNodeAddress
+
 
 def _clean_text(value: str, field_name: str) -> str:
     text = str(value or "").strip()
@@ -37,6 +39,8 @@ class EngineeringObject:
 class HardwareNode(EngineeringObject):
     device_type: str = "GenericDevice"
     ports: tuple[str, ...] = ()
+    diagnostic_addressable: bool = False
+    logical_node_address: LogicalNodeAddress | None = None
 
     def __post_init__(self) -> None:
         super().__post_init__()

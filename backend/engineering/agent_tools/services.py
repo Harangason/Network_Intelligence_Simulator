@@ -18,6 +18,7 @@ from ..routing.repository import get_route
 from ..workflow.service import WorkflowStatusService
 from ..workloads import EngineeringWorkloadOrchestrator
 from ..intelligence import IntelligenceService
+from ..addressing import AddressResolutionService, LogicalNodeAddressAllocator
 from backend.intelligence.ml import MLInferenceService
 from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
 from .catalog import TOOLS, register, ID, TEXT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
@@ -223,6 +224,25 @@ def register_tools():
     register("inspect_network", "Kanonisches Netzwerk lesen.", P.READ_MODEL, _network, network_id=ID)
     register("inspect_route", "Kanonische Route lesen.", P.READ_MODEL, lambda a: get_route(a["route_id"]), route_id=ID)
     register("inspect_findings", "Projektfindings aus vorhandenen Analysediensten lesen.", P.READ_MODEL, lambda a: IntelligenceService(current_project_id()).assess(persist=False))
+    register("get_logical_node_address", "Logische Diagnoseadresse eines HardwareNode lesen.", P.READ_MODEL,
+             lambda a: AddressResolutionService(namespace=a["namespace"]).resolve_address(a["hardware_id"]),
+             hardware_id=ID, namespace=(str, "PROJECT"))
+    register("resolve_logical_node_address", "Diagnoseadresse in HardwareNode, Interfaces und Netze auflösen.", P.READ_MODEL,
+             lambda a: AddressResolutionService(namespace=a["namespace"]).resolve(a["address"]),
+             address=(str | int, ...), namespace=(str, "PROJECT"))
+    register("find_free_logical_node_address", "Nächste freie Diagnoseadresse ausschließlich im Python-Allocator ermitteln.", P.READ_MODEL,
+             lambda a: LogicalNodeAddressAllocator(namespace=a["namespace"]).find_next_free_address().to_dict(),
+             namespace=(str, "PROJECT"))
+    register("validate_logical_node_address", "Diagnoseadresse gegen Projektpolicy, Reservierungen und Eindeutigkeit prüfen.", P.VALIDATE,
+             lambda a: _validation(LogicalNodeAddressAllocator(namespace=a["namespace"]).validate_address(a["address"], node_id=a.get("hardware_id"))),
+             address=(str | int, ...), hardware_id=(str | None, None), namespace=(str, "PROJECT"))
+    register("allocate_logical_node_address", "Freie oder explizite Diagnoseadresse serverseitig atomar zuweisen.", P.APPLY_APPROVED_PROPOSAL,
+             lambda a: LogicalNodeAddressAllocator(namespace=a["namespace"]).assign_address(
+                 a["hardware_id"], a.get("address"), assignment_mode=a["assignment_mode"], actor=a.get("_actor")
+             ), hardware_id=ID, address=(str | int | None, None), assignment_mode=(str, "AUTO"), namespace=(str, "PROJECT"))
+    register("resolve_route_by_address", "Kanonische Routen zwischen zwei logischen Diagnoseadressen auflösen.", P.READ_MODEL,
+             lambda a: {"items": AddressResolutionService(namespace=a["namespace"]).resolve_routes(a["source_address"], a["destination_address"])},
+             source_address=(str | int, ...), destination_address=(str | int, ...), namespace=(str, "PROJECT"))
     register("search_model", "Objekte über Typen hinweg nach Namen suchen.", P.READ_MODEL, lambda a: {"items": [
         {**item,"object_type":kind} for kind in ([a["object_type"]] if a.get("object_type") else ENTITY_SPECS)
         for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(str|None,None), limit=LIMIT)

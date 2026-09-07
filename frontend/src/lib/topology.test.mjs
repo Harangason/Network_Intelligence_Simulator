@@ -46,3 +46,45 @@ test("semantic system buses keep powertrain together and chassis separate", () =
   assert.notEqual(config.communications[0].network, config.communications[1].network);
   assert.equal(config.networks.find((network) => network.id === "antriebsstrang-can-fd-bus")?.name, "Antriebsstrang-CAN");
 });
+
+test("normalization persists one powertrain bus and splits a shared gateway interface by domain", () => {
+  const gatewayPort = { id: "gateway-can", name: "CAN", bus: "can_fd", side: "bottom", offset: 0.5, hardwareInterfaceId: "gateway-interface" };
+  const ecu = (id, name) => ({ id, name, kind: "ecu", x: 0, y: 0, ports: [{ id: `${id}-can`, name: "CAN", bus: "can_fd", side: "top", offset: 0.5 }] });
+  const topology = normalizePhysicalTopology({
+    nodes: [
+      { id: "gateway", name: "System", kind: "gateway", x: 0, y: 0, ports: [gatewayPort] },
+      ecu("motor", "Motorsteuerung"),
+      ecu("fuel", "Kraftstoffsystem"),
+      ecu("brake", "Bremsensteuerung"),
+    ],
+    edges: [
+      { id: "motor-gateway", source: "motor", sourcePort: "motor-can", target: "gateway", targetPort: "gateway-can", bus: "can_fd" },
+      { id: "fuel-motor", source: "fuel", sourcePort: "fuel-can", target: "motor", targetPort: "motor-can", bus: "can_fd" },
+      { id: "brake-gateway", source: "brake", sourcePort: "brake-can", target: "gateway", targetPort: "gateway-can", bus: "can_fd" },
+    ],
+  });
+
+  assert.equal(topology.edges.find((edge) => edge.id === "motor-gateway")?.physicalNetworkId, "antriebsstrang-can-fd-bus");
+  assert.equal(topology.edges.find((edge) => edge.id === "fuel-motor")?.physicalNetworkId, "antriebsstrang-can-fd-bus");
+  assert.notEqual(
+    topology.edges.find((edge) => edge.id === "motor-gateway")?.physicalNetworkId,
+    topology.edges.find((edge) => edge.id === "brake-gateway")?.physicalNetworkId,
+  );
+  const gateway = topology.nodes.find((node) => node.id === "gateway");
+  assert.equal(gateway.ports.length, 2);
+  assert.deepEqual(new Set(gateway.ports.map((port) => port.physicalNetworkName)), new Set(["Antriebsstrang-CAN", "Fahrwerk / Fahrdynamik-CAN"]));
+});
+
+test("normalization replaces old generic network placeholders with the owning ECU domain", () => {
+  const topology = normalizePhysicalTopology({
+    nodes: [
+      { id: "speed", name: "Drehzahl", kind: "sensor", x: 0, y: 0, ports: [{ id: "speed-can", name: "Systemgruppe-CAN", bus: "can_fd", side: "right", offset: 0.5, physicalNetworkId: "systemgruppe-can-fd-bus" }] },
+      { id: "motor", name: "Motorsteuerung", kind: "ecu", x: 200, y: 0, ports: [{ id: "motor-can", name: "Systemgruppe-CAN", bus: "can_fd", side: "left", offset: 0.5, physicalNetworkId: "systemgruppe-can-fd-bus" }] },
+    ],
+    edges: [{ id: "speed-motor", source: "speed", sourcePort: "speed-can", target: "motor", targetPort: "motor-can", bus: "can_fd", physicalNetworkId: "systemgruppe-can-fd-bus", physicalNetworkName: "Systemgruppe-CAN" }],
+  });
+
+  assert.equal(topology.edges[0].physicalNetworkId, "antriebsstrang-can-fd-bus");
+  assert.equal(topology.edges[0].physicalNetworkName, "Antriebsstrang-CAN");
+  assert.deepEqual(new Set(topology.nodes.flatMap((node) => node.ports.map((port) => port.physicalNetworkId))), new Set(["antriebsstrang-can-fd-bus"]));
+});

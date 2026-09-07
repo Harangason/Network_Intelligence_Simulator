@@ -2,6 +2,7 @@ export type UserSettings = {
   activeProject: string;
   automaticModelSync: boolean;
   openAgentOnStart: boolean;
+  collapseWorkflowHeroes: boolean;
 };
 
 export const NETWORK_PROJECT_PREFIX = "network-project-";
@@ -11,6 +12,7 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   activeProject: DEFAULT_PROJECT_ID,
   automaticModelSync: true,
   openAgentOnStart: false,
+  collapseWorkflowHeroes: true,
 };
 
 const STORAGE_KEY = "communication-simulator:settings:v1";

@@ -65,11 +65,11 @@ def simulation_config(tmp_path: Path, *, faults=None, seed=42):
         "seed": seed,
         "max_events": 1000,
         "formats": ["universal-jsonl", "universal-csv"],
-        "networks": [{"id": "can-main", "technology": "can_fd", "bitrate": 2_000_000}],
+        "networks": [{"id": "can-main", "name": "Antriebs-CAN", "technology": "can_fd", "bitrate": 2_000_000}],
         "hardware": {
             "devices": [
-                {"id": "sensor", "name": "Sensor", "type": "sensor", "ports": [{"id": "p1", "physical_type": "can", "network_interfaces": [{"id": "if-sensor", "technology": "can_fd", "network": "can-main"}]}]},
-                {"id": "ecu", "name": "ECU", "type": "ecu", "ports": [{"id": "p2", "physical_type": "can", "network_interfaces": [{"id": "if-ecu", "technology": "can_fd", "network": "can-main"}]}]},
+                {"id": "sensor", "name": "Sensor", "type": "sensor", "logical_node_address": 0x12, "formatted_logical_node_address": "0x0012", "ports": [{"id": "p1", "physical_type": "can", "network_interfaces": [{"id": "if-sensor", "technology": "can_fd", "network": "can-main"}]}]},
+                {"id": "ecu", "name": "ECU", "type": "ecu", "logical_node_address": 0x23, "formatted_logical_node_address": "0x0023", "ports": [{"id": "p2", "physical_type": "can", "network_interfaces": [{"id": "if-ecu", "technology": "can_fd", "network": "can-main"}]}]},
             ]
         },
         "communications": [{
@@ -318,11 +318,18 @@ def test_model_run_writes_decoded_golden_fault_and_comparison_artifacts(tmp_path
     assert result["model_simulation"]["signals"][0]["semantic_type"] == "NUMERIC_PHYSICAL"
     assert result["model_simulation"]["signals"][0]["quality"] in {"VALID", "ESTIMATED"}
     assert len(result["model_simulation"]["frames"]) == result["trace"]["events"]
+    first_frame = result["model_simulation"]["frames"][0]
+    assert first_frame["source_name"] == "Sensor"
+    assert first_frame["source_logical_address"] == "0x0012"
+    assert first_frame["destination_names"] == ["ECU"]
+    assert first_frame["destination_logical_addresses"] == ["0x0023"]
     assert result["model_simulation"]["bus_load"]
     event = json.loads((tmp_path / "traces" / "universal_trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert event["signal"] == "Temperature"
     assert event["value"] != event["golden_value"]
     assert event["payload_hex"] != ""
+    assert event["source_logical_address"] == "0x0012"
+    assert event["destination_logical_addresses"] == ["0x0023"]
 
 
 def test_fresh_job_directory_writes_model_trace_without_universal_format(tmp_path: Path) -> None:
@@ -374,6 +381,11 @@ def test_runtime_load_is_derived_from_transmitted_frames(tmp_path: Path) -> None
     assert metrics["networks"][0]["event_count"] == result["trace"]["events"]
     assert metrics["networks"][0]["average_load_percent"] > 0
     assert metrics["networks"][0]["peak_load_percent"] >= metrics["networks"][0]["average_load_percent"]
+    assert metrics["networks"][0]["network_name"] == "Antriebs-CAN"
+    assert metrics["networks"][0]["senders"] == ["Sensor"]
+    assert metrics["networks"][0]["receivers"] == ["ECU"]
+    assert metrics["routes"][0]["sender"] == "Sensor"
+    assert metrics["routes"][0]["receivers"] == ["ECU"]
 
 
 def test_engine_uses_min_max_unit_resolution_and_cycle() -> None:
@@ -606,6 +618,49 @@ def test_short_drive_cycle_makes_exhaust_and_damper_signals_dynamic() -> None:
     assert damper_values != [50] * len(damper_values)
 
 
+def test_german_rotational_speed_uses_the_shared_drive_cycle() -> None:
+    rpm = definition(id="drehzahl", name="Drehzahl", min_value=0, max_value=8000, factor=1, behavior={"behavior_type": "PHYSICS_MODEL", "model_label": "PHYSICS_BASED"})
+    engine = SignalBehaviorEngine([rpm], seed=23, scenario={"duration_s": 12, "mode": "NORMAL"})
+
+    values = [engine.sample(rpm, time_s) for time_s in (0, 1, 2, 3, 4, 6, 8, 10, 11.5)]
+
+    assert len(set(values)) > 4
+    assert values[0] == 0
+    assert max(values) > 900
+
+
+def test_coarse_rpm_resolution_does_not_deadlock_dense_sampling_at_zero() -> None:
+    rpm = definition(id="drehzahl-coarse", name="Drehzahl", min_value=0, max_value=5000, factor=50, cycle_ms=10, behavior={"behavior_type": "PHYSICS_MODEL", "model_label": "PHYSICS_BASED"})
+    engine = SignalBehaviorEngine([rpm], seed=23, scenario={"duration_s": 2, "mode": "NORMAL"})
+
+    values = [engine.sample(rpm, index / 100) for index in range(201)]
+
+    assert values[0] == 0
+    assert len(set(values)) > 8
+    assert max(values) >= 900
+
+
+def test_mode_signal_exposes_the_operating_state_label() -> None:
+    mode = definition(id="drive-mode", name="DriveMode", min_value=0, max_value=7, factor=1, behavior={"behavior_type": "STATE_MACHINE", "model_label": "RULE_BASED", "parameters": {"semantic_type": "STATE_MACHINE"}})
+    engine = SignalBehaviorEngine([mode], seed=5, scenario={"duration_s": 2, "mode": "NORMAL"})
+
+    engine.sample(mode, 1.0)
+
+    assert engine.sample_details(mode.id).state == "RUNNING"
+
+
+def test_missing_low_level_behavior_is_completed_by_semantic_inference(tmp_path: Path) -> None:
+    config = simulation_config(tmp_path)
+    config["engineering_model"]["behaviors"] = []
+
+    validation = validate_signal_emulation_model(config)
+
+    assert validation["valid"] is True
+    assert validation["warnings"] == []
+    assert validation["counts"]["inferred_behaviors"] == 1
+    assert validation["counts"]["generic_fallbacks"] == 0
+
+
 def test_dependency_graph_rejects_cycles_and_reports_dirty_dependents() -> None:
     first = definition(id="first", name="First", behavior={"behavior_type": "FORMULA", "dependencies": ["Second"]})
     second = definition(id="second", name="Second", behavior={"behavior_type": "FORMULA", "dependencies": ["First"]})
@@ -625,13 +680,13 @@ def test_trace_marks_discrete_samples_as_step_lanes(tmp_path: Path) -> None:
     config["engineering_model"]["behaviors"] = [{"signal_id": "gateway-state", "behavior_type": "STATE_MACHINE", "model_label": "RULE_BASED"}]
     config["communications"][0]["signal_ids"] = ["gateway-state"]
 
-    event = ModelBasedSimulationEngine(config).encode_event(config["communications"][0], 1.5, 8)
-    trace = build_model_trace([{**event, "time_s": 1.5, "status": "transmitted", "network": "can-main"}], config)
+    event = ModelBasedSimulationEngine(config).encode_event(config["communications"][0], 0.05, 8)
+    trace = build_model_trace([{**event, "time_s": 0.05, "status": "transmitted", "network": "can-main"}], config)
     series = trace["signals"][0]
 
     assert series["trace_kind"] == "state"
     assert series["interpolation"] == "step"
-    assert series["points"][0]["state"] == "ACTIVE"
+    assert series["points"][0]["state"] == "RUNNING"
     assert series["points"][0]["value"] == 4
 
 

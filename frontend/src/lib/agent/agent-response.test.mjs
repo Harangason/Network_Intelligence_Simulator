@@ -29,3 +29,18 @@ test('only known context targets generate internal links', () => {
   }
   assert.equal(engineeringContextHref({object_type:'javascript:alert(1)'},'p'),null);
 });
+
+test('wizard-scale proposals above the old 2000-change ceiling remain renderable', () => {
+  const changes = Array.from({length: 3000}, (_, index) => ({
+    action: 'CREATE', object_type: 'Signal', data: {name: `Signal-${index}`},
+  }));
+  const parsed = agentResponseSchema.safeParse({
+    id: 'large-proposal', type: 'APPROVAL', text: 'Prüfen', created_at: 'now',
+    proposal: {
+      proposal_id: 'proposal-large', proposal_type: 'WIZARD_ENGINEERING_MODEL', revision: '1',
+      status: 'PROPOSED', rationale: '250 Sensoren und 250 Aktoren', assumptions: [], changes,
+      validation_result: {}, canonical_ids: [],
+    },
+  });
+  assert.equal(parsed.success, true);
+});

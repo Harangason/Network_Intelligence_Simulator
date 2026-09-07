@@ -2725,18 +2725,18 @@ export function NetworkEditor({
     });
   }
 
-  const arrangeCurrentTopology = useCallback((persist: boolean) => {
+  const arrangeCurrentTopology = useCallback(() => {
     const next = arrangeTopology(topology, surfaceWidth, routingEntries);
     arrangedStructureRef.current = `${topologyStructureSignature(next)}::${routingGroupSignature(routingEntries)}`;
-    if (persist && topologyLayoutSignature(next) !== topologyLayoutSignature(topology)) {
-      commitRelationships(next);
-    } else {
-      onChange(next);
-    }
-  }, [commitRelationships, onChange, routingEntries, surfaceWidth, topology]);
+    // Layout has its own persisted artifact below. Never save an automatic
+    // arrangement as a relationship change: that would resynchronize the
+    // engineering model, invalidate Capacity/Preflight/Simulation and can loop
+    // while a large EVA topology is still settling.
+    onChange(next);
+  }, [onChange, routingEntries, surfaceWidth, topology]);
 
   const applyAutoLayout = useCallback(() => {
-    arrangeCurrentTopology(true);
+    arrangeCurrentTopology();
   }, [arrangeCurrentTopology]);
 
   useEffect(() => {
@@ -2773,7 +2773,7 @@ export function NetworkEditor({
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
     if (arrangedStructureRef.current === structureSignature) return;
     arrangedStructureRef.current = structureSignature;
-    if (!evaStable) arrangeCurrentTopology(true);
+    if (!evaStable) arrangeCurrentTopology();
   }, [arrangeCurrentTopology, drag, evaStable, loadedLayoutKey, structureSignature, surfaceWidth, topology.nodes.length, topologyLayoutKey]);
 
   useEffect(() => {
@@ -2951,6 +2951,21 @@ export function NetworkEditor({
     if (!largeTopology || !visibleCanvasBounds) return evaDomainClusters;
     return evaDomainClusters.filter((cluster) => canvasRectangleIsVisible(cluster, visibleCanvasBounds));
   }, [evaDomainClusters, largeTopology, visibleCanvasBounds]);
+  const domainBusJunctions = useMemo(() => new Map(evaDomainClusters.map((domain) => {
+    const members = new Set(domain.memberIds);
+    const systems = evaClusters
+      .filter((cluster) => cluster.memberIds.some((nodeId) => members.has(nodeId)))
+      .map((cluster) => ({
+        id: cluster.id,
+        label: cluster.label,
+        left: Math.max(14, Math.min(domain.width - 14, cluster.left + cluster.width / 2 - domain.left)),
+      }));
+    const gateway = Boolean(primaryGatewayId && effectiveTopology.edges.some((edge) => (
+      (edge.source === primaryGatewayId && members.has(edge.target))
+      || (edge.target === primaryGatewayId && members.has(edge.source))
+    )));
+    return [domain.id, { systems, gateway }] as const;
+  })), [effectiveTopology.edges, evaClusters, evaDomainClusters, primaryGatewayId]);
 
   const renderedNodes = useMemo(() => {
     if (!largeTopology) return effectiveTopology.nodes;
@@ -3109,7 +3124,27 @@ export function NetworkEditor({
                 }}
               >
                 <span>{cluster.label}</span>
-                <div className="net-domain-bus"><b>{cluster.busLabel}</b></div>
+                <div
+                  aria-label={`${cluster.busLabel} mit ${domainBusJunctions.get(cluster.id)?.systems.length ?? 0} Systemknoten`}
+                  className="net-domain-bus"
+                  role="img"
+                >
+                  <b>{cluster.busLabel}</b>
+                  {(domainBusJunctions.get(cluster.id)?.systems ?? []).map((junction) => (
+                    <i
+                      className="net-domain-bus-junction"
+                      key={junction.id}
+                      style={{ left: junction.left }}
+                      title={`${junction.label} ist mit ${cluster.busLabel} verbunden`}
+                    />
+                  ))}
+                  {domainBusJunctions.get(cluster.id)?.gateway && (
+                    <i
+                      className="net-domain-bus-junction gateway"
+                      title={`${cluster.busLabel} ist mit dem zentralen Gateway verbunden`}
+                    />
+                  )}
+                </div>
               </div>
             ))}
           </div>

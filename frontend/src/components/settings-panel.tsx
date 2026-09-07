@@ -62,7 +62,7 @@ export function SettingsPanel() {
   );
   const formatGroups = useMemo(() => groupSimulationFormats(availableFormats), [availableFormats]);
 
-  function update(key: "automaticModelSync" | "openAgentOnStart", value: boolean) {
+  function update(key: "automaticModelSync" | "openAgentOnStart" | "collapseWorkflowHeroes", value: boolean) {
     const next = { ...settings, [key]: value };
     setSettings(next);
     writeUserSettings(next);
@@ -161,6 +161,17 @@ export function SettingsPanel() {
             <input
               checked={settings.openAgentOnStart}
               onChange={(event) => update("openAgentOnStart", event.target.checked)}
+              type="checkbox"
+            />
+          </label>
+          <label className="settings-toggle">
+            <span>
+              <strong>Workflow-Kopfbereiche standardmäßig einklappen</strong>
+              <small>Die große Beschreibung und Statusübersicht in allen Workflow-Ansichten zunächst kompakt anzeigen.</small>
+            </span>
+            <input
+              checked={settings.collapseWorkflowHeroes}
+              onChange={(event) => update("collapseWorkflowHeroes", event.target.checked)}
               type="checkbox"
             />
           </label>

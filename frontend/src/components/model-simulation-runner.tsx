@@ -35,6 +35,7 @@ import {
   type SignalBehaviorFilter,
   type SignalKindFilter,
 } from "@/lib/simulation-signal-view";
+import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/lib/simulation-network-view";
 
 type SimulationView = "network" | "signals" | "load" | "events";
 type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
@@ -454,9 +455,9 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
       <section className="panel synchronized-simulation-view">
         <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} onChange={setPlayhead} />
         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
-        {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} />}
+        {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} topology={workflow?.topology} />}
         {modelTrace && view === "signals" && <SignalsView trace={modelTrace} playhead={playhead} />}
-        {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} playhead={playhead} projectId={projectIdForLinks} trace={modelTrace} />}
+        {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} playhead={playhead} projectId={projectIdForLinks} topology={workflow?.topology} trace={modelTrace} />}
         {modelTrace && view === "events" && <EventsView trace={modelTrace} playhead={playhead} />}
       </section>
 
@@ -535,8 +536,8 @@ function SimulationScopeSelector({
       </div>
       {mode === "ALL" ? (
         <div className="simulation-scope-summary">
-          <strong>Alle Messages und Signals werden simuliert.</strong>
-          <span>{messages.length} Botschaften · {signals.length} Signale</span>
+          <strong>Alle freigegebenen, gerouteten Botschaften und Signale werden simuliert.</strong>
+          <span>{messages.length} Botschaften · {signals.length} Signale im Modell; interne oder ungeroutete Signale erzeugen keine Buslast.</span>
         </div>
       ) : mode === "MESSAGE" ? (
         <div className="simulation-scope-list">
@@ -578,15 +579,24 @@ function FaultProposalReview({ proposals, magnitudes, onMagnitude, onReview }: {
   return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Review gate</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{proposal.fault_scope}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Magnitude</span><input type="number" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" onClick={() => void onReview(proposal, "EDIT")} type="button">Ändern</button><button className="button secondary" onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div></article>)}</div></section>;
 }
 
-function NetworkView({ job, trace, playhead }: { job: SimulationJob | null; trace: ModelSimulationTrace; playhead: number }) {
+function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | null; trace: ModelSimulationTrace; playhead: number; topology?: Partial<NetworkTopology> }) {
   const networks = job?.result?.runtime_metrics?.networks ?? [];
   const routes = job?.result?.runtime_metrics?.routes ?? [];
   const visibleFrames = (trace.frames ?? []).filter((frame) => frame.time_s <= playhead + 0.000001);
+  const framesByRoute = useMemo(() => {
+    const grouped = new Map<string, ModelSimulationTrace["frames"]>();
+    for (const frame of trace.frames ?? []) {
+      const existing = grouped.get(frame.route_id);
+      if (existing) existing.push(frame);
+      else grouped.set(frame.route_id, [frame]);
+    }
+    return grouped;
+  }, [trace.frames]);
   const activeRoutes = new Set(visibleFrames.map((frame) => frame.route_id));
   const delivered = visibleFrames.filter((frame) => frame.status !== "dropped").length;
   const currentLoads = networks.map((network) => (trace.bus_load ?? []).filter((point) => point.network_id === network.network_id && point.time_s <= playhead + 0.000001).at(-1)?.load_percent ?? 0);
   const currentLoad = currentLoads.length ? Math.max(...currentLoads) : 0;
-  return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list">{routes.slice(0, 12).map((route) => <div key={route.route_id}><strong>{route.route_name}</strong><span>{route.configured_cycle_ms} ms</span><span>{visibleFrames.filter((frame) => frame.route_id === route.route_id).length} / {route.event_count} Frames</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>)}</div></div>;
+  return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list"><div className="runtime-route-heading"><span>Route</span><span>TX</span><span>RX</span><span>Takt</span><span>Frames</span><span>Status</span></div>{routes.slice(0, 12).map((route) => { const routeFrames = framesByRoute.get(route.route_id) ?? []; const presentation = runtimeRoutePresentation(route, routeFrames, topology); return <div className="runtime-route-row" key={route.route_id}><strong>{presentation.name}<small>{route.route_id}</small></strong><span><b>TX</b>{presentation.sender}</span><span><b>RX</b>{formatParticipants(presentation.receivers, 2)}</span><span>{route.configured_cycle_ms} ms</span><span>{routeFrames.filter((frame) => frame.time_s <= playhead + 0.000001).length} / {route.event_count}</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>; })}</div><div className="runtime-frame-list"><strong>Frame-Trace am Zeitzeiger</strong>{visibleFrames.slice(-20).reverse().map((frame, index) => <div key={`${frame.route_id}:${frame.time_s}:${index}`}><time>{frame.time_s.toFixed(4)} s</time><span>TX {frame.source_logical_address ?? "—"} · {frame.source_name ?? frame.sender}</span><span>RX {(frame.destination_logical_addresses ?? []).map((address, receiverIndex) => `${address ?? "—"} · ${frame.destination_names?.[receiverIndex] ?? frame.receivers?.[receiverIndex] ?? "unbekannt"}`).join(", ")}</span><span>{frame.route_name} · {frame.network}</span></div>)}</div></div>;
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
@@ -630,7 +640,16 @@ function modelLabel(label: ModelSignalSeries["model_label"]) {
   return { PHYSICS_BASED: "Physikbasiert", RULE_BASED: "Regelbasiert", EMPIRICAL: "Empirisch", SYNTHETIC: "Synthetisch", GENERIC_ESTIMATE: "Generische Schätzung" }[label];
 }
 
-function BusLoadView({ metrics, projectId, trace, playhead }: { metrics: RuntimeNetworkMetric[]; projectId?: string; trace: ModelSimulationTrace; playhead: number }) {
+function BusLoadView({ metrics, projectId, trace, playhead, topology }: { metrics: RuntimeNetworkMetric[]; projectId?: string; trace: ModelSimulationTrace; playhead: number; topology?: Partial<NetworkTopology> }) {
+  const framesByNetwork = useMemo(() => {
+    const grouped = new Map<string, ModelSimulationTrace["frames"]>();
+    for (const frame of trace.frames ?? []) {
+      const existing = grouped.get(frame.network);
+      if (existing) existing.push(frame);
+      else grouped.set(frame.network, [frame]);
+    }
+    return grouped;
+  }, [trace.frames]);
   return <div className="bus-load-grid"><div className="bus-load-source"><strong>SIMULATED LOAD</strong><span>Aus tatsächlichen Frames, Protokolloverhead, Zeitstempeln und Bitrate.</span><Link href={withProjectParam("/studio/capacity", projectId)}>CALCULATED LOAD im Capacity View</Link></div>{metrics.map((network) => {
     const visible = (trace.bus_load ?? []).filter((point) => point.network_id === network.network_id && point.time_s <= playhead + 0.000001);
     const current = visible.at(-1)?.load_percent ?? 0;
@@ -643,7 +662,8 @@ function BusLoadView({ metrics, projectId, trace, playhead }: { metrics: Runtime
     }, 0);
     const reserve = Math.max(0, 100 - peakToNow);
     const status = peakToNow >= 90 ? "OVERLOAD" : peakToNow >= 75 ? "WARNING" : "NOMINAL";
-    return <article key={network.network_id}><header><div><span>{network.technology}</span><strong>{network.network_id}</strong></div><b className={`load-status ${status.toLowerCase()}`}>{status} · t = {playhead.toFixed(3)} s</b></header>{[["Aktuell 50 ms", current], ["Ø bis Zeitzeiger", averageToNow], ["Peak bis Zeitzeiger", peakToNow], ["Burst 100 ms", burstToNow], ["Reserve", reserve]].map(([label, value]) => <div className="load-meter" key={String(label)}><span>{label}</span><div><i style={{ width: `${Math.min(100, Number(value))}%` }} /></div><strong>{Number(value).toFixed(2)} %</strong></div>)}</article>;
+    const presentation = runtimeNetworkPresentation(network, framesByNetwork.get(network.network_id) ?? [], topology);
+    return <article key={network.network_id}><header><div><span>{technologyLabel(network.technology)}</span><strong>{presentation.name}</strong><small>{network.network_id}</small></div><b className={`load-status ${status.toLowerCase()}`}>{status} · t = {playhead.toFixed(3)} s</b></header><div className="bus-load-participants"><span><b>TX</b>{formatParticipants(presentation.senders)}</span><span><b>RX</b>{formatParticipants(presentation.receivers)}</span></div>{[["Aktuell 50 ms", current], ["Ø bis Zeitzeiger", averageToNow], ["Peak bis Zeitzeiger", peakToNow], ["Burst 100 ms", burstToNow], ["Reserve", reserve]].map(([label, value]) => <div className="load-meter" key={String(label)}><span>{label}</span><div><i style={{ width: `${Math.min(100, Number(value))}%` }} /></div><strong>{Number(value).toFixed(2)} %</strong></div>)}</article>;
   })}{!metrics.length && <div className="simulation-empty-state"><strong>Keine Laufzeitlast verfügbar</strong></div>}</div>;
 }
 

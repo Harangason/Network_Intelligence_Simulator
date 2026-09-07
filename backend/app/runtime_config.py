@@ -14,6 +14,8 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
 
+from ..simulator.numeric_acceleration import acceleration_status
+
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_CONFIG_FILE = ROOT / "config" / "networkis.resources.json"
@@ -180,6 +182,7 @@ def runtime_status() -> dict[str, object]:
             "total_gib": round(memory / (1024**3), 2) if memory else None,
         },
         "gpu": _gpu_status(),
+        "numeric_acceleration": acceleration_status(),
         "ai": {
             "provider": settings.ai_provider,
             "local_base_url": settings.local_ai_base_url,

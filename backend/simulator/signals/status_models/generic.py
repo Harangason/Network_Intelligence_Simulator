@@ -27,10 +27,19 @@ def status_dimension(signal: Any) -> str:
 
 
 def state_code(signal: Any, context: Any, state_name: str, states: tuple[str, ...]) -> float:
+    aliases = {
+        "RUNNING": ("RUNNING", "ACTIVE"),
+        "STARTING": ("STARTING", "CONFIGURING", "INITIALIZING", "INIT"),
+        "STOPPING": ("STOPPING", "SHUTTING_DOWN", "TERMINATING", "SHUTDOWN"),
+        "INIT": ("INIT", "INITIALIZING", "CONFIGURING"),
+        "STANDBY": ("STANDBY", "READY", "INACTIVE"),
+        "OFF": ("OFF", "INACTIVE"),
+    }
+    compatible_state = next((candidate for candidate in aliases.get(state_name, (state_name,)) if candidate in states), states[0])
     enum = getattr(signal, "enum_values", {}) or {}
     if enum:
-        return float(enum.get(state_name, enum.get(state_name.lower(), 0)))
-    return float(states.index(state_name) if state_name in states else 0)
+        return float(enum.get(compatible_state, enum.get(compatible_state.lower(), 0)))
+    return float(states.index(compatible_state))
 
 
 def health(signal: Any, _time_s: float, context: Any, _state: Any) -> float:
@@ -47,6 +56,10 @@ def quality(signal: Any, time_s: float, _context: Any, _state: Any) -> float:
 
 
 def operating(signal: Any, time_s: float, context: Any, _state: Any, engine: StateMachineEngine) -> float:
-    state_name = engine.state_at(time_s, {"signal_values": getattr(context, "signal_values", {})})
-    getattr(context, "system_state", {})["operating_state"] = state_name
+    system_state = getattr(context, "system_state", {})
+    state_name = str(system_state.get("operating_state") or "") if isinstance(system_state, dict) else ""
+    if not state_name:
+        state_name = engine.state_at(time_s, {"signal_values": getattr(context, "signal_values", {})})
+        if isinstance(system_state, dict):
+            system_state["operating_state"] = state_name
     return state_code(signal, context, state_name, engine.allowed_states)

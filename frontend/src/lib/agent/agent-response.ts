@@ -28,7 +28,7 @@ export const agentResponseSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).default({}), created_at: z.string().min(1),
   proposal: z.object({ proposal_id: z.string(), proposal_type: z.string(), revision: z.string(),
     status: z.enum(['PROPOSED','VALIDATED','REJECTED','APPROVED','APPLIED','OUTDATED']), rationale: z.string(), assumptions: z.array(z.string()),
-    changes: z.array(z.object({action:z.string(),object_type:z.string(),data:z.record(z.string(),z.unknown()).optional()}).passthrough()).max(2000),
+    changes: z.array(z.object({action:z.string(),object_type:z.string(),data:z.record(z.string(),z.unknown()).optional()}).passthrough()).max(10000),
     validation_result:z.object({findings:z.array(z.object({message:z.string()}).passthrough()).optional()}).passthrough(),
     canonical_ids:z.array(z.object({object_type:z.string(),id:z.string()})),
   }).passthrough().optional(), workload: z.record(z.string(), z.unknown()).optional(),
