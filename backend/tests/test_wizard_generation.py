@@ -1,5 +1,6 @@
 """Real MCP regression for combined wizard creation, without local LLM calls."""
 import asyncio
+import json
 from collections import Counter
 from uuid import uuid4
 
@@ -18,7 +19,7 @@ from backend.engineering.agent_tools.run_status import reconcile_model_apply
 import pytest
 
 
-def test_combined_wizard_creates_validated_model_without_reasoner():
+def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch):
     authority = ToolAuthority(f'pytest-wizard-generator-{uuid4()}')
     prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
 - Lauf-ID: test-wizard-12345678
@@ -83,6 +84,196 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
         return WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
     reconciled = execute(authority, 'test_apply_status', Permission.READ_MODEL, {}, lambda _: restore_review_state())
     assert reconciled.success and reconciled.data['state'] == 'READY_TO_CONTINUE', reconciled
+
+    canonical_hardware = execute(authority, 'test_route_nodes', Permission.READ_MODEL, {}, lambda _: model.objects('HardwareNode')).data
+    interfaces = execute(authority, 'test_route_interfaces', Permission.READ_MODEL, {}, lambda _: model.objects('Interface')).data
+    interface_by_node = {str(item.get('hardware_node_id')): item.get('interface_type') for item in interfaces}
+    available_sensor_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'SensorController'}
+    available_actuator_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'ActuatorController'}
+    ecu = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] in available_sensor_types & available_actuator_types)
+    ecu_type = interface_by_node[str(ecu['id'])]
+    sensor = next(item for item in canonical_hardware if item['device_type'] == 'SensorController' and interface_by_node[str(item['id'])] == ecu_type)
+    actuator = next(item for item in canonical_hardware if item['device_type'] == 'ActuatorController' and interface_by_node[str(item['id'])] == ecu_type)
+    hmi = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] != ecu_type)
+    graph = json.dumps([{'cluster_id': 'test', 'controllers': [{
+        'ecu': ecu['name'], 'sensors': [sensor['name']], 'actuators': [actuator['name']]}],
+        'hmi_routes': [{'source': ecu['name'], 'target': hmi['name']}]}], separators=(',', ':'))
+    continuation_prompt = prompt + f'\n- Systemcluster-Graph: {graph}\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: routing.'
+    async def route_continuation():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            return await EngineeringAgent(client, reasoner=NoReasoner()).run(
+                continuation_prompt, AgentContext(active_project_id=authority.project_id))
+    routed = asyncio.run(route_continuation())
+    assert routed['status'] == 'READY_FOR_REVIEW', routed.get('proposals', [{}])[0].get('validation_result', routed)
+    routing_proposal = routed['proposals'][0]
+    assert routing_proposal['proposal_type'] == 'WIZARD_ROUTING'
+    assert routing_proposal['status'] == 'VALIDATED'
+    assert len(routing_proposal['changes']) == 3
+    hmi_route = routing_proposal['changes'][-1]['data']
+    assert hmi_route['route']['gateways']
+    assert hmi_route['route']['transformations'][0]['type'] == 'PROTOCOL_TRANSLATION'
+    assert not routing_proposal['canonical_ids']
+
+    route_approved = execute(authority, 'test_routing_review', Permission.READ_MODEL, {}, lambda _: proposal_service.review(
+        routing_proposal['proposal_id'], revision=routing_proposal['revision'], decision='approve', actor='test-human', trace_id=str(uuid4())))
+    assert route_approved.success and route_approved.data['status'] == 'APPROVED', route_approved
+    route_applied = execute(authority, 'test_routing_apply', Permission.READ_MODEL, {}, lambda _: proposal_service.apply(
+        routing_proposal['proposal_id'], actor='test-human', trace_id=str(uuid4())))
+    assert route_applied.success and route_applied.data['status'] == 'APPLIED', route_applied
+    routing_check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['routing']
+    assert routing_check['complete'], routing_check
+
+    network_prompt = prompt + f'\n- Systemcluster-Graph: {graph}\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'
+    async def network_continuation():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            return await EngineeringAgent(client, reasoner=NoReasoner()).run(
+                network_prompt, AgentContext(active_project_id=authority.project_id))
+    networked = asyncio.run(network_continuation())
+    assert networked['status'] == 'READY_FOR_REVIEW', networked
+    network_proposal = networked['proposals'][0]
+    assert network_proposal['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'
+    assert network_proposal['status'] == 'VALIDATED', network_proposal['validation_result']
+    topology = network_proposal['changes'][0]['data']['topology']
+    assert len(topology['nodes']) == len(canonical_hardware)
+    assert len(topology['edges']) >= 3
+    assert all(node['engineeringId'] for node in topology['nodes'])
+    assert all(edge['engineeringRelationId'] for edge in topology['edges'])
+    assert all(edge['routingEntryIds'] for edge in topology['edges'] if edge['origin'] == 'ROUTING_TABLE')
+    connected_node_ids = {node_id for edge in topology['edges'] for node_id in (edge['source'], edge['target'])}
+    assert connected_node_ids == {node['id'] for node in topology['nodes']}
+    assert WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['network_editor']['status'] == 'EMPTY'
+
+    topology_approved = execute(authority, 'test_topology_review', Permission.READ_MODEL, {}, lambda _: proposal_service.review(
+        network_proposal['proposal_id'], revision=network_proposal['revision'], decision='approve', actor='test-human', trace_id=str(uuid4())))
+    assert topology_approved.success and topology_approved.data['status'] == 'APPROVED', topology_approved
+    topology_applied = execute(authority, 'test_topology_apply', Permission.READ_MODEL, {}, lambda _: proposal_service.apply(
+        network_proposal['proposal_id'], actor='test-human', trace_id=str(uuid4())))
+    assert topology_applied.success and topology_applied.data['status'] == 'APPLIED', topology_applied
+    topology_check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['network_editor']
+    assert topology_check['complete'], topology_check
+    assert topology_check['counts'] == {'nodes': len(canonical_hardware), 'edges': len(topology['edges'])}
+    topology_conversation = conversation.read()
+    topology_conversation.update(active_proposal=network_proposal['proposal_id'], current_requirement=network_prompt)
+    conversation.write(topology_conversation)
+    WorkflowStatusService(authority.project_id).set_context({'agent_execution': {
+        'run_id': 'test-wizard-12345678', 'state': 'REVIEW_REQUIRED', 'step': 'network_editor',
+        'completed': 1, 'total': 1}})
+    topology_status = execute(authority, 'test_topology_apply_status', Permission.READ_MODEL, {}, lambda _: (
+        reconcile_model_apply(authority.project_id, topology_applied.data),
+        WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution'],
+    )[1])
+    assert topology_status.success and topology_status.data['state'] == 'READY_TO_CONTINUE', topology_status
+    assert topology_status.data['step'] == 'capacity_timing', topology_status
+
+    capacity_prompt = prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: capacity_timing.'
+    async def capacity_continuation():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            return await EngineeringAgent(client, reasoner=NoReasoner()).run(
+                capacity_prompt, AgentContext(active_project_id=authority.project_id))
+    capacity_result = asyncio.run(capacity_continuation())
+    assert capacity_result['status'] == 'COMPLETED', capacity_result
+    assert any(item['tool'] == 'calculate_capacity' and item['status'] == 'SUCCESS'
+               for item in capacity_result['trace'])
+    capacity_status = WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['capacity_timing']
+    assert capacity_status in {'COMPLETE', 'WARNING'}, capacity_status
+    capacity_snapshot = WorkflowStatusService(authority.project_id).latest_analysis('capacity_timing')
+    assert capacity_snapshot['results']['overview']['route_count'] == 3
+    assert capacity_snapshot['results']['overview']['network_count'] >= 1
+
+    preflight_result = asyncio.run(network_continuation())
+    assert preflight_result['status'] == 'READY_TO_CONTINUE', preflight_result
+    assert [item['tool'] for item in preflight_result['trace']].count('calculate_capacity') == 0
+    assert any(item['tool'] == 'validate_simulation_preflight' for item in preflight_result['trace'])
+    assert 'kein prüfbarer Änderungs- oder Workload-Aufruf' not in preflight_result['text']
+    assert WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['validation'] == 'APPROVED'
+
+    from backend.engineering.agent_tools import simulation_gateway
+    simulation_job_id = 'test-wizard-simulation-job'
+    def start_simulation(snapshot_id):
+        WorkflowStatusService(authority.project_id).update_simulation_snapshot(
+            snapshot_id,
+            status='COMPLETED',
+            job_id=simulation_job_id,
+            result={
+                'runtime_metrics': {'network_count': 1, 'event_count': 3},
+                'trace': {'event_count': 3},
+                'hardware_validation': {'valid': True},
+                'warnings': [],
+            },
+        )
+        return {'id': simulation_job_id, 'status': 'completed'}
+    monkeypatch.setattr(simulation_gateway, 'start', start_simulation)
+    monkeypatch.setattr(simulation_gateway, 'job', lambda job_id: {
+        'id': job_id, 'status': 'completed', 'result': {'runtime_metrics': {'event_count': 3}},
+    })
+
+    simulation_result = asyncio.run(network_continuation())
+    assert simulation_result['status'] == 'READY_TO_CONTINUE', simulation_result
+    simulation_tools = [item['tool'] for item in simulation_result['trace']]
+    assert 'create_simulation_snapshot' in simulation_tools
+    assert 'start_simulation' in simulation_tools
+    assert 'get_simulation_status' in simulation_tools
+    assert 'kein prüfbarer Änderungs- oder Workload-Aufruf' not in simulation_result['text']
+    workflow_after_simulation = WorkflowStatusService(authority.project_id).get(summary=True)
+    assert workflow_after_simulation['statuses']['simulation'] == 'COMPLETE'
+    assert workflow_after_simulation['statuses']['results_analysis'] == 'COMPLETE'
+
+
+def test_rail_cluster_graph_produces_valid_native_rail_interfaces():
+    authority = ToolAuthority(f'pytest-rail-wizard-{uuid4()}')
+    prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
+- Lauf-ID: test-rail-wizard
+- Industrie: Rail
+- Systemcluster-Graph: [{"network_id":"mvb","network_label":"rail · mvb","controllers":[{"ecu":"TrainControl","sensors":["TrainSpeed"],"actuators":["TrainControlStellglied"]}]}]
+- Hardware-Sollwerte: {"gateways":1,"ecus":1,"sensors":1,"actuators":1}
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Erzeuge ein kleines Rail-Modell mit einem Gateway, einer ECU, einem Sensor und einem Aktor.
+'''
+
+    result = execute(authority, 'test_rail_wizard', Permission.GENERATE_PROPOSAL, {},
+                     lambda _: wizard_generation.generate({'prompt': prompt}))
+    assert result.success, result.findings
+    validated = execute(authority, 'test_rail_validate', Permission.VALIDATE,
+                        {'proposal_id': result.data['proposal_id']},
+                        lambda args: proposal_service.validate(args['proposal_id']))
+    assert validated.success, validated.findings
+    assert validated.data['status'] == 'VALIDATED', validated.data['validation_result']
+    rail_interfaces = [change['data'] for change in validated.data['changes']
+                       if change['object_type'] in {'Interface', 'HardwareNetworkInterface'}
+                       and (change['data'].get('interface_type') == 'MVB' or change['data'].get('technology') == 'MVB')]
+    assert rail_interfaces
+
+
+def test_industrial_model_type_generates_plc_and_registry_backed_transport_chain():
+    authority = ToolAuthority(f'pytest-industrial-wizard-{uuid4()}')
+    prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
+- Lauf-ID: test-industrial-wizard
+- Industrie: Industrial Automation / SPS
+- Projekt-Modelltyp: industrial_automation
+- Kommunikationstechnologien: PROFINET
+- Systemcluster-Graph: [{"network_id":"profinet","network_label":"industrial_automation · profinet","controllers":[{"ecu":"SPSLeitsystem","sensors":["Temperatur"],"actuators":[]}]}]
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Erzeuge eine SPS mit Temperaturmessung über PROFINET.
+'''
+
+    result = execute(authority, 'test_industrial_wizard', Permission.GENERATE_PROPOSAL, {},
+                     lambda _: wizard_generation.generate({'prompt': prompt}))
+    assert result.success, result.findings
+    proposal = result.data
+    hardware = [change['data'] for change in proposal['changes'] if change['object_type'] == 'HardwareNode']
+    assert len([item for item in hardware if item['device_type'] == 'PLC']) == 1
+    assert not [item for item in hardware if item['device_type'] == 'ECU']
+    ports = [change['data'] for change in proposal['changes'] if change['object_type'] == 'HardwareNetworkInterface']
+    assert ports and all(port['technology'] == 'ProfiNET' for port in ports)
+    messages = [change['data'] for change in proposal['changes'] if change['object_type'] == 'Message']
+    assert all(message['configuration']['model_type'] == 'TransportUnit' for message in messages)
+    assert all(message['configuration']['technology_binding']['technology_id'] == 'profinet' for message in messages)
+    signals = [change['data'] for change in proposal['changes'] if change['object_type'] == 'Signal']
+    assert all(signal['protocol_bindings'][0]['model_type'] == 'PayloadElement' for signal in signals)
+    assert proposal['evidence'][0]['model_type'] == 'industrial_automation'
+
+
 @pytest.mark.parametrize('device_class', [0, 1, 2])
 def test_basic_sensor_interfaces_reparent_without_losing_children(device_class):
     authority = ToolAuthority(f'pytest-class-reparent-{uuid4()}')

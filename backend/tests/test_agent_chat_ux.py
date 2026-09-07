@@ -8,13 +8,13 @@ import httpx
 import pytest
 from backend.agent_core.api.agent_response import AgentResponse, InteractiveQuestion, validate_response
 from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _no_think_messages
+from backend.agent_core.core.engineering_agent import EngineeringAgent, reasoning_workload_progress
+from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _is_structured_wizard_request, _no_think_messages
 from backend.agent_core.api.mcp_client import EngineeringMCPClient
 from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
 from backend.engineering.agent_tools import conversation, proposal_service
-from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id
+from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id, restore_wizard_continuation_prompt
 from backend.engineering.workflow.service import WorkflowStatusService
 
 
@@ -54,6 +54,16 @@ def test_local_reasoner_disables_hidden_thinking_without_mutating_history():
     prepared = _no_think_messages(messages)
     assert prepared[-1]['content'] == 'Werkzeug wählen\n/no_think'
     assert messages[-1]['content'] == 'Werkzeug wählen'
+
+
+def test_structured_wizard_request_uses_fast_orchestration_path():
+    messages = [{'role': 'user', 'content': (
+        'Strukturierte Vorgaben fuer den Engineering-Agenten:\n'
+        '- Systemcluster-Graph: []\n'
+        '- Netzarchitektur-ID: gateway_ecu_segments'
+    )}]
+    assert _is_structured_wizard_request(messages) is True
+    assert _is_structured_wizard_request([{'role': 'user', 'content': 'Analysiere das Routing'}]) is False
 
 
 def test_local_reasoner_does_not_duplicate_the_full_requirement_in_system_context():
@@ -109,6 +119,61 @@ def test_wizard_execution_status_is_durable_and_uses_the_external_run_id():
     finished = WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
     assert finished['state'] == 'REVIEW_REQUIRED'
     assert finished['message'] == 'Prüfung erforderlich.'
+
+
+def test_reasoning_iterations_emit_bounded_structured_progress():
+    assert reasoning_workload_progress(0, 12) == {'completed': 1, 'total': 12}
+    assert reasoning_workload_progress(4, 12) == {'completed': 5, 'total': 12}
+    assert reasoning_workload_progress(99, 12) == {'completed': 12, 'total': 12}
+    assert reasoning_workload_progress(0, 0) == {'completed': 1, 'total': 1}
+
+
+def test_engineering_agent_emits_structured_progress_after_each_reasoning_step():
+    class OneToolReasoner:
+        def __init__(self):
+            self.turn = 0
+
+        async def next(self, messages, context, tools):
+            self.turn += 1
+            if self.turn == 1:
+                return {
+                    'calls': [{'id': 'call-progress', 'name': 'inspect_project', 'arguments': {}}],
+                    'assistant_message': {'role': 'assistant', 'content': '', 'tool_calls': []},
+                }
+            return {'text': 'Prüfung beendet.', 'calls': [], 'assistant_message': {}}
+
+    authority = ToolAuthority(f'wizard-progress-{uuid4()}')
+    emitted = []
+
+    async def invoke():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            return await EngineeringAgent(client, reasoner=OneToolReasoner(), max_steps=3).run(
+                'Prüfe Routing und Pfade.',
+                AgentContext(active_project_id=authority.project_id),
+                emit=emitted.append,
+            )
+
+    asyncio.run(invoke())
+    progress = next(event for event in emitted if event.get('text') == 'Arbeitsschritt 1 geprüft.')
+    assert progress['workload'] == {'completed': 1, 'total': 3}
+
+
+def test_compact_wizard_continuation_restores_the_confirmed_request():
+    run_id = str(uuid4())
+    original = (
+        'Strukturierte Vorgaben fuer den Engineering-Agenten:\n'
+        f'- Lauf-ID: {run_id}\n'
+        '- Hardware-Sollwerte: {"ecus": 2}\n'
+        'Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:\n'
+        'Erzeuge das Modell.'
+    )
+    compact = f'Setze den bestaetigten Engineering-Auftrag fort. Lauf-ID: {run_id}. Ziel: routing.'
+    restored = restore_wizard_continuation_prompt(compact, {'run_id': run_id, 'agent_prompt': original})
+    assert restored.startswith(original)
+    assert restored.endswith(compact)
+    assert restore_wizard_continuation_prompt(original, {'run_id': run_id, 'agent_prompt': original}) == original
+    assert restore_wizard_continuation_prompt(compact, {'run_id': 'other-run', 'agent_prompt': original}) == compact
+    assert len(restore_wizard_continuation_prompt(compact, {'run_id': run_id, 'agent_prompt': original}, 180)) <= 180
 
 
 def test_conversation_heartbeat_only_renews_matching_run():

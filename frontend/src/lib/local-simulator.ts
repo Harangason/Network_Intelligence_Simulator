@@ -11,14 +11,21 @@ export const localCatalog: Catalog = {
   formats: simulationFormatDefinitions.map((format) => format.id),
   domains: [
     { id: "automotive", label: "Automotive", technologies: [technology("can_fd", "CAN", "Differential bus", "Bus", 2000000, 64, ["blf", "dbc", "asc", "trc", "mdf", "mf4"]), technology("automotive_ethernet", "Ethernet", "Twisted pair", "Switched", 100000000, 1500, ["pcap", "pcapng"]), technology("lin", "LIN", "Single wire", "Bus", 19200, 8, ["asc", "trc", "csv", "json"])] },
-    { id: "industrial", label: "Industrial Automation", technologies: [technology("profinet", "Industrial Ethernet", "Ethernet", "Switched", 100000000, 1440, ["pcap", "pcapng"]), technology("modbus_tcp", "Modbus", "Ethernet", "Client/server", 100000000, 253, ["pcap", "pcapng"])] },
+    { id: "industrial_automation", label: "Industrial Automation / SPS", technologies: [technology("profinet", "Industrial Ethernet", "Ethernet", "Switched", 100000000, 1440, ["pcap", "pcapng"]), technology("modbus_tcp", "Modbus", "Ethernet", "Client/server", 100000000, 253, ["pcap", "pcapng"])] },
     { id: "aerospace", label: "Aerospace", technologies: [technology("arinc429", "ARINC", "Shielded pair", "Point-to-point", 100000, 4), technology("mil_std_1553", "MIL-STD-1553", "Dual bus", "Command/response", 1000000, 32)] },
-    { id: "iot", label: "IoT & Sensor Networks", technologies: [technology("mqtt", "MQTT", "IP", "Broker", 10000000, 65535), technology("lorawan", "LoRaWAN", "Radio", "Star-of-stars", 50000, 242)] },
-    { id: "telecom", label: "Telecommunication", technologies: [technology("ethernet", "Ethernet", "Fiber / copper", "Switched", 1000000000, 1500, ["pcap", "pcapng"]), technology("5g_nr", "5G NR", "Radio", "Cellular", 100000000, 65535)] },
+    { id: "iot_wireless", label: "IoT / Edge / Wireless", technologies: [technology("mqtt", "MQTT", "IP", "Broker", 10000000, 65535), technology("lorawan", "LoRaWAN", "Radio", "Star-of-stars", 50000, 242)] },
     { id: "energy", label: "Energy & Smart Grid", technologies: [technology("iec61850", "IEC 61850", "Ethernet", "Station bus", 100000000, 1500), technology("dnp3", "DNP3", "Serial / IP", "Master/outstation", 115200, 2048)] },
-    { id: "robotics", label: "Robotics", technologies: [technology("ethercat", "EtherCAT", "Ethernet", "Line / ring", 100000000, 1486, ["pcap", "pcapng"]), technology("ros2_dds", "DDS", "IP", "Publish/subscribe", 1000000000, 65535, ["pcap", "pcapng"])] },
-    { id: "medical", label: "Medical Devices", technologies: [technology("hl7", "HL7", "IP", "Client/server", 100000000, 65535), technology("ble", "Bluetooth LE", "Radio", "Star", 2000000, 251)] },
+    { id: "robotics_ros", label: "Robotics / ROS 2", technologies: [technology("ethercat", "EtherCAT", "Ethernet", "Line / ring", 100000000, 1486, ["pcap", "pcapng"]), technology("dds", "DDS", "IP", "Publish/subscribe", 1000000000, 65535, ["pcap", "pcapng"])] },
+    { id: "rail", label: "Rail", technologies: [technology("mvb", "Rail", "Twisted pair", "Bus", 1500000, 32), technology("trdp", "Rail Ethernet", "Ethernet", "Switched", 100000000, 65507, ["pcap", "pcapng"])] },
+    { id: "marine", label: "Marine / Off-Highway", technologies: [technology("nmea2000", "Marine CAN", "Differential bus", "Bus", 250000, 223)] },
+    { id: "building_automation", label: "Building Automation", technologies: [technology("bacnet_ip", "BACnet", "Ethernet", "Switched", 100000000, 1476)] },
+    { id: "process_industry", label: "Process Industry", technologies: [technology("hart", "HART", "Field wiring", "Point-to-point", 1200, 255)] },
+    { id: "embedded_systems", label: "Embedded / Electronics", technologies: [technology("i2c", "Embedded", "Two wire", "Bus", 400000, 255), technology("spi", "Embedded", "Board local", "Point-to-multipoint", 50000000, 65535)] },
+    { id: "generic_networking", label: "Generische Kommunikationsarchitektur", technologies: [technology("ethernet", "Ethernet", "Fiber / copper", "Switched", 1000000000, 1500, ["pcap", "pcapng"])] },
+    { id: "custom", label: "Custom / Proprietary", technologies: [technology("custom_protocol", "Custom", "Configurable", "Configurable", 1000000, 65535)] },
   ],
+  layers: ["PHYSICAL", "DATA_LINK", "NETWORK", "TRANSPORT", "APPLICATION", "INDUSTRY_PROFILE"],
+  core_model_types: ["HardwareNode", "HardwareInterface", "FunctionalInterface", "TechnologyBinding", "TransportUnit", "PayloadElement"],
 };
 
 const LEGACY_STORAGE_KEY = "communication-simulator-jobs-v1";

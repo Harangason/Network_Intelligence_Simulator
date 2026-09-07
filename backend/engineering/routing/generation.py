@@ -25,6 +25,10 @@ INTERFACE_TO_PROTOCOL = {
     "OPCUA": "OPC_UA",
     "ARINC": "ARINC",
     "MIL_STD_1553": "MIL_STD_1553",
+    "MVB": "MVB",
+    "WTB": "WTB",
+    "ETB": "ETB",
+    "TRDP": "TRDP",
     "PCIe": "PCIE",
 }
 

@@ -140,6 +140,11 @@ def _validate_changes(changes: list[dict]) -> dict:
                 result = RoutingValidator().validate(data)
                 if not result.get("valid", result.get("is_valid", False)):
                     raise ValueError(f"Route ist nicht gültig: {result.get('findings', result)}")
+            elif kind == "NetworkTopology" and action == "CREATE":
+                topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
+                result = WorkflowStatusService._topology_artifact_check(topology)
+                if not result["complete"]:
+                    raise ValueError(f"Netzwerktopologie ist unvollständig: {result}")
             elif kind == "Network" and action == "CREATE":
                 if not data.get("id") or not data.get("technology"):
                     raise ValueError("Netzwerk benötigt id und technology.")
@@ -259,6 +264,10 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             item = accept_proposal_routes(str(route_proposal["proposal_id"]),[0],actor=contract["approved_by"])[0]
             save_validation(str(item["id"]),RoutingValidator().validate(item,exclude_route_id=str(item["id"])),actor=actor)
             item = approve_routes([str(item["id"])],actor=contract["approved_by"])[0]
+        elif kind == "NetworkTopology":
+            topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
+            WorkflowStatusService(current_project_id()).save_topology(topology, actor=actor)
+            item = {"id": "workflow-network-topology", "name": data.get("name") or "Netzwerktopologie"}
         elif kind == "SimulationScenario":
             item = save_scenario({**data, "created_by": contract["approved_by"]})
         elif kind == "Network":
@@ -292,7 +301,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     if contract.get("workload_id"):
         from ..workloads import EngineeringWorkloadOrchestrator
         EngineeringWorkloadOrchestrator(current_project_id()).evaluate_workload_completion(contract["workload_id"], actor=actor)
-    mark_model_changed()
+    if any(change["object_type"] in ENTITY_SPECS for change in contract["changes"]):
+        mark_model_changed()
     record(trace_id, actor, "APPLY", "apply_approved_proposal", "APPLIED", {"proposal_id": proposal_id, "canonical_ids": canonical})
     return result
 

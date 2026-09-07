@@ -592,6 +592,20 @@ def test_motor_physics_is_state_dependent_and_continuous() -> None:
     assert temp_values[-1] - temp_values[0] <= 4.000001
 
 
+def test_short_drive_cycle_makes_exhaust_and_damper_signals_dynamic() -> None:
+    exhaust = definition(id="exhaust-temperature", name="ExhaustGasTemperature", min_value=-40, max_value=1100, factor=0.1, behavior={"behavior_type": "PHYSICS_MODEL", "model_label": "PHYSICS_BASED"})
+    damper = definition(id="damper-position", name="FrontLeftDamperPosition", min_value=0, max_value=100, factor=0.1, behavior={"behavior_type": "PHYSICS_MODEL", "model_label": "PHYSICS_BASED"})
+    engine = SignalBehaviorEngine([exhaust, damper], seed=17, scenario={"duration_s": 2, "mode": "NORMAL"})
+
+    exhaust_values = [engine.sample(exhaust, time_s) for time_s in (0, 0.4, 0.8, 1.2, 1.6)]
+    damper_values = [engine.sample(damper, time_s) for time_s in (0, 0.4, 0.8, 1.2, 1.6)]
+
+    assert exhaust_values[0] >= 90
+    assert len(set(exhaust_values)) > 2
+    assert len(set(damper_values)) > 2
+    assert damper_values != [50] * len(damper_values)
+
+
 def test_dependency_graph_rejects_cycles_and_reports_dirty_dependents() -> None:
     first = definition(id="first", name="First", behavior={"behavior_type": "FORMULA", "dependencies": ["Second"]})
     second = definition(id="second", name="Second", behavior={"behavior_type": "FORMULA", "dependencies": ["First"]})

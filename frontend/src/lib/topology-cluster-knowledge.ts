@@ -68,9 +68,10 @@ const AUTOMOTIVE_RULES: TopologyClusterRule[] = [
   { key: "emobility", label: "E-Mobilitaet", role: "plant", terms: ["elektromotor", "emotor", "electricmotor", "inverter", "traction", "hv", "hochvolt", "charging", "laden", "ladegeraet", "obc", "dcdc"], related: ["powertrain_motor", "powertrain_transmission", "energy"] },
   { key: "energy", label: "Energie / HV", role: "infrastructure", terms: ["energie", "energy", "batterie", "battery", "bms", "bordnetz", "alternator", "generator", "spannung", "voltage", "strom", "current", "zellspannung", "soc", "soh"], related: ["emobility", "powertrain_motor", "body_comfort"] },
   { key: "chassis", label: "Fahrdynamik", role: "controller", terms: ["bremse", "brake", "lenkung", "steering", "fahrwerk", "suspension", "reifen", "tire", "rad", "wheel", "yaw", "pitch", "roll"], related: ["driver_assistance", "powertrain_motor"] },
+  { key: "safety", label: "Passive Sicherheit", role: "controller", terms: ["airbag", "restraint", "rueckhalt", "crash", "impact", "seatbelt", "gurt"], related: ["chassis", "diagnostics"] },
   { key: "driver_assistance", label: "Fahrerassistenz", role: "source", terms: ["adas", "fahrerassistenz", "radar", "kamera", "camera", "lidar", "park", "parking", "spur", "lane", "ultraschall"], related: ["chassis", "body_comfort"] },
   { key: "body_comfort", label: "Karosserie / Komfort", role: "actuation", terms: ["karosserie", "body", "bodycontrol", "comfort", "komfort", "wischer", "wiper", "tuer", "tuere", "door", "fenster", "window", "seat", "sitz", "keyless", "wegfahrsperre", "heckklappe", "tailgate", "schiebedach", "sunroof"], related: ["energy", "lighting", "climate"] },
-  { key: "climate", label: "Klima / Thermik", role: "actuation", terms: ["klima", "climate", "hvac", "thermal", "kuehlung", "cooling", "coolant", "thermo", "compressor", "kompressor"], related: ["energy", "body_comfort", "emobility"] },
+  { key: "climate", label: "Klima / Thermik", role: "actuation", terms: ["klima", "climate", "hvac", "thermal", "kuehlung", "cooling", "coolant", "thermo", "compressor", "kompressor", "ambient", "aussen", "outside", "cabin", "innenraum", "refrigerant", "kaeltemittel"], related: ["energy", "body_comfort", "emobility"] },
   { key: "lighting", label: "Licht", role: "actuation", terms: ["licht", "light", "lamp", "illumination", "scheinwerfer"], related: ["body_comfort", "energy"] },
   { key: "infotainment", label: "Infotainment", role: "service", terms: ["infotainment", "display", "kombiinstrument", "headup", "audio", "sound", "telematik", "navigation", "connectivity", "konnektivitaet"], related: ["body_comfort", "diagnostics"] },
   { key: "diagnostics", label: "Diagnose", role: "service", terms: ["diagnose", "diagnostic", "service", "uds", "obd", "logging", "trace"], related: ["powertrain_motor", "energy", "infotainment"] },
@@ -91,11 +92,25 @@ const INDUSTRY_RULES: Partial<Record<TopologyClusterProfileKey, TopologyClusterR
     { key: "grid", label: "Netz / Schutz", role: "infrastructure", terms: ["grid", "netz", "breaker", "schalter", "frequency", "schutz"], related: ["inverter", "metering"] },
     { key: "metering", label: "Messung", role: "source", terms: ["meter", "messung", "voltage", "current", "power"], related: ["grid"] },
   ],
+  rail: [
+    { key: "train_control", label: "Zugsteuerung", role: "controller", terms: ["traincontrol", "zugsteuerung", "vehiclecontrol", "zugfuehrung"], related: ["traction", "brake", "signalling"] },
+    { key: "traction", label: "Antrieb / Traktion", role: "actuation", terms: ["traction", "traktion", "antrieb", "motor", "drive"], related: ["train_control", "energy", "brake"] },
+    { key: "brake", label: "Bremse / Safety", role: "controller", terms: ["brake", "bremse", "brems", "safetyinterlock", "safety", "sicherheit"], related: ["traction", "running_gear", "train_control"] },
+    { key: "running_gear", label: "Fahrwerk / Drehgestell", role: "plant", terms: ["axletemperature", "axleload", "axlevibration", "bearingtemperature", "bogietemperature", "bogie", "bogies", "drehgestell", "axle", "achse", "bearing", "lager", "vibration", "fahrwerk"], related: ["brake", "traction"] },
+    { key: "doors_coupling", label: "Türen / Kupplung", role: "actuation", terms: ["door", "tuer", "coupling", "kupplung", "access"], related: ["passenger", "train_control"] },
+    { key: "passenger", label: "Fahrgast / HMI", role: "service", terms: ["passenger", "fahrgast", "information", "display", "hmi", "lighting", "licht"], related: ["doors_coupling", "climate", "wayside"] },
+    { key: "climate", label: "Klima / Thermik", role: "actuation", terms: ["hvac", "climate", "klima", "thermal", "temperatur", "temperature"], related: ["passenger", "energy"] },
+    { key: "energy", label: "Energie / Stromabnehmer", role: "infrastructure", terms: ["energy", "energie", "metering", "pantograph", "stromabnehmer", "current", "spannung", "voltage"], related: ["traction", "climate"] },
+    { key: "signalling", label: "Signaltechnik", role: "infrastructure", terms: ["signalling", "signalaspect", "signalbegriff", "etcs", "controlcommand"], related: ["train_control", "wayside"] },
+    { key: "wayside", label: "Wayside-Kommunikation", role: "infrastructure", terms: ["wayside", "strecke", "trackside", "communication"], related: ["signalling", "passenger", "diagnostics"] },
+    { key: "diagnostics", label: "Ereignis / Diagnose", role: "service", terms: ["eventrecorder", "event", "recorder", "diagnose", "diagnostic", "logging", "trace"], related: ["train_control", "wayside"] },
+  ],
 };
 
 const PROFILE_ORDER: Record<string, string[]> = {
-  automotive: ["powertrain_motor", "powertrain_exhaust", "powertrain_transmission", "emobility", "energy", "chassis", "driver_assistance", "body_comfort", "climate", "lighting", "infotainment", "diagnostics"],
+  automotive: ["powertrain_motor", "powertrain_exhaust", "powertrain_transmission", "emobility", "energy", "chassis", "safety", "driver_assistance", "body_comfort", "climate", "lighting", "infotainment", "diagnostics"],
   generic: ["control", "sensorics", "actuation", "energy", "diagnostics"],
+  rail: ["train_control", "traction", "brake", "running_gear", "doors_coupling", "passenger", "climate", "energy", "signalling", "wayside", "diagnostics"],
 };
 
 const PROFILE_FAMILIES: Partial<Record<TopologyClusterProfileKey, Record<string, { key: string; label: string }>>> = {
@@ -106,6 +121,7 @@ const PROFILE_FAMILIES: Partial<Record<TopologyClusterProfileKey, Record<string,
     emobility: { key: "powertrain", label: "Antriebsstrang" },
     energy: { key: "energy", label: "Energieversorgung" },
     chassis: { key: "chassis", label: "Fahrwerk / Fahrdynamik" },
+    safety: { key: "safety", label: "Passive Sicherheit" },
     driver_assistance: { key: "driver_assistance", label: "Fahrerassistenz" },
     body_comfort: { key: "body_comfort", label: "Karosserie / Komfort" },
     climate: { key: "climate", label: "Klima / Thermik" },
@@ -124,6 +140,19 @@ const PROFILE_FAMILIES: Partial<Record<TopologyClusterProfileKey, Record<string,
     inverter: { key: "conversion", label: "Speicher / Umwandlung" },
     grid: { key: "grid", label: "Netz / Schutz" },
     metering: { key: "grid", label: "Netz / Schutz" },
+  },
+  rail: {
+    train_control: { key: "train_control", label: "Zugsteuerung" },
+    traction: { key: "traction", label: "Antriebsstrang" },
+    brake: { key: "safety", label: "Bremse / Safety" },
+    running_gear: { key: "running_gear", label: "Fahrwerk / Drehgestell" },
+    doors_coupling: { key: "body", label: "Türen / Kupplung" },
+    passenger: { key: "passenger", label: "Fahrgast / HMI" },
+    climate: { key: "climate", label: "Klima / Thermik" },
+    energy: { key: "energy", label: "Energieversorgung" },
+    signalling: { key: "signalling", label: "Signaltechnik" },
+    wayside: { key: "communications", label: "Wayside-Kommunikation" },
+    diagnostics: { key: "diagnostics", label: "Ereignis / Diagnose" },
   },
 };
 
@@ -144,6 +173,17 @@ const PROFILE_SYSTEM_ALIASES: Partial<Record<TopologyClusterProfileKey, Record<s
     klimatisierung: "klimatisierung",
     thermal: "thermomanagement",
     thermomanagement: "thermomanagement",
+  },
+  rail: {
+    traincontrol: "zugsteuerung",
+    tractioncontrol: "traktionssteuerung",
+    brakecontrol: "bremssteuerung",
+    doorcontrol: "tuersteuerung",
+    hvaccontrol: "klimasteuerung",
+    bogiesensorik: "drehgestellsteuerung",
+    passengerinformation: "fahrgastinformation",
+    energymetering: "energiemessung",
+    lightingcontrol: "lichtsteuerung",
   },
 };
 
@@ -198,14 +238,25 @@ export function topologyClusterForText(text: string, industry?: string) {
   const profile = inferTopologyClusterProfileFromText(text, industry);
   const normalized = normalizeTopologyClusterText(text);
   const compactText = compact(text);
-  const tokens = new Set(normalized.split(/\s+/).filter(Boolean));
+  const orderedTokens = normalized.split(/\s+/).filter(Boolean);
+  const tokens = new Set(orderedTokens);
+  const leadingToken = orderedTokens[0] ?? "";
   const scoreRules = (rules: TopologyClusterRule[]) => rules
     .map((rule, index) => ({
       index,
       rule,
       score: rule.terms.reduce((total, term) => {
         const needle = compact(term);
-        return total + (tokens.has(needle) || (needle.length >= 4 && compactText.includes(needle)) ? needle.length : 0);
+        const matched = tokens.has(needle) || (needle.length >= 4 && compactText.includes(needle));
+        if (!matched) return total;
+        // Hardware names conventionally start with the owning system (for example
+        // AxleTemperature). A trailing measurement qualifier must not outweigh
+        // that system root merely because its word is longer.
+        // The owning system at the beginning of a generated hardware name is
+        // stronger evidence than generic words from descriptions/system frames.
+        // This keeps Airbag out of Energy and Door/Seat out of Chassis even if
+        // surrounding German metadata contains several weaker family terms.
+        return total + needle.length + (leadingToken === needle ? 1_000 : 0);
       }, 0),
     }))
     .filter((item) => item.score > 0)

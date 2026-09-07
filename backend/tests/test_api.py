@@ -10,8 +10,13 @@ def test_health_and_catalog() -> None:
 
     assert client.get("/api/health").get_json()["status"] == "ok"
     catalog = client.get("/api/technologies").get_json()
-    assert catalog["technology_count"] == 54
-    assert len(catalog["domains"]) == 10
+    assert catalog["technology_count"] >= 100
+    assert len(catalog["domains"]) == 13
+    assert catalog["core_model_types"] == [
+        "HardwareNode", "HardwareInterface", "FunctionalInterface",
+        "TechnologyBinding", "TransportUnit", "PayloadElement",
+    ]
+    assert catalog["implementation_status"]["IMPLEMENTED"] >= 12
     can_fd = next(
         technology
         for domain in catalog["domains"]

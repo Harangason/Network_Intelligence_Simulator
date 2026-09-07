@@ -31,6 +31,11 @@ FAMILIES = (
     (("coolant", "oiltemperature", "intakeairtemperature", "oillevel", "temperature", "temperatur"), ("thermal", "thermomanagement", "klimatisierung")),
 )
 
+CONTROLLER_DEVICE_TYPES = {
+    "ECU", "PLC", "RobotController", "EmbeddedController", "IndustrialPC",
+    "FlightComputer", "BatteryManagementSystem", "EnergyController", "BuildingController",
+}
+
 
 def _key(value: str) -> str:
     value = normalize_hardware_name(value).lower()
@@ -42,7 +47,7 @@ def _key(value: str) -> str:
 def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> dict[str, dict[str, str]]:
     """Prefer explicit ownership; unresolved or ambiguous names stay separate."""
     by_id = {str(item["id"]): item for item in hardware}
-    processors = {key: item for key, item in by_id.items() if item.get("device_type") == "ECU"}
+    processors = {key: item for key, item in by_id.items() if item.get("device_type") in CONTROLLER_DEVICE_TYPES}
     processor_keys: dict[str, list[str]] = {}
     for processor_id, processor in processors.items():
         processor_keys.setdefault(_key(str(processor.get("name") or "")), []).append(processor_id)

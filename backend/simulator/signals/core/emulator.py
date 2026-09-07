@@ -152,7 +152,14 @@ def _initial_default(definition: Any, context: SimulationContext) -> float:
     if semantic_type in {"ENUM", "STATE", "BOOLEAN", "COUNTER", "BITFIELD", "EVENT", "QUALITY"}:
         return float(definition.minimum)
     if "temperature" in name or "temp" in name:
-        return number(getattr(context, "environment", {}).get("ambient_temperature"), 22.0)
+        ambient = number(getattr(context, "environment", {}).get("ambient_temperature"), 22.0)
+        if any(token in name for token in ("exhaust", "abgas", "catalyst", "katalys")):
+            return min(definition.maximum, max(definition.minimum, ambient + 70.0))
+        if any(token in name for token in ("motor", "engine", "oil", "oel", "transmission", "getriebe")):
+            return min(definition.maximum, max(definition.minimum, ambient + 18.0))
+        if "battery" in name or "batterie" in name:
+            return min(definition.maximum, max(definition.minimum, ambient + 3.0))
+        return ambient
     if any(token in name for token in ("rpm", "speed", "torque", "current", "velocity", "acceleration")) and definition.minimum <= 0:
         return 0.0
     return (definition.minimum + definition.maximum) / 2.0

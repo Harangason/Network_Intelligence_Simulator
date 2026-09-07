@@ -11,12 +11,12 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 try:
-    from signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type
+    from signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type, vehicle_state
     from signals.derived import DerivedSignalEngine
     from signals.quality import SignalQualityEngine
     from signals.faults import SignalFaultOverlayRegistry
 except ImportError:  # pragma: no cover - package import fallback
-    from .signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type
+    from .signals.core import PlausibleSignalEmulationService, SimulationContext, infer_semantic_type, vehicle_state
     from .signals.derived import DerivedSignalEngine
     from .signals.quality import SignalQualityEngine
     from .signals.faults import SignalFaultOverlayRegistry
@@ -287,9 +287,10 @@ class SignalDependency:
 
 
 class SignalBehaviorEngine:
-    def __init__(self, signals: list[SignalDefinition], *, seed: int = 42) -> None:
+    def __init__(self, signals: list[SignalDefinition], *, seed: int = 42, scenario: dict[str, Any] | None = None) -> None:
         self.signals = signals
         self.seed = seed
+        self.scenario = scenario or {"duration_s": 30.0}
         self._state: dict[str, float] = {}
         self._history: dict[str, list[tuple[float, float]]] = defaultdict(list)
         self._last_samples: dict[str, Any] = {}
@@ -306,12 +307,19 @@ class SignalBehaviorEngine:
             if self._history.get(signal.id)
             else signal.cycle_ms / 1000.0
         )
+        scenario = {**self.scenario}
+        scenario.setdefault("duration_s", 30.0)
         simulation_context = SimulationContext(
             current_time=time_s,
             dt=dt,
             seed=self.seed,
             signal_values=context or {},
-            environment={"ambient_temperature": 22.0, "supply_voltage": 13.6},
+            scenario=scenario,
+            system_state=vehicle_state(time_s, scenario),
+            environment={
+                "ambient_temperature": _number(scenario.get("ambient_temperature"), 22.0),
+                "supply_voltage": _number(scenario.get("supply_voltage"), 13.6),
+            },
         )
         sample = self.emulator.step(signal, time_s, dt, simulation_context)
         self._last_samples[signal.id] = sample
@@ -502,9 +510,10 @@ class ModelBasedSimulationEngine:
         for signal in self.signals:
             self.by_message[signal.message_id].append(signal)
         self.seed = int(config.get("seed") or 42)
-        scenario = _mapping(config.get("scenario"))
+        scenario = {**_mapping(config.get("scenario"))}
+        scenario.setdefault("duration_s", _number(config.get("duration_s"), 2.0))
         scenario_mode = str(scenario.get("mode") or "NORMAL").upper()
-        self.behavior = SignalBehaviorEngine(self.signals, seed=self.seed)
+        self.behavior = SignalBehaviorEngine(self.signals, seed=self.seed, scenario=scenario)
         self.functions = FunctionBehaviorEngine()
         self.derived = DerivedSignalEngine()
         self.quality = SignalQualityEngine()

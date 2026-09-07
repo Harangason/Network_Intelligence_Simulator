@@ -1,4 +1,10 @@
-import { normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import { isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import {
+  compareTopologyClusterKeys,
+  resolveTopologyClusterProfile,
+  topologyClusterFamilyForKey,
+  topologyClusterForText,
+} from "../topology-cluster-knowledge.ts";
 
 export type EquipmentNetworkOption = {
   id: string;
@@ -16,6 +22,59 @@ export type EquipmentClusterAssignment = {
   devices: number;
   counts: Record<string, number>;
   evidence: string[];
+  tree?: EquipmentEcuBranch[];
+  unassigned?: EquipmentDeviceLeaf[];
+  hmi_routes?: EquipmentHmiRoute[];
+  validation?: { valid: boolean; warnings: string[] };
+};
+
+export type EquipmentDeviceLeaf = {
+  name: string;
+  deviceType: string;
+  interfaceType: string;
+  confidence: number;
+  reason: string;
+};
+
+export type EquipmentTermMeaning = {
+  english: string;
+  german: string;
+  system: string;
+};
+
+const EQUIPMENT_MEANINGS: Array<{ pattern: RegExp; meaning: EquipmentTermMeaning }> = [
+  { pattern: /ambienttemperature/i, meaning: { english: "Ambient temperature", german: "Außentemperatur", system: "Klima / Thermik" } },
+  { pattern: /accessorycurrent/i, meaning: { english: "Accessory electrical current", german: "Stromaufnahme der Nebenverbraucher", system: "Energieversorgung / Bordnetz" } },
+  { pattern: /suspensiontravel/i, meaning: { english: "Suspension travel", german: "Federweg", system: "Fahrwerk / Fahrdynamik" } },
+  { pattern: /damperposition/i, meaning: { english: "Damper position", german: "Dämpferposition", system: "Fahrwerk / Fahrdynamik" } },
+  { pattern: /tirepressure/i, meaning: { english: "Tire pressure", german: "Reifendruck", system: "Fahrwerk / Fahrdynamik" } },
+  { pattern: /airbag/i, meaning: { english: "Airbag / restraint system", german: "Airbag- / Rückhaltesystem", system: "Passive Sicherheit" } },
+  { pattern: /door/i, meaning: { english: "Door control", german: "Türsteuerung", system: "Karosserie / Komfort" } },
+  { pattern: /seat/i, meaning: { english: "Seat control", german: "Sitzsteuerung", system: "Karosserie / Komfort" } },
+  { pattern: /batterytemperature/i, meaning: { english: "Battery temperature", german: "Batterietemperatur", system: "Energieversorgung" } },
+  { pattern: /batteryvoltage/i, meaning: { english: "Battery voltage", german: "Batteriespannung", system: "Energieversorgung" } },
+  { pattern: /batterycurrent/i, meaning: { english: "Battery current", german: "Batteriestrom", system: "Energieversorgung" } },
+];
+
+export function equipmentTermMeaning(name: string): EquipmentTermMeaning {
+  const known = EQUIPMENT_MEANINGS.find((entry) => entry.pattern.test(name))?.meaning;
+  if (known) return known;
+  const readable = keyText(name).replace(/\b\w/g, (char) => char.toUpperCase());
+  return { english: readable || name, german: "Keine eindeutige Fachübersetzung hinterlegt", system: "Fachliche Zuordnung prüfen" };
+}
+
+export type EquipmentEcuBranch = {
+  name: string;
+  interfaceType: string;
+  sensors: EquipmentDeviceLeaf[];
+  actuators: EquipmentDeviceLeaf[];
+};
+
+export type EquipmentHmiRoute = {
+  source: string;
+  target: string;
+  signals: string[];
+  path: string[];
 };
 
 export type EquipmentCluster = {
@@ -27,6 +86,10 @@ export type EquipmentCluster = {
   counts: Record<string, number>;
   devices: ExtractedEngineeringChain[];
   evidence: string[];
+  clusterKey: string;
+  controllers: EquipmentEcuBranch[];
+  unassigned: EquipmentDeviceLeaf[];
+  hmiRoutes: EquipmentHmiRoute[];
 };
 
 const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferredNetworks: string[]; recommendation: string }> = [
@@ -288,7 +351,9 @@ function uniqueDevices(devices: ExtractedEngineeringChain[]) {
 }
 
 function fallbackClusterFor(chain: ExtractedEngineeringChain) {
-  return FALLBACK_CLUSTER_BY_DEVICE_TYPE[chain.device_type] ?? {
+  return FALLBACK_CLUSTER_BY_DEVICE_TYPE[chain.device_type]
+    ?? (isEngineeringControllerDevice(chain.device_type) ? FALLBACK_CLUSTER_BY_DEVICE_TYPE.ECU : undefined)
+    ?? {
     id: `system:${slug(inferredSystemName(chain))}`,
     label: displayLabel(inferredSystemName(chain)),
     preferredNetworks: [chain.interface_type, "canfd", "can", "lin"],
@@ -296,22 +361,160 @@ function fallbackClusterFor(chain: ExtractedEngineeringChain) {
   };
 }
 
+function profilePreferences(profile: string, familyKey: string, devices: ExtractedEngineeringChain[]) {
+  const critical = devices.some((chain) => chain.cycle_ms <= 20)
+    || /safety|brake|traction|powertrain|fahrwerk|signalling/.test(familyKey);
+  const highBandwidth = devices.some((chain) => /ethernet/i.test(chain.interface_type))
+    || /infotainment|passenger|wayside|diagnostics/.test(familyKey);
+  if (profile === "rail" && highBandwidth) return ["trdp", "etb", "ethernet", "wtb", "mvb"];
+  if (profile === "rail" && critical) return ["mvb", "etb", "wtb", "can", "lin"];
+  if (profile === "rail") return ["mvb", "wtb", "etb", "trdp"];
+  if (highBandwidth) return ["ethernet", "canfd", "can", "lin"];
+  if (critical) return ["canfd", "ethernet", "can", "lin"];
+  if (profile === "automotive" && /body|climate|lighting/.test(familyKey)) return ["lin", "canfd", "can"];
+  return ["canfd", "can", "ethernet", "lin"];
+}
+
+function instanceOrdinal(value: string) {
+  return Number(value.match(/(?:-|_|\s)(\d+)$/)?.[1] ?? 1);
+}
+
+function ownershipStem(value: string) {
+  return compactKey(normalizeHardwareName(value))
+    .replace(/\d+$/, "")
+    .replace(/(?:schaltausgang|stellglied|actuator|aktuator|aktor|sensor|controller|steuergeraet|steuerung|control|erfassung|plc|sps)$/g, "");
+}
+
+function deviceLeaf(chain: ExtractedEngineeringChain, confidence: number, reason: string): EquipmentDeviceLeaf {
+  return {
+    name: chain.hardware_name,
+    deviceType: chain.device_type,
+    interfaceType: chain.interface_type,
+    confidence,
+    reason,
+  };
+}
+
+function controllerBranches(devices: ExtractedEngineeringChain[], industry?: string) {
+  const controllers = devices.filter((chain) => isEngineeringControllerDevice(chain.device_type));
+  const endpoints = devices.filter((chain) => chain.device_type === "SensorController" || chain.device_type === "ActuatorController");
+  const branches = controllers.map((controller) => ({
+    name: controller.hardware_name,
+    interfaceType: controller.interface_type,
+    sensors: [] as EquipmentDeviceLeaf[],
+    actuators: [] as EquipmentDeviceLeaf[],
+  }));
+  const unassigned: EquipmentDeviceLeaf[] = [];
+
+  for (const endpoint of endpoints) {
+    const endpointStem = ownershipStem(endpoint.hardware_name);
+    const endpointCluster = topologyClusterForText(chainCorpus(endpoint), industry);
+    const ranked = controllers
+      .map((controller, index) => {
+        const controllerStem = ownershipStem(controller.hardware_name);
+        const sameStem = endpointStem.length >= 4 && controllerStem.length >= 4
+          && (endpointStem.includes(controllerStem) || controllerStem.includes(endpointStem));
+        const sameOrdinal = instanceOrdinal(endpoint.hardware_name) === instanceOrdinal(controller.hardware_name);
+        const sameSystem = topologyClusterForText(chainCorpus(controller), industry).key === endpointCluster.key;
+        return { controller, index, score: (sameStem ? 1_000 : 0) + (sameOrdinal ? 80 : 0) + (sameSystem ? 160 : 0) };
+      })
+      .sort((left, right) => right.score - left.score || left.controller.hardware_name.localeCompare(right.controller.hardware_name, "de"));
+    const best = ranked[0];
+    const tiedBest = Boolean(best && ranked[1] && ranked[1].score === best.score);
+    const uniqueFamilyOwner = controllers.length === 1 ? controllers[0] : undefined;
+    const owner = best?.score >= 240 && (!tiedBest || best.score >= 1_000) ? best.controller : uniqueFamilyOwner;
+    if (!owner) {
+      unassigned.push(deviceLeaf(endpoint, 0, "Mehrere fachlich mögliche Controller; Zuordnung muss bestätigt werden."));
+      continue;
+    }
+    const branch = branches.find((candidate) => candidate.name === owner.hardware_name)!;
+    const reason = best?.score >= 1_000
+      ? "Gemeinsamer Systemname und Instanzbezug."
+      : best?.score >= 240
+        ? "Gleicher fachlicher Systemzweig."
+        : "Einziger Controller im fachlichen Systemzweig.";
+    const leaf = deviceLeaf(endpoint, best?.score >= 1_000 ? 0.98 : best?.score >= 240 ? 0.82 : 0.68, reason);
+    if (endpoint.device_type === "SensorController") branch.sensors.push(leaf);
+    else branch.actuators.push(leaf);
+  }
+  return { branches, unassigned };
+}
+
+function graphClusterFor(chain: ExtractedEngineeringChain, industry: string) {
+  const cluster = topologyClusterForText(chainCorpus(chain), industry);
+  const family = topologyClusterFamilyForKey(cluster.key, industry);
+  return {
+    id: `family:${family.key}`,
+    key: cluster.key,
+    familyKey: family.key,
+    label: family.label,
+  };
+}
+
+function displayRoutesForClusters(clusters: EquipmentCluster[], allDevices: ExtractedEngineeringChain[]) {
+  const hmis = allDevices.filter((chain) => isEngineeringControllerDevice(chain.device_type)
+    && /kombiinstrument|headup|display|infotainment|passengerinformation|fahrgastinformation|hmi/i.test(chain.hardware_name));
+  if (!hmis.length) return;
+  for (const cluster of clusters) {
+    if (!/powertrain|traction|antrieb/.test(`${cluster.id} ${cluster.label}`.toLowerCase())) continue;
+    const sources = cluster.devices.filter((chain) => isEngineeringControllerDevice(chain.device_type));
+    cluster.hmiRoutes = sources.slice(0, 4).flatMap((source) => hmis.slice(0, 2).map((target) => ({
+      source: source.hardware_name,
+      target: target.hardware_name,
+      signals: cluster.devices
+        .filter((chain) => chain.hardware_name === source.hardware_name || chain.device_type === "SensorController")
+        .map((chain) => chain.signal_display_name || chain.signal_name)
+        .filter(Boolean)
+        .slice(0, 4),
+      path: [source.hardware_name, cluster.recommendedNetworkLabel, "Gateway", target.hardware_name],
+    })));
+  }
+}
+
+export function equipmentClusterBusWarnings(cluster: EquipmentCluster, networkId: string, networkLabel = "") {
+  const network = compactKey(`${networkId} ${networkLabel}`);
+  const warnings: string[] = [];
+  if (network.includes("lin") && cluster.devices.some((chain) => chain.cycle_ms <= 20)) {
+    warnings.push("LIN ist für mindestens einen Teilnehmer mit Zykluszeit ≤ 20 ms nicht die belastbare Standardwahl.");
+  }
+  if (network.includes("lin") && /safety|bremse|antrieb|traction|fahrwerk|signalling/.test(cluster.label.toLowerCase())) {
+    warnings.push("Safety- oder regelungskritischer Systemzweig darf nicht ohne begründete Ausnahme auf LIN liegen.");
+  }
+  if (cluster.unassigned.length) warnings.push(`${cluster.unassigned.length} Sensoren/Aktoren besitzen noch keine eindeutige Controller-Zuordnung.`);
+  return warnings;
+}
+
 export function buildEquipmentClusters(
   chains: ExtractedEngineeringChain[],
   networkOptions: EquipmentNetworkOption[],
+  industry?: string,
 ): EquipmentCluster[] {
-  const buckets = new Map<string, { label: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
+  const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
+  const graphMode = Boolean(industry);
+  const buckets = new Map<string, { label: string; clusterKey: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
+  const controllerGraphs = graphMode
+    ? uniqueDevices(chains)
+      .filter((chain) => isEngineeringControllerDevice(chain.device_type))
+      .map((chain) => ({ stem: ownershipStem(chain.hardware_name), graph: graphClusterFor(chain, profile) }))
+    : [];
 
   chains
     .filter((chain) => chain.device_type !== "Gateway")
     .forEach((chain) => {
+      const stem = ownershipStem(chain.hardware_name);
+      const inheritedGraph = (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
+        ? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
+          ?? (controllerGraphs.length === 1 ? controllerGraphs[0].graph : undefined)
+        : undefined;
+      const graph = graphMode ? inheritedGraph ?? graphClusterFor(chain, profile) : null;
       const rule = ruleFor(chain);
       const explicit = explicitSystemName(chain);
       const fallback = explicit ? null : fallbackClusterFor(chain);
-      const label = rule?.label ?? displayLabel(explicit || fallback?.label || inferredSystemName(chain));
-      const id = rule ? `rule:${rule.id}` : explicit ? `system:${slug(label)}` : fallback?.id ?? `system:${slug(label)}`;
+      const label = graph?.label ?? rule?.label ?? displayLabel(explicit || fallback?.label || inferredSystemName(chain));
+      const id = graph?.id ?? (rule ? `rule:${rule.id}` : explicit ? `system:${slug(label)}` : fallback?.id ?? `system:${slug(label)}`);
       const bucket = buckets.get(id) ?? {
         label,
+        clusterKey: graph?.key ?? rule?.id ?? id,
         recommendation: rule?.recommendation ?? fallback?.recommendation ?? "Fachlich zusammenhaengende Teilnehmer als Systemrahmen pruefen.",
         preferredNetworks: rule?.preferredNetworks ?? fallback?.preferredNetworks ?? [chain.interface_type, "canfd", "can", "lin"],
         devices: [],
@@ -320,22 +523,31 @@ export function buildEquipmentClusters(
       buckets.set(id, bucket);
     });
 
-  return [...buckets.entries()]
+  const clusters = [...buckets.entries()]
     .map(([id, bucket]) => {
-      const network = recommendedNetwork(networkOptions, bucket.preferredNetworks);
       const sortedDevices = uniqueDevices(bucket.devices).sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de"));
+      const preferences = graphMode ? profilePreferences(profile, id, sortedDevices) : bucket.preferredNetworks;
+      const network = recommendedNetwork(networkOptions, preferences);
+      const ownership = controllerBranches(sortedDevices, profile);
       return {
         id,
         label: bucket.label,
+        clusterKey: bucket.clusterKey,
         recommendation: bucket.recommendation,
         recommendedNetworkId: network.id,
         recommendedNetworkLabel: network.label,
         counts: deviceCounts(sortedDevices),
         devices: sortedDevices,
         evidence: sortedDevices.slice(0, 6).map((chain) => chain.hardware_name),
+        controllers: ownership.branches,
+        unassigned: ownership.unassigned,
+        hmiRoutes: [],
       };
     })
-    .sort((left, right) => right.devices.length - left.devices.length || left.label.localeCompare(right.label, "de"));
+    .sort((left, right) => compareTopologyClusterKeys(left.clusterKey, right.clusterKey, profile)
+      || left.label.localeCompare(right.label, "de"));
+  displayRoutesForClusters(clusters, chains);
+  return clusters;
 }
 
 export function equipmentClusterSummary(assignments: EquipmentClusterAssignment[]) {
@@ -343,4 +555,29 @@ export function equipmentClusterSummary(assignments: EquipmentClusterAssignment[
     .filter((assignment) => assignment.selected)
     .map((assignment) => `${assignment.label} -> ${assignment.network_label} / ${assignment.bus_name} (${assignment.devices} Teilnehmer)`)
     .join("; ");
+}
+
+export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignment[]) {
+  return assignments
+    .filter((assignment) => assignment.selected)
+    .map((assignment) => ({
+      cluster_id: assignment.cluster_id,
+      label: assignment.label,
+      network_id: assignment.network_id,
+      network_label: assignment.network_label,
+      bus_name: assignment.bus_name,
+      controllers: (assignment.tree ?? []).map((controller) => ({
+        ecu: controller.name,
+        sensors: controller.sensors.map((sensor) => sensor.name),
+        actuators: controller.actuators.map((actuator) => actuator.name),
+      })),
+      unassigned: (assignment.unassigned ?? []).map((device) => device.name),
+      hmi_routes: (assignment.hmi_routes ?? []).map((route) => ({
+        source: route.source,
+        target: route.target,
+        signals: route.signals,
+        path: route.path,
+      })),
+      warnings: assignment.validation?.warnings ?? [],
+    }));
 }

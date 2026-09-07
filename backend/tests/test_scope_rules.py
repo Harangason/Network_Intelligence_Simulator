@@ -94,7 +94,12 @@ def test_scope_rules_accept_someip_as_ethernet_carried_protocol():
         ("ActuatorController", "actuators"),
         ("ECU", "ecus"),
         ("Gateway", "gateways"),
-        ("PLC", None),
+        ("PLC", "ecus"),
+        ("RobotController", "ecus"),
+        ("EmbeddedController", "ecus"),
+        ("FlightComputer", "ecus"),
+        ("EnergyController", "ecus"),
+        ("BuildingController", "ecus"),
     ],
 )
 def test_hardware_scope_category(device_type, category):

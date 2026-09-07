@@ -16,6 +16,16 @@ if str(SIMULATOR_ROOT) not in sys.path:
     sys.path.insert(0, str(SIMULATOR_ROOT))
 
 from bus_technologies import DEFAULT_TECHNOLOGY_REGISTRY  # noqa: E402
+try:  # package import in API/tests; fallback keeps the standalone backend entry point working
+    from ..communication.technologies import (
+        DEFAULT_TECHNOLOGY_REGISTRY as COMMUNICATION_TECHNOLOGY_REGISTRY,
+        MODEL_TYPES,
+    )
+except ImportError:  # pragma: no cover - exercised by the standalone launcher
+    from communication.technologies import (  # type: ignore[no-redef]
+        DEFAULT_TECHNOLOGY_REGISTRY as COMMUNICATION_TECHNOLOGY_REGISTRY,
+        MODEL_TYPES,
+    )
 from communication_simulator import CommunicationSimulator  # noqa: E402
 from standalone_cli import (  # noqa: E402
     DOMAIN_LABELS,
@@ -45,24 +55,32 @@ class SimulationService:
         self.runtime_load_monitor = RuntimeBusLoadMonitor()
 
     def catalog(self) -> dict[str, Any]:
+        profiles = {profile["id"]: profile for profile in COMMUNICATION_TECHNOLOGY_REGISTRY.profiles()}
         domains: list[dict[str, Any]] = []
-        for generator in DEFAULT_TECHNOLOGY_REGISTRY.generators:
+        for model_type in MODEL_TYPES:
+            selected_ids = model_type.get("recommended_technologies") or [
+                technology_id for technology_id, profile in profiles.items() if profile["domain"] == model_type["id"]
+            ]
             technologies = []
-            for technology_id, profile in generator.generate().items():
-                technology = {"id": technology_id, **profile.to_dict()}
+            for technology_id in selected_ids:
+                if technology_id not in profiles:
+                    continue
+                technology = copy.deepcopy(profiles[technology_id])
+                technology.setdefault("kind", "protocol" if technology["layer"] in {"NETWORK", "TRANSPORT", "APPLICATION", "INDUSTRY_PROFILE"} else "network")
+                technology.setdefault("family", technology["domain"])
+                technology.setdefault("medium", technology["hardware_interface"])
+                technology.setdefault("topology", "technology_specific")
+                technology.setdefault("native_formats", [])
                 technology["parameter_schema"] = self._parameter_schema(technology_id, technology)
                 technologies.append(technology)
-            domains.append(
-                {
-                    "id": generator.domain,
-                    "label": DOMAIN_LABELS.get(generator.domain, generator.domain),
-                    "technologies": technologies,
-                }
-            )
+            domains.append({**copy.deepcopy(model_type), "technologies": technologies})
         return {
-            "technology_count": sum(len(item["technologies"]) for item in domains),
+            "technology_count": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["technology_count"],
             "domains": domains,
             "formats": sorted(SUPPORTED_STANDALONE_FORMATS),
+            "layers": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["layers"],
+            "implementation_status": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["implementation_status"],
+            "core_model_types": ["HardwareNode", "HardwareInterface", "FunctionalInterface", "TechnologyBinding", "TransportUnit", "PayloadElement"],
         }
 
     @staticmethod

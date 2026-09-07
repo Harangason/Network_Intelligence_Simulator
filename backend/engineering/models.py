@@ -71,8 +71,16 @@ INTERFACE_TYPES = (
     "PCIe",
     "MQTT",
     "OPCUA",
+    "WiFi",
+    "BLE",
+    "DDS",
+    "ROS2",
     "ARINC",
     "MIL_STD_1553",
+    "MVB",
+    "WTB",
+    "ETB",
+    "TRDP",
     "Other",
 )
 

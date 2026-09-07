@@ -72,6 +72,10 @@ PROTOCOLS = (
     "MODBUS",
     "ARINC",
     "MIL_STD_1553",
+    "MVB",
+    "WTB",
+    "ETB",
+    "TRDP",
     "CUSTOM",
 )
 

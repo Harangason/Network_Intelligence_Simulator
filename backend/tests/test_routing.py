@@ -396,6 +396,43 @@ def test_network_path_accepted_from_routing_table_does_not_duplicate_route():
     assert skipped == []
 
 
+def test_wizard_physical_completeness_edge_does_not_create_logical_route():
+    topology = {
+        "nodes": [
+            {
+                "id": "source",
+                "name": "Fahrersitz",
+                "kind": "ecu",
+                "engineeringId": SOURCE,
+                "ports": [{"id": "source-port", "bus": "lin"}],
+            },
+            {
+                "id": "target",
+                "name": "Beifahrersitz",
+                "kind": "ecu",
+                "engineeringId": TARGET,
+                "ports": [{"id": "target-port", "bus": "lin"}],
+            },
+        ],
+        "edges": [
+            {
+                "id": "physical-completeness-edge",
+                "source": "source",
+                "sourcePort": "source-port",
+                "target": "target",
+                "targetPort": "target-port",
+                "bus": "lin",
+                "origin": "WIZARD_PHYSICAL_COMPLETENESS",
+            }
+        ],
+    }
+
+    candidates, skipped = build_network_route_candidates("project-a", topology)
+
+    assert candidates == []
+    assert skipped == []
+
+
 def test_linked_agent_route_receives_physical_network_and_ports():
     route_id = "00000000-0000-0000-0000-000000000099"
     route = {

@@ -1,4 +1,5 @@
 from .context import SimulationContext
+from .scenario_state import vehicle_state
 from .emulator import PlausibleSignalEmulationService, SignalEmulator, infer_semantic_type
 from .random_service import SimulationRandomService
 from .sample import SignalSample
@@ -9,7 +10,7 @@ __all__ = [
     "SignalEmulator",
     "SignalSample",
     "SimulationRandomService",
-    "SimulationContext",
+    "SimulationContext", "vehicle_state",
     "infer_semantic_type",
     "validate_signal_emulation_model",
 ]

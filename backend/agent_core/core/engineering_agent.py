@@ -1,6 +1,7 @@
 """Engineering orchestration. No SQL, repositories or simulator domain imports."""
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Callable
 from uuid import uuid4
@@ -8,6 +9,12 @@ from ..api.mcp_client import EngineeringMCPClient
 from ..api.tool_contract import ToolResult
 from ..context.agent_context import AgentContext
 from ..api.agent_response import AgentResponse, InteractiveQuestion, validate_response
+
+
+def reasoning_workload_progress(step: int, max_steps: int) -> dict[str, int]:
+    """Expose bounded reasoning iterations as structured progress telemetry."""
+    total = max(1, min(int(max_steps), 24))
+    return {"completed": min(max(0, int(step)) + 1, total), "total": total}
 
 
 class EngineeringAgent:
@@ -73,7 +80,7 @@ class EngineeringAgent:
 
         if context.active_proposal and not context.current_workload:
             restored = await call('inspect_proposal', {'proposal_id':context.active_proposal})
-            if restored.success and restored.data['status'] not in {'APPLIED', 'REJECTED'}:
+            if restored.success and restored.data['status'] in {'VALIDATED', 'READY_FOR_REVIEW', 'APPROVED'}:
                 event('APPROVAL', proposal=restored.data, text=restored.data['rationale'])
                 event('RESULT', status=restored.data['status'], text='Der gespeicherte Vorschlag ist wiederhergestellt. Bitte seinen aktuellen Prüfstatus beachten.')
                 return {'run_id':run_id, 'status':restored.data['status'], 'events':events, 'context':context.model_dump(), 'trace':traces, 'proposals':[restored.data]}
@@ -102,6 +109,253 @@ class EngineeringAgent:
             event('RESULT', status=status, text=text)
             return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
+
+        # A confirmed continuation has a deterministic server-side generator.
+        # Do not ask the reasoner to infer hundreds of calls from the mass model.
+        wizard_target = re.search(r'Fortsetzung des bestätigten Wizard-Auftrags:.*?Ziel:\s*([a-z_]+)', prompt, re.I | re.S)
+        workflow_order = ['engineering_model', 'routing', 'network_editor', 'parameters', 'capacity_timing',
+                          'validation', 'simulation', 'results_analysis', 'data_science_intelligence']
+        target = wizard_target.group(1).casefold() if wizard_target else None
+        target_index = workflow_order.index(target) if target in workflow_order else -1
+        routing_complete = project.data.get('artifact_checks', {}).get('routing', {}).get('complete', False)
+        topology_complete = project.data.get('artifact_checks', {}).get('network_editor', {}).get('complete', False)
+        parameters_complete = project.data.get('artifact_checks', {}).get('parameters', {}).get('complete', False)
+        workflow_statuses = project.data.get('statuses', {})
+        capacity_complete = workflow_statuses.get('capacity_timing') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        validation_complete = workflow_statuses.get('validation') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        simulation_complete = workflow_statuses.get('simulation') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        results_complete = workflow_statuses.get('results_analysis') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        intelligence_complete = workflow_statuses.get('data_science_intelligence') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        if confirmed_wizard and target_index >= workflow_order.index('routing') and not routing_complete:
+            event('PROGRESS', status='PLANNING', text='Routing aus dem bestätigten Systemcluster-Graph vorbereiten.')
+            result = await call('generate_wizard_routing', {'prompt': prompt})
+            if result.success:
+                proposal = await validate_proposal(result.data)
+                valid = proposal.get('status') == 'VALIDATED'
+                event('PROGRESS', status='VALIDATING', text=f"{len(proposal['changes'])} Routen geprüft.",
+                      workload={'completed': len(proposal['changes']) if valid else 0, 'total': len(proposal['changes'])})
+                event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                text = ('Der Routing-Vorschlag ist vollständig erzeugt und wartet auf die fachliche Freigabe.' if valid
+                        else 'Der Routing-Vorschlag wurde erzeugt, enthält aber noch konkrete Validierungsfehler.')
+            else:
+                status = 'INCOMPLETE'
+                text = 'Der serverseitige Routing-Generator konnte den bestätigten Auftrag nicht umsetzen. ' + '; '.join(str(f.get('message', '')) for f in result.findings)
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
+
+        if confirmed_wizard and target_index >= workflow_order.index('network_editor') and routing_complete and not topology_complete:
+            event('PROGRESS', status='PLANNING', text='Physische Netzwerktopologie aus den freigegebenen Routen vorbereiten.')
+            result = await call('generate_wizard_network', {'prompt': prompt})
+            if result.success:
+                proposal = await validate_proposal(result.data)
+                valid = proposal.get('status') == 'VALIDATED'
+                topology_change = next((change for change in proposal.get('changes', [])
+                                        if change.get('object_type') == 'NetworkTopology'), {})
+                topology = (topology_change.get('data') or {}).get('topology') or {}
+                nodes = len(topology.get('nodes') or [])
+                edges = len(topology.get('edges') or [])
+                event('PROGRESS', status='VALIDATING', text=f'{nodes} Geräte und {edges} Netzsegmente geprüft.',
+                      workload={'completed': nodes + edges if valid else 0, 'total': nodes + edges})
+                event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                text = ('Die physische Netzwerktopologie ist vollständig erzeugt und wartet auf die fachliche Freigabe.' if valid
+                        else 'Die Netzwerktopologie wurde erzeugt, enthält aber noch konkrete Validierungsfehler.')
+            else:
+                status = 'INCOMPLETE'
+                text = 'Der serverseitige Netzwerk-Generator konnte den bestätigten Auftrag nicht umsetzen. ' + '; '.join(str(f.get('message', '')) for f in result.findings)
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
+
+        # Capacity and preflight are deterministic analyses over canonical,
+        # already reviewed artifacts. They do not need an LLM tool choice or a
+        # second proposal store, and may run consecutively until a real finding
+        # or the next human review gate is reached.
+        if (confirmed_wizard and target_index >= workflow_order.index('capacity_timing')
+                and topology_complete and parameters_complete and not capacity_complete):
+            event('PROGRESS', status='PLANNING', text='Capacity & Timing aus Routing, Topologie und Parametern berechnen.')
+            result = await call('calculate_capacity', {})
+            if not result.success:
+                status = 'INCOMPLETE'
+                text = 'Capacity & Timing konnte nicht berechnet werden. ' + '; '.join(
+                    str(f.get('message', '')) for f in result.findings)
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            overview = (result.data.get('results') or {}).get('overview') or {}
+            route_count = int(overview.get('route_count') or 0)
+            message_count = len((result.data.get('results') or {}).get('messages') or [])
+            network_count = int(overview.get('network_count') or 0)
+            total = route_count + message_count + network_count
+            capacity_complete = str(result.data.get('status') or '').upper() in {'COMPLETE', 'APPROVED', 'WARNING'}
+            event('PROGRESS', status='VALIDATING',
+                  text=f'{network_count} Netze, {route_count} Routen und {message_count} Nachrichten berechnet.',
+                  workload={'completed': total if capacity_complete else 0, 'total': total})
+            if not capacity_complete:
+                status = 'INCOMPLETE'
+                text = 'Capacity & Timing wurde berechnet, enthält aber blockierende Befunde.'
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            if target_index == workflow_order.index('capacity_timing'):
+                status = 'COMPLETED'
+                text = 'Capacity & Timing ist vollständig aus dem aktuellen kanonischen Projektstand berechnet.'
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+        if (confirmed_wizard and target_index >= workflow_order.index('validation')
+                and topology_complete and parameters_complete and capacity_complete and not validation_complete):
+            event('PROGRESS', status='PLANNING', text='Verbindlichen Workflow-Preflight ausführen.')
+            result = await call('validate_simulation_preflight', {})
+            if not result.success:
+                finding_codes = {str(item.get('code') or '') for item in result.findings}
+                if finding_codes and finding_codes <= {'NETWORK_NODE_DISCONNECTED'}:
+                    repair = await call('generate_wizard_network', {'prompt': prompt})
+                    if repair.success:
+                        proposal = await validate_proposal(repair.data)
+                        valid = proposal.get('status') == 'VALIDATED'
+                        event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                        status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                        text = ('Capacity & Timing ist vollständig. Für die im Preflight erkannten unverbundenen '
+                                'Teilnehmer wurde eine physisch vollständige Topologie zur Freigabe vorbereitet.'
+                                if valid else 'Die Topologie-Reparatur enthält noch konkrete Validierungsfehler.')
+                        event('RESULT', status=status, text=text)
+                        return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                                'context': context.model_dump(), 'trace': traces,
+                                'proposals': list(proposals.values())}
+                status = 'INCOMPLETE'
+                text = ('Capacity & Timing ist berechnet. Der anschließende Preflight hat konkrete '
+                        'blockierende Befunde gefunden; diese müssen vor der Simulation behoben werden.')
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            checked = len(result.data.get('checked_steps') or [])
+            warnings = int(result.data.get('warning_count') or 0)
+            event('PROGRESS', status='VALIDATING',
+                  text=f'Preflight über {checked} Workflow-Bereiche abgeschlossen; {warnings} Warnungen.',
+                  workload={'completed': checked, 'total': checked})
+            status = 'COMPLETED' if target_index == workflow_order.index('validation') else 'READY_TO_CONTINUE'
+            text = ('Der Workflow-Preflight ist abgeschlossen.' if status == 'COMPLETED'
+                    else 'Capacity & Timing und Workflow-Preflight sind abgeschlossen. Als Nächstes wird der unveränderliche Simulationssnapshot ausgeführt.')
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+        # A confirmed wizard run owns a bounded, reproducible normal simulation.
+        # Reuse an already prepared/running snapshot so an explicit retry never
+        # creates a second job for the same canonical project state.
+        if (confirmed_wizard and target_index >= workflow_order.index('simulation')
+                and validation_complete and not simulation_complete):
+            event('PROGRESS', status='PLANNING', text='Aktuellen Preflight-Stand als SimulationSnapshot vorbereiten.')
+            snapshots = project.data.get('simulation_snapshots') or []
+            current_snapshot = next((item for item in snapshots
+                                     if not item.get('is_outdated') and str(item.get('status') or '').upper()
+                                     in {'READY', 'RUNNING'}), None)
+            if current_snapshot is None:
+                snapshot_result = await call('create_simulation_snapshot', {'configuration': {
+                    'duration_s': 1.0,
+                    'seed': 42,
+                    'max_events': 100_000,
+                    'formats': ['universal-jsonl', 'universal-csv'],
+                    'scenario': {'mode': 'NORMAL', 'faults': []},
+                }})
+                if not snapshot_result.success:
+                    status = 'INCOMPLETE'
+                    text = 'Der validierte Simulationssnapshot konnte nicht angelegt werden. ' + '; '.join(
+                        str(f.get('message', '')) for f in snapshot_result.findings)
+                    event('RESULT', status=status, text=text)
+                    return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                current_snapshot = snapshot_result.data
+
+            snapshot_id = str(current_snapshot.get('id') or '')
+            job_id = str(current_snapshot.get('job_id') or '')
+            snapshot_status = str(current_snapshot.get('status') or '').upper()
+            if not job_id and snapshot_status == 'READY':
+                start_result = await call('start_simulation', {'snapshot_id': snapshot_id})
+                if not start_result.success:
+                    status = 'INCOMPLETE'
+                    text = 'Der SimulationSnapshot wurde erstellt, konnte aber nicht gestartet werden. ' + '; '.join(
+                        str(f.get('message', '')) for f in start_result.findings)
+                    event('RESULT', status=status, text=text)
+                    return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                job_id = str(start_result.data.get('id') or '')
+            if not job_id:
+                status = 'INCOMPLETE'
+                text = 'Der SimulationSnapshot besitzt keine ausführbare Job-ID.'
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+            job = None
+            for attempt in range(240):
+                status_result = await call('get_simulation_status', {'job_id': job_id})
+                if not status_result.success:
+                    status = 'INCOMPLETE'
+                    text = 'Der gestartete Simulationslauf konnte nicht mehr gelesen werden. ' + '; '.join(
+                        str(f.get('message', '')) for f in status_result.findings)
+                    event('RESULT', status=status, text=text)
+                    return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                job = status_result.data
+                job_status = str(job.get('status') or '').lower()
+                if job_status in {'completed', 'failed', 'canceled'}:
+                    break
+                if attempt % 20 == 0:
+                    event('PROGRESS', status='IN_PROGRESS', text='Simulation läuft auf dem unveränderlichen Projektstand.',
+                          workload={'completed': attempt, 'total': 240})
+                await asyncio.sleep(0.25)
+            job_status = str((job or {}).get('status') or '').lower()
+            if job_status != 'completed':
+                status = 'INCOMPLETE'
+                detail = str((job or {}).get('error') or ('Zeitfenster überschritten' if job_status not in {'failed', 'canceled'} else job_status))
+                text = f'Der Simulationslauf wurde nicht erfolgreich abgeschlossen: {detail}.'
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+            refreshed = await call('inspect_project')
+            refreshed_statuses = refreshed.data.get('statuses', {}) if refreshed.success else {}
+            simulation_complete = refreshed_statuses.get('simulation') in {'COMPLETE', 'APPROVED', 'WARNING'}
+            results_complete = refreshed_statuses.get('results_analysis') in {'COMPLETE', 'APPROVED', 'WARNING'}
+            if not simulation_complete or not results_complete:
+                status = 'INCOMPLETE'
+                text = 'Die Simulation ist beendet, aber der kanonische Results-/Analysis-Nachweis ist unvollständig.'
+            else:
+                status = 'COMPLETED' if target_index <= workflow_order.index('results_analysis') else 'READY_TO_CONTINUE'
+                text = ('Simulation und Results / Analysis sind vollständig abgeschlossen.' if status == 'COMPLETED'
+                        else 'Simulation und Results / Analysis sind vollständig abgeschlossen. Als Nächstes folgt Data Science & Intelligence.')
+            event('PROGRESS', status='VALIDATING', text='Simulationslauf und Ergebnisartefakte kanonisch geprüft.',
+                  workload={'completed': 1 if simulation_complete and results_complete else 0, 'total': 1})
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+        if (confirmed_wizard and target_index >= workflow_order.index('data_science_intelligence')
+                and simulation_complete and results_complete and not intelligence_complete):
+            event('PROGRESS', status='PLANNING', text='Data Science & Intelligence aus den verifizierten Simulationsergebnissen bewerten.')
+            result = await call('assess_intelligence', {})
+            if not result.success:
+                status = 'INCOMPLETE'
+                text = 'Data Science & Intelligence konnte nicht erzeugt werden. ' + '; '.join(
+                    str(f.get('message', '')) for f in result.findings)
+            else:
+                intelligence_status = str(result.data.get('status') or '').upper()
+                intelligence_complete = intelligence_status in {'COMPLETE', 'APPROVED', 'WARNING'}
+                findings = result.data.get('findings') or []
+                status = 'COMPLETED' if intelligence_complete else 'INCOMPLETE'
+                text = (f'Data Science & Intelligence ist mit {len(findings)} nachvollziehbaren Befunden abgeschlossen.'
+                        if intelligence_complete else 'Die Systembewertung enthält blockierende Befunde und ist noch nicht abgeschlossen.')
+                event('PROGRESS', status='VALIDATING', text=f'{len(findings)} Intelligence-Befunde bewertet.',
+                      workload={'completed': len(findings) if intelligence_complete else 0,
+                                'total': len(findings)})
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
 
         # Explicit structured decisions precede the existing proposal pipeline.
         if re.search(r'kamera|camera', prompt, re.I) and re.search(r'umfeld|umgebung|überwach|ueberwach|erkenn|vision|360', prompt, re.I) and not re.search(r'^\s*(zeige|liste|welche|inspect)|\d+\s+(?:Funktion(?:en)?|functions?|Signal(?:e)?|signals?)\b', prompt, re.I):
@@ -212,7 +466,12 @@ class EngineeringAgent:
                                 response = result.data["agent_response"]
                                 event(response["type"],**{k:v for k,v in response.items() if k!="type"})
                                 return {"run_id":run_id,"status":"BLOCKED","events":events,"context":context.model_dump(),"trace":traces}
-                    event("PROGRESS",status="IN_PROGRESS",text=f"Arbeitsschritt {step+1} geprüft.")
+                    event(
+                        "PROGRESS",
+                        status="IN_PROGRESS",
+                        text=f"Arbeitsschritt {step+1} geprüft.",
+                        workload=reasoning_workload_progress(step, self.max_steps),
+                    )
             else:
                 result = await call("inspect_findings")
                 event("RESULT", text="Projektprüfung", data=result.data)

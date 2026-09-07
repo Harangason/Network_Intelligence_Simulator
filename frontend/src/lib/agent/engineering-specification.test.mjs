@@ -1,7 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizeHardwareName, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+import { applyConfirmedClusterGraph, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+
+test("domain evidence detects rail content independently from a conflicting wizard header", () => {
+  const evidence = engineeringDomainEvidence(`Industrie: Automotive\nAxleTemperatureSensor\nBogiesensorik\nPantographControl\nWaysideCommunication`);
+  assert.equal(evidence.domain, "rail");
+  assert.ok(evidence.confidence >= 0.7);
+  assert.ok(evidence.markers.length >= 3);
+});
+
+test("confirmed cluster graph overrides template buses before model generation", () => {
+  const base = extractEngineeringSpecification("Rail project with 1 AxleTemperature sensor").chains[0];
+  const chains = [{ ...base, hardware_name: "AxleTemperature", interface_type: "LIN", interface_name: "AxleTemperature_LIN" }];
+  const prompt = '- Systemcluster-Graph: [{"network_id":"rail-mvb","network_label":"Rail MVB","controllers":[{"ecu":"BogieControl","sensors":["AxleTemperature"],"actuators":[]}]}]';
+  const [mapped] = applyConfirmedClusterGraph(chains, prompt);
+  assert.equal(mapped.interface_type, "MVB");
+  assert.equal(mapped.interface_name, "AxleTemperature_MVB");
+
+  const industrialPrompt = '- Systemcluster-Graph: [{"network_id":"profinet","network_label":"industrial_automation · profinet","controllers":[{"ecu":"SPSLeitsystem","sensors":["AxleTemperature"],"actuators":[]}]}]';
+  const [industrial] = applyConfirmedClusterGraph(chains, industrialPrompt);
+  assert.equal(industrial.interface_type, "ProfiNET");
+  assert.equal(industrial.interface_name, "AxleTemperature_ProfiNET");
+});
 
 test("a review with hardware evidence must never trigger model creation", () => {
   const review = `Bewerte diese Intelligence-Empfehlung als Engineering-Agent.
@@ -152,6 +173,11 @@ test("quantity matches support noun-first wizard and file wording", () => {
   assert.deepEqual(extractEngineeringTargetCounts(text), { sensors: 95, actuators: 88, ecus: 47, gateways: 2, explicit: true });
 });
 
+test("comma-separated count-first hardware quantities stay attached to their nouns", () => {
+  const text = "Erzeuge 1 Gateway, 50 Controller, 100 Sensoren und 100 Aktoren mit CAN-FD.";
+  assert.deepEqual(extractEngineeringTargetCounts(text), { sensors: 100, actuators: 100, ecus: 50, gateways: 1, explicit: true });
+});
+
 test("communication system quantities are extracted from the specification text", () => {
   const text = [
     "Kommunikationssysteme:",
@@ -180,7 +206,7 @@ test("neu 9 system scope generates all 100 actuators alongside sensors, ECUs and
   }
 });
 
-test("class 0 to 2 sensor and actuator templates start on LIN", () => {
+test("sensor templates preserve their domain bus while simple actuators remain on LIN", () => {
   const result = extractEngineeringSpecification(SAMPLE, { sensors: 100, actuators: 100 });
   const basicSensors = result.chains.filter((chain) =>
     chain.device_type === "SensorController"
@@ -190,7 +216,8 @@ test("class 0 to 2 sensor and actuator templates start on LIN", () => {
 
   assert.ok(basicSensors.length > 0);
   assert.ok(actuators.length > 0);
-  assert.ok(basicSensors.every((chain) => chain.interface_type === "LIN"));
+  assert.ok(basicSensors.some((chain) => chain.interface_type === "CAN_FD"));
+  assert.ok(basicSensors.some((chain) => chain.interface_type === "LIN"));
   assert.ok(actuators.every((chain) => chain.interface_type === "LIN"));
 });
 
@@ -226,27 +253,49 @@ test("corrected quantities can exceed the initial template catalog", () => {
   assert.equal(new Set(result.chains.map((chain) => chain.hardware_name)).size, 272);
 });
 
+test("system completeness supplements an underspecified ADAS low-level scope", () => {
+  const result = extractEngineeringSpecification(`
+Industrie: Automotive
+- Fahrerassistenzsteuergeraet
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
+- Vollstaendigkeitsprinzip: System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten; diese sind Mindestumfang, keine Obergrenze.
+  `);
+  const hardwareNames = new Set(result.chains.map((chain) => chain.hardware_name));
+  const sensorNames = result.chains
+    .filter((chain) => chain.device_type === "SensorController")
+    .map((chain) => chain.hardware_name);
+
+  assert.deepEqual(result.targetCounts, { sensors: 1, actuators: 0, ecus: 1, gateways: 0, explicit: true });
+  for (const required of ["Fahrerassistenz", "Kameraverarbeitung", "Radarverarbeitung", "Ultraschallverarbeitung"]) {
+    assert.equal(hardwareNames.has(required), true, required);
+  }
+  assert.ok(sensorNames.length > result.targetCounts.sensors);
+  assert.ok(sensorNames.some((name) => /FrontCamera/i.test(name)));
+  assert.ok(sensorNames.some((name) => /RearRadarDistance/i.test(name)));
+  assert.equal(sensorNames.filter((name) => /UltrasonicDistance/i.test(name)).length, 4);
+});
+
 test("generated system variants follow the selected industry without ECU suffixes", () => {
   const examples = [
-    ["Automotive", "automotive", "Kuehlkreislaufsteuerung"],
-    ["Industrial Automation", "industrial_automation", "SPSLeitsystem"],
-    ["Embedded Systems", "embedded_systems", "MainControl"],
-    ["Aerospace / Defense", "aerospace", "FlightManagement"],
-    ["Rail", "rail", "TrainControl"],
-    ["Marine", "marine", "PropulsionControl"],
-    ["Building Automation", "building_automation", "Gebaeudeleittechnik"],
-    ["Energy", "energy", "Umrichtersteuerung"],
-    ["Robotics / ROS", "robotics_ros", "MotionPlanner"],
-    ["Generic Networking", "generic_networking", "CoreSwitch"],
+    ["Automotive", "automotive", "Kuehlkreislaufsteuerung", "ECU"],
+    ["Industrial Automation", "industrial_automation", "SPSLeitsystem", "PLC"],
+    ["Embedded Systems", "embedded_systems", "MainControl", "EmbeddedController"],
+    ["Aerospace / Defense", "aerospace", "FlightManagement", "FlightComputer"],
+    ["Rail", "rail", "TrainControl", "ECU"],
+    ["Marine", "marine", "PropulsionControl", "ECU"],
+    ["Building Automation", "building_automation", "Gebaeudeleittechnik", "BuildingController"],
+    ["Energy", "energy", "Umrichtersteuerung", "EnergyController"],
+    ["Robotics / ROS", "robotics_ros", "MotionPlanner", "RobotController"],
+    ["Generic Networking", "generic_networking", "CoreSwitch", "IndustrialPC"],
   ];
 
-  for (const [label, domain, expectedName] of examples) {
+  for (const [label, domain, expectedName, expectedType] of examples) {
     const result = extractEngineeringSpecification(`Industrie: ${label}\n- 3 ECUs\n- 1 Gateway`);
-    const ecuNames = result.chains.filter((chain) => chain.device_type === "ECU").map((chain) => chain.hardware_name);
+    const controllerNames = result.chains.filter((chain) => chain.device_type === expectedType).map((chain) => chain.hardware_name);
 
     assert.equal(result.domain, domain, label);
-    assert.equal(ecuNames[0], expectedName, label);
-    assert.equal(ecuNames.some((name) => /-ECU$/i.test(name)), false, label);
+    assert.equal(controllerNames[0], expectedName, label);
+    assert.equal(controllerNames.some((name) => /-ECU$/i.test(name)), false, label);
   }
 });
 
@@ -281,7 +330,7 @@ test("automotive prose headings do not create generic or synonymous duplicate EC
   }
 });
 
-test("generated sensor names stay industry specific while basic devices start on LIN", () => {
+test("generated sensor names and buses stay industry specific", () => {
   const industrial = extractEngineeringSpecification("Industrie: Industrial Automation\n- 2 Sensoren\n- 1 ECU");
   const embedded = extractEngineeringSpecification("Industrie: Embedded Systems\n- 2 Sensoren\n- 1 ECU");
 
@@ -291,7 +340,7 @@ test("generated sensor names stay industry specific while basic devices start on
   );
   assert.deepEqual(
     embedded.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.interface_type),
-    ["LIN", "LIN"],
+    ["I2C", "I2C"],
   );
   assert.equal(industrial.chains.some((chain) => /^FrontLeftWheel/.test(chain.hardware_name)), false);
 });
@@ -428,4 +477,39 @@ test("direct lowercase camera creation request is still actionable", () => {
   assert.equal(result.chains.length, 1);
   assert.equal(result.chains[0].hardware_name, "frontkamera");
   assert.equal(result.chains[0].function_name, "Frontkamera_Umfelderfassung");
+});
+
+test("wizard preserves the explicit project model type independently from the display label", () => {
+  const result = extractEngineeringSpecification(`Strukturierte Vorgaben fuer den Engineering-Agenten:
+- Industrie: Industrial Automation / SPS
+- Projekt-Modelltyp: industrial_automation
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
+Konkrete Aufgabe des Nutzers:
+PLC TemperatureControl mit PROFINET und Temperatursensor.`);
+
+  assert.equal(result.modelType, "industrial_automation");
+  assert.equal(result.domain, "industrial_automation");
+  assert.equal(result.chains.filter((chain) => chain.device_type === "PLC").length, 1);
+  assert.equal(result.chains.some((chain) => chain.device_type === "ECU"), false);
+  assert.equal(result.chains.find((chain) => chain.device_type === "PLC")?.interface_type, "ProfiNET");
+});
+
+test("explicit model types select their native controller classes", () => {
+  const examples = [
+    ["process_industry", "PLC"],
+    ["robotics_ros", "RobotController"],
+    ["aerospace", "FlightComputer"],
+    ["building_automation", "BuildingController"],
+    ["energy", "EnergyController"],
+    ["embedded_systems", "EmbeddedController"],
+    ["iot_wireless", "EmbeddedController"],
+    ["generic_networking", "IndustrialPC"],
+    ["custom", "IndustrialPC"],
+  ];
+  for (const [modelType, expectedType] of examples) {
+    const result = extractEngineeringSpecification(`- Projekt-Modelltyp: ${modelType}\n- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":0,"actuators":0}`);
+    assert.equal(result.domain, modelType);
+    assert.equal(result.chains.length, 1);
+    assert.equal(result.chains[0].device_type, expectedType, modelType);
+  }
 });

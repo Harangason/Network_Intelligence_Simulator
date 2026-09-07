@@ -54,6 +54,12 @@ test("industry profiles do not leak automotive cluster semantics", () => {
   assert.equal(automation.key, "motion");
 });
 
+test("rail measurement qualifiers do not override their owning subsystem", () => {
+  assert.equal(topologyClusterForText("AxleTemperature", "rail").key, "running_gear");
+  assert.equal(topologyClusterForText("BearingTemperature", "rail").key, "running_gear");
+  assert.equal(topologyClusterForText("CabinTemperature", "rail").key, "climate");
+});
+
 test("system aliases merge only exact duplicate system identities", () => {
   assert.equal(topologySystemIdentityForText("Motion-ECU", "automotive"), "motorsteuerung");
   assert.equal(topologySystemIdentityForText("Motor", "automotive"), "motorsteuerung");

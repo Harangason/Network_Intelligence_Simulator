@@ -26,8 +26,14 @@ def rotational_speed(signal: Any, time_s: float, context: Any, state: Any) -> fl
     elif operating == "STOPPING":
         target = 0.0
     else:
-        command = max((float(value) for key, value in getattr(context, "signal_values", {}).items() if "throttle" in str(key).lower()), default=0.5)
-        target = clamp(number(signal.parameters.get("idle_rpm"), 850.0) + command * number(signal.parameters.get("rpm_span"), 2200.0) + 120.0 * math.sin(time_s / 7.0), signal.minimum, signal.maximum)
+        vehicle = getattr(context, "system_state", {})
+        name = str(signal.name).lower()
+        if any(token in name for token in ("wheel", "vehicle", "fahrzeug")):
+            target = number(vehicle.get("vehicle_speed_kph"), 0.0)
+        else:
+            command = number(vehicle.get("throttle_percent"), 0.0) / 100.0
+            target = number(vehicle.get("engine_rpm"), number(signal.parameters.get("idle_rpm"), 850.0) + command * number(signal.parameters.get("rpm_span"), 2200.0))
+        target = clamp(target + 35.0 * math.sin(time_s * 2.1), signal.minimum, signal.maximum)
     previous = previous_value(signal, state, 0.0)
     dt = time_delta(signal, time_s, state)
     up = number(signal.parameters.get("max_rise_rate"), 1000.0) * dt

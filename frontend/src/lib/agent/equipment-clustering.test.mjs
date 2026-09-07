@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { extractEngineeringSpecification } from "./engineering-specification.ts";
-import { buildEquipmentClusters, equipmentClusterSummary } from "./equipment-clustering.ts";
+import { buildEquipmentClusters, equipmentClusterBusWarnings, equipmentClusterGraphPrompt, equipmentClusterSummary, equipmentTermMeaning } from "./equipment-clustering.ts";
 
 function chain(name, deviceType, interfaceType = "LIN") {
   return {
@@ -49,6 +49,20 @@ test("related thermal equipment is clustered and can be assigned to CAN-FD", () 
   assert.deepEqual(thermal.counts, { ECU: 1, SensorController: 1, ActuatorController: 1 });
 });
 
+test("industrial clusters assign endpoints to PLC controllers", () => {
+  const clusters = buildEquipmentClusters([
+    chain("LinePLC", "PLC", "ProfiNET"),
+    chain("LineSensor", "SensorController", "ProfiNET"),
+    chain("LineActuator", "ActuatorController", "ProfiNET"),
+  ], [{ id: "industrial-profinet", label: "PROFINET", count: 1 }], "industrial_automation");
+
+  const cluster = clusters.find((item) => item.controllers.some((controller) => controller.name === "LinePLC"));
+  assert.ok(cluster);
+  assert.equal(cluster.controllers[0].sensors.length, 1);
+  assert.equal(cluster.controllers[0].actuators.length, 1);
+  assert.equal(cluster.unassigned.length, 0);
+});
+
 test("cluster summaries keep the user network choice visible for the agent prompt", () => {
   const summary = equipmentClusterSummary([{
     cluster_id: "rule:climate",
@@ -73,6 +87,33 @@ test("cluster summaries keep the user network choice visible for the agent promp
   }]);
 
   assert.equal(summary, "Klima -> Industrial CAN-FD / Klima (3 Teilnehmer)");
+});
+
+test("agent graph prompt keeps ownership and HMI routes without verbose confidence metadata", () => {
+  const prompt = equipmentClusterGraphPrompt([{
+    cluster_id: "family:traction",
+    label: "Antriebsstrang",
+    selected: true,
+    network_id: "rail-can",
+    network_label: "Rail CAN",
+    bus_name: "Traction_CAN",
+    devices: 2,
+    counts: { ECU: 1, ActuatorController: 1 },
+    evidence: ["TractionControl"],
+    tree: [{
+      name: "TractionControl",
+      interfaceType: "CAN",
+      sensors: [],
+      actuators: [{ name: "TractionValve", deviceType: "ActuatorController", interfaceType: "CAN", confidence: 0.98, reason: "same stem" }],
+    }],
+    unassigned: [],
+    hmi_routes: [{ source: "TractionControl", target: "PassengerInformation", signals: ["TractionStatus"], path: ["TractionControl", "Rail CAN", "Gateway", "PassengerInformation"] }],
+    validation: { valid: true, warnings: [] },
+  }]);
+  const serialized = JSON.stringify(prompt);
+  assert.match(serialized, /TractionValve/);
+  assert.match(serialized, /PassengerInformation/);
+  assert.doesNotMatch(serialized, /confidence|same stem/);
 });
 
 test("automotive equipment is grouped by domain families instead of singleton fallback names", () => {
@@ -117,6 +158,43 @@ test("clusters count unique hardware and ignore misleading signal names", () => 
   assert.deepEqual(clusters[0].counts, { ECU: 1 });
 });
 
+test("rail graph assigns endpoints to ECUs and exposes traction signals to passenger HMI", () => {
+  const clusters = buildEquipmentClusters([
+    chain("TractionControl", "ECU", "CAN"),
+    chain("TractionControlSchaltausgang", "ActuatorController", "CAN"),
+    chain("Bogiesensorik", "ECU", "CAN"),
+    chain("AxleTemperature", "SensorController", "CAN"),
+    chain("PassengerInformation", "ECU", "Ethernet"),
+  ], [
+    { id: "rail-mvb", label: "Rail MVB", count: 2 },
+    { id: "rail-etb", label: "Rail ETB Ethernet", count: 1 },
+    { id: "rail-lin", label: "Rail LIN", count: 1 },
+  ], "rail");
+
+  const traction = clusters.find((cluster) => cluster.label === "Antriebsstrang");
+  const runningGear = clusters.find((cluster) => cluster.label === "Fahrwerk / Drehgestell");
+  assert.ok(traction);
+  assert.ok(runningGear);
+  assert.equal(traction.recommendedNetworkId, "rail-mvb");
+  assert.equal(traction.controllers[0].actuators[0].name, "TractionControlSchaltausgang");
+  assert.equal(runningGear.controllers[0].sensors[0].name, "AxleTemperature");
+  assert.equal(traction.unassigned.length, 0);
+  assert.equal(traction.hmiRoutes[0].target, "PassengerInformation");
+  assert.deepEqual(traction.hmiRoutes[0].path, ["TractionControl", "Rail MVB", "Gateway", "PassengerInformation"]);
+  assert.ok(equipmentClusterBusWarnings(traction, "rail-lin", "Rail LIN").length > 0);
+});
+
+test("ambiguous endpoints remain visible instead of being assigned round-robin", () => {
+  const clusters = buildEquipmentClusters([
+    chain("BrakeControl", "ECU", "CAN"),
+    chain("SafetyInterlock", "ECU", "CAN"),
+    chain("UnknownSafetySensor", "SensorController", "CAN"),
+  ], [{ id: "rail-can", label: "Rail CAN", count: 1 }], "rail");
+  const safety = clusters.find((cluster) => cluster.id === "family:safety");
+  assert.ok(safety);
+  assert.equal(safety.unassigned.length, 1);
+});
+
 test("automotive scale clusters stay compact enough to guide network node planning", () => {
   const specification = [
     "Industrie: Automotive",
@@ -143,4 +221,26 @@ test("automotive scale clusters stay compact enough to guide network node planni
   assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AmbientLight"))?.label, "Licht");
   assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AccessoryCurrent"))?.label, "Energie");
   assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "TransmissionInputSpeed"))?.label, "Antrieb");
+});
+
+test("automotive semantic roots keep airbag, doors, seats, climate and suspension in their proper families", () => {
+  const clusters = buildEquipmentClusters([
+    chain("Airbag", "ECU", "CAN_FD"),
+    chain("Fahrertuer", "ECU", "LIN"),
+    chain("Beifahrersitz", "ECU", "LIN"),
+    chain("ClimateController", "ECU", "CAN_FD"),
+    chain("AmbientTemperature", "SensorController", "LIN"),
+    chain("ChassisController", "ECU", "CAN_FD"),
+    chain("RearRightSuspensionTravel", "SensorController", "CAN_FD"),
+  ], [
+    { id: "automotive-can_fd", label: "Automotive CAN-FD", count: 2 },
+    { id: "automotive-lin", label: "Automotive LIN", count: 2 },
+  ], "automotive");
+  const familyOf = (name) => clusters.find((cluster) => cluster.devices.some((device) => device.hardware_name === name))?.id;
+  assert.equal(familyOf("Airbag"), "family:safety");
+  assert.equal(familyOf("Fahrertuer"), "family:body_comfort");
+  assert.equal(familyOf("Beifahrersitz"), "family:body_comfort");
+  assert.equal(familyOf("AmbientTemperature"), "family:climate");
+  assert.equal(familyOf("RearRightSuspensionTravel"), "family:chassis");
+  assert.equal(equipmentTermMeaning("AccessoryCurrent").german, "Stromaufnahme der Nebenverbraucher");
 });

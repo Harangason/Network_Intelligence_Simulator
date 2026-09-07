@@ -105,6 +105,16 @@ def _find_preferred_interface(
         ).fetchone()
 
 
+def _find_hardware_interface(hardware_id: str, technology: str) -> dict[str, Any] | None:
+    with get_connection() as connection:
+        return connection.execute(
+            "SELECT * FROM engineering_hardware_interfaces "
+            "WHERE hardware_node_id = %s AND technology = %s AND project_id = %s "
+            "ORDER BY channel_index, created_at, id LIMIT 1",
+            (hardware_id, technology, current_project_id()),
+        ).fetchone()
+
+
 def _find_connection(
     source_id: str,
     target_id: str,
@@ -387,10 +397,24 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                         f"gehoert nicht zu {name!r}."
                     )
                 if str(hardware_interface.get("technology") or "") != interface_type:
-                    raise EngineeringValidationError(
-                        f"HardwareNetworkInterface {requested_hardware_interface_id!r} nutzt "
-                        f"{hardware_interface.get('technology')!r} statt {interface_type!r}."
+                    matching_hardware_interface = _find_hardware_interface(str(hardware["id"]), interface_type)
+                    hardware_interface = matching_hardware_interface or create_object(
+                        "HardwareNetworkInterface",
+                        {
+                            "name": f"{canonical_name} {interface_type}",
+                            "hardware_node_id": str(hardware["id"]),
+                            "technology": interface_type,
+                            "channel_index": 1,
+                            "network_ref": configuration["network_id"],
+                            "capabilities": configuration,
+                            "provenance": {
+                                **provenance,
+                                "repair_reason": "stale-topology-interface-technology",
+                                "replaced_hardware_interface_id": requested_hardware_interface_id,
+                            },
+                        },
                     )
+                    requested_hardware_interface_id = str(hardware_interface["id"])
                 linked_port_ids = hardware_interface_ports.get(requested_hardware_interface_id, [port_id])
                 capabilities = {
                     key: value

@@ -8,6 +8,16 @@ export type Technology = {
   max_payload_bytes?: number | null;
   native_formats?: string[];
   parameter_schema?: TechnologyParameterField[];
+  label?: string;
+  domain?: string;
+  layer?: "PHYSICAL" | "DATA_LINK" | "NETWORK" | "TRANSPORT" | "APPLICATION" | "INDUSTRY_PROFILE";
+  transport_unit?: string;
+  payload_element_types?: string[];
+  hardware_interface?: string;
+  default_stack?: string[];
+  implementation_status?: "IMPLEMENTED" | "PARTIAL" | "PLANNED" | "EXPERIMENTAL" | "LEGACY" | "NOT_SUPPORTED";
+  capabilities?: Record<string, boolean>;
+  known_limitations?: string;
 };
 
 export type TechnologyParameterField = {
@@ -32,12 +42,17 @@ export type TechnologyDomain = {
   id: string;
   label: string;
   technologies: Technology[];
+  device_types?: string[];
+  recommended_technologies?: string[];
 };
 
 export type Catalog = {
   technology_count: number;
   domains: TechnologyDomain[];
   formats: string[];
+  layers?: string[];
+  implementation_status?: Record<string, number>;
+  core_model_types?: string[];
 };
 
 export type ArtifactDownload = {
@@ -69,6 +84,12 @@ export type ModelSignalPoint = {
   value: number | null;
   golden_value: number | null;
   faults: string[];
+  display_value?: string | number | null;
+  state?: string | null;
+  quality?: string | null;
+  trace_kind?: string | null;
+  actual_value?: number | null;
+  fault_state?: string | null;
 };
 
 export type ModelSignalSeries = {
@@ -80,6 +101,9 @@ export type ModelSignalSeries = {
   resolution: number;
   cycle_ms: number;
   behavior_type: string;
+  semantic_type?: string;
+  trace_kind?: string;
+  interpolation?: string;
   model_label: "PHYSICS_BASED" | "RULE_BASED" | "EMPIRICAL" | "SYNTHETIC" | "GENERIC_ESTIMATE";
   points: ModelSignalPoint[];
 };

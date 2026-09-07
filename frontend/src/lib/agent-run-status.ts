@@ -42,10 +42,20 @@ export function agentRunIsActive(run: AgentRunStatus | null, now = Date.now()) {
   return run?.state === "RUNNING" && now - Date.parse(run.updated_at) < 120_000;
 }
 
+export function agentRunHasDurableOutcome(run: AgentRunStatus | null) {
+  return run != null && ["REVIEW_REQUIRED", "READY_TO_CONTINUE", "COMPLETED"].includes(run.state);
+}
+
 export function resolveAgentRunStep(run: AgentRunStatus | null, statuses: Partial<Record<AgentBuildProgress['step'], string>>) {
   if (!run || !['RUNNING', 'BLOCKED'].includes(run.state)) return run;
   const done = (step: AgentBuildProgress['step']) => ['COMPLETE', 'APPROVED', 'WARNING'].includes(statuses[step] ?? '');
   if (!done(run.step)) return run;
   const next = RUN_STEPS.slice(RUN_STEPS.indexOf(run.step) + 1).find(step => !done(step));
   return next ? { ...run, step: next } : run;
+}
+
+export function wizardRunCanRetry(runPaused: boolean, hasResumablePrompt: boolean, run: AgentRunStatus | null) {
+  // Retries are explicit user actions. A failed attempt must not turn the
+  // durable wizard into a permanent dead end; only cancellation is terminal.
+  return runPaused && hasResumablePrompt && run?.state !== "CANCELED";
 }

@@ -1,4 +1,8 @@
 import type { HardwareNode } from "./types";
+import {
+  topologyClusterForText,
+  topologyClusterFamilyForKey,
+} from "./topology-cluster-knowledge.ts";
 
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
 export type BusType = "can_fd" | "lin" | "automotive_ethernet" | "flexray";
@@ -227,20 +231,101 @@ export const busProfiles: Record<BusType, { label: string; bitrate: number; cycl
 
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+export type PhysicalNetworkAssignment = {
+  id: string;
+  name: string;
+  technology: BusType;
+};
+
+function busDisplayName(bus: BusType) {
+  return bus === "can_fd" ? "CAN" : busProfiles[bus].label;
+}
+
+/** Keep distinct physical buses distinct, while joining a complete semantic
+ * system (for example motor, fuel, exhaust and transmission) on one domain bus. */
+export function physicalNetworkAssignments(topology: NetworkTopology) {
+  const nodes = new Map(topology.nodes.map((node) => [node.id, node]));
+  const unknownComponents = new Map<string, number>();
+  const componentByNode = new Map<string, number>();
+  let nextComponent = 1;
+  const result = new Map<string, PhysicalNetworkAssignment>();
+
+  for (const bus of Object.keys(busProfiles) as BusType[]) {
+    const busEdges = topology.edges.filter((edge) => edge.bus === bus);
+    const adjacency = new Map<string, string[]>();
+    busEdges.forEach((edge) => {
+      adjacency.set(edge.source, [...(adjacency.get(edge.source) ?? []), edge.target]);
+      adjacency.set(edge.target, [...(adjacency.get(edge.target) ?? []), edge.source]);
+    });
+    for (const nodeId of adjacency.keys()) {
+      if (componentByNode.has(`${bus}:${nodeId}`)) continue;
+      const component = nextComponent++;
+      const pending = [nodeId];
+      while (pending.length) {
+        const current = pending.pop() as string;
+        const key = `${bus}:${current}`;
+        if (componentByNode.has(key)) continue;
+        componentByNode.set(key, component);
+        pending.push(...(adjacency.get(current) ?? []));
+      }
+    }
+  }
+
+  topology.edges.forEach((edge) => {
+    const candidates = [nodes.get(edge.source), nodes.get(edge.target)]
+      .filter((node): node is TopologyNode => Boolean(node && node.kind !== "gateway"));
+    const families = candidates.map((node) => {
+      const cluster = topologyClusterForText(`${node.name} ${node.systemOwnerSource ?? ""}`, "automotive");
+      return topologyClusterFamilyForKey(cluster.key, "automotive");
+    }).filter((family) => family.key !== "unassigned");
+    const family = families[0];
+    const component = componentByNode.get(`${edge.bus}:${edge.source}`) ?? 0;
+    const semanticKey = family?.key || `segment-${component}`;
+    const label = family?.label || `Netzsegment ${component}`;
+    const key = `${edge.bus}:${semanticKey}`;
+    let ordinal = unknownComponents.get(key);
+    if (!ordinal) {
+      ordinal = unknownComponents.size + 1;
+      unknownComponents.set(key, ordinal);
+    }
+    result.set(edge.id, {
+      id: `${slug(label)}-${edge.bus.replaceAll("_", "-")}-${family ? "bus" : ordinal}`,
+      name: `${label}-${busDisplayName(edge.bus)}`,
+      technology: edge.bus,
+    });
+  });
+  return result;
+}
+
 export function topologyToConfig(topology: NetworkTopology, formats: string[] = ["universal-jsonl", "universal-csv"]) {
   if (topology.nodes.length < 2) throw new Error("Füge mindestens zwei Geräte hinzu.");
   if (topology.edges.length === 0) throw new Error("Verdrahte mindestens zwei Geräte miteinander.");
 
-  const grouped = new Map<BusType, TopologyEdge[]>();
-  topology.edges.forEach((edge) => grouped.set(edge.bus, [...(grouped.get(edge.bus) ?? []), edge]));
+  const assignments = physicalNetworkAssignments(topology);
+  const grouped = new Map<string, TopologyEdge[]>();
+  topology.edges.forEach((edge) => {
+    const networkId = assignments.get(edge.id)?.id ?? `network-${edge.bus}`;
+    grouped.set(networkId, [...(grouped.get(networkId) ?? []), edge]);
+  });
 
-  const networks = Array.from(grouped.entries()).map(([technology, edges]) => ({
-    id: `network-${technology}`,
+  const networks = Array.from(grouped.entries()).map(([id, edges]) => {
+    const assignment = assignments.get(edges[0].id)!;
+    const technology = assignment.technology;
+    return ({
+    id,
+    name: assignment.name,
     technology,
     bitrate: busProfiles[technology].bitrate,
     cycle_ms: busProfiles[technology].cycleMs,
     nodes: Array.from(new Set(edges.flatMap((edge) => [edge.source, edge.target]))),
-  }));
+  }); });
+
+  const networkByPort = new Map<string, string>();
+  topology.edges.forEach((edge) => {
+    const networkId = assignments.get(edge.id)?.id ?? `network-${edge.bus}`;
+    networkByPort.set(`${edge.source}:${edge.sourcePort}`, networkId);
+    networkByPort.set(`${edge.target}:${edge.targetPort}`, networkId);
+  });
 
   const hardware = {
     nodes: topology.nodes.map((node) => ({
@@ -254,7 +339,7 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
         interfaces: [{
           id: `${item.id}-interface`,
           name: item.name,
-          network_id: `network-${item.bus}`,
+          network_id: networkByPort.get(`${node.id}:${item.id}`) ?? `network-${item.bus}`,
           technology: item.bus,
         }],
       })),
@@ -273,7 +358,7 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
         sender_interface: `${edge.sourcePort}-interface`,
         target: edge.target,
         receiver_interfaces: [`${edge.targetPort}-interface`],
-        network: `network-${edge.bus}`,
+        network: assignments.get(edge.id)?.id ?? `network-${edge.bus}`,
         technology: edge.bus,
         cycle_ms: busProfiles[edge.bus].cycleMs,
         payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
@@ -292,7 +377,7 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
         sender_interface: `${reversed ? edge.targetPort : edge.sourcePort}-interface`,
         target: targetNode?.id ?? (reversed ? edge.source : edge.target),
         receiver_interfaces: [`${reversed ? edge.sourcePort : edge.targetPort}-interface`],
-        network: `network-${edge.bus}`,
+        network: assignments.get(edge.id)?.id ?? `network-${edge.bus}`,
         technology: edge.bus,
         cycle_ms: busProfiles[edge.bus].cycleMs,
         payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
@@ -307,12 +392,12 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
       name: "ecu_network_topology",
       industry: "automotive",
       duration_s: 1,
-      cycle_ms: Math.min(...Array.from(grouped.keys()).map((bus) => busProfiles[bus].cycleMs)),
+      cycle_ms: Math.min(...topology.edges.map((edge) => busProfiles[edge.bus].cycleMs)),
       node_count: topology.nodes.length,
       max_events: 100_000,
       seed: 42,
       formats,
-      technologies: Array.from(grouped.keys()),
+      technologies: [...new Set(topology.edges.map((edge) => edge.bus))],
       hardware,
       networks,
       communications,

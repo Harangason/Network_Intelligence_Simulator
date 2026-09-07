@@ -27,6 +27,14 @@ import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 import { withProjectParam } from "@/lib/user-settings";
+import {
+  filterSignalSeries,
+  formatSignalValue,
+  initialSignalSelection,
+  signalCurrentPoint,
+  type SignalBehaviorFilter,
+  type SignalKindFilter,
+} from "@/lib/simulation-signal-view";
 
 type SimulationView = "network" | "signals" | "load" | "events";
 type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
@@ -110,7 +118,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
       setMessages([]);
       setSignals([]);
     });
-  }, [workflow?.project_id]);
+  }, [workflow?.project_id, workflow?.versions.engineering_model]);
 
   useEffect(() => {
     void setWorkflowContext({
@@ -582,17 +590,26 @@ function NetworkView({ job, trace, playhead }: { job: SimulationJob | null; trac
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
-  const [selected, setSelected] = useState(() => trace.signals.map((series) => series.signal_id));
+  const [selected, setSelected] = useState(() => initialSignalSelection(trace.signals));
+  const [search, setSearch] = useState("");
+  const [behavior, setBehavior] = useState<SignalBehaviorFilter>("DYNAMIC");
+  const [kind, setKind] = useState<SignalKindFilter>("ALL");
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState(0);
   const signalIds = useMemo(() => trace.signals.map((series) => series.signal_id), [trace.signals]);
+  const filtered = useMemo(() => filterSignalSeries(trace.signals, { search, behavior, kind }), [behavior, kind, search, trace.signals]);
+  const visibleSelected = filtered.filter((series) => selected.includes(series.signal_id));
   useEffect(() => {
-    setSelected(signalIds);
-  }, [signalIds]);
+    setSelected(initialSignalSelection(trace.signals));
+  }, [signalIds, trace.signals]);
   const windowDuration = trace.scenario.duration_s / zoom;
   const windowStart = Math.min(Math.max(0, pan), Math.max(0, trace.scenario.duration_s - windowDuration));
   const windowEnd = windowStart + windowDuration;
-  return <div className="signal-plot-workbench"><div className="signal-plot-controls"><div className="signal-selector-actions"><button className="button secondary tiny" disabled={selected.length === signalIds.length} onClick={() => setSelected(signalIds)} type="button">Alle Signale</button><button className="button secondary tiny" disabled={selected.length === 0} onClick={() => setSelected([])} type="button">Keine</button><span>{selected.length} / {signalIds.length}</span></div><div className="signal-selector">{trace.signals.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...current, series.signal_id] : current.filter((id) => id !== series.signal_id))} />{series.signal}</label>)}</div><label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label><label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label></div><div className="signal-lanes">{trace.signals.filter((series) => selected.includes(series.signal_id)).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && selected.length === 0 && <div className="simulation-empty-state"><strong>Keine Signale ausgewählt</strong><span>Wähle oben mindestens eine Signallane.</span></div>}</div></div>;
+  const filteredIds = filtered.map((series) => series.signal_id);
+  const selectFiltered = () => setSelected((current) => [...new Set([...current, ...filteredIds])]);
+  const clearFiltered = () => setSelected((current) => current.filter((id) => !filteredIds.includes(id)));
+  return <div className="signal-plot-workbench"><div className="signal-plot-controls"><div className="signal-filter-primary"><input aria-label="Signale durchsuchen" placeholder="Signal, Einheit oder Modell suchen …" value={search} onChange={(event) => setSearch(event.target.value)} /><select aria-label="Dynamik filtern" value={behavior} onChange={(event) => setBehavior(event.target.value as SignalBehaviorFilter)}><option value="ALL">Alle Verläufe</option><option value="DYNAMIC">Nur dynamisch</option><option value="STATIC">Nur statisch</option></select><select aria-label="Signaltyp filtern" value={kind} onChange={(event) => setKind(event.target.value as SignalKindFilter)}><option value="ALL">Alle Typen</option><option value="STATE">Zustände</option><option value="PHYSICAL">Physikalisch</option><option value="OTHER">Weitere</option></select><button className="button secondary tiny" onClick={() => setSelectorOpen((current) => !current)} type="button">{selectorOpen ? "Auswahl schließen" : "Signale auswählen"}</button></div><div className="signal-selector-actions"><button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button><button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button><span>{visibleSelected.length} sichtbar · {selected.length} gewählt · {filtered.length} Treffer</span></div>{selectorOpen && <div className="signal-selector">{filtered.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, series.signal_id])] : current.filter((id) => id !== series.signal_id))} /><span>{series.signal}<small>{series.semantic_type ?? series.behavior_type} · {series.unit || "ohne Einheit"}</small></span></label>)}{!filtered.length && <p>Keine Signale für diesen Filter.</p>}</div>}<div className="signal-time-controls"><label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label><label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label></div></div><div className="signal-lanes">{visibleSelected.slice(0, 60).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{visibleSelected.length > 60 && <div className="simulation-result-note">60 von {visibleSelected.length} Treffern dargestellt. Filter weiter eingrenzen.</div>}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div></div>;
 }
 
 function SignalLane({ series, windowStart, windowEnd, playhead }: { series: ModelSignalSeries; windowStart: number; windowEnd: number; playhead: number }) {
@@ -604,9 +621,9 @@ function SignalLane({ series, windowStart, windowEnd, playhead }: { series: Mode
   const golden = visiblePoints.map((item) => point(item.time_s, item.golden_value)).join(" ");
   const actual = visiblePoints.filter((item) => item.value !== null).map((item) => point(item.time_s, item.value)).join(" ");
   const faultPoints = visiblePoints.filter((item) => item.faults.length);
-  const current = [...series.points].reverse().find((item) => item.time_s <= playhead) ?? series.points[0];
+  const current = signalCurrentPoint(series, playhead);
   const playheadX = (playhead - windowStart) / Math.max(windowEnd - windowStart, 0.001) * width;
-  return <article className="signal-lane"><header><div><strong>{series.signal}</strong><span>{series.behavior_type} · {modelLabel(series.model_label)}</span></div><b>{current?.value ?? "-"} {series.unit}</b></header><div className="signal-chart"><svg aria-label={`${series.signal} Signalverlauf`} preserveAspectRatio="none" viewBox={`0 0 ${width} ${height}`}><line className="signal-limit" x1="0" x2={width} y1="1" y2="1" /><line className="signal-limit" x1="0" x2={width} y1={height - 1} y2={height - 1} /><polyline className="signal-golden-line" points={golden} /><polyline className="signal-actual-line" points={actual} />{faultPoints.map((item, index) => { const [x, y] = point(item.time_s, item.value).split(","); return <circle className="signal-fault-marker" cx={x} cy={y} key={`${item.time_s}-${index}`} r="4" />; })}{playheadX >= 0 && playheadX <= width && <line className="signal-playhead" x1={playheadX} x2={playheadX} y1="0" y2={height} />}</svg><span className="limit max">{series.maximum}</span><span className="limit min">{series.minimum}</span></div></article>;
+  return <article className="signal-lane"><header><div><strong>{series.signal}</strong><span>{series.behavior_type} · {modelLabel(series.model_label)}</span></div><b title={current?.value === null || current?.value === undefined ? "Kein Rohwert" : `Rohwert: ${current.value}`}>{formatSignalValue(series, current)}</b></header><div className="signal-chart"><svg aria-label={`${series.signal} Signalverlauf`} preserveAspectRatio="none" viewBox={`0 0 ${width} ${height}`}><line className="signal-limit" x1="0" x2={width} y1="1" y2="1" /><line className="signal-limit" x1="0" x2={width} y1={height - 1} y2={height - 1} /><polyline className="signal-golden-line" points={golden} /><polyline className="signal-actual-line" points={actual} />{faultPoints.map((item, index) => { const [x, y] = point(item.time_s, item.value).split(","); return <circle className="signal-fault-marker" cx={x} cy={y} key={`${item.time_s}-${index}`} r="4" />; })}{playheadX >= 0 && playheadX <= width && <line className="signal-playhead" x1={playheadX} x2={playheadX} y1="0" y2={height} />}</svg><span className="limit max">{series.maximum}</span><span className="limit min">{series.minimum}</span></div></article>;
 }
 
 function modelLabel(label: ModelSignalSeries["model_label"]) {

@@ -5,6 +5,7 @@ from ..message_packing import valid_payload_bytes
 from ..capacity.calculators import estimate_frame, utilization_percent
 from .model import objects, networks
 from ..device_classification import DeviceClassificationRegistry
+from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 
 
 def validate_effective_model(changes):
@@ -92,7 +93,10 @@ def validate_effective_model(changes):
                 affected_ports.add(identifier)
                 if item.get('network_ref'):
                     network = declared.get(str(item['network_ref']))
-                    if network is None or network['technology'] != item['technology']:
+                    if network is None or (
+                        DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(network['technology'])
+                        != DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item['technology'])
+                    ):
                         raise ValueError('Netzwerk fehlt oder verwendet eine andere Technologie.')
         except (ValueError, KeyError, TypeError) as error:
             findings.append({'severity': 'ERROR', 'index': index, 'message': str(error)})

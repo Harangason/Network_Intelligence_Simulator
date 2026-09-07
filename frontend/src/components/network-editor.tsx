@@ -1519,6 +1519,7 @@ type EvaDomainClusterLayout = {
   top: number;
   width: number;
   height: number;
+  busLabel: string;
 };
 
 function evaClusterLayouts(
@@ -1574,14 +1575,24 @@ function evaDomainClusterLayouts(
     const top = Math.min(...family.frames.map((frame) => frame.top));
     const right = Math.max(...family.frames.map((frame) => frame.left + frame.width));
     const bottom = Math.max(...family.frames.map((frame) => frame.top + frame.height));
+    const memberIds = family.frames.flatMap((frame) => frame.memberIds);
+    const busCounts = new Map<TopologyEdge["bus"], number>();
+    topology.edges.forEach((edge) => {
+      if (memberIds.includes(edge.source) || memberIds.includes(edge.target)) {
+        busCounts.set(edge.bus, (busCounts.get(edge.bus) ?? 0) + 1);
+      }
+    });
+    const dominantBus = [...busCounts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0];
+    const busLabel = dominantBus === "can_fd" ? `${family.label}-CAN` : dominantBus === "automotive_ethernet" ? `${family.label}-Ethernet` : dominantBus === "lin" ? `${family.label}-LIN` : `${family.label}-Netz`;
     return [{
       id: key,
-      memberIds: family.frames.flatMap((frame) => frame.memberIds),
+      memberIds,
       label: family.label,
       left: Math.max(4, left - EVA_DOMAIN_CLUSTER_PADDING),
       top: Math.max(36, top - EVA_DOMAIN_CLUSTER_PADDING),
       width: right - left + EVA_DOMAIN_CLUSTER_PADDING * 2,
       height: bottom - top + EVA_DOMAIN_CLUSTER_PADDING * 2,
+      busLabel,
     }];
   });
 }
@@ -3098,6 +3109,7 @@ export function NetworkEditor({
                 }}
               >
                 <span>{cluster.label}</span>
+                <div className="net-domain-bus"><b>{cluster.busLabel}</b></div>
               </div>
             ))}
           </div>

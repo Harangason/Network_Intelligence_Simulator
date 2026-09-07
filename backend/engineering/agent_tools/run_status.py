@@ -20,6 +20,22 @@ def extract_wizard_run_id(prompt: str) -> str | None:
     return match.group(1).rstrip(".") if match else None
 
 
+def restore_wizard_continuation_prompt(prompt: str, wizard: dict | None, maximum: int = 30_000) -> str:
+    """Reattach the durable confirmed request to compact continuation messages."""
+    compact = str(prompt or "").strip()
+    if not isinstance(wizard, dict) or "Strukturierte Vorgaben fuer den Engineering-Agenten:" in compact:
+        return compact
+    run_id = extract_wizard_run_id(compact)
+    original = str(wizard.get("agent_prompt") or "").strip()
+    if not run_id or wizard.get("run_id") != run_id or not original:
+        return compact
+    if "Strukturierte Vorgaben fuer den Engineering-Agenten:" not in original \
+            or "per Wizard-Uebernehmen bestaetigt" not in original:
+        return compact
+    suffix = "\n\nFortsetzung des bestätigten Wizard-Auftrags:\n" + compact
+    return original[:max(0, maximum - len(suffix))] + suffix
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -36,8 +52,15 @@ def execution_step(summary: dict) -> str:
 
 
 def reconcile_model_apply(project_id: str, proposal: dict) -> None:
-    """An applied model is not a pending approval and not a finished workflow."""
-    if proposal.get('proposal_type') != 'WIZARD_ENGINEERING_MODEL' or proposal.get('status') != 'APPLIED':
+    """Move an applied wizard proposal from the review gate to the next stale step."""
+    proposal_type = str(proposal.get('proposal_type') or '')
+    artifact_by_proposal = {
+        'WIZARD_ENGINEERING_MODEL': 'engineering_model',
+        'WIZARD_ROUTING': 'routing',
+        'WIZARD_NETWORK_TOPOLOGY': 'network_editor',
+    }
+    artifact = artifact_by_proposal.get(proposal_type)
+    if artifact is None or proposal.get('status') != 'APPLIED':
         return
     from . import conversation
     state = conversation.read()
@@ -48,13 +71,27 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
             or extract_wizard_run_id(state.get('current_requirement', '')) != execution.get('run_id')
             or execution.get('state') != 'REVIEW_REQUIRED'):
         return
-    check = summary['artifact_checks']['engineering_model']
+    check = summary['artifact_checks'][artifact]
     complete = check.get('complete', False)
-    message = ('Engineering-Modell übernommen und vollständig geprüft. Der Auftrag kann mit Routing fortgesetzt werden.'
-               if complete else 'Modell übernommen, aber die Workflow-Prüfung meldet noch Modelllücken: '
-               + str({k: v for k, v in check.get('consistency', {}).items() if k != 'function_required' and v}))
-    service.set_context({'agent_execution': {**execution, 'state': 'READY_TO_CONTINUE' if complete else 'BLOCKED',
-        'message': message, 'updated_at': _now()}}, summary=True)
+    if complete:
+        message = {
+            'WIZARD_ENGINEERING_MODEL':
+                'Engineering-Modell übernommen und vollständig geprüft. Der Auftrag kann mit Routing fortgesetzt werden.',
+            'WIZARD_ROUTING':
+                'Routing übernommen und vollständig geprüft. Der Auftrag kann mit der Netzwerktopologie fortgesetzt werden.',
+            'WIZARD_NETWORK_TOPOLOGY':
+                'Netzwerktopologie übernommen und vollständig geprüft. Capacity & Timing wird im nächsten Schritt neu berechnet.',
+        }[proposal_type]
+    else:
+        details = check.get('consistency') or check.get('invalid') or check.get('counts') or {}
+        message = f'{artifact} übernommen, aber die Workflow-Prüfung meldet noch Lücken: {details}'
+    service.set_context({'agent_execution': {
+        **execution,
+        'state': 'READY_TO_CONTINUE' if complete else 'BLOCKED',
+        'step': execution_step(summary),
+        'message': message,
+        'updated_at': _now(),
+    }}, summary=True)
 
 
 class WizardExecutionTracker:
@@ -126,6 +163,8 @@ class WizardExecutionTracker:
         message = str(result.get("text") or "Der Engineering-Auftrag wurde beendet.")
         if status in TERMINAL_SUCCESS:
             self.update("COMPLETED", message)
+        elif status == "READY_TO_CONTINUE":
+            self.update("READY_TO_CONTINUE", message)
         elif status in TERMINAL_REVIEW:
             self.update("REVIEW_REQUIRED", message)
         else:

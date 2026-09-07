@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agentBuildProgressPercent, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep } from "./agent-run-status.ts";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry } from "./agent-run-status.ts";
 
 const run = {
   run_id: "wizard-run", state: "RUNNING", step: "routing", completed: 36, total: 150,
@@ -54,8 +54,23 @@ test("heartbeats keep a restored run active but an interrupted run expires", () 
   assert.equal(agentRunIsActive(null, started), false);
 });
 
+test("a durable server outcome supersedes a disconnected browser stream", () => {
+  assert.equal(agentRunHasDurableOutcome({ ...run, state: "REVIEW_REQUIRED", step: "network_editor" }), true);
+  assert.equal(agentRunHasDurableOutcome({ ...run, state: "READY_TO_CONTINUE" }), true);
+  assert.equal(agentRunHasDurableOutcome({ ...run, state: "COMPLETED" }), true);
+  assert.equal(agentRunHasDurableOutcome({ ...run, state: "RUNNING" }), false);
+  assert.equal(agentRunHasDurableOutcome({ ...run, state: "BLOCKED" }), false);
+});
+
 test("all downstream workflow steps survive reopening the wizard", () => {
   for (const step of ["network_editor", "parameters", "capacity_timing", "validation", "simulation", "results_analysis", "data_science_intelligence"]) {
     assert.equal(readAgentRunStatus({ ...run, step }, run.run_id)?.step, step);
   }
+});
+
+test("an explicit retry remains available after earlier failed continuations", () => {
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "BLOCKED" }), true);
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "READY_TO_CONTINUE" }), true);
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "CANCELED" }), false);
+  assert.equal(wizardRunCanRetry(false, true, { ...run, state: "BLOCKED" }), false);
 });

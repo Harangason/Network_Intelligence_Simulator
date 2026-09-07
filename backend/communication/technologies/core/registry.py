@@ -1,0 +1,202 @@
+"""Extensible technology registry and resolvers."""
+
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any, Iterable
+
+from .components import (
+    IdentityDecoder,
+    IdentityEncoder,
+    TechnologyBindingAdapter,
+    TechnologyLoadCalculator,
+    TechnologyTimingModel,
+    TechnologyTransportGenerator,
+    TechnologyValidator,
+)
+from .models import ImplementationStatus, Layer, TechnologyCapability, TechnologyStack, TransportRequirement
+
+
+LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
+
+
+class TechnologyRegistry:
+    def __init__(self) -> None:
+        self._profiles: dict[str, dict[str, Any]] = {}
+        self._bindings: dict[str, Any] = {}
+        self._generators: dict[str, Any] = {}
+        self._validators: dict[str, list[Any]] = {}
+        self._encoders: dict[str, Any] = {}
+        self._decoders: dict[str, Any] = {}
+        self._load_calculators: dict[str, Any] = {}
+        self._timing_models: dict[str, Any] = {}
+
+    @staticmethod
+    def normalize_id(value: Any) -> str:
+        token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
+        while "__" in token:
+            token = token.replace("__", "_")
+        aliases = {
+            "canfd": "can_fd", "canxl": "can_xl", "some_ip": "someip",
+            "automotiveethernet": "ethernet", "modbustcp": "modbus_tcp",
+            "modbusrtu": "modbus_rtu", "opcua": "opc_ua", "profinet": "profinet",
+            "arinc": "arinc429", "milstd_1553": "mil_std_1553", "dds_rtps": "dds",
+            "ros_2": "ros2", "ros2_dds": "ros2", "sps": "plc",
+        }
+        return aliases.get(token, token)
+
+    def register_profile(self, technology_id: str, profile: dict[str, Any]) -> None:
+        key = self.normalize_id(technology_id)
+        if key in self._profiles:
+            raise ValueError(f"technology already registered: {key}")
+        self._profiles[key] = {"id": key, **deepcopy(profile)}
+
+    def register_binding(self, technology_id: str, binding: Any) -> None:
+        self._bindings[self.normalize_id(technology_id)] = binding
+
+    def register_generator(self, technology_id: str, generator: Any) -> None:
+        self._generators[self.normalize_id(technology_id)] = generator
+
+    def register_validator(self, technology_id: str, validator: Any) -> None:
+        self._validators.setdefault(self.normalize_id(technology_id), []).append(validator)
+
+    def register_encoder(self, technology_id: str, encoder: Any) -> None:
+        self._encoders[self.normalize_id(technology_id)] = encoder
+
+    def register_decoder(self, technology_id: str, decoder: Any) -> None:
+        self._decoders[self.normalize_id(technology_id)] = decoder
+
+    def register_load_calculator(self, technology_id: str, calculator: Any) -> None:
+        self._load_calculators[self.normalize_id(technology_id)] = calculator
+
+    def register_timing_model(self, technology_id: str, timing_model: Any) -> None:
+        self._timing_models[self.normalize_id(technology_id)] = timing_model
+
+    def register_defaults(self, definitions: Iterable[dict[str, Any]]) -> None:
+        for raw in definitions:
+            technology_id = self.normalize_id(raw["id"])
+            profile = {**raw, "capabilities": TechnologyCapability(**raw.get("capabilities", {})).to_dict()}
+            self.register_profile(technology_id, profile)
+            status = ImplementationStatus(profile["implementation_status"])
+            if status in {ImplementationStatus.IMPLEMENTED, ImplementationStatus.PARTIAL, ImplementationStatus.EXPERIMENTAL, ImplementationStatus.LEGACY}:
+                binding = TechnologyBindingAdapter(technology_id)
+                timing = TechnologyTimingModel(technology_id, profile)
+                self.register_binding(technology_id, binding)
+                self.register_generator(technology_id, TechnologyTransportGenerator(technology_id, profile["transport_unit"], profile.get("max_payload_bytes")))
+                self.register_validator(technology_id, TechnologyValidator(technology_id, profile))
+                self.register_encoder(technology_id, IdentityEncoder())
+                self.register_decoder(technology_id, IdentityDecoder())
+                self.register_timing_model(technology_id, timing)
+                self.register_load_calculator(technology_id, TechnologyLoadCalculator(technology_id, timing))
+
+    def get_capabilities(self, technology_id: str) -> dict[str, bool]:
+        return deepcopy(self.profile(technology_id)["capabilities"])
+
+    def profile(self, technology_id: str) -> dict[str, Any]:
+        key = self.normalize_id(technology_id)
+        if key not in self._profiles:
+            raise KeyError(f"unknown technology: {key}")
+        return deepcopy(self._profiles[key])
+
+    def profiles(self) -> list[dict[str, Any]]:
+        return [deepcopy(self._profiles[key]) for key in sorted(self._profiles)]
+
+    def resolve_stack(self, stack: str | Iterable[str]) -> dict[str, Any]:
+        ids = tuple(self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack))
+        stack_model = TechnologyStack(ids)
+        profiles = [self.profile(item) for item in ids]
+        layers = [LAYER_ORDER[profile["layer"]] for profile in profiles]
+        if layers != sorted(layers):
+            raise ValueError(f"technology stack layers are not ordered: {ids}")
+        top = ids[-1]
+        return {
+            "stack": stack_model,
+            "profiles": profiles,
+            "binding": self.resolve_binding(ids),
+            "generator": self.resolve_generator(ids),
+            "validators": self._validators.get(top, []),
+            "encoder": self._encoders.get(top),
+            "decoder": self._decoders.get(top),
+            "timing_model": self._timing_models.get(top),
+            "load_calculator": self._load_calculators.get(top),
+        }
+
+    def resolve_binding(self, stack: str | Iterable[str]) -> Any:
+        ids = [self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack)]
+        for technology_id in reversed(ids):
+            if technology_id in self._bindings:
+                return self._bindings[technology_id]
+        raise LookupError(f"no executable binding for stack: {ids}")
+
+    def resolve_generator(self, stack: str | Iterable[str]) -> Any:
+        ids = [self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack)]
+        for technology_id in reversed(ids):
+            if technology_id in self._generators:
+                return self._generators[technology_id]
+        raise LookupError(f"no executable generator for stack: {ids}")
+
+    def validate_chain(self, stack: str | Iterable[str], context: dict[str, Any]) -> list[dict[str, Any]]:
+        resolved = self.resolve_stack(stack)
+        findings = []
+        for validator in resolved["validators"]:
+            findings.extend(vars(item) for item in validator.validate(context))
+        return findings
+
+    def summary(self) -> dict[str, Any]:
+        profiles = self.profiles()
+        return {
+            "technology_count": len(profiles),
+            "implementation_status": {
+                status.value: sum(profile["implementation_status"] == status.value for profile in profiles)
+                for status in ImplementationStatus
+            },
+            "layers": [layer.value for layer in Layer],
+            "technologies": profiles,
+        }
+
+
+class BindingResolver:
+    def __init__(self, registry: TechnologyRegistry) -> None:
+        self.registry = registry
+
+    def resolve(
+        self,
+        *,
+        requirement: TransportRequirement,
+        hardware_capabilities: Iterable[str] = (),
+        domain_profile: str | None = None,
+    ) -> list[dict[str, Any]]:
+        hardware = {str(item).lower() for item in hardware_capabilities}
+        candidates: list[dict[str, Any]] = []
+        for profile in self.registry.profiles():
+            if profile["implementation_status"] not in {"IMPLEMENTED", "PARTIAL", "EXPERIMENTAL", "LEGACY"}:
+                continue
+            if domain_profile and profile["domain"] not in {domain_profile, "generic_networking", "custom"}:
+                continue
+            capabilities = profile["capabilities"]
+            complexity = requirement.data_complexity.upper()
+            if complexity in {"IMAGE_STREAM", "POINT_CLOUD", "AUDIO_STREAM"} and not capabilities["supports_streams"]:
+                continue
+            if requirement.safety and not capabilities["supports_safety_profile"]:
+                continue
+            if requirement.redundancy and not capabilities["supports_redundancy"]:
+                continue
+            required_interface = str(profile.get("hardware_interface") or "").lower()
+            if hardware and required_interface not in hardware:
+                continue
+            bitrate = int(profile.get("default_bitrate") or 0)
+            if requirement.bandwidth_bps and bitrate and bitrate < requirement.bandwidth_bps:
+                continue
+            score = 100
+            score += 15 if domain_profile == profile["domain"] else 0
+            score += 10 if requirement.deterministic and profile.get("deterministic") else 0
+            candidates.append({"technology_id": profile["id"], "score": score, "profile": profile})
+        return sorted(candidates, key=lambda item: (-item["score"], item["technology_id"]))
+
+
+class GeneratorResolver:
+    def __init__(self, registry: TechnologyRegistry) -> None:
+        self.registry = registry
+
+    def resolve(self, binding: Any) -> Any:
+        return self.registry.resolve_generator(binding.stack.technology_ids)

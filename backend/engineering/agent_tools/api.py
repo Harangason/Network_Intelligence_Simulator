@@ -24,7 +24,7 @@ from .runtime import ToolAuthority, DEFAULT_PERMISSIONS, execute
 from .services import TOOLS
 from . import proposal_service as proposals
 from . import conversation
-from .run_status import WizardExecutionTracker, extract_wizard_run_id, reconcile_model_apply
+from .run_status import WizardExecutionTracker, extract_wizard_run_id, reconcile_model_apply, restore_wizard_continuation_prompt
 from .cancellation import RunCancellation, request_cancel
 from ..workflow.service import WorkflowStatusService
 from datetime import datetime, timezone
@@ -179,6 +179,11 @@ def chat():
         return jsonify({"error":"Ungültiger Gesprächskontext."}),400
     history = [{"role":item["role"], "content":item["content"]} for item in history]
     project_id = _project()
+    workflow = WorkflowStatusService(project_id).get(summary=True)
+    payload['prompt'] = restore_wizard_continuation_prompt(
+        payload['prompt'],
+        (workflow.get('context') or {}).get('agent_wizard_status'),
+    )
     raw_context = payload.get("context") or {}
     if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > 30000:
         return jsonify({"error":"Ungültiger Kontext oder zu lange Anforderung."}),400

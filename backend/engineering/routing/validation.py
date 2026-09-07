@@ -30,6 +30,10 @@ PROTOCOL_CAPACITY = {
     "MODBUS": (100_000, 253),
     "ARINC": (100_000, 4),
     "MIL_STD_1553": (1_000_000, 4),
+    "MVB": (1_500_000, 32),
+    "WTB": (1_000_000, 128),
+    "ETB": (100_000_000, 1_500),
+    "TRDP": (100_000_000, 65_507),
     "PCIE": (8_000_000_000, 4096),
     "CUSTOM": (1_000_000, 65_535),
 }
@@ -47,6 +51,10 @@ INTERFACE_PROTOCOLS = {
     "OPCUA": {"OPC_UA"},
     "ARINC": {"ARINC"},
     "MIL_STD_1553": {"MIL_STD_1553"},
+    "MVB": {"MVB"},
+    "WTB": {"WTB"},
+    "ETB": {"ETB", "TRDP"},
+    "TRDP": {"TRDP"},
     "PCIe": {"PCIE"},
     "Other": set(PROTOCOL_CAPACITY),
 }

@@ -295,6 +295,8 @@ def register_tools():
     for name in ["classify_trace_fault","classify_fault"]:
         register(name,"Trace-Fehler über den ML-Fachdienst klassifizieren.",P.ANALYZE_TRACE,lambda a:MLInferenceService().classify_fault(a["trace"]),trace=OBJECT)
     register("evaluate_architecture","Kanonische Architektur bewerten.",P.VALIDATE,lambda a:IntelligenceService(current_project_id()).assess(persist=False))
+    register("assess_intelligence","Data Science & Intelligence als aktuellen Workflow-Nachweis speichern.",P.VALIDATE,
+             lambda a:IntelligenceService(current_project_id()).assess(persist=True))
     for name in ["find_graph_gaps","find_single_points_of_failure"]:
         register(name,"Graphlücken und Ausfallpunkte aus kanonischen Routen ermitteln.",P.READ_MODEL,lambda a:analysis.graph_analysis())
     register("update_object_via_proposal","Versionierte Änderung als Proposal erzeugen.",P.GENERATE_PROPOSAL,_update,object_type=TEXT,object_id=ID,changes=OBJECT,rationale=TEXT)
@@ -303,6 +305,8 @@ def register_tools():
     register("validate_proposal","Proposal und referenzierten Modellstand validieren.",P.VALIDATE,lambda a:proposals.validate(a["proposal_id"]),proposal_id=ID)
     register("apply_approved_proposal","Ausschließlich menschlich freigegebenen, aktuellen Proposal atomar anwenden.",P.APPLY_APPROVED_PROPOSAL,lambda a:proposals.apply(a["proposal_id"],actor=a["_actor"],trace_id=a["_trace_id"]),proposal_id=ID)
     register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=TEXT)
+    register("generate_wizard_routing", "Bestätigten Systemcluster-Graph deterministisch in einen prüfbaren Routing-Vorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_routing, prompt=TEXT)
+    register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=TEXT)
     register("create_workload","Messbaren Auftrag mit Sollzahlen planen und speichern.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload(a["request"]),request=OBJECT)
     register("generate_signals","Signalauftrag durch vorhandenen Workload-Generator planen.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload({**a["request"],"workload_type":"SIGNAL_GENERATION"}),request=OBJECT)
     for name,method in [("start_workload","start_workload"),("validate_workload","validate_workload"),("repair_workload","retry_invalid"),("generate_missing","generate_missing"),("inspect_workload","get_workload"),("get_workload_progress","progress")]:

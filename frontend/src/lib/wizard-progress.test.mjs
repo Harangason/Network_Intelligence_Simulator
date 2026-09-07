@@ -2,12 +2,32 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parameterProgressTarget, symbolicProgressAt } from "./wizard-progress.ts";
 
-test("implicit approval starts at zero until parameters are processed", () => {
-  assert.equal(parameterProgressTarget(false, undefined, 100), 0);
+test("approved default parameters use the canonical workflow completion", () => {
+  assert.equal(parameterProgressTarget(false, undefined, 100), 100);
   assert.equal(parameterProgressTarget(false, "input-available", 100), 90);
   assert.equal(parameterProgressTarget(true, "input-available", 100), 90);
   assert.equal(parameterProgressTarget(false, "output-available", 100), 100);
   assert.equal(parameterProgressTarget(true, undefined, 100), 100);
+});
+
+test("analysis heading follows the actual workflow phase", async () => {
+  const { wizardAnalysisHeading } = await import("./wizard-progress.ts");
+  assert.equal(wizardAnalysisHeading({
+    agentPending: true,
+    currentStep: "Routing-Tabelle",
+    executionState: "RUNNING",
+    modelReviewPending: false,
+    routingReviewPending: false,
+    runPaused: false,
+  }), "Routing-Tabelle wird bearbeitet");
+  assert.equal(wizardAnalysisHeading({
+    agentPending: false,
+    currentStep: "Routing-Tabelle",
+    executionState: "REVIEW_REQUIRED",
+    modelReviewPending: false,
+    routingReviewPending: true,
+    runPaused: false,
+  }), "Analyse bereit zur Freigabe");
 });
 
 test("parameter warnings and errors are not converted into completion", () => {

@@ -26,13 +26,16 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
-import { parameterProgressTarget, symbolicProgressAt } from "@/lib/wizard-progress";
-import { extractEngineeringSpecification, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import { parameterProgressTarget, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
+import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import {
   buildEquipmentClusters,
+  equipmentClusterBusWarnings,
+  equipmentClusterGraphPrompt,
   equipmentClusterSummary,
+  equipmentTermMeaning,
   type EquipmentClusterAssignment,
 } from "@/lib/agent/equipment-clustering";
 import { inspectAgentText } from "@/lib/agent/agent-output-safety";
@@ -59,7 +62,7 @@ import { EngineeringAgentEventCard } from "./engineering-agent-event";
 
 const EQUIPMENT_CATEGORIES = [
   { key: "gateways", label: "Gateways", type: "Gateway" },
-  { key: "ecus", label: "ECUs", type: "ECU" },
+  { key: "ecus", label: "Controller", type: "Controller" },
   { key: "sensors", label: "Sensoren", type: "SensorController" },
   { key: "actuators", label: "Aktoren", type: "ActuatorController" },
 ] as const;
@@ -585,12 +588,17 @@ type ChoiceGroup = {
 const STATIC_INDUSTRY_DOMAINS: TechnologyDomain[] = [
   { id: "automotive", label: "Automotive", technologies: [] },
   { id: "industrial_automation", label: "Industrial Automation", technologies: [] },
+  { id: "robotics_ros", label: "Robotics / ROS 2", technologies: [] },
   { id: "aerospace", label: "Aerospace", technologies: [] },
-  { id: "iot", label: "IoT & Sensor Networks", technologies: [] },
-  { id: "telecom", label: "Telecommunication", technologies: [] },
+  { id: "rail", label: "Rail", technologies: [] },
+  { id: "marine", label: "Marine / Off-Highway", technologies: [] },
+  { id: "building_automation", label: "Building Automation", technologies: [] },
   { id: "energy", label: "Energy & Smart Grid", technologies: [] },
-  { id: "robotics", label: "Robotics", technologies: [] },
-  { id: "medical", label: "Medical Devices", technologies: [] },
+  { id: "process_industry", label: "Process Industry", technologies: [] },
+  { id: "embedded_systems", label: "Embedded / Electronics", technologies: [] },
+  { id: "iot_wireless", label: "IoT / Edge / Wireless", technologies: [] },
+  { id: "generic_networking", label: "Generische Kommunikationsarchitektur", technologies: [] },
+  { id: "custom", label: "Custom / Proprietary", technologies: [] },
 ];
 
 const SCOPE_GROUP: ChoiceGroup = {
@@ -679,45 +687,45 @@ type NetworkArchitectureOption = {
 const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
   {
     id: "sensor_ecu_actuator",
-    label: "Variante 0 · Sensor-ECU-Aktor",
-    detail: "Lokaler Regelkreis ohne Gateway/BCM-Pfad: Sensoren liefern an die ECU, die ECU steuert Aktoren.",
-    diagram: "Sensor -> ECU -> Aktor",
-    rules: "Lokale Funktionskette: Sensoren und Aktoren werden fachlich an die zuständige ECU gebunden. Es werden keine Gateway-/BCM-Verbindungen und keine direkten Sensor-/Aktor-Netzpfade angelegt.",
+    label: "Variante 0 · Sensor-Controller-Aktor",
+    detail: "Lokaler Regelkreis ohne Gateway-Pfad: Sensoren liefern an die zuständige Steuerung, die Steuerung bedient Aktoren.",
+    diagram: "Sensor -> Controller -> Aktor",
+    rules: "Lokale Funktionskette: Sensoren und Aktoren werden fachlich an den zuständigen Controller gebunden. Es werden keine Gateway-Verbindungen und keine direkten Sensor-/Aktor-Netzpfade angelegt.",
   },
   {
     id: "eva",
     label: "Variante 1 · Einfaches EVA",
-    detail: "Eingabe, Verarbeitung und Ausgabe bleiben je System fachlich zusammengefasst.",
-    diagram: "Sensor/Aktor → ECU → Gateway",
-    rules: "EVA je Systemrahmen: Sensoren und Eingaben zur ECU, ECU-Verarbeitung zu Aktoren und Ausgaben; die Gateway-Anbindung vermittelt nur die Systemkommunikation.",
+    detail: "Eingabe, Verarbeitung und Ausgabe bleiben je System und Controller fachlich zusammengefasst.",
+    diagram: "Sensor/Aktor → Controller → Gateway",
+    rules: "EVA je Systemrahmen: Sensoren und Eingaben zur Steuerung, Controller-Verarbeitung zu Aktoren und Ausgaben; die Gateway-Anbindung vermittelt nur die Systemkommunikation.",
   },
   {
     id: "ecu_gateway",
-    label: "Variante 2 · ECU-vermittelt",
-    detail: "Sensoren und Aktoren hängen an der ECU; die ECU kommuniziert mit Gateway oder BCM.",
-    diagram: "Sensor ─┐\n        ├─ ECU ─ Gateway / BCM\nAktor ──┘",
-    rules: "Sensoren und Aktoren werden ihrer fachlich zuständigen ECU zugeordnet; ausschließlich die ECU bindet den Systemrahmen an Gateway oder BCM an.",
+    label: "Variante 2 · Controller-vermittelt",
+    detail: "Sensoren und Aktoren hängen am zuständigen Controller; der Controller kommuniziert mit dem Gateway.",
+    diagram: "Sensor ─┐\n        ├─ Controller ─ Gateway\nAktor ──┘",
+    rules: "Sensoren und Aktoren werden ihrem fachlich zuständigen Controller zugeordnet; ausschließlich der Controller bindet den Systemrahmen an das Gateway an.",
   },
   {
     id: "gateway_direct",
     label: "Variante 3 · Gateway-direkt",
-    detail: "Sensoren, ECUs und Aktoren erhalten jeweils eine direkte Gateway- oder BCM-Anbindung.",
-    diagram: "Sensor ─────┐\nECU ────────┼─ Gateway / BCM\nAktor ──────┘",
-    rules: "Sensoren, ECUs und Aktoren werden als eigenständige Teilnehmer direkt an Gateway oder BCM angebunden.",
+    detail: "Sensoren, Controller und Aktoren erhalten jeweils eine direkte Gateway-Anbindung.",
+    diagram: "Sensor ─────┐\nController ─┼─ Gateway\nAktor ──────┘",
+    rules: "Sensoren, Controller und Aktoren werden als eigenständige Teilnehmer direkt an das Gateway angebunden.",
   },
   {
     id: "gateway_ecu_segments",
     label: "Variante 4 · Gateway-Segmente",
-    detail: "Ein Gateway-Segment bündelt bis zu 6 ECUs; Sensoren und Aktoren bleiben an der fachlichen ECU.",
-    diagram: "Sensor/Aktor -> ECU 1 --\\\nSensor/Aktor -> ECU 2 --- Gateway / BCM\n... bis ECU 6 ----/",
-    rules: "Segmentierte Gateway-Backbone-Architektur: Sensoren und Aktoren werden fachlich an ECUs geführt; pro Gateway-Leitung werden bis zu 6 ECUs als Bussegment gebündelt. Das Gateway kennt die ECU-Segmente, legt aber keine Sensor-/Aktor-Direktanbindungen an.",
+    detail: "Ein Gateway-Segment bündelt bis zu 6 Controller; Sensoren und Aktoren bleiben an der fachlichen Steuerung.",
+    diagram: "Sensor/Aktor -> Controller 1 --\\\nSensor/Aktor -> Controller 2 --- Gateway\n... bis Controller 6 ----/",
+    rules: "Segmentierte Gateway-Backbone-Architektur: Sensoren und Aktoren werden fachlich an Controller geführt; pro Gateway-Leitung werden bis zu 6 Controller als Bussegment gebündelt. Das Gateway kennt die Controller-Segmente, legt aber keine Sensor-/Aktor-Direktanbindungen an.",
   },
   {
     id: "hybrid_ai",
     label: "KI-Kombination · Variante 2 + 3",
-    detail: "Die KI entscheidet je Teilnehmer zwischen lokaler ECU-Zuordnung und direkter Gateway-Anbindung.",
-    diagram: "lokal → ECU ─┐\n              ├─ Gateway / BCM\ndirekt ───────┘",
-    rules: "Kombination aus Variante 2 und 3: lokale, echtzeit- oder regelungskritische Teilnehmer über die fachliche ECU; systemweite, zentrale oder hochbandbreitige Teilnehmer direkt über Gateway oder BCM.",
+    detail: "Die KI entscheidet je Teilnehmer zwischen lokaler Controller-Zuordnung und direkter Gateway-Anbindung.",
+    diagram: "lokal → Controller ─┐\n                    ├─ Gateway\ndirekt ─────────────┘",
+    rules: "Kombination aus Variante 2 und 3: lokale, echtzeit- oder regelungskritische Teilnehmer über den fachlichen Controller; systemweite, zentrale oder hochbandbreitige Teilnehmer direkt über das Gateway.",
   },
 ];
 
@@ -730,6 +738,7 @@ type AgentWizardContext = {
   attachments: Array<{ kind: string; name: string; size: number; source?: "task" | "architecture" }>;
   confirmed_at: string;
   industry: string;
+  model_type: string;
   mode: "full" | "can";
   network_architecture?: {
     ai_proposal: string;
@@ -749,6 +758,7 @@ type AgentWizardContext = {
   scope_ids: string[];
   task: string;
   technologies: string[];
+  hardware_counts?: EngineeringHardwareCounts;
   communication_system_counts?: Array<{ id: string; label: string; recognized: number; count: number }>;
   planned_network_connections?: number;
   system_cluster_assignments?: EquipmentClusterAssignment[];
@@ -786,6 +796,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     attachments,
     confirmed_at: String(context.confirmed_at ?? ""),
     industry: String(context.industry ?? "Aus Projektkontext ableiten"),
+    model_type: String(context.model_type ?? context.industry ?? "generic_networking"),
     mode: context.mode === "can" ? "can" : "full",
     network_architecture: architectureId && rawArchitecture?.approved === true ? {
       ai_proposal: String(rawArchitecture.ai_proposal ?? ""),
@@ -805,6 +816,14 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     scope_ids: strings("scope_ids"),
     task: String(context.task ?? "Engineering-Auftrag"),
     technologies: strings("technologies"),
+    hardware_counts: context.hardware_counts && typeof context.hardware_counts === "object"
+      ? {
+          gateways: Number((context.hardware_counts as Record<string, unknown>).gateways ?? 0),
+          ecus: Number((context.hardware_counts as Record<string, unknown>).ecus ?? 0),
+          sensors: Number((context.hardware_counts as Record<string, unknown>).sensors ?? 0),
+          actuators: Number((context.hardware_counts as Record<string, unknown>).actuators ?? 0),
+        }
+      : undefined,
     communication_system_counts: Array.isArray(context.communication_system_counts)
       ? context.communication_system_counts
         .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
@@ -832,6 +851,12 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
           devices: Number(item.devices ?? 0),
           counts: item.counts && typeof item.counts === "object" ? item.counts as Record<string, number> : {},
           evidence: Array.isArray(item.evidence) ? item.evidence.filter((value): value is string => typeof value === "string") : [],
+          tree: Array.isArray(item.tree) ? item.tree as EquipmentClusterAssignment["tree"] : undefined,
+          unassigned: Array.isArray(item.unassigned) ? item.unassigned as EquipmentClusterAssignment["unassigned"] : undefined,
+          hmi_routes: Array.isArray(item.hmi_routes) ? item.hmi_routes as EquipmentClusterAssignment["hmi_routes"] : undefined,
+          validation: item.validation && typeof item.validation === "object"
+            ? item.validation as EquipmentClusterAssignment["validation"]
+            : undefined,
         }))
         .filter((item) => item.cluster_id && item.label)
       : undefined,
@@ -1029,6 +1054,86 @@ function latestWizardQuestion(messages: EngineeringAgentUIMessage[], runId: stri
   return null;
 }
 
+function ClusterUnassignedReview({
+  busy,
+  clusterId,
+  clusterLabel,
+  controllerOptions,
+  leaves,
+  onAssign,
+  onOpenLeaf,
+  ownerSelections,
+}: {
+  busy: boolean;
+  clusterId: string;
+  clusterLabel: string;
+  controllerOptions: Array<{ hardware_name: string }>;
+  leaves: NonNullable<EquipmentClusterAssignment["unassigned"]>;
+  onAssign: (owners: Record<string, string>) => void;
+  onOpenLeaf: (name: string, target: string) => void;
+  ownerSelections: Record<string, string>;
+}) {
+  const [selections, setSelections] = useState<string[]>([]);
+  const [target, setTarget] = useState("");
+  const allSelected = leaves.length > 0 && leaves.every((leaf) => selections.includes(leaf.name));
+
+  return (
+    <details className="agent-cluster-unassigned" open>
+      <summary>Ungeklärte Controller-Zuordnung · {leaves.length}</summary>
+      <div className="agent-cluster-batch-toolbar">
+        <label className="agent-cluster-select-all">
+          <input
+            aria-label={`${clusterLabel}: alle ungeklärten Teilnehmer auswählen`}
+            checked={allSelected}
+            disabled={busy}
+            onChange={(event) => setSelections(event.target.checked ? leaves.map((leaf) => leaf.name) : [])}
+            type="checkbox"
+          />
+          <span>{allSelected ? "Alle ausgewählt" : "Alle auswählen"}</span>
+        </label>
+        <strong>{selections.length} ausgewählt</strong>
+        <select
+          aria-label={`${clusterLabel}: Controller für Mehrfachauswahl`}
+          disabled={busy || !controllerOptions.length}
+          onChange={(event) => setTarget(event.target.value)}
+          value={target}
+        >
+          <option value="">Controller auswählen …</option>
+          {controllerOptions.map((ecu) => <option key={ecu.hardware_name} value={ecu.hardware_name}>{ecu.hardware_name}</option>)}
+        </select>
+        <button
+          disabled={busy || !target || selections.length === 0}
+          onClick={() => {
+            onAssign(Object.fromEntries(selections.map((name) => [name, target])));
+            setSelections([]);
+            setTarget("");
+          }}
+          type="button"
+        >Auswahl zuordnen</button>
+      </div>
+      <ul>{leaves.map((leaf) => (
+        <li className={selections.includes(leaf.name) ? "selected" : ""} key={`${clusterId}:${leaf.deviceType}:${leaf.name}`}>
+          <input
+            aria-label={`${leaf.name} für Mehrfachzuordnung auswählen`}
+            checked={selections.includes(leaf.name)}
+            disabled={busy}
+            onChange={(event) => setSelections((current) => event.target.checked ? [...current, leaf.name] : current.filter((name) => name !== leaf.name))}
+            type="checkbox"
+          />
+          <span title={`${equipmentTermMeaning(leaf.name).english} / ${equipmentTermMeaning(leaf.name).german}`}>{leaf.name}<small>{leaf.reason}</small><small>EN: {equipmentTermMeaning(leaf.name).english} · DE: {equipmentTermMeaning(leaf.name).german}</small></span>
+          <button
+            aria-label={`${leaf.name}: Controller-Zuordnung öffnen`}
+            className="agent-unassigned-owner-button"
+            disabled={busy || !controllerOptions.length}
+            onClick={() => onOpenLeaf(leaf.name, ownerSelections[leaf.name] ?? "")}
+            type="button"
+          >{ownerSelections[leaf.name] || "Einzeln zuordnen …"}</button>
+        </li>
+      ))}</ul>
+    </details>
+  );
+}
+
 export function EngineeringAgentWizard({
   busy,
   mode,
@@ -1063,10 +1168,36 @@ export function EngineeringAgentWizard({
   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
   const [equipmentClusterEdits, setEquipmentClusterEdits] = useState<{
     source: string;
-    values: Record<string, { selected?: boolean; networkId?: string; busName?: string }>;
+    values: Record<string, {
+      selected?: boolean;
+      networkId?: string;
+      busName?: string;
+      owners?: Record<string, string>;
+      verdicts?: Record<string, boolean>;
+      branchTargets?: Record<string, string>;
+    }>;
   }>({ source: "", values: {} });
+  const [clusterReviewDialog, setClusterReviewDialog] = useState<null | {
+    kind: "leaf" | "branch";
+    clusterId: string;
+    name: string;
+    target: string;
+  }>(null);
+  const [activeEquipmentClusterId, setActiveEquipmentClusterId] = useState("");
+  const [acceptedDomainMismatch, setAcceptedDomainMismatch] = useState("");
   const taskSource = `${taskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
-  const recognizedEquipment = useMemo(() => extractEngineeringSpecification(taskSource), [taskSource]);
+  const detectedDomain = useMemo(() => engineeringDomainEvidence(taskSource), [taskSource]);
+  const selectedDomainId = canonicalWizardDomain(selectedIndustry);
+  const domainMismatch = detectedDomain.domain !== "generic"
+    && detectedDomain.domain !== selectedDomainId
+    && detectedDomain.confidence >= 0.65;
+  const domainMismatchSignature = domainMismatch ? `${selectedDomainId}->${detectedDomain.domain}:${detectedDomain.markers.join("|")}` : "";
+  const domainMismatchAccepted = Boolean(domainMismatchSignature && acceptedDomainMismatch === domainMismatchSignature);
+  const previewDomain = domainMismatch && !domainMismatchAccepted ? detectedDomain.domain : selectedDomainId;
+  const recognizedEquipment = useMemo(
+    () => extractEngineeringSpecification(taskSource, {}, previewDomain),
+    [previewDomain, taskSource],
+  );
   const equipmentValues = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key,
     equipmentEdits.source === taskSource && equipmentEdits.values[key] !== undefined
       ? equipmentEdits.values[key] : String(recognizedEquipment.targetCounts[key]),
@@ -1074,6 +1205,10 @@ export function EngineeringAgentWizard({
   const equipmentReady = Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
     && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
   const equipmentCounts = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key, Number(equipmentValues[key])])) as EngineeringHardwareCounts;
+  const plannedEquipment = useMemo(
+    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain),
+    [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
+  );
   const [projectId] = useState(() => readActiveProjectId());
   const wizardTransport = useMemo(
     () => new DefaultChatTransport({
@@ -1101,6 +1236,7 @@ export function EngineeringAgentWizard({
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
   const [hardwareItems, setHardwareItems] = useState<EngineeringObject[]>([]);
+  const [reviewProposal, setReviewProposal] = useState<EngineeringProposal | null>(null);
   const [routingReviewBusy, setRoutingReviewBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [supplementOpen, setSupplementOpen] = useState(false);
@@ -1116,14 +1252,17 @@ export function EngineeringAgentWizard({
   const missingResponseLogRef = useRef(false);
   const missingQuestionSignatureRef = useRef("");
   const wizardErrorRef = useRef("");
+  const statusRefreshErrorRef = useRef("");
+  const clusterDiagnosticRef = useRef("");
   const selectedDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedIndustry) ?? domains[0],
     [domains, selectedIndustry],
   );
   const allTechnologies = useMemo(() => domains.flatMap((domain) => domain.technologies), [domains]);
   const technologyChoices = useMemo(() => {
-    if (mode === "can") return allTechnologies.filter((technology) => isCanTechnology(technology.id, technology.family));
-    return selectedDomain?.technologies ?? [];
+    const executable = (technology: Technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED");
+    if (mode === "can") return allTechnologies.filter((technology) => executable(technology) && isCanTechnology(technology.id, technology.family));
+    return (selectedDomain?.technologies ?? []).filter(executable);
   }, [allTechnologies, mode, selectedDomain]);
 
   useEffect(() => {
@@ -1193,24 +1332,28 @@ export function EngineeringAgentWizard({
         setWorkflow(nextWorkflow);
         setRoutingEntries(nextRoutes);
         setStatusRefreshError("");
+        statusRefreshErrorRef.current = "";
       } catch (error) {
         if (!active) return;
         const message = error instanceof Error ? error.message : "Status konnte nicht geladen werden.";
         setStatusRefreshError(message);
-        void writeWizardDiagnostic("error", {
-          projectId,
-          runId,
-          step: "status-overview",
-          event: "status-refresh-failed",
-          details: message,
-        }).catch(() => undefined);
+        if (statusRefreshErrorRef.current !== message) {
+          statusRefreshErrorRef.current = message;
+          void writeWizardDiagnostic("error", {
+            projectId,
+            runId,
+            step: "status-overview",
+            event: "status-refresh-failed",
+            details: message,
+          }).catch(() => undefined);
+        }
       } finally {
         refreshing = false;
       }
     };
     const handleWorkflowChanged = () => void refreshStatus();
     void refreshStatus();
-    const interval = window.setInterval(refreshStatus, 2000);
+    const interval = window.setInterval(refreshStatus, 5000);
     window.addEventListener(WORKFLOW_CHANGED_EVENT, handleWorkflowChanged);
     return () => {
       active = false;
@@ -1222,6 +1365,10 @@ export function EngineeringAgentWizard({
   useEffect(() => {
     if (phase !== "status" || !runId || !wizardAgentError) return;
     const persistedExecution = readAgentRunStatus(workflow?.context?.agent_execution, runId);
+    if (agentRunHasDurableOutcome(persistedExecution)) {
+      setStatusError("");
+      return;
+    }
     if (agentRunIsActive(persistedExecution)) {
       void writeWizardDiagnostic("workflow", {
         projectId,
@@ -1261,7 +1408,7 @@ export function EngineeringAgentWizard({
       }
     };
     void refreshPerformance();
-    const interval = window.setInterval(refreshPerformance, 2000);
+    const interval = window.setInterval(refreshPerformance, 10000);
     return () => {
       active = false;
       window.clearInterval(interval);
@@ -1373,12 +1520,12 @@ export function EngineeringAgentWizard({
 
   const industryGroup: ChoiceGroup = useMemo(() => ({
     id: "industry",
-    label: "Industrie",
+    label: "Projekt-Modelltyp",
     multi: false,
     options: domains.map((domain) => ({
       id: domain.id,
       label: domain.label,
-      detail: `${domain.technologies.length || "?"} definierte Technologien`,
+      detail: `${domain.device_types?.slice(0, 4).join(", ") || "generische Hardware"} · ${domain.technologies.filter((technology) => technology.implementation_status !== "PLANNED").length}/${domain.technologies.length || "?"} ausführbar`,
       value: domain.label,
     })),
   }), [domains]);
@@ -1387,12 +1534,15 @@ export function EngineeringAgentWizard({
     id: "technologies",
     label: "Netzwerktechnologien",
     multi: true,
-    options: technologyChoices.map((technology) => ({
-      id: technology.id,
-      label: technologyLabel(technology.id, technology.family),
-      detail: `${technology.medium} · ${technology.topology}${technology.max_payload_bytes ? ` · max. ${technology.max_payload_bytes} B` : ""}`,
-      value: `${technologyLabel(technology.id, technology.family)} (${technology.id})`,
-    })),
+    options: technologyChoices.map((technology) => {
+      const label = technology.label ?? technologyLabel(technology.id, technology.family);
+      return {
+        id: technology.id,
+        label,
+        detail: `${technology.implementation_status ?? "IMPLEMENTED"} · ${technology.layer ?? technology.medium} · ${technology.hardware_interface ?? technology.topology}${technology.max_payload_bytes ? ` · max. ${technology.max_payload_bytes} B` : ""}`,
+        value: `${label} (${technology.id})`,
+      };
+    }),
   }), [technologyChoices]);
   const communicationSystemSource = [
     taskSource,
@@ -1420,14 +1570,21 @@ export function EngineeringAgentWizard({
     selectedIndustry,
     selectedTechnologies.join("|"),
     communicationSystemCounts.map((item) => `${item.id}:${item.label}:${item.count}`).join("|"),
-    recognizedEquipment.chains.map((chain) => `${chain.device_type}:${chain.hardware_name}:${chain.interface_type}`).join("|"),
+    plannedEquipment.chains.map((chain) => `${chain.device_type}:${chain.hardware_name}:${chain.interface_type}`).join("|"),
   ].join("\n");
   const equipmentClusters = useMemo(() => buildEquipmentClusters(
-    recognizedEquipment.chains,
+    plannedEquipment.chains,
     communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
-  ), [communicationSystemCounts, recognizedEquipment.chains]);
+    previewDomain,
+  ), [communicationSystemCounts, plannedEquipment.chains, previewDomain]);
+  const ecuOwnerOptions = useMemo(() => [...new Map(
+    plannedEquipment.chains
+      .filter((chain) => isEngineeringControllerDevice(chain.device_type))
+      .map((chain) => [chain.hardware_name, chain]),
+  ).values()].sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de")), [plannedEquipment.chains]);
   const clusterEditValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-  const equipmentClusterAssignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster, index) => {
+  const equipmentClusterAssignments: EquipmentClusterAssignment[] = useMemo(() => {
+    const assignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster, index) => {
     const edit = clusterEditValues[cluster.id];
     const selected = edit?.selected ?? true;
     const requestedNetworkId = edit?.networkId || cluster.recommendedNetworkId;
@@ -1437,6 +1594,28 @@ export function EngineeringAgentWizard({
       ?? { id: "", label: "Noch kein Netz", count: 0 };
     const busName = edit?.busName?.trim()
       || suggestedClusterBusName(cluster.label, index + 1, network.count > 1);
+    const controllers = cluster.controllers.map((controller) => ({
+      ...controller,
+      sensors: [...controller.sensors],
+      actuators: [...controller.actuators],
+    }));
+    const unassigned = cluster.unassigned.filter((leaf) => {
+      const ownerName = edit?.owners?.[leaf.name] || edit?.owners?.["*"];
+      if (!ownerName) return true;
+      let owner = controllers.find((controller) => controller.name === ownerName);
+      if (!owner) {
+        const source = plannedEquipment.chains.find((chain) => isEngineeringControllerDevice(chain.device_type) && chain.hardware_name === ownerName);
+        if (!source) return true;
+        owner = { name: source.hardware_name, interfaceType: source.interface_type, sensors: [], actuators: [] };
+        controllers.push(owner);
+      }
+      const assigned = { ...leaf, confidence: 1, reason: "Im Wizard bestätigte Controller-Zuordnung." };
+      if (leaf.deviceType === "SensorController") owner.sensors.push(assigned);
+      else owner.actuators.push(assigned);
+      return false;
+    });
+    const reviewedCluster = { ...cluster, controllers, unassigned };
+    const warnings = equipmentClusterBusWarnings(reviewedCluster, network.id, network.label);
     return {
       cluster_id: cluster.id,
       bus_name: busName,
@@ -1447,10 +1626,65 @@ export function EngineeringAgentWizard({
       network_id: network.id,
       network_label: network.label,
       selected,
+      tree: controllers,
+      unassigned,
+      hmi_routes: cluster.hmiRoutes.map((route) => ({
+        ...route,
+        path: [route.source, network.label, "Gateway", route.target],
+      })),
+      validation: { valid: warnings.length === 0, warnings },
     };
-  });
+    });
+    // Apply explicit review corrections after the deterministic first pass. This
+    // permits moving a leaf to a controller in another cluster and moving a whole
+    // controller branch, while keeping the generated catalog itself immutable.
+    for (const assignment of assignments) {
+    const edit = clusterEditValues[assignment.cluster_id];
+    for (const [leafName, ownerName] of Object.entries(edit?.owners ?? {})) {
+      if (leafName === "*" || !ownerName) continue;
+      let moved: NonNullable<EquipmentClusterAssignment["unassigned"]>[number] | undefined;
+      for (const controller of assignment.tree ?? []) {
+        const sensorIndex = controller.sensors.findIndex((leaf) => leaf.name === leafName);
+        if (sensorIndex >= 0) moved = controller.sensors.splice(sensorIndex, 1)[0];
+        const actuatorIndex = controller.actuators.findIndex((leaf) => leaf.name === leafName);
+        if (actuatorIndex >= 0) moved = controller.actuators.splice(actuatorIndex, 1)[0];
+      }
+      const unresolvedIndex = assignment.unassigned?.findIndex((leaf) => leaf.name === leafName) ?? -1;
+      if (!moved && unresolvedIndex >= 0) moved = assignment.unassigned?.splice(unresolvedIndex, 1)[0];
+      if (!moved) continue;
+      const targetAssignment = assignments.find((candidate) => candidate.tree?.some((controller) => controller.name === ownerName)) ?? assignment;
+      let targetController = targetAssignment.tree?.find((controller) => controller.name === ownerName);
+      if (!targetController) {
+        const source = plannedEquipment.chains.find((chain) => isEngineeringControllerDevice(chain.device_type) && chain.hardware_name === ownerName);
+        if (!source) continue;
+        targetController = { name: source.hardware_name, interfaceType: source.interface_type, sensors: [], actuators: [] };
+        (targetAssignment.tree ??= []).push(targetController);
+      }
+      const corrected = { ...moved, confidence: 1, reason: "Im Wizard als unzutreffend markiert und neu zugeordnet." };
+      if (moved.deviceType === "SensorController") targetController.sensors.push(corrected);
+      else targetController.actuators.push(corrected);
+    }
+    }
+    for (const sourceAssignment of assignments) {
+    const branchTargets = clusterEditValues[sourceAssignment.cluster_id]?.branchTargets ?? {};
+    for (const [controllerName, targetClusterId] of Object.entries(branchTargets)) {
+      if (!targetClusterId || targetClusterId === sourceAssignment.cluster_id) continue;
+      const branchIndex = sourceAssignment.tree?.findIndex((branch) => branch.name === controllerName) ?? -1;
+      if (branchIndex < 0) continue;
+      const [branch] = sourceAssignment.tree!.splice(branchIndex, 1);
+      const target = assignments.find((candidate) => candidate.cluster_id === targetClusterId);
+      if (target && !target.tree?.some((candidate) => candidate.name === controllerName)) (target.tree ??= []).push(branch);
+    }
+    }
+    return assignments;
+  }, [clusterEditValues, communicationSystemCounts, equipmentClusters, plannedEquipment.chains]);
+  const equipmentOwnershipReady = equipmentClusterAssignments.every((assignment) => !assignment.selected || !(assignment.unassigned?.length));
+  const equipmentClusterValidationReady = equipmentClusterAssignments.every((assignment) => !assignment.selected || assignment.validation?.valid !== false);
+  const activeEquipmentCluster = equipmentClusters.find((cluster) => cluster.id === activeEquipmentClusterId)
+    ?? equipmentClusters[0];
+  const detectedDomainOption = domains.find((domain) => canonicalWizardDomain(domain.id) === detectedDomain.domain);
   const questionnaireSteps = [
-    ...(mode === "full" ? [{ id: "industry", label: "Industrie" }] : []),
+    ...(mode === "full" ? [{ id: "industry", label: "Modelltyp" }] : []),
     { id: "technologies", label: "Technologien" },
     { id: "architecture", label: "Netzarchitektur" },
     ...(mode === "can" ? [{ id: "parameters", label: "Parameter" }] : []),
@@ -1475,6 +1709,36 @@ export function EngineeringAgentWizard({
     && (networkArchitecture !== "hybrid_ai" || architectureAiProposal.trim()),
   );
   const architectureStepIndex = questionnaireSteps.findIndex((item) => item.id === "architecture");
+  const clusterDiagnosticSignature = JSON.stringify({
+    domain: previewDomain,
+    mismatch: domainMismatch && !domainMismatchAccepted,
+    clusters: equipmentClusterAssignments.map((assignment) => [
+      assignment.cluster_id,
+      assignment.network_id,
+      assignment.devices,
+      assignment.unassigned?.length ?? 0,
+      assignment.validation?.warnings.length ?? 0,
+    ]),
+  });
+
+  useEffect(() => {
+    if (!plannedEquipment.chains.length || clusterDiagnosticRef.current === clusterDiagnosticSignature) return;
+    clusterDiagnosticRef.current = clusterDiagnosticSignature;
+    void writeWizardDiagnostic(domainMismatch && !domainMismatchAccepted ? "error" : "workflow", {
+      projectId,
+      runId,
+      step: "equipment-clustering",
+      event: domainMismatch && !domainMismatchAccepted ? "domain-evidence-conflict" : "cluster-preview-built",
+      details: {
+        selected_domain: selectedDomainId,
+        effective_domain: previewDomain,
+        evidence: detectedDomain,
+        clusters: equipmentClusterGraphPrompt(equipmentClusterAssignments),
+      },
+    }).catch(() => {
+      // Preview diagnostics must never interrupt the user's questionnaire.
+    });
+  }, [clusterDiagnosticSignature, detectedDomain, domainMismatch, domainMismatchAccepted, equipmentClusterAssignments, plannedEquipment.chains.length, previewDomain, projectId, runId, selectedDomainId]);
 
   function toggle(group: ChoiceGroup, optionId: string) {
     if (group.id === "industry") {
@@ -1492,6 +1756,26 @@ export function EngineeringAgentWizard({
     if (group.id === "process") {
       setProcess((current) => toggleSelection(current, optionId));
     }
+  }
+
+  function updateEquipmentCluster(clusterId: string, changes: {
+    selected?: boolean;
+    networkId?: string;
+    busName?: string;
+    owners?: Record<string, string>;
+    verdicts?: Record<string, boolean>;
+    branchTargets?: Record<string, string>;
+  }) {
+    setEquipmentClusterEdits((current) => {
+      const values = current.source === equipmentClusterSource ? current.values : {};
+      return {
+        source: equipmentClusterSource,
+        values: {
+          ...values,
+          [clusterId]: { ...values[clusterId], ...changes },
+        },
+      };
+    });
   }
 
   async function handleTaskFiles(files: FileList | null, source: TaskAttachment["source"] = "task") {
@@ -1514,15 +1798,15 @@ export function EngineeringAgentWizard({
     setNetworkArchitecture("hybrid_ai");
     setArchitectureApproved(false);
     setArchitectureAiProposal(
-      `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren der fachlich zuständigen ECU zu. ` +
-      `Binde zentrale, diagnoseorientierte oder hochbandbreitige Teilnehmer direkt an Gateway/BCM an. ` +
+      `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren dem fachlich zuständigen Controller zu. ` +
+      `Binde zentrale, diagnoseorientierte oder hochbandbreitige Teilnehmer direkt an ein System-Gateway an. ` +
       `Begründe jede Direktanbindung anhand von Semantik, Safety, Latenz und Bandbreite${technologies ? ` für ${technologies}` : ""}. ` +
       `Beruecksichtige angehaengte Architektur-Evidence wie PDF, PowerPoint, Bilder, Diagramme und Textauszuege als Quelle fuer Cluster, Knoten und Verbindungen.`,
     );
   }
 
   async function submitQuestionnaire() {
-    if (!taskReady || !equipmentReady || !architectureReady || !selectedArchitecture || submitting) return;
+    if (!taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !architectureReady || !selectedArchitecture || submitting || (domainMismatch && !domainMismatchAccepted)) return;
     setSubmitting(true);
     setStatusError("");
     const selectedTechnologyValues = technologyGroup.options
@@ -1545,6 +1829,7 @@ export function EngineeringAgentWizard({
       attachments: taskFiles.map((file) => ({ kind: file.kind, name: file.name, size: file.size, source: file.source })),
       confirmed_at: confirmedAt,
       industry: mode === "can" ? "Aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry,
+      model_type: mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry,
       mode,
       network_architecture: {
         ai_proposal: architectureAiProposal.trim(),
@@ -1563,6 +1848,7 @@ export function EngineeringAgentWizard({
       scope_ids: scope,
       task: taskText.trim() || "Aufgabe wurde als Datei übergeben.",
       technologies: selectedTechnologyValues,
+      hardware_counts: equipmentCounts,
       communication_system_counts: communicationSystemCounts,
       planned_network_connections: plannedNetworkConnections,
       system_cluster_assignments: equipmentClusterAssignments,
@@ -1575,11 +1861,13 @@ export function EngineeringAgentWizard({
         `- Abfrage erfolgt: true\n` +
         `- Abfrage-Modus: ${mode === "can" ? "reduziert fuer CAN/CAN-FD" : "vollstaendig"}\n` +
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
+        `- Projekt-Modelltyp: ${mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry}\n` +
+        `- Core-Modellkette: HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement\n` +
         `- Netzwerktechnologien: ${selectedTechnologyValues.length ? selectedTechnologyValues.join("; ") : "nicht vorgegeben, passende Technologien aus der gewaehlten Industrie verwenden"}\n` +
         `- Kommunikationssystem-Sollwerte: ${JSON.stringify(communicationSystemCounts)}\n` +
         `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
-        `- Systemcluster-Details: ${JSON.stringify(equipmentClusterAssignments)}\n` +
+        `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
         `- Gelernte Topologie-Nachbarschaften: ${topologyKnowledge.lessonSummary.join("; ") || "noch keine Projektkorrekturen gelernt"}\n` +
@@ -1588,6 +1876,7 @@ export function EngineeringAgentWizard({
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
         `- Netzarchitektur-Freigabe: explizit durch den Nutzer erteilt am ${confirmedAt}\n` +
         `- Hardware-Sollwerte: ${JSON.stringify(equipmentCounts)}\n` +
+        `- Vollstaendigkeitsprinzip: System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten; diese sind Mindestumfang, keine Obergrenze. Fehlende Low-Level-Klassen, Sensoren, Aktoren und Signale fuer ausgewaehlte Systeme muessen fachlich ergaenzt werden.\n` +
         `${architectureAiProposal.trim() ? `- KI-Architekturvorgabe: ${architectureAiProposal.trim()}\n` : ""}` +
         `- Parameter: ${parameterSummary}\n` +
         `- Workflowumfang: ${selectedScopeValues.length ? selectedScopeValues.join("; ") : "nicht vorgegeben, Ziel aus Nutzeranfrage ableiten"}\n` +
@@ -1596,6 +1885,7 @@ export function EngineeringAgentWizard({
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
+        "Verbindliche Anzeige-Routing-Regel: Setze jede im Systemcluster-Graph enthaltene hmi_routes-Verbindung als Ende-zu-Ende-Route vom Quell-Controller ueber das Cluster-Netz und erforderliche Gateways bis zur Nutzeranzeige um. Die Anzeige ist Empfaengerin der benannten Antriebs- oder Traktionssignale; eine reine Quell-Gateway-Route gilt dafuer nicht als vollstaendig.\n\n" +
         "Verbindliche Topologie-Regel: Systemrahmen sind kompakte Nachbarschaftsgruppen, keine ueber den ganzen View gezogenen Container. Ordne fachlich verwandte Rahmen nebeneinander an, fuehre Leitungen innerhalb und zwischen benachbarten Rahmen lokal, und gib Korrekturen des Nutzers als abstrakte Cluster-Nachbarschaften an den RAG-Kontext zurueck.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
@@ -1775,7 +2065,7 @@ export function EngineeringAgentWizard({
   }
 
   async function retryPopupRun() {
-    if (agentPending || !runId || (resumeCount >= 1 && execution?.state !== "READY_TO_CONTINUE")) return;
+    if (agentPending || !runId) return;
     const originalPrompt = currentRunMessages
       .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
     const originalText = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
@@ -1915,7 +2205,7 @@ export function EngineeringAgentWizard({
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
   const primaryDisabled = effectiveBusy
-    || (atLastStep && (!taskReady || !equipmentReady || !communicationSystemReady))
+    || (atLastStep && (!taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !communicationSystemReady || (domainMismatch && !domainMismatchAccepted)))
     || (activeStepId === "task" && !taskReady)
     || (activeStepId === "architecture" && !architectureReady);
   const visibleQuestion = currentQuestion?.key === answeredQuestionKey ? null : currentQuestion;
@@ -1979,9 +2269,10 @@ export function EngineeringAgentWizard({
   const routingReviewPending = !agentPending
     && !executionStopped && !routingReview.complete
     && !modelReviewPending && (routingReview.total > 0 || agentReviewStep(execution) === "routing");
-  const runPaused = !agentPending && !routingReviewPending && !modelReviewPending
+  const workflowReviewPending = !agentPending && execution?.state === "REVIEW_REQUIRED";
+  const runPaused = !agentPending && !workflowReviewPending && !routingReviewPending && !modelReviewPending
     && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
-  const canRetryPopupRun = runPaused && hasResumablePrompt && (resumeCount < 1 || execution?.state === "READY_TO_CONTINUE") && execution?.state !== "CANCELED";
+  const canRetryPopupRun = wizardRunCanRetry(runPaused, hasResumablePrompt, execution);
   const lastAssistantText = [...currentRunMessages].reverse()
     .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
   const runMessage = execution?.state === "RUNNING" && executionStopped
@@ -1991,6 +2282,18 @@ export function EngineeringAgentWizard({
     (route) => route.validation?.valid === true && String(route.approval_state).toUpperCase() !== "APPROVED",
   ).length;
   const engineeringCounts = workflow?.artifact_checks?.engineering_model?.counts ?? {};
+  const proposalChanges = reviewProposal?.changes ?? [];
+  const proposalCount = (objectType: string) => proposalChanges.filter((change) => change.object_type === objectType).length;
+  const proposedRoutingCount = proposalCount("RoutingEntry");
+  const displayedRoutingTotal = routingReview.total || proposedRoutingCount;
+  const displayedRoutingValid = approvableRoutingCount || (proposedRoutingCount > 0 && ["VALIDATED", "READY_FOR_REVIEW"].includes(String(reviewProposal?.status)) ? proposedRoutingCount : 0);
+  const submittedEquipment = useMemo(() => submittedContext?.agent_prompt
+    ? extractEngineeringSpecification(
+        submittedContext.agent_prompt,
+        submittedContext.hardware_counts ?? {},
+        submittedContext.model_type,
+      )
+    : null, [submittedContext]);
   const hardwareRevision = workflow?.versions?.engineering_model;
   useEffect(() => {
     if (phase !== "status") return;
@@ -2002,12 +2305,33 @@ export function EngineeringAgentWizard({
   }, [phase, hardwareRevision]);
   const hardwareByType = workflow?.artifact_checks?.engineering_model?.hardware_by_type ?? {};
   const hardwareNodes = Array.isArray(workflow?.topology?.nodes) ? workflow.topology.nodes : [];
+  const proposalHardware = proposalChanges
+    .filter((change) => change.object_type === "HardwareNode")
+    .map((change, index) => ({
+      id: change.local_ref ?? `proposal-hardware-${index}`,
+      name: String(change.data?.name ?? change.object_name ?? change.local_ref ?? "HardwareNode"),
+      device_type: String(change.data?.device_type ?? ""),
+    }));
+  const controllerCount = Object.entries(hardwareByType)
+    .filter(([deviceType]) => isEngineeringControllerDevice(deviceType))
+    .reduce((total, [, count]) => total + Number(count), 0);
   const hardwareDetails = {
-    ecus: Number(hardwareByType.ECU ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "ecu").length),
-    gateways: Number(hardwareByType.Gateway ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "gateway").length),
-    sensors: Number(hardwareByType.SensorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length),
-    actuators: Number(hardwareByType.ActuatorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "actuator").length),
+    ecus: controllerCount || hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "ecu").length || proposalHardware.filter((item) => isEngineeringControllerDevice(item.device_type)).length || submittedEquipment?.targetCounts.ecus || 0,
+    gateways: Number(hardwareByType.Gateway ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "gateway").length) || proposalHardware.filter((item) => item.device_type === "Gateway").length || submittedEquipment?.targetCounts.gateways || 0,
+    sensors: Number(hardwareByType.SensorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "sensor").length) || proposalHardware.filter((item) => item.device_type === "SensorController").length || submittedEquipment?.targetCounts.sensors || 0,
+    actuators: Number(hardwareByType.ActuatorController ?? hardwareNodes.filter((node) => String(node.kind).toLowerCase() === "actuator").length) || proposalHardware.filter((item) => item.device_type === "ActuatorController").length || submittedEquipment?.targetCounts.actuators || 0,
   };
+  const displayedHardwareItems = hardwareItems.length > 0
+    ? hardwareItems.map((item) => ({
+        id: item.id,
+        name: String(item.name),
+        device_type: "device_type" in item ? String(item.device_type) : "",
+      }))
+    : proposalHardware.length > 0 ? proposalHardware : (submittedEquipment?.chains ?? []).map((item, index) => ({
+        id: `proposal-${item.device_type}-${item.hardware_name}-${index}`,
+        name: item.hardware_name,
+        device_type: item.device_type,
+      }));
   const displayedPlannedNetworkConnections = submittedContext?.planned_network_connections ?? plannedNetworkConnectionCount({
     architectureId: submittedContext?.network_architecture?.id ?? selectedArchitecture?.id,
     clusterAssignments: submittedContext?.system_cluster_assignments ?? equipmentClusterAssignments,
@@ -2029,22 +2353,22 @@ export function EngineeringAgentWizard({
     })),
     {
       label: "Funktionen",
-      value: Number(engineeringCounts.functions ?? 0),
+      value: Number(engineeringCounts.functions ?? 0) || proposalCount("Function"),
       detail: "Soll nach Class-Modell nur fuer Class 3/4 automatisch entstehen. Basic/Passive Sensoren und Aktoren bleiben ohne kuenstliche Function.",
     },
     {
       label: "Interfaces",
-      value: Number(engineeringCounts.interfaces ?? 0),
+      value: Number(engineeringCounts.interfaces ?? 0) || proposalCount("Interface"),
       detail: "Logische Interfaces werden je Teilnehmer oder Subsystem erzeugt. Direkte Hardware-Interfaces zaehlen separat im Hardware-Interface-Modell.",
     },
     {
       label: "Nachrichten",
-      value: Number(engineeringCounts.messages ?? 0),
+      value: Number(engineeringCounts.messages ?? 0) || proposalCount("Message"),
       detail: "Gepackte Kommunikationsobjekte. Mehrere Signale koennen eine Nachricht teilen, wenn Bus, Zyklus und Producer passen.",
     },
     {
       label: "Signale",
-      value: Number(engineeringCounts.signals ?? 0),
+      value: Number(engineeringCounts.signals ?? 0) || proposalCount("Signal"),
       detail: "Einzelne Werte, Statuscodes, Commands oder Datenindikatoren innerhalb der Nachrichten.",
     },
     {
@@ -2054,15 +2378,18 @@ export function EngineeringAgentWizard({
     },
     {
       label: "Routen",
-      value: routingReview.total,
+      value: displayedRoutingTotal,
       detail: "Vorbereitete Routing-Pfade, die vor der Uebernahme validiert und freigegeben werden muessen.",
     },
   ];
-  const analysisHeading = agentPending
-    ? "Erste Analyse läuft"
-    : routingReviewPending || modelReviewPending
-      ? "Analyse bereit zur Freigabe"
-      : execution?.state === "READY_TO_CONTINUE" ? "Modell übernommen · Fortsetzung bereit" : runPaused ? "Auftrag angehalten" : "Analyseübersicht";
+  const analysisHeading = wizardAnalysisHeading({
+    agentPending,
+    currentStep: currentStatusStep,
+    executionState: execution?.state,
+    modelReviewPending,
+    routingReviewPending,
+    runPaused,
+  });
 
   return (
     <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
@@ -2072,7 +2399,7 @@ export function EngineeringAgentWizard({
           <span>{visibleSteps[step]?.label}: Schritt {step + 1} von {visibleSteps.length}</span>
         </div>
         {phase === "status" ? (
-          <span className={`agent-wizard-live ${displayedStatusError || runPaused ? "error" : ""}`}><i aria-hidden="true" /> {displayedStatusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : runPaused ? "Angehalten" : routingReviewPending ? "Freigabe erforderlich" : "Live"}</span>
+          <span className={`agent-wizard-live ${displayedStatusError || runPaused ? "error" : ""}`}><i aria-hidden="true" /> {displayedStatusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : runPaused ? "Angehalten" : workflowReviewPending || routingReviewPending ? "Freigabe erforderlich" : "Live"}</span>
         ) : (
           <button className="button primary tiny" disabled={primaryDisabled} onClick={handlePrimary} type="button">
             {submitting ? "Wird übernommen ..." : atLastStep ? "Übernehmen" : "Weiter"}
@@ -2235,7 +2562,7 @@ export function EngineeringAgentWizard({
                   setArchitectureAiProposal(event.target.value);
                   setArchitectureApproved(false);
                 }}
-                placeholder="Beschreibe, welche Teilnehmer lokal über eine ECU oder direkt über Gateway/BCM geführt werden sollen."
+                placeholder="Beschreibe, welche Teilnehmer lokal über einen Controller oder direkt über ein System-Gateway geführt werden sollen."
                 rows={3}
                 value={architectureAiProposal}
               />
@@ -2319,6 +2646,35 @@ export function EngineeringAgentWizard({
       {activeStepId === "equipment" && (
         <fieldset className="agent-choice-group">
           <legend>Geräteumfang prüfen</legend>
+          {domainMismatch && !domainMismatchAccepted && (
+            <section className="agent-domain-conflict" role="alert">
+              <div>
+                <strong>Industrieangabe und Anlage widersprechen sich</strong>
+                <p>
+                  Aus der Anlage wird <b>{detectedDomainOption?.label ?? detectedDomain.domain}</b> erkannt,
+                  ausgewählt ist <b>{selectedDomain?.label ?? selectedIndustry}</b>.
+                  Ohne Klärung würden Vorschau, Clusterung und Agent unterschiedliche Vorlagen verwenden.
+                </p>
+                <small>Evidence: {detectedDomain.markers.join(", ")}</small>
+              </div>
+              <div className="agent-domain-conflict-actions">
+                {detectedDomainOption && (
+                  <button className="button primary tiny" disabled={effectiveBusy} onClick={() => {
+                    setSelectedIndustry(detectedDomainOption.id);
+                    setAcceptedDomainMismatch("");
+                  }} type="button">
+                    {detectedDomainOption.label} übernehmen
+                  </button>
+                )}
+                <button className="button secondary tiny" disabled={effectiveBusy} onClick={() => setAcceptedDomainMismatch(domainMismatchSignature)} type="button">
+                  {selectedDomain?.label ?? selectedIndustry} bewusst beibehalten
+                </button>
+              </div>
+            </section>
+          )}
+          {domainMismatchAccepted && (
+            <p className="agent-domain-override"><strong>Bewusste Abweichung:</strong> {selectedDomain?.label ?? selectedIndustry} wird trotz erkannter {detectedDomainOption?.label ?? detectedDomain.domain}-Evidence verwendet.</p>
+          )}
           <table className="agent-equipment-table">
             <thead><tr><th>Gerätetyp</th><th>Anzahl</th></tr></thead>
             <tbody>{EQUIPMENT_CATEGORIES.map(({ key, label }) => (
@@ -2365,6 +2721,8 @@ export function EngineeringAgentWizard({
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
+          {!equipmentOwnershipReady && <p role="alert">Vor der Übergabe müssen alle Teilnehmer aktiver Cluster einem Controller zugeordnet oder der betreffende Cluster abgewählt werden.</p>}
+          {equipmentOwnershipReady && !equipmentClusterValidationReady && <p role="alert">Mindestens ein aktiver Cluster besitzt noch eine fachlich unzulässige Buswahl. Öffne den markierten Cluster und wähle ein geeignetes Netz.</p>}
           <dl className="agent-equipment-facts">
             <div><dt>Architektur</dt><dd>{selectedArchitecture?.label}</dd></div>
             <div><dt>Kommunikationssysteme im Auftrag</dt><dd>{communicationSystemCounts.map((item) => `${item.label}: ${item.count}`).join(", ") || "Keine vorgegeben"}</dd></div>
@@ -2375,125 +2733,132 @@ export function EngineeringAgentWizard({
             <section className="agent-equipment-clusters" aria-label="Intelligente Systemcluster">
               <div className="agent-equipment-clusters-head">
                 <div>
-                  <strong>Systemcluster</strong>
-                  <span>Fachlich zusammenhaengende Teilnehmer als Vorgabe fuer Netz und Systemrahmen.</span>
+                  <strong>Systemcluster schrittweise prüfen</strong>
+                  <span>Je Cluster zuerst Controller-Besitz und Teilnehmer, danach Bus und HMI-Routing bestätigen.</span>
                 </div>
                 <small>{equipmentClusterAssignments.filter((item) => item.selected).length}/{equipmentClusterAssignments.length} aktiv</small>
               </div>
-              <table className="agent-equipment-cluster-table">
-                <thead>
-                  <tr>
-                    <th>Cluster</th>
-                    <th>Bustechnik</th>
-                    <th>Busname</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {equipmentClusters.map((cluster) => {
-                  const assignment = equipmentClusterAssignments.find((item) => item.cluster_id === cluster.id);
-                  const selected = assignment?.selected ?? true;
-                  const networkId = assignment?.network_id ?? cluster.recommendedNetworkId;
-                  const assignedNetwork = communicationSystemCounts.find((item) => item.id === networkId);
-                  const busName = assignment?.bus_name ?? suggestedClusterBusName(cluster.label, 1, (assignedNetwork?.count ?? 0) > 1);
-                  const countText = EQUIPMENT_CATEGORIES
-                    .map(({ label, type }) => {
-                      const count = cluster.counts[type] ?? 0;
-                      return count ? `${label}: ${count}` : "";
-                    })
-                    .filter(Boolean)
-                    .join(" · ");
-                  return (
-                    <tr className={selected ? "selected" : ""} key={cluster.id}>
-                      <th scope="row">
-                        <label>
-                          <input
-                            checked={selected}
-                            disabled={effectiveBusy}
-                            onChange={(event) => {
-                              const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-                              setEquipmentClusterEdits({
-                                source: equipmentClusterSource,
-                                values: {
-                                  ...currentValues,
-                                  [cluster.id]: {
-                                    ...currentValues[cluster.id],
-                                    busName,
-                                    selected: event.target.checked,
-                                    networkId,
-                                  },
-                                },
-                              });
-                            }}
-                            type="checkbox"
-                          />
-                          <span>
-                            <strong>{cluster.label}</strong>
-                            <small>{countText || `${cluster.devices.length} Teilnehmer`}</small>
-                          </span>
-                        </label>
-                        <p>{cluster.recommendation}</p>
-                        <ul aria-label={`${cluster.label}: erkannte Teilnehmer`}>
-                          {cluster.evidence.map((name) => <li key={`${cluster.id}:${name}`}>{name}</li>)}
-                        </ul>
-                      </th>
-                      <td>
-                        <select
-                          aria-label={`${cluster.label}: Bustechnik`}
-                          disabled={effectiveBusy || !communicationSystemCounts.length}
-                          onChange={(event) => {
-                            const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-                            setEquipmentClusterEdits({
-                              source: equipmentClusterSource,
-                              values: {
-                                ...currentValues,
-                                [cluster.id]: {
-                                  ...currentValues[cluster.id],
-                                  networkId: event.target.value,
-                                  selected,
-                                },
-                              },
-                            });
-                          }}
-                          value={networkId}
-                        >
+              <label className="agent-cluster-selector">
+                <span>Cluster</span>
+                <select disabled={effectiveBusy} onChange={(event) => setActiveEquipmentClusterId(event.target.value)} value={activeEquipmentCluster?.id ?? ""}>
+                  {equipmentClusters.map((cluster, index) => {
+                    const assignment = equipmentClusterAssignments.find((item) => item.cluster_id === cluster.id);
+                    return <option key={cluster.id} value={cluster.id}>{assignment?.validation?.valid === false ? "⚠ " : ""}{index + 1}. {cluster.label} · {cluster.devices.length} Teilnehmer</option>;
+                  })}
+                </select>
+              </label>
+              {activeEquipmentCluster && (() => {
+                const cluster = activeEquipmentCluster;
+                const assignment = equipmentClusterAssignments.find((item) => item.cluster_id === cluster.id);
+                const selected = assignment?.selected ?? true;
+                const networkId = assignment?.network_id ?? cluster.recommendedNetworkId;
+                const assignedNetwork = communicationSystemCounts.find((item) => item.id === networkId);
+                const busName = assignment?.bus_name ?? suggestedClusterBusName(cluster.label, 1, (assignedNetwork?.count ?? 0) > 1);
+                const warnings = assignment?.validation?.warnings ?? equipmentClusterBusWarnings(cluster, networkId, assignedNetwork?.label);
+                const controllerTree = assignment?.tree ?? cluster.controllers;
+                const unresolved = assignment?.unassigned ?? cluster.unassigned;
+                const ownerSelections = clusterEditValues[cluster.id]?.owners ?? {};
+                const verdicts = clusterEditValues[cluster.id]?.verdicts ?? {};
+                const branchTargets = clusterEditValues[cluster.id]?.branchTargets ?? {};
+                return (
+                  <article className={`agent-cluster-review ${selected ? "selected" : ""}`}>
+                    <header>
+                      <label>
+                        <input checked={selected} disabled={effectiveBusy} onChange={(event) => updateEquipmentCluster(cluster.id, { busName, networkId, selected: event.target.checked })} type="checkbox" />
+                        <span><strong>{cluster.label}</strong><small>{cluster.devices.length} Teilnehmer · {controllerTree.length} Controller</small></span>
+                      </label>
+                      <p>{cluster.recommendation}</p>
+                    </header>
+                    <div className="agent-cluster-bus-grid">
+                      <label>Bustechnik
+                        <select aria-label={`${cluster.label}: Bustechnik`} disabled={effectiveBusy || !communicationSystemCounts.length} onChange={(event) => updateEquipmentCluster(cluster.id, { networkId: event.target.value, selected })} value={networkId}>
                           {communicationSystemCounts.length
                             ? communicationSystemCounts.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)
                             : <option value="">Noch kein Netz</option>}
                         </select>
-                      </td>
-                      <td>
-                        <input
-                          aria-label={`${cluster.label}: vorgeschlagener Busname`}
-                          disabled={effectiveBusy}
-                          onChange={(event) => {
-                            const currentValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
-                            setEquipmentClusterEdits({
-                              source: equipmentClusterSource,
-                              values: {
-                                ...currentValues,
-                                [cluster.id]: {
-                                  ...currentValues[cluster.id],
-                                  busName: event.target.value,
-                                  networkId,
-                                  selected,
-                                },
-                              },
-                            });
-                          }}
-                          value={busName}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-                </tbody>
-              </table>
+                      </label>
+                      <label>Busname
+                        <input aria-label={`${cluster.label}: vorgeschlagener Busname`} disabled={effectiveBusy} onChange={(event) => updateEquipmentCluster(cluster.id, { busName: event.target.value, networkId, selected })} value={busName} />
+                      </label>
+                    </div>
+                    {warnings.length > 0 ? (
+                      <ul className="agent-cluster-warnings" aria-label={`${cluster.label}: Validierung`}>
+                        {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                      </ul>
+                    ) : <p className="agent-cluster-valid">Controller-Zuordnung und Bustechnik sind für diesen Vorschlag konsistent.</p>}
+                    <div className="agent-cluster-tree" role="tree" aria-label={`${cluster.label}: Controller-Struktur`}>
+                      {controllerTree.length ? controllerTree.map((controller) => (
+                        <details key={`${cluster.id}:${controller.name}`} open>
+                          <summary><strong>{controller.name}</strong><span>Controller · {controller.interfaceType}</span></summary>
+                          <div className="agent-assignment-review agent-assignment-review-group">
+                            <span><strong>Gruppenzuordnung</strong><small>Controller mit allen Teilnehmern</small></span>
+                            <div className="agent-assignment-segmented" role="group" aria-label={`${controller.name}: Gruppenzuordnung bewerten`}>
+                              <button aria-pressed={!branchTargets[controller.name]} className={!branchTargets[controller.name] ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { branchTargets: { ...branchTargets, [controller.name]: "" } })} type="button">✓ Passt</button>
+                              <button aria-pressed={Boolean(branchTargets[controller.name])} className={branchTargets[controller.name] ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "branch", clusterId: cluster.id, name: controller.name, target: branchTargets[controller.name] || "" })} type="button">↗ Neu zuordnen</button>
+                            </div>
+                          </div>
+                          <div>
+                            <section><strong>Sensoren · {controller.sensors.length}</strong><ul>{controller.sensors.map((leaf) => <li key={leaf.name} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small></span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                            <section><strong>Aktoren · {controller.actuators.length}</strong><ul>{controller.actuators.map((leaf) => <li key={leaf.name} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small></span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                          </div>
+                        </details>
+                      )) : <p>Kein Controller in diesem Systemzweig erkannt.</p>}
+                    </div>
+                    {unresolved.length > 0 && (
+                      <ClusterUnassignedReview
+                        busy={effectiveBusy}
+                        clusterId={cluster.id}
+                        clusterLabel={cluster.label}
+                        controllerOptions={ecuOwnerOptions}
+                        key={cluster.id}
+                        leaves={unresolved}
+                        onAssign={(batchOwners) => updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, ...batchOwners } })}
+                        onOpenLeaf={(name, target) => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name, target })}
+                        ownerSelections={ownerSelections}
+                      />
+                    )}
+                    {(assignment?.hmi_routes?.length ?? 0) > 0 && (
+                      <section className="agent-cluster-hmi" aria-label={`${cluster.label}: HMI-Routing`}>
+                        <strong>Nutzeranzeige über Routing</strong>
+                        {assignment?.hmi_routes?.map((route) => (
+                          <div key={`${route.source}:${route.target}`}>
+                            <span>{route.path.join(" → ")}</span>
+                            <small>{route.signals.join(", ") || "Statussignale"}</small>
+                          </div>
+                        ))}
+                      </section>
+                    )}
+                    {clusterReviewDialog?.clusterId === cluster.id && (() => {
+                      const meaning = equipmentTermMeaning(clusterReviewDialog.name);
+                      return <div className="agent-cluster-correction-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setClusterReviewDialog(null); }}>
+                        <section aria-label="Zuordnung korrigieren" aria-modal="true" className="agent-cluster-correction-dialog" role="dialog">
+                          <header><div><strong>Zuordnung korrigieren</strong><small>{clusterReviewDialog.name}</small></div><button aria-label="Dialog schließen" onClick={() => setClusterReviewDialog(null)} type="button">×</button></header>
+                          <dl><div><dt>English</dt><dd>{meaning.english}</dd></div><div><dt>Deutsch</dt><dd>{meaning.german}</dd></div><div><dt>Fachgebiet</dt><dd>{meaning.system}</dd></div></dl>
+                          <label>{clusterReviewDialog.kind === "leaf" ? "Neuen Controller auswählen" : "Neue Systemgruppe auswählen"}
+                            <select autoFocus onChange={(event) => setClusterReviewDialog((current) => current ? { ...current, target: event.target.value } : current)} value={clusterReviewDialog.target}>
+                              <option value="">Bitte auswählen …</option>
+                              {clusterReviewDialog.kind === "leaf"
+                                ? ecuOwnerOptions.filter((ecu) => ecu.hardware_name !== clusterReviewDialog.name).map((ecu) => <option key={ecu.hardware_name} value={ecu.hardware_name}>{ecu.hardware_name}</option>)
+                                : equipmentClusters.filter((candidate) => candidate.id !== cluster.id).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.label}</option>)}
+                            </select>
+                          </label>
+                          <footer><button onClick={() => setClusterReviewDialog(null)} type="button">Abbrechen</button><button disabled={!clusterReviewDialog.target} onClick={() => {
+                            if (clusterReviewDialog.kind === "leaf") updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, [clusterReviewDialog.name]: clusterReviewDialog.target }, verdicts: { ...verdicts, [clusterReviewDialog.name]: false } });
+                            else updateEquipmentCluster(cluster.id, { branchTargets: { ...branchTargets, [clusterReviewDialog.name]: clusterReviewDialog.target } });
+                            setClusterReviewDialog(null);
+                          }} type="button">Neue Zuordnung übernehmen</button></footer>
+                        </section>
+                      </div>;
+                    })()}
+                  </article>
+                );
+              })()}
             </section>
           )}
           <div className="agent-equipment-list">
             {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
-              <details key={key}><summary>{label} · {recognizedEquipment.targetCounts[key]}</summary>
-                <ul>{recognizedEquipment.chains.filter((chain) => chain.device_type === type)
+              <details key={key}><summary>{label} · {equipmentCounts[key]}</summary>
+                <ul>{plannedEquipment.chains.filter((chain) => type === "Controller" ? isEngineeringControllerDevice(chain.device_type) : chain.device_type === type)
                   .sort((a, b) => a.hardware_name.localeCompare(b.hardware_name, "de"))
                   .map((chain, index) => <li key={`${chain.device_type}:${chain.hardware_name}:${index}`}>{chain.hardware_name}</li>)}</ul>
               </details>
@@ -2516,10 +2881,10 @@ export function EngineeringAgentWizard({
                   </span>
                 ))}
               </div>
-              <div className="agent-equipment-list" aria-label="Angelegte Geräte">
+              <div className="agent-equipment-list" aria-label={hardwareItems.length > 0 ? "Angelegte Geräte" : "Vorgeschlagene Geräte"}>
                 {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
                   <details key={key}><summary>{label} · {hardwareDetails[key]}</summary>
-                    <ul>{hardwareItems.filter((item) => "device_type" in item && item.device_type === type)
+                    <ul>{displayedHardwareItems.filter((item) => type === "Controller" ? isEngineeringControllerDevice(item.device_type) : item.device_type === type)
                       .sort((a, b) => String(a.name).localeCompare(String(b.name), "de"))
                       .map((item) => <li key={item.id}>{item.name}</li>)}</ul>
                   </details>
@@ -2612,9 +2977,11 @@ export function EngineeringAgentWizard({
             ) : (
               <div>
                 <span className="eyebrow">Rückfragen</span>
-                <strong>{modelReviewPending ? "Modellfreigabe ausstehend" : routingReviewPending ? "Routing-Review ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
+                <strong>{modelReviewPending ? "Modellfreigabe ausstehend" : routingReviewPending ? "Routing-Review ausstehend" : workflowReviewPending ? "Freigabe ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
                 <small>{modelReviewPending ? runMessage : routingReviewPending
-                  ? `${routingReview.total} Routing-Einträge vorbereitet · ${routingReview.awaitingValidation} noch zu validieren · ${approvableRoutingCount} valide und freigabebereit.`
+                  ? `${displayedRoutingTotal} Routing-Einträge vorbereitet · ${proposedRoutingCount ? 0 : routingReview.awaitingValidation} noch zu validieren · ${displayedRoutingValid} valide und freigabebereit.`
+                  : workflowReviewPending
+                    ? runMessage
                   : agentPending
                     ? execution?.state === "RUNNING" ? runMessage : "Der Agent verarbeitet den bestätigten Auftrag."
                     : runPaused
@@ -2634,7 +3001,7 @@ export function EngineeringAgentWizard({
             )}
           </section>
 
-          {execution?.state === "REVIEW_REQUIRED" && <WizardModelReview projectId={projectId} runId={runId} />}
+          {execution?.state === "REVIEW_REQUIRED" && <WizardModelReview onProposalLoaded={setReviewProposal} projectId={projectId} runId={runId} />}
 
           <div
             className="agent-wizard-runtime"
@@ -2656,7 +3023,7 @@ export function EngineeringAgentWizard({
               <button className="button secondary" disabled={cancelBusy} onClick={() => void cancelWizardRun()} type="button">
                 {cancelBusy ? "Breche ab..." : "Abbrechen"}
               </button>
-              <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || routingReviewPending || modelReviewPending || runPaused || cancelBusy} onClick={() => void finishWizard()} type="button">
+              <button className="button primary" disabled={agentPending || routingReviewBusy || supplementBusy || workflowReviewPending || routingReviewPending || modelReviewPending || runPaused || cancelBusy} onClick={() => void finishWizard()} type="button">
                 Fertig stellen
               </button>
             </div>
@@ -2671,7 +3038,7 @@ export function EngineeringAgentWizard({
           <span>{activeStepId === "task"
             ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt"
             : activeStepId === "equipment"
-              ? equipmentReady && communicationSystemReady ? "Sollzahlen bereit" : "Anzahlen prüfen"
+              ? equipmentReady && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, Busse und Controller-Zuordnung prüfen"
             : activeStepId === "architecture"
               ? architectureReady ? "Verbindlich freigegeben" : selectedArchitecture ? "Freigabe fehlt" : "Auswahl erforderlich"
               : activeGroup
@@ -2793,7 +3160,9 @@ function formatFileSize(size: number) {
 
 function defaultTechnologyIds(domain?: TechnologyDomain) {
   if (!domain) return [];
-  const ids = domain.technologies.map((technology) => technology.id);
+  const ids = domain.technologies
+    .filter((technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED"))
+    .map((technology) => technology.id);
   const preferredByDomain: Record<string, string[]> = {
     automotive: ["can_fd", "automotive_ethernet", "lin", "someip"],
     industrial_automation: ["profinet", "ethercat", "modbus_tcp", "opc_ua", "io_link"],
@@ -2940,7 +3309,7 @@ function scopeMismatchSummaries(value: unknown) {
   if (!value || typeof value !== "object") return [];
   const labels: Record<string, string> = {
     actuators: "Aktoren",
-    ecus: "ECUs",
+    ecus: "Controller",
     gateways: "Gateways",
     sensors: "Sensoren",
     hardware_nodes: "Hardware-Knoten",
@@ -3408,7 +3777,7 @@ function summarizeToolInput(input: unknown) {
   return hints.length ? `: ${hints.join(" · ")}.` : ".";
 }
 
-function WizardModelReview({ projectId, runId }: { projectId: string; runId: string }) {
+function WizardModelReview({ onProposalLoaded, projectId, runId }: { onProposalLoaded?: (proposal: EngineeringProposal) => void; projectId: string; runId: string }) {
   const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -3423,12 +3792,20 @@ function WizardModelReview({ projectId, runId }: { projectId: string; runId: str
       const value = await result.json();
       if (!result.ok || !value.success) throw new Error("Modellvorschlag konnte nicht geladen werden.");
       setProposal(value.data);
+      onProposalLoaded?.(value.data);
     })().catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
     return () => controller.abort();
-  }, [projectId, runId]);
+  }, [onProposalLoaded, projectId, runId]);
   if (error) return <p role="alert">{error}</p>;
   return proposal ? <EngineeringAgentEventCard event={{ type: "APPROVAL", proposal }} projectId={projectId} />
     : <p>Modellvorschlag wird geladen …</p>;
+}
+
+function canonicalWizardDomain(value: string) {
+  const compact = value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  if (compact === "robotics") return "robotics_ros";
+  if (compact === "building") return "building_automation";
+  return compact;
 }
 
 function MessagePart({

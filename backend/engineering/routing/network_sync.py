@@ -59,6 +59,12 @@ def _edge_route_ids(edge: dict[str, Any]) -> set[str]:
     return route_ids
 
 
+def _is_physical_only_edge(edge: dict[str, Any]) -> bool:
+    """Return whether an edge documents topology without logical communication."""
+    origin = str(edge.get("origin") or "").strip().upper()
+    return origin == "WIZARD_PHYSICAL_COMPLETENESS"
+
+
 def enrich_route_from_linked_topology(
     route: dict[str, Any],
     topology: dict[str, Any],
@@ -226,6 +232,11 @@ def build_network_route_candidates(
     adjacency: dict[str, list[dict[str, Any]]] = {}
     for edge in raw_edges:
         if not isinstance(edge, dict) or not edge.get("id"):
+            continue
+        # The wizard may add links solely to make an otherwise isolated device
+        # physically reachable. They deliberately carry no payload and must not
+        # be promoted into reviewable logical routes by a later network sync.
+        if _is_physical_only_edge(edge):
             continue
         source = str(edge.get("source") or "")
         target = str(edge.get("target") or "")

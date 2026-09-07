@@ -44,12 +44,24 @@ export type ExtractedEngineeringChain = {
 export type ExtractedEngineeringSpecification = {
   chains: ExtractedEngineeringChain[];
   domain: string;
+  modelType: string;
   interfaceType: string;
   communicationSystems: string[];
   communicationSystemCounts: Record<string, number>;
   networkArchitecture: NetworkArchitectureMode;
   targetCounts: EngineeringTargetCounts;
 };
+
+export type EngineeringDomainEvidence = {
+  domain: string;
+  confidence: number;
+  markers: string[];
+};
+
+function extractProjectModelType(text: string, fallback: string) {
+  const value = text.match(/^- Projekt-Modelltyp:\s*([^\r\n]+)$/mi)?.[1]?.trim();
+  return value ? value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") : fallback;
+}
 
 const INTELLIGENT_DEVICE_TYPES = new Set([
   "ECU",
@@ -63,6 +75,35 @@ const INTELLIGENT_DEVICE_TYPES = new Set([
   "EnergyController",
   "BuildingController",
 ]);
+
+const ENGINEERING_CONTROLLER_DEVICE_TYPES = new Set([
+  "ECU",
+  "PLC",
+  "RobotController",
+  "EmbeddedController",
+  "IndustrialPC",
+  "FlightComputer",
+  "BatteryManagementSystem",
+  "EnergyController",
+  "BuildingController",
+]);
+
+type EngineeringControllerDeviceType = "ECU" | "PLC" | "RobotController" | "EmbeddedController" | "IndustrialPC" | "FlightComputer" | "EnergyController" | "BuildingController";
+
+export function isEngineeringControllerDevice(deviceType: string) {
+  return ENGINEERING_CONTROLLER_DEVICE_TYPES.has(deviceType);
+}
+
+export function controllerDeviceTypeForModel(modelType: string): EngineeringControllerDeviceType {
+  if (modelType === "industrial_automation" || modelType === "process_industry") return "PLC";
+  if (modelType === "robotics_ros") return "RobotController";
+  if (modelType === "aerospace") return "FlightComputer";
+  if (modelType === "energy") return "EnergyController";
+  if (modelType === "building_automation") return "BuildingController";
+  if (modelType === "embedded_systems" || modelType === "iot_wireless") return "EmbeddedController";
+  if (modelType === "generic_networking" || modelType === "custom") return "IndustrialPC";
+  return "ECU";
+}
 
 function requiresCompleteSignalModel(chain: ExtractedEngineeringChain) {
   if (INTELLIGENT_DEVICE_TYPES.has(chain.device_type)) return true;
@@ -191,7 +232,7 @@ export type EngineeringTargetCounts = EngineeringHardwareCounts & {
 
 type ArchitectureTemplate = {
   hardwareName: string;
-  deviceType: "SensorController" | "ActuatorController" | "ECU" | "Gateway";
+  deviceType: "SensorController" | "ActuatorController" | "Gateway" | EngineeringControllerDeviceType;
   signalName: string;
   interfaceType: string;
   cycleMs: number;
@@ -618,15 +659,18 @@ function specificationBody(text: string) {
 function requestedCount(text: string, nounPattern: string, modifierPattern = "") {
   const modifiers = modifierPattern ? `(?:(?:${modifierPattern})\\s+){0,2}` : "";
   const countBeforePattern = new RegExp(`\\b${COUNT_TOKEN}\\s+${modifiers}${nounPattern}\\b`, "g");
-  const countAfterPattern = new RegExp(`\\b${modifiers}${nounPattern}\\b\\s*(?:anzahl\\s*)?(?::|=|-)?\\s*${COUNT_TOKEN}\\b`, "g");
+  const countAfterPattern = new RegExp(`\\b${modifiers}${nounPattern}\\b\\s*(?:anzahl|countsep)\\s*${COUNT_TOKEN}\\b`, "g");
+  const countAfterBareLinePattern = new RegExp(`^${modifiers}${nounPattern}\\s+${COUNT_TOKEN}$`, "g");
   // Numbered UI choices and adjacent lines are not hardware quantity statements.
   return text.split(/\r?\n/).reduce((maximum, line) => {
     const source = normalized(line
       .replace(/^\s*#{1,6}\s+/, "")
       .replace(/^\s*\d+[.)]\s+/, "")
+      .replace(/[:=]|(?:^|\s)-(?:\s*)(?=\d|ein\b|eine\b|zwei\b|drei\b|vier\b|fuenf\b|funf\b|sechs\b|sieben\b|acht\b|neun\b|zehn\b)/gi, " countsep ")
       .replace(/\bVariante\s+\d+(?:\s*(?:\+|und)\s*\d+)?/gi, "Variante"));
     const before = [...source.matchAll(countBeforePattern)].reduce((count, match) => Math.max(count, countValue(match[1] ?? "")), maximum);
-    return [...source.matchAll(countAfterPattern)].reduce((count, match) => Math.max(count, countValue(match[1] ?? "")), before);
+    const after = [...source.matchAll(countAfterPattern)].reduce((count, match) => Math.max(count, countValue(match[1] ?? "")), before);
+    return [...source.matchAll(countAfterBareLinePattern)].reduce((count, match) => Math.max(count, countValue(match[1] ?? "")), after);
   }, 0);
 }
 
@@ -634,7 +678,10 @@ export function extractEngineeringTargetCounts(text: string): EngineeringTargetC
   const body = specificationBody(text);
   const sensors = requestedCount(body, "sensor(?:en|s)?", "technische|physikalische|logische|fahrzeugrelevante");
   const actuators = requestedCount(body, "(?:actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?)", "technische|physikalische|logische|einfache");
-  const ecus = requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere");
+  const ecus = Math.max(
+    requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere"),
+    requestedCount(body, "(?:sps|plc|controller|steuerung(?:en)?|flugrechner|industrial\\s*pc)(?:s)?", "zentrale|typische|weitere"),
+  );
   const gateways = requestedCount(body, "gateway(?:s)?", "zentralen|zentrales|zentraler|zentrale|einziges|einzigen");
   return {
     sensors,
@@ -651,7 +698,7 @@ function chainCounts(chains: ExtractedEngineeringChain[]) {
       if (chain.device_type === "SensorController") counts.sensors += 1;
       else if (chain.device_type === "ActuatorController") counts.actuators += 1;
       else if (chain.device_type === "Gateway") counts.gateways += 1;
-      else if (chain.device_type === "ECU") counts.ecus += 1;
+      else if (isEngineeringControllerDevice(chain.device_type)) counts.ecus += 1;
       return counts;
     },
     { sensors: 0, actuators: 0, ecus: 0, gateways: 0 },
@@ -660,7 +707,7 @@ function chainCounts(chains: ExtractedEngineeringChain[]) {
 
 function systemInterfaceType(name: string, domain: string) {
   const key = normalized(name);
-  if (domain === "industrial_automation") {
+  if (domain === "industrial_automation" || domain === "process_industry") {
     if (/motion|antrieb|servo|roboter|foerder|safety|sicher/.test(key)) return "EtherCAT";
     if (/hmi|prozess|produktions|condition|qualitaet|pruef/.test(key)) return "ProfiNET";
     return "ModbusTCP";
@@ -697,6 +744,8 @@ function systemInterfaceType(name: string, domain: string) {
     return "CAN";
   }
   if (domain === "generic_networking") return "Ethernet";
+  if (domain === "iot_wireless") return "WiFi";
+  if (domain === "custom") return "Ethernet";
   if (/infotainment|telematik|diagnose|fahrerassistenz|radar|kamera|zentralrechner|konnektivitaet/i.test(name)) {
     return "Ethernet";
   }
@@ -712,20 +761,20 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     hardwareName: template.hardwareName,
     deviceType: "SensorController" as const,
     signalName: template.signalName,
-    interfaceType: /camera|kamera|vision|radar|lidar|scanner|ultrasonic/i.test(template.hardwareName)
-      ? template.interfaceType
-      : "LIN",
+    // The industry template is authoritative. Replacing every ordinary sensor
+    // with LIN silently moved fast and safety-relevant devices onto the wrong bus.
+    interfaceType: template.interfaceType,
     cycleMs: template.cycleMs,
     unit: template.unit,
     minValue: template.minValue,
     maxValue: template.maxValue,
     factor: template.factor,
   }));
-  const ecus = profile.systemVariants.map((name) => {
+  const controllers = profile.systemVariants.map((name) => {
     const interfaceType = systemInterfaceType(name, domain);
     return {
     hardwareName: name,
-    deviceType: "ECU" as const,
+    deviceType: controllerDeviceTypeForModel(domain),
     signalName: `${identifier(baseName(name))}Status`,
       interfaceType,
       cycleMs: interfaceType === "LIN" ? 100 : interfaceType === "Ethernet" ? 20 : 10,
@@ -736,7 +785,7 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     };
   });
   const actuators = profile.systemVariants.flatMap((name) => ["Stellglied", "Schaltausgang"].map((kind) => {
-    const interfaceType = "LIN";
+    const interfaceType = domain === "automotive" ? "LIN" : systemInterfaceType(`${name} ${kind}`, domain);
     return {
     hardwareName: `${baseName(name)}${kind}Actuator`,
     deviceType: "ActuatorController" as const,
@@ -752,7 +801,7 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
   return [
     ...sensorTemplates,
     ...actuators,
-    ...ecus,
+    ...controllers,
     {
       hardwareName: profile.gatewayName ?? "System-Gateway",
       deviceType: "Gateway",
@@ -839,7 +888,7 @@ function canonicalSystemName(name: string, domain: string) {
 
 function canonicalizeRecognizedSystems(chains: ExtractedEngineeringChain[], domain: string) {
   const canonicalized = chains.flatMap((chain) => {
-    if (chain.device_type !== "ECU") return [chain];
+    if (!isEngineeringControllerDevice(chain.device_type)) return [chain];
     const canonicalName = canonicalSystemName(chain.hardware_name, domain);
     if (!canonicalName) return [];
     if (canonicalName === chain.hardware_name) return [chain];
@@ -890,6 +939,7 @@ function expandArchitectureChains(
   domain: string,
   communicationSystems: string[],
   overrides: Partial<EngineeringHardwareCounts> = {},
+  completenessFirst = false,
 ) {
   const canonicalRecognizedChains = canonicalizeRecognizedSystems(recognizedChains, domain);
   const recognizedCounts = chainCounts(canonicalRecognizedChains);
@@ -902,14 +952,14 @@ function expandArchitectureChains(
     explicit: requested.explicit || Object.keys(overrides).length > 0,
   };
   const retainedCounts = { sensors: 0, actuators: 0, ecus: 0, gateways: 0 };
-  const chains = targets.explicit
+  const chains = targets.explicit && !completenessFirst
     ? canonicalRecognizedChains.filter((chain) => {
       const category = chain.device_type === "SensorController"
         ? "sensors"
         : chain.device_type === "ActuatorController" ? "actuators"
         : chain.device_type === "Gateway"
           ? "gateways"
-          : chain.device_type === "ECU"
+          : isEngineeringControllerDevice(chain.device_type)
             ? "ecus"
             : null;
       if (!category) return true;
@@ -949,7 +999,8 @@ function expandArchitectureChains(
     names.add(key);
   }
   // Additional instances keep the same technical template and a stable unique name.
-  for (const deviceType of ["SensorController", "ActuatorController", "ECU", "Gateway"] as const) {
+  const targetControllerType = controllerDeviceTypeForModel(domain);
+  for (const deviceType of ["SensorController", "ActuatorController", targetControllerType, "Gateway"] as const) {
     const candidates = templates.filter((template) => template.deviceType === deviceType);
     let current = chains.filter((chain) => chain.device_type === deviceType).length;
     for (let instance = 0; current < targetFor(deviceType); instance += 1) {
@@ -961,6 +1012,35 @@ function expandArchitectureChains(
       chains.push(chainFromTemplate({ ...template, hardwareName, interfaceType }, chains.length, domain));
       names.add(normalized(normalizeHardwareName(hardwareName)));
       current += 1;
+    }
+  }
+  if (domain === "automotive" && completenessFirst) {
+    const presentControllers = new Set(chains
+      .filter((chain) => isEngineeringControllerDevice(chain.device_type))
+      .map((chain) => normalized(normalizeHardwareName(chain.hardware_name))));
+    const adasSelected = ["fahrerassistenz", "kameraverarbeitung", "radarverarbeitung", "ultraschallverarbeitung"]
+      .some((name) => presentControllers.has(name));
+    if (adasSelected) {
+      const requiredNames = [
+        "Fahrerassistenz", "Kameraverarbeitung", "Radarverarbeitung", "Ultraschallverarbeitung",
+        "FrontCameraSensor", "RearCameraSensor", "SurroundLeftCameraSensor", "SurroundRightCameraSensor",
+        "FrontRadarDistanceSensor", "RearRadarDistanceSensor",
+        "FrontLeftUltrasonicDistanceSensor", "FrontRightUltrasonicDistanceSensor",
+        "RearLeftUltrasonicDistanceSensor", "RearRightUltrasonicDistanceSensor",
+      ];
+      for (const requiredName of requiredNames) {
+        const key = normalized(normalizeHardwareName(requiredName));
+        if (names.has(key)) continue;
+        const template = templates.find((candidate) => normalized(normalizeHardwareName(candidate.hardwareName)) === key);
+        if (!template) continue;
+        const interfaceType = communicationSystems.some((system) => communicationSystemAllowsTemplateInterface(system, template.interfaceType)) || !communicationSystems.length
+          ? template.interfaceType
+          : communicationSystems.includes("Ethernet") || communicationSystems.includes("SOME_IP")
+            ? "Ethernet"
+            : communicationSystems[0];
+        chains.push(chainFromTemplate({ ...template, interfaceType }, chains.length, domain));
+        names.add(key);
+      }
     }
   }
   return { chains, targets };
@@ -1040,7 +1120,13 @@ function deviceType(name: string) {
   if (key.includes("gateway")) return "Gateway";
   if (key.includes("sensor") || key.includes("kamera") || key.includes("camera") || key.includes("radar") || key.includes("lidar")) return "SensorController";
   if (/actuator|aktuator|aktor/.test(key)) return "ActuatorController";
-  if (key.includes("plc")) return "PLC";
+  if (key.includes("plc") || /\bsps\b/.test(key)) return "PLC";
+  if (/robot.*controller|motion.*controller/.test(key)) return "RobotController";
+  if (/flight.*computer|flugrechner/.test(key)) return "FlightComputer";
+  if (/energy.*controller|energie.*controller/.test(key)) return "EnergyController";
+  if (/building.*controller|gebaeude.*controller/.test(key)) return "BuildingController";
+  if (/embedded.*controller/.test(key)) return "EmbeddedController";
+  if (/industrial.*pc/.test(key)) return "IndustrialPC";
   if (key.includes("controller")) return "GenericDevice";
   return "ECU";
 }
@@ -1062,6 +1148,10 @@ function protocolFrom(text: string) {
   if (/\buart\b/.test(key)) return "UART";
   if (/\b(?:usb|pcie|rs485|rs232)\b/.test(key)) return key.match(/\b(?:usb|pcie|rs485|rs232)\b/)?.[0].toUpperCase() ?? "Other";
   if (key.includes("opc ua")) return "OPCUA";
+  if (/\bmqtt\b/.test(key)) return "MQTT";
+  if (/\bwifi\b|wi-fi/.test(key)) return "WiFi";
+  if (/\bble\b|bluetooth low energy/.test(key)) return "BLE";
+  if (/\bdds\b/.test(key)) return "DDS";
   return "CAN";
 }
 
@@ -1087,6 +1177,10 @@ export function extractCommunicationSystems(text: string) {
   if (/\brs485\b/.test(key)) systems.push("RS485");
   if (/\brs232\b/.test(key)) systems.push("RS232");
   if (/\bopc ua\b/.test(key)) systems.push("OPCUA");
+  if (/\bmqtt\b/.test(key)) systems.push("MQTT");
+  if (/\bwifi\b|wi-fi/.test(key)) systems.push("WiFi");
+  if (/\bble\b|bluetooth low energy/.test(key)) systems.push("BLE");
+  if (/\bdds\b/.test(key)) systems.push("DDS");
   return [...new Set(systems)];
 }
 
@@ -1095,6 +1189,7 @@ function canonicalCommunicationSystem(value: string) {
   const compact = key.replace(/\s+/g, "");
   if (/\blin\b/.test(key) || compact === "lin") return "LIN";
   if (/\bcan fd\b|\bcanfd\b/.test(key) || compact === "canfd") return "CAN_FD";
+  if (/\bflexray\b/.test(key)) return "FlexRay";
   if (/\bautomotive ethernet\b|\bethernet\b/.test(key) || compact === "eth") return "Ethernet";
   if (/\bsome ip\b/.test(key) || compact === "someip") return "SOME_IP";
   if (/\barinc 429\b/.test(key) || compact === "arinc429") return "ARINC";
@@ -1111,6 +1206,14 @@ function canonicalCommunicationSystem(value: string) {
   if (/\brs485\b/.test(key)) return "RS485";
   if (/\brs232\b/.test(key)) return "RS232";
   if (/\bopc ua\b/.test(key) || compact === "opcua") return "OPCUA";
+  if (/\bmqtt\b/.test(key)) return "MQTT";
+  if (/\bwifi\b|wi-fi/.test(key)) return "WiFi";
+  if (/\bble\b|bluetooth low energy/.test(key)) return "BLE";
+  if (/\bdds\b/.test(key)) return "DDS";
+  if (/\btrdp\b/.test(key)) return "TRDP";
+  if (/\betb\b/.test(key)) return "ETB";
+  if (/\bwtb\b/.test(key)) return "WTB";
+  if (/\bmvb\b/.test(key)) return "MVB";
   if (/\bcan\b/.test(key)) return "CAN";
   return "";
 }
@@ -1173,6 +1276,37 @@ function domainFrom(text: string) {
   if (/automotive|fahrzeug|ecu|can fd|kamera|camera|radar|lidar|umfeld/.test(key)) return "automotive";
   if (/\bembedded\b|\bi2c\b|\bspi\b|\buart\b|\bpcie\b|\busb\b/.test(key)) return "embedded_systems";
   return "generic";
+}
+
+const DOMAIN_EVIDENCE_RULES: Array<{ domain: string; markers: RegExp[] }> = [
+  { domain: "rail", markers: [/\bbogie/i, /drehgestell/i, /\baxle/i, /pantograph/i, /stromabnehmer/i, /wayside/i, /eventrecorder/i, /passengerinformation/i, /couplingcontrol/i, /signalling/i] },
+  { domain: "automotive", markers: [/kombiinstrument/i, /headupdisplay/i, /abgasnachbehandlung/i, /batteriemanagement/i, /motorsteuerung/i, /getriebesteuerung/i, /fahrerassistenz/i, /parkassistenz/i, /keylessentry/i, /bordnetzmanagement/i] },
+  { domain: "industrial_automation", markers: [/\bplc\b/i, /profinet/i, /ethercat/i, /fertigungs/i, /foerder/i, /servo/i] },
+  { domain: "aerospace", markers: [/arinc/i, /avionik/i, /flightcontrol/i, /landinggear/i, /autopilot/i] },
+  { domain: "energy", markers: [/microgrid/i, /wechselrichter/i, /schaltanlage/i, /transformator/i, /gridcontrol/i] },
+  { domain: "marine", markers: [/vessel/i, /schiff/i, /marine/i, /nmea/i] },
+  { domain: "building_automation", markers: [/\bknx\b/i, /bacnet/i, /gebaeude/i, /gebäude/i, /buildingautomation/i] },
+  { domain: "robotics_ros", markers: [/\bros2?\b/i, /robotik/i, /manipulator/i, /motionplanner/i] },
+];
+
+/** Detect strong domain evidence without allowing a wizard header to decide the result. */
+export function engineeringDomainEvidence(text: string): EngineeringDomainEvidence {
+  const body = specificationBody(text).replace(/^\s*-?\s*Industrie\s*:[^\r\n]*$/gim, "");
+  const scored = DOMAIN_EVIDENCE_RULES
+    .map((rule) => ({
+      domain: rule.domain,
+      markers: rule.markers.flatMap((marker) => body.match(marker)?.[0] ?? []),
+    }))
+    .map((item) => ({ ...item, score: new Set(item.markers.map((marker) => normalized(marker))).size }))
+    .sort((left, right) => right.score - left.score || left.domain.localeCompare(right.domain));
+  const best = scored[0];
+  const runnerUp = scored[1]?.score ?? 0;
+  if (!best || best.score < 2 || best.score === runnerUp) return { domain: "generic", confidence: 0, markers: [] };
+  return {
+    domain: best.domain,
+    confidence: Math.min(1, 0.45 + best.score * 0.08 + Math.max(0, best.score - runnerUp) * 0.04),
+    markers: [...new Set(best.markers)].slice(0, 6),
+  };
 }
 
 function numeric(value: string | undefined) {
@@ -1257,7 +1391,11 @@ function generatedPhysicalDefaults(name: string) {
   return { min: undefined, max: undefined, unit: undefined };
 }
 
-export function extractEngineeringSpecification(text: string, overrides: Partial<EngineeringHardwareCounts> = {}): ExtractedEngineeringSpecification {
+export function extractEngineeringSpecification(
+  text: string,
+  overrides: Partial<EngineeringHardwareCounts> = {},
+  domainOverride?: string,
+): ExtractedEngineeringSpecification {
   const lines = specificationBody(text).split(/\r?\n/);
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
@@ -1273,7 +1411,9 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
     contexts.set(key, existing);
   });
 
-  const domain = domainFrom(text);
+  const inferredDomain = domainOverride || domainFrom(text);
+  const modelType = extractProjectModelType(text, inferredDomain);
+  const domain = domainOverride || modelType || inferredDomain;
   const interfaceType = protocolFrom(text);
   const communicationSystems = extractCommunicationSystems(text);
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
@@ -1350,6 +1490,7 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
     domain,
     communicationSystems,
     { ...confirmedHardwareCounts(text), ...overrides },
+    /System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten/i.test(text),
   );
 
   return {
@@ -1357,6 +1498,7 @@ export function extractEngineeringSpecification(text: string, overrides: Partial
       expanded.chains.map((chain) => ({ ...chain, hardware_name: normalizeHardwareName(chain.hardware_name) })),
     ),
     domain,
+    modelType,
     interfaceType,
     communicationSystems,
     communicationSystemCounts,
@@ -1376,6 +1518,50 @@ export function confirmedHardwareCounts(text: string): Partial<EngineeringHardwa
     }
   }
   return counts;
+}
+
+type ConfirmedClusterGraph = Array<{
+  network_id?: string;
+  network_label?: string;
+  bus_name?: string;
+  controllers?: Array<{ ecu?: string; sensors?: string[]; actuators?: string[] }>;
+}>;
+
+function confirmedBusTechnology(network: string) {
+  return canonicalCommunicationSystem(network);
+}
+
+export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], prompt: string) {
+  const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+  if (!raw) return chains;
+  let graph: ConfirmedClusterGraph;
+  try {
+    graph = JSON.parse(raw) as ConfirmedClusterGraph;
+  } catch {
+    throw new Error("Der bestätigte Systemcluster-Graph ist kein gültiges JSON-Array.");
+  }
+  if (!Array.isArray(graph)) throw new Error("Der bestätigte Systemcluster-Graph ist kein Array.");
+  const assignedBus = new Map<string, { technology: string; networkRef: string }>();
+  for (const cluster of graph) {
+    const technology = confirmedBusTechnology(`${cluster.network_id ?? ""} ${cluster.network_label ?? ""}`);
+    if (!technology) continue;
+    const networkRef = cluster.bus_name || cluster.network_label || cluster.network_id || `${technology}_network`;
+    for (const controller of cluster.controllers ?? []) {
+      for (const name of [controller.ecu, ...(controller.sensors ?? []), ...(controller.actuators ?? [])]) {
+        if (name) assignedBus.set(normalizeHardwareName(name).toLocaleLowerCase("de"), { technology, networkRef });
+      }
+    }
+  }
+  return chains.map((chain) => {
+    const assignment = assignedBus.get(normalizeHardwareName(chain.hardware_name).toLocaleLowerCase("de"));
+    if (!assignment) return chain;
+    return {
+      ...chain,
+      interface_type: assignment.technology,
+      interface_name: `${normalizeHardwareName(chain.hardware_name)}_${assignment.technology}`,
+      transport_network_ref: assignment.networkRef,
+    };
+  });
 }
 
 export function isEngineeringReviewRequest(text: string) {
