@@ -177,7 +177,7 @@ def generate_parameters(arguments: dict) -> dict:
 
 
 def generate(arguments: dict) -> dict:
-    fingerprint = hashlib.sha256(('technology-binding-v3\n' + arguments['prompt']).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('technology-binding-v4-local-controller-io\n' + arguments['prompt']).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
@@ -209,6 +209,9 @@ def generate(arguments: dict) -> dict:
         return ref
 
     declared_networks: dict[str, str] = {}
+    hardware_refs: dict[str, str] = {}
+    function_refs: dict[str, str | None] = {}
+    chain_by_name = {str(item.get('hardware_name') or '').casefold(): item for item in spec['chains']}
     for chain in spec['chains']:
         network_ref = str(chain.get('transport_network_ref') or '').strip()
         if not network_ref:
@@ -233,10 +236,12 @@ def generate(arguments: dict) -> dict:
         hw = ensure('HardwareNode', chain['hardware_name'], {
             'device_type': chain['device_type'], 'device_class': profile.device_class,
             'description': chain['hardware_description']})
+        hardware_refs[str(chain['hardware_name']).casefold()] = hw
         fn = None
         if profile.requires_function_model:
             fn = ensure('Function', chain['function_name'], {
                 'hardware_node_id': hw, 'domain': spec['domain'], 'description': chain['function_description']}, 'hardware_node_id')
+        function_refs[str(chain['hardware_name']).casefold()] = fn
         port = ensure('HardwareNetworkInterface', chain['interface_name'], {
             'hardware_node_id': hw, 'technology': chain['interface_type'], 'channel_index': 1,
             'network_ref': chain.get('transport_network_ref'),
@@ -284,6 +289,48 @@ def generate(arguments: dict) -> dict:
                 'source_ref': hw,
                 'technology_binding_ref': technology_contract['technology_id'],
             }]}, 'message_id')
+
+    # The selected cluster technology is the ECU/Gateway backbone. Controllers
+    # also need a matching local interface for every endpoint technology they
+    # own; otherwise a LIN sensor connected to a CAN-FD ECU is incorrectly
+    # translated through the central gateway by the route generator.
+    graph_raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', arguments['prompt'], re.M)
+    if graph_raw:
+        for cluster in json.loads(graph_raw.group(1)):
+            for controller in cluster.get('controllers') or []:
+                if not isinstance(controller, dict):
+                    continue
+                controller_name = str(controller.get('ecu') or '').strip()
+                controller_key = controller_name.casefold()
+                hw = hardware_refs.get(controller_key)
+                if not hw:
+                    continue
+                fn = function_refs.get(controller_key)
+                endpoint_names = [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]
+                local_bindings = {
+                    (str(chain.get('interface_type') or ''), str(chain.get('transport_network_ref') or ''))
+                    for endpoint_name in endpoint_names
+                    for chain in [chain_by_name.get(str(endpoint_name or '').casefold())]
+                    if chain and chain.get('interface_type') and chain.get('transport_network_ref')
+                }
+                for channel_index, (interface_type, network_ref) in enumerate(sorted(local_bindings), start=2):
+                    technology_contract = _technology_contract(interface_type)
+                    interface_name = f'{controller_name}_{interface_type}_IO'
+                    ensure('HardwareNetworkInterface', interface_name, {
+                        'hardware_node_id': hw,
+                        'technology': interface_type,
+                        'channel_index': channel_index,
+                        'network_ref': network_ref,
+                        'capabilities': {
+                            'hardware_interface': technology_contract['hardware_interface'],
+                            'technology_stack': technology_contract['stack'],
+                            **technology_contract['capabilities'],
+                        },
+                    }, 'hardware_node_id')
+                    ensure('Interface', interface_name, {
+                        **({'function_id': fn} if fn else {'hardware_node_id': hw}),
+                        'interface_type': interface_type,
+                    }, 'function_id' if fn else 'hardware_node_id')
     if not changes:
         raise ValueError('Die abgeleiteten Modellobjekte sind bereits vorhanden; vorhandenen Modellstand prüfen.')
     return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
@@ -418,6 +465,111 @@ def _semantic_slug(value: object) -> str:
     return re.sub(r'(^-|-$)', '', re.sub(r'[^a-z0-9]+', '-', text))
 
 
+_GATEWAY_ECU_SEGMENT_SIZE = 6
+
+
+def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str, int]]]:
+    """Map confirmed graph participants to their approved gateway segment.
+
+    Variant 4 explicitly limits one gateway line to six controllers. Only the
+    controllers belong to that backbone; low-level endpoints are mapped to
+    separate local I/O segments by ``_confirmed_local_io_memberships``.
+    """
+    architecture = re.search(r'^- Netzarchitektur-ID:\s*([^\r\n]+)', prompt, re.M)
+    if not architecture or architecture.group(1).strip().casefold() != 'gateway_ecu_segments':
+        return {}
+    raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
+    if not raw:
+        return {}
+    graph = json.loads(raw.group(1))
+    memberships: dict[str, list[tuple[str, str, int]]] = {}
+    for cluster in graph:
+        controllers = [item for item in cluster.get('controllers') or [] if isinstance(item, dict)]
+        label = str(cluster.get('label') or cluster.get('cluster_id') or 'Netzsegment').strip()
+        base_id = str(cluster.get('bus_name') or _semantic_slug(label) or 'network').strip()
+        for index, controller in enumerate(controllers):
+            ordinal = index // _GATEWAY_ECU_SEGMENT_SIZE + 1
+            segment_id = f'{base_id}-S{ordinal:02d}'
+            membership = (segment_id, label, ordinal)
+            for member in [controller.get('ecu')]:
+                key = str(member or '').strip().casefold()
+                if key and membership not in memberships.setdefault(key, []):
+                    memberships[key].append(membership)
+    return memberships
+
+
+def _confirmed_local_io_memberships(prompt: str) -> dict[str, tuple[str, str, str, int]]:
+    """Return endpoint -> (owner, base id, label, stable index)."""
+    raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
+    if not raw:
+        return {}
+    memberships: dict[str, tuple[str, str, str, int]] = {}
+    for cluster in json.loads(raw.group(1)):
+        label = str(cluster.get('label') or cluster.get('cluster_id') or 'Netzsegment').strip()
+        base_id = str(cluster.get('bus_name') or _semantic_slug(label) or 'network').strip()
+        for controller in cluster.get('controllers') or []:
+            if not isinstance(controller, dict):
+                continue
+            owner = str(controller.get('ecu') or '').strip()
+            endpoints = [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]
+            for index, endpoint in enumerate(endpoints):
+                key = str(endpoint or '').strip().casefold()
+                if key and owner:
+                    memberships[key] = (owner.casefold(), base_id, label, index)
+    return memberships
+
+
+def _local_io_physical_network(
+    bus: str,
+    memberships: dict[str, tuple[str, str, str, int]],
+    *items: dict,
+) -> tuple[str, str] | None:
+    names = {str(item.get('name') or '').strip().casefold() for item in items}
+    for item in items:
+        endpoint_name = str(item.get('name') or '').strip().casefold()
+        membership = memberships.get(endpoint_name)
+        if not membership:
+            continue
+        owner, base_id, _label, index = membership
+        if owner not in names:
+            continue
+        group_size = 4 if bus == 'lin' else 16 if bus == 'automotive_ethernet' else 8
+        ordinal = index // group_size + 1
+        technology = bus.replace('_', '-')
+        display = 'CAN' if bus == 'can_fd' else 'Ethernet' if bus == 'automotive_ethernet' else bus.upper()
+        owner_name = next(
+            str(candidate.get('name') or '') for candidate in items
+            if str(candidate.get('name') or '').strip().casefold() == owner
+        )
+        network_id = f'{base_id}-IO-{_semantic_slug(owner_name)}-{technology}-S{ordinal:02d}'
+        return network_id, f'{owner_name} {display} I/O Segment {ordinal}'
+    return None
+
+
+def _segmented_physical_network(
+    bus: str,
+    memberships: dict[str, list[tuple[str, str, int]]],
+    *items: dict,
+) -> tuple[str, str] | None:
+    candidates = [
+        memberships.get(str(item.get('name') or '').strip().casefold(), [])
+        for item in items
+        if str(item.get('device_type') or '') != 'Gateway'
+    ]
+    candidates = [item for item in candidates if item]
+    if not candidates:
+        return None
+    shared = list(candidates[0])
+    for values in candidates[1:]:
+        value_ids = {item[0] for item in values}
+        shared = [item for item in shared if item[0] in value_ids]
+    if not shared:
+        return None
+    segment_id, label, ordinal = shared[0]
+    display = 'CAN' if bus == 'can_fd' else 'Ethernet' if bus == 'automotive_ethernet' else bus.upper()
+    return segment_id, f'{label}-{display} Segment {ordinal}'
+
+
 def _semantic_physical_network(bus: str, *items: dict) -> tuple[str, str] | None:
     candidates = []
     for item_index, item in enumerate(items):
@@ -459,6 +611,8 @@ def generate_network_topology(arguments: dict) -> dict:
         interfaces_by_node.setdefault(str(interface.get('hardware_node_id') or ''), []).append(interface)
     for values in interfaces_by_node.values():
         values.sort(key=lambda item: (str(item.get('technology', '')), str(item.get('name', '')), str(item['id'])))
+    segment_memberships = _confirmed_segment_memberships(prompt)
+    local_io_memberships = _confirmed_local_io_memberships(prompt)
 
     kind_by_type = {
         'Gateway': 'gateway',
@@ -525,7 +679,16 @@ def generate_network_topology(arguments: dict) -> dict:
                 path = [source, destination]
             for segment_index, (left, right) in enumerate(zip(path, path[1:])):
                 bus = source_bus if segment_index == 0 else destination_bus
-                network = _semantic_physical_network(bus, hardware_by_id[left], hardware_by_id[right])
+                network = (
+                    _local_io_physical_network(
+                        bus, local_io_memberships, hardware_by_id[left], hardware_by_id[right]
+                    )
+                    or
+                    _segmented_physical_network(
+                        bus, segment_memberships, hardware_by_id[left], hardware_by_id[right]
+                    )
+                    or _semantic_physical_network(bus, hardware_by_id[left], hardware_by_id[right])
+                )
                 network_id, network_name = network or ('', '')
                 key = (left, right, bus, network_id)
                 reverse_key = (right, left, bus, network_id)
@@ -599,7 +762,16 @@ def generate_network_topology(arguments: dict) -> dict:
             1 if hardware_by_id[other_id].get('device_type') in {'ECU', 'Gateway'} else 0,
             str(hardware_by_id[other_id].get('name') or ''),
         ))
-        network = _semantic_physical_network(bus, hardware_by_id[node_id], hardware_by_id[anchor])
+        network = (
+            _local_io_physical_network(
+                bus, local_io_memberships, hardware_by_id[node_id], hardware_by_id[anchor]
+            )
+            or
+            _segmented_physical_network(
+                bus, segment_memberships, hardware_by_id[node_id], hardware_by_id[anchor]
+            )
+            or _semantic_physical_network(bus, hardware_by_id[node_id], hardware_by_id[anchor])
+        )
         network_id, network_name = network or ('', '')
         source_port = ensure_port(node_id, bus, network_id, network_name)
         target_port = ensure_port(anchor, bus, network_id, network_name)
@@ -629,7 +801,7 @@ def generate_network_topology(arguments: dict) -> dict:
         'interfaces': [(item['id'], item.get('version'), item.get('technology')) for item in interfaces],
         'routes': [(item['id'], item.get('revision'), item.get('approval_state')) for item in routes],
     }, sort_keys=True).encode('utf-8')).hexdigest()
-    fingerprint = hashlib.sha256(('wizard-network-v3-semantic-shared-buses\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-network-v5-local-io-segments\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'

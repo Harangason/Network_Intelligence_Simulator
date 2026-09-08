@@ -471,9 +471,27 @@ class SystemHealthService:
         ]
         route_signals = {
             str(signal_id)
-            for route in routes
+            for route in valid_routes
             for signal_id in (route.get("payload") or {}).get("signal_ids") or []
         }
+        routed_message_ids = {
+            str(message_id)
+            for route in valid_routes
+            for message_id in [
+                *((route.get("payload") or {}).get("message_ids") or []),
+                *(
+                    [(route.get("payload") or {}).get("message_id")]
+                    if (route.get("payload") or {}).get("message_id")
+                    else []
+                ),
+            ]
+            if message_id
+        }
+        route_signals.update(
+            str(signal.get("id"))
+            for signal in objects["Signal"]
+            if signal.get("id") and str(signal.get("message_id") or "") in routed_message_ids
+        )
         interfaces = objects["Interface"]
         route_metrics = capacity_results.get("routes") or []
         current_runs = [item for item in simulations if not item.get("is_outdated")]
@@ -491,7 +509,14 @@ class SystemHealthService:
         metrics = {
             "routing_coverage": _clamp(len(valid_routes) / max(len(routes), 1) * 100),
             "signal_coverage": _clamp(len(route_signals) / max(len(objects["Signal"]), 1) * 100),
-            "interface_completeness": _clamp(sum(bool(item.get("function_id") and item.get("interface_type")) for item in interfaces) / max(len(interfaces), 1) * 100),
+            "interface_completeness": _clamp(
+                sum(
+                    bool((item.get("function_id") or item.get("hardware_node_id")) and item.get("interface_type"))
+                    for item in interfaces
+                )
+                / max(len(interfaces), 1)
+                * 100
+            ),
             "network_reachability": _clamp(len(connected_ids) / max(len(physical_nodes), 1) * 100),
             "validation_pass_rate": _clamp(sum(value == "PASS" for value in category_values) / max(len(category_values), 1) * 100),
             "timing_compliance": _clamp(sum(item.get("requirement_status") == "PASS" for item in route_metrics) / max(len(route_metrics), 1) * 100),

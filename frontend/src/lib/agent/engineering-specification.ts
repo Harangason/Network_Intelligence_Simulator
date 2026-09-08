@@ -1694,18 +1694,38 @@ export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], 
   }
   if (!Array.isArray(graph)) throw new Error("Der bestätigte Systemcluster-Graph ist kein Array.");
   const assignedBus = new Map<string, { technology: string; networkRef: string }>();
+  const localEndpointNetwork = new Map<string, { controller: string; networkRef: string }>();
   for (const cluster of graph) {
     const technology = confirmedBusTechnology(`${cluster.network_id ?? ""} ${cluster.network_label ?? ""}`);
     if (!technology) continue;
     const networkRef = cluster.bus_name || cluster.network_label || cluster.network_id || `${technology}_network`;
     for (const controller of cluster.controllers ?? []) {
-      for (const name of [controller.ecu, ...(controller.sensors ?? []), ...(controller.actuators ?? [])]) {
-        if (name) assignedBus.set(normalizeHardwareName(name).toLocaleLowerCase("de"), { technology, networkRef });
+      if (controller.ecu) {
+        assignedBus.set(normalizeHardwareName(controller.ecu).toLocaleLowerCase("de"), { technology, networkRef });
+      }
+      const controllerSlug = normalizeHardwareName(controller.ecu || "controller")
+        .toLocaleLowerCase("de")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+      for (const name of [...(controller.sensors ?? []), ...(controller.actuators ?? [])]) {
+        const key = normalizeHardwareName(name).toLocaleLowerCase("de");
+        localEndpointNetwork.set(key, { controller: controller.ecu || "Controller", networkRef: `${networkRef}-IO-${controllerSlug}` });
       }
     }
   }
   return chains.map((chain) => {
-    const assignment = assignedBus.get(normalizeHardwareName(chain.hardware_name).toLocaleLowerCase("de"));
+    const key = normalizeHardwareName(chain.hardware_name).toLocaleLowerCase("de");
+    const assignment = assignedBus.get(key);
+    const local = localEndpointNetwork.get(key);
+    if (local) {
+      // The selected cluster bus is the ECU/Gateway backbone.  Low-level
+      // sensors and actuators retain their own confirmed/template technology
+      // and are connected to the owning controller on a local I/O network.
+      return {
+        ...chain,
+        transport_network_ref: `${local.networkRef}-${chain.interface_type.toLocaleLowerCase("de").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "local"}`,
+      };
+    }
     if (!assignment) return chain;
     return {
       ...chain,

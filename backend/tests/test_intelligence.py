@@ -5,6 +5,7 @@ from backend.engineering.intelligence.services import (
     GraphAnalyticsService,
     MaturityAssessmentService,
     RecommendationEngine,
+    SystemHealthService,
     correlation,
 )
 from backend.engineering.project_bundle import normalize_project_id
@@ -143,6 +144,53 @@ def test_data_quality_accepts_direct_hardware_owned_interfaces():
         item["code"] == "MISSING_REQUIRED_DATA" and item["object_id"] == "interface-a"
         for item in result["issues"]
     )
+
+
+def test_system_health_counts_signals_reached_through_routed_messages():
+    health = SystemHealthService().calculate(
+        _objects(),
+        [{"status": "APPROVED", "payload": {"message_id": "message-a", "signal_ids": []}}],
+        {"nodes": [], "edges": []},
+        {"results": {"networks": [], "routes": [], "overview": {}}, "findings": []},
+        {"results": {"category_statuses": {}}},
+        [],
+        {"score": 100},
+    )
+
+    assert health["metrics"]["signal_coverage"] == 100
+    assert health["counts"]["unmapped_signals"] == 0
+
+
+def test_system_health_ignores_signals_from_rejected_routes():
+    health = SystemHealthService().calculate(
+        _objects(),
+        [{"status": "REJECTED", "payload": {"message_id": "message-a", "signal_ids": ["signal-a"]}}],
+        {"nodes": [], "edges": []},
+        {"results": {"networks": [], "routes": [], "overview": {}}, "findings": []},
+        {"results": {"category_statuses": {}}},
+        [],
+        {"score": 100},
+    )
+
+    assert health["metrics"]["signal_coverage"] == 0
+    assert health["counts"]["unmapped_signals"] == 1
+
+
+def test_system_health_accepts_direct_hardware_owned_interfaces():
+    objects = _objects()
+    objects["Interface"][0].update({"function_id": None, "hardware_node_id": "node-a"})
+
+    health = SystemHealthService().calculate(
+        objects,
+        [],
+        {"nodes": [], "edges": []},
+        {"results": {"networks": [], "routes": [], "overview": {}}, "findings": []},
+        {"results": {"category_statuses": {}}},
+        [],
+        {"score": 100},
+    )
+
+    assert health["metrics"]["interface_completeness"] == 100
 
 
 def test_graph_analytics_finds_articulation_point_and_isolated_node():

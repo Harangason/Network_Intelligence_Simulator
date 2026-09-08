@@ -120,6 +120,25 @@ def _route_segment_network_ids(
     return segment_ids or [fallback_network_id]
 
 
+def _topology_route_network_ids(topology: dict[str, Any]) -> dict[str, list[str]]:
+    """Resolve route load against reviewed physical segments when available."""
+    result: dict[str, list[str]] = defaultdict(list)
+    for edge in topology.get("edges") or []:
+        if not isinstance(edge, dict):
+            continue
+        network_id = str(edge.get("physicalNetworkId") or "").strip()
+        if not network_id:
+            continue
+        route_ids = list(edge.get("routingEntryIds") or [])
+        if edge.get("routingEntryId"):
+            route_ids.append(edge["routingEntryId"])
+        for route_id in route_ids:
+            key = str(route_id or "").strip()
+            if key and network_id not in result[key]:
+                result[key].append(network_id)
+    return dict(result)
+
+
 def _requirement_value(
     route_timing: dict[str, Any],
     message: dict[str, Any],
@@ -225,6 +244,7 @@ class CapacityTimingService:
             max(_number(parameters.get("packet_loss_probability"), _number(parameters.get("dropout_probability"), 0.0)), 0.0),
             1.0,
         )
+        topology_networks = _topology_route_network_ids(state.get("topology") or {})
 
         for route in routes:
             source = route.get("source") or {}
@@ -238,7 +258,9 @@ class CapacityTimingService:
                 or route_path.get("network_id")
                 or protocol.upper()
             )
-            segment_network_ids = _route_segment_network_ids(source, route_path, destinations, network_id)
+            segment_network_ids = topology_networks.get(str(route.get("id") or "")) or _route_segment_network_ids(
+                source, route_path, destinations, network_id
+            )
             segment_count = max(1, len(segment_network_ids))
             payload_bytes = _payload_bytes(route, messages, default_payload)
             payload = route.get("payload") or {}

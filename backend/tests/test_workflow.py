@@ -706,3 +706,48 @@ def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch)
     }
     assert results["overview"]["route_count"] == 2
     assert results["overview"]["route_segment_count"] == 3
+
+
+def test_capacity_prefers_reviewed_topology_segment_over_logical_network(monkeypatch):
+    state = {
+        "project_id": "physical-capacity-project",
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {
+            "technology": "can_fd",
+            "bitrate": 2_000_000,
+            "cycle_ms": 10,
+            "payload_bytes": 8,
+            "target_bus_load_percent": 90,
+        },
+        "topology": {"nodes": [], "edges": [{
+            "id": "physical-edge",
+            "physicalNetworkId": "Fahrwerk_Fahrdynamik_03-S02",
+            "routingEntryIds": ["route-physical"],
+        }]},
+    }
+    route = {
+        "id": "route-physical",
+        "route_code": "RT-PHYSICAL",
+        "name": "Physical route",
+        "status": "APPROVED",
+        "approval_state": "APPROVED",
+        "source": {"node_id": "producer", "protocol": "CAN_FD", "network_id": "logical-chassis"},
+        "payload": {"payload_bytes": 8},
+        "destinations": [{"node_id": "consumer", "network_id": "logical-chassis"}],
+        "route": {"gateways": []},
+        "timing": {"cycle_time_ms": 10},
+        "routing_policy": {"priority": "NORMAL"},
+    }
+    service = CapacityTimingService("physical-capacity-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service, "latest", lambda: None)
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda limit=500, offset=0: [route])
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda object_type, limit=500, offset=0: [])
+
+    response = service.calculate(persist=False)
+
+    assert [item["network_id"] for item in response["results"]["networks"]] == [
+        "Fahrwerk_Fahrdynamik_03-S02"
+    ]
+    assert response["results"]["routes"][0]["network_id"] == "Fahrwerk_Fahrdynamik_03-S02"

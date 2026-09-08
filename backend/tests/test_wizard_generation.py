@@ -31,6 +31,40 @@ def test_semantic_network_assignment_keeps_powertrain_on_one_named_can():
     )
 
 
+def test_confirmed_gateway_architecture_splits_controllers_after_six():
+    controllers = [
+        {'ecu': f'Controller{i}', 'sensors': [f'Sensor{i}'], 'actuators': [f'Actuator{i}']}
+        for i in range(1, 8)
+    ]
+    graph = json.dumps([{
+        'cluster_id': 'family:chassis',
+        'label': 'Fahrwerk / Fahrdynamik',
+        'bus_name': 'Fahrwerk_Fahrdynamik_03',
+        'controllers': controllers,
+    }], separators=(',', ':'))
+    prompt = (
+        '- Netzarchitektur-ID: gateway_ecu_segments\n'
+        f'- Systemcluster-Graph: {graph}\n'
+    )
+
+    memberships = wizard_generation._confirmed_segment_memberships(prompt)
+    local_memberships = wizard_generation._confirmed_local_io_memberships(prompt)
+
+    assert memberships['controller1'][0][0] == 'Fahrwerk_Fahrdynamik_03-S01'
+    assert 'sensor6' not in memberships
+    assert local_memberships['sensor6'][0] == 'controller6'
+    assert local_memberships['actuator7'][0] == 'controller7'
+    assert wizard_generation._segmented_physical_network(
+        'can_fd', memberships,
+        {'name': 'Controller7', 'device_type': 'ECU'},
+    ) == ('Fahrwerk_Fahrdynamik_03-S02', 'Fahrwerk / Fahrdynamik-CAN Segment 2')
+    assert wizard_generation._local_io_physical_network(
+        'can_fd', local_memberships,
+        {'name': 'Sensor7', 'device_type': 'SensorController'},
+        {'name': 'Controller7', 'device_type': 'ECU'},
+    ) == ('Fahrwerk_Fahrdynamik_03-IO-controller7-can-fd-S01', 'Controller7 CAN I/O Segment 1')
+
+
 def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch):
     authority = ToolAuthority(f'pytest-wizard-generator-{uuid4()}')
     prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:

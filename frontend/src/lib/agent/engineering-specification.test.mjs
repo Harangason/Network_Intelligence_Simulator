@@ -10,18 +10,28 @@ test("domain evidence detects rail content independently from a conflicting wiza
   assert.ok(evidence.markers.length >= 3);
 });
 
-test("confirmed cluster graph overrides template buses before model generation", () => {
+test("confirmed cluster graph preserves endpoint technology on local controller I/O", () => {
   const base = extractEngineeringSpecification("Rail project with 1 AxleTemperature sensor").chains[0];
   const chains = [{ ...base, hardware_name: "AxleTemperature", interface_type: "LIN", interface_name: "AxleTemperature_LIN" }];
   const prompt = '- Systemcluster-Graph: [{"network_id":"rail-mvb","network_label":"Rail MVB","controllers":[{"ecu":"BogieControl","sensors":["AxleTemperature"],"actuators":[]}]}]';
   const [mapped] = applyConfirmedClusterGraph(chains, prompt);
-  assert.equal(mapped.interface_type, "MVB");
-  assert.equal(mapped.interface_name, "AxleTemperature_MVB");
+  assert.equal(mapped.interface_type, "LIN");
+  assert.equal(mapped.interface_name, "AxleTemperature_LIN");
+  assert.match(mapped.transport_network_ref, /IO-bogiecontrol-lin$/);
 
   const industrialPrompt = '- Systemcluster-Graph: [{"network_id":"profinet","network_label":"industrial_automation · profinet","controllers":[{"ecu":"SPSLeitsystem","sensors":["AxleTemperature"],"actuators":[]}]}]';
   const [industrial] = applyConfirmedClusterGraph(chains, industrialPrompt);
-  assert.equal(industrial.interface_type, "ProfiNET");
-  assert.equal(industrial.interface_name, "AxleTemperature_ProfiNET");
+  assert.equal(industrial.interface_type, "LIN");
+  assert.match(industrial.transport_network_ref, /IO-spsleitsystem-lin$/);
+});
+
+test("confirmed cluster graph binds only the controller to the selected backbone", () => {
+  const base = extractEngineeringSpecification("Motorsteuergerät mit CAN-FD und Signal Motordrehzahl").chains[0];
+  const chains = [{ ...base, hardware_name: "Motorsteuerung", device_type: "ECU", interface_type: "LIN" }];
+  const prompt = '- Systemcluster-Graph: [{"network_id":"automotive-can_fd","network_label":"CAN FD","bus_name":"Antriebsstrang_01","controllers":[{"ecu":"Motorsteuerung","sensors":[],"actuators":[]}]}]';
+  const [mapped] = applyConfirmedClusterGraph(chains, prompt);
+  assert.equal(mapped.interface_type, "CAN_FD");
+  assert.equal(mapped.transport_network_ref, "Antriebsstrang_01");
 });
 
 test("a review with hardware evidence must never trigger model creation", () => {

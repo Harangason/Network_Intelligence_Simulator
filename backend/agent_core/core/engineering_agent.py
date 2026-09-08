@@ -220,6 +220,42 @@ class EngineeringAgent:
                   text=f'{network_count} Netze, {route_count} Routen und {message_count} Nachrichten berechnet.',
                   workload={'completed': total if capacity_complete else 0, 'total': total})
             if not capacity_complete:
+                capacity_networks = (result.data.get('results') or {}).get('networks') or []
+                physical_segment_ids = {
+                    str(item.get('network_id') or '') for item in capacity_networks if isinstance(item, dict)
+                }
+                confirmed_gateway_segments = bool(re.search(
+                    r'^- Netzarchitektur-ID:\s*gateway_ecu_segments\s*$', prompt, re.I | re.M
+                ))
+                segment_rule_missing = confirmed_gateway_segments and not any(
+                    re.search(r'-S\d+$', network_id, re.I) for network_id in physical_segment_ids
+                )
+                local_io_rule_missing = confirmed_gateway_segments and not any(
+                    '-IO-' in network_id.upper() for network_id in physical_segment_ids
+                )
+                if segment_rule_missing or local_io_rule_missing:
+                    repair = await call('generate_wizard_network', {'prompt': prompt})
+                    if repair.success:
+                        proposal = await validate_proposal(repair.data)
+                        valid = proposal.get('status') == 'VALIDATED'
+                        event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                        status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                        text = (
+                            ('Die freigegebene Gateway-Segmentregel war in der physischen Topologie noch nicht '
+                             'materialisiert. Die korrigierte Netzaufteilung mit höchstens sechs Controllern je '
+                             'Segment ist geprüft und wartet auf Übernahme.'
+                             if segment_rule_missing else
+                             'Sensor-/Aktor-I/O war noch dem gemeinsamen Controller-Backbone zugerechnet. '
+                             'Die geprüfte Topologie trennt lokale I/O-Segmente vom freigegebenen Systembus '
+                             'und wartet auf Übernahme.')
+                            if valid else
+                            'Die aus dem Capacity-Befund abgeleitete Topologie-Reparatur enthält noch '
+                            'Validierungsfehler.'
+                        )
+                        event('RESULT', status=status, text=text)
+                        return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                                'context': context.model_dump(), 'trace': traces,
+                                'proposals': list(proposals.values())}
                 status = 'INCOMPLETE'
                 text = 'Capacity & Timing wurde berechnet, enthält aber blockierende Befunde.'
                 event('RESULT', status=status, text=text)
