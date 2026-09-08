@@ -169,6 +169,32 @@ class EngineeringAgent:
             return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
 
+        if (confirmed_wizard and target_index >= workflow_order.index('parameters')
+                and topology_complete and not parameters_complete):
+            event('PROGRESS', status='PLANNING', text='Technologieabhängige Parameter-Defaults aus der Registry übernehmen.')
+            result = await call('generate_wizard_parameters', {'prompt': prompt})
+            parameters_complete = bool(
+                result.success and (result.data.get('artifact_check') or {}).get('complete')
+            )
+            if not parameters_complete:
+                status = 'INCOMPLETE'
+                text = 'Die technologieabhängigen Parameter konnten nicht vollständig gespeichert werden. ' + '; '.join(
+                    str(f.get('message', '')) for f in result.findings)
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            technology_count = len(result.data.get('technology_ids') or [])
+            field_count = len(result.data.get('parameters') or {})
+            event('PROGRESS', status='VALIDATING',
+                  text=f'{field_count} Parameterfelder für {technology_count} Technologien gespeichert.',
+                  workload={'completed': field_count, 'total': field_count})
+            if target_index == workflow_order.index('parameters'):
+                status = 'COMPLETED'
+                text = 'Die technologieabhängigen Parameter-Defaults sind vollständig im kanonischen Projektstand gespeichert.'
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
         # Capacity and preflight are deterministic analyses over canonical,
         # already reviewed artifacts. They do not need an LLM tool choice or a
         # second proposal store, and may run consecutively until a real finding

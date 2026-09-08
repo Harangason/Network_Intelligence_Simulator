@@ -36,6 +36,7 @@ def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch):
     prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
 - Lauf-ID: test-wizard-12345678
 - Industrie: Automotive
+- Netzwerktechnologien: CAN-FD (can_fd); LIN (lin)
 - Hardware-Sollwerte: {"gateways":1,"ecus":50,"sensors":100,"actuators":100}
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
 Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gateway.
@@ -177,6 +178,13 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert topology_status.success and topology_status.data['state'] == 'READY_TO_CONTINUE', topology_status
     assert topology_status.data['step'] == 'capacity_timing', topology_status
 
+    # A partial parameter draft used to send this continuation to the LLM and
+    # leave the wizard blocked without a canonical change.
+    WorkflowStatusService(authority.project_id).save_parameters(
+        {'target_bus_load_percent': 60}, actor='test-human'
+    )
+    assert not WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['parameters']['complete']
+
     capacity_prompt = prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: capacity_timing.'
     async def capacity_continuation():
         async with EngineeringMCPClient(create_server(authority)) as client:
@@ -184,8 +192,14 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
                 capacity_prompt, AgentContext(active_project_id=authority.project_id))
     capacity_result = asyncio.run(capacity_continuation())
     assert capacity_result['status'] == 'COMPLETED', capacity_result
+    assert any(item['tool'] == 'generate_wizard_parameters' and item['status'] == 'SUCCESS'
+               for item in capacity_result['trace'])
     assert any(item['tool'] == 'calculate_capacity' and item['status'] == 'SUCCESS'
                for item in capacity_result['trace'])
+    parameter_state = WorkflowStatusService(authority.project_id).get()
+    assert parameter_state['artifact_checks']['parameters']['complete']
+    assert parameter_state['parameters']['technology'] in parameter_state['parameters']['technology_defaults']
+    assert {'can_fd', 'lin'}.issubset(parameter_state['parameters']['technology_defaults'])
     capacity_status = WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['capacity_timing']
     assert capacity_status in {'COMPLETE', 'WARNING'}, capacity_status
     capacity_snapshot = WorkflowStatusService(authority.project_id).latest_analysis('capacity_timing')

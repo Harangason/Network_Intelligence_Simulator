@@ -13,8 +13,11 @@ from . import model, proposal_service
 from .. import proposals as proposal_store
 from ..device_classification import DeviceClassificationRegistry
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+from ..workflow.service import WorkflowStatusService
+from ..project_context import current_project_id
 from ..routing.generation import RoutingGenerationService
 from ..routing.validation import PROTOCOL_CAPACITY
+from backend.app.simulation_service import SimulationService
 
 
 _TOPOLOGY_BUS_BY_PROTOCOL = {
@@ -86,6 +89,91 @@ def extract_specification(prompt: str) -> dict:
     if result.returncode:
         raise ValueError('Die Wizard-Spezifikation konnte nicht abgeleitet werden: ' + result.stderr[-1000:])
     return json.loads(result.stdout)
+
+
+def _wizard_parameter_technology_ids(prompt: str) -> list[str]:
+    """Return confirmed technologies in stable wizard order."""
+    raw = re.search(r'^- Netzwerktechnologien:\s*(.+)$', prompt, re.M)
+    candidates = re.findall(r'\(([a-zA-Z0-9_.:-]+)\)', raw.group(1)) if raw else []
+    if not candidates:
+        graph = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
+        if graph:
+            candidates = [str(item.get('network_id') or '') for item in json.loads(graph.group(1))]
+    resolved: list[str] = []
+    for candidate in candidates:
+        if candidate.startswith('detected:'):
+            candidate = candidate.split(':', 1)[1]
+        try:
+            technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(candidate)
+            DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+        except (KeyError, ValueError):
+            continue
+        if technology_id not in resolved:
+            resolved.append(technology_id)
+    return resolved
+
+
+def _parameter_defaults(technology_id: str) -> dict:
+    profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+    return {
+        field['key']: field.get('default')
+        for field in SimulationService._parameter_schema(technology_id, profile)
+        if 'default' in field
+    }
+
+
+def generate_parameters(arguments: dict) -> dict:
+    """Persist confirmed registry defaults without delegating tool choice to an LLM."""
+    prompt = arguments['prompt']
+    workflow = WorkflowStatusService(current_project_id())
+    state = workflow.get()
+    technology_ids = _wizard_parameter_technology_ids(prompt)
+    if not technology_ids:
+        for route in model.routes():
+            protocol = str((route.get('source') or {}).get('protocol') or '')
+            try:
+                technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol)
+                DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+            except (KeyError, ValueError):
+                continue
+            if technology_id not in technology_ids:
+                technology_ids.append(technology_id)
+    if not technology_ids:
+        raise ValueError('Keine registrierte Netzwerktechnologie für die Parameter-Defaults gefunden.')
+
+    domain_match = re.search(r'^- Projekt-Modelltyp:\s*([^\r\n]+)', prompt, re.M)
+    industry = (domain_match.group(1).strip() if domain_match else '') or str(
+        (state.get('parameters') or {}).get('industry') or 'generic_networking'
+    )
+    primary = technology_ids[0]
+    primary_defaults = _parameter_defaults(primary)
+    existing = state.get('parameters') or {}
+    parameters = {
+        **primary_defaults,
+        **existing,
+        'industry': industry,
+        'technology': primary,
+        'formats': list(existing.get('formats') or ['universal-jsonl', 'universal-csv']),
+        'technology_defaults': {
+            technology_id: _parameter_defaults(technology_id)
+            for technology_id in technology_ids
+        },
+        'defaults_source': 'technology-registry',
+    }
+
+    saved = workflow.save_parameters(
+        parameters, actor=str(arguments.get('_actor') or 'engineering-agent')
+    )
+    artifact_check = saved['artifact_checks']['parameters']
+    if not artifact_check['complete']:
+        raise ValueError(f'Parameter-Defaults bleiben unvollständig: {artifact_check["required"]}')
+    return {
+        'status': saved['statuses']['parameters'],
+        'parameters': saved['parameters'],
+        'artifact_check': artifact_check,
+        'technology_ids': technology_ids,
+        'source': 'technology-registry',
+    }
 
 
 def generate(arguments: dict) -> dict:

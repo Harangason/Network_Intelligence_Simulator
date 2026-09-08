@@ -327,6 +327,7 @@ def register_tools():
     register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=TEXT)
     register("generate_wizard_routing", "Bestätigten Systemcluster-Graph deterministisch in einen prüfbaren Routing-Vorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_routing, prompt=TEXT)
     register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=TEXT)
+    register("generate_wizard_parameters", "Bestätigte technologieabhängige Wizard-Defaults deterministisch aus der zentralen Registry speichern.", P.VALIDATE, wizard_generation.generate_parameters, prompt=TEXT)
     register("create_workload","Messbaren Auftrag mit Sollzahlen planen und speichern.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload(a["request"]),request=OBJECT)
     register("generate_signals","Signalauftrag durch vorhandenen Workload-Generator planen.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload({**a["request"],"workload_type":"SIGNAL_GENERATION"}),request=OBJECT)
     for name,method in [("start_workload","start_workload"),("validate_workload","validate_workload"),("repair_workload","retry_invalid"),("generate_missing","generate_missing"),("inspect_workload","get_workload"),("get_workload_progress","progress")]:
