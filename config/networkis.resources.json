@@ -40,6 +40,40 @@
     "ollama_fast_keep_alive": "30m",
     "numeric_accelerator": "auto",
     "numeric_accelerator_min_items": 256,
+    "compute_policy": {
+      "policy_version": 1,
+      "rule": "CPU steuert und persistiert; GPU beschleunigt ausschließlich geeignete, seiteneffektfreie Batch-Berechnungen und lokale KI-Inferenz.",
+      "cpu_authoritative_tasks": [
+        "Datenbankzugriffe, CRUD und Transaktionen",
+        "Projekt-Locks und Workflow-Steuerung",
+        "Validierung, Regelwerke und kanonische Modelländerungen",
+        "Numerische Arbeit unterhalb der konfigurierten Batch-Schwelle",
+        "Fallback bei fehlender oder fehlerhafter CUDA-Laufzeit"
+      ],
+      "gpu_accelerated_tasks": [
+        "Deterministische Trace-Statistiken der Simulation",
+        "Deterministische Capacity- und Netzlast-Aggregationen",
+        "Lokale semantische KI-Aufgaben über Ollama"
+      ],
+      "numeric_selection": {
+        "mode_from": "resources.numeric_accelerator",
+        "minimum_items_from": "resources.numeric_accelerator_min_items",
+        "required_runtime": "NVIDIA Container Runtime und CuPy CUDA",
+        "fallback": "CPU",
+        "deterministic_results_required": true,
+        "gpu_side_effects_allowed": false
+      },
+      "ai_selection": {
+        "semantic_fast_model_from": "ai.providers.ollama.fast_model",
+        "deep_model_from": "ai.providers.ollama.model",
+        "fast_model_keep_alive_from": "resources.ollama_fast_keep_alive",
+        "fallback": "konfigurierter Hybrid-/Cloud-Pfad"
+      },
+      "telemetry": {
+        "preferred_source": "Windows-Hosttelemetrie",
+        "gpu_fallback_source": "NVIDIA-Metriken im Container"
+      }
+    },
     "memory_budget": {
       "backend_hot_cache_mb": 1024,
       "frontend_runtime_mb": 1024,
