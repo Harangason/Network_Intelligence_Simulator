@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import NamedTuple
 from urllib.parse import urlparse
 from urllib.error import URLError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parent
@@ -617,12 +617,53 @@ def _model_is_installed(requested: str, installed: list[str]) -> bool:
     return any(item.lower().removesuffix(":latest") == normalized for item in installed)
 
 
+def _local_ai_enabled(environment: dict[str, str]) -> bool:
+    return environment.get("AI_PROVIDER", "hybrid-demand").strip().lower() in {
+        "local",
+        "ollama",
+        "hybrid",
+        "hybrid-demand",
+    }
+
+
+def _local_ai_required_for_startup(environment: dict[str, str]) -> bool:
+    """Only strict local modes may prevent the remaining application from starting."""
+    return environment.get("AI_PROVIDER", "hybrid-demand").strip().lower() in {"local", "ollama"}
+
+
+def _prewarm_local_ai(environment: dict[str, str], *, timeout: float = 180.0) -> bool:
+    """Load the fast semantic model and keep it resident for subsequent wizard work."""
+    model = (
+        environment.get("LOCAL_AI_FAST_MODEL", "").strip()
+        or environment.get("LOCAL_AI_MODEL", DEFAULT_LOCAL_AI_MODEL).strip()
+    )
+    payload = json.dumps(
+        {
+            "model": model,
+            "prompt": "",
+            "stream": False,
+            "keep_alive": environment.get("OLLAMA_FAST_KEEP_ALIVE", "30m").strip() or "30m",
+        }
+    ).encode("utf-8")
+    request = Request(
+        f"{_ollama_api_root(environment)}/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=timeout) as response:
+            response.read()
+        return True
+    except (OSError, URLError, UnicodeError, json.JSONDecodeError):
+        return False
+
+
 def _ensure_local_ai(
     environment: dict[str, str],
     log_handle,
 ) -> subprocess.Popen[object] | None:
-    provider = environment.get("AI_PROVIDER", "hybrid-demand").strip().lower()
-    if provider not in {"local", "ollama", "hybrid", "hybrid-demand"}:
+    if not _local_ai_enabled(environment):
         return None
 
     models = _ollama_models(environment)
@@ -837,6 +878,7 @@ def _run_web() -> int:
     backend_process: subprocess.Popen[object] | None = None
     frontend_process: subprocess.Popen[object] | None = None
     ollama_process: subprocess.Popen[object] | None = None
+    local_ai_ready = False
     launcher_error = False
     restart_counts = {"Backend": 0, "Frontend": 0}
     restart_limit = _service_restart_limit(service_environment)
@@ -866,7 +908,25 @@ def _run_web() -> int:
     try:
         _ensure_engineering_database(service_environment)
         backend_environment["DATABASE_URL"] = service_environment["DATABASE_URL"]
-        ollama_process = _ensure_local_ai(service_environment, ollama_log)
+        try:
+            ollama_process = _ensure_local_ai(service_environment, ollama_log)
+        except RuntimeError as error:
+            if _local_ai_required_for_startup(service_environment):
+                raise
+            print(
+                f"Lokaler AI-Dienst ist beim Start noch nicht verfügbar: {error} "
+                "Der Hybridmodus stellt ihn im Hintergrund wieder her.",
+                file=sys.stderr,
+            )
+        if ollama_process is not None or _ollama_models(service_environment) is not None:
+            local_ai_ready = True
+            if _prewarm_local_ai(service_environment):
+                print(
+                    "Lokales Semantikmodell ist vorgewärmt "
+                    f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                )
+            else:
+                print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
         backend_process = start_backend()
         if not _wait_for_url(
             f"{backend_url}/api/health",
@@ -960,21 +1020,22 @@ def _run_web() -> int:
             now = time.monotonic()
             if now >= next_dependency_check:
                 next_dependency_check = now + DEPENDENCY_HEALTH_INTERVAL_SECONDS
-                local_ai_required = service_environment.get("AI_PROVIDER", "hybrid-demand").strip().lower() in {
-                    "local",
-                    "ollama",
-                    "hybrid",
-                    "hybrid-demand",
-                }
-                if local_ai_required and _ollama_models(service_environment) is None:
+                available_models = _ollama_models(service_environment)
+                if _local_ai_enabled(service_environment) and available_models is None:
+                    local_ai_ready = False
                     if ollama_process is not None and ollama_process.poll() is None:
                         _terminate_process_tree(ollama_process)
                     ollama_process = None
                     try:
                         ollama_process = _ensure_local_ai(service_environment, ollama_log)
+                        local_ai_ready = _prewarm_local_ai(service_environment)
                         print("Lokaler AI-Dienst wurde automatisch wiederhergestellt.")
                     except RuntimeError as error:
                         print(f"Lokaler AI-Dienst bleibt nicht verfügbar: {error}", file=sys.stderr)
+                elif _local_ai_enabled(service_environment) and not local_ai_ready:
+                    local_ai_ready = _prewarm_local_ai(service_environment)
+                    if local_ai_ready:
+                        print("Lokales Semantikmodell wurde nachträglich vorgewärmt.")
 
                 database_host, database_port = _database_endpoint(service_environment["DATABASE_URL"])
                 if not _tcp_endpoint_available(database_host, database_port):

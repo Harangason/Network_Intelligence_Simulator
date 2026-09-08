@@ -486,6 +486,52 @@ def test_missing_fast_model_falls_back_to_deep_model(monkeypatch: pytest.MonkeyP
     assert environment["LOCAL_AI_FAST_MODEL"] == "qwen3.8:27b"
 
 
+def test_hybrid_ai_does_not_block_application_startup() -> None:
+    assert LAUNCHER._local_ai_enabled({"AI_PROVIDER": "hybrid-demand"}) is True
+    assert LAUNCHER._local_ai_required_for_startup({"AI_PROVIDER": "hybrid-demand"}) is False
+    assert LAUNCHER._local_ai_required_for_startup({"AI_PROVIDER": "local"}) is True
+
+
+def test_prewarm_uses_fast_model_and_keep_alive(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def read(self) -> bytes:
+            return b'{}'
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(LAUNCHER, "urlopen", fake_urlopen)
+    environment = {
+        "LOCAL_AI_BASE_URL": "http://ollama:11434/v1",
+        "LOCAL_AI_MODEL": "qwen3.8:27b",
+        "LOCAL_AI_FAST_MODEL": "llama3.1:8b",
+        "OLLAMA_FAST_KEEP_ALIVE": "45m",
+    }
+
+    assert LAUNCHER._prewarm_local_ai(environment, timeout=7.0) is True
+    assert captured == {
+        "url": "http://ollama:11434/api/generate",
+        "payload": {
+            "model": "llama3.1:8b",
+            "prompt": "",
+            "stream": False,
+            "keep_alive": "45m",
+        },
+        "timeout": 7.0,
+    }
+
+
 def test_service_restart_limit_rejects_invalid_values() -> None:
     with pytest.raises(RuntimeError, match="ganze Zahl"):
         LAUNCHER._service_restart_limit({"NETWORKIS_SERVICE_RESTARTS": "many"})
