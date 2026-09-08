@@ -175,7 +175,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
           <button className="button secondary" disabled={busy} onClick={() => void runScenario()} type="button">
             Szenario berechnen
           </button>
-          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">KI-Vorschläge</button>
+          <button className="button secondary" disabled={busy} onClick={() => void requestOptimization()} type="button">Zweige optimieren</button>
           <button className="button primary" disabled={busy} onClick={() => void calculate()} type="button">
             {busy ? "Berechnet …" : "Aktuell berechnen"}
           </button>
@@ -308,7 +308,7 @@ function buildCapacityWarningInfo(
     addWarning(info, "overview", readableMessage);
     addWarning(info, "recommendations", finding.recommendation ? readableCapacityFinding(finding.recommendation) : readableMessage);
   }
-  if (proposals.length > 0) addWarning(info, "recommendations", `${proposals.length} KI-Vorschläge zur Kapazitätsoptimierung offen.`);
+  if (proposals.length > 0) addWarning(info, "recommendations", `${proposals.length} deterministische Vorschläge zur Kapazitätsoptimierung offen.`);
 
   for (const network of results.networks) {
     if (network.status !== "NORMAL" || network.target_status === "EXCEEDED") {
@@ -475,9 +475,35 @@ function RecommendationList({ proposals, findings }: { proposals: Array<Record<s
   if (!items.length) return <EmptyAnalysis text="Keine Kapazitätsauffälligkeiten gefunden." />;
   return <PaginatedResults items={items} label="Empfehlungen">{(entries) => <div className="analysis-list findings-list">
     {entries.map((item, index) => item.kind === "proposal"
-      ? <div className="finding finding-info" key={`proposal-${String(item.proposal.id ?? index)}`}><span>AI PROPOSAL</span><strong>{String(item.proposal.summary)}</strong><small>{String(item.proposal.kind)} · nicht angewendet</small></div>
+      ? <CapacityProposal proposal={item.proposal} index={index} />
       : <div className={`finding finding-${item.finding.severity.toLowerCase()}`} key={`finding-${item.finding.code}-${index}`}><span>{item.finding.severity}</span><strong>{item.finding.message}</strong><small>{item.finding.recommendation ?? "Keine Aktion erforderlich."}</small></div>)}
   </div>}</PaginatedResults>;
+}
+
+function CapacityProposal({ proposal, index }: { proposal: Record<string, unknown>; index: number }) {
+  const branch = typeof proposal.branch_analysis === "object" && proposal.branch_analysis !== null
+    ? proposal.branch_analysis as Record<string, unknown>
+    : {};
+  const inventory = typeof proposal.protocol_inventory === "object" && proposal.protocol_inventory !== null
+    ? proposal.protocol_inventory as Record<string, unknown>
+    : {};
+  const selectedProtocol = String(branch.selected_protocol ?? branch.protocol ?? "unbekannt");
+  const stock = typeof inventory[selectedProtocol] === "object" && inventory[selectedProtocol] !== null
+    ? inventory[selectedProtocol] as Record<string, unknown>
+    : {};
+  const current = Number(branch.current_load_percent);
+  const projected = Number(branch.projected_max_load_percent);
+  const loadText = Number.isFinite(current)
+    ? `${current.toFixed(2)} % aktuell${Number.isFinite(projected) ? ` → ${projected.toFixed(2)} % prognostiziert` : ""}`
+    : "Lastdaten werden bei der Freigabe erneut geprüft";
+  const stockText = Object.keys(stock).length
+    ? `${selectedProtocol}: ${String(stock.free ?? 0)} frei / ${String(stock.provisioned ?? 0)} vorgesehen`
+    : `${selectedProtocol}: Bestand nicht explizit begrenzt`;
+  return <div className="finding finding-info" key={`proposal-${String(proposal.id ?? index)}`}>
+    <span>DETERMINISTISCHER VORSCHLAG</span>
+    <strong>{String(proposal.summary)}</strong>
+    <small>{String(proposal.kind)} · {loadText} · {stockText} · Freigabe erforderlich</small>
+  </div>;
 }
 
 function NetworkTable({ items, routes, onSelect, selectedId, sourceVersions }: { items: CapacityResults["networks"]; routes: CapacityResults["routes"]; onSelect: (id: string | null) => void; selectedId: string | null; sourceVersions: Record<string, number> | null }) {

@@ -256,8 +256,59 @@ class EngineeringAgent:
                         return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                                 'context': context.model_dump(), 'trace': traces,
                                 'proposals': list(proposals.values())}
+                remediation = await call('plan_capacity_remediation', {'prompt': prompt})
+                if remediation.success:
+                    branch_plans = remediation.data.get('networks') or []
+                    split_plans = [
+                        item for item in branch_plans
+                        if item.get('decision') == 'SPLIT_CURRENT_TECHNOLOGY'
+                    ]
+                    migration_plans = [
+                        item for item in branch_plans
+                        if item.get('decision') == 'MIGRATE_TECHNOLOGY'
+                    ]
+                    if split_plans:
+                        repair = await call('generate_capacity_network_repair', {'prompt': prompt})
+                        if repair.success:
+                            proposal = await validate_proposal(repair.data)
+                            valid = proposal.get('status') == 'VALIDATED'
+                            event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+                            status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                            text = (
+                                f'{len(split_plans)} überlastete physische Zweige wurden paketweise analysiert. '
+                                'Die Last wird auf bestätigte freie Bussegmente verteilt; die geprüfte '
+                                'Topologie wartet auf menschliche Freigabe.'
+                                + (
+                                    f' Zusätzlich benötigen {len(migration_plans)} Zweige einen separat '
+                                    'freizugebenden Technologiewechsel einschließlich Teilnehmer- und '
+                                    'Gateway-Interfaces.'
+                                    if migration_plans else ''
+                                )
+                                if valid else
+                                'Der paketweise Capacity-Reparaturvorschlag enthält noch Validierungsfehler.'
+                            )
+                            event('RESULT', status=status, text=text)
+                            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                                    'context': context.model_dump(), 'trace': traces,
+                                    'proposals': list(proposals.values())}
+                    if migration_plans:
+                        details = '; '.join(
+                            f"{item.get('network_id')}: {item.get('protocol')} → {item.get('selected_protocol')}"
+                            for item in migration_plans
+                        )
+                        status = 'INCOMPLETE'
+                        text = (
+                            'Die Zweiganalyse hat einen geeigneten Technologiewechsel gefunden, aber keine '
+                            f'zulässige automatische Interface-Migration: {details}. Teilnehmer- und '
+                            'Gateway-Interfaces müssen vor der Topologieänderung bestätigt werden.'
+                        )
+                        event('RESULT', status=status, text=text)
+                        return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                                'context': context.model_dump(), 'trace': traces, 'proposals': []}
                 status = 'INCOMPLETE'
-                text = 'Capacity & Timing wurde berechnet, enthält aber blockierende Befunde.'
+                unresolved = remediation.data.get('unresolved') if remediation.success else []
+                detail = f" {'; '.join(str(item) for item in unresolved[:3])}" if unresolved else ''
+                text = 'Capacity & Timing wurde berechnet, enthält aber technisch nicht auflösbare Kapazitätsbefunde.' + detail
                 event('RESULT', status=status, text=text)
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                         'context': context.model_dump(), 'trace': traces, 'proposals': []}

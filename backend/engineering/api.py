@@ -83,6 +83,7 @@ from .capacity.service import CapacityTimingService, PreflightService
 from .workflow.models import WORKFLOW_STEPS
 from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change, check_edit_token
 from .intelligence import IntelligenceService
+from .intelligence.network_planning import communication_system_inventory, plan_network_distribution
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
 from .project_context import activate_project, current_project_id, normalize_context_project_id, reset_project
@@ -1072,43 +1073,61 @@ def capacity_optimize_route():
     service = CapacityTimingService(_project_id())
     result = service.calculate(persist=False)
     state = WorkflowStatusService(_project_id()).get()
-    parameters = state.get("parameters") or {}
+    context = state.get("context") or {}
+    prompt = str(((context.get("agent_wizard_status") or {}).get("agent_prompt")) or "")
+    inventory = communication_system_inventory(prompt)
+    plan = plan_network_distribution(
+        result,
+        list_objects("HardwareNode", limit=1000),
+        state.get("topology") or {},
+        parameters=state.get("parameters") or {},
+        allowed_protocols=(context.get("engineering_scope_rules") or {}).get("communication_systems"),
+        available_protocol_counts=inventory,
+    )
     proposals = []
-    networks = result["results"].get("networks") or []
-    routes = result["results"].get("routes") or []
-    if networks:
-        network = networks[0]
-        current_bitrate = float(parameters.get("bitrate") or 1_000_000)
-        scenario = service.calculate({"bitrate": current_bitrate * 2}, persist=False)
-        proposals.append(
-            {
-                "id": f"OPT-BITRATE-{network['network_id']}",
-                "status": "PROPOSAL",
-                "kind": "INCREASE_BITRATE",
-                "target_type": "Network",
-                "target_id": network["network_id"],
-                "summary": "Bitrate verdoppeln, um Peak-, Burst- und Queueing-Last zu reduzieren.",
-                "changes": {"bitrate": {"from": current_bitrate, "to": current_bitrate * 2}},
-                "expected_impact": scenario.get("impact"),
-            }
-        )
-    if routes:
-        route = routes[0]
-        current_policy = str(parameters.get("queue_policy") or "FIFO")
-        scenario = service.calculate({"queue_policy": "STRICT_PRIORITY"}, persist=False)
-        proposals.append(
-            {
-                "id": f"OPT-QUEUE-{route['route_id']}",
-                "status": "PROPOSAL",
-                "kind": "QUEUE_POLICY",
-                "target_type": "RoutingEntry",
-                "target_id": route["route_id"],
-                "summary": "Prioritaetsbasiertes Queueing als What-if gegen FIFO vergleichen.",
-                "changes": {"queue_policy": {"from": current_policy, "to": "STRICT_PRIORITY"}},
-                "expected_impact": scenario.get("impact"),
-            }
-        )
-    return jsonify({"status": result["status"], "proposals": proposals, "applied": False})
+    for network in plan.get("networks") or []:
+        decision = str(network.get("decision") or "UNRESOLVED_CAPACITY_CONSTRAINT")
+        if decision == "SPLIT_CURRENT_TECHNOLOGY":
+            summary = (
+                f"Überlasteten Zweig {network['network_id']} anhand seiner Pakete auf "
+                f"{network['proposed_segments']} {network['protocol']}-Segmente verteilen; "
+                f"Prognose maximal {network['projected_max_load_percent']:.2f} %."
+            )
+            kind = "SPLIT_NETWORK_BRANCH"
+        elif decision == "MIGRATE_TECHNOLOGY":
+            candidate = next(
+                (item for item in network.get("technology_candidates") or []
+                 if item.get("protocol") == network.get("selected_protocol")),
+                {},
+            )
+            summary = (
+                f"Für {network['network_id']} reicht der freie {network['protocol']}-Bestand nicht aus. "
+                f"Auf {network['selected_protocol']} mit {candidate.get('required_segments', 1)} Segment(en) migrieren; "
+                "Payload und Ziel-Buslast sind rechnerisch geeignet."
+            )
+            kind = "MIGRATE_NETWORK_TECHNOLOGY"
+        else:
+            summary = (
+                f"Für {network['network_id']} wurde keine verfügbare Kombination aus Segmentanzahl, "
+                "Payload und Technologie innerhalb der Ziel-Buslast gefunden."
+            )
+            kind = "CAPACITY_CONSTRAINT_REVIEW"
+        proposals.append({
+            "id": f"OPT-BRANCH-{network['network_id']}",
+            "status": "PROPOSAL" if decision != "UNRESOLVED_CAPACITY_CONSTRAINT" else "REVIEW_REQUIRED",
+            "kind": kind,
+            "target_type": "Network",
+            "target_id": network["network_id"],
+            "summary": summary,
+            "branch_analysis": network,
+            "protocol_inventory": plan.get("protocol_inventory") or {},
+            "requires_human_approval": True,
+        })
+    return jsonify({
+        "status": result["status"], "plan_status": plan.get("status"),
+        "protocol_inventory": plan.get("protocol_inventory") or {},
+        "proposals": proposals, "applied": False,
+    })
 
 
 @engineering_api.route("/capacity/networks", methods=["GET"])

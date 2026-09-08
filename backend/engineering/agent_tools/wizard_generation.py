@@ -17,6 +17,12 @@ from ..workflow.service import WorkflowStatusService
 from ..project_context import current_project_id
 from ..routing.generation import RoutingGenerationService
 from ..routing.validation import PROTOCOL_CAPACITY
+from ..capacity.service import CapacityTimingService
+from ..intelligence.network_planning import (
+    communication_system_inventory,
+    plan_network_distribution,
+    split_topology_by_distribution,
+)
 from backend.app.simulation_service import SimulationService
 
 
@@ -819,4 +825,77 @@ def generate_network_topology(arguments: dict) -> dict:
         evidence=[{'source': 'approved-routing-table', 'prompt_sha256': fingerprint,
                    'route_count': len(routes), 'node_count': len(topology['nodes']), 'edge_count': len(topology['edges']),
                    'physical_completion_edges': fallback_count}],
+    )
+
+
+def plan_capacity_remediation(arguments: dict) -> dict:
+    """Analyse overloaded physical branches against the approved bus inventory."""
+    prompt = arguments['prompt']
+    workflow = WorkflowStatusService(current_project_id())
+    state = workflow.get()
+    capacity = CapacityTimingService(current_project_id()).latest()
+    if not capacity or capacity.get('is_outdated'):
+        capacity = CapacityTimingService(current_project_id()).calculate(persist=False)
+    return plan_network_distribution(
+        capacity,
+        model.objects('HardwareNode'),
+        state.get('topology') or {},
+        parameters=state.get('parameters') or {},
+        allowed_protocols=((state.get('context') or {}).get('engineering_scope_rules') or {}).get('communication_systems'),
+        available_protocol_counts=communication_system_inventory(prompt),
+    )
+
+
+def generate_capacity_network_repair(arguments: dict) -> dict:
+    """Turn safe same-technology branch splits into a governed topology proposal."""
+    prompt = arguments['prompt']
+    state = WorkflowStatusService(current_project_id()).get()
+    plan = plan_capacity_remediation(arguments)
+    decisions = [item for item in plan.get('networks') or [] if item.get('decision') == 'SPLIT_CURRENT_TECHNOLOGY']
+    if not decisions:
+        raise ValueError(
+            'Kein sicher materialisierbarer Segment-Split vorhanden. '
+            'Ein Technologiewechsel benötigt eine explizite Interface- und Gateway-Freigabe.'
+        )
+    topology, changed_edges = split_topology_by_distribution(state.get('topology') or {}, plan)
+    if changed_edges <= 0:
+        raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
+    signature = hashlib.sha256(json.dumps({
+        'prompt': prompt,
+        'topology': state.get('topology') or {},
+        'decisions': decisions,
+    }, sort_keys=True).encode('utf-8')).hexdigest()
+    for row in proposal_store.list_proposals(limit=100):
+        contract = row.get('engineering_contract') or {}
+        if (row['proposal_type'] == 'CAPACITY_NETWORK_REPAIR'
+                and any(item.get('capacity_repair_sha256') == signature for item in row.get('evidence') or [])
+                and (contract.get('validation_result') or {}).get('valid') is True):
+            return proposal_service.envelope(row)
+    branch_text = '; '.join(
+        f"{item['network_id']}: {item['current_load_percent']:.2f}% auf "
+        f"{item['proposed_segments']} {item['protocol']}-Segmente, Prognose "
+        f"{item['projected_max_load_percent']:.2f}%"
+        for item in decisions
+    )
+    return proposal_service.create(
+        'CAPACITY_NETWORK_REPAIR',
+        [{'object_type': 'NetworkTopology', 'data': {
+            'name': 'Capacity-optimierte Netzwerktopologie', 'topology': topology,
+        }}],
+        f'Gezielte Reparatur der überlasteten physischen Zweige: {branch_text}. '
+        f'{changed_edges} routenbelegte physische Kanten werden neu segmentiert; '
+        'unbetroffene Zweige bleiben unverändert. Der Projektstand ändert sich erst nach menschlicher Freigabe.',
+        assumptions=[
+            'Die bestätigte Anzahl freier Bussegmente ist die verbindliche Ressourcenobergrenze.',
+            'Ein Technologiewechsel wird nicht stillschweigend materialisiert; Interfaces und Gateways benötigen separate Freigabe.',
+        ],
+        evidence=[{
+            'source': 'capacity-branch-remediation',
+            'capacity_repair_sha256': signature,
+            'target_load_percent': plan.get('target_load_percent'),
+            'protocol_inventory': plan.get('protocol_inventory') or {},
+            'branches': decisions,
+            'changed_edges': changed_edges,
+        }],
+        confidence=0.95,
     )

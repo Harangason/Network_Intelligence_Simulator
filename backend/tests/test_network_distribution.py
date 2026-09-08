@@ -3,7 +3,11 @@ from contextlib import contextmanager
 
 from backend.engineering.physical_segments import physical_port_networks
 from backend.engineering.system_clusters import system_owners
-from backend.engineering.intelligence.network_planning import plan_network_distribution
+from backend.engineering.intelligence.network_planning import (
+    communication_system_inventory,
+    plan_network_distribution,
+    split_topology_by_distribution,
+)
 from backend.engineering.routing.network_sync import enrich_route_from_linked_topology
 from backend.engineering.structure_rules import normalize_hardware_name
 from backend.engineering.routing.config_builder import CommunicationConfigBuilder
@@ -263,12 +267,92 @@ def test_overload_proposes_additional_buses_without_splitting_system_ownership()
     assert result["automatic_changes"] is False
 
 
+def test_approved_wizard_bus_quantities_become_capacity_inventory():
+    prompt = (
+        '- Kommunikationssystem-Sollwerte: [{"id":"can_fd","count":10},'
+        '{"id":"lin","count":25},{"id":"detected:ethernet","count":5}]\n'
+    )
+
+    assert communication_system_inventory(prompt) == {"CAN_FD": 10, "LIN": 25, "ETHERNET": 5}
+
+
+def test_distribution_uses_free_same_protocol_segments_before_migration():
+    result = plan_network_distribution(
+        capacity(), hardware(), {}, available_protocol_counts={"LIN": 3, "CAN_FD": 1}
+    )
+    network = result["networks"][0]
+
+    assert network["decision"] == "SPLIT_CURRENT_TECHNOLOGY"
+    assert network["available_additional_segments"] == 2
+    assert network["selected_protocol"] == "LIN"
+
+
+def test_distribution_selects_capable_available_technology_when_bus_stock_is_exhausted():
+    result = plan_network_distribution(
+        capacity((120, 20, 20)), hardware(), {},
+        parameters={"technology_defaults": {"can_fd": {"bitrate": 2_000_000, "data_bitrate": 2_000_000}}},
+        available_protocol_counts={"LIN": 1, "CAN_FD": 2},
+    )
+    network = result["networks"][0]
+
+    assert result["status"] == "PROPOSED"
+    assert network["decision"] == "MIGRATE_TECHNOLOGY"
+    assert network["selected_protocol"] == "CAN_FD"
+    assert network["technology_candidates"][0]["fits_target"] is True
+
+
+def test_split_plan_rewrites_only_the_overloaded_branch_and_preserves_route_evidence():
+    source = topology(shared=True)
+    for index, edge in enumerate(source["edges"], start=1):
+        route_id = f"r{index}"
+        edge.update(
+            physicalNetworkId="network-lin",
+            physicalNetworkName="LIN branch",
+            routingEntryId=route_id,
+            routingEntryIds=[route_id],
+            routingMetadata={route_id: {"routeId": route_id}},
+        )
+        for node in source["nodes"]:
+            for port in node["ports"]:
+                if port["id"] in {edge["sourcePort"], edge["targetPort"]}:
+                    port.update(physicalNetworkId="network-lin", physicalNetworkName="LIN branch")
+    unaffected = deepcopy(source["edges"][0])
+    unaffected.update(
+        id="edge-unaffected",
+        physicalNetworkId="network-can-fd",
+        physicalNetworkName="Powertrain CAN-FD",
+        routingEntryId="r3",
+        routingEntryIds=["r3"],
+        routingMetadata={"r3": {"routeId": "r3"}},
+    )
+    source["edges"].append(unaffected)
+    plan = {
+        "networks": [{
+            "network_id": "network-lin", "decision": "SPLIT_CURRENT_TECHNOLOGY",
+            "segments": [
+                {"name": "network-lin-CAP-S01", "route_ids": ["r1"]},
+                {"name": "network-lin-CAP-S02", "route_ids": ["r2"]},
+            ],
+        }]
+    }
+
+    repaired, changed = split_topology_by_distribution(source, plan)
+
+    assert changed == 2
+    assert {edge["physicalNetworkId"] for edge in repaired["edges"]} == {
+        "network-lin-CAP-S01", "network-lin-CAP-S02", "network-can-fd",
+    }
+    assert sorted(edge["routingEntryId"] for edge in repaired["edges"]) == ["r1", "r2", "r3"]
+    assert next(edge for edge in repaired["edges"] if edge["id"] == "edge-unaffected") == unaffected
+
+
 def test_single_route_overload_is_not_hidden_by_adding_buses():
     result = plan_network_distribution(capacity((120, 20, 20)), hardware(), {}, allowed_protocols=["LIN", "CAN_FD"])
-    assert result["status"] == "RESIDUAL_CONSTRAINTS"
+    assert result["status"] == "PROPOSED"
     segment = next(item for item in result["networks"][0]["segments"] if item["load_check"] == "EXCEEDED")
     assert "20.0 ms" in segment["alternatives"][0]
-    assert "CAN-FD-Alternative" in segment["alternatives"][1]
+    assert result["networks"][0]["decision"] == "MIGRATE_TECHNOLOGY"
+    assert result["networks"][0]["selected_protocol"] == "CAN_FD"
 
 
 def test_stale_and_missing_capacity_never_yield_a_validated_plan():

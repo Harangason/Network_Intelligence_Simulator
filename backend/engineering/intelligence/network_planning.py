@@ -1,23 +1,140 @@
 """Reviewable load distribution with system clusters and explicit residual risks."""
 
 from collections import defaultdict
+from copy import deepcopy
+import json
 from math import ceil, isfinite
+import re
 from typing import Any
 
 from ..system_clusters import system_owners
 from ..capacity.calculators import estimate_frame, utilization_percent
 from ..capacity.service import parameters_for_protocol
+from ..routing.validation import PROTOCOL_CAPACITY
 from .services import _number
 
 
 LOAD_KEYS = ("average_load_percent", "peak_load_percent", "burst_load_percent")
+PROTOCOL_ALIASES = {
+    "CANFD": "CAN_FD", "CAN_FD": "CAN_FD", "CAN-FD": "CAN_FD",
+    "AUTOMOTIVE_ETHERNET": "ETHERNET", "SOMEIP": "SOME_IP", "SOME/IP": "SOME_IP",
+}
+
+
+def canonical_protocol(value: Any) -> str:
+    normalized = str(value or "").strip().upper().replace(" ", "_")
+    return PROTOCOL_ALIASES.get(normalized, normalized)
+
+
+def communication_system_inventory(prompt: str) -> dict[str, int]:
+    """Read the approved bus quantities embedded in a persisted wizard prompt."""
+    match = re.search(r"^- Kommunikationssystem-Sollwerte:\s*(\[[^\r\n]*\])\s*$", prompt or "", re.M)
+    if not match:
+        return {}
+    try:
+        rows = json.loads(match.group(1))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    inventory: dict[str, int] = defaultdict(int)
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        identity = str(row.get("id") or row.get("label") or "").split(":")[-1]
+        protocol = canonical_protocol(identity)
+        if protocol not in PROTOCOL_CAPACITY:
+            protocol = canonical_protocol(row.get("label"))
+        if protocol in PROTOCOL_CAPACITY:
+            inventory[protocol] += max(0, int(_number(row.get("count"), 0)))
+    return dict(inventory)
+
+
+def _technology_defaults(protocol: str, parameters: dict[str, Any]) -> dict[str, Any]:
+    defaults = parameters.get("technology_defaults") or {}
+    aliases = {
+        "CAN_FD": ("can_fd", "canfd"), "ETHERNET": ("ethernet",),
+        "SOME_IP": ("someip", "some_ip"), "LIN": ("lin",),
+    }
+    selected = next(
+        (defaults[key] for key in aliases.get(protocol, (protocol.lower(),)) if isinstance(defaults.get(key), dict)),
+        {},
+    )
+    return parameters_for_protocol(protocol, {**parameters, **selected})
+
+
+def _candidate_route_load(row: dict[str, Any], protocol: str, parameters: dict[str, Any]) -> dict[str, float] | None:
+    payload = max(0, int(_number(row.get("payload_bytes"), 8)))
+    capacity = PROTOCOL_CAPACITY.get(protocol)
+    if capacity is None or payload > capacity[1]:
+        return None
+    cycle = _number(row.get("cycle_ms"), 0)
+    if cycle <= 0:
+        return None
+    frame = estimate_frame(protocol, payload, _technology_defaults(protocol, parameters))
+    retry = max(0, min(1, _number(parameters.get("retransmission_rate"), 0)))
+    average = utilization_percent(frame.transmission_time_s, cycle) * (1 + retry)
+    source_average = max(_number(row.get("average_load_percent"), 0), 0.0001)
+    return {
+        "average_load_percent": average,
+        "peak_load_percent": average * max(1, _number(row.get("peak_load_percent"), 0) / source_average),
+        "burst_load_percent": average * max(1, _number(row.get("burst_load_percent"), 0) / source_average),
+    }
+
+
+def _technology_candidates(
+    rows: list[dict[str, Any]], current_protocol: str, target: float,
+    parameters: dict[str, Any], inventory: dict[str, dict[str, int]],
+) -> list[dict[str, Any]]:
+    candidates = []
+    for protocol, stock in inventory.items():
+        if protocol == current_protocol or stock["free"] <= 0:
+            continue
+        recalculated = [_candidate_route_load(row, protocol, parameters) for row in rows]
+        if not recalculated or any(item is None for item in recalculated):
+            continue
+        route_loads = [item for item in recalculated if item is not None]
+        maximum_route = max((_load([item]) for item in route_loads), default=0)
+        combined = _load(route_loads)
+        bins: list[list[dict[str, float]]] = []
+        for route_load in sorted(route_loads, key=lambda item: _load([item]), reverse=True):
+            destination = next(
+                (bucket for bucket in bins if _load([*bucket, route_load]) <= target),
+                None,
+            )
+            if destination is None:
+                bins.append([route_load])
+            else:
+                destination.append(route_load)
+        required = max(1, len(bins))
+        projected_max = max((_load(bucket) for bucket in bins), default=0)
+        candidates.append({
+            "protocol": protocol,
+            "available_segments": stock["free"],
+            "required_segments": required,
+            "projected_combined_load_percent": round(combined, 4),
+            "projected_max_segment_load_percent": round(projected_max, 4),
+            "projected_max_route_load_percent": round(maximum_route, 4),
+            "payload_compatible": True,
+            "fits_target": maximum_route <= target and required <= stock["free"],
+            "requires_interface_migration": True,
+        })
+    return sorted(
+        candidates,
+        key=lambda item: (
+            not item["fits_target"], item["required_segments"],
+            PROTOCOL_CAPACITY.get(item["protocol"], (float("inf"), 0))[0], item["protocol"],
+        ),
+    )
 
 
 def _load(rows: list[dict[str, Any]]) -> float:
     return max((sum(_number(row.get(key)) for row in rows) for key in LOAD_KEYS), default=0.0)
 
 
-def plan_network_distribution(capacity: dict[str, Any], hardware: list[dict[str, Any]], topology: dict[str, Any], *, parameters: dict[str, Any] | None = None, allowed_protocols: list[str] | None = None) -> dict[str, Any]:
+def plan_network_distribution(
+    capacity: dict[str, Any], hardware: list[dict[str, Any]], topology: dict[str, Any], *,
+    parameters: dict[str, Any] | None = None, allowed_protocols: list[str] | None = None,
+    available_protocol_counts: dict[str, int] | None = None,
+) -> dict[str, Any]:
     results = capacity.get("results") or {}
     target = _number((results.get("overview") or {}).get("target_bus_load_percent"), 60.0)
     plan: dict[str, Any] = {
@@ -37,16 +154,43 @@ def plan_network_distribution(capacity: dict[str, Any], hardware: list[dict[str,
         plan["status"] = "INVALID_TARGET"
         plan["unresolved"] = ["Die Ziel-Buslast muss groesser als 0 und hoechstens 100 Prozent sein."]
         return plan
+    parameters = parameters or {}
     owners = system_owners(hardware, topology)
     plan["clusters"] = [{"device_id": key, **owner} for key, owner in sorted(owners.items())]
     metrics_by_network: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in results["routes"]:
         metrics_by_network[str(row.get("network_id") or "unknown")].append(row)
+    used_protocols: dict[str, int] = defaultdict(int)
+    for rows in metrics_by_network.values():
+        if rows:
+            used_protocols[canonical_protocol(rows[0].get("protocol"))] += 1
+    requested_inventory = {
+        canonical_protocol(key): max(0, int(value))
+        for key, value in (available_protocol_counts or {}).items()
+        if canonical_protocol(key) in PROTOCOL_CAPACITY
+    }
+    if not requested_inventory and allowed_protocols:
+        requested_inventory = {canonical_protocol(item): 1_000_000 for item in allowed_protocols}
+    if not requested_inventory:
+        requested_inventory = {
+            canonical_protocol(key): 1_000_000
+            for key in (parameters.get("technology_defaults") or {})
+            if canonical_protocol(key) in PROTOCOL_CAPACITY
+        }
+    inventory = {
+        protocol: {
+            "provisioned": count,
+            "used": used_protocols.get(protocol, 0),
+            "free": max(0, count - used_protocols.get(protocol, 0)),
+        }
+        for protocol, count in sorted(requested_inventory.items())
+    }
+    plan["protocol_inventory"] = inventory
     for network_id, rows in sorted(metrics_by_network.items()):
         before = _load(rows)
         if before <= target:
             continue
-        protocol = str(rows[0].get("protocol") or "UNKNOWN")
+        protocol = canonical_protocol(rows[0].get("protocol") or "UNKNOWN")
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for row in rows:
             producer = str(row.get("producer") or row["route_id"])
@@ -86,18 +230,6 @@ def plan_network_distribution(capacity: dict[str, Any], hardware: list[dict[str,
                             "alternativ schnelleres Protokoll und passende Interfaces pruefen."
                         )
                         segment["alternatives"].append(explanation)
-                        plan["unresolved"].append(explanation)
-                        if protocol.upper() == "LIN" and allowed_protocols and "CAN_FD" in allowed_protocols:
-                            candidate_parameters = parameters_for_protocol("CAN_FD", parameters or {})
-                            estimate = estimate_frame("CAN_FD", int(_number(row.get("payload_bytes"), 8)), candidate_parameters)
-                            cycle = _number(row.get("cycle_ms"))
-                            retry = max(0, min(1, _number((parameters or {}).get("retransmission_rate"))))
-                            factor = max(1, _load([row]) / max(_number(row.get("average_load_percent")), 0.0001))
-                            candidate_load = utilization_percent(estimate.transmission_time_s, cycle) * (1 + retry) * factor
-                            segment["alternatives"].append(
-                                f"Berechnete CAN-FD-Alternative: {candidate_load:.2f}% bei unveraendert {cycle:.1f} ms und "
-                                f"{candidate_parameters['bitrate']:.0f} bit/s. CAN-FD-Interfaces an Teilnehmer und Gateway sowie Timing/Safety sind freigabepflichtig."
-                            )
                 if owner["basis"] == "unassigned":
                     plan["unresolved"].append(f"Systemzuordnung von {owner['name']} noch nicht bestaetigt.")
                 segments.append(segment)
@@ -120,16 +252,115 @@ def plan_network_distribution(capacity: dict[str, Any], hardware: list[dict[str,
                 destination["ownership_basis"] = segment["ownership_basis"]
         segments = packed
         for index, segment in enumerate(segments):
-            segment["name"] = f"{protocol.replace('_', '-')}-{index + 1}"
+            segment["name"] = f"{network_id}-CAP-S{index + 1:02d}"
+        additional = max(0, len(segments) - 1)
+        same_protocol_free = (inventory.get(protocol) or {}).get("free", 1_000_000)
+        technology_candidates = _technology_candidates(rows, protocol, target, parameters, inventory)
+        selected_technology = next((item for item in technology_candidates if item["fits_target"]), None)
+        if max(item["projected_load_percent"] for item in segments) <= target and additional <= same_protocol_free:
+            decision = "SPLIT_CURRENT_TECHNOLOGY"
+        elif selected_technology:
+            decision = "MIGRATE_TECHNOLOGY"
+        else:
+            decision = "UNRESOLVED_CAPACITY_CONSTRAINT"
+            for segment in segments:
+                plan["unresolved"].extend(segment["alternatives"])
+            plan["unresolved"].append(
+                f"{network_id}: {additional} zusätzliche {protocol}-Segmente benötigt, "
+                f"aber nur {same_protocol_free} frei; keine verfügbare Technologie erfüllt Last und Payload."
+            )
         plan["networks"].append({
             "network_id": network_id, "protocol": protocol,
             "current_load_percent": round(before, 4), "current_segments": 1,
-            "proposed_segments": len(segments), "additional_segments": max(0, len(segments) - 1),
+            "proposed_segments": len(segments), "additional_segments": additional,
             "projected_max_load_percent": max(item["projected_load_percent"] for item in segments),
+            "available_additional_segments": same_protocol_free,
+            "decision": decision,
+            "selected_protocol": (
+                selected_technology["protocol"]
+                if decision == "MIGRATE_TECHNOLOGY" and selected_technology
+                else protocol
+            ),
+            "technology_candidates": technology_candidates,
             "segments": segments,
         })
     plan["status"] = "RESIDUAL_CONSTRAINTS" if plan["unresolved"] else "PROPOSED" if plan["networks"] else "WITHIN_TARGET"
     return plan
+
+
+def split_topology_by_distribution(topology: dict[str, Any], plan: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Materialize only validated same-technology split decisions into a topology copy."""
+    assignments: dict[tuple[str, str], tuple[str, str]] = {}
+    for network in plan.get("networks") or []:
+        if network.get("decision") != "SPLIT_CURRENT_TECHNOLOGY":
+            continue
+        for segment in network.get("segments") or []:
+            for route_id in segment.get("route_ids") or []:
+                assignments[(str(network.get("network_id")), str(route_id))] = (
+                    str(segment.get("name")), str(segment.get("name")),
+                )
+    if not assignments:
+        return deepcopy(topology), 0
+
+    updated = deepcopy(topology)
+    nodes = {str(node.get("id")): node for node in updated.get("nodes") or []}
+    port_by_id = {
+        str(port.get("id")): (node, port)
+        for node in nodes.values()
+        for port in node.get("ports") or []
+        if port.get("id")
+    }
+    new_edges = []
+    changed = 0
+    for edge in updated.get("edges") or []:
+        network_id = str(edge.get("physicalNetworkId") or "")
+        route_ids = [str(item) for item in (edge.get("routingEntryIds") or []) if item]
+        if not route_ids and edge.get("routingEntryId"):
+            route_ids = [str(edge["routingEntryId"])]
+        groups: dict[tuple[str, str], list[str]] = defaultdict(list)
+        unchanged = []
+        for route_id in route_ids:
+            target = assignments.get((network_id, route_id))
+            (groups[target] if target else unchanged).append(route_id)
+        if not groups:
+            new_edges.append(edge)
+            continue
+        if unchanged:
+            retained = deepcopy(edge)
+            retained["routingEntryIds"] = unchanged
+            retained["routingEntryId"] = unchanged[0]
+            retained["routingMetadata"] = {
+                key: value for key, value in (retained.get("routingMetadata") or {}).items() if key in unchanged
+            }
+            new_edges.append(retained)
+        for group_index, ((target_id, target_name), members) in enumerate(sorted(groups.items()), start=1):
+            clone = deepcopy(edge)
+            clone["id"] = f"{edge.get('id')}-capacity-{group_index}"
+            clone["physicalNetworkId"] = target_id
+            clone["physicalNetworkName"] = target_name
+            clone["routingEntryIds"] = members
+            clone["routingEntryId"] = members[0]
+            clone["routingMetadata"] = {
+                key: value for key, value in (clone.get("routingMetadata") or {}).items() if key in members
+            }
+            for side in ("source", "target"):
+                port_key = f"{side}Port"
+                original_id = str(clone.get(port_key) or "")
+                original = port_by_id.get(original_id)
+                node = nodes.get(str(clone.get(side) or ""))
+                if original is None or node is None:
+                    continue
+                new_port = deepcopy(original[1])
+                new_port["id"] = f"{original_id}-capacity-{target_id}"
+                new_port["physicalNetworkId"] = target_id
+                new_port["physicalNetworkName"] = target_name
+                if not any(str(item.get("id")) == new_port["id"] for item in node.get("ports") or []):
+                    node.setdefault("ports", []).append(new_port)
+                clone[port_key] = new_port["id"]
+            new_edges.append(clone)
+            changed += 1
+    updated["edges"] = new_edges
+    return updated, changed
 
 
 def distribution_recommendations(plan: dict[str, Any]) -> list[dict[str, Any]]:
@@ -138,9 +369,12 @@ def distribution_recommendations(plan: dict[str, Any]) -> list[dict[str, Any]]:
         "problem": f"{network['network_id']}: {network['current_load_percent']:.2f}% Buslast",
         "affected_objects": sorted({node for segment in network["segments"] for node in segment["device_ids"]}),
         "recommendation": (
+            f"Auf {network['selected_protocol']} wechseln; {next((item['required_segments'] for item in network['technology_candidates'] if item['protocol'] == network['selected_protocol']), 1)} "
+            "verfügbare Segmente tragen Payload und Last. Teilnehmer- und Gateway-Interfaces vor Übernahme migrieren und Timing/Safety neu prüfen."
+            if network.get("decision") == "MIGRATE_TECHNOLOGY" else
             f"Busaufteilung allein reicht nicht: Einzelrouten ueberschreiten {plan['target_load_percent']:.2f}%. "
             "Die berechneten Zyklus- und Protokollalternativen pruefen; keine Lastentlastung durch unveraenderte Segmente behaupten."
-            if network["projected_max_load_percent"] > plan["target_load_percent"] else
+            if network.get("decision") == "UNRESOLVED_CAPACITY_CONSTRAINT" else
             f"{network['proposed_segments']} {network['protocol']}-Segmente unter Erhalt der Systemcluster vorsehen. "
             f"Prognose maximal {network['projected_max_load_percent']:.2f}% bei Ziel {plan['target_load_percent']:.2f}%. "
             "Gateway-Interfaces und Timing vor Freigabe validieren."
