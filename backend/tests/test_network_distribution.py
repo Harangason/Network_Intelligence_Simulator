@@ -301,6 +301,48 @@ def test_distribution_selects_capable_available_technology_when_bus_stock_is_exh
     assert network["technology_candidates"][0]["fits_target"] is True
 
 
+def test_binding_inventory_reports_existing_overprovisioning_even_without_overload():
+    result = plan_network_distribution(
+        capacity((10, 10, 10)), hardware(), {}, available_protocol_counts={"LIN": 0}
+    )
+
+    assert result["status"] == "RESIDUAL_CONSTRAINTS"
+    assert result["networks"] == []
+    assert result["inventory_constraints"] == [{
+        "protocol": "LIN", "provisioned": 0, "used": 1, "free": 0, "excess": 1,
+    }]
+
+
+def test_multiple_overloaded_branches_cannot_reserve_the_same_free_segment():
+    source = {
+        "id": "capacity-scarce-stock",
+        "results": {
+            "overview": {"target_bus_load_percent": 60},
+            "routes": [
+                {
+                    "route_id": f"{network}-r{index}", "producer": producer,
+                    "protocol": "LIN", "network_id": network, "cycle_ms": 10,
+                    "payload_bytes": 8, "average_load_percent": 30,
+                    "peak_load_percent": 40, "burst_load_percent": 40,
+                }
+                for network in ("network-a", "network-b")
+                for index, producer in enumerate(("ecu", "s"), start=1)
+            ],
+        },
+    }
+
+    result = plan_network_distribution(
+        source, hardware(), {}, available_protocol_counts={"LIN": 3}
+    )
+
+    decisions = {item["network_id"]: item["decision"] for item in result["networks"]}
+    assert decisions == {
+        "network-a": "SPLIT_CURRENT_TECHNOLOGY",
+        "network-b": "UNRESOLVED_CAPACITY_CONSTRAINT",
+    }
+    assert result["remaining_protocol_inventory"]["LIN"] == 0
+
+
 def test_split_plan_rewrites_only_the_overloaded_branch_and_preserves_route_evidence():
     source = topology(shared=True)
     for index, edge in enumerate(source["edges"], start=1):

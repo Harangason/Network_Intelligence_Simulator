@@ -487,13 +487,20 @@ function CapacityProposal({ proposal, index }: { proposal: Record<string, unknow
   const inventory = typeof proposal.protocol_inventory === "object" && proposal.protocol_inventory !== null
     ? proposal.protocol_inventory as Record<string, unknown>
     : {};
-  const selectedProtocol = String(branch.selected_protocol ?? branch.protocol ?? "unbekannt");
-  const stock = typeof inventory[selectedProtocol] === "object" && inventory[selectedProtocol] !== null
+  const constraint = typeof proposal.inventory_constraint === "object" && proposal.inventory_constraint !== null
+    ? proposal.inventory_constraint as Record<string, unknown>
+    : {};
+  const selectedProtocol = String(constraint.protocol ?? branch.selected_protocol ?? branch.protocol ?? "unbekannt");
+  const stock = Object.keys(constraint).length
+    ? constraint
+    : typeof inventory[selectedProtocol] === "object" && inventory[selectedProtocol] !== null
     ? inventory[selectedProtocol] as Record<string, unknown>
     : {};
   const current = Number(branch.current_load_percent);
   const projected = Number(branch.projected_max_load_percent);
-  const loadText = Number.isFinite(current)
+  const loadText = Object.keys(constraint).length
+    ? `Bestand ${String(constraint.used ?? 0)} / ${String(constraint.provisioned ?? 0)}, Überschreitung ${String(constraint.excess ?? 0)}`
+    : Number.isFinite(current)
     ? `${current.toFixed(2)} % aktuell${Number.isFinite(projected) ? ` → ${projected.toFixed(2)} % prognostiziert` : ""}`
     : "Lastdaten werden bei der Freigabe erneut geprüft";
   const stockText = Object.keys(stock).length

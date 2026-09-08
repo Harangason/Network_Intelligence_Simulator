@@ -10,6 +10,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 import webbrowser
@@ -659,6 +660,22 @@ def _prewarm_local_ai(environment: dict[str, str], *, timeout: float = 180.0) ->
         return False
 
 
+def _prewarm_local_ai_in_background(environment: dict[str, str]) -> threading.Thread:
+    """Warm the optional local model without delaying the web/API startup."""
+    isolated_environment = environment.copy()
+
+    def run() -> None:
+        model = isolated_environment.get("LOCAL_AI_FAST_MODEL", DEFAULT_LOCAL_AI_FAST_MODEL)
+        if _prewarm_local_ai(isolated_environment):
+            print(f"Lokales Semantikmodell ist im Hintergrund vorgewärmt ({model}).")
+        else:
+            print("Lokales Semantikmodell konnte im Hintergrund nicht vorgewärmt werden.", file=sys.stderr)
+
+    worker = threading.Thread(target=run, name="networkis-ai-prewarm", daemon=True)
+    worker.start()
+    return worker
+
+
 def _ensure_local_ai(
     environment: dict[str, str],
     log_handle,
@@ -920,13 +937,17 @@ def _run_web() -> int:
             )
         if ollama_process is not None or _ollama_models(service_environment) is not None:
             local_ai_ready = True
-            if _prewarm_local_ai(service_environment):
-                print(
-                    "Lokales Semantikmodell ist vorgewärmt "
-                    f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
-                )
+            if _local_ai_required_for_startup(service_environment):
+                if _prewarm_local_ai(service_environment):
+                    print(
+                        "Lokales Semantikmodell ist vorgewärmt "
+                        f"({service_environment.get('LOCAL_AI_FAST_MODEL', DEFAULT_LOCAL_AI_FAST_MODEL)})."
+                    )
+                else:
+                    print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
             else:
-                print("Lokales Semantikmodell konnte nicht vorgewärmt werden.", file=sys.stderr)
+                _prewarm_local_ai_in_background(service_environment)
+                print("Lokales Semantikmodell wird parallel zum Anwendungsstart vorgewärmt.")
         backend_process = start_backend()
         if not _wait_for_url(
             f"{backend_url}/api/health",

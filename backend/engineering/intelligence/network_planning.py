@@ -140,7 +140,7 @@ def plan_network_distribution(
     plan: dict[str, Any] = {
         "status": "NO_CAPACITY_DATA", "target_load_percent": target,
         "source_snapshot_id": str(capacity.get("id") or ""),
-        "networks": [], "clusters": [], "unresolved": [],
+        "networks": [], "clusters": [], "inventory_constraints": [], "unresolved": [],
         "automatic_changes": False, "requires_human_approval": True,
         "calculation": "Cluster-preserving first-fit decreasing; max(sum average, sum peak, sum burst)",
         "validation_scope": "Buslast rechnerisch geprueft; Timing, Gateway-Portkapazitaet und Safety vor Uebernahme neu pruefen.",
@@ -164,6 +164,7 @@ def plan_network_distribution(
     for rows in metrics_by_network.values():
         if rows:
             used_protocols[canonical_protocol(rows[0].get("protocol"))] += 1
+    binding_inventory = bool(available_protocol_counts)
     requested_inventory = {
         canonical_protocol(key): max(0, int(value))
         for key, value in (available_protocol_counts or {}).items()
@@ -177,16 +178,32 @@ def plan_network_distribution(
             for key in (parameters.get("technology_defaults") or {})
             if canonical_protocol(key) in PROTOCOL_CAPACITY
         }
+    inventory_protocols = set(requested_inventory)
+    if binding_inventory:
+        inventory_protocols.update(used_protocols)
     inventory = {
         protocol: {
-            "provisioned": count,
+            "provisioned": requested_inventory.get(protocol, 0),
             "used": used_protocols.get(protocol, 0),
-            "free": max(0, count - used_protocols.get(protocol, 0)),
+            "free": max(0, requested_inventory.get(protocol, 0) - used_protocols.get(protocol, 0)),
         }
-        for protocol, count in sorted(requested_inventory.items())
+        for protocol in sorted(inventory_protocols)
     }
     plan["protocol_inventory"] = inventory
-    for network_id, rows in sorted(metrics_by_network.items()):
+    if binding_inventory:
+        for protocol, stock in inventory.items():
+            excess = max(0, stock["used"] - stock["provisioned"])
+            if not excess:
+                continue
+            constraint = {"protocol": protocol, **stock, "excess": excess}
+            plan["inventory_constraints"].append(constraint)
+            plan["unresolved"].append(
+                f"{protocol}: {stock['used']} physische Segmente belegt, aber nur "
+                f"{stock['provisioned']} bestätigt; Sollbestand um {excess} überschritten."
+            )
+    remaining = {protocol: stock["free"] for protocol, stock in inventory.items()}
+    ordered_networks = sorted(metrics_by_network.items(), key=lambda item: (-_load(item[1]), item[0]))
+    for network_id, rows in ordered_networks:
         before = _load(rows)
         if before <= target:
             continue
@@ -254,13 +271,23 @@ def plan_network_distribution(
         for index, segment in enumerate(segments):
             segment["name"] = f"{network_id}-CAP-S{index + 1:02d}"
         additional = max(0, len(segments) - 1)
-        same_protocol_free = (inventory.get(protocol) or {}).get("free", 1_000_000)
-        technology_candidates = _technology_candidates(rows, protocol, target, parameters, inventory)
+        same_protocol_free = remaining.get(protocol, 1_000_000)
+        available_inventory = {
+            candidate_protocol: {**stock, "free": remaining.get(candidate_protocol, stock["free"])}
+            for candidate_protocol, stock in inventory.items()
+        }
+        technology_candidates = _technology_candidates(rows, protocol, target, parameters, available_inventory)
         selected_technology = next((item for item in technology_candidates if item["fits_target"]), None)
         if max(item["projected_load_percent"] for item in segments) <= target and additional <= same_protocol_free:
             decision = "SPLIT_CURRENT_TECHNOLOGY"
+            if protocol in remaining:
+                remaining[protocol] -= additional
         elif selected_technology:
             decision = "MIGRATE_TECHNOLOGY"
+            selected_protocol = selected_technology["protocol"]
+            remaining[selected_protocol] -= selected_technology["required_segments"]
+            if protocol in remaining:
+                remaining[protocol] += 1
         else:
             decision = "UNRESOLVED_CAPACITY_CONSTRAINT"
             for segment in segments:
@@ -284,6 +311,7 @@ def plan_network_distribution(
             "technology_candidates": technology_candidates,
             "segments": segments,
         })
+    plan["remaining_protocol_inventory"] = remaining
     plan["status"] = "RESIDUAL_CONSTRAINTS" if plan["unresolved"] else "PROPOSED" if plan["networks"] else "WITHIN_TARGET"
     return plan
 
@@ -364,7 +392,7 @@ def split_topology_by_distribution(topology: dict[str, Any], plan: dict[str, Any
 
 
 def distribution_recommendations(plan: dict[str, Any]) -> list[dict[str, Any]]:
-    return [{
+    branch_recommendations = [{
         "candidate_id": f"SEGMENT-{network['network_id']}", "category": "Network Segmentation",
         "problem": f"{network['network_id']}: {network['current_load_percent']:.2f}% Buslast",
         "affected_objects": sorted({node for segment in network["segments"] for node in segment["device_ids"]}),
@@ -385,3 +413,22 @@ def distribution_recommendations(plan: dict[str, Any]) -> list[dict[str, Any]]:
         "priority_factors": {"capacity": 95}, "implementation_effort": "MEDIUM",
         "status": "CANDIDATE", "governance": "Validate -> Human Review -> Approval",
     } for network in plan["networks"]]
+    inventory_recommendations = [{
+        "candidate_id": f"INVENTORY-{item['protocol']}",
+        "category": "Communication System Inventory",
+        "problem": (
+            f"{item['protocol']}: {item['used']} Segmente belegt, "
+            f"aber nur {item['provisioned']} bestätigt"
+        ),
+        "affected_objects": [],
+        "recommendation": (
+            f"Die {item['excess']} überzähligen {item['protocol']}-Segmente konsolidieren oder "
+            "den Sollbestand im Engineering-Auftrag ausdrücklich freigeben."
+        ),
+        "expected_impact": {**item, "requires_revalidation": True},
+        "evidence": [{"capacity_snapshot_id": plan["source_snapshot_id"], **item}],
+        "graph_context": [], "rag_context": [], "confidence": 1.0, "priority": 98,
+        "priority_factors": {"capacity": 98}, "implementation_effort": "MEDIUM",
+        "status": "CANDIDATE", "governance": "Human Review -> Approval -> Recalculate",
+    } for item in plan.get("inventory_constraints") or []]
+    return [*inventory_recommendations, *branch_recommendations]

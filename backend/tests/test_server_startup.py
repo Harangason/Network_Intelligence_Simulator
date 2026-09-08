@@ -4,6 +4,7 @@ import importlib.util
 import json
 import socket
 import sys
+import threading
 from io import BytesIO
 from pathlib import Path
 
@@ -530,6 +531,23 @@ def test_prewarm_uses_fast_model_and_keep_alive(monkeypatch: pytest.MonkeyPatch)
         },
         "timeout": 7.0,
     }
+
+
+def test_optional_local_ai_prewarm_runs_in_a_daemon_thread(monkeypatch) -> None:
+    called = threading.Event()
+
+    def fake_prewarm(environment, *, timeout=180.0):
+        assert environment["LOCAL_AI_FAST_MODEL"] == "llama3.1:8b"
+        called.set()
+        return True
+
+    monkeypatch.setattr(LAUNCHER, "_prewarm_local_ai", fake_prewarm)
+
+    worker = LAUNCHER._prewarm_local_ai_in_background({"LOCAL_AI_FAST_MODEL": "llama3.1:8b"})
+    worker.join(timeout=1)
+
+    assert worker.daemon is True
+    assert called.is_set()
 
 
 def test_service_restart_limit_rejects_invalid_values() -> None:

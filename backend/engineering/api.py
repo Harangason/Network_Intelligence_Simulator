@@ -1123,6 +1123,22 @@ def capacity_optimize_route():
             "protocol_inventory": plan.get("protocol_inventory") or {},
             "requires_human_approval": True,
         })
+    for constraint in plan.get("inventory_constraints") or []:
+        proposals.append({
+            "id": f"OPT-INVENTORY-{constraint['protocol']}",
+            "status": "REVIEW_REQUIRED",
+            "kind": "CAPACITY_INVENTORY_REVIEW",
+            "target_type": "CommunicationSystemInventory",
+            "target_id": constraint["protocol"],
+            "summary": (
+                f"{constraint['protocol']}: {constraint['used']} Segmente belegt, aber nur "
+                f"{constraint['provisioned']} bestätigt. Die Überschreitung um "
+                f"{constraint['excess']} Segmente muss konsolidiert oder freigegeben werden."
+            ),
+            "inventory_constraint": constraint,
+            "protocol_inventory": plan.get("protocol_inventory") or {},
+            "requires_human_approval": True,
+        })
     return jsonify({
         "status": result["status"], "plan_status": plan.get("status"),
         "protocol_inventory": plan.get("protocol_inventory") or {},
