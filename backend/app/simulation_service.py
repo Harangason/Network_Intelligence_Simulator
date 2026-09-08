@@ -316,6 +316,10 @@ class SimulationService:
             )
         result = self.simulator.run(config, validate_only=validate_only)
         if not validate_only:
+            if result.get("status") == "validation_failed" or (result.get("hardware_validation") or {}).get("valid") is False:
+                findings = (result.get("hardware_validation") or {}).get("findings") or []
+                details = "; ".join(str(item.get("message")) for item in findings if item.get("severity") == "error")
+                raise ValueError("Hardware-Validierung fehlgeschlagen: " + (details or "kein ausführbarer Simulationslauf"))
             result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
             if payload.get("workflow_managed") or project_id != "default":
                 from ..engineering.simulation import artifact_job_id, persist_trace_metadata

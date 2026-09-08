@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from flask import Flask, request
 
@@ -19,6 +20,21 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
     app.register_blueprint(engineering_api, url_prefix=f"{api_prefix}/engineering")
     from ..engineering.agent_tools.api import agent_api
     app.register_blueprint(agent_api, url_prefix=f"{api_prefix}/engineering/agent")
+
+    if not testing:
+        try:
+            from ..engineering.agent_tools.run_status import recover_interrupted_wizard_runs
+            recovered = recover_interrupted_wizard_runs()
+            if recovered:
+                logging.getLogger(__name__).warning(
+                    "%s unterbrochene Wizard-Läufe für die Wiederaufnahme markiert.", recovered,
+                )
+        except Exception:
+            # Keep health and diagnostics available when the database is the
+            # dependency that prevented recovery.
+            logging.getLogger(__name__).exception(
+                "Unterbrochene Wizard-Läufe konnten beim Backend-Start nicht abgeglichen werden."
+            )
 
     @app.after_request
     def add_cors_headers(response):

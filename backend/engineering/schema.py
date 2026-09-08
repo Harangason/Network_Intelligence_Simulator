@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 24
+SCHEMA_VERSION = 25
 MIGRATION_LOCK_ID = 1_947_042_611
 
 

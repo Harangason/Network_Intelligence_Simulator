@@ -12,6 +12,7 @@ import {
   type WorkflowStepId,
 } from "@/lib/workflow-api";
 import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
+import { traceViewHref } from "@/lib/trace-navigation";
 
 const LINKS: Record<WorkflowStepId, string> = {
   engineering_model: "/studio/engineering",
@@ -98,7 +99,6 @@ export function WorkflowHeader({
 function TraceAnalysisHeader({ initialProjectId = "" }: { initialProjectId?: string }) {
   const search = useSearchParams();
   const activeView = search.get("view") || "session";
-  const jobId = search.get("job");
   return (
     <section className="workflow-header trace-workflow-header" aria-label="Verbindlicher Trace-Analyse-Workflow">
       <div className="workflow-heading">
@@ -115,7 +115,7 @@ function TraceAnalysisHeader({ initialProjectId = "" }: { initialProjectId?: str
           <Link
             aria-current={step.id === activeView ? "step" : undefined}
             className={`workflow-step ${step.id === activeView ? "active" : ""}`}
-            href={withProjectParam(`/trace-analysis?view=${step.id}${jobId ? `&job=${encodeURIComponent(jobId)}` : ""}`, initialProjectId)}
+            href={withProjectParam(traceViewHref(search.toString(), step.id), initialProjectId)}
             key={step.id}
             title={step.label}
           >

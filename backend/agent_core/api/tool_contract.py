@@ -40,6 +40,9 @@ class ToolResult(BaseModel):
     findings: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     evidence: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_refs: list[dict[str, Any]] = Field(default_factory=list)
+    time_range: dict[str, Any] | None = None
+    validation_status: str = "NOT_EVALUATED"
     affected_objects: list[dict[str, str]] = Field(default_factory=list)
     next_actions: list[str] = Field(default_factory=list)
     trace_id: str = Field(default_factory=lambda: str(uuid4()))

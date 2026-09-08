@@ -18,6 +18,7 @@ from ..project_context import current_project_id
 from ..routing.generation import RoutingGenerationService
 from ..routing.validation import PROTOCOL_CAPACITY
 from ..capacity.service import CapacityTimingService
+from ..intelligence.resource_policy import planning_policy, planning_inventory, resource_decision, decision_summary
 from ..intelligence.network_planning import (
     communication_system_inventory,
     plan_network_distribution,
@@ -183,7 +184,7 @@ def generate_parameters(arguments: dict) -> dict:
 
 
 def generate(arguments: dict) -> dict:
-    fingerprint = hashlib.sha256(('technology-binding-v4-local-controller-io\n' + arguments['prompt']).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('technology-binding-v5-confirmed-device-identities\n' + arguments['prompt']).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
@@ -382,6 +383,18 @@ def generate_routing(arguments: dict) -> dict:
 
     def node(name):
         return nodes_by_name.get(str(name or '').casefold())
+
+    referenced_names = set()
+    for cluster in graph:
+        for controller in cluster.get('controllers') or []:
+            referenced_names.add(controller.get('ecu'))
+            referenced_names.update(controller.get('sensors') or [])
+            referenced_names.update(controller.get('actuators') or [])
+        for hmi in cluster.get('hmi_routes') or []:
+            referenced_names.update((hmi.get('source'), hmi.get('target')))
+    missing = sorted(str(name or '<ohne Namen>') for name in referenced_names if not node(name))
+    if missing:
+        raise ValueError('Bestätigte Routing-Teilnehmer fehlen im kanonischen Modell: ' + ', '.join(missing[:30]))
 
     def first_message(node_id: str):
         for interface in interfaces_by_node.get(node_id, []):
@@ -802,12 +815,17 @@ def generate_network_topology(arguments: dict) -> dict:
         }
         connected.add(node_id)
     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}
+    workflow_state = WorkflowStatusService(current_project_id()).get()
+    policy = planning_policy(workflow_state)
+    resource_receipt = resource_decision(workflow_state.get('topology') or {}, topology,
+        planning_inventory(workflow_state, prompt), policy)
     state_signature = hashlib.sha256(json.dumps({
         'nodes': [(item['id'], item.get('version')) for item in hardware],
         'interfaces': [(item['id'], item.get('version'), item.get('technology')) for item in interfaces],
         'routes': [(item['id'], item.get('revision'), item.get('approval_state')) for item in routes],
+        'resource_decision': resource_receipt,
     }, sort_keys=True).encode('utf-8')).hexdigest()
-    fingerprint = hashlib.sha256(('wizard-network-v5-local-io-segments\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-network-v6-resource-sizing\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'
@@ -816,11 +834,13 @@ def generate_network_topology(arguments: dict) -> dict:
             return proposal_service.envelope(row)
     return proposal_service.create(
         'WIZARD_NETWORK_TOPOLOGY',
-        [{'object_type': 'NetworkTopology', 'data': {'name': 'Wizard-Netzwerktopologie', 'topology': topology}}],
+        [{'object_type': 'NetworkTopology', 'data': {'name': 'Wizard-Netzwerktopologie', 'topology': topology,
+                                                  'resource_decision': resource_receipt}}],
         f'Physische Netzwerktopologie aus {len(routes)} freigegebenen Routen: '
         f'{len(topology["nodes"])} Geräte und {len(topology["edges"])} deduplizierte Segmente; '
         f'{fallback_count} Teilnehmer wurden ohne künstliche logische Route physisch ergänzt. '
-        'Der Workflow-Stand bleibt bis zur menschlichen Freigabe unverändert.',
+        'Der Workflow-Stand bleibt bis zur menschlichen Freigabe unverändert. '
+        + (decision_summary(resource_receipt) if policy['mode'] == 'AUTO_SIZE' else 'Der feste Ressourcenbestand bleibt verbindlich.'),
         assumptions=['Busse folgen den validierten Endpunktprotokollen; gemeinsame physische Segmente bündeln ihre logischen Routen.'],
         evidence=[{'source': 'approved-routing-table', 'prompt_sha256': fingerprint,
                    'route_count': len(routes), 'node_count': len(topology['nodes']), 'edge_count': len(topology['edges']),
@@ -829,7 +849,7 @@ def generate_network_topology(arguments: dict) -> dict:
 
 
 def plan_capacity_remediation(arguments: dict) -> dict:
-    """Analyse overloaded physical branches against the approved bus inventory."""
+    """Decide resource sizing from measured load and explicit hard limits."""
     prompt = arguments['prompt']
     workflow = WorkflowStatusService(current_project_id())
     state = workflow.get()
@@ -842,7 +862,8 @@ def plan_capacity_remediation(arguments: dict) -> dict:
         state.get('topology') or {},
         parameters=state.get('parameters') or {},
         allowed_protocols=((state.get('context') or {}).get('engineering_scope_rules') or {}).get('communication_systems'),
-        available_protocol_counts=communication_system_inventory(prompt),
+        available_protocol_counts=planning_inventory(state, prompt),
+        resource_policy=planning_policy(state),
     )
 
 
@@ -860,10 +881,14 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
     topology, changed_edges = split_topology_by_distribution(state.get('topology') or {}, plan)
     if changed_edges <= 0:
         raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
+    policy = planning_policy(state)
+    resource_receipt = resource_decision(state.get('topology') or {}, topology,
+        planning_inventory(state, prompt), policy)
     signature = hashlib.sha256(json.dumps({
         'prompt': prompt,
         'topology': state.get('topology') or {},
         'decisions': decisions,
+        'resource_decision': resource_receipt,
     }, sort_keys=True).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
@@ -881,12 +906,15 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
         'CAPACITY_NETWORK_REPAIR',
         [{'object_type': 'NetworkTopology', 'data': {
             'name': 'Capacity-optimierte Netzwerktopologie', 'topology': topology,
+            'resource_decision': resource_receipt,
         }}],
         f'Gezielte Reparatur der überlasteten physischen Zweige: {branch_text}. '
         f'{changed_edges} routenbelegte physische Kanten werden neu segmentiert; '
-        'unbetroffene Zweige bleiben unverändert. Der Projektstand ändert sich erst nach menschlicher Freigabe.',
+        'unbetroffene Zweige bleiben unverändert. Der Projektstand ändert sich erst nach menschlicher Freigabe. '
+        + (decision_summary(resource_receipt) if policy['mode'] == 'AUTO_SIZE' else 'Der feste Ressourcenbestand bleibt verbindlich.'),
         assumptions=[
-            'Die bestätigte Anzahl freier Bussegmente ist die verbindliche Ressourcenobergrenze.',
+            ('Die eingegebenen Netzanzahlen sind Ausgangswerte; das Tool dimensioniert zusätzliche Segmente anhand der Ziel-Buslast. Explizite hard_limits bleiben verbindlich.'
+             if policy['mode'] == 'AUTO_SIZE' else 'Die bestätigte Anzahl freier Bussegmente ist die verbindliche Ressourcenobergrenze.'),
             'Ein Technologiewechsel wird nicht stillschweigend materialisiert; Interfaces und Gateways benötigen separate Freigabe.',
         ],
         evidence=[{
@@ -896,6 +924,8 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
             'protocol_inventory': plan.get('protocol_inventory') or {},
             'branches': decisions,
             'changed_edges': changed_edges,
+            'resource_decision': resource_receipt,
+            'decision_rationale': plan.get('decision_rationale'),
         }],
         confidence=0.95,
     )

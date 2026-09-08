@@ -36,6 +36,18 @@ def test_http_route_method_registrations_are_unique():
             seen.add(key)
 
 
+def test_empty_workflow_payloads_are_validation_errors(workspace):
+    _project, call = workspace
+
+    parameters = call("PATCH", "/workflow/parameters", {})
+    topology = call("PUT", "/workflow/topology", {})
+
+    assert parameters.status_code == 400
+    assert parameters.get_json()["error"] == "parameters muss ein nicht-leeres Objekt sein."
+    assert topology.status_code == 400
+    assert topology.get_json()["error"] == "topology.nodes muss eine Liste sein."
+
+
 @pytest.fixture
 def workspace(monkeypatch):
     url = os.environ.get("ENGINEERING_TEST_DATABASE_URL")

@@ -18,6 +18,21 @@ def reasoning_workload_progress(step: int, max_steps: int) -> dict[str, int]:
 
 
 class EngineeringAgent:
+    async def analyze_trace_root_cause(self, job_id: str, **options):
+        return await self.client.call("analyze_trace_root_cause", {"job_id": job_id, **options})
+
+    async def explain_simulation_failure(self, job_id: str, **options):
+        return await self.client.call("explain_simulation_failure", {"job_id": job_id, **options})
+
+    async def investigate_deadline_miss(self, job_id: str, **options):
+        return await self.client.call("investigate_deadline_miss", {"job_id": job_id, **options})
+
+    async def analyze_fault_effects(self, job_id: str, **options):
+        return await self.client.call("analyze_fault_effects", {"job_id": job_id, **options})
+
+    async def compare_simulation_runs(self, before_reasoning_id: str, after_reasoning_id: str):
+        return await self.client.call("compare_simulation_runs", {"before_reasoning_id": before_reasoning_id, "after_reasoning_id": after_reasoning_id})
+
     def __init__(self, client: EngineeringMCPClient, *, reasoner=None, max_steps: int = 12, max_repairs: int = 3):
         self.client = client
         self.reasoner = reasoner
@@ -78,6 +93,20 @@ class EngineeringAgent:
             context.selected_object_refs = [{"id":str(selected["id"]),"object_type":str(selected.get("object_type") or selected.get("type") or "")}]
         event("PROGRESS", status="PLANNING", text="Projektstand und benötigte Arbeitsschritte prüfen.")
 
+        # Explicit trace investigation bypasses generator and approval continuation.
+        job_match = re.search(r"\b[a-f0-9]{32}\b", prompt, re.I)
+        if job_match and re.search(r"ursach|reasoning|root.?cause|deadline|fault.*analys|fehler.*erkl", prompt, re.I):
+            tool = "investigate_deadline_miss" if re.search(r"deadline", prompt, re.I) else "analyze_trace_root_cause"
+            result = await call(tool, {"job_id": job_match.group(), "goal": prompt[:2000]})
+            complete = result.success and result.data.get("completion_status") in {"COMPLETE", "NO_ANOMALY_IN_WINDOW"} and result.data.get("validation_status") == "CURRENT"
+            text = result.data.get("conclusion", "Ursachenanalyse konnte nicht ausgeführt werden.") if result.success else "Ursachenanalyse konnte nicht ausgeführt werden."
+            if result.success:
+                event("FINDING", text=text, metadata={"reasoning_id": result.data["reasoning_id"],
+                    "completion_status": result.data["completion_status"], "validation_status": result.data["validation_status"]})
+            event("RESULT", status="ANSWERED" if complete else "INCOMPLETE", text=text)
+            return {"run_id": run_id, "status": "ANSWERED" if complete else "INCOMPLETE", "text": text,
+                    "events": events, "context": context.model_dump(), "trace": traces, "proposals": []}
+
         if context.active_proposal and not context.current_workload:
             restored = await call('inspect_proposal', {'proposal_id':context.active_proposal})
             if restored.success and restored.data['status'] in {'VALIDATED', 'READY_FOR_REVIEW', 'APPROVED'}:
@@ -126,6 +155,13 @@ class EngineeringAgent:
         simulation_complete = workflow_statuses.get('simulation') in {'COMPLETE', 'APPROVED', 'WARNING'}
         results_complete = workflow_statuses.get('results_analysis') in {'COMPLETE', 'APPROVED', 'WARNING'}
         intelligence_complete = workflow_statuses.get('data_science_intelligence') in {'COMPLETE', 'APPROVED', 'WARNING'}
+        if (confirmed_wizard and target_index >= 0 and all(
+                workflow_statuses.get(step) in {'COMPLETE', 'APPROVED', 'WARNING'}
+                for step in workflow_order[:target_index + 1])):
+            text = 'Alle beauftragten Workflow-Schritte sind bereits vollständig und aktuell. Es wurde kein zusätzlicher Lauf gestartet.'
+            event('RESULT', status='COMPLETED', text=text)
+            return {'run_id': run_id, 'status': 'COMPLETED', 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
         if confirmed_wizard and target_index >= workflow_order.index('routing') and not routing_complete:
             event('PROGRESS', status='PLANNING', text='Routing aus dem bestätigten Systemcluster-Graph vorbereiten.')
             result = await call('generate_wizard_routing', {'prompt': prompt})
@@ -276,8 +312,9 @@ class EngineeringAgent:
                             status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
                             text = (
                                 f'{len(split_plans)} überlastete physische Zweige wurden paketweise analysiert. '
-                                'Die Last wird auf bestätigte freie Bussegmente verteilt; die geprüfte '
-                                'Topologie wartet auf menschliche Freigabe.'
+                                'Das Tool hat Segmentanzahl und Ressourcenbedarf aus der Ziel-Buslast bestimmt; '
+                                'Bestand und zusätzliche Planungsressourcen sind im Vorschlag ausgewiesen. '
+                                'Die geprüfte Topologie wartet auf Übernahme, nicht auf eine manuell geschätzte Segmentanzahl.'
                                 + (
                                     f' Zusätzlich benötigen {len(migration_plans)} Zweige einen separat '
                                     'freizugebenden Technologiewechsel einschließlich Teilnehmer- und '
@@ -350,12 +387,12 @@ class EngineeringAgent:
             event('PROGRESS', status='VALIDATING',
                   text=f'Preflight über {checked} Workflow-Bereiche abgeschlossen; {warnings} Warnungen.',
                   workload={'completed': checked, 'total': checked})
-            status = 'COMPLETED' if target_index == workflow_order.index('validation') else 'READY_TO_CONTINUE'
-            text = ('Der Workflow-Preflight ist abgeschlossen.' if status == 'COMPLETED'
-                    else 'Capacity & Timing und Workflow-Preflight sind abgeschlossen. Als Nächstes wird der unveränderliche Simulationssnapshot ausgeführt.')
-            event('RESULT', status=status, text=text)
-            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
-                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            validation_complete = True
+            if target_index == workflow_order.index('validation'):
+                text = 'Der Workflow-Preflight ist abgeschlossen.'
+                event('RESULT', status='COMPLETED', text=text)
+                return {'run_id': run_id, 'status': 'COMPLETED', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
 
         # A confirmed wizard run owns a bounded, reproducible normal simulation.
         # Reuse an already prepared/running snapshot so an explicit retry never
@@ -444,9 +481,10 @@ class EngineeringAgent:
                         else 'Simulation und Results / Analysis sind vollständig abgeschlossen. Als Nächstes folgt Data Science & Intelligence.')
             event('PROGRESS', status='VALIDATING', text='Simulationslauf und Ergebnisartefakte kanonisch geprüft.',
                   workload={'completed': 1 if simulation_complete and results_complete else 0, 'total': 1})
-            event('RESULT', status=status, text=text)
-            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
-                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            if status != 'READY_TO_CONTINUE':
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
 
         if (confirmed_wizard and target_index >= workflow_order.index('data_science_intelligence')
                 and simulation_complete and results_complete and not intelligence_complete):

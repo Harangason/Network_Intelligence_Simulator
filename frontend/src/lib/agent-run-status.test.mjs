@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry } from "./agent-run-status.ts";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "./agent-run-status.ts";
 
 const run = {
   run_id: "wizard-run", state: "RUNNING", step: "routing", completed: 36, total: 150,
@@ -73,4 +73,14 @@ test("an explicit retry remains available after earlier failed continuations", (
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "READY_TO_CONTINUE" }), true);
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "CANCELED" }), false);
   assert.equal(wizardRunCanRetry(false, true, { ...run, state: "BLOCKED" }), false);
+});
+
+test("only an interrupted backend run is resumed automatically once", () => {
+  const base = { runPaused: true, hasResumablePrompt: true, automaticResumeCount: 0, restoredSession: false };
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: { ...run, state: "BLOCKED", recoverable: true } }), true);
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: { ...run, updated_at: "2026-09-08T09:00:00Z" }, now: Date.parse("2026-09-08T09:03:00Z") }), true);
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: { ...run, state: "BLOCKED", recoverable: false } }), false);
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: null, restoredSession: true }), true);
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: null, restoredSession: false }), false);
+  assert.equal(wizardRunNeedsAutomaticRecovery({ ...base, run: { ...run, state: "BLOCKED", recoverable: true }, automaticResumeCount: 1 }), false);
 });

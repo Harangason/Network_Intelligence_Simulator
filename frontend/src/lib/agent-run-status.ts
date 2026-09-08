@@ -11,6 +11,8 @@ export type AgentRunStatus = AgentBuildProgress & {
   state: "RUNNING" | "BLOCKED" | "REVIEW_REQUIRED" | "READY_TO_CONTINUE" | "COMPLETED" | "CANCELED";
   message: string;
   updated_at: string;
+  recoverable?: boolean;
+  server_pid?: number;
 };
 
 export function readAgentRunStatus(value: unknown, runId: string): AgentRunStatus | null {
@@ -58,4 +60,26 @@ export function wizardRunCanRetry(runPaused: boolean, hasResumablePrompt: boolea
   // Retries are explicit user actions. A failed attempt must not turn the
   // durable wizard into a permanent dead end; only cancellation is terminal.
   return runPaused && hasResumablePrompt && run?.state !== "CANCELED";
+}
+
+export function wizardRunNeedsAutomaticRecovery({
+  runPaused,
+  hasResumablePrompt,
+  run,
+  automaticResumeCount,
+  restoredSession,
+  now = Date.now(),
+}: {
+  runPaused: boolean;
+  hasResumablePrompt: boolean;
+  run: AgentRunStatus | null;
+  automaticResumeCount: number;
+  restoredSession: boolean;
+  now?: number;
+}) {
+  if (!runPaused || !hasResumablePrompt || automaticResumeCount > 0 || run?.state === "CANCELED") return false;
+  if (run?.recoverable === true) return true;
+  if (run?.state === "RUNNING") return !agentRunIsActive(run, now);
+  // Older interrupted runs may predate the durable agent_execution record.
+  return run == null && restoredSession;
 }

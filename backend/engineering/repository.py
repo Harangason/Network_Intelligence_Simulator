@@ -456,6 +456,7 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
             if row.get("logical_node_address") is None:
                 row = allocator.assign_address(
                     str(row["id"]), assignment_mode="AUTO", actor=payload.get("created_by"), connection=conn,
+                    increment_version=False,
                 )
             elif row.get("diagnostic_addressable"):
                 allocator._audit(conn, str(row["id"]), "ADDRESS_ASSIGNED", payload.get("created_by"), None, row)

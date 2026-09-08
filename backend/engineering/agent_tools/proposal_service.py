@@ -182,6 +182,43 @@ def _validate_changes(changes: list[dict]) -> dict:
     return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-len(findings)), "findings": findings}
 
 
+def _validate_topology_inventory(row: dict, changes: list[dict]) -> list[dict]:
+    if row.get('proposal_type') not in {'CAPACITY_NETWORK_REPAIR', 'WIZARD_NETWORK_TOPOLOGY'}:
+        return []
+    from ..intelligence.network_planning import communication_system_inventory, physical_network_inventory
+    from ..intelligence.resource_policy import planning_policy, resource_decision
+    state = WorkflowStatusService(current_project_id()).get()
+    wizard = (state.get('context') or {}).get('agent_wizard_status') or {}
+    inventory = communication_system_inventory(wizard.get('agent_prompt') or '')
+    policy = planning_policy(state)
+    findings = []
+    for change in changes:
+        if change.get('object_type') != 'NetworkTopology':
+            continue
+        data = change.get('data') or {}
+        topology = data.get('topology') or {}
+        counts = physical_network_inventory(topology)
+        receipt = data.get('resource_decision')
+        receipt_valid = receipt == resource_decision(state.get('topology') or {}, topology, inventory, policy)
+        if receipt is not None and not receipt_valid:
+            findings.append({'severity': 'ERROR', 'code': 'RESOURCE_DECISION_OUTDATED',
+                'message': 'Die Ressourcenentscheidung passt nicht mehr zu Ausgangstopologie, Bestand oder Planungsregeln. Tool-Plan neu erzeugen.'})
+        for protocol, networks in counts.items():
+            hard_limit = policy['hard_limits'].get(protocol)
+            if hard_limit is not None and len(networks) > hard_limit:
+                findings.append({'severity': 'ERROR', 'code': 'PHYSICAL_HARD_LIMIT_EXCEEDED',
+                    'message': f'{protocol}: {len(networks)} geplante Segmente überschreiten die ausdrücklich feste Grenze {hard_limit}.'})
+                continue
+            if policy['mode'] == 'AUTO_SIZE' and receipt_valid:
+                continue
+            maximum = inventory.get(protocol, 0)
+            if inventory and len(networks) > maximum:
+                findings.append({'severity': 'ERROR', 'code': 'PHYSICAL_INVENTORY_EXCEEDED',
+                    'message': f'{protocol}: {len(networks)} physische Segmente geplant, aber nur {maximum} bestätigt. '
+                               'Netzverteilung oder verbindlichen Ressourcenbestand fachlich klären.'})
+    return findings
+
+
 def validate(proposal_id: str) -> dict:
     row = legacy.get_proposal(proposal_id)
     contract = deepcopy(row.get("engineering_contract") or {})
@@ -189,6 +226,10 @@ def validate(proposal_id: str) -> dict:
     if contract["status"] in {"APPLIED", "REJECTED", "APPROVED"}:
         return envelope(row)
     contract["validation_result"] = _validate_changes(contract["changes"])
+    inventory_findings = _validate_topology_inventory(row, contract['changes'])
+    if inventory_findings:
+        contract['validation_result']['findings'].extend(inventory_findings)
+        contract['validation_result'].update(valid=False, valid_count=0)
     contract["status"] = "VALIDATED" if contract["validation_result"]["valid"] else "PROPOSED"
     contract["base_model_revision"] = model_revision()
     contract["revision"] = str(uuid4())
@@ -245,6 +286,10 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         contract["revision"] = str(uuid4())
         return _write(proposal_id, contract)
     validation = _validate_changes(contract["changes"])
+    inventory_findings = _validate_topology_inventory(row, contract['changes'])
+    if inventory_findings:
+        validation['findings'].extend(inventory_findings)
+        validation['valid'] = False
     if not validation["valid"]:
         raise EngineeringValidationError(str(validation["findings"]))
     refs, canonical = {}, []

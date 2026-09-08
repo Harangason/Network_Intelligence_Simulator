@@ -26,7 +26,7 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
@@ -758,6 +758,7 @@ type AgentWizardContext = {
   process: string[];
   project_id: string;
   resume_count?: number;
+  automatic_resume_count?: number;
   run_id: string;
   scope: string[];
   scope_ids: string[];
@@ -816,6 +817,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     process: strings("process"),
     project_id: projectId,
     resume_count: Number.isFinite(Number(context.resume_count)) ? Math.max(0, Number(context.resume_count)) : 0,
+    automatic_resume_count: Number.isFinite(Number(context.automatic_resume_count)) ? Math.max(0, Number(context.automatic_resume_count)) : 0,
     run_id: String(context.run_id),
     scope: strings("scope"),
     scope_ids: strings("scope_ids"),
@@ -1261,6 +1263,7 @@ export function EngineeringAgentWizard({
   const wizardErrorRef = useRef("");
   const statusRefreshErrorRef = useRef("");
   const clusterDiagnosticRef = useRef("");
+  const automaticRecoveryRef = useRef("");
   const selectedDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedIndustry) ?? domains[0],
     [domains, selectedIndustry],
@@ -1438,6 +1441,9 @@ export function EngineeringAgentWizard({
   const resumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
     ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).resume_count) || 0)
     : submittedContext?.resume_count ?? 0;
+  const automaticResumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
+    ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).automatic_resume_count) || 0)
+    : submittedContext?.automatic_resume_count ?? 0;
   const transportPending = wizardAgentStatus === "submitted" || wizardAgentStatus === "streaming";
   const agentPending = transportPending || agentRunIsActive(execution);
   const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
@@ -2127,7 +2133,7 @@ export function EngineeringAgentWizard({
     }
   }
 
-  async function retryPopupRun() {
+  async function retryPopupRun(automatic = false) {
     if (agentPending || !runId) return;
     const originalPrompt = currentRunMessages
       .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
@@ -2137,9 +2143,11 @@ export function EngineeringAgentWizard({
       ? !routingReview.complete ? "routing" : [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
       : undefined;
     const prompt = workflowTarget
-      ? `Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`
+      ? `${automatic ? "Automatische Wiederaufnahme nach einem unterbrochenen Backend-Prozess. " : ""}Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`
       : [
-        "Fortsetzung-Freigabe: Der Nutzer hat im Popup ausdrücklich Auftrag fortsetzen gewählt.",
+        automatic
+          ? "Automatische Wiederaufnahme: Der bestätigte Wizard-Lauf wurde durch einen Backend-Prozesswechsel unterbrochen. Keine Human-Review-Entscheidung automatisch treffen."
+          : "Fortsetzung-Freigabe: Der Nutzer hat im Popup ausdrücklich Auftrag fortsetzen gewählt.",
         `Lauf-ID: ${runId}.`,
         "Wenn nach der Nachbearbeitung weiterhin reine Soll/Ist-Abweichungen im Geräteumfang bestehen, dokumentiere die fehlenden Teilnehmer im Wizard-Kontext und arbeite genau einmal weiter. Bei technischen Anlagefehlern stoppen. Keine automatische Endlosschleife.",
         "",
@@ -2148,7 +2156,11 @@ export function EngineeringAgentWizard({
     if (!prompt) return;
     setStatusError("");
     try {
-      const resumedContext = submittedContext ? { ...submittedContext, resume_count: resumeCount + 1 } : null;
+      const resumedContext = submittedContext ? {
+        ...submittedContext,
+        resume_count: resumeCount + 1,
+        automatic_resume_count: automatic ? automaticResumeCount + 1 : automaticResumeCount,
+      } : null;
       if (resumedContext) {
         const nextWorkflow = await setWorkflowContext({
           agent_wizard_status: {
@@ -2164,7 +2176,7 @@ export function EngineeringAgentWizard({
         projectId,
         runId,
         step: "agent-start",
-        event: "popup-agent-resumed",
+        event: automatic ? "popup-agent-auto-recovered" : "popup-agent-resumed",
         details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
       }).catch(() => undefined);
       await sendWizardMessage({ text: prompt }, workflowTarget ? { body: { workflowTarget } } : undefined);
@@ -2336,6 +2348,18 @@ export function EngineeringAgentWizard({
   const runPaused = !agentPending && !workflowReviewPending && !routingReviewPending && !modelReviewPending
     && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
   const canRetryPopupRun = wizardRunCanRetry(runPaused, hasResumablePrompt, execution);
+  const needsAutomaticRecovery = wizardRunNeedsAutomaticRecovery({
+    runPaused,
+    hasResumablePrompt,
+    run: execution,
+    automaticResumeCount,
+    restoredSession: submittedAt === 0,
+  });
+  useEffect(() => {
+    if (!needsAutomaticRecovery || !runId || automaticRecoveryRef.current === runId) return;
+    automaticRecoveryRef.current = runId;
+    void retryPopupRun(true);
+  }, [needsAutomaticRecovery, runId]);
   const lastAssistantText = [...currentRunMessages].reverse()
     .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
   const runMessage = execution?.state === "RUNNING" && executionStopped
@@ -3074,7 +3098,7 @@ export function EngineeringAgentWizard({
                         ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
                         : "Der Auftrag wird an den Agenten übergeben."}</small>
                 {canRetryPopupRun && (
-                  <button className="button primary tiny" onClick={() => void retryPopupRun()} type="button">
+                  <button className="button primary tiny" onClick={() => void retryPopupRun(false)} type="button">
                     Auftrag fortsetzen
                   </button>
                 )}

@@ -15,6 +15,7 @@ import psycopg
 from flask import Blueprint, Response, g, jsonify, request, make_response
 from psycopg_pool import PoolTimeout
 
+from backend.agent_core.errors import RegistryLookupError
 from .models import (
     CLASSIFICATION_STATUSES,
     DATA_COMPLEXITIES,
@@ -84,6 +85,7 @@ from .workflow.models import WORKFLOW_STEPS
 from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change, check_edit_token
 from .intelligence import IntelligenceService
 from .intelligence.network_planning import communication_system_inventory, plan_network_distribution
+from .intelligence.resource_policy import planning_policy
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
 from .project_context import activate_project, current_project_id, normalize_context_project_id, reset_project
@@ -261,6 +263,11 @@ def _handle_validation_error(error: EngineeringValidationError):
 
 @engineering_api.errorhandler(NotFoundError)
 def _handle_not_found(error: NotFoundError):
+    return jsonify({"error": str(error)}), 404
+
+
+@engineering_api.errorhandler(RegistryLookupError)
+def _handle_registry_lookup_error(error: RegistryLookupError):
     return jsonify({"error": str(error)}), 404
 
 
@@ -725,6 +732,8 @@ def workflow_parameters_route():
 def update_workflow_parameters_route():
     payload = _routing_payload()
     parameters = payload.get("parameters") if isinstance(payload.get("parameters"), dict) else payload
+    if not parameters:
+        raise EngineeringValidationError("parameters muss ein nicht-leeres Objekt sein.")
     project_id = _project_id()
     check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["parameters"])
     WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
@@ -742,6 +751,8 @@ def workflow_topology_route():
 def update_workflow_topology_route():
     payload = _routing_payload()
     topology = payload.get("topology") if isinstance(payload.get("topology"), dict) else payload
+    if not isinstance(topology.get("nodes"), list):
+        raise EngineeringValidationError("topology.nodes muss eine Liste sein.")
     project_id = _project_id()
     actor = str(payload.get("actor") or "network-editor")
     workflow = WorkflowStatusService(project_id)
@@ -1083,6 +1094,7 @@ def capacity_optimize_route():
         parameters=state.get("parameters") or {},
         allowed_protocols=(context.get("engineering_scope_rules") or {}).get("communication_systems"),
         available_protocol_counts=inventory,
+        resource_policy=planning_policy(state),
     )
     proposals = []
     for network in plan.get("networks") or []:
@@ -1092,6 +1104,8 @@ def capacity_optimize_route():
                 f"Überlasteten Zweig {network['network_id']} anhand seiner Pakete auf "
                 f"{network['proposed_segments']} {network['protocol']}-Segmente verteilen; "
                 f"Prognose maximal {network['projected_max_load_percent']:.2f} %."
+                + (f" Tool plant {network['new_resources_required']} zusätzliche Ressourcen ein."
+                   if network.get('new_resources_required') else ' Vorhandene freie Segmente werden genutzt.')
             )
             kind = "SPLIT_NETWORK_BRANCH"
         elif decision == "MIGRATE_TECHNOLOGY":
@@ -1143,6 +1157,9 @@ def capacity_optimize_route():
         "status": result["status"], "plan_status": plan.get("status"),
         "protocol_inventory": plan.get("protocol_inventory") or {},
         "proposals": proposals, "applied": False,
+        "resource_policy": plan.get('resource_policy'),
+        "resource_allocation": plan.get('resource_allocation'),
+        "decision_rationale": plan.get('decision_rationale'),
     })
 
 
@@ -1771,6 +1788,47 @@ def list_resource(resource: str):
     filters = {key: request.args.get(key) for key in FILTERABLE_QUERY_PARAMS if request.args.get(key)}
     items = list_objects(object_type, filters=filters, limit=limit, offset=offset)
     return jsonify({"items": items, "count": len(items)})
+
+
+@engineering_api.route("/reasoning", methods=["GET", "POST"])
+def reasoning_collection():
+    from .reasoning.service import ReasoningService
+    service = ReasoningService()
+    if request.method == "GET":
+        return jsonify({"items": service.list(request.args.get("job_id"))})
+    return jsonify(_reasoning_call(lambda: service.analyze(_routing_payload()).model_dump(mode="json"))), 201
+
+
+def _reasoning_call(operation):
+    try:
+        return operation()
+    except ValueError as error:
+        raise EngineeringValidationError(str(error)) from error
+
+
+@engineering_api.get("/reasoning/<reasoning_id>")
+def reasoning_result(reasoning_id):
+    from .reasoning.service import ReasoningService
+    return jsonify(ReasoningService().get(reasoning_id).model_dump(mode="json"))
+
+
+@engineering_api.post("/reasoning/<reasoning_id>/continue")
+def reasoning_continue(reasoning_id):
+    from .reasoning.service import ReasoningService
+    return jsonify(_reasoning_call(lambda: ReasoningService().continue_analysis(reasoning_id).model_dump(mode="json"))), 201
+
+
+@engineering_api.post("/reasoning/<reasoning_id>/proposal")
+def reasoning_proposal(reasoning_id):
+    from .reasoning.service import ReasoningService
+    return jsonify(_reasoning_call(lambda: ReasoningService().propose(reasoning_id, _routing_payload().get("action_id")))), 201
+
+
+@engineering_api.post("/reasoning/compare")
+def reasoning_compare():
+    from .reasoning.service import ReasoningService
+    payload = _routing_payload()
+    return jsonify(ReasoningService().compare_runs(payload.get("before_reasoning_id"), payload.get("after_reasoning_id")))
 
 
 @engineering_api.route("/addressing/policy", methods=["GET", "PATCH"])

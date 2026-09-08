@@ -1,0 +1,14 @@
+# Optional: add to docker-compose.networkis.yml to expose a user-chosen host folder.
+# Set NETWORKIS_TRACE_HOST_PATH to an existing absolute path (PowerShell: D:/NetworkIS-Traces).
+# The stable runtime volume, registry, and existing traces remain unchanged.
+services:
+  networkis:
+    environment:
+      NETWORKIS_TRACE_HOST_PATH: ${NETWORKIS_TRACE_HOST_PATH:?Set an existing absolute host folder first}
+      NETWORKIS_TRACE_MOUNT_PATH: /trace-output
+    volumes:
+      - type: bind
+        source: ${NETWORKIS_TRACE_HOST_PATH:?Set an existing absolute host folder first}
+        target: /trace-output
+        bind:
+          create_host_path: false

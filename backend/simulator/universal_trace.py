@@ -13,6 +13,8 @@ from typing import Any
 from bus_technologies import normalize_technology_id, resolve_technology, technology_registry
 from hardware_profile import iter_network_interfaces
 from model_based_simulation import ModelBasedSimulationEngine
+from backend.engineering.capacity.calculators import estimate_frame
+from ethernet_transport import resolve_flow, wire_bytes, packet_bytes
 
 
 def _utc(timestamp: float) -> str:
@@ -142,7 +144,7 @@ def _generate_universal_events(
     start_utc: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     duration_s = max(0.001, float(config.get("duration_s") or config.get("duration") or 1.0))
-    seed = int(config.get("seed") or 42)
+    seed = int(config.get("seed", 42))
     max_events = max(1, int(config.get("max_events") or 100_000))
     trace_start = float(start_utc if start_utc is not None else datetime.now(timezone.utc).timestamp())
     registry = technology_registry(profile.get("technology_profiles"))
@@ -161,6 +163,7 @@ def _generate_universal_events(
         "reordering_probability": 0 if suppress_root_faults else config.get("reordering_probability"),
     }
 
+    address_owners = {}
     for route in routes:
         sender = route["sender"]
         receivers = route["receivers"]
@@ -177,6 +180,21 @@ def _generate_universal_events(
         if str(sender.get("health")).lower() in {"degraded", "faulty"}:
             cycle_s *= 2
         network_metadata = route.get("network_metadata") if isinstance(route.get("network_metadata"), dict) else {}
+        bitrate = int(network_metadata.get("bitrate") or network_metadata.get("link_speed")
+                      or technology.get("default_bitrate") or 1_000_000)
+        frame = estimate_frame(technology["id"], payload_size, {**network_metadata, "bitrate": bitrate})
+        ethernet = resolve_flow({**route, 'network_metadata': {
+            **{key: config[key] for key in ('ip_version', 'transport_protocol', 'source_port', 'destination_port', 'mtu', 'vlan_id') if key in config},
+            **network_metadata}})
+        if ethernet:
+            for endpoint in [ethernet["source"], *ethernet["destinations"]]:
+                for key in ("ip", "mac"):
+                    address_key = (route["network"], ethernet["vlan_id"], key, endpoint[key])
+                    owner = address_owners.setdefault(address_key, endpoint["interface_id"])
+                    if owner != endpoint["interface_id"]:
+                        raise ValueError(f"Duplicate {key} on network {route['network']}: {endpoint[key]}")
+            # Validate MTU before generating any events; never truncate an IP packet.
+            packet_bytes({"ethernet": ethernet, "payload_hex": bytes(payload_size).hex(), "sequence": 0, "route_id": route["id"]})
         network_faults = network_metadata.get("fault_model") if isinstance(network_metadata.get("fault_model"), dict) else {}
         route_faults = route["metadata"].get("fault_model") if isinstance(route["metadata"].get("fault_model"), dict) else {}
         fault_model = {**root_faults, **network_faults, **route_faults}
@@ -202,8 +220,8 @@ def _generate_universal_events(
             + engineering_latency_ms / 1000.0
         )
         sequence = 0
-        relative_time = 0.0
-        jitter_ratio = float(route["metadata"].get("jitter_ratio") or 0.01)
+        relative_time = max(0.0, float(route["metadata"].get("phase_ms") or 0)) / 1000.0
+        jitter_ratio = float(route["metadata"].get("jitter_ratio", 0.01))
         while relative_time <= duration_s and len(events) < max_events:
             jitter = rng.uniform(-cycle_s * jitter_ratio, cycle_s * jitter_ratio) if sequence else 0.0
             reordered = rng.random() < reordering_probability
@@ -229,16 +247,21 @@ def _generate_universal_events(
             if status == "corrupted" and payload_hex:
                 payload_hex = ("FF" + payload_hex[2:]) if len(payload_hex) >= 2 else "FF"
             event = {
+                "event_id": f"{route['id']}:{sequence}",
                 "timestamp_utc": _utc(trace_start + event_time),
                 "timestamp_unix": trace_start + event_time,
                 "time_s": event_time,
                 "scheduled_time_s": relative_time,
                 "configured_cycle_ms": cycle_s * 1000.0,
+                "deadline_ms": route["metadata"].get("deadline_ms") or (route["metadata"].get("timing") or {}).get("deadline_ms") or config.get("deadline_ms"),
                 "configured_latency_ms": latency_s * 1000.0,
                 "injected_jitter_ms": jitter * 1000.0,
                 "sequence": sequence,
+                "transport_sequence_bytes": sequence * payload_size,
                 "route_id": route["id"],
                 "route_name": route["name"],
+                "route_ref": route.get('metadata', {}).get('routing_entry_id'),
+                "route_refs": route.get('metadata', {}).get('routing_entry_ids') or [],
                 "technology": technology["id"],
                 "technology_family": technology.get("family"),
                 "access_model": technology.get("access"),
@@ -254,10 +277,14 @@ def _generate_universal_events(
                 "destination_names": [item["hardware_name"] for item in receivers],
                 "destination_logical_addresses": [item.get("formatted_logical_node_address") for item in receivers],
                 "receiver_interfaces": [item["interface_id"] for item in receivers],
+                "receiver_ports": [item["port_id"] for item in receivers],
                 "gateway_ids": gateways,
                 "message_ids": route.get("metadata", {}).get("message_ids") or [],
                 "payload_bytes": payload_size,
                 "payload_hex": payload_hex,
+                "frame_bits": frame.frame_bits,
+                "frame_calculation_model": frame.calculation_model,
+                "base_transmission_time_s": frame.transmission_time_s,
                 "priority": route.get("priority"),
                 "status": status,
                 "retransmission_count": retransmission_count,
@@ -271,6 +298,15 @@ def _generate_universal_events(
                     or 1_000_000
                 ),
             }
+            if ethernet:
+                event["ethernet"] = ethernet
+                event["frame_bits"] = wire_bytes(ethernet, payload_size) * 8
+                event["base_transmission_time_s"] = event["frame_bits"] / bitrate
+                event["frame_calculation_model"] = "PROJECT_IP_ETHERNET_WIRE_V1"
+                event["src_ip"] = ethernet["source"]["ip"]
+                event["dst_ips"] = [d["ip"] for d in ethernet["destinations"]]
+                event["ip_version"] = ethernet["ip_version"]
+                event["transport_protocol"] = ethernet["transport_protocol"]
             event["signals"] = model_payload.get("signals") or []
             if event["signals"]:
                 first_signal = event["signals"][0]
@@ -282,40 +318,75 @@ def _generate_universal_events(
                 event["golden_value"] = first_signal.get("golden_value")
                 event["model_label"] = first_signal.get("model_label")
                 event["behavior_type"] = first_signal.get("behavior_type")
-            event["faults"] = model_engine.faults.event_faults(event)
+            event["faults"] = list(dict.fromkeys([
+                *model_engine.faults.event_faults(event),
+                *(fault for signal in event['signals'] for fault in signal.get('faults') or []),
+            ]))
             if scenario_mode == "STRESS":
                 event["fault_load_multiplier"] = max(1.0, float(scenario.get("load_factor") or 2.0))
             events.append(event)
             if event.get("duplicate_injected") and len(events) < max_events:
                 events.append({
                     **event,
+                    "event_id": f"{route['id']}:{sequence}:duplicate",
                     "sequence": sequence * 1_000_000 + 1,
                     "time_s": event_time + 0.000001,
                     "duplicate_of": sequence,
                 })
             sequence += 1
-            relative_time = sequence * cycle_s
+            relative_time = round(relative_time + max(0.001, float(event['configured_cycle_ms'])) / 1000.0, 12)
         if len(events) >= max_events:
             break
 
     events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
     network_available_at: dict[str, float] = {}
+    port_available_at: dict[tuple, float] = {}
     for event in events:
         requested_at = float(event["time_s"])
         network_id = str(event["network"])
-        bitrate = max(1, int(event["configured_bitrate"]))
-        payload_bytes = int(event["payload_bytes"])
-        technology_id = str(event["technology"]).lower()
-        if "ethernet" in technology_id or technology_id in {"some_ip", "someip", "dds", "ros_2", "udp", "tcp"}:
-            wire_bits = max(84, payload_bytes + 74) * 8
-        elif technology_id in {"can_fd", "canfd", "can_xl"}:
-            wire_bits = int((payload_bytes * 8 + 83) * 1.15)
-        elif technology_id in {"can", "can_classic"}:
-            wire_bits = int((payload_bytes * 8 + 47) * 1.2)
-        else:
-            wire_bits = (payload_bytes + 24) * 8
-        wire_bits = int(wire_bits * max(1.0, float(event.get("fault_load_multiplier") or 1.0)))
-        transmission_s = wire_bits / bitrate * (1 + int(event.get("retransmission_count") or 0))
+        # Capacity and runtime must serialize the same frame with the same
+        # technology model (including the separate CAN-FD bit-rate phases).
+        transmission_s = (float(event["base_transmission_time_s"])
+                          * max(1.0, float(event.get("fault_load_multiplier") or 1.0))
+                          * (1 + int(event.get("retransmission_count") or 0)))
+        if event.get("ethernet"):
+            # Switched, store-and-forward, full-duplex data plane. TX and RX
+            # queues are separate per physical port; no fictitious shared bus.
+            flow = event["ethernet"]
+            tx_key = (network_id, event["sender_hardware"], event["sender_port"], "TX")
+            tx_start = max(requested_at, port_available_at.get(tx_key, 0.0))
+            tx_wait = tx_start - requested_at
+            queue_size = max(1, int(config.get("queue_size") or 256))
+            if tx_wait / max(transmission_s, 1e-9) > queue_size and event["status"] != "dropped":
+                event.update(status="dropped", drop_reason="tx_queue_overflow")
+            rx_ports = []
+            dropped = event["status"] == "dropped"
+            tx_end = tx_start + transmission_s if not dropped else requested_at
+            if not dropped:
+                port_available_at[tx_key] = tx_end
+            for receiver in flow["destinations"]:
+                key = (network_id, receiver["hardware_id"], receiver["port_id"], "RX")
+                start = max(tx_end, port_available_at.get(key, 0.0)) if not dropped else requested_at
+                wait = max(0.0, start - tx_end)
+                overflow = wait / max(transmission_s, 1e-9) > queue_size
+                status = "dropped" if dropped or overflow else event["status"]
+                end = start + transmission_s if status != "dropped" else requested_at
+                if status != "dropped":
+                    port_available_at[key] = end
+                rx_ports.append({**receiver, "start_s": start, "end_s": end, "queue_delay_ms": wait * 1000, "status": status})
+            delivered = [rx for rx in rx_ports if rx["status"] != "dropped"]
+            if not dropped and not delivered:
+                event.update(status="dropped", drop_reason="rx_queue_overflow")
+            completion = max((rx["end_s"] for rx in delivered), default=requested_at)
+            queue_delay = tx_wait + max((rx["queue_delay_ms"] / 1000 for rx in delivered), default=0)
+            event.update(tx_start_s=tx_start if not dropped else None, tx_end_s=tx_end if not dropped else None,
+                rx_ports=rx_ports, queue_delay_ms=queue_delay * 1000,
+                queue_depth_estimate=int(queue_delay / max(transmission_s, 1e-9)),
+                transmission_latency_ms=transmission_s * 2000,
+                end_to_end_latency_ms=(completion-requested_at)*1000 + float(event["configured_latency_ms"]) + float(event.get("retry_delay_ms") or 0),
+                port_model="SWITCHED_FULL_DUPLEX_STORE_FORWARD_V1", time_s=completion,
+                timestamp_unix=trace_start+completion, timestamp_utc=_utc(trace_start+completion))
+            continue
         available_at = network_available_at.get(network_id, 0.0)
         transmit_start = max(requested_at, available_at)
         queue_delay_s = max(0.0, transmit_start - requested_at)
@@ -344,14 +415,25 @@ def _generate_universal_events(
         event["timestamp_unix"] = trace_start + completion
         event["timestamp_utc"] = _utc(trace_start + completion)
     events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
+    from transport_dependencies import apply_transport_dependencies
+    apply_transport_dependencies(events, model_engine)
     return routes, events
 
 
 def _write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
-        for event in events:
-            handle.write(json.dumps(event, ensure_ascii=False, default=str) + "\n")
+    entries, previous, ordered = [], -1.0, True
+    with path.open("wb") as handle:
+        for index, event in enumerate(events):
+            timestamp = float(event.get("time_s", 0))
+            ordered &= timestamp >= previous
+            previous = timestamp
+            if index % 512 == 0:
+                entries.append([timestamp, handle.tell()])
+            handle.write((json.dumps(event, ensure_ascii=False, default=str) + "\n").encode("utf-8"))
+    metadata = path.stat()
+    path.with_suffix(".index.json").write_text(json.dumps({"schema": "trace-time-index-v1", "size_bytes": metadata.st_size,
+        "mtime_ns": metadata.st_mtime_ns, "ordered": ordered, "entries": entries}), encoding="utf-8")
     return path
 
 
@@ -360,12 +442,15 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
     columns = [
         "timestamp_utc", "timestamp_unix", "time_s", "scheduled_time_s",
         "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms",
-        "sequence", "route_id", "route_name",
+        "deadline_ms",
+        "event_id", "sequence", "transport_sequence_bytes", "route_id", "route_name", "route_ref", "route_refs",
         "technology", "technology_family", "access_model", "timing_model", "error_model",
         "network", "sender_hardware", "source_name", "source_logical_address", "sender_port",
         "sender_interface", "receiver_hardware", "receiver_interfaces", "payload_bytes",
+        "receiver_ports", "ip_version", "src_ip", "dst_ips", "transport_protocol", "ethernet", "tx_start_s", "tx_end_s", "rx_ports", "port_model",
         "destination_names", "destination_logical_addresses",
         "payload_hex", "priority", "status", "configured_bitrate", "queue_delay_ms",
+        "frame_bits", "frame_calculation_model", "base_transmission_time_s",
         "queue_depth_estimate", "transmission_latency_ms", "end_to_end_latency_ms",
         "gateway_ids", "retransmission_count", "duplicate_injected", "reordered",
         "retry_delay_ms", "drop_reason", "signal", "signal_id", "signal_value",
@@ -385,6 +470,10 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
                     "gateway_ids": ",".join(event.get("gateway_ids") or []),
                     "message_ids": ",".join(str(item) for item in event.get("message_ids") or []),
                     "signals": json.dumps(event.get("signals") or [], ensure_ascii=False),
+                    "ethernet": json.dumps(event.get("ethernet"), ensure_ascii=False),
+                    "rx_ports": json.dumps(event.get("rx_ports") or [], ensure_ascii=False),
+                    "dst_ips": json.dumps(event.get("dst_ips") or []),
+                    "receiver_ports": json.dumps(event.get("receiver_ports") or []),
                     "faults": ",".join(str(item) for item in event.get("faults") or []),
                 }
             )

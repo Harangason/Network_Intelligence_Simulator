@@ -1679,6 +1679,78 @@ type ConfirmedClusterGraph = Array<{
   controllers?: Array<{ ecu?: string; sensors?: string[]; actuators?: string[] }>;
 }>;
 
+/** The reviewed graph owns device identities; catalog expansion must not replace them. */
+export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecification, prompt: string) {
+  const raw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+  if (!raw) return spec.chains;
+  const graph = JSON.parse(raw) as ConfirmedClusterGraph;
+  if (!Array.isArray(graph)) throw new Error("Der bestätigte Systemcluster-Graph ist kein Array.");
+  const keyOf = (name: string) => normalizeHardwareName(name).toLocaleLowerCase("de");
+  const desired = new Map<string, { name: string; role: ArchitectureTemplate["deviceType"]; owner?: string }>();
+  const add = (name: string | undefined, role: ArchitectureTemplate["deviceType"], owner?: string) => {
+    if (typeof name !== "string" || !name.trim()) throw new Error("Ein bestätigter Graph-Teilnehmer hat keinen Namen.");
+    const key = keyOf(name);
+    const previous = desired.get(key);
+    if (previous && (previous.name !== name.trim() || previous.role !== role || previous.owner !== owner)) {
+      throw new Error(`Mehrdeutige Geräteidentität im bestätigten Graph: ${name}`);
+    }
+    desired.set(key, { name: name.trim(), role, owner });
+  };
+  for (const cluster of graph) {
+    for (const controller of cluster.controllers ?? []) {
+      add(controller.ecu, controllerDeviceTypeForModel(spec.modelType));
+      for (const name of controller.sensors ?? []) add(name, "SensorController", controller.ecu);
+      for (const name of controller.actuators ?? []) add(name, "ActuatorController", controller.ecu);
+    }
+  }
+  const catalog = architectureTemplates(spec.domain);
+  const used = new Set<string>();
+  const result: ExtractedEngineeringChain[] = [];
+  for (const [key, device] of desired) {
+    const matches = spec.chains.filter((chain) => keyOf(chain.hardware_name) === key && chain.device_type === device.role);
+    if (matches.length) {
+      result.push(...matches.map((chain) => ({ ...chain, hardware_name: device.name,
+        configuration: { ...chain.configuration, ...(device.owner ? { functional_owner: device.owner } : {}) } })));
+    } else {
+      const template = catalog.find((item) => keyOf(item.hardwareName) === key && item.deviceType === device.role);
+      const chain = chainFromTemplate({ ...(template ?? {
+        deviceType: device.role, signalName: `${identifier(device.name)}Value`,
+        interfaceType: spec.interfaceType, cycleMs: 100, minValue: 0, maxValue: 255, factor: 1,
+      }), hardwareName: device.name, functionalOwner: device.owner }, result.length, spec.domain);
+      result.push({ ...chain, hardware_description: template
+        ? `Bestätigter Graph-Teilnehmer; Parameter aus dem ${spec.domain}-Katalog.`
+        : "Bestätigter Graph-Teilnehmer; generisches, vor Übernahme zu prüfendes Parametermodell (keine physikalische Zusicherung).",
+        configuration: { ...chain.configuration, specification_source: "CONFIRMED_CLUSTER_GRAPH",
+          parameter_quality: template ? "DOMAIN_TEMPLATE" : "GENERIC_ESTIMATE" } });
+    }
+    used.add(key);
+  }
+  const roleKey = (role: string) => role === "SensorController" ? "sensors" : role === "ActuatorController"
+    ? "actuators" : role === "Gateway" ? "gateways" : "ecus";
+  const counts = { sensors: 0, actuators: 0, ecus: 0, gateways: 0 };
+  for (const device of desired.values()) counts[roleKey(device.role)] += 1;
+  const confirmed = confirmedHardwareCounts(prompt);
+  for (const key of ["sensors", "actuators", "ecus", "gateways"] as const) {
+    if (confirmed[key] !== undefined && counts[key] > confirmed[key]) {
+      throw new Error(`Bestätigter Graph überschreitet Hardware-Sollwert ${key}: ${counts[key]} > ${confirmed[key]}`);
+    }
+  }
+  // A graph can cover selected clusters only. Retain other devices up to the
+  // confirmed counts; replace inferred surplus of the same role, never gateways.
+  const retained = new Set<string>();
+  for (const chain of spec.chains) {
+    const key = keyOf(chain.hardware_name);
+    if (used.has(key)) continue;
+    const role = roleKey(chain.device_type);
+    if (!retained.has(key)) {
+      if (counts[role] >= (confirmed[role] ?? spec.targetCounts[role])) continue;
+      retained.add(key); counts[role] += 1;
+    }
+    result.push(chain);
+  }
+  return result;
+}
+
 function confirmedBusTechnology(network: string) {
   return canonicalCommunicationSystem(network);
 }

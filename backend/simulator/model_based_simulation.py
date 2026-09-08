@@ -423,15 +423,23 @@ class FaultInjectionEngine:
             expected_target = str(_mapping(fault.get("target")).get("id") or "")
             message_targets = {str(item) for item in _sequence(event.get("message_ids"))}
             target_matches = self._target_matches(fault, object_id=target_id, name=str(event.get("route_name") or "")) or bool(expected_target and expected_target in message_targets)
+            if fault_type in {'GATEWAY_DROP', 'GATEWAY_DELAY'}:
+                target_matches = target_matches or bool(expected_target and expected_target in {
+                    str(item) for item in _sequence(event.get('gateway_ids'))
+                })
             if not valid or not self._active(fault, time_s) or not target_matches:
                 continue
             if fault_type in {"MESSAGE_LOSS", "BUS_OFF", "LINK_DOWN", "GATEWAY_DROP", "TEMPORARY_DISCONNECT", "ROUTING_FAILURE"}:
                 event["status"] = "dropped"
                 event["drop_reason"] = fault_type.lower()
             elif fault_type in {"MESSAGE_DELAY", "GATEWAY_DELAY", "CONGESTION", "MESSAGE_TIMEOUT"}:
-                event["configured_latency_ms"] = float(event.get("configured_latency_ms") or 0.0) + _number(fault.get("delay_ms"), 50.0)
+                delay_ms = max(0.0, _number(fault.get("delay_ms"), 50.0))
+                event["configured_latency_ms"] = float(event.get("configured_latency_ms") or 0.0) + delay_ms
+                event['time_s'] = float(event.get('time_s', time_s)) + delay_ms / 1000.0
             elif fault_type == "MESSAGE_JITTER":
-                event["injected_jitter_ms"] = float(event.get("injected_jitter_ms") or 0.0) + _number(fault.get("jitter_ms"), 10.0)
+                jitter_ms = _number(fault.get("jitter_ms"), 10.0)
+                event["injected_jitter_ms"] = float(event.get("injected_jitter_ms") or 0.0) + jitter_ms
+                event['time_s'] = max(0.0, float(event.get('time_s', time_s)) + jitter_ms / 1000.0)
             elif fault_type in {"MESSAGE_CORRUPTION", "FRAME_ERROR"}:
                 event["status"] = "corrupted"
                 payload = str(event.get("payload_hex") or "")
@@ -516,7 +524,7 @@ class ModelBasedSimulationEngine:
         self.by_message: dict[str, list[SignalDefinition]] = defaultdict(list)
         for signal in self.signals:
             self.by_message[signal.message_id].append(signal)
-        self.seed = int(config.get("seed") or 42)
+        self.seed = int(config.get("seed", 42))
         scenario = {**_mapping(config.get("scenario"))}
         scenario.setdefault("duration_s", _number(config.get("duration_s"), 2.0))
         scenario_mode = str(scenario.get("mode") or "NORMAL").upper()
@@ -549,7 +557,9 @@ class ModelBasedSimulationEngine:
         encoded: list[tuple[SignalDefinition, float | None]] = []
         samples: list[dict[str, Any]] = []
         for signal in self.route_signals(route):
-            baseline = self.functions.evaluate(signal, time_s, values, self.behavior)
+            # Transport-dependent functions are evaluated after scheduling, from
+            # receiver caches, not guessed from unavailable remote inputs here.
+            baseline = float(signal.parameters.get("initial_value", 0)) if signal.parameters.get("transport_inputs") else self.functions.evaluate(signal, time_s, values, self.behavior)
             baseline_sample = self.behavior.sample_details(signal.id)
             value, faults = self.faults.signal_value(signal, time_s, baseline, self.behavior)
             if value is not None:

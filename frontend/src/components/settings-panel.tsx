@@ -18,6 +18,7 @@ import {
 } from "@/lib/user-settings";
 import { getWorkflow, saveWorkflowParameters } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { TraceStorageSettingsPanel } from "./trace-storage-settings";
 
 export function SettingsPanel() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
@@ -179,6 +180,8 @@ export function SettingsPanel() {
             Standard wiederherstellen
           </button>
         </section>
+
+        <TraceStorageSettingsPanel key={settings.activeProject} project={settings.activeProject} />
 
         <section className="panel settings-panel settings-formats" aria-labelledby="format-settings">
           <div className="panel-heading">

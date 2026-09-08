@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
 from datetime import datetime, timezone
+from uuid import uuid4
 
+from ..db import get_connection
 from ..project_context import activate_project, reset_project
 from ..workflow.service import WorkflowStatusService
 from ..workflow.models import WORKFLOW_STEPS
@@ -13,6 +17,9 @@ from ..workflow.models import WORKFLOW_STEPS
 WIZARD_RUN_PATTERN = re.compile(r"\bLauf-ID:\s*([A-Za-z0-9._-]{8,120})", re.IGNORECASE)
 TERMINAL_SUCCESS = {"COMPLETED"}
 TERMINAL_REVIEW = {"READY_FOR_REVIEW", "REVIEW_REQUIRED", "VALIDATED", "PROPOSED"}
+# PIDs are reused across container restarts. Keep a process-incarnation token,
+# not just the PID, as the durable owner of in-flight work.
+SERVER_INSTANCE_ID = str(uuid4())
 
 
 def extract_wizard_run_id(prompt: str) -> str | None:
@@ -40,6 +47,45 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def recover_interrupted_wizard_runs(project_id: str | None = None) -> int:
+    """Mark RUNNING wizard rows owned by an old backend process as resumable."""
+    current_pid = os.getpid()
+    status_patch = json.dumps({
+        "state": "BLOCKED",
+        "recoverable": True,
+        "message": (
+            "Der Backend-Prozess wurde während des Engineering-Auftrags neu gestartet. "
+            "Der bestätigte Lauf wird am letzten gespeicherten Schritt fortgesetzt."
+        ),
+        "updated_at": _now(),
+        "server_pid": current_pid,
+        "server_instance_id": SERVER_INSTANCE_ID,
+    }, ensure_ascii=False)
+    parameters: list[object] = [status_patch, str(current_pid), SERVER_INSTANCE_ID]
+    project_filter = ""
+    if project_id is not None:
+        project_filter = " AND project_id = %s"
+        parameters.append(project_id)
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            UPDATE engineering_workflow_projects
+            SET context = jsonb_set(
+                    context,
+                    '{agent_execution}',
+                    (context -> 'agent_execution') || %s::jsonb,
+                    true
+                ),
+                updated_at = now()
+            WHERE context -> 'agent_execution' ->> 'state' = 'RUNNING'
+              AND (COALESCE(context -> 'agent_execution' ->> 'server_pid', '') <> %s
+                   OR COALESCE(context -> 'agent_execution' ->> 'server_instance_id', '') <> %s)
+            """ + project_filter + " RETURNING project_id",
+            tuple(parameters),
+        ).fetchall()
+    return len(rows)
+
+
 def execution_step(summary: dict) -> str:
     """A continuation cannot reset an already completed artifact's progress."""
     active = summary.get('active_step') or 'engineering_model'
@@ -58,6 +104,7 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
         'WIZARD_ENGINEERING_MODEL': 'engineering_model',
         'WIZARD_ROUTING': 'routing',
         'WIZARD_NETWORK_TOPOLOGY': 'network_editor',
+        'CAPACITY_NETWORK_REPAIR': 'network_editor',
     }
     artifact = artifact_by_proposal.get(proposal_type)
     if artifact is None or proposal.get('status') != 'APPLIED':
@@ -81,6 +128,8 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
                 'Routing übernommen und vollständig geprüft. Der Auftrag kann mit der Netzwerktopologie fortgesetzt werden.',
             'WIZARD_NETWORK_TOPOLOGY':
                 'Netzwerktopologie übernommen und vollständig geprüft. Capacity & Timing wird im nächsten Schritt neu berechnet.',
+            'CAPACITY_NETWORK_REPAIR':
+                'Capacity-Reparatur übernommen und vollständig geprüft. Capacity & Timing wird im nächsten Schritt neu berechnet.',
         }[proposal_type]
     else:
         details = check.get('consistency') or check.get('invalid') or check.get('counts') or {}
@@ -134,6 +183,9 @@ class WizardExecutionTracker:
                     "total": self.total,
                     "message": str(message or "Engineering-Auftrag wird verarbeitet.")[:1000],
                     "updated_at": _now(),
+                    "server_pid": os.getpid(),
+                    "server_instance_id": SERVER_INSTANCE_ID,
+                    "recoverable": False,
                 },
             }, summary=True)
         finally:

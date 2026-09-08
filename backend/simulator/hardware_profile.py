@@ -81,13 +81,20 @@ def _normalize_hardware_config(config: dict[str, Any] | None) -> dict[str, Any]:
         if not raw_ports and isinstance(item.get("interfaces"), list):
             raw_ports = [
                 {
-                    "id": f"{item['id']}_port_{index + 1}",
+                    "id": interface.get("physical_port_ref") or f"{item['id']}_port_{index + 1}",
                     "name": interface.get("name") or interface.get("id") or f"Port {index + 1}",
                     "interfaces": [interface],
                 }
                 for index, interface in enumerate(item["interfaces"])
                 if isinstance(interface, dict)
             ]
+            grouped_ports = {}
+            for port in raw_ports:
+                if port["id"] in grouped_ports:
+                    grouped_ports[port["id"]]["interfaces"].extend(port["interfaces"])
+                else:
+                    grouped_ports[port["id"]] = port
+            raw_ports = list(grouped_ports.values())
         normalized_ports: list[dict[str, Any]] = []
         for port_index, port in enumerate(raw_ports):
             normalized_port = deepcopy(port)

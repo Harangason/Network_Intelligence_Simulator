@@ -8,7 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const backend = await proxyBackend(`/simulations/${encodeURIComponent(id)}`, {
+  const metadata = new URL(request.url).searchParams.get("view") === "metadata" ? "?view=metadata" : "";
+  const backend = await proxyBackend(`/simulations/${encodeURIComponent(id)}${metadata}`, {
     headers: projectHeaders(projectIdFromRequest(request)),
   });
   if (backend && backend.status !== 404) return backend;

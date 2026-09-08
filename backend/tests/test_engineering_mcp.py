@@ -159,6 +159,14 @@ def test_browser_approval_requires_separate_intent(authority):
     assert response.json["data"]["status"]=="APPROVED"
     result=client.post(path+"/apply",headers=headers,json={})
     assert result.json["data"]["status"]=="APPLIED",result.json
+    assert "changes" in result.json["data"]  # Existing open tabs retain the full response contract.
+    compact=client.post(path+"/apply?view=status",headers=headers,json={})
+    assert compact.json["data"]["status"]=="APPLIED",compact.json
+    assert "changes" not in compact.json["data"]
+    status=client.get(path+"?view=status",headers=headers)
+    assert status.status_code==200,status.json
+    assert status.json["data"]["status"]=="APPLIED"
+    assert "changes" not in status.json["data"]
 
 
 def test_trace_correlation_and_message_group_uniqueness(authority):
@@ -294,11 +302,19 @@ def test_complete_pagination_and_large_trace_window(monkeypatch):
     from backend.engineering.agent_tools import simulation_gateway
     rows = list(range(1251))
     assert all_pages(lambda limit, offset: rows[offset:offset+limit]) == rows
-    monkeypatch.setattr(simulation_gateway, "iter_trace", lambda _: ({"time_s": index} for index in range(120000)))
-    result = window({"job_id": "test", "start_s": 110000, "end_s": 110009, "offset": 3, "limit": 2})
+    # Inline offset compatibility remains intact; jobs must use bounded server pages.
+    result = window({"events": [{"time_s": index} for index in range(110000,110010)], "start_s": 110000, "end_s": 110009, "offset": 3, "limit": 2})
     assert result["total"] == 10
     assert [event["time_s"] for event in result["events"]] == [110003, 110004]
     assert result["next_offset"] == 5
+    monkeypatch.setattr(simulation_gateway, "iter_trace", lambda _: pytest.fail("Whole-trace scanning is forbidden"))
+    calls = []
+    monkeypatch.setattr(simulation_gateway, "request_json", lambda path: calls.append(path) or {"events": [{"time_s":110003}], "next_cursor": 9000})
+    page = window({"job_id": "test", "start_s": 110000, "end_s": 110009, "cursor": 8000, "limit": 2})
+    assert len(calls) == 1 and "cursor=8000" in calls[0] and "limit=2" in calls[0]
+    assert page["next_cursor"] == 9000 and page["total"] is None
+    with pytest.raises(ValueError, match="Byte-Cursor"):
+        window({"job_id": "test", "offset": 3})
 
 
 def test_route_proposal_uses_canonical_routing_review(authority):

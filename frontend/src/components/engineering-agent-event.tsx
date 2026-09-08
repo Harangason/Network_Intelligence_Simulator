@@ -7,6 +7,7 @@ import { WorkloadProgress } from "./workload-progress";
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
+import { applyReviewedProposal, refreshProposal } from '@/lib/agent/proposal-client';
 
 function LazyDetails({ title, children }: { title: string; children: () => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -42,28 +43,40 @@ function ProposalReview({ initial, projectId }: { initial: EngineeringProposal; 
   const [rationale, setRationale] = useState(initial.rationale);
   const base = `/api/engineering/agent/proposals/${encodeURIComponent(proposal.proposal_id)}`;
   useEffect(() => {
+    if (busy) return;
     const controller = new AbortController();
-    const refresh = () => fetch(base, { headers: { "X-Project-ID": projectId }, signal: controller.signal, cache: "no-store" })
-      .then(response => response.json()).then(result => { if (result.success) { setProposal(result.data); setLoaded(true); } })
+    const refresh = () => refreshProposal(proposal, projectId, controller.signal)
+      .then(result => { if (!controller.signal.aborted) { setProposal(result); setLoaded(true); if (result.status === "APPLIED") setError(""); } })
       .catch(() => {});
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [base, projectId]);
+  }, [base, projectId, busy, proposal.revision]);
   async function action(kind: "approve" | "reject" | "apply" | "validate" | "revise") {
     setBusy(true); setError("");
     try {
       const session = await fetch("/api/engineering/agent/review-session", { cache: "no-store" });
       if (!session.ok) throw new Error("Review-Sitzung konnte nicht geöffnet werden.");
       const { csrf_token } = await session.json();
-      const response = await fetch(`${base}/${kind === "apply" || kind === "validate" || kind === "revise" ? kind : "review"}`, {
+      if (kind === "apply") {
+        const persisted = await applyReviewedProposal(proposal, projectId, csrf_token);
+        setProposal(persisted);
+        setEditing(false);
+        if (persisted.status === "APPLIED") {
+          window.dispatchEvent(new Event("engineering:write-completed"));
+          publishEngineeringModelChanged({ resource: "hardware-nodes", id: persisted.proposal_id, name: "Engineering-Vorschlag" });
+        }
+        return;
+      }
+      const actionPath = kind === "validate" || kind === "revise" ? kind : "review";
+      const response = await fetch(`${base}/${actionPath}`, {
         method: "POST", headers: { "Content-Type": "application/json", "X-Project-ID": projectId,
           "X-Review-CSRF": csrf_token, "X-Human-Review": "confirmed" },
         body: JSON.stringify({ decision: kind, revision: proposal.revision, ...(kind === 'revise' ? { names, rationale } : {}) }),
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error ?? result.findings?.[0]?.message ?? "Aktion fehlgeschlagen.");
-      setProposal(result.data);
+      setProposal(current => ({ ...current, ...result.data }));
       setEditing(false);
       if (result.data.status === "APPLIED") {
         window.dispatchEvent(new Event("engineering:write-completed"));

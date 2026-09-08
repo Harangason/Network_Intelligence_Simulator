@@ -311,6 +311,7 @@ class LogicalNodeAddressAllocator:
         assignment_mode: str = "AUTO",
         actor: str | None = None,
         connection=None,
+        increment_version: bool = True,
     ) -> dict[str, Any]:
         validate_uuid(node_id)
         mode = str(assignment_mode or "AUTO").upper()
@@ -346,8 +347,9 @@ class LogicalNodeAddressAllocator:
                 after = conn.execute(
                     "UPDATE engineering_hardware_nodes SET diagnostic_addressable=TRUE, logical_node_address=%s, "
                     "address_assignment_mode=%s, address_status='ASSIGNED', address_namespace=%s, address_provenance=%s, "
-                    "version=version+1, modified_at=now(), modified_by=%s WHERE id=%s AND project_id=%s RETURNING *",
-                    (proposed, mode, self.namespace, Jsonb(provenance), actor, node_id, self.project_id),
+                    "version=version+%s, modified_at=now(), modified_by=%s WHERE id=%s AND project_id=%s RETURNING *",
+                    (proposed, mode, self.namespace, Jsonb(provenance), 1 if increment_version else 0,
+                     actor, node_id, self.project_id),
                 ).fetchone()
             except UniqueViolation as error:
                 raise EngineeringValidationError("DIAGNOSTIC_ADDRESS_CONFLICT: Adresse ist im Namespace bereits vergeben.") from error

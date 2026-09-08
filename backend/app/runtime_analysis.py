@@ -143,6 +143,13 @@ def analyze_runtime_trace(
         average = busy_s / observed_duration * 100.0
         peak = max(average, _load_in_window(items, 0.01))
         burst = max(average, _load_in_window(items, 0.1))
+        ports = []
+        if all(item.get('port_model') == 'SWITCHED_FULL_DUPLEX_STORE_FORWARD_V1' for item in items):
+            from .port_load import ethernet_port_load
+            ports = ethernet_port_load(items, observed_duration)
+            average = max((p['average_load_percent'] for p in ports), default=0)
+            peak = max((p['peak_load_percent'] for p in ports), default=0)
+            burst = max((p['peak_load_percent'] for p in ethernet_port_load(items, observed_duration, .1)), default=0)
         network_metrics.append(
             {
                 "network_id": network_id,
@@ -157,6 +164,8 @@ def analyze_runtime_trace(
                 "average_load_percent": round(average, 6),
                 "peak_load_percent": round(peak, 6),
                 "burst_load_percent": round(burst, 6),
+                "load_basis": "BUSIEST_FULL_DUPLEX_PORT" if ports else "SHARED_BUS",
+                "port_metrics": ports,
                 "average_queue_depth": round(
                     sum(_number(item.get("queue_depth_estimate")) for item in items) / len(items), 6
                 ),

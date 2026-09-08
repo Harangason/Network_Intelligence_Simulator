@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from backend.app import create_app
 from engineering.tool_registry import get_engineering_tool, list_engineering_tools
 
 
@@ -22,3 +23,12 @@ def test_engineering_tool_registry_filters_for_agent_planning() -> None:
     assert all(tool["requires_approval"] is True for tool in approval_tools)
     assert [tool["id"] for tool in automotive_imports] == ["import.intelligent"]
     assert {tool["id"] for tool in capacity_tools} >= {"analyze.capacity_timing", "validate.signal_sizing"}
+
+
+def test_unknown_tool_api_returns_not_found_instead_of_database_unavailable() -> None:
+    response = create_app(testing=True).test_client().get(
+        "/api/engineering/tools/not-registered"
+    )
+
+    assert response.status_code == 404
+    assert "not-registered" in response.get_json()["error"]

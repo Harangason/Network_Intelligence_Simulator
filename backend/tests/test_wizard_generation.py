@@ -16,7 +16,85 @@ from backend.engineering.workflow.service import WorkflowStatusService
 from backend.engineering.repository import create_object, update_object, get_object
 from backend.engineering.agent_tools import conversation
 from backend.engineering.agent_tools.run_status import reconcile_model_apply
+from backend.engineering.agent_tools import run_status
 import pytest
+
+
+def test_capacity_repair_apply_releases_review_gate(monkeypatch):
+    execution = {
+        'run_id': 'capacity-repair-run-12345678',
+        'state': 'REVIEW_REQUIRED',
+        'step': 'capacity_timing',
+    }
+    summary = {
+        'active_step': 'network_editor',
+        'statuses': {
+            'network_editor': 'COMPLETE',
+            'parameters': 'APPROVED',
+            'capacity_timing': 'OUTDATED',
+        },
+        'artifact_checks': {'network_editor': {'complete': True}},
+        'context': {'agent_execution': execution},
+    }
+    updates = []
+
+    class FakeWorkflowStatusService:
+        def __init__(self, project_id):
+            assert project_id == 'capacity-repair-project'
+
+        def get(self, summary=False):
+            assert summary is True
+            return summary_data
+
+        def set_context(self, context, summary=False):
+            assert summary is True
+            updates.append(context)
+
+    summary_data = summary
+    monkeypatch.setattr(run_status, 'WorkflowStatusService', FakeWorkflowStatusService)
+    monkeypatch.setattr(conversation, 'read', lambda: {
+        'active_proposal': 'capacity-repair-proposal',
+        'current_requirement': 'Lauf-ID: capacity-repair-run-12345678',
+    })
+
+    reconcile_model_apply('capacity-repair-project', {
+        'proposal_id': 'capacity-repair-proposal',
+        'proposal_type': 'CAPACITY_NETWORK_REPAIR',
+        'status': 'APPLIED',
+    })
+
+    reconciled = updates[0]['agent_execution']
+    assert reconciled['state'] == 'READY_TO_CONTINUE'
+    assert reconciled['step'] == 'capacity_timing'
+    assert 'Capacity-Reparatur übernommen' in reconciled['message']
+
+
+def test_confirmed_names_generate_reviewable_model_and_complete_routing():
+    authority = ToolAuthority(f'pytest-confirmed-identities-{uuid4()}')
+    prompt = '''- Industrie: Automotive
+- Netzwerktechnologien: CAN-FD (can_fd)
+- Hardware-Sollwerte: {"gateways":1,"ecus":1,"sensors":1,"actuators":1}
+- Systemcluster-Graph: [{"network_id":"can_fd","bus_name":"Drive","controllers":[{"ecu":"Motorsteuerung","sensors":["MotorTemperature"],"actuators":["MotorValve"]}]}]
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperatursensor und einem Stellglied.
+'''
+    def generate_and_apply():
+        proposal = wizard_generation.generate({'prompt': prompt})
+        proposal = proposal_service.validate(proposal['proposal_id'])
+        assert proposal['status'] == 'VALIDATED', proposal['validation_result']
+        names = {c['data']['name'] for c in proposal['changes'] if c['object_type'] == 'HardwareNode'}
+        assert {'Motorsteuerung', 'MotorTemperature', 'MotorValve'} <= names
+        approved = proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
+            decision='approve', actor='test-human', trace_id=str(uuid4()))
+        proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        routing = wizard_generation.generate_routing({'prompt': prompt})
+        routing = proposal_service.validate(routing['proposal_id'])
+        assert routing['status'] == 'VALIDATED', routing['validation_result']
+        assert len(routing['changes']) == 2
+        with pytest.raises(ValueError, match='Routing-Teilnehmer fehlen.*Unknown'):
+            wizard_generation.generate_routing({'prompt': prompt.replace('MotorTemperature', 'Unknown')})
+    result = execute(authority, 'test_confirmed_identity', Permission.GENERATE_PROPOSAL, {}, lambda _: generate_and_apply())
+    assert result.success, result
 
 
 def test_semantic_network_assignment_keeps_powertrain_on_one_named_can():
@@ -65,7 +143,7 @@ def test_confirmed_gateway_architecture_splits_controllers_after_six():
     ) == ('Fahrwerk_Fahrdynamik_03-IO-controller7-can-fd-S01', 'Controller7 CAN I/O Segment 1')
 
 
-def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch):
+def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch, tmp_path):
     authority = ToolAuthority(f'pytest-wizard-generator-{uuid4()}')
     prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
 - Lauf-ID: test-wizard-12345678
@@ -240,43 +318,43 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert capacity_snapshot['results']['overview']['route_count'] == 3
     assert capacity_snapshot['results']['overview']['network_count'] >= 1
 
-    preflight_result = asyncio.run(network_continuation())
-    assert preflight_result['status'] == 'READY_TO_CONTINUE', preflight_result
-    assert [item['tool'] for item in preflight_result['trace']].count('calculate_capacity') == 0
-    assert any(item['tool'] == 'validate_simulation_preflight' for item in preflight_result['trace'])
-    assert 'kein prüfbarer Änderungs- oder Workload-Aufruf' not in preflight_result['text']
-    assert WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['validation'] == 'APPROVED'
-
     from backend.engineering.agent_tools import simulation_gateway
-    simulation_job_id = 'test-wizard-simulation-job'
-    def start_simulation(snapshot_id):
-        WorkflowStatusService(authority.project_id).update_simulation_snapshot(
-            snapshot_id,
-            status='COMPLETED',
-            job_id=simulation_job_id,
-            result={
-                'runtime_metrics': {'network_count': 1, 'event_count': 3},
-                'trace': {'event_count': 3},
-                'hardware_validation': {'valid': True},
-                'warnings': [],
-            },
-        )
-        return {'id': simulation_job_id, 'status': 'completed'}
-    monkeypatch.setattr(simulation_gateway, 'start', start_simulation)
-    monkeypatch.setattr(simulation_gateway, 'job', lambda job_id: {
-        'id': job_id, 'status': 'completed', 'result': {'runtime_metrics': {'event_count': 3}},
-    })
+    from backend.app import create_app
+    import importlib
+    application_api = importlib.import_module('backend.app.api')
+    from backend.app import job_service
+    from backend.engineering.project_context import current_project_id
+    monkeypatch.setattr(job_service, 'TRACE_ROOT', tmp_path / 'traces')
+    jobs = job_service.JobService(synchronous=True, persist=False)
+    monkeypatch.setattr(application_api, 'JOBS', jobs)
+    client = create_app(testing=True).test_client()
+    def local_http(path, payload=None):
+        response = client.open('/api' + path, method='GET' if payload is None else 'POST',
+                               json=payload, headers={'X-Project-ID': current_project_id()})
+        assert response.status_code < 400, response.get_json()
+        return response.get_json()
+    monkeypatch.setattr(simulation_gateway, 'request_json', local_http)
 
     simulation_result = asyncio.run(network_continuation())
-    assert simulation_result['status'] == 'READY_TO_CONTINUE', simulation_result
+    assert simulation_result['status'] == 'COMPLETED', simulation_result
     simulation_tools = [item['tool'] for item in simulation_result['trace']]
+    assert 'validate_simulation_preflight' in simulation_tools
     assert 'create_simulation_snapshot' in simulation_tools
     assert 'start_simulation' in simulation_tools
     assert 'get_simulation_status' in simulation_tools
+    assert 'assess_intelligence' in simulation_tools
     assert 'kein prüfbarer Änderungs- oder Workload-Aufruf' not in simulation_result['text']
     workflow_after_simulation = WorkflowStatusService(authority.project_id).get(summary=True)
     assert workflow_after_simulation['statuses']['simulation'] == 'COMPLETE'
     assert workflow_after_simulation['statuses']['results_analysis'] == 'COMPLETE'
+    assert workflow_after_simulation['statuses']['data_science_intelligence'] in {'COMPLETE', 'WARNING'}
+    assert all(value in {'COMPLETE', 'APPROVED', 'WARNING'}
+               for value in workflow_after_simulation['statuses'].values())
+    assert list((tmp_path / 'traces').rglob('universal_trace.jsonl'))
+    repeated = asyncio.run(network_continuation())
+    assert repeated['status'] == 'COMPLETED'
+    assert not any(item['tool'] == 'start_simulation' for item in repeated['trace'])
+    assert len(jobs.list(authority.project_id)) == 1
 
 
 def test_rail_cluster_graph_produces_valid_native_rail_interfaces():

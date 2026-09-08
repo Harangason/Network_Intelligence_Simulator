@@ -17,6 +17,7 @@ from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
 from ..workflow.service import WorkflowStatusService
 from ..addressing import LogicalNodeAddressAllocator
+from .resource_policy import planning_policy
 from .network_planning import (
     communication_system_inventory,
     distribution_recommendations,
@@ -430,6 +431,7 @@ class IntelligenceService:
             parameters=data["state"].get("parameters") or {},
             allowed_protocols=((data["state"].get("context") or {}).get("engineering_scope_rules") or {}).get("communication_systems"),
             available_protocol_counts=communication_system_inventory(wizard_prompt),
+            resource_policy=planning_policy(data['state']),
         )
         recommendations = [*distribution_recommendations(distribution), *RecommendationEngine().generate(issues, rag)]
         review_learning = enrich_with_review_history(recommendations, data.get("review_history") or [])

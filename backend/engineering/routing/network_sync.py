@@ -127,6 +127,7 @@ def enrich_route_from_linked_topology(
         return {
             **endpoint,
             "port_id": hardware_interface_id or port_id or endpoint.get("port_id"),
+            "physical_port_ref": port_id or endpoint.get("physical_port_ref"),
             "interface_id": logical_interface_id,
             "network_id": port_networks.get(port_id, f"network-{bus}"),
             "network_name": str(

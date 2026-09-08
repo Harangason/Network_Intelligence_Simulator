@@ -6,8 +6,11 @@ import os
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request, send_file
+from psycopg import Error as DatabaseError
 
 from .job_service import JOBS
+from .config import RUNTIME_ROOT
+from .trace_storage import StorageError, StorageUnavailable
 from .runtime_config import runtime_status
 from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
 from ..engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
@@ -53,6 +56,56 @@ def health():
     if instance_id:
         response["instance_id"] = instance_id
     return jsonify(response)
+
+
+@api.errorhandler(StorageError)
+def storage_error(error):
+    return jsonify({"error": str(error)}), 503 if isinstance(error, StorageUnavailable) else 400
+
+
+@api.get("/storage/settings")
+def storage_settings():
+    return jsonify(JOBS.storage.settings(_request_project_id()))
+
+
+@api.put("/storage/settings")
+def save_storage_settings():
+    # Deliberately not CORS-allowlisted: cross-origin sites cannot change local paths.
+    if request.headers.get("X-NetworkIS-Storage") != "confirmed":
+        return jsonify({"error": "Speicheränderung muss ausdrücklich bestätigt werden."}), 403
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or "path" not in payload:
+        return jsonify({"error": "Ein JSON-Objekt mit path wird erwartet; null setzt den Standard zurück."}), 400
+    return jsonify(JOBS.storage.save(_request_project_id(), payload["path"]))
+
+
+@api.post("/storage/validate")
+def validate_storage_settings():
+    if request.headers.get("X-NetworkIS-Storage") != "confirmed":
+        return jsonify({"error": "Die Schreibprüfung muss ausdrücklich angefordert werden."}), 403
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "Ein JSON-Objekt mit path wird erwartet."}), 400
+    return jsonify(JOBS.storage.validate(payload.get("path")))
+
+
+@api.get("/storage/directories")
+def storage_directories():
+    return jsonify(JOBS.storage.directories(_request_project_id(), request.args.get("path")))
+
+
+@api.get('/ready')
+def readiness():
+    """Liveness alone cannot detect a broken Windows/Docker runtime mount."""
+    try:
+        if not RUNTIME_ROOT.is_dir() or not os.access(RUNTIME_ROOT, os.R_OK | os.W_OK):
+            raise OSError('Laufzeitverzeichnis ist nicht les- und schreibbar.')
+        from ..engineering.db import get_connection
+        with get_connection() as connection:
+            connection.execute('SELECT 1').fetchone()
+    except (OSError, RuntimeError, DatabaseError) as error:
+        return jsonify({'status': 'unavailable', 'error': str(error), 'service': 'communication-simulator'}), 503
+    return jsonify({'status': 'ready', 'storage': 'available', 'database': 'available'})
 
 
 @api.route("/technologies", methods=["GET"])
@@ -121,7 +174,7 @@ def validate_simulation():
 @api.route("/simulations/<job_id>", methods=["GET"])
 def simulation(job_id: str):
     project_id = _request_project_id()
-    job = JOBS.get(job_id, project_id)
+    job = JOBS.get(job_id, project_id, metadata=request.args.get("view") == "metadata")
     if job is None:
         return jsonify({"error": "Simulation nicht gefunden."}), 404
     if job.get("result"):
@@ -137,6 +190,7 @@ def simulation(job_id: str):
     return jsonify(job)
 
 
+@api.route("/simulations/<job_id>", methods=["POST"])
 @api.route("/simulations/<job_id>/cancel", methods=["POST"])
 def cancel_simulation(job_id: str):
     job = JOBS.cancel(job_id, _request_project_id())
@@ -151,6 +205,33 @@ def artifact(job_id: str, artifact_index: int):
     if path is None:
         return jsonify({"error": "Artefakt nicht gefunden."}), 404
     return send_file(path, as_attachment=True, download_name=path.name)
+
+
+@api.get('/simulations/<job_id>/trace-window')
+def trace_window(job_id: str):
+    from .trace_service import read_trace_window
+    project_id = _request_project_id()
+    job = JOBS.get(job_id, project_id, metadata=True)
+    if job is None:
+        return jsonify({'error': 'Simulation nicht gefunden.'}), 404
+    artifacts = (job.get('result') or {}).get('artifacts') or []
+    index = next((i for i, path in enumerate(artifacts) if str(path).endswith('universal_trace.jsonl')), None)
+    if index is None:
+        return jsonify({'error': 'Kein universeller JSONL-Trace vorhanden.'}), 404
+    try:
+        path = JOBS.artifact(job_id, index, project_id)
+        if path is None:
+            return jsonify({'error': 'Trace-Datei nicht gefunden.'}), 404
+        result = read_trace_window(path, cursor=int(request.args.get('cursor', 0)),
+                                  limit=int(request.args.get('limit', 500)),
+                                  start_s=float(request.args.get('start_s', 0)),
+                                  end_s=float(request.args.get('end_s', 1e15)),
+                                  query=request.args.get('q', ''))
+        return jsonify({**result, 'job_id': job_id, 'project_id': project_id})
+    except (ValueError, UnicodeError) as error:
+        return jsonify({'error': str(error)}), 400
+    except OSError:
+        return jsonify({'error': 'Trace-Speicher derzeit nicht erreichbar. Erneut versuchen.'}), 503
 
 
 @api.route("/simulation-campaigns", methods=["POST"])

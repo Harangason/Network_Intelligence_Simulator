@@ -18,6 +18,7 @@ from typing import Any
 from .config import RUNTIME_ROOT, TRACE_ROOT
 from .runtime_config import runtime_settings
 from .simulation_service import SimulationService
+from .trace_storage import TraceStorage
 
 
 logger = logging.getLogger(__name__)
@@ -68,9 +69,10 @@ def _run_simulation_process(
     job_id: str,
     payload: dict[str, Any],
     validate_only: bool,
+    output_directory: str | None = None,
 ) -> dict[str, Any]:
     """Run one isolated simulation in a spawned worker process."""
-    output_dir = (TRACE_ROOT / job_id).resolve()
+    output_dir = Path(output_directory).resolve() if output_directory else (TRACE_ROOT / job_id).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     return SimulationService().run(payload, output_dir, validate_only=validate_only)
 
@@ -85,7 +87,9 @@ class JobService:
         max_workers: int | None = None,
         registry_path: Path | None = None,
         persist: bool | None = None,
+        storage: TraceStorage | None = None,
     ) -> None:
+        self._storage = storage
         custom_simulation_service = simulation_service is not None
         self.simulations = simulation_service or SimulationService()
         settings = runtime_settings()
@@ -125,9 +129,11 @@ class JobService:
         return self.executor
 
     def _load_registry(self) -> None:
-        if not self.persist or not self.registry_path.is_file():
+        if not self.persist:
             return
         try:
+            if not self.registry_path.is_file():
+                return
             payload = json.loads(self.registry_path.read_text(encoding="utf-8"))
             jobs = payload.get("jobs", []) if isinstance(payload, dict) else []
             for item in jobs:
@@ -201,10 +207,16 @@ class JobService:
         except (OSError, TypeError, ValueError):
             logger.exception("Could not persist simulation jobs")
 
+    @property
+    def storage(self) -> TraceStorage:
+        return self._storage or TraceStorage(default_root=TRACE_ROOT)
+
     def submit(self, payload: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
         job_id = uuid.uuid4().hex
+        output_dir = self.storage.output_for(payload.get("project_id") or "default", job_id)
         job = {
             "id": job_id,
+            "output_dir": str(output_dir),
             "status": "queued",
             "validate_only": validate_only,
             "created_at": _now(),
@@ -228,6 +240,7 @@ class JobService:
                 job_id,
                 copy.deepcopy(payload),
                 validate_only,
+                str(output_dir),
             )
         else:
             future = self._get_executor().submit(
@@ -287,7 +300,8 @@ class JobService:
         self._update(job_id, status="running")
         self._update_workflow_snapshot(payload, "RUNNING", job_id)
         try:
-            output_dir = (TRACE_ROOT / job_id).resolve()
+            job = self.get(job_id) or {}
+            output_dir = Path(job.get("output_dir") or TRACE_ROOT / job_id).resolve()
             output_dir.mkdir(parents=True, exist_ok=True)
             result = self.simulations.run(
                 payload,
@@ -387,11 +401,14 @@ class JobService:
             self._update_workflow_snapshot(workflow_payload, "CANCELED", job_id)
         return response
 
-    def get(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:
+    def get(self, job_id: str, project_id: str | None = None, *, metadata: bool = False) -> dict[str, Any] | None:
         with self._lock:
             job = self._jobs.get(job_id)
             if not job or (project_id is not None and job.get("project_id") != project_id):
                 return None
+            if metadata:
+                return copy.deepcopy({**{k: v for k, v in job.items() if k != "result"},
+                                      "result": _compact_result_for_registry(job.get("result"))})
             return copy.deepcopy(job)
 
     def list(self, project_id: str | None = None) -> list[dict[str, Any]]:
@@ -409,14 +426,14 @@ class JobService:
             ]
 
     def artifact(self, job_id: str, artifact_index: int, project_id: str | None = None) -> Path | None:
-        job = self.get(job_id, project_id)
+        job = self.get(job_id, project_id, metadata=True)
         if not job or not job.get("result"):
             return None
         artifacts = job["result"].get("artifacts") or []
         if artifact_index < 0 or artifact_index >= len(artifacts):
             return None
         candidate = Path(artifacts[artifact_index]).resolve()
-        allowed_root = (TRACE_ROOT / job_id).resolve()
+        allowed_root = Path(job.get("output_dir") or TRACE_ROOT / job_id).resolve()
         if candidate != allowed_root and allowed_root not in candidate.parents:
             return None
         return candidate if candidate.is_file() else None

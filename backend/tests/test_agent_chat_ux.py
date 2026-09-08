@@ -14,7 +14,7 @@ from backend.agent_core.api.mcp_client import EngineeringMCPClient
 from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
 from backend.engineering.agent_tools import conversation, proposal_service
-from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id, restore_wizard_continuation_prompt
+from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id, recover_interrupted_wizard_runs, restore_wizard_continuation_prompt
 from backend.engineering.workflow.service import WorkflowStatusService
 
 
@@ -149,6 +149,31 @@ def test_wizard_execution_status_is_durable_and_uses_the_external_run_id():
     finished = WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
     assert finished['state'] == 'REVIEW_REQUIRED'
     assert finished['message'] == 'Prüfung erforderlich.'
+
+
+@pytest.mark.parametrize('same_pid', [False, True])
+def test_backend_restart_marks_only_the_old_process_wizard_as_recoverable(monkeypatch, same_pid):
+    authority = ToolAuthority(f'chat-restart-recovery-{uuid4()}')
+    run_id = 'wizard-restart-12345678'
+    tracker = WizardExecutionTracker(authority.project_id, run_id)
+    tracker.started()
+    before = WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
+    assert before['state'] == 'RUNNING'
+    assert before['recoverable'] is False
+    assert recover_interrupted_wizard_runs(authority.project_id) == 0
+
+    if same_pid:
+        monkeypatch.setattr('backend.engineering.agent_tools.run_status.SERVER_INSTANCE_ID', 'new-container-instance')
+    else:
+        monkeypatch.setattr('backend.engineering.agent_tools.run_status.os.getpid', lambda: before['server_pid'] + 1)
+    assert recover_interrupted_wizard_runs(authority.project_id) == 1
+
+    recovered = WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
+    assert recovered['state'] == 'BLOCKED'
+    assert recovered['recoverable'] is True
+    assert recovered['run_id'] == run_id
+    assert 'neu gestartet' in recovered['message']
+    assert recover_interrupted_wizard_runs(authority.project_id) == 0
 
 
 def test_reasoning_iterations_emit_bounded_structured_progress():

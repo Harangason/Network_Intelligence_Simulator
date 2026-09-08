@@ -34,6 +34,9 @@ agent_api = Blueprint("engineering_agent_api", __name__)
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="engineering-agent")
 _slots = threading.BoundedSemaphore(4)
 COOKIE = "engineering_review_csrf"
+_PROPOSAL_STATUS_FIELDS = (
+    "proposal_id", "proposal_type", "revision", "status", "validation_result", "canonical_ids", "workload_id",
+)
 
 
 def _project() -> str:
@@ -57,11 +60,20 @@ def _human_intent() -> bool:
     return bool(cookie and supplied and hmac.compare_digest(cookie,supplied)) and request.headers.get("X-Human-Review")=="confirmed"
 
 
+def _proposal_status_payload(result) -> dict:
+    """Keep polling and mutation responses small even for topology proposals."""
+    payload = result.model_dump(mode="json")
+    if isinstance(result.data, dict):
+        payload["data"] = {key: result.data[key] for key in _PROPOSAL_STATUS_FIELDS if key in result.data}
+    return payload
+
+
 @agent_api.get("/proposals/<proposal_id>")
 def proposal_get(proposal_id):
     authority = ToolAuthority(_project(),"review-ui")
     result = execute(authority,"inspect_proposal",Permission.READ_MODEL,{"proposal_id":proposal_id},lambda a:proposals.latest(a["proposal_id"]))
-    return jsonify(result.model_dump(mode="json")), 200 if result.success else 404
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload), 200 if result.success else 404
 
 
 @agent_api.post("/proposals/<proposal_id>/review")
@@ -80,12 +92,16 @@ def proposal_apply(proposal_id):
     if not _human_intent():
         return jsonify({"error":"Die bewusste Übernahme in der Review-Oberfläche ist erforderlich."}),403
     authority = ToolAuthority(_project(),"local-human",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
+    def apply_and_reconcile(args):
+        proposal = proposals.apply(args["proposal_id"], actor=authority.actor, trace_id=args["_trace_id"])
+        # One transaction: an applied model must never leave the wizard at its
+        # old review gate if updating the durable continuation state fails.
+        reconcile_model_apply(authority.project_id, proposal)
+        return proposal
     result = execute(authority,"apply_approved_proposal",Permission.APPLY_APPROVED_PROPOSAL,{"proposal_id":proposal_id},
-                     lambda a:proposals.apply(a["proposal_id"],actor=authority.actor,trace_id=a["_trace_id"]))
-    if result.success:
-        execute(authority, 'reconcile_model_apply', Permission.READ_MODEL, {},
-                lambda _: reconcile_model_apply(authority.project_id, result.data))
-    return jsonify(result.model_dump(mode="json")),200 if result.success else 409
+                     apply_and_reconcile)
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload),200 if result.success else 409
 
 
 @agent_api.post("/proposals/<proposal_id>/validate")

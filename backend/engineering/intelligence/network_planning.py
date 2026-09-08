@@ -26,6 +26,17 @@ def canonical_protocol(value: Any) -> str:
     return PROTOCOL_ALIASES.get(normalized, normalized)
 
 
+def physical_network_inventory(topology: dict[str, Any]) -> dict[str, set[str]]:
+    """Count physical resources even when no current route uses them."""
+    by_protocol: dict[str, set[str]] = defaultdict(set)
+    for edge in topology.get('edges') or []:
+        network = edge.get('physicalNetworkId')
+        protocol = canonical_protocol(edge.get('bus') or edge.get('technology'))
+        if network and protocol:
+            by_protocol[protocol].add(str(network))
+    return by_protocol
+
+
 def communication_system_inventory(prompt: str) -> dict[str, int]:
     """Read the approved bus quantities embedded in a persisted wizard prompt."""
     match = re.search(r"^- Kommunikationssystem-Sollwerte:\s*(\[[^\r\n]*\])\s*$", prompt or "", re.M)
@@ -134,7 +145,11 @@ def plan_network_distribution(
     capacity: dict[str, Any], hardware: list[dict[str, Any]], topology: dict[str, Any], *,
     parameters: dict[str, Any] | None = None, allowed_protocols: list[str] | None = None,
     available_protocol_counts: dict[str, int] | None = None,
+    resource_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    policy = resource_policy or {'mode': 'FIXED_INVENTORY', 'hard_limits': {}}
+    auto_size = policy.get('mode') == 'AUTO_SIZE'
+    hard_limits = policy.get('hard_limits') or {}
     results = capacity.get("results") or {}
     target = _number((results.get("overview") or {}).get("target_bus_load_percent"), 60.0)
     plan: dict[str, Any] = {
@@ -142,6 +157,7 @@ def plan_network_distribution(
         "source_snapshot_id": str(capacity.get("id") or ""),
         "networks": [], "clusters": [], "inventory_constraints": [], "unresolved": [],
         "automatic_changes": False, "requires_human_approval": True,
+        "resource_policy": policy,
         "calculation": "Cluster-preserving first-fit decreasing; max(sum average, sum peak, sum burst)",
         "validation_scope": "Buslast rechnerisch geprueft; Timing, Gateway-Portkapazitaet und Safety vor Uebernahme neu pruefen.",
     }
@@ -160,26 +176,27 @@ def plan_network_distribution(
     metrics_by_network: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in results["routes"]:
         metrics_by_network[str(row.get("network_id") or "unknown")].append(row)
-    used_protocols: dict[str, int] = defaultdict(int)
-    for rows in metrics_by_network.values():
+    physical_networks = physical_network_inventory(topology)
+    for network_id, rows in metrics_by_network.items():
         if rows:
-            used_protocols[canonical_protocol(rows[0].get("protocol"))] += 1
+            physical_networks[canonical_protocol(rows[0].get("protocol"))].add(network_id)
+    used_protocols = {protocol: len(networks) for protocol, networks in physical_networks.items()}
     binding_inventory = bool(available_protocol_counts)
     requested_inventory = {
         canonical_protocol(key): max(0, int(value))
         for key, value in (available_protocol_counts or {}).items()
         if canonical_protocol(key) in PROTOCOL_CAPACITY
     }
-    if not requested_inventory and allowed_protocols:
+    if not requested_inventory and allowed_protocols and not auto_size:
         requested_inventory = {canonical_protocol(item): 1_000_000 for item in allowed_protocols}
-    if not requested_inventory:
+    if not requested_inventory and not auto_size:
         requested_inventory = {
             canonical_protocol(key): 1_000_000
             for key in (parameters.get("technology_defaults") or {})
             if canonical_protocol(key) in PROTOCOL_CAPACITY
         }
     inventory_protocols = set(requested_inventory)
-    if binding_inventory:
+    if binding_inventory or auto_size:
         inventory_protocols.update(used_protocols)
     inventory = {
         protocol: {
@@ -190,7 +207,7 @@ def plan_network_distribution(
         for protocol in sorted(inventory_protocols)
     }
     plan["protocol_inventory"] = inventory
-    if binding_inventory:
+    if binding_inventory and not auto_size:
         for protocol, stock in inventory.items():
             excess = max(0, stock["used"] - stock["provisioned"])
             if not excess:
@@ -201,7 +218,12 @@ def plan_network_distribution(
                 f"{protocol}: {stock['used']} physische Segmente belegt, aber nur "
                 f"{stock['provisioned']} bestätigt; Sollbestand um {excess} überschritten."
             )
-    remaining = {protocol: stock["free"] for protocol, stock in inventory.items()}
+    remaining = {protocol: min(stock['free'], max(0, hard_limits.get(protocol, stock['provisioned']) - stock['used']))
+                 for protocol, stock in inventory.items()}
+    allocated = defaultdict(int)
+    for protocol, maximum in hard_limits.items():
+        if used_protocols.get(protocol, 0) > maximum:
+            plan['unresolved'].append(f'{protocol}: bestehende Topologie überschreitet die ausdrücklich feste Grenze von {maximum} Segmenten.')
     ordered_networks = sorted(metrics_by_network.items(), key=lambda item: (-_load(item[1]), item[0]))
     for network_id, rows in ordered_networks:
         before = _load(rows)
@@ -271,23 +293,29 @@ def plan_network_distribution(
         for index, segment in enumerate(segments):
             segment["name"] = f"{network_id}-CAP-S{index + 1:02d}"
         additional = max(0, len(segments) - 1)
-        same_protocol_free = remaining.get(protocol, 1_000_000)
+        same_protocol_free = remaining.get(protocol, 0 if auto_size else 1_000_000)
         available_inventory = {
             candidate_protocol: {**stock, "free": remaining.get(candidate_protocol, stock["free"])}
             for candidate_protocol, stock in inventory.items()
         }
         technology_candidates = _technology_candidates(rows, protocol, target, parameters, available_inventory)
         selected_technology = next((item for item in technology_candidates if item["fits_target"]), None)
-        if max(item["projected_load_percent"] for item in segments) <= target and additional <= same_protocol_free:
+        fits_same_protocol = max(item['projected_load_percent'] for item in segments) <= target
+        can_expand = auto_size and (protocol not in hard_limits or
+            used_protocols.get(protocol, 0) + allocated[protocol] + additional <= hard_limits[protocol])
+        resource_action = 'USE_EXISTING_SEGMENTS'
+        if fits_same_protocol and (additional <= same_protocol_free or can_expand):
             decision = "SPLIT_CURRENT_TECHNOLOGY"
+            resource_action = 'PLAN_ADDITIONAL_SEGMENTS' if additional > same_protocol_free else 'USE_EXISTING_SEGMENTS'
+            allocated[protocol] += additional
             if protocol in remaining:
-                remaining[protocol] -= additional
+                remaining[protocol] = max(0, remaining[protocol] - additional)
         elif selected_technology:
             decision = "MIGRATE_TECHNOLOGY"
             selected_protocol = selected_technology["protocol"]
             remaining[selected_protocol] -= selected_technology["required_segments"]
-            if protocol in remaining:
-                remaining[protocol] += 1
+            # A migration is only a recommendation. The split-only proposal
+            # cannot spend its source segment until that migration is applied.
         else:
             decision = "UNRESOLVED_CAPACITY_CONSTRAINT"
             for segment in segments:
@@ -302,6 +330,8 @@ def plan_network_distribution(
             "proposed_segments": len(segments), "additional_segments": additional,
             "projected_max_load_percent": max(item["projected_load_percent"] for item in segments),
             "available_additional_segments": same_protocol_free,
+            "resource_action": resource_action,
+            "new_resources_required": max(0, additional - same_protocol_free) if decision == 'SPLIT_CURRENT_TECHNOLOGY' else 0,
             "decision": decision,
             "selected_protocol": (
                 selected_technology["protocol"]
@@ -312,6 +342,17 @@ def plan_network_distribution(
             "segments": segments,
         })
     plan["remaining_protocol_inventory"] = remaining
+    plan['resource_allocation'] = [{
+        'protocol': protocol, 'baseline_count': stock['provisioned'], 'current_modeled_count': stock['used'],
+        'recommended_count': stock['used'] + allocated[protocol],
+        'increase_over_baseline': max(0, stock['used'] + allocated[protocol] - stock['provisioned']),
+        'additional_for_load': allocated[protocol], 'hard_limit': hard_limits.get(protocol),
+        'decision': 'EXPAND_SAME_TECHNOLOGY' if allocated[protocol] else 'KEEP_CURRENT_TOPOLOGY',
+    } for protocol, stock in inventory.items()]
+    plan['decision_rationale'] = ('Vorhandene freie Segmente zuerst nutzen; danach gleichartige Segmente nach berechneter '
+        'Ziel-Buslast ergänzen. Protokolle, Zyklen und unbetroffene Zweige bleiben erhalten. '
+        'Keine globale Minimalitätsbehauptung und kein Nachweis real vorhandener zusätzlicher Hardware.'
+        if auto_size else 'Explizit feste Ressourcenobergrenzen einhalten; Engpässe als Grenzen ausweisen.')
     plan["status"] = "RESIDUAL_CONSTRAINTS" if plan["unresolved"] else "PROPOSED" if plan["networks"] else "WITHIN_TARGET"
     return plan
 

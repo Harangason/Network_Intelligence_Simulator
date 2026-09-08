@@ -1,5 +1,31 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { reconcileConfirmedGraphDevices } from "./engineering-specification.ts";
+
+test("confirmed graph identities survive unrelated prose templates and preserve role counts", () => {
+  const prompt = `- Industrie: Automotive
+- Netzwerktechnologien: CAN-FD (can_fd)
+- Hardware-Sollwerte: {"gateways":1,"ecus":1,"sensors":1,"actuators":1}
+- Systemcluster-Graph: [{"network_id":"can_fd","controllers":[{"ecu":"Motorsteuerung","sensors":["MotorTemperature"],"actuators":["MotorValve"]}]}]
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperatursensor und einem Stellglied.`;
+  const spec = extractEngineeringSpecification(prompt);
+  const chains = reconcileConfirmedGraphDevices(spec, prompt);
+  assert.deepEqual(chains.filter(c => c.device_type !== "Gateway").map(c => c.hardware_name).sort(),
+    ["MotorTemperature", "MotorValve", "Motorsteuerung"].sort());
+  assert.equal(chains.filter(c => c.device_type === "Gateway").length, 1);
+  assert.equal(chains.find(c => c.hardware_name === "MotorValve").configuration.parameter_quality, "GENERIC_ESTIMATE");
+  const mapped = applyConfirmedClusterGraph(chains, prompt);
+  assert.match(mapped.find(c => c.hardware_name === "MotorTemperature").transport_network_ref, /IO-motorsteuerung/);
+});
+
+test("confirmed graph rejects conflicting identities and excess hardware before proposal review", () => {
+  const spec = extractEngineeringSpecification("Fahrzeug mit 1 ECU, 1 Sensor und 1 Gateway");
+  assert.throws(() => reconcileConfirmedGraphDevices(spec,
+    '- Systemcluster-Graph: [{"controllers":[{"ecu":"Drive","sensors":["Drive"]}]}]'), /Mehrdeutige/);
+  assert.throws(() => reconcileConfirmedGraphDevices(spec,
+    '- Hardware-Sollwerte: {"ecus":1,"sensors":0,"actuators":0,"gateways":1}\n- Systemcluster-Graph: [{"controllers":[{"ecu":"Drive","sensors":["Temp"]}]}]'), /Hardware-Sollwert sensors/);
+});
 
 import { applyConfirmedClusterGraph, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
 

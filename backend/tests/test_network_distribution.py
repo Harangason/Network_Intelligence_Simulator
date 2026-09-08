@@ -313,6 +313,20 @@ def test_binding_inventory_reports_existing_overprovisioning_even_without_overlo
     }]
 
 
+def test_unapplied_migration_does_not_free_segments_for_split_proposals():
+    source = capacity((120, 20, 20))
+    extra = deepcopy(capacity((40, 40))['results']['routes'])
+    for row in extra:
+        row.update(network_id='other-lin', route_id='other-' + row['route_id'])
+    source['results']['routes'].extend(extra)
+    result = plan_network_distribution(
+        source, hardware(), {}, available_protocol_counts={'LIN': 2, 'CAN_FD': 1},
+    )
+    assert result['networks'][0]['decision'] == 'MIGRATE_TECHNOLOGY'
+    assert result['remaining_protocol_inventory']['LIN'] == 0
+    assert result['networks'][1]['decision'] == 'UNRESOLVED_CAPACITY_CONSTRAINT'
+
+
 def test_multiple_overloaded_branches_cannot_reserve_the_same_free_segment():
     source = {
         "id": "capacity-scarce-stock",
@@ -433,6 +447,7 @@ def test_simulator_export_preserves_physical_segments_and_protocol_speed(monkeyp
     class Connection:
         def execute(self, query, _values):
             self.hardware = "FROM engineering_hardware_nodes" in query
+            self.addressing = "engineering_hardware_interfaces" in query or "engineering_technology_address_bindings" in query
             return self
 
         def fetchall(self):
@@ -459,9 +474,12 @@ def test_simulator_export_updates_interface_technology_with_route_network(monkey
     class Connection:
         def execute(self, query, _values):
             self.hardware = "FROM engineering_hardware_nodes" in query
+            self.addressing = "engineering_hardware_interfaces" in query or "engineering_technology_address_bindings" in query
             return self
 
         def fetchall(self):
+            if self.addressing:
+                return []
             if self.hardware:
                 return [
                     {"id": "source", "name": "Source", "device_type": "ECU"},
@@ -496,4 +514,5 @@ def test_simulator_export_updates_interface_technology_with_route_network(monkey
         "name": "Target Ethernet",
         "technology": "can_fd",
         "network": "powertrain-can",
+        "physical_port_ref": "target:target-interface",
     }]

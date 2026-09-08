@@ -1,6 +1,20 @@
 from pathlib import Path
+import errno
 
 from backend.app.job_service import JobService
+
+
+def test_unavailable_runtime_mount_does_not_crash_application_import(monkeypatch, tmp_path, caplog):
+    primary = tmp_path / 'jobs' / 'registry.json'
+    original = Path.is_file
+    def unavailable(path):
+        if path == primary:
+            raise OSError(errno.EIO, 'Input/output error')
+        return original(path)
+    monkeypatch.setattr(Path, 'is_file', unavailable)
+    service = JobService(registry_path=primary, persist=True)
+    assert service.list() == []
+    assert 'Could not load persisted simulation jobs' in caplog.text
 
 
 def test_vercel_jobs_run_synchronously(monkeypatch) -> None:

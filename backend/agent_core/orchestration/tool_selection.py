@@ -19,4 +19,9 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
             names.update(candidates)
     if len(names)==5:
         names.update({"inspect_findings","evaluate_architecture","find_graph_gaps"})
-    return [tool for tool in tools if tool["name"] in names][:24]
+    reasoning_names = {"analyze_trace_root_cause", "explain_simulation_failure", "investigate_deadline_miss", "analyze_fault_effects",
+                       "find_first_divergence", "compare_simulation_runs", "continue_reasoning", "inspect_reasoning", "get_trace_window"}
+    if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
+        names.update(reasoning_names)
+    selected = [tool for tool in tools if tool["name"] in names]
+    return sorted(selected, key=lambda tool: tool["name"] not in reasoning_names)[:24]

@@ -91,6 +91,8 @@ def _load_project_transport_config(project_id: str, routes: list[dict[str, Any]]
 def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) -> dict[str, Any]:
     """Freeze canonical transport and signal data under the snapshot transaction."""
     from .capacity.service import _payload_bytes, _requirement_value, parameters_for_protocol
+    from .routing.network_sync import enrich_route_from_linked_topology
+    from .physical_segments import physical_port_networks
     from .workflow.service import WorkflowStatusService
 
     state = WorkflowStatusService(project_id).get()
@@ -99,7 +101,12 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
     signals = {str(item["id"]): item for item in model["signals"]}
     interfaces = {str(item["id"]): item for item in model["interfaces"]}
     parameters = state["parameters"]
-    routes = deepcopy(model["routes"])
+    topology = state.get("topology") or {}
+    port_networks = physical_port_networks(topology)
+    routes = [enrich_route_from_linked_topology(route, topology, port_networks) for route in model["routes"]]
+    # Freeze reviewed physical assignments, not older logical bus names.
+    # This projection changes the new snapshot, never canonical routes.
+    model = {**model, "routes": routes}
     for route in routes:
         payload = route.get("payload") or {}
         message = messages.get(str(payload.get("message_id") or ""), {})
@@ -205,6 +212,11 @@ def enrich_simulation_config(config: dict[str, Any], project_id: str, *, model: 
             communication["message_ids"] = sorted(message_ids)
         if linked_routes:
             communication["routing_entry_ids"] = sorted(str(route.get("id")) for route in linked_routes)
+            communication["gateways"] = sorted({
+                str(hop.get('node_id') or hop.get('id')) if isinstance(hop, dict) else str(hop)
+                for route in linked_routes for hop in (route.get('route') or {}).get('gateways') or []
+                if hop and (not isinstance(hop, dict) or hop.get('node_id') or hop.get('id'))
+            })
     _apply_simulation_scope(enriched)
     signal_validation = validate_signal_emulation_model(enriched)
     enriched["signal_emulation_validation"] = signal_validation
@@ -288,6 +300,7 @@ def validate_scenario(scenario: dict[str, Any], engineering_model: dict[str, Any
     faults = scenario.get("faults") if isinstance(scenario.get("faults"), list) else []
     if mode == "NORMAL" and faults:
         raise EngineeringValidationError("NORMAL darf keine absichtlich injizierten Fehler enthalten.")
+    has_model = engineering_model is not None
     engineering_model = engineering_model or {}
     valid_targets = {
         "SIGNAL": {str(value) for item in engineering_model.get("signals") or [] if isinstance(item, dict) for value in (item.get("id"), item.get("name")) if value},
@@ -320,7 +333,21 @@ def validate_scenario(scenario: dict[str, Any], engineering_model: dict[str, Any
             raise EngineeringValidationError(f"Fault {index + 1} muss nach seiner Startzeit enden.")
         target = fault.get("target") if isinstance(fault.get("target"), dict) else {}
         target_id = str(target.get("id") or target.get("name") or "")
-        if target_id and valid_targets[scope] and target_id not in valid_targets[scope]:
+        allowed = valid_targets[scope]
+        if fault_type in {'GATEWAY_DELAY', 'GATEWAY_DROP'}:
+            gateways = [node for node in engineering_model.get('nodes') or []
+                if isinstance(node, dict) and str(node.get('device_type') or node.get('type') or '').upper() == 'GATEWAY']
+            allowed = allowed | {str(value) for node in gateways for value in (node.get('id'), node.get('name')) if value}
+            matches = [node for node in gateways if target_id and target_id == str(node.get('id') or '')]
+            if not matches:
+                matches = [node for node in gateways if target_id and target_id == str(node.get('name') or '')]
+            if len(matches) > 1:
+                raise EngineeringValidationError(f"Fault {index + 1} hat ein mehrdeutiges Gateway-Ziel: {target_id}")
+            if matches and matches[0].get('id'):
+                # Runtime events carry canonical gateway IDs, never display names.
+                target_id = str(matches[0]['id'])
+                fault = {**fault, 'target': {**target, 'id': target_id}}
+        if target_id and has_model and target_id not in allowed:
             raise EngineeringValidationError(f"Fault {index + 1} referenziert kein vorhandenes {scope}-Ziel: {target_id}")
         normalized.append({
             **fault,
@@ -356,7 +383,7 @@ def save_scenario(data: dict[str, Any]) -> dict[str, Any]:
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
             (
                 current_project_id(), str(scenario.get("name") or "Simulationsszenario"), scenario.get("description"), scenario["mode"],
-                float(scenario.get("duration_s") or 1), float(scenario.get("speed") or 1), int(scenario.get("seed") or 42),
+                float(scenario.get("duration_s") or 1), float(scenario.get("speed") or 1), int(scenario.get("seed", 42)),
                 Jsonb(scenario.get("trace_formats") or ["universal-jsonl"]), Jsonb(scenario.get("simulation_scope") or {}),
                 Jsonb(scenario.get("faults") or []),
                 Jsonb(scenario.get("initial_conditions") or {}), Jsonb(scenario.get("signal_profiles") or []),
@@ -497,7 +524,7 @@ def persist_trace_metadata(project_id: str, job_id: str, result: dict[str, Any],
                     str((config.get("scenario") or {}).get("mode") or "NORMAL"), Jsonb(config.get("scenario") or {}),
                     Jsonb((config.get("engineering_model") or {}).get("counts") or {}),
                     Jsonb({"behavior_engine": "v1", "codec": "v1", "fault_engine": "v1"}),
-                    int(config.get("seed") or 42), Jsonb(config.get("formats") or []),
+                    int(config.get("seed", 42)), Jsonb(config.get("formats") or []),
                     Jsonb(result.get("artifacts") or []), Jsonb({
                         "trace": result.get("trace") or {}, "runtime_metrics": result.get("runtime_metrics") or {},
                         "comparison": (result.get("model_simulation") or {}).get("comparison") or {},

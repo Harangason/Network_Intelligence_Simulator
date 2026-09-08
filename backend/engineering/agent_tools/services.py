@@ -309,7 +309,7 @@ def register_tools():
         register(name,"Projektgebundenen Simulationslauf lesen oder stoppen.",P.RUN_SIMULATION,lambda a,x=action:_simulation(a,x),job_id=ID)
     trace_fields=dict(job_id=(str|None,None),events=(list[dict[str,Any]]|None,None))
     for name,handler in [("load_trace",analysis.window),("get_trace_window",analysis.window),("analyze_trace",analysis.analyze),("find_trace_root_cause",analysis.root_cause),("find_anomalies",analysis.analyze)]:
-        register(name,"Projektgebundene Trace-Ereignisse auswerten.",P.ANALYZE_TRACE,handler,**trace_fields,start_s=(float,0.0),end_s=(float,1e12),limit=LIMIT,offset=(int,Field(default=0,ge=0)),configuration=OPTIONAL_OBJECT)
+        register(name,"Projektgebundene Trace-Ereignisse auswerten. Job-Fenster: next_cursor als cursor fortsetzen; offset nur für Inline-Ereignisse.",P.ANALYZE_TRACE,handler,**trace_fields,start_s=(float,0.0),end_s=(float,1e12),limit=LIMIT,offset=(int,Field(default=0,ge=0)),cursor=(int,Field(default=0,ge=0)),configuration=OPTIONAL_OBJECT)
     register("correlate_signals","Signalreihen auf gemeinsamen Zeitpunkten korrelieren.",P.ANALYZE_TRACE,analysis.correlate,**trace_fields,signal_names=(list[str]|None,None))
     register("compare_golden_trace","Trace mit einem Golden Trace vergleichen.",P.ANALYZE_TRACE,analysis.compare,**trace_fields,golden_job_id=(str|None,None),golden_events=(list[dict[str,Any]],Field(default_factory=list)))
     for name in ["classify_trace_fault","classify_fault"]:
@@ -329,7 +329,7 @@ def register_tools():
     register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=TEXT)
     register("generate_wizard_parameters", "Bestätigte technologieabhängige Wizard-Defaults deterministisch aus der zentralen Registry speichern.", P.VALIDATE, wizard_generation.generate_parameters, prompt=TEXT)
     register("plan_capacity_remediation", "Überlastete physische Zweige paketweise analysieren und gegen freie Bussegmente sowie geeignete Technologien planen.", P.READ_MODEL, wizard_generation.plan_capacity_remediation, prompt=TEXT)
-    register("generate_capacity_network_repair", "Sichere Capacity-Splits auf freie gleichartige Bussegmente als prüfbaren Topologie-Vorschlag erzeugen.", P.GENERATE_PROPOSAL, wizard_generation.generate_capacity_network_repair, prompt=TEXT)
+    register("generate_capacity_network_repair", "Segmentanzahl automatisch aus Last bestimmen, vorhandene Ressourcen zuerst nutzen und zusätzlichen Bedarf als prüfbaren Topologie-Vorschlag ausweisen; explizite harte Grenzen bleiben verbindlich.", P.GENERATE_PROPOSAL, wizard_generation.generate_capacity_network_repair, prompt=TEXT)
     register("create_workload","Messbaren Auftrag mit Sollzahlen planen und speichern.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload(a["request"]),request=OBJECT)
     register("generate_signals","Signalauftrag durch vorhandenen Workload-Generator planen.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload({**a["request"],"workload_type":"SIGNAL_GENERATION"}),request=OBJECT)
     for name,method in [("start_workload","start_workload"),("validate_workload","validate_workload"),("repair_workload","retry_invalid"),("generate_missing","generate_missing"),("inspect_workload","get_workload"),("get_workload_progress","progress")]:
@@ -349,3 +349,7 @@ def register_tools():
 
 from pydantic import Field
 register_tools()
+
+from ..reasoning.tools import register_reasoning_tools
+register_reasoning_tools()
+register("get_interface_load", "Physische Schnittstellenlast durch den vorhandenen Kapazitätsrechner bestimmen.", P.READ_MODEL, _interface_load, interface_id=ID)

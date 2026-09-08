@@ -25,6 +25,8 @@ def create_server(authority: ToolAuthority) -> MCPServer:
             call.__annotations__ = {"request": item.input_model, "return": ToolResult}
             return call
         read_only = definition.permission in {Permission.READ_MODEL, Permission.ANALYZE_TRACE}
+        if definition.name in {"analyze_trace_root_cause", "find_trace_root_cause", "explain_simulation_failure", "investigate_deadline_miss", "analyze_fault_effects", "continue_reasoning"}:
+            read_only = False  # Persists a derived analysis, never an architecture change.
         server.add_tool(make_tool(definition), name=definition.name, description=definition.description,
                         annotations=ToolAnnotations(read_only_hint=read_only, destructive_hint=definition.name == "apply_approved_proposal",
                                                     idempotent_hint=read_only, open_world_hint=False), structured_output=True)

@@ -15,6 +15,6 @@ export function engineeringContextHref(ref: Record<string, string>, projectId: s
   if (!routes[type] && !resources[type]) return null;
   const params = new URLSearchParams({ project: projectId });
   if (resources[type]) params.set("resource", resources[type]);
-  if (ref.id) params.set(type === 'Workspace' ? 'response' : "object", ref.id);
+  if (ref.id) params.set(type === 'Workspace' ? 'response' : type === 'Route' || type === 'Routing' ? 'route' : "object", ref.id);
   return `${routes[type] ?? "/studio/engineering"}?${params}`;
 }

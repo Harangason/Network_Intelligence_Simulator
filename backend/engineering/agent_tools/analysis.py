@@ -22,8 +22,17 @@ def trace_events(arguments: dict) -> list[dict]:
 
 
 def window(arguments: dict) -> dict:
-    from .simulation_gateway import iter_trace
-    events = trace_events(arguments) if arguments.get("events") is not None else iter_trace(arguments["job_id"])
+    if arguments.get("events") is None:
+        from urllib.parse import quote, urlencode
+        from .simulation_gateway import request_json
+        if arguments.get("offset", 0):
+            raise ValueError("Job-Traces verwenden Byte-Cursor: next_cursor als cursor übergeben; offset gilt nur für Inline-Ereignisse.")
+        query = urlencode({"start_s": arguments.get("start_s", 0), "end_s": arguments.get("end_s", 1e12),
+            "cursor": arguments.get("cursor", 0), "limit": min(int(arguments.get("limit", 500)), 1000)})
+        page = request_json(f"/simulations/{quote(arguments['job_id'], safe='')}/trace-window?{query}")
+        return {**page, "total": None, "next_offset": None, "pagination": "BYTE_CURSOR",
+                "validation_status": "PARTIAL" if page["next_cursor"] is not None else "VALIDATED"}
+    events = trace_events(arguments)
     start, end = float(arguments.get("start_s", 0)), float(arguments.get("end_s", 1e12))
     if start < 0 or end < start:
         raise ValueError("Ungültiges Zeitfenster.")
@@ -49,12 +58,21 @@ def analyze(arguments: dict) -> dict:
 
 
 def root_cause(arguments: dict) -> dict:
-    result = analyze(arguments)
-    events = trace_events(arguments)
-    faults = [event for event in events if event.get("fault") or event.get("error") or event.get("status") in {"ERROR", "FAILED"}]
-    return {"analysis": result, "hypotheses": [{"reason": "Zeitlich zugeordneter Fehler im Trace",
-             "event": item, "confidence": 0.6, "requires_review": True} for item in faults[:50]],
-            "causality_proven": False, "evidence": [{"fault_event_count": len(faults)}]}
+    from ..reasoning.engine import EngineeringReasoningEngine
+    from ..reasoning.service import ReasoningService
+    if arguments.get("events") is None:
+        result = ReasoningService().analyze({k: arguments[k] for k in ("job_id", "start_s", "end_s") if k in arguments})
+    else:
+        result = EngineeringReasoningEngine().analyze(project_id=current_project_id(), job_id="inline-trace",
+            events=trace_events(arguments), context={"snapshot_available": False, "trusted_simulation": False,
+                "configuration": arguments.get("configuration") or {}, "faults": []})
+    data = result.model_dump(mode="json")
+    # Preserve the old affected_objects lookup while all conclusions come from one core.
+    refs = {e.id: e for e in result.evidence_refs}
+    for item in data["hypotheses"]:
+        item["affected_objects"] = next(({k: refs[r].details[k] for k in ("route_id", "network", "gateway_ids", "message_ids") if k in refs[r].details}
+            for r in item["evidence_refs"] if r in refs and refs[r].source_type == "TraceEvent"), {})
+    return {**data, "causality_proven": bool(result.confirmed_causes) and result.validation_status == "CURRENT"}
 
 
 def correlate(arguments: dict) -> dict:
@@ -88,10 +106,21 @@ def correlate(arguments: dict) -> dict:
 
 
 def compare(arguments: dict) -> dict:
+    if arguments.get("events") is None and arguments.get("job_id") and arguments.get("golden_job_id"):
+        from ..reasoning.service import ReasoningService
+        return ReasoningService().inspect("find_first_divergence", arguments)["data"]
     actual = trace_events(arguments)
     golden = trace_events({"job_id": arguments["golden_job_id"]}) if arguments.get("golden_job_id") else arguments.get("golden_events", [])
     if not golden:
         raise ValueError("Ein Golden Trace ist erforderlich.")
+    if not isinstance(golden, list) or len(golden) > 100000:
+        raise ValueError('Golden Trace benötigt höchstens 100000 Ereignisse; größere Traces fensterweise vergleichen.')
+    def identity(event):
+        # Arrival time is an observation, not identity: a delayed frame is still
+        # the same frame and its signal values must remain comparable.
+        sequence = event.get('sequence', event.get('sequence_number'))
+        return (str(event.get('route_id') or event.get('message_id') or 'unknown'),
+                str(sequence) if sequence is not None else str(float(event.get('time_s', 0))))
     def summarize(events):
         counts = defaultdict(int)
         for event in events:
@@ -106,7 +135,7 @@ def compare(arguments: dict) -> dict:
                 if isinstance(value, dict):
                     value = value.get("physical_value", value.get("value"))
                 if isinstance(value, (int, float)) and math.isfinite(value):
-                    result[str(name)][float(event.get("time_s", 0))] = float(value)
+                    result[str(name)][identity(event)] = float(value)
         return result
     actual_samples, golden_samples = samples(actual), samples(golden)
     values = []
@@ -118,9 +147,34 @@ def compare(arguments: dict) -> dict:
                        "rmse": math.sqrt(mean(delta*delta for delta in deltas)) if deltas else None,
                        "max_absolute_error": max(map(abs, deltas)) if deltas else None})
     a, g = summarize(actual), summarize(golden)
+    actual_events = {identity(item): item for item in actual}
+    golden_events = {identity(item): item for item in golden}
+    deviations = []
+    for key in sorted(actual_events.keys() | golden_events.keys()):
+        left, right = actual_events.get(key), golden_events.get(key)
+        difference = {'route_id': key[0], 'sequence': key[1]}
+        if left is None or right is None:
+            difference['type'] = 'MISSING_EVENT' if left is None else 'ADDITIONAL_EVENT'
+        else:
+            delta = float(left.get('time_s', 0)) - float(right.get('time_s', 0))
+            if abs(delta) > 1e-9:
+                difference['timing_delta_s'] = delta
+            for field in ('status', 'network', 'faults'):
+                if left.get(field) != right.get(field):
+                    difference[field] = {'actual': left.get(field), 'golden': right.get(field)}
+            if len(difference) == 2:
+                continue
+            difference['type'] = 'EVENT_DEVIATION'
+        deviations.append(difference)
+    findings = [{'code': 'GOLDEN_TRACE_DEVIATION', 'severity': 'WARNING', 'evidence': item}
+                for item in deviations[:200]]
+    findings.extend({'code': 'SIGNAL_DEVIATION', 'severity': 'WARNING', 'evidence': item}
+                    for item in values if (item['max_absolute_error'] or 0) > 0)
     return {"event_count_delta": len(actual)-len(golden), "routes": [
         {"id": key, "actual": a[key], "golden": g[key], "delta": a[key]-g[key]} for key in sorted(a.keys() | g.keys())],
-        "method": "MESSAGE_FREQUENCY_AND_ALIGNED_VALUE_COMPARISON", "value_comparison": values}
+        "method": "MESSAGE_FREQUENCY_AND_ALIGNED_VALUE_COMPARISON", "value_comparison": values,
+        "alignment": "ROUTE_SEQUENCE_OR_TIMESTAMP", "deviation_count": len(deviations),
+        "event_deviations": deviations[:200], "findings": findings}
 
 
 def graph_analysis() -> dict:

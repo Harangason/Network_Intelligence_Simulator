@@ -13,6 +13,7 @@ from bus_technologies import catalog_summary, normalize_technology_id, technolog
 from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
 from model_based_simulation import build_model_trace
 from universal_trace import generate_universal_events, trace_summary, write_csv, write_jsonl
+from ethernet_transport import write_project_captures
 
 
 CONFIG_SCHEMA = "communication-simulator.simulation-config.v1"
@@ -104,7 +105,6 @@ def _native_configuration(
     native_formats = [
         item for item in formats
         if (can_enabled and item in NATIVE_CAN_FORMATS)
-        or (ethernet_enabled and item in NATIVE_ETHERNET_FORMATS)
     ]
     if not native_formats:
         return None
@@ -256,6 +256,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     events: list[dict[str, Any]] = []
     model_trace: dict[str, Any] = {}
     model_trace_reference: dict[str, Any] = {}
+    native_ethernet: dict[str, Any] = {}
 
     if not validate_only and validation["valid"]:
         routes, events = generate_universal_events(config, profile)
@@ -295,6 +296,10 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
                 written.append(write_jsonl(out_dir / "traces" / "fault_trace.jsonl", events))
         model_trace_reference = _model_trace_manifest_reference(model_trace, model_trace_path)
 
+        packet_paths, native_ethernet = write_project_captures(out_dir / "native", events, formats)
+        written.extend(packet_paths)
+        if native_ethernet.get("unsupported_events"):
+            warnings.append("PCAP enthält ausschließlich unterstützte IP-Ereignisse; andere Technologien bleiben im Universal Trace. Keine Ersatz-/Demo-Pakete.")
         native_config = _native_configuration(config, profile, out_dir, formats)
         if native_config is not None:
             try:
@@ -323,6 +328,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "technology_catalog": catalog_summary(registry),
         "trace": trace_summary(routes, events),
         "model_simulation": model_trace_reference,
+        "native_ethernet": native_ethernet,
     }
     manifest_path = out_dir / "generation_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
@@ -338,6 +344,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         "hardware_validation": validation,
         "trace": trace_summary(routes, events),
         "model_simulation": model_trace,
+        "native_ethernet": native_ethernet,
     }
     result_path = out_dir / "simulation_result.json"
     result["artifacts"].append(str(result_path))
