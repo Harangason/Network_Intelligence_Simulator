@@ -70,33 +70,11 @@ def _participant_names(values: Any, names: dict[str, str]) -> list[str]:
     return sorted({names.get(str(item), str(item)) for item in items if item})
 
 
-def _network_definitions(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {
-        str(item.get("id") or item.get("network_id")): item
-        for item in config.get("networks") or []
-        if isinstance(item, dict) and (item.get("id") or item.get("network_id"))
-    }
-
-
-def _hardware_names(config: dict[str, Any]) -> dict[str, str]:
-    hardware = config.get("hardware") if isinstance(config.get("hardware"), dict) else {}
-    devices = hardware.get("devices") or hardware.get("nodes") or []
-    return {
-        str(item.get("id")): str(item.get("name") or item.get("id"))
-        for item in devices
-        if isinstance(item, dict) and item.get("id")
-    }
-
-
-def _participant_names(values: Any, names: dict[str, str]) -> list[str]:
-    items = values if isinstance(values, list) else [values]
-    return sorted({names.get(str(item), str(item)) for item in items if item})
-
-
 def analyze_runtime_trace(
     result: dict[str, Any],
     config: dict[str, Any],
 ) -> dict[str, Any]:
+    config = {**(config.get("parameters") or {}), **config}
     trace_path = next(
         (Path(path) for path in result.get("artifacts") or [] if str(path).endswith("universal_trace.jsonl")),
         None,
@@ -112,7 +90,7 @@ def analyze_runtime_trace(
     else:
         model_simulation = result.get("model_simulation") if isinstance(result.get("model_simulation"), dict) else {}
         events = [item for item in model_simulation.get("frames") or [] if isinstance(item, dict)]
-    if not events:
+    if not events and not _route_requirements(config):
         return {
             "available": False,
             "reason": "Simulation trace contains no frame events.",
@@ -120,7 +98,7 @@ def analyze_runtime_trace(
         }
 
     configured_duration = max(0.001, _number(config.get("duration_s") or config.get("duration"), 1.0))
-    observed_duration = max(configured_duration, max(_number(item.get("time_s")) for item in events))
+    observed_duration = max(configured_duration, max((_number(item.get("time_s")) for item in events), default=0.0))
     route_requirements = _route_requirements(config)
     network_definitions = _network_definitions(config)
     hardware_names = _hardware_names(config)
@@ -128,8 +106,10 @@ def analyze_runtime_trace(
     by_route: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         by_network[str(event.get("network") or "unknown")].append(event)
-        if str(event.get("traffic_type") or "DATA").upper() == "DATA":
-            by_route[str(event.get("route_id") or "unknown")].append(event)
+        if str(event.get("traffic_type") or "DATA").upper() == "DATA" and event.get("final_segment", True):
+            by_route[str(event.get("end_to_end_route_id") or event.get("route_id") or "unknown")].append(event)
+    for route_id in route_requirements:
+        by_route.setdefault(route_id, [])
 
     network_metrics: list[dict[str, Any]] = []
     for network_id, items in by_network.items():
@@ -191,59 +171,70 @@ def analyze_runtime_trace(
         valid = [item for item in items if item.get("status") == "transmitted"]
         times = [_number(item.get("time_s")) for item in valid]
         intervals_ms = [(right - left) * 1000.0 for left, right in zip(times, times[1:])]
-        expected_cycle_ms = _number(items[0].get("configured_cycle_ms"), 0.0)
-        jitters = [abs(interval - expected_cycle_ms) for interval in intervals_ms]
         requirement = route_requirements.get(route_id, {})
         metadata = requirement.get("metadata") if isinstance(requirement.get("metadata"), dict) else {}
-        jitter_limit = _number(
-            requirement.get("maximum_jitter_ms")
-            or requirement.get("jitter_limit_ms")
-            or metadata.get("maximum_jitter_ms")
-            or config.get("jitter_ms"),
-            0.0,
-        )
-        timeout_ms = _number(requirement.get("timeout_ms") or metadata.get("timeout_ms") or config.get("timeout_ms"), 0.0)
-        maximum_latency_ms = _number(
-            requirement.get("maximum_latency_ms")
-            or requirement.get("deadline_ms")
-            or metadata.get("maximum_latency_ms")
-            or config.get("maximum_latency_ms")
-            or config.get("deadline_ms"),
-            0.0,
-        )
-        freshness_ms = _number(
-            requirement.get("freshness_ms")
-            or requirement.get("data_freshness_limit")
-            or metadata.get("freshness_ms"),
-            0.0,
-        )
-        jitter_violations = sum(jitter_limit > 0 and value > jitter_limit for value in jitters)
-        timeout_events = sum(timeout_ms > 0 and interval > timeout_ms for interval in intervals_ms)
+        first = items[0] if items else {}
+        expected_cycle_ms = _number(first.get("configured_cycle_ms") or requirement.get("cycle_ms"), 0.0)
+        jitters = [abs(interval - expected_cycle_ms) for interval in intervals_ms]
+
+        def limit(*names):
+            for source in (requirement, requirement.get("timing") or {}, metadata, config):
+                value = next((source[name] for name in names if source.get(name) is not None), None)
+                if value is not None:
+                    number = _number(value, -1)
+                    return number if number >= 0 else None
+            return None
+
+        jitter_limit = limit("jitter_limit_ms", "maximum_jitter_ms", "jitter_ms")
+        timeout_ms = limit("timeout_ms")
+        maximum_latency_ms = limit("maximum_latency_ms", "max_latency_ms", "deadline_ms")
+        freshness_ms = limit("freshness_ms", "data_freshness_limit")
+        release_start = max(0.0, _number(requirement.get("phase_ms"), 0.0) / 1000)
+        # Observe silence before the first reception and after the last one as
+        # well as gaps between receptions. A totally dead route is not healthy.
+        monitored_times = [time for time in times if release_start <= time <= observed_duration]
+        gaps_ms = [(right - left) * 1000 for left, right in zip(
+            [release_start, *monitored_times], [*monitored_times, observed_duration])]
+        timeout_events = sum(gap > timeout_ms + 1e-7 for gap in gaps_ms) if timeout_ms is not None and timeout_ms > 0 else 0
+        jitter_violations = sum(value > jitter_limit + 1e-7 for value in jitters) if jitter_limit is not None else 0
+        latencies = [_number(item.get("end_to_end_latency_ms")) for item in valid]
+        queue_delays = [_number(item.get("queue_delay_ms")) for item in items]
+        latency_violations = sum(value > maximum_latency_ms + 1e-7 for value in latencies) if maximum_latency_ms is not None else 0
+        freshness_violations = (sum(value > freshness_ms + 1e-7 for value in latencies)
+            + sum(gap > freshness_ms + 1e-7 for gap in gaps_ms)) if freshness_ms is not None else 0
         jitter_violation_total += jitter_violations
         timeout_total += timeout_events
-        latencies = [_number(item.get("end_to_end_latency_ms")) for item in items]
-        queue_delays = [_number(item.get("queue_delay_ms")) for item in items]
-        latency_violations = sum(maximum_latency_ms > 0 and value > maximum_latency_ms for value in latencies)
-        freshness_violations = sum(
-            freshness_ms > 0 and interval + latency > freshness_ms
-            for interval, latency in zip(intervals_ms, latencies[1:])
-        )
         latency_violation_total += latency_violations
         freshness_violation_total += freshness_violations
-        sender_id = str(items[0].get("sender_hardware") or items[0].get("sender") or "")
-        receiver_ids = [str(item) for item in (items[0].get("receiver_hardware") or items[0].get("receivers") or []) if item]
+        requirement_statuses = {
+            "jitter": "FAIL" if jitter_violations else "PASS" if jitter_limit is not None and jitters else "NOT_EVALUATED",
+            "latency": "FAIL" if latency_violations else "PASS" if maximum_latency_ms is not None and latencies else "NOT_EVALUATED",
+            "timeout": "FAIL" if timeout_events else "PASS" if timeout_ms is not None and timeout_ms > 0 and (times or observed_duration-release_start >= timeout_ms/1000) else "NOT_EVALUATED",
+            "freshness": "FAIL" if freshness_violations else "PASS" if freshness_ms is not None and latencies else "NOT_EVALUATED",
+        }
+        dropped_count = sum(item.get("status") == "dropped" for item in items)
+        corrupted_count = sum(item.get("status") == "corrupted" for item in items)
+        configured_checks = [name for name, value in (("jitter", jitter_limit), ("latency", maximum_latency_ms),
+            ("timeout", timeout_ms), ("freshness", freshness_ms)) if value is not None]
+        route_status = ("FAIL" if dropped_count or corrupted_count or "FAIL" in requirement_statuses.values()
+            else "PASS" if configured_checks and all(requirement_statuses[name] == "PASS" for name in configured_checks)
+            else "NOT_EVALUATED")
+        sender_id = str(first.get("origin_sender_hardware") or requirement.get("source") or first.get("sender_hardware") or first.get("sender") or "")
+        receiver_ids = [str(item) for item in (first.get("receiver_hardware") or first.get("receivers") or [requirement.get("target")]) if item]
         route_metrics.append(
             {
                 "route_id": route_id,
-                "route_name": str(items[0].get("route_name") or route_id),
-                "network_id": str(items[0].get("network") or "unknown"),
+                "route_name": str(requirement.get("name") or first.get("route_name") or route_id),
+                "canonical_route_id": requirement.get("canonical_route_id") or requirement.get("routing_entry_id") or first.get("route_ref"),
+                "route_segment_count": len(requirement.get("segments") or []) or 1,
+                "network_id": str(first.get("network") or requirement.get("network_id") or "unknown"),
                 "sender_id": sender_id,
                 "sender": hardware_names.get(sender_id, sender_id),
                 "receiver_ids": receiver_ids,
                 "receivers": [hardware_names.get(item, item) for item in receiver_ids],
                 "event_count": len(items),
-                "drop_rate": round(sum(item.get("status") == "dropped" for item in items) / len(items), 6),
-                "corruption_rate": round(sum(item.get("status") == "corrupted" for item in items) / len(items), 6),
+                "drop_rate": round(dropped_count / len(items), 6) if items else None,
+                "corruption_rate": round(corrupted_count / len(items), 6) if items else None,
                 "configured_cycle_ms": expected_cycle_ms,
                 "actual_average_cycle_ms": round(sum(intervals_ms) / len(intervals_ms), 6) if intervals_ms else 0.0,
                 "actual_min_cycle_ms": round(min(intervals_ms), 6) if intervals_ms else 0.0,
@@ -252,18 +243,22 @@ def analyze_runtime_trace(
                 "p95_jitter_ms": round(_percentile(jitters, 0.95), 6),
                 "p99_jitter_ms": round(_percentile(jitters, 0.99), 6),
                 "maximum_jitter_ms": round(max(jitters), 6) if jitters else 0.0,
-                "jitter_limit_ms": jitter_limit or None,
+                "jitter_limit_ms": jitter_limit,
                 "jitter_violations": jitter_violations,
-                "maximum_latency_limit_ms": maximum_latency_ms or None,
+                "maximum_latency_limit_ms": maximum_latency_ms,
                 "latency_violations": latency_violations,
-                "freshness_limit_ms": freshness_ms or None,
+                "freshness_limit_ms": freshness_ms,
                 "freshness_violations": freshness_violations,
-                "average_end_to_end_latency_ms": round(sum(latencies) / len(latencies), 6),
-                "maximum_end_to_end_latency_ms": round(max(latencies), 6),
-                "average_queue_delay_ms": round(sum(queue_delays) / len(queue_delays), 6),
-                "maximum_queue_delay_ms": round(max(queue_delays), 6),
+                "average_end_to_end_latency_ms": round(sum(latencies) / len(latencies), 6) if latencies else 0.0,
+                "maximum_end_to_end_latency_ms": round(max(latencies, default=0.0), 6),
+                "average_queue_delay_ms": round(sum(queue_delays) / len(queue_delays), 6) if queue_delays else 0.0,
+                "maximum_queue_delay_ms": round(max(queue_delays, default=0.0), 6),
                 "timeouts": timeout_events,
-                "status": "FAIL" if jitter_violations or timeout_events or latency_violations or freshness_violations else "PASS",
+                "status": route_status,
+                "requirement_statuses": requirement_statuses,
+                "timeout_limit_ms": timeout_ms,
+                "received_event_count": len(valid),
+                "observed_silence_max_ms": round(max(gaps_ms, default=0.0), 6),
             }
         )
     route_metrics.sort(
@@ -344,6 +339,9 @@ def analyze_runtime_trace(
         "burst_window_ms": 100,
         "summary": {
             "event_count": total,
+            "expected_route_count": len(route_requirements),
+            "evaluated_route_count": sum(item["status"] != "NOT_EVALUATED" for item in route_metrics),
+            "route_status_counts": {status: sum(item["status"] == status for item in route_metrics) for status in ("PASS", "FAIL", "NOT_EVALUATED")},
             "transmitted_events": total - dropped - corrupted,
             "dropped_frames": dropped,
             "corrupted_frames": corrupted,
@@ -363,9 +361,9 @@ def analyze_runtime_trace(
             "queue_drops": sum(item.get("drop_reason") == "queue_overflow" for item in events),
         },
         "reliability": {
-            "delivery_probability": round((total - dropped - corrupted) / total, 8),
-            "packet_loss_rate": round(dropped / total, 8),
-            "corruption_rate": round(corrupted / total, 8),
+            "delivery_probability": round((total - dropped - corrupted) / total, 8) if total else None,
+            "packet_loss_rate": round(dropped / total, 8) if total else None,
+            "corruption_rate": round(corrupted / total, 8) if total else None,
             "retransmissions": sum(int(item.get("retransmission_count") or 0) for item in events),
             "duplicates": sum(bool(item.get("duplicate_injected")) for item in events),
             "reordered_events": sum(bool(item.get("reordered")) for item in events),

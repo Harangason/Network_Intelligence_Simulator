@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import heapq
+from copy import deepcopy
 import json
 import random
 from datetime import datetime, timezone
@@ -129,12 +131,15 @@ def _restbus_control_event(
         "dst_ips": [target["ip"]],
         "traffic_type": "CONTROL",
         "protocol_event": protocol_event,
-        "session_id": f"session:{template['route_id']}",
+        "session_id": template.get("session_id") or f"session:{template['route_id']}",
         "signals": [],
         "faults": [],
     }
-    for key in ("signal", "signal_id", "signal_value", "value", "unit", "golden_value", "model_label", "behavior_type"):
+    for key in ("signal", "signal_id", "signal_value", "value", "unit", "golden_value", "model_label", "behavior_type", "caused_by_event_id"):
         event.pop(key, None)
+    for key in list(event):
+        if key.startswith("_"):
+            event.pop(key)
     if tcp_flags is not None:
         event["tcp_flags"] = tcp_flags
     return event
@@ -144,14 +149,16 @@ def _add_restbus_sessions(events: list[dict[str, Any]], config: dict[str, Any], 
     settings = _restbus_settings(config)
     if settings is None:
         return events
+    config = {**(config.get("parameters") or {}), **config}
     duration_s = max(0.001, float(config.get("duration_s") or config.get("duration") or 1.0))
     grouped: dict[str, list[dict[str, Any]]] = {}
     for event in events:
         if event.get("ethernet"):
             event["traffic_type"] = "DATA"
             event["protocol_event"] = "DATA"
-            event["session_id"] = f"session:{event['route_id']}"
-            grouped.setdefault(str(event["route_id"]), []).append(event)
+            session_key = event.get("segment_id") if int(event.get("segment_count") or 1) > 1 else event["route_id"]
+            event["session_id"] = f"session:{session_key}"
+            grouped.setdefault(str(session_key), []).append(event)
     if not grouped:
         return events
 
@@ -195,7 +202,7 @@ def _add_restbus_sessions(events: list[dict[str, Any]], config: dict[str, Any], 
                 shifted["transport_ack_number"] = server_isn + 1
             if shifted["scheduled_time_s"] <= duration_s + 1e-12:
                 shifted_data.append(shifted)
-                if settings["acknowledge_data"] and shifted.get("status") == "transmitted":
+                if settings["acknowledge_data"] and shifted.get("status") == "transmitted" and not config.get("_defer_restbus_acks"):
                     for receiver_index, _receiver in enumerate(flow["destinations"]):
                         data_delivery_s = float(shifted.get("base_transmission_time_s") or 0.0) * 2
                         ack_time = float(shifted["time_s"]) + data_delivery_s + response_delay_s
@@ -236,6 +243,24 @@ def _add_restbus_sessions(events: list[dict[str, Any]], config: dict[str, Any], 
     return untouched + shifted_data + controls[:available_controls]
 
 
+def _restbus_ack_events(event, settings):
+    """Acknowledge delivered data after its actual queued arrival."""
+    if not settings or not settings["acknowledge_data"] or not event.get("ethernet") or event.get("traffic_type") != "DATA" or event["status"] != "transmitted":
+        return []
+    result = []
+    for receiver_index, _ in enumerate(event["ethernet"]["destinations"]):
+        kwargs = {}
+        if event["ethernet"]["transport_protocol"].lower() == "tcp":
+            kwargs = {"tcp_flags": 0x10, "transport_sequence": int(event.get("transport_ack_number") or 0),
+                "transport_acknowledgement": int(event.get("transport_sequence_bytes") or 0) + int(event["payload_bytes"])}
+        else:
+            kwargs = {"payload": f"ACK:{event['sequence']}".encode()}
+        result.append(_restbus_control_event(event, event_id=f"{event['event_id']}:ack:{receiver_index}",
+            protocol_event="DATA_ACK", requested_at=float(event["time_s"]) + settings["response_delay_s"],
+            receiver_index=receiver_index, reverse=True, **kwargs))
+    return result
+
+
 def _interface_index(profile: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, list[dict[str, Any]]]]:
     by_id: dict[str, dict[str, Any]] = {}
     by_network: dict[str, list[dict[str, Any]]] = {}
@@ -270,7 +295,20 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
     explicit = config.get("communications")
     routes: list[dict[str, Any]] = []
     if isinstance(explicit, list):
-        for index, raw in enumerate(explicit):
+        expanded = []
+        for raw in explicit:
+            if not isinstance(raw, dict):
+                continue
+            segments = raw.get("segments") or []
+            if len(segments) > 1:
+                for segment in segments:
+                    expanded.append({**raw, **segment, "segments": [],
+                        "end_to_end_route_id": raw["id"], "origin_sender_hardware": raw.get("source"),
+                        "origin_target_hardware": raw.get("target"), "name": raw.get("name") or raw["id"],
+                        "gateways": segment.get("gateway_ids") or []})
+            else:
+                expanded.append(raw)
+        for index, raw in enumerate(expanded):
             if not isinstance(raw, dict):
                 continue
             sender_id = str(raw.get("sender_interface") or raw.get("source_interface") or raw.get("sender") or "")
@@ -292,12 +330,12 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
             if not receivers:
                 receivers = [item for item in by_network.get(network_id, []) if item["interface_id"] != sender_id]
             gateway_ids = [str(item) for item in raw.get("gateways") or []]
-            if sender.get("hardware_type") == "gateway":
+            if int(raw.get("segment_count") or 1) == 1 and sender.get("hardware_type") == "gateway":
                 gateway_ids.append(str(sender["hardware_id"]))
             gateway_ids.extend(
                 str(item["hardware_id"])
                 for item in receivers
-                if item.get("hardware_type") == "gateway"
+                if int(raw.get("segment_count") or 1) == 1 and item.get("hardware_type") == "gateway"
             )
             routes.append(
                 {
@@ -346,12 +384,88 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
     return routes
 
 
+def _serialize_event(event, config, trace_start, network_available_at, port_available_at):
+    requested_at = float(event["time_s"])
+    network_id = str(event["network"])
+    # Capacity and runtime must serialize the same frame with the same
+    # technology model (including the separate CAN-FD bit-rate phases).
+    transmission_s = (float(event["base_transmission_time_s"])
+                      * max(1.0, float(event.get("fault_load_multiplier") or 1.0))
+                      * (1 + int(event.get("retransmission_count") or 0)))
+    if event.get("ethernet"):
+        # Switched, store-and-forward, full-duplex data plane. TX and RX
+        # queues are separate per physical port; no fictitious shared bus.
+        flow = event["ethernet"]
+        tx_key = (network_id, event["sender_hardware"], event["sender_port"], "TX")
+        tx_start = max(requested_at, port_available_at.get(tx_key, 0.0))
+        tx_wait = tx_start - requested_at
+        queue_size = max(1, int(config.get("queue_size") or 256))
+        if tx_wait / max(transmission_s, 1e-9) > queue_size and event["status"] != "dropped":
+            event.update(status="dropped", drop_reason="tx_queue_overflow")
+        rx_ports = []
+        dropped = event["status"] == "dropped"
+        tx_end = tx_start + transmission_s if not dropped else requested_at
+        if not dropped:
+            port_available_at[tx_key] = tx_end
+        for receiver in flow["destinations"]:
+            key = (network_id, receiver["hardware_id"], receiver["port_id"], "RX")
+            start = max(tx_end, port_available_at.get(key, 0.0)) if not dropped else requested_at
+            wait = max(0.0, start - tx_end)
+            overflow = wait / max(transmission_s, 1e-9) > queue_size
+            status = "dropped" if dropped or overflow else event["status"]
+            end = start + transmission_s if status != "dropped" else requested_at
+            if status != "dropped":
+                port_available_at[key] = end
+            rx_ports.append({**receiver, "start_s": start, "end_s": end, "queue_delay_ms": wait * 1000, "status": status})
+        delivered = [rx for rx in rx_ports if rx["status"] != "dropped"]
+        if not dropped and not delivered:
+            event.update(status="dropped", drop_reason="rx_queue_overflow")
+        completion = max((rx["end_s"] for rx in delivered), default=requested_at)
+        queue_delay = tx_wait + max((rx["queue_delay_ms"] / 1000 for rx in delivered), default=0)
+        event.update(tx_start_s=tx_start if not dropped else None, tx_end_s=tx_end if not dropped else None,
+            rx_ports=rx_ports, queue_delay_ms=queue_delay * 1000,
+            queue_depth_estimate=int(queue_delay / max(transmission_s, 1e-9)),
+            transmission_latency_ms=transmission_s * 2000,
+            end_to_end_latency_ms=(completion-requested_at)*1000 + float(event["configured_latency_ms"]) + float(event.get("retry_delay_ms") or 0),
+            port_model="SWITCHED_FULL_DUPLEX_STORE_FORWARD_V1", time_s=completion,
+            timestamp_unix=trace_start+completion, timestamp_utc=_utc(trace_start+completion))
+        return
+    available_at = network_available_at.get(network_id, 0.0)
+    transmit_start = max(requested_at, available_at)
+    queue_delay_s = max(0.0, transmit_start - requested_at)
+    queue_depth = int(queue_delay_s / max(transmission_s, 0.000000001))
+    queue_size = max(1, int(config.get("queue_size") or 256))
+    queue_overflow = queue_depth > queue_size and event.get("status") != "dropped"
+    if queue_overflow:
+        event["status"] = "dropped"
+        event["drop_reason"] = "queue_overflow"
+        completion = requested_at
+    elif event.get("status") == "dropped":
+        completion = requested_at
+    else:
+        completion = transmit_start + transmission_s
+        network_available_at[network_id] = completion
+    event["queue_delay_ms"] = queue_delay_s * 1000.0
+    event["queue_depth_estimate"] = queue_depth
+    event["transmission_latency_ms"] = transmission_s * 1000.0
+    event["end_to_end_latency_ms"] = (
+        queue_delay_s * 1000.0
+        + transmission_s * 1000.0
+        + float(event["configured_latency_ms"])
+        + float(event.get("retry_delay_ms") or 0.0)
+    )
+    event["time_s"] = completion
+    event["timestamp_unix"] = trace_start + completion
+    event["timestamp_utc"] = _utc(trace_start + completion)
+
+
 def _generate_universal_events(
     config: dict[str, Any],
     profile: dict[str, Any],
     *,
     start_utc: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    config = {**(config.get("parameters") or {}), **config}
     duration_s = max(0.001, float(config.get("duration_s") or config.get("duration") or 1.0))
     seed = int(config.get("seed", 42))
     max_events = max(1, int(config.get("max_events") or 100_000))
@@ -373,7 +487,12 @@ def _generate_universal_events(
     }
 
     address_owners = {}
+    forwarding_templates = {}
     for route in routes:
+        segment_index = int(route["metadata"].get("segment_index") or 0)
+        segment_count = int(route["metadata"].get("segment_count") or 1)
+        end_to_end_id = str(route["metadata"].get("end_to_end_route_id") or route["id"])
+        is_forwarding = segment_index > 0
         sender = route["sender"]
         receivers = route["receivers"]
         if str(sender.get("health")).lower() in {"offline", "disabled", "not_available"}:
@@ -416,8 +535,8 @@ def _generate_universal_events(
         retry_delay_ms = max(0.0, float(config.get("retransmission_delay_ms") or 0.0))
         gateways = route.get("gateways") or []
         engineering_latency_ms = (
-            float(config.get("source_processing_delay_ms") or 0.0)
-            + float(config.get("target_processing_delay_ms") or 0.0)
+            (float(config.get("source_processing_delay_ms") or 0.0) if segment_index == 0 else 0.0)
+            + (float(config.get("target_processing_delay_ms") or 0.0) if segment_index == segment_count - 1 else 0.0)
             + float(config.get("propagation_delay_ms") or 0.0)
             + len(gateways) * float(config.get("gateway_delay_ms") or 0.0)
             + len(gateways) * float(config.get("gateway_queue_delay_ms") or 0.0)
@@ -430,14 +549,21 @@ def _generate_universal_events(
         )
         sequence = 0
         relative_time = max(0.0, float(route["metadata"].get("phase_ms") or 0)) / 1000.0
-        jitter_ratio = float(route["metadata"].get("jitter_ratio", 0.01))
+        if "jitter_ratio" in route["metadata"]:
+            jitter_amplitude_s = cycle_s * max(0.0, float(route["metadata"]["jitter_ratio"]))
+        else:
+            # jitter_ms is an acceptance budget, not a random disturbance.
+            # Inject source timing variation only when explicitly configured;
+            # network arbitration/serialization still contributes real jitter.
+            configured_jitter = route["metadata"].get("source_jitter_ms", network_metadata.get("source_jitter_ms", config.get("source_jitter_ms")))
+            jitter_amplitude_s = max(0.0, float(configured_jitter)) / 1000 if configured_jitter is not None else 0.0
         while relative_time <= duration_s and len(events) < max_events:
-            jitter = rng.uniform(-cycle_s * jitter_ratio, cycle_s * jitter_ratio) if sequence else 0.0
-            reordered = rng.random() < reordering_probability
+            jitter = rng.uniform(-jitter_amplitude_s, jitter_amplitude_s) if sequence and not is_forwarding else 0.0
+            reordered = not is_forwarding and rng.random() < reordering_probability
             event_time = max(0.0, relative_time + jitter + latency_s + (cycle_s * 0.5 if reordered else 0.0))
             status = "transmitted"
             retransmission_count = 0
-            if rng.random() < dropout_probability:
+            if not is_forwarding and rng.random() < dropout_probability:
                 status = "dropped"
                 if retransmission_enabled:
                     for _ in range(retry_limit):
@@ -445,9 +571,9 @@ def _generate_universal_events(
                         if rng.random() >= dropout_probability:
                             status = "transmitted"
                             break
-            if status != "dropped" and rng.random() < corruption_probability:
+            if not is_forwarding and status != "dropped" and rng.random() < corruption_probability:
                 status = "corrupted"
-            model_payload = model_engine.encode_event(route, relative_time, payload_size)
+            model_payload = {} if is_forwarding else model_engine.encode_event(route, relative_time, payload_size)
             payload_hex = (
                 str(model_payload["payload_hex"])
                 if model_payload.get("signals")
@@ -456,7 +582,15 @@ def _generate_universal_events(
             if status == "corrupted" and payload_hex:
                 payload_hex = ("FF" + payload_hex[2:]) if len(payload_hex) >= 2 else "FF"
             event = {
-                "event_id": f"{route['id']}:{sequence}",
+                "event_id": f"{end_to_end_id}:{sequence}" + (f":segment:{segment_index}" if segment_count > 1 else ""),
+                "end_to_end_event_id": f"{end_to_end_id}:{sequence}",
+                "end_to_end_route_id": end_to_end_id,
+                "canonical_route_id": route["metadata"].get("canonical_route_id") or route["metadata"].get("routing_entry_id"),
+                "segment_index": segment_index, "segment_count": segment_count, "final_segment": segment_index == segment_count - 1,
+                "segment_id": route["id"],
+                "origin_sender_hardware": route["metadata"].get("origin_sender_hardware") or sender["hardware_id"],
+                "origin_scheduled_time_s": relative_time,
+                "origin_release_time_s": max(0.0, relative_time + jitter),
                 "timestamp_utc": _utc(trace_start + event_time),
                 "timestamp_unix": trace_start + event_time,
                 "time_s": event_time,
@@ -467,7 +601,7 @@ def _generate_universal_events(
                 "injected_jitter_ms": jitter * 1000.0,
                 "sequence": sequence,
                 "transport_sequence_bytes": sequence * payload_size,
-                "route_id": route["id"],
+                "route_id": end_to_end_id,
                 "route_name": route["name"],
                 "route_ref": route.get('metadata', {}).get('routing_entry_id'),
                 "route_refs": route.get('metadata', {}).get('routing_entry_ids') or [],
@@ -497,7 +631,7 @@ def _generate_universal_events(
                 "priority": route.get("priority"),
                 "status": status,
                 "retransmission_count": retransmission_count,
-                "duplicate_injected": rng.random() < duplicate_probability,
+                "duplicate_injected": not is_forwarding and rng.random() < duplicate_probability,
                 "reordered": reordered,
                 "retry_delay_ms": retransmission_count * retry_delay_ms,
                 "configured_bitrate": int(
@@ -527,6 +661,11 @@ def _generate_universal_events(
                 event["golden_value"] = first_signal.get("golden_value")
                 event["model_label"] = first_signal.get("model_label")
                 event["behavior_type"] = first_signal.get("behavior_type")
+            if is_forwarding:
+                event["faults"] = []
+                event["_probabilities"] = (dropout_probability, corruption_probability)
+                forwarding_templates[(end_to_end_id, segment_index)] = event
+                break
             event["faults"] = list(dict.fromkeys([
                 *model_engine.faults.event_faults(event),
                 *(fault for signal in event['signals'] for fault in signal.get('faults') or []),
@@ -537,7 +676,8 @@ def _generate_universal_events(
             if event.get("duplicate_injected") and len(events) < max_events:
                 events.append({
                     **event,
-                    "event_id": f"{route['id']}:{sequence}:duplicate",
+                    "event_id": event["event_id"] + ":duplicate",
+                    "end_to_end_event_id": event["end_to_end_event_id"] + ":duplicate",
                     "sequence": sequence * 1_000_000 + 1,
                     "time_s": event_time + 0.000001,
                     "duplicate_of": sequence,
@@ -547,83 +687,81 @@ def _generate_universal_events(
         if len(events) >= max_events:
             break
 
-    events = _add_restbus_sessions(events, config, max_events)
-    events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
+    session_config = {**config, "_defer_restbus_acks": True}
+    events = _add_restbus_sessions(events, session_config, max_events)
+    session_settings = _restbus_settings(config)
+    # Gateways originate a separate IP session on their outgoing physical
+    # segment. Set it up independently, then release data only after both
+    # upstream delivery and local session establishment.
+    for key, template in list(forwarding_templates.items()):
+        if not template.get("ethernet") or not session_settings:
+            continue
+        prepared = _add_restbus_sessions([deepcopy(template)], session_config, max_events)
+        shifted = next((item for item in prepared if item.get("traffic_type") == "DATA"), template)
+        shifted["_session_ready_at"] = float(shifted["scheduled_time_s"])
+        shifted["_session_sequence_base"] = int(shifted.get("transport_sequence_bytes") or 0)
+        forwarding_templates[key] = shifted
+        events.extend(item for item in prepared if item.get("traffic_type") == "CONTROL")
+    for event in events:
+        if event.get("traffic_type") == "CONTROL":
+            event["faults"] = model_engine.faults.event_faults(event)
+    # Simultaneously due LIN polls use shortest period first. UUID ordering
+    # is not a bus schedule: it could put a slow frame before a 10 ms poll,
+    # making the same regenerated project randomly pass or fail its jitter.
+    events.sort(key=lambda item: (float(item["time_s"]),
+        float(item.get('configured_cycle_ms') or 0) if item.get('technology') == 'lin' else 0,
+        str(item["route_id"]), int(item["sequence"])))
     network_available_at: dict[str, float] = {}
     port_available_at: dict[tuple, float] = {}
-    for event in events:
-        requested_at = float(event["time_s"])
-        network_id = str(event["network"])
-        # Capacity and runtime must serialize the same frame with the same
-        # technology model (including the separate CAN-FD bit-rate phases).
-        transmission_s = (float(event["base_transmission_time_s"])
-                          * max(1.0, float(event.get("fault_load_multiplier") or 1.0))
-                          * (1 + int(event.get("retransmission_count") or 0)))
-        if event.get("ethernet"):
-            # Switched, store-and-forward, full-duplex data plane. TX and RX
-            # queues are separate per physical port; no fictitious shared bus.
-            flow = event["ethernet"]
-            tx_key = (network_id, event["sender_hardware"], event["sender_port"], "TX")
-            tx_start = max(requested_at, port_available_at.get(tx_key, 0.0))
-            tx_wait = tx_start - requested_at
-            queue_size = max(1, int(config.get("queue_size") or 256))
-            if tx_wait / max(transmission_s, 1e-9) > queue_size and event["status"] != "dropped":
-                event.update(status="dropped", drop_reason="tx_queue_overflow")
-            rx_ports = []
-            dropped = event["status"] == "dropped"
-            tx_end = tx_start + transmission_s if not dropped else requested_at
-            if not dropped:
-                port_available_at[tx_key] = tx_end
-            for receiver in flow["destinations"]:
-                key = (network_id, receiver["hardware_id"], receiver["port_id"], "RX")
-                start = max(tx_end, port_available_at.get(key, 0.0)) if not dropped else requested_at
-                wait = max(0.0, start - tx_end)
-                overflow = wait / max(transmission_s, 1e-9) > queue_size
-                status = "dropped" if dropped or overflow else event["status"]
-                end = start + transmission_s if status != "dropped" else requested_at
-                if status != "dropped":
-                    port_available_at[key] = end
-                rx_ports.append({**receiver, "start_s": start, "end_s": end, "queue_delay_ms": wait * 1000, "status": status})
-            delivered = [rx for rx in rx_ports if rx["status"] != "dropped"]
-            if not dropped and not delivered:
-                event.update(status="dropped", drop_reason="rx_queue_overflow")
-            completion = max((rx["end_s"] for rx in delivered), default=requested_at)
-            queue_delay = tx_wait + max((rx["queue_delay_ms"] / 1000 for rx in delivered), default=0)
-            event.update(tx_start_s=tx_start if not dropped else None, tx_end_s=tx_end if not dropped else None,
-                rx_ports=rx_ports, queue_delay_ms=queue_delay * 1000,
-                queue_depth_estimate=int(queue_delay / max(transmission_s, 1e-9)),
-                transmission_latency_ms=transmission_s * 2000,
-                end_to_end_latency_ms=(completion-requested_at)*1000 + float(event["configured_latency_ms"]) + float(event.get("retry_delay_ms") or 0),
-                port_model="SWITCHED_FULL_DUPLEX_STORE_FORWARD_V1", time_s=completion,
-                timestamp_unix=trace_start+completion, timestamp_utc=_utc(trace_start+completion))
+    pending = [(float(event["time_s"]), index, event) for index, event in enumerate(events)]
+    heapq.heapify(pending)
+    events = []
+    serial = len(pending)
+    while pending and len(events) < max_events:
+        _, _, event = heapq.heappop(pending)
+        _serialize_event(event, config, trace_start, network_available_at, port_available_at)
+        if int(event.get("segment_count") or 1) > 1:
+            event["end_to_end_latency_ms"] = max(0.0, (float(event["time_s"]) - float(event["origin_release_time_s"])) * 1000)
+        if event.get("transmission_attempted") is False:
+            event["transmission_latency_ms"] = 0.0
+        events.append(event)
+        for acknowledgement in _restbus_ack_events(event, session_settings):
+            acknowledgement["faults"] = model_engine.faults.event_faults(acknowledgement)
+            if float(acknowledgement["time_s"]) <= duration_s:
+                serial += 1
+                heapq.heappush(pending, (float(acknowledgement["time_s"]), serial, acknowledgement))
+        next_index = int(event.get("segment_index") or 0) + 1
+        template = forwarding_templates.get((event.get("end_to_end_route_id"), next_index))
+        if template is None or event.get("traffic_type") == "CONTROL":
             continue
-        available_at = network_available_at.get(network_id, 0.0)
-        transmit_start = max(requested_at, available_at)
-        queue_delay_s = max(0.0, transmit_start - requested_at)
-        queue_depth = int(queue_delay_s / max(transmission_s, 0.000000001))
-        queue_size = max(1, int(config.get("queue_size") or 256))
-        queue_overflow = queue_depth > queue_size and event.get("status") != "dropped"
-        if queue_overflow:
-            event["status"] = "dropped"
-            event["drop_reason"] = "queue_overflow"
-            completion = requested_at
-        elif event.get("status") == "dropped":
-            completion = requested_at
+        forwarded = deepcopy(template)
+        drop_probability, corrupt_probability = forwarded.pop("_probabilities", (0, 0))
+        session_ready_at = forwarded.pop("_session_ready_at", 0.0)
+        session_sequence_base = forwarded.pop("_session_sequence_base", 0)
+        for key in ("sequence", "transport_sequence_bytes", "origin_release_time_s", "origin_scheduled_time_s",
+                    "origin_sender_hardware", "end_to_end_event_id", "payload_hex", "signals", "signal", "signal_id",
+                    "signal_value", "value", "unit", "golden_value", "model_label", "behavior_type"):
+            if key in event:
+                forwarded[key] = deepcopy(event[key])
+        forwarded["event_id"] = str(event["end_to_end_event_id"]) + f":segment:{next_index}"
+        forwarded["caused_by_event_id"] = event["event_id"]
+        forwarded["scheduled_time_s"] = float(event["time_s"])
+        forwarded["time_s"] = max(float(event["time_s"]), session_ready_at) + float(forwarded["configured_latency_ms"]) / 1000
+        if session_sequence_base:
+            forwarded["transport_sequence_bytes"] = session_sequence_base + int(event["sequence"]) * int(event["payload_bytes"])
+        if event["status"] != "transmitted":
+            forwarded.update(status="dropped", drop_reason="upstream_" + event["status"], transmission_attempted=False)
+            forwarded["faults"] = list(event.get("faults") or [])
         else:
-            completion = transmit_start + transmission_s
-            network_available_at[network_id] = completion
-        event["queue_delay_ms"] = queue_delay_s * 1000.0
-        event["queue_depth_estimate"] = queue_depth
-        event["transmission_latency_ms"] = transmission_s * 1000.0
-        event["end_to_end_latency_ms"] = (
-            queue_delay_s * 1000.0
-            + transmission_s * 1000.0
-            + float(event["configured_latency_ms"])
-            + float(event.get("retry_delay_ms") or 0.0)
-        )
-        event["time_s"] = completion
-        event["timestamp_unix"] = trace_start + completion
-        event["timestamp_utc"] = _utc(trace_start + completion)
+            if rng.random() < drop_probability:
+                forwarded.update(status="dropped", drop_reason="configured_packet_loss")
+            elif rng.random() < corrupt_probability:
+                forwarded["status"] = "corrupted"
+                payload_hex = str(forwarded.get("payload_hex") or "")
+                forwarded["payload_hex"] = "FF" + payload_hex[2:] if payload_hex else "FF"
+            forwarded["faults"] = list(dict.fromkeys([*event.get("faults", []), *model_engine.faults.event_faults(forwarded)]))
+        serial += 1
+        heapq.heappush(pending, (float(forwarded["time_s"]), serial, forwarded))
     events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
     from transport_dependencies import apply_transport_dependencies
     apply_transport_dependencies(events, model_engine)
@@ -654,6 +792,10 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms",
         "deadline_ms",
         "event_id", "sequence", "transport_sequence_bytes", "route_id", "route_name", "route_ref", "route_refs",
+        "end_to_end_event_id", "end_to_end_route_id", "canonical_route_id", "segment_index", "segment_count",
+        "segment_id", "final_segment", "origin_sender_hardware", "origin_scheduled_time_s", "origin_release_time_s",
+        "caused_by_event_id", "transmission_attempted", "golden_time_s",
+        "traffic_type", "protocol_event", "session_id", "tcp_flags", "transport_ack_number",
         "technology", "technology_family", "access_model", "timing_model", "error_model",
         "network", "sender_hardware", "source_name", "source_logical_address", "sender_port",
         "sender_interface", "receiver_hardware", "receiver_interfaces", "payload_bytes",
@@ -694,7 +836,8 @@ def _trace_summary(routes: list[dict[str, Any]], events: list[dict[str, Any]]) -
     technologies = sorted({str(event["technology"]) for event in events})
     networks = sorted({str(event["network"]) for event in events})
     return {
-        "routes": len(routes),
+        "routes": len({str(route.get("metadata", {}).get("end_to_end_route_id") or route["id"]) for route in routes}),
+        "route_segments": len(routes),
         "events": len(events),
         "technologies": technologies,
         "networks": networks,

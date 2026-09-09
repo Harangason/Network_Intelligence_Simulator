@@ -1,0 +1,191 @@
+........................................................................ [  9%]
+.................F.............F........................................ [ 18%]
+........................................................................ [ 28%]
+........................................................................ [ 37%]
+........................................................................ [ 47%]
+........................................................................ [ 56%]
+........................................................................ [ 66%]
+........................................................................ [ 75%]
+........................................................................ [ 85%]
+.............................................................F.......... [ 94%]
+.........................................                                [100%]
+================================== FAILURES ===================================
+___________ test_auto_resource_receipt_is_revalidated_before_apply ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B5A1663D40>
+
+    def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
+        """Real proposal store/validate/review/apply, isolated project, no user changes."""
+        authority = ToolAuthority('pytest-auto-resources-' + str(uuid4()))
+        def work():
+            workflow = WorkflowStatusService(authority.project_id)
+            prompt = '- Kommunikationssystem-Sollwerte: [{"id":"lin","count":1}]'
+            workflow.set_context({'agent_wizard_status': {'agent_prompt': prompt}})
+            before = topology(shared=True)
+            for node in before['nodes']:
+                node.update(name=node['id'], kind='ecu')
+            for index, edge in enumerate(before['edges']):
+                edge.update(physicalNetworkId='network-lin', routingEntryId=f'r{index}',
+                            routingEntryIds=[f'r{index}'], engineeringRelationId=f'relation-{index}')
+            workflow.save_topology(before)
+            plan = plan_network_distribution(capacity((40, 40)), hardware(), before, available_protocol_counts={'LIN': 1}, resource_policy=AUTO)
+            after, count = split_topology_by_distribution(before, plan)
+            assert count == 2
+            receipt = resource_decision(before, after, {'LIN': 1}, AUTO)
+            monkeypatch.setattr(wizard_generation, 'plan_capacity_remediation', lambda arguments: deepcopy(plan))
+            proposal = wizard_generation.generate_capacity_network_repair({'prompt': prompt})
+            assert proposal['changes'][0]['data']['resource_decision'] == receipt
+            assert 'Tool-Entscheidung:' in proposal['rationale']
+            assert 'LIN 1 \u2192 2' in proposal['rationale']
+            validated = proposal_service.validate(proposal['proposal_id'])
+            assert validated['status'] == 'VALIDATED', validated
+            assert workflow.get()['topology'] == before, 'Planning must not apply changes.'
+            approved = proposal_service.review(validated['proposal_id'], revision=validated['revision'], decision='approve', actor='test-human', trace_id=str(uuid4()))
+            applied = proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+            assert applied['status'] == 'APPLIED'
+            assert workflow.get()['topology'] == after
+            assert receipt['resources'][0]['planned_count'] == 2
+            assert receipt['additional_modeled_ports']
+        result = execute(authority, 'test_auto_resource_apply', Permission.GENERATE_PROPOSAL, {}, lambda _: work())
+>       assert result.success, result
+E       AssertionError: ToolResult(success=False, status=<ToolStatus.INVALID_INPUT: 'INVALID_INPUT'>, data=None, findings=[{'severity': 'ERROR...fected_objects=[], next_actions=['Eingaben oder Dienststatus pr�fen'], trace_id='e4530229-7f30-4112-8e4f-5d1df3a428bf')
+E       assert False
+E        +  where False = ToolResult(success=False, status=<ToolStatus.INVALID_INPUT: 'INVALID_INPUT'>, data=None, findings=[{'severity': 'ERROR...fected_objects=[], next_actions=['Eingaben oder Dienststatus pr�fen'], trace_id='e4530229-7f30-4112-8e4f-5d1df3a428bf').success
+
+backend\tests\test_automatic_resource_planning.py:117: AssertionError
+________ test_identical_topology_can_be_reconfirmed_after_routing_edit ________
+
+workspace = ('audit-9a36ec10-6536-48a1-a50e-671ec15b9f71', <function workspace.<locals>.call at 0x000001B5A2FBB060>)
+
+    def test_identical_topology_can_be_reconfirmed_after_routing_edit(workspace):
+        _, call = workspace
+        saved = call("PUT", "/workflow/topology", {"topology": topology()}).get_json()
+        call("POST", "/workflow/changed", {"step": "routing", "reason": "Routing changed"})
+        assert call("GET", "/workflow").get_json()["statuses"]["network_editor"] == "OUTDATED"
+        response = call("PUT", "/workflow/topology", {"topology": saved["topology"]})
+        assert response.status_code == 200, response.get_json()
+>       assert response.get_json()["statuses"]["network_editor"] == "COMPLETE"
+E       AssertionError: assert 'IN_PROGRESS' == 'COMPLETE'
+E         
+E         - COMPLETE
+E         + IN_PROGRESS
+
+backend\tests\test_collaboration.py:196: AssertionError
+________ test_combined_wizard_creates_validated_model_without_reasoner ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B5A180AC80>
+tmp_path = WindowsPath('I:/PycharmProjects/My_first_Network_Simulator/runtime/transport-full-20260909/pytest-01/test_combined_wizard_creates_v0')
+
+    def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch, tmp_path):
+        authority = ToolAuthority(f'pytest-wizard-generator-{uuid4()}')
+        prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
+    - Lauf-ID: test-wizard-12345678
+    - Industrie: Automotive
+    - Netzwerktechnologien: CAN-FD (can_fd); LIN (lin)
+    - Hardware-Sollwerte: {"gateways":1,"ecus":50,"sensors":100,"actuators":100}
+    Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+    Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gateway.
+    25 LIN, 10 CAN-FD und 5 Automotive Ethernet. Pr�fe, welche Nachrichten das Gateway passieren.
+    '''
+    
+        class NoReasoner:
+            async def next(self, *args):
+                raise AssertionError('Confirmed mass creation must not depend on an LLM tool decision')
+    
+        async def invoke():
+            async with EngineeringMCPClient(create_server(authority)) as client:
+                return await EngineeringAgent(client, reasoner=NoReasoner()).run(
+                    prompt, AgentContext(active_project_id=authority.project_id))
+    
+        result = asyncio.run(invoke())
+        assert result['status'] == 'READY_FOR_REVIEW', result
+        proposal = result['proposals'][0]
+        assert proposal['status'] == 'VALIDATED', proposal['validation_result']
+        hardware = [c for c in proposal['changes'] if c['object_type'] == 'HardwareNode']
+        assert len(hardware) == 251
+        assert len({c['data']['name'] for c in hardware}) == 251
+        assert not proposal['canonical_ids']  # Review remains required.
+        assert any(event.get('workload', {}).get('completed', 0) > 0 for event in result['events'] if event.get('workload'))
+        by_ref = {'$' + c['local_ref']: c for c in proposal['changes']}
+        signal_counts = Counter()
+        for change in proposal['changes']:
+            if change['object_type'] != 'Signal':
+                continue
+            message = by_ref[change['data']['message_id']]
+            port = by_ref[message['data']['hardware_interface_id']]
+            signal_counts[port['data']['hardware_node_id']] += 1
+        assert all(signal_counts['$' + c['local_ref']] >= 5 for c in hardware if c['data']['device_type'] == 'ECU')
+        duplicate = execute(authority, 'test_retry', Permission.GENERATE_PROPOSAL, {}, lambda _: wizard_generation.generate({'prompt': prompt}))
+        assert duplicate.success, duplicate
+        assert duplicate.data['proposal_id'] == proposal['proposal_id']
+        untouched = execute(authority, 'test_canonical', Permission.READ_MODEL, {}, lambda _: model.objects('HardwareNode'))
+        assert untouched.data == []
+        # Simulate the two explicit human actions in this isolated test project only.
+        approved = execute(authority, 'test_human_review', Permission.READ_MODEL, {}, lambda _: proposal_service.review(
+            proposal['proposal_id'], revision=proposal['revision'], decision='approve', actor='test-human', trace_id=str(uuid4())))
+        assert approved.success and approved.data['status'] == 'APPROVED', approved
+        applied = execute(authority, 'test_human_apply', Permission.READ_MODEL, {}, lambda _: proposal_service.apply(
+            proposal['proposal_id'], actor='test-human', trace_id=str(uuid4())))
+        assert applied.success and applied.data['status'] == 'APPLIED', applied
+        assert len(applied.data['canonical_ids']) == len(proposal['changes'])
+        check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
+        assert check['complete'], check
+        assert check['consistency']['functions_unexpected'] == 0
+        def restore_review_state():
+            state = conversation.read()
+            state.update(active_proposal=proposal['proposal_id'], current_requirement=prompt)
+            conversation.write(state)
+            WorkflowStatusService(authority.project_id).set_context({'agent_execution': {
+                'run_id': 'test-wizard-12345678', 'state': 'REVIEW_REQUIRED', 'step': 'engineering_model',
+                'completed': 1, 'total': 1}})
+            reconcile_model_apply(authority.project_id, applied.data)
+            return WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
+        reconciled = execute(authority, 'test_apply_status', Permission.READ_MODEL, {}, lambda _: restore_review_state())
+        assert reconciled.success and reconciled.data['state'] == 'READY_TO_CONTINUE', reconciled
+    
+        canonical_hardware = execute(authority, 'test_route_nodes', Permission.READ_MODEL, {}, lambda _: model.objects('HardwareNode')).data
+        interfaces = execute(authority, 'test_route_interfaces', Permission.READ_MODEL, {}, lambda _: model.objects('Interface')).data
+        interface_by_node = {str(item.get('hardware_node_id')): item.get('interface_type') for item in interfaces}
+        available_sensor_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'SensorController'}
+        available_actuator_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'ActuatorController'}
+        ecu = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] in available_sensor_types & available_actuator_types)
+        ecu_type = interface_by_node[str(ecu['id'])]
+        sensor = next(item for item in canonical_hardware if item['device_type'] == 'SensorController' and interface_by_node[str(item['id'])] == ecu_type)
+        actuator = next(item for item in canonical_hardware if item['device_type'] == 'ActuatorController' and interface_by_node[str(item['id'])] == ecu_type)
+        hmi = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] != ecu_type)
+        graph = json.dumps([{'cluster_id': 'test', 'controllers': [{
+            'ecu': ecu['name'], 'sensors': [sensor['name']], 'actuators': [actuator['name']]}],
+            'hmi_routes': [{'source': ecu['name'], 'target': hmi['name']}]}], separators=(',', ':'))
+        continuation_prompt = prompt + f'\n- Systemcluster-Graph: {graph}\nFortsetzung des best�tigten Wizard-Auftrags: Ziel: routing.'
+        async def route_continuation():
+            async with EngineeringMCPClient(create_server(authority)) as client:
+                return await EngineeringAgent(client, reasoner=NoReasoner()).run(
+                    continuation_prompt, AgentContext(active_project_id=authority.project_id))
+        routed = asyncio.run(route_continuation())
+        assert routed['status'] == 'READY_FOR_REVIEW', routed
+        routing_proposal = routed['proposals'][0]
+        assert routing_proposal['proposal_type'] == 'WIZARD_ROUTING'
+        assert routing_proposal['status'] == 'VALIDATED'
+        assert len(routing_proposal['changes']) == 4  # Includes the actuator feedback transport
+        hmi_route = routing_proposal['changes'][-1]['data']
+        assert hmi_route['route']['gateways']
+        assert hmi_route['route']['transformations'][0]['type'] == 'PROTOCOL_TRANSLATION'
+        assert not routing_proposal['canonical_ids']
+    
+        route_approved = execute(authority, 'test_routing_review', Permission.READ_MODEL, {}, lambda _: proposal_service.review(
+            routing_proposal['proposal_id'], revision=routing_proposal['revision'], decision='approve', actor='test-human', trace_id=str(uuid4())))
+        assert route_approved.success and route_approved.data['status'] == 'APPROVED', route_approved
+        route_applied = execute(authority, 'test_routing_apply', Permission.READ_MODEL, {}, lambda _: proposal_service.apply(
+            routing_proposal['proposal_id'], actor='test-human', trace_id=str(uuid4())))
+        assert route_applied.success and route_applied.data['status'] == 'APPLIED', route_applied
+        routing_check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['routing']
+>       assert routing_check['complete'], routing_check
+E       AssertionError: {'status': 'IN_PROGRESS', 'complete': False, 'coverage': {'version': 1, 'scope_mode': 'ALL', 'complete': False, 'errors': [], ...}, 'counts': {'total': 4, 'approved': 4, 'valid': 4, 'invalid': 0, ...}}
+E       assert False
+
+backend\tests\test_wizard_generation.py:466: AssertionError
+=========================== short test summary info ===========================
+FAILED backend\tests\test_automatic_resource_planning.py::test_auto_resource_receipt_is_revalidated_before_apply
+FAILED backend\tests\test_collaboration.py::test_identical_topology_can_be_reconfirmed_after_routing_edit
+FAILED backend\tests\test_wizard_generation.py::test_combined_wizard_creates_validated_model_without_reasoner
+3 failed, 758 passed in 174.91s (0:02:54)

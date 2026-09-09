@@ -1068,7 +1068,7 @@ export function SimulationWizard({
                           ? `Synchronisierung fehlgeschlagen: ${engineeringSync.error || "Unbekannter Fehler"}`
                           : topology.nodes.length === 0
                             ? "Keine Geräte vorhanden"
-                            : "Noch nicht synchronisiert"}
+                            : `Gespeicherte Topologie: ${topology.nodes.filter(node => node.engineeringId).length}/${topology.nodes.length} Geräte mit Modellreferenz`}
                   </strong>
                 </div>
               </div>

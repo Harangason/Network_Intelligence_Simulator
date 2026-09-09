@@ -1,0 +1,35 @@
+import { chromium } from '../frontend/node_modules/playwright/index.mjs';
+import { writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const base = 'http://127.0.0.1:13500';
+const project = 'network-project-20260909082213746-780a13ef';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1647, height: 1272 } });
+const errors = [];
+page.on('pageerror', e => errors.push(String(e)));
+try {
+  await page.goto(`${base}/studio/engineering?project=${project}&resource=messages`);
+  await page.locator('.eng-structure-tree-tab').click();
+  await page.getByPlaceholder('Name, Typ oder Wert', { exact: true }).fill('Abgasnachbehandlung');
+  const can = page.locator('.structure-traffic').filter({ hasText: 'EGRValvePosition → Abgasnachbehandlung' });
+  await can.waitFor({ timeout: 60000 });
+  await can.locator('summary').click();
+  assert.match(await can.innerText(), /0 Senderouten.*2 Empfangsrouten/);
+  assert.match(await can.innerText(), /Antrieb_03/);
+  assert.match(await can.innerText(), /AGRVentilstellung/);
+  const lin = page.locator('.structure-traffic').filter({ hasText: 'UreaLevel → Abgasnachbehandlung' });
+  await lin.locator('summary').click();
+  assert.match(await lin.innerText(), /2 Senderouten.*3 Empfangsrouten/);
+  assert.match(await lin.innerText(), /Antrieb_05/);
+  assert.match(await lin.innerText(), /Antrieb_06/);
+  assert.match(await lin.innerText(), /Timeout 500 ms/);
+  assert.ok(await page.getByText('Befehl unvollständig:', { exact: false }).count());
+  await lin.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'docs/implementation_audit/verification/2026-09-09-interface-status.png' });
+  await page.goto(`${base}/studio/engineering?project=${project}&resource=hardware-interfaces&object=145458d6-5a9c-4ac8-b3da-8f7766bbe49f`);
+  await page.getByRole('heading', { name: 'Antrieb_03', exact: true }).waitFor();
+  assert.ok(await page.getByText('Bus zugeordnet', { exact: true }).count());
+  assert.deepEqual(errors, []);
+  await writeFile('docs/implementation_audit/verification/2026-09-09-interface-status-browser.json', JSON.stringify({ status: 'PASS', checks: ['CAN RX references, bus and signals', 'LIN TX/RX and buses', 'Timing warning', 'Missing command signals', 'Physical binding state'], errors }, null, 2));
+  console.log('PASS: interface status browser verification');
+} finally { await browser.close(); }

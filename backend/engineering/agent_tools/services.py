@@ -24,6 +24,19 @@ from . import model as access, generation, proposal_service as proposals, analys
 from .catalog import TOOLS, register, ID, TEXT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
 
+def _inspect_project(_arguments):
+    result = WorkflowStatusService(current_project_id()).get()
+    wizard = (result.get('context') or {}).get('agent_wizard_status') or {}
+    request = (result.get('context') or {}).get('wizard_request') or {}
+    if '- Systemcluster-Graph:' in str(request.get('prompt') or wizard.get('agent_prompt') or ''):
+        messages = access.objects('Message')
+        missing = [str(message['id']) for message in messages
+                   if not (message.get('configuration') or {}).get('communication_contract')]
+        result['wizard_communication'] = {'complete': bool(messages) and not missing,
+                                           'missing_message_ids': missing}
+    return result
+
+
 def _validation(data: dict) -> ToolResult:
     findings = data.get("findings") or data.get("errors") or data.get("checks") or []
     valid = data.get("valid")
@@ -37,6 +50,14 @@ def _device(a):
     data = a.get("device") or get_object("HardwareNode", a["hardware_id"])
     return DeviceClassificationRegistry().resolve_profile(**{k:v for k,v in data.items() if k in
         {"name", "device_type", "device_class", "device_typing", "data_complexity"}}).to_dict()
+
+
+def _communication_validation(a):
+    from ..device_communication import communication_findings
+    graph = {kind: {str(row['id']): row for row in access.objects(kind)} for kind in
+             ('HardwareNode', 'Function', 'Interface', 'Message', 'Signal')}
+    findings = communication_findings(graph)
+    return _validation({'valid': not any(f['severity'] == 'ERROR' for f in findings), 'findings': findings})
 
 
 def _signal(a):
@@ -217,7 +238,7 @@ def _simulation(a, action):
 def register_tools():
     if TOOLS:
         return
-    register("inspect_project", "Aktiven Workflow und Projektstand lesen.", P.READ_MODEL, lambda a: WorkflowStatusService(current_project_id()).get())
+    register("inspect_project", "Aktiven Workflow und Projektstand lesen.", P.READ_MODEL, _inspect_project)
     register("inspect_object", "Kanonisches Objekt im aktiven Projekt lesen.", P.READ_MODEL, lambda a: get_object(a["object_type"], a["object_id"]), object_type=TEXT, object_id=ID)
     for name, kind in {"inspect_function":"Function", "inspect_hardware":"HardwareNode", "inspect_function_interface":"Interface", "inspect_hardware_interface":"HardwareNetworkInterface", "inspect_signal":"Signal", "inspect_message":"Message"}.items():
         register(name, f"{kind} im aktiven Projekt lesen.", P.READ_MODEL, lambda a, k=kind: get_object(k,a["object_id"]), object_id=ID)
@@ -277,6 +298,7 @@ def register_tools():
     register("calculate_message_payload", "Nutzlastgröße aus Signalbelegung berechnen.", P.READ_MODEL, lambda a:{"packed_messages":generation.packed(a)}, **packing_fields)
     register("allocate_message_identifier", "Freien Identifier ermitteln; Reservierung erst bei Apply.", P.READ_MODEL, _identifier, interface_id=ID,extended=(bool,False),start=(int,256))
     register("validate_message", "Signalüberlappung und Payload prüfen.", P.VALIDATE, _message_validation,message=OBJECT,signals=ITEMS)
+    register("validate_device_communication", "Projekt auf Mindestkommunikation prüfen: Funktionen ab Klasse 3, Status ab Klasse 2, Sensorwerte, Aktorrückmeldung und vollständige Befehlssignale. Offene gerätespezifische Befehle vor der Modellfreigabe mit dem Nutzer klären.", P.VALIDATE, _communication_validation)
     frame_fields=dict(technology=TECHNOLOGY,payload_bytes=(int,Field(ge=0,le=65535)),parameters=OPTIONAL_OBJECT)
     register("calculate_message_size", "Technologiespezifische Framegröße und Sendezeit berechnen.", P.READ_MODEL,_frame,**frame_fields)
     register("calculate_bus_load", "Technologiespezifische Buslast berechnen.", P.READ_MODEL,_load,**frame_fields,cycle_ms=(float,Field(gt=0)),multiplicity=(int,Field(default=1,ge=1,le=100000)))
@@ -326,6 +348,7 @@ def register_tools():
     register("apply_approved_proposal","Ausschließlich menschlich freigegebenen, aktuellen Proposal atomar anwenden.",P.APPLY_APPROVED_PROPOSAL,lambda a:proposals.apply(a["proposal_id"],actor=a["_actor"],trace_id=a["_trace_id"]),proposal_id=ID)
     register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=TEXT)
     register("generate_wizard_routing", "Bestätigten Systemcluster-Graph deterministisch in einen prüfbaren Routing-Vorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_routing, prompt=TEXT)
+    register("generate_wizard_communication_contract", "Fehlende Kommunikationsabsichten als prüfbare Modelländerung ergänzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_communication_contract, prompt=TEXT)
     register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=TEXT)
     register("generate_wizard_parameters", "Bestätigte technologieabhängige Wizard-Defaults deterministisch aus der zentralen Registry speichern.", P.VALIDATE, wizard_generation.generate_parameters, prompt=TEXT)
     register("plan_capacity_remediation", "Überlastete physische Zweige paketweise analysieren und gegen freie Bussegmente sowie geeignete Technologien planen.", P.READ_MODEL, wizard_generation.plan_capacity_remediation, prompt=TEXT)

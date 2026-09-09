@@ -28,7 +28,7 @@ import {
 import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
-import { parameterProgressTarget, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
+import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import {
   buildEquipmentClusters,
@@ -900,7 +900,7 @@ function wizardStepProgress(status: WorkflowStatus) {
   return WORKFLOW_PROGRESS_BY_STATUS[status];
 }
 
-function useSymbolicParameterProgress(runId: string, target: number) {
+function useSymbolicParameterProgress(runId: string, target: number, animate: boolean) {
   const [progress, setProgress] = useState(0);
   const current = useRef({ runId, value: 0 });
 
@@ -923,7 +923,7 @@ function useSymbolicParameterProgress(runId: string, target: number) {
       window.cancelAnimationFrame(frame);
       update(target);
     };
-    if (motion.matches || from === target) update(target);
+    if (!animate || motion.matches || from === target) update(target);
     else {
       update(from);
       frame = window.requestAnimationFrame(tick);
@@ -933,7 +933,7 @@ function useSymbolicParameterProgress(runId: string, target: number) {
       window.cancelAnimationFrame(frame);
       motion.removeEventListener("change", finish);
     };
-  }, [runId, target]);
+  }, [runId, target, animate]);
 
   return progress;
 }
@@ -1231,7 +1231,7 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     let active = true;
-    void getWorkflow().then((nextWorkflow) => {
+    void getWorkflowSummary().then((nextWorkflow) => {
       if (!active) return;
       setWorkflow(nextWorkflow);
       const fallbackModelType = typeof nextWorkflow.parameters?.industry === "string"
@@ -1288,14 +1288,24 @@ export function EngineeringAgentWizard({
     if (phase !== "status" || !runId) return;
     let active = true;
     let refreshing = false;
+    let routingSignature = "";
     const refreshStatus = async () => {
       if (refreshing) return;
       refreshing = true;
       try {
-        const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflowSummary(), listRoutes()]);
+        const nextWorkflow = await getWorkflowSummary();
         if (!active) return;
         setWorkflow(nextWorkflow);
-        setRoutingEntries(nextRoutes);
+        const nextSignature = JSON.stringify({
+          versions: nextWorkflow.versions,
+          routing: nextWorkflow.artifact_checks?.routing,
+        });
+        if (nextSignature !== routingSignature) {
+          const nextRoutes = await listRoutes();
+          if (!active) return;
+          setRoutingEntries(nextRoutes);
+          routingSignature = nextSignature;
+        }
         setStatusRefreshError("");
         statusRefreshErrorRef.current = "";
       } catch (error) {
@@ -1410,13 +1420,16 @@ export function EngineeringAgentWizard({
   const parameterToolState = parameterTool && "state" in parameterTool ? parameterTool.state : undefined;
   const parametersConfigured = Object.keys(workflow?.parameters ?? {}).length > 0;
   const parameterStatus = workflow?.steps.find((item) => item.id === "parameters")?.status ?? "EMPTY";
+  const parametersWorking = parametersAreWorking(
+    agentPending,
+    readAgentRunStatus(workflow?.context?.agent_execution, runId),
+    parameterToolState,
+  );
   const parameterProgress = useSymbolicParameterProgress(runId, parameterProgressTarget(
     parametersConfigured,
-    parameterToolState,
+    parametersWorking ? "input-available" : undefined,
     wizardStepProgress(parameterStatus),
-  ));
-  const parametersWorking = transportPending
-    && (parameterToolState === "input-streaming" || parameterToolState === "input-available");
+  ), phase === "status" && parametersWorking);
 
   useEffect(() => {
     if (phase !== "status" || !workflow || !runId) return;
@@ -1866,6 +1879,7 @@ export function EngineeringAgentWizard({
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
+        "Verbindlicher Kommunikationsplan: Jede Nachricht bekommt vor der Modellfreigabe ihren Zweck und ihre Empfaenger. Sensorwerte und Aktorrueckmeldungen gehen an den zugeordneten Controller, Befehle an den Aktor. Geraetestatus geht zur Diagnose, ersatzweise zum Gateway bzw. einem anderen Controller. Die Abgasnachbehandlung berichtet auch an die Motorsteuerung. Diese Defaults werden als Teil des Modellvorschlags geprueft.\n\n" +
         "Verbindliche Anzeige-Routing-Regel: Setze jede im Systemcluster-Graph enthaltene hmi_routes-Verbindung als Ende-zu-Ende-Route vom Quell-Controller ueber das Cluster-Netz und erforderliche Gateways bis zur Nutzeranzeige um. Die Anzeige ist Empfaengerin der benannten Antriebs- oder Traktionssignale; eine reine Quell-Gateway-Route gilt dafuer nicht als vollstaendig.\n\n" +
         "Verbindliche Topologie-Regel: Systemrahmen sind kompakte Nachbarschaftsgruppen, keine ueber den ganzen View gezogenen Container. Ordne fachlich verwandte Rahmen nebeneinander an, fuehre Leitungen innerhalb und zwischen benachbarten Rahmen lokal, und gib Korrekturen des Nutzers als abstrakte Cluster-Nachbarschaften an den RAG-Kontext zurueck.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";

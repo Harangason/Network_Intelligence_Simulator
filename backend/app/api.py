@@ -12,6 +12,7 @@ from .job_service import JOBS
 from .config import RUNTIME_ROOT
 from .trace_storage import StorageError, StorageUnavailable
 from .runtime_config import runtime_status
+from .build_info import build_info
 from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
 from ..engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
 from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
@@ -51,11 +52,17 @@ def health():
         "service": "communication-simulator",
         "runtime": runtime_status(),
         "jobs": JOBS.runtime_summary(),
+        "build": build_info(),
     }
     instance_id = os.environ.get("SIMULATOR_INSTANCE_ID")
     if instance_id:
         response["instance_id"] = instance_id
     return jsonify(response)
+
+
+@api.get("/build-info")
+def release_info():
+    return jsonify(build_info())
 
 
 @api.errorhandler(StorageError)

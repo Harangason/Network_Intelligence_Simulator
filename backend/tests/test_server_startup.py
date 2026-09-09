@@ -12,7 +12,7 @@ import pytest
 import psycopg
 
 from backend.app import create_app
-from backend.app.__main__ import ExclusiveThreadedWSGIServer, _server_settings
+from backend.app.__main__ import ExclusiveThreadedWSGIServer, _exclusive_listener, _server_settings
 from backend.engineering import api as engineering_api
 from backend.engineering import db as engineering_db
 from backend.engineering import schema as engineering_schema
@@ -66,6 +66,15 @@ def test_launcher_rejects_an_occupied_port() -> None:
             LAUNCHER._ensure_port_available("127.0.0.1", port, "Testdienst")
     finally:
         listener.close()
+
+
+def test_production_listener_cannot_be_stolen_by_a_second_reusing_socket():
+    with _exclusive_listener("127.0.0.1", 0) as listener:
+        listener.listen()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as second:
+            second.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            with pytest.raises(OSError):
+                second.bind(listener.getsockname())
 
 
 def test_readiness_check_rejects_a_foreign_backend(

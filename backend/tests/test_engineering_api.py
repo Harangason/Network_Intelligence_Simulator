@@ -387,7 +387,7 @@ def test_network_topology_sync_is_idempotent() -> None:
     first_response = client.post("/api/engineering/topology/sync", json=payload)
     assert first_response.status_code == 200
     first = first_response.get_json()
-    assert first["counts"] == {"hardware_nodes": 2, "interfaces": 2, "connections": 1}
+    assert first["counts"] == {"hardware_nodes": 2, "interfaces": 2, "hardware_interfaces": 2, "connections": 1}
 
     second_response = client.post("/api/engineering/topology/sync", json=payload)
     assert second_response.status_code == 200

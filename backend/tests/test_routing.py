@@ -2,6 +2,33 @@ from __future__ import annotations
 
 import pytest
 
+
+def test_disconnected_dense_bus_has_bounded_path_search(monkeypatch):
+    from contextlib import contextmanager
+    from backend.engineering.routing import generation
+    size = 80
+    names = [f'node-{i}' for i in range(size)]
+    class Graph(dict):
+        visits = 0
+        def get(self, *args):
+            self.visits += 1
+            assert self.visits <= size * 5, 'Path search enumerates unbounded bus walks'
+            return super().get(*args)
+    graph = Graph({name: set(names) - {name} for name in names})
+    service = RoutingGenerationService()
+    node = lambda name: {'id': name, 'name': name, 'device_type': 'ECU'}
+    monkeypatch.setattr(service, '_node', node)
+    monkeypatch.setattr(service, '_hardware_graph', lambda: (graph, {}))
+    class Connection:
+        def execute(self, *args): return self
+        def fetchall(self): return [node(names[0]), node('disconnected')]
+    @contextmanager
+    def connection(): yield Connection()
+    monkeypatch.setattr(generation, 'get_connection', connection)
+    paths = service.find_candidate_paths(names[0], 'disconnected')
+    assert len(paths) == 1  # Explicit unresolved fallback still requires validation.
+    assert graph.visits <= size * 5
+
 from backend.engineering.models import EngineeringValidationError
 from backend.engineering.routing.generation import RoutingGenerationService
 from backend.engineering.routing.models import normalize_route
@@ -94,12 +121,39 @@ class UnmappedValidator(FakeValidator):
         return False, destination_node_ids
 
 
+@pytest.mark.parametrize('has_signals', [False, True])
+def test_generated_command_requires_canonical_signal_definition(has_signals):
+    validator = FakeValidator(message_bindings={MESSAGE: {'configuration': {
+        'transport_unit': {'provenance': {'generator': 'wizard-local-actuator-command'}}}}})
+    validator._messages_with_signals = lambda ids: set(ids) if has_signals else set()
+    result = validator.validate(route_payload(payload={'message_id': MESSAGE, 'signal_ids': []}))
+    assert ('COMMAND_SIGNALS_MISSING' in {issue['code'] for issue in result['errors']}) is not has_signals
+
+
 def test_routing_entry_model_normalizes_governance_and_signal_selection():
     route = normalize_route(route_payload())
     assert route["routing_policy"]["routing_type"] == "UNICAST"
     assert route["payload"]["signal_ids"] == [SIGNAL]
     assert route["status"] == "DRAFT"
     assert route["approval_state"] == "PENDING"
+
+
+def test_generated_timeout_defaults_allow_slow_cycles_and_preserve_explicit_requirements():
+    from backend.engineering.routing.timing import generated_timing
+    timing = generated_timing(500)
+    assert timing["timeout_ms"] == timing["freshness_ms"] == 1500
+    assert timing["provenance"]["timeout_ms"]["source"] == "generated-default"
+    explicit = generated_timing(500, {"configuration": {"timeout_ms": 400}}, {"timeout_ms": 700, "freshness_ms": 900})
+    assert explicit["timeout_ms"] == 400 and explicit["freshness_ms"] == 900
+    assert explicit["provenance"]["timeout_ms"]["source"] == "message.configuration"
+
+
+def test_preflight_routing_validation_exposes_inconsistent_timeout_without_changing_it():
+    route = route_payload(timing={"cycle_time_ms": 500, "timeout_ms": 500, "freshness_ms": 500,
+        "max_latency_ms": 20, "jitter_limit_ms": 5})
+    result = FakeValidator().validate(route)
+    assert {"TIMEOUT_BELOW_CYCLE_BUDGET", "FRESHNESS_BELOW_CYCLE_BUDGET"} <= {item["code"] for item in result["warnings"]}
+    assert route["timing"]["timeout_ms"] == route["timing"]["freshness_ms"] == 500
 
 
 def test_routing_entry_model_preserves_multiple_messages_with_legacy_primary():
@@ -170,6 +224,43 @@ def test_routing_validator_rejects_message_bound_to_other_source_endpoints():
     assert "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH" in errors_by_code
     assert SOURCE_INTERFACE in errors_by_code["MESSAGE_SOURCE_INTERFACE_MISMATCH"]
     assert SOURCE_PORT in errors_by_code["MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH"]
+
+
+@pytest.mark.parametrize('binding_network,valid', [('segment-two', True), ('other-network', False)])
+def test_additional_message_transmit_binding_requires_matching_canonical_network(binding_network, valid):
+    class MultiChannelValidator(FakeValidator):
+        def _rows(self, table, ids):
+            rows = super()._rows(table, ids)
+            if table == 'engineering_hardware_interfaces':
+                for row in rows.values():
+                    row['network_ref'] = 'segment-two'
+            return rows
+    result = MultiChannelValidator(message_bindings={MESSAGE: {
+        'interface_id': SOURCE_INTERFACE, 'hardware_interface_id': SOURCE_PORT,
+        'configuration': {'physical_transmit_bindings': [{'hardware_interface_id': OTHER_SOURCE_PORT, 'network_id': binding_network}]},
+    }}).validate(route_payload(source={'node_id': SOURCE, 'interface_id': SOURCE_INTERFACE,
+        'port_id': OTHER_SOURCE_PORT, 'protocol': 'CAN_FD', 'network_id': 'segment-two'}))
+    assert ('MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH' not in {row['code'] for row in result['errors']}) is valid
+
+
+def test_route_generation_selects_reviewed_additional_channel_for_destination_network(monkeypatch):
+    service = RoutingGenerationService()
+    monkeypatch.setattr(service, '_node', lambda identifier: {'id': identifier, 'name': identifier, 'device_type': 'ECU'})
+    monkeypatch.setattr(service, '_interface_candidates', lambda identifier: [{'id': SOURCE_INTERFACE if identifier == SOURCE else TARGET_INTERFACE,
+        'hardware_node_id': identifier, 'interface_type': 'CAN_FD'}])
+    monkeypatch.setattr(service, '_hardware_interface_candidates', lambda identifier: [
+        {'id': SOURCE_PORT, 'technology': 'CAN_FD', 'network_ref': 'network-one'},
+        {'id': OTHER_SOURCE_PORT, 'technology': 'CAN_FD', 'network_ref': 'network-two'}] if identifier == SOURCE else [
+        {'id': TARGET_PORT, 'technology': 'CAN_FD', 'network_ref': 'network-two'}])
+    monkeypatch.setattr(service, '_message_context', lambda _: {'id': MESSAGE, 'hardware_node_id': SOURCE,
+        'interface_id': SOURCE_INTERFACE, 'hardware_interface_id': SOURCE_PORT,
+        'configuration': {'physical_transmit_bindings': [{'hardware_interface_id': OTHER_SOURCE_PORT, 'network_id': 'network-two'}]}})
+    monkeypatch.setattr(service, 'find_candidate_paths', lambda *_: [{'nodes': [{'node_id': SOURCE}, {'node_id': TARGET}],
+        'connections': [], 'gateways': [], 'protocol': 'CAN_FD', 'score': 1}])
+    monkeypatch.setattr('backend.engineering.routing.generation.RoutingValidator.validate', lambda *_: {'valid': True, 'errors': [], 'warnings': []})
+    route = service.generate_route(source_node_id=SOURCE, destination_node_id=TARGET, message_id=MESSAGE)
+    assert route['source']['port_id'] == OTHER_SOURCE_PORT
+    assert route['source']['network_id'] == route['destinations'][0]['network_id'] == 'network-two'
 
 
 def test_routing_validator_checks_every_bound_message_but_allows_legacy_unbound_messages():
@@ -368,9 +459,18 @@ def test_conditional_and_fallback_validation():
 
 def test_unmapped_route_is_visible_without_becoming_an_automatic_approval():
     result = UnmappedValidator().validate(route_payload())
-    assert result["valid"] is True
+    assert result["valid"] is False
     assert result["metrics"]["physical_path_mapped"] is False
-    assert any(warning["code"] == "UNMAPPED_ROUTE" for warning in result["warnings"])
+    assert any(issue["code"] == "UNMAPPED_ROUTE" for issue in result["errors"])
+
+
+def test_equal_protocol_does_not_bridge_independent_physical_buses():
+    result = FakeValidator().validate(route_payload(
+        source={'node_id': SOURCE, 'port_id': SOURCE_PORT, 'network_id': 'backbone', 'protocol': 'CAN_FD'},
+        destinations=[{'node_id': TARGET, 'port_id': TARGET_PORT, 'network_id': 'local-sensors', 'protocol': 'CAN_FD'}],
+    ))
+    assert not result['valid']
+    assert 'INDEPENDENT_BUSES_WITHOUT_GATEWAY' in {issue['code'] for issue in result['errors']}
 
 
 def test_empty_routing_table_is_not_reported_as_valid():

@@ -98,11 +98,14 @@ def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> d
         physical_candidates = physical_owners.get(key, set())
         physical_owner = next(iter(physical_candidates)) if len(physical_candidates) == 1 else ""
         identity = item.get("identity") or {}
-        identity_owner = str(identity.get("system_owner_id") or "")
+        identity_owner = str(identity.get("system_owner_id") or identity.get("systemOwnerId") or "")
         if identity_owner:
             basis = str(identity.get("system_owner_source") or "explicit")
         owner = identity_owner or explicit_owner
         owner = processor_owner.get(owner, owner)
+        if identity_owner and owner not in processors:
+            owners[key] = {"id": key, "name": normalize_hardware_name(str(item.get("name") or key)), "basis": "unassigned"}
+            continue
         if key in processors:
             owner = processor_owner.get(key, key)
             basis = "explicit" if owner == key else "inferred"

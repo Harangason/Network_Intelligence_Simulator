@@ -1,8 +1,16 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
 
 const configuredDistDir = process.env.NETWORKIS_NEXT_DIST_DIR;
+let frontendBuildId = "development";
+if (process.env.NODE_ENV === "production") {
+  try {
+    frontendBuildId = JSON.parse(readFileSync(new URL("./public/build-info.json", import.meta.url), "utf8")).build_id;
+  } catch { /* A local build can run without a release manifest. */ }
+}
 
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_NETWORKIS_BUILD_ID: frontendBuildId },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   distDir: configuredDistDir ?? ".next-networkis",
   turbopack: {

@@ -1,8 +1,9 @@
 import type { UIMessage } from 'ai';
 import { readProgramCache } from '@/lib/server/program-cache';
+import { backendEndpoints } from '@/lib/backend-endpoints';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-const backend = process.env.SIMULATOR_ENGINEERING_API_URL ?? 'http://127.0.0.1:15050/api/engineering';
+const { engineering: backend } = backendEndpoints(process.env);
 async function forward(request: Request) {
   let payload: { projectId?: string; messages?: UIMessage[] } = {};
   if (request.method === 'PUT') {

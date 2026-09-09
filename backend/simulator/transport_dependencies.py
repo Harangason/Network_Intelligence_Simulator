@@ -5,6 +5,7 @@ The pass runs in release-time order and exposes each consumed sample and loss.
 """
 import heapq
 import math
+from copy import deepcopy
 from model_based_simulation import FormulaEvaluator
 
 
@@ -29,7 +30,10 @@ def apply_transport_dependencies(events, engine):
     rank = {s.id: i for i, s in enumerate(engine.derived.order(engine.signals))}
     ordered = sorted(events, key=lambda e: (float(e["scheduled_time_s"]), min((rank.get(s["signal_id"], 0) for s in e.get("signals", [])), default=0), e["route_id"]))
     serial = 0
+    by_event_id = {event["event_id"]: event for event in events}
     for event in ordered:
+        if event.get("traffic_type") == "CONTROL":
+            continue
         now = float(event["scheduled_time_s"])
         while pending and pending[0][0] <= now:
             _, _, receiver, record = heapq.heappop(pending)
@@ -38,8 +42,19 @@ def apply_transport_dependencies(events, engine):
             if record["status"] == "transmitted":
                 inbox[key] = record
         changed = False
+        upstream = by_event_id.get(event.get("caused_by_event_id"))
+        if upstream is not None:
+            # A gateway forwards the already evaluated source payload. It must
+            # not execute the producer's function again with its own inbox.
+            event["signals"] = deepcopy(upstream.get("signals") or [])
+            event["payload_hex"] = upstream["payload_hex"]
+            for key in ("value", "signal_value", "golden_value"):
+                if key in upstream:
+                    event[key] = upstream[key]
+            if event["status"] == "corrupted" and event["payload_hex"]:
+                event["payload_hex"] = "FF" + event["payload_hex"][2:]
         for sample in event.get("signals", []):
-            signal = models.get(sample["signal_id"])
+            signal = models.get(sample["signal_id"]) if upstream is None else None
             if signal:
                 inputs, actual, golden = [], {}, {}
                 for name, policy in signal.parameters["transport_inputs"].items():
@@ -94,7 +109,7 @@ def apply_transport_dependencies(events, engine):
                     continue
                 serial += 1
                 record = {"signal_id": sample["signal_id"], "value": sample.get("received_value", sample["value"]),
-                    "published_s": now, "received_s": received_s, "event_id": event["event_id"],
+                    "published_s": float(event.get("origin_scheduled_time_s", now)), "received_s": received_s, "event_id": event["event_id"],
                     "status": status, "faults": list(dict.fromkeys([*event.get("faults", []), *sample.get("faults", [])]))}
                 if sample.get("quality") == "STALE_INPUT":
                     record["faults"].append("UPSTREAM_INPUT_DEGRADED")

@@ -1,0 +1,47 @@
+import { chromium } from '../frontend/node_modules/playwright/index.mjs';
+import assert from 'node:assert/strict';
+import { writeFile } from 'node:fs/promises';
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1647, height: 1272 } });
+page.setDefaultTimeout(30000);
+let submitted;
+try {
+  await page.route('**/api/engineering/signals', async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    submitted = route.request().postDataJSON();
+    await route.fulfill({ status: 400, json: { error: 'UI test: no project data written' } });
+  });
+  await page.goto('http://127.0.0.1:13500/studio/engineering?project=20260909082213746-780a13ef&resource=signals', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Wizard starten', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('#name').fill('WizardVerificationCommand');
+  await dialog.getByRole('button', { name: 'Weiter', exact: true }).click();
+  const select = dialog.locator('#parent_id');
+  await select.locator('option').nth(10).waitFor({ state: 'attached' });
+  const labels = await select.locator('option').allTextContents();
+  assert.deepEqual(labels, [...labels].sort((a,b) => a.localeCompare(b, 'de', { numeric: true, sensitivity: 'base' })));
+  await select.selectOption('73cbaf4f-f0c2-477e-a5bb-d39dc8acc900');
+  await dialog.getByRole('button', { name: 'Weiter', exact: true }).click();
+  await dialog.getByText(/LIN · Bus: Antrieb_05/).filter({ visible: true }).waitFor();
+  const text = await dialog.innerText();
+  assert.match(text, /LIN · Bus:/);
+  assert.match(text, /Antrieb_0[56]/);
+  assert.match(text, /2 Byte/);
+  await dialog.getByLabel('Signalart', { exact: true }).selectOption('STATE');
+  await dialog.getByLabel('Zustand oder Botschaft 1', { exact: true }).fill('OFF');
+  await dialog.getByLabel('Code 1', { exact: true }).fill('0');
+  await dialog.locator('#start_bit').fill('0');
+  await dialog.locator('#length_bits').fill('1');
+  await dialog.locator('#byte_order').selectOption('little_endian');
+  await dialog.locator('#data_type').fill('unsigned');
+  await page.screenshot({ path: 'docs/implementation_audit/verification/2026-09-09-signal-wizard.png' });
+  await dialog.getByRole('button', { name: 'Weiter', exact: true }).click();
+  const response = page.waitForResponse(response => response.request().method() === 'POST' && response.url().endsWith('/signals'));
+  await dialog.getByRole('button', { name: 'Objekt anlegen', exact: true }).click();
+  await response;
+  assert.equal(submitted.semantic.semantic_type, 'STATE');
+  assert.deepEqual(submitted.data.enum_values, { OFF: 0 });
+  assert.equal(submitted.data.default_value, '');
+  await writeFile('docs/implementation_audit/verification/2026-09-09-signal-wizard.json', JSON.stringify({ alphabetic: true, physicalBus: true, semanticPayload: submitted, persisted: false }, null, 2));
+  console.log('PASS: alphabetical parents, physical bus context, logical state payload; no data written');
+} finally { await browser.close(); }

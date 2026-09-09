@@ -8,9 +8,11 @@ from typing import Any
 from ..db import get_connection
 from ..models import EngineeringValidationError
 from ..project_context import current_project_id
+from ..message_bindings import message_hardware_interface_ids, explicit_transmit_interface_ids
 from .repository import create_proposal
 from .retrieval import HybridRoutingRetriever
 from .validation import RoutingValidator, is_gateway_fanout_interface
+from .timing import generated_timing
 
 INTERFACE_TO_PROTOCOL = {
     "CAN": "CAN",
@@ -109,6 +111,21 @@ class RoutingGenerationService:
                 "source_interface_type": data["target_interface_type"],
                 "target_interface_type": data["source_interface_type"],
             }
+        # Canonical bus membership is a physical connection, independent of
+        # whether a logical route has already published CONNECTED_TO relations.
+        with get_connection() as connection:
+            ports = connection.execute(
+                "SELECT * FROM engineering_hardware_interfaces WHERE project_id = %s AND network_ref IS NOT NULL",
+                (current_project_id(),),
+            ).fetchall()
+        for left in ports:
+            for right in ports:
+                source, target = str(left['hardware_node_id']), str(right['hardware_node_id'])
+                if source == target or not left.get('network_ref') or left['network_ref'] != right.get('network_ref') or left['technology'] != right['technology']:
+                    continue
+                adjacency[source].add(target)
+                edge_data[(source, target)] = {'source_interface_type': left['technology'], 'target_interface_type': right['technology'],
+                                              'source_network_id': left['network_ref'], 'target_network_id': right['network_ref']}
         return adjacency, edge_data
 
     def find_candidate_paths(self, source_node_id: str, target_node_id: str, limit: int = 5) -> list[dict[str, Any]]:
@@ -118,6 +135,10 @@ class RoutingGenerationService:
         target_id = str(target["id"])
         adjacency, edge_data = self._hardware_graph()
         queue = deque([[source_id]])
+        # A dense shared bus has exponentially many simple walks. Keep only a
+        # bounded number of shortest arrivals at each node, including when the
+        # destination is disconnected. Queue size is at most limit * nodes.
+        arrivals = {source_id: 1}
         paths: list[list[str]] = []
         while queue and len(paths) < limit:
             path = queue.popleft()
@@ -128,7 +149,8 @@ class RoutingGenerationService:
             if len(path) >= 8:
                 continue
             for neighbor in sorted(adjacency.get(current, set())):
-                if neighbor not in path:
+                if neighbor not in path and arrivals.get(neighbor, 0) < max(1, limit):
+                    arrivals[neighbor] = arrivals.get(neighbor, 0) + 1
                     queue.append([*path, neighbor])
 
         # A direct candidate remains useful for incomplete imported graphs; validation marks missing interfaces.
@@ -197,6 +219,7 @@ class RoutingGenerationService:
         message_id: str | None = None,
         signal_ids: list[str] | None = None,
         routing_type: str = "UNICAST",
+        timing: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         source = self._node(source_node_id)
         destination = self._node(destination_node_id)
@@ -255,6 +278,10 @@ class RoutingGenerationService:
             destination_interface = destination_interfaces[0]
 
         message_hardware_interface_id = str((message or {}).get("hardware_interface_id") or "")
+        allowed_source_ids = message_hardware_interface_ids(message)
+        explicit_source_ids = explicit_transmit_interface_ids(message)
+        source_hardware_interfaces.sort(key=lambda item: (bool(explicit_source_ids) and str(item['id']) not in explicit_source_ids,
+            str(item['id']) != message_hardware_interface_id))
         shared_hardware_pair = next(
             (
                 (source_hardware, destination_hardware)
@@ -264,13 +291,13 @@ class RoutingGenerationService:
                 and source_hardware.get("network_ref") == destination_hardware.get("network_ref")
                 and source_hardware.get("technology") == destination_hardware.get("technology")
                 and (
-                    not message_hardware_interface_id
-                    or str(source_hardware.get("id")) == message_hardware_interface_id
+                    not allowed_source_ids
+                    or str(source_hardware.get("id")) in allowed_source_ids
                 )
             ),
             None,
         )
-        if shared_hardware_pair is None:
+        if shared_hardware_pair is None and not allowed_source_ids:
             shared_hardware_pair = next(
                 (
                     (source_hardware, destination_hardware)
@@ -283,7 +310,7 @@ class RoutingGenerationService:
                 None,
             )
         source_hardware_interface = shared_hardware_pair[0] if shared_hardware_pair else next(
-            (item for item in source_hardware_interfaces if str(item.get("id")) == message_hardware_interface_id),
+            (item for item in source_hardware_interfaces if str(item.get("id")) in (explicit_source_ids or allowed_source_ids)),
             source_hardware_interfaces[0] if source_hardware_interfaces else None,
         )
         destination_hardware_interface = shared_hardware_pair[1] if shared_hardware_pair else next(
@@ -295,6 +322,17 @@ class RoutingGenerationService:
             destination_hardware_interfaces[0] if destination_hardware_interfaces else None,
         )
 
+        # Equal technology does not connect independent buses. Leave an unknown
+        # receiving port unbound rather than choosing the first local sensor bus.
+        if shared_hardware_pair is None and not candidate.get("gateways"):
+            destination_hardware_interface = None
+
+        if not shared_hardware_pair and connections and candidate.get('gateways'):
+            destination_network = connections[-1].get('target_network_id')
+            if destination_network:
+                destination_hardware_interface = next((item for item in destination_hardware_interfaces if item.get('network_ref') == destination_network), None)
+        if shared_hardware_pair:
+            candidate = {**candidate, 'nodes': [{'node_id': str(source['id']), 'name': source['name']}, {'node_id': str(destination['id']), 'name': destination['name']}], 'gateways': [], 'hop_count': 1}
         transport_type = str((source_hardware_interface or {}).get("technology") or source_interface_type)
         protocol = INTERFACE_TO_PROTOCOL.get(transport_type, str(candidate.get("protocol") or "CUSTOM"))
         source_interface_id = str(source_interface["id"]) if source_interface else None
@@ -326,7 +364,7 @@ class RoutingGenerationService:
                     "interface_id": destination_interface_id,
                     "network_id": (destination_hardware_interface or {}).get("network_ref"),
                     "protocol": INTERFACE_TO_PROTOCOL.get(
-                        str((destination_hardware_interface or {}).get("technology") or ""),
+                        str((destination_hardware_interface or {}).get("technology") or (destination_interface or {}).get("interface_type") or ""),
                         protocol,
                     ),
                 }
@@ -337,12 +375,7 @@ class RoutingGenerationService:
                 "transformations": [],
                 "priority": "NORMAL",
             },
-            "timing": {
-                "cycle_time_ms": cycle_time_ms,
-                "timeout_ms": 500,
-                "max_latency_ms": 20,
-                "jitter_limit_ms": 5,
-            },
+            "timing": generated_timing(cycle_time_ms, message, timing),
             "routing_policy": {
                 "routing_type": routing_type,
                 "redundancy": "NONE",
@@ -370,6 +403,7 @@ class RoutingGenerationService:
                 message_id=data.get("message_id"),
                 signal_ids=data.get("signal_ids") or [],
                 routing_type="UNICAST" if len(destinations) > 1 else routing_type,
+                timing=data.get("timing"),
             )
             for destination in destinations
         ]

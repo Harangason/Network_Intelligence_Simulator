@@ -1,4 +1,5 @@
 "use client";
+import { physicalBindingStatus } from "@/lib/interface-status";
 
 import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -45,6 +46,8 @@ import { readActiveProjectId } from "@/lib/user-settings";
 import { buildCanonicalSignalDefinition } from "@/lib/signal-architecture";
 import { EngineeringAgentWizard } from "@/components/agent-chat-core";
 import { StructureTreeWorkbench } from "@/components/structure-tree-workbench";
+import { engineeringOwnership, requiresFunctionModel } from "@/lib/engineering-ownership";
+import { conciseGeneratedName, messageBusNames, technologyLabel } from "@/lib/engineering-names";
 
 const RESOURCES: EngineeringResource[] = [
   "hardware-nodes",
@@ -117,7 +120,7 @@ const RESOURCE_HIERARCHY: Partial<
   },
   interfaces: {
     parentResource: "functions",
-    parentLabel: "Funktion",
+    parentLabel: "Funktion oder direktes Gerät",
     relationType: "HAS_INTERFACE",
   },
   messages: {
@@ -133,21 +136,21 @@ const RESOURCE_HIERARCHY: Partial<
 };
 
 const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = {
-  "hardware-nodes": ["hardware-interfaces", "functions"],
+  "hardware-nodes": ["hardware-interfaces", "functions", "interfaces", "messages"],
   "hardware-interfaces": ["hardware-nodes", "messages", "functions", "interfaces"],
   functions: ["hardware-nodes", "interfaces", "messages"],
   interfaces: ["functions", "hardware-nodes", "messages"],
   messages: ["interfaces", "hardware-interfaces", "signals"],
-  signals: ["messages", "interfaces", "functions"],
+  signals: ["messages", "interfaces", "functions", "hardware-nodes"],
 };
 
 const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
   "hardware-nodes": ["Name", "Gerätetyp", "Diagnoseadresse", "Class", "Typisierung", "Domäne"],
   "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status"],
   functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung"],
-  interfaces: ["Name", "Funktion", "Interface-Typ", "Hardware"],
-  messages: ["Name", "Interface", "Hardware Interface", "Message-ID", "Richtung", "Zyklus", "DLC"],
-  signals: ["Funktion", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
+  interfaces: ["Name", "Funktion (optional)", "Technologie", "Hardware"],
+  messages: ["Name", "Kommunikationsschnittstelle", "Physischer Bus", "Message-ID", "Richtung", "Zyklus", "DLC"],
+  signals: ["System", "Quellgerät", "Funktion (optional)", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
 };
 
 function referenceName(names: Record<string, string>, id: string | null) {
@@ -208,18 +211,11 @@ function toPascalCase(value: unknown) {
 }
 
 function normalizeMessageName(value: unknown) {
-  const withoutBus = toSnakeCase(value).replace(BUS_TECH_NAME_PATTERN, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
-  const base = withoutBus.replace(MESSAGE_NAME_SUFFIX_PATTERN, "") || withoutBus;
-  return toPascalCase(base || value);
+  return conciseGeneratedName("Message", String(value ?? ""));
 }
 
 function normalizeInterfaceName(value: unknown) {
-  const raw = String(value ?? "");
-  const cleaned = toSnakeCase(raw)
-    .replace(BUS_TECH_NAME_PATTERN, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_|_$/g, "");
-  return cleaned ? cleaned.split("_").map((token) => /^\d+$/.test(token) ? token : token.charAt(0).toUpperCase() + token.slice(1)).join("_") : raw;
+  return conciseGeneratedName("Interface", String(value ?? ""));
 }
 
 function normalizedInterfaceGroupName(value: unknown) {
@@ -314,16 +310,8 @@ function signalFunctionName(
   names: Record<string, string>,
   objectsById: Map<string, EngineeringObject>,
 ) {
-  if (!("message_id" in item) || !item.message_id) return "—";
-  const message = objectsById.get(item.message_id);
-  const interfaceId = message && "interface_id" in message && typeof message.interface_id === "string"
-    ? message.interface_id
-    : null;
-  const interfaceObject = interfaceId ? objectsById.get(interfaceId) : null;
-  const functionId = interfaceObject && "function_id" in interfaceObject && typeof interfaceObject.function_id === "string"
-    ? interfaceObject.function_id
-    : null;
-  return referenceName(names, functionId);
+  const ownership = engineeringOwnership(item, objectsById);
+  return ownership.error ?? ownership.function?.name ?? (requiresFunctionModel(ownership.hardware ?? undefined) ? "Funktion fehlt" : "Direkt am Gerät · keine eigene Funktion erforderlich");
 }
 
 function hardwareClassValue(item: EngineeringObject) {
@@ -378,12 +366,12 @@ function resourceTableValues(
       return [
         "hardware_node_id" in item ? referenceName(names, item.hardware_node_id) : "—",
         item.name,
-        "technology" in item ? item.technology : "—",
+        "technology" in item ? technologyLabel(item.technology) : "—",
         "channel_index" in item && item.channel_index !== null ? String(item.channel_index) : "—",
-        "network_ref" in item ? item.network_ref ?? "—" : "—",
+        "network_ref" in item && item.network_ref ? names[item.network_ref] ?? item.network_ref : "Nicht zugeordnet",
         String(messageCount),
         load,
-        "status" in item ? item.status : "—",
+        physicalBindingStatus(item),
       ];
     }
     case "functions":
@@ -396,15 +384,15 @@ function resourceTableValues(
     case "interfaces":
       return [
         item.name,
-        "function_id" in item ? referenceName(names, item.function_id) : "—",
-        "interface_type" in item ? item.interface_type : "—",
+        "function_id" in item && item.function_id ? referenceName(names, item.function_id) : "Direkt am Gerät",
+        "interface_type" in item ? technologyLabel(item.interface_type) : "—",
         "hardware_node_id" in item ? referenceName(names, item.hardware_node_id) : "—",
       ];
     case "messages":
       return [
         item.name,
         "interface_id" in item ? referenceName(names, item.interface_id) : "—",
-        "hardware_interface_id" in item ? referenceName(names, item.hardware_interface_id) : "—",
+        messageBusNames(item, objectsById, names),
         "message_id_hex" in item ? item.message_id_hex ?? "—" : "—",
         "direction" in item ? item.direction ?? "—" : "—",
         "cycle_ms" in item && item.cycle_ms !== null ? `${item.cycle_ms} ms` : "—",
@@ -412,6 +400,8 @@ function resourceTableValues(
       ];
     case "signals":
       return [
+        engineeringOwnership(item, objectsById).system?.name ?? "Systemzuordnung offen",
+        engineeringOwnership(item, objectsById).hardware?.name ?? "Quellgerät fehlt",
         signalFunctionName(item, names, objectsById),
         item.name,
         "message_id" in item ? referenceName(names, item.message_id) : "—",
@@ -488,11 +478,11 @@ const FIELD_LABELS: Record<string, string> = {
   classification_status: "Klassifikationsstatus",
   capability_profile_ref: "Capability-Profil",
   hardware_node_id: "Hardware-Knoten",
-  hardware_interface_id: "Hardware Interface",
+  hardware_interface_id: "Physischer Anschluss",
   function_id: "Funktion",
   interface_id: "Interface",
   message_id: "Message",
-  interface_type: "Interface-Typ",
+  interface_type: "Technologie",
   technology: "Technologie",
   controller_ref: "Controller",
   physical_port_ref: "Physischer Port",
@@ -597,7 +587,10 @@ function interfaceTechnology(item: EngineeringObject | undefined) {
 }
 
 function missingProposalFields(type: string, item: Record<string, unknown>) {
-  return (REQUIRED_PROPOSAL_FIELDS[type] ?? ["name"]).filter((field) => {
+  const required = type === "Interface" && item.hardware_node_id
+    ? REQUIRED_PROPOSAL_FIELDS.Interface.filter((field) => field !== "function_id")
+    : REQUIRED_PROPOSAL_FIELDS[type] ?? ["name"];
+  return required.filter((field) => {
     const value = item[field];
     return value === null || value === undefined || String(value).trim() === "";
   });
@@ -608,7 +601,7 @@ function optionLabel(item: EngineeringObject, references: Partial<Record<Enginee
   if ("interface_type" in item) {
     const fn = objectById(references, item.function_id);
     const hw = objectById(references, item.hardware_node_id);
-    return `${item.name} · ${item.interface_type}${fn ? ` · ${fn.name}` : ""}${hw ? ` · ${hw.name}` : ""} · ${shortId(item.id)}`;
+    return `${item.name} · ${technologyLabel(item.interface_type)}${fn ? ` · ${fn.name}` : ""}${hw ? ` · ${hw.name}` : ""} · ${shortId(item.id)}`;
   }
   if ("interface_id" in item) {
     const iface = objectById(references, item.interface_id);
@@ -749,6 +742,7 @@ export function EngineeringWorkbench() {
         ? OBJECT_TYPE_RESOURCE[requestedType]
         : undefined;
     if (nextResource) setResource(nextResource);
+    if (params.get("create") === "1" && nextResource) setShowCreate(true);
     const objectId = params.get("object");
     if (objectId) setDeepLinkTarget({ id: objectId, edit: params.get("edit") === "1" });
   }, []);
@@ -760,14 +754,16 @@ export function EngineeringWorkbench() {
     Promise.all([
       listAllEngineeringObjects(resource),
       Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listAllEngineeringObjects(reference))),
+      getWorkflow(),
     ])
-      .then(([nextItems, referenceGroups]) => {
+      .then(([nextItems, referenceGroups, workflow]) => {
         if (cancelled) return;
         const nextReferences = referenceGroups.flat();
         setItems(nextItems);
         setReferenceObjects(nextReferences);
         setReferenceNames(
-          Object.fromEntries(nextReferences.map((reference) => [reference.id, reference.name])),
+          Object.fromEntries([...nextReferences.map((reference) => [reference.id, reference.name]),
+            ...((workflow.parameters.networks ?? []) as { id: string; name?: string }[]).map(network => [network.id, network.name ?? network.id])]),
         );
       })
       .catch((err) => { if (!cancelled) setError(err instanceof Error ? err.message : "Backend nicht erreichbar."); })
@@ -972,8 +968,8 @@ export function EngineeringWorkbench() {
           </div>
         </div>
 
-        <div className="eng-resource-tabs eng-resource-flow" role="tablist" aria-label="Objekthierarchie">
-          {RESOURCES.map((res, index) => (
+        <div className="eng-resource-tabs eng-resource-flow" role="tablist" aria-label="Objekttypen">
+          {RESOURCES.map((res) => (
             <Fragment key={res}>
               <button
                 aria-selected={!showStructureTree && resource === res}
@@ -990,9 +986,6 @@ export function EngineeringWorkbench() {
               >
                 {RESOURCE_LABELS[res]}
               </button>
-              {index < RESOURCES.length - 1 && (
-                <span aria-hidden="true" className="eng-resource-arrow">→</span>
-              )}
             </Fragment>
           ))}
           <span aria-hidden="true" className="eng-resource-tree-divider" />
@@ -1015,6 +1008,9 @@ export function EngineeringWorkbench() {
         {showStructureTree ? (
           <StructureTreeWorkbench onChanged={refresh} />
         ) : <>
+        {(resource === "interfaces" || resource === "hardware-interfaces") && <p className="field-hint">{resource === "hardware-interfaces"
+          ? "Physische Anschlüsse verbinden ein Gerät über einen konkreten Kanal mit einem Netzwerk. Eine Nachricht verwendet einen solchen Anschluss."
+          : "Kommunikationsschnittstellen gruppieren Nachrichten einer Funktion oder eines direkt kommunizierenden Geräts. Die Nachricht legt ihren physischen Anschluss fest."}</p>}
         <div className={`eng-resource-wizard-bar eng-object-surface ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>
           <div>
             <p className="eyebrow">Objekt-Wizard</p>
@@ -1044,7 +1040,7 @@ export function EngineeringWorkbench() {
               }}
               type="checkbox"
             />
-            <span>Verwaiste Netzwerk-Interfaces anzeigen</span>
+            <span>Unverwendete Kommunikationsschnittstellen anzeigen</span>
             <small>{unusedNetworkInterfaces.length} nicht mehr in der Topologie verwendet</small>
           </label>
         )}
@@ -1699,9 +1695,12 @@ function ProposalObjectWizard({
             )}
             {objectType === "Interface" && (
               <>
-                <ReferenceSelect label="Funktion" options={references.functions ?? []} proposal={proposal} references={references} required value={fieldValue(draft.function_id)} onChange={updateFunction} draft={draft} />
+                <ReferenceSelect label="Hardware-Eigentümer" options={references["hardware-nodes"] ?? []} proposal={proposal} references={references} required value={fieldValue(draft.hardware_node_id)} onChange={(value) => setDraft((current) => ({ ...current, hardware_node_id: value || null, function_id: null }))} draft={draft} />
+                {requiresFunctionModel(objectById(references, draft.hardware_node_id)) ? (
+                  <ReferenceSelect label="Funktion" options={(references.functions ?? []).filter((item) => "hardware_node_id" in item && item.hardware_node_id === draft.hardware_node_id)} proposal={proposal} references={references} required value={fieldValue(draft.function_id)} onChange={updateFunction} draft={draft} />
+                ) : <p className="field-hint">Direkte Kommunikation am Gerät. Für Klasse 0–2 ist keine eigene Funktion erforderlich.</p>}
                 <label className="field">
-                  <span>Interface-Typ</span>
+                  <span>Technologie</span>
                   <select required onChange={(event) => updateField("interface_type", event.target.value)} value={fieldValue(draft.interface_type || schema?.interface_types[0] || "CAN")}>
                     {(schema?.interface_types ?? ["CAN"]).map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
@@ -1942,7 +1941,7 @@ function ReferenceSelect({
 function referenceEmptyHint(label: string) {
   const subject = label.toLowerCase();
   if (subject.includes("message")) return "Es gibt noch keine Messages im Modell. Lege zuerst eine Message auf einem Interface an.";
-  if (subject.includes("interface")) return "Es gibt noch keine Interfaces im Modell. Lege zuerst eine Function und ein Interface an.";
+  if (subject.includes("interface")) return "Es gibt noch keine Kommunikationsschnittstellen. Lege eine Schnittstelle an einer Funktion oder direkt an einem einfachen Gerät an.";
   if (subject.includes("funktion")) return "Es gibt noch keine Functions im Modell. Lege zuerst eine Function auf einem Hardware-Knoten an.";
   if (subject.includes("hardware")) return "Es gibt noch keine Hardware-Knoten im Modell. Lege zuerst Hardware an.";
   return "Das benötigte Elternobjekt ist noch nicht im Modell angelegt.";
@@ -1975,6 +1974,7 @@ function CreateForm({
   const [dataComplexity, setDataComplexity] = useState(initialHardwareDefaults.complexity);
   const [diagnosticAddressable, setDiagnosticAddressable] = useState(initialHardwareDefaults.deviceClass === 4);
   const [parents, setParents] = useState<EngineeringObject[]>([]);
+  const [busNames, setBusNames] = useState<Record<string, string>>({});
   const [hardwareInterfaces, setHardwareInterfaces] = useState<EngineeringObject[]>([]);
   const [parentId, setParentId] = useState("");
   const [loadingParents, setLoadingParents] = useState(false);
@@ -1993,14 +1993,18 @@ function CreateForm({
     }
     let cancelled = false;
     setLoadingParents(true);
-    listAllEngineeringObjects(hierarchy.parentResource)
+    (resource === "interfaces"
+      ? Promise.all([listAllEngineeringObjects("functions"), listAllEngineeringObjects("hardware-nodes")]).then(([functions, hardware]) => [...functions, ...hardware.filter((item) => !requiresFunctionModel(item) && !isMergedHardwareAlias(item))])
+      : listAllEngineeringObjects(hierarchy.parentResource))
       .then((items) => {
         if (cancelled) return;
         const availableItems = hierarchy.parentResource === "hardware-nodes"
           ? items.filter((item) => !isMergedHardwareAlias(item))
           : items;
+        availableItems.sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true, sensitivity: "base" }));
         setParents(availableItems);
-        setParentId(availableItems[0]?.id ?? "");
+        const requestedParent = new URLSearchParams(window.location.search).get("parent");
+        setParentId(availableItems.find(item => item.id === requestedParent)?.id ?? availableItems[0]?.id ?? "");
       })
       .catch((err) => {
         if (!cancelled) {
@@ -2013,17 +2017,20 @@ function CreateForm({
     return () => {
       cancelled = true;
     };
-  }, [hierarchy]);
+  }, [hierarchy, resource]);
 
   useEffect(() => {
-    if (resource !== "messages") {
+    if (resource !== "messages" && resource !== "signals") {
       setHardwareInterfaces([]);
       return;
     }
     let cancelled = false;
+    if (resource === "signals") getWorkflow().then(workflow => {
+      if (!cancelled) setBusNames(Object.fromEntries(((workflow.parameters.networks ?? []) as { id: string; name?: string }[]).map(network => [network.id, network.name ?? network.id])));
+    }).catch(() => { if (!cancelled) setBusNames({}); });
     listAllEngineeringObjects("hardware-interfaces")
       .then((items) => {
-        if (!cancelled) setHardwareInterfaces(items);
+        if (!cancelled) setHardwareInterfaces(items.sort((a, b) => a.name.localeCompare(b.name, "de", { numeric: true, sensitivity: "base" })));
       })
       .catch(() => {
         if (!cancelled) setHardwareInterfaces([]);
@@ -2092,8 +2099,8 @@ function CreateForm({
     if (resource === "functions") payload.hardware_node_id = parentId;
     if (resource === "interfaces") payload.interface_type = form.get("interface_type");
     if (resource === "interfaces" && parent) {
-      payload.function_id = parentId;
-      if ("hardware_node_id" in parent) payload.hardware_node_id = parent.hardware_node_id;
+      payload.function_id = parent.object_type === "Function" ? parentId : null;
+      payload.hardware_node_id = parent.object_type === "HardwareNode" ? parentId : "hardware_node_id" in parent ? parent.hardware_node_id : null;
     }
     if (resource === "messages") {
       payload.interface_id = parentId;
@@ -2117,6 +2124,15 @@ function CreateForm({
       payload.min_value = optionalFormNumber(form, "min_value");
       payload.max_value = optionalFormNumber(form, "max_value");
       payload.communication = requirementPayload(form, "requirement_");
+      const semanticType = String(form.get("edit_semantic_type") || "UNKNOWN");
+      const { enumValues, reservedValues } = parseSignalEnumValueRows(form);
+      payload.semantic = { semantic_type: semanticType, quantity: normalizedName };
+      payload.data = {
+        semantic_type: semanticType, enum_values: enumValues,
+        allowed_values: Object.keys(enumValues), reserved_values: reservedValues,
+        invalid_values: parseSignalValueList(form.get("edit_invalid_values")),
+        default_value: parseTypedSignalValue(String(form.get("edit_default_value") ?? "")),
+      };
     }
     return payload;
   }
@@ -2202,7 +2218,7 @@ function CreateForm({
             {!loadingParents && parents.length === 0 && <option value="">Kein übergeordnetes Objekt vorhanden</option>}
             {parents.map((parent) => (
               <option key={parent.id} value={parent.id}>
-                {parent.name}{parent.domain ? ` · ${parent.domain}` : ""}
+                {parent.name}{resource === "interfaces" ? ` · ${parent.object_type === "HardwareNode" ? "direkt am Gerät" : "Funktion"}` : ""}{parent.domain ? ` · ${parent.domain}` : ""}
               </option>
             ))}
           </select>
@@ -2211,6 +2227,7 @@ function CreateForm({
           )}
         </div>
       )}
+      {resource === "signals" && <SignalTransportContext message={parents.find((item) => item.id === parentId)} ports={hardwareInterfaces} busNames={busNames} />}
       {resource === "hardware-nodes" && (
         <div className="field">
           <label htmlFor="device_type">Gerätetyp</label>
@@ -2278,7 +2295,7 @@ function CreateForm({
 
       {resource === "interfaces" && (
         <div className="field">
-          <label htmlFor="interface_type">Interface-Typ</label>
+          <label htmlFor="interface_type">Technologie</label>
           <select id="interface_type" name="interface_type" required>
             {(schema?.interface_types ?? ["CAN"]).map((type) => (
               <option key={type} value={type}>
@@ -2333,7 +2350,7 @@ function CreateForm({
         <>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="hardware_interface_id">Hardware Interface</label>
+            <label htmlFor="hardware_interface_id">Physischer Anschluss</label>
             <select id="hardware_interface_id" name="hardware_interface_id">
               <option value="">Noch nicht zugewiesen</option>
               {hardwareInterfaces.map((hardwareInterface) => (
@@ -2366,6 +2383,8 @@ function CreateForm({
 
       {resource === "signals" && (
         <>
+        <SignalTransportContext message={parents.find((item) => item.id === parentId)} ports={hardwareInterfaces} busNames={busNames} />
+        <SignalValueDomainFields item={{ name: "", semantic: { semantic_type: "NUMERIC" } }} />
         <div className="form-grid three">
           <div className="field">
             <label htmlFor="display_name">Anzeigename</label>
@@ -2796,14 +2815,22 @@ function TraceabilityNextLevel({
       resource: "functions",
     });
     groups.push({
-      emptyText: "Kein Hardware Interface ist diesem Hardware-Knoten direkt zugeordnet.",
+      emptyText: "Kein physischer Anschluss ist diesem Hardware-Knoten direkt zugeordnet.",
       entries: childHardwareInterfaces.map((child) => ({
         item: child,
-        meta: [child.technology, child.network_ref].filter(Boolean).join(" · ") || "Hardware Interface",
+        meta: [child.technology, child.network_ref].filter(Boolean).join(" · ") || "Physischer Anschluss",
         resource: "hardware-interfaces",
       })),
-      label: "Hardware Interfaces",
+      label: "Physische Anschlüsse",
       resource: "hardware-interfaces",
+    });
+    groups.push({
+      emptyText: "Keine direkte Kommunikationsschnittstelle vorhanden.",
+      entries: sortedEngineeringObjects(interfaces.filter((candidate) => !candidate.function_id && candidate.hardware_node_id === item.id)).map((child) => ({
+        item: child, meta: `${child.interface_type} · direkt am Gerät`, resource: "interfaces",
+      })),
+      label: "Direkte Kommunikationsschnittstellen",
+      resource: "interfaces",
     });
   }
 
@@ -2816,7 +2843,7 @@ function TraceabilityNextLevel({
         const firstMessage = childMessages[0];
         return {
           item: child,
-          meta: [child.interface_type, child.hardware_node_id ? referenceName(referenceNames, child.hardware_node_id) : ""].filter(Boolean).join(" · ") || "Interface",
+          meta: [technologyLabel(child.interface_type), child.hardware_node_id ? referenceName(referenceNames, child.hardware_node_id) : ""].filter(Boolean).join(" · ") || "Interface",
           resource: "interfaces",
           shortcut: firstMessage ? {
             id: firstMessage.id,
@@ -3014,10 +3041,10 @@ function HardwareInterfaceOverview({
       <dl className="overview-list eng-signal-parameter-list">
         <div><dt>Hardware Node</dt><dd>{"hardware_node_id" in hardwareInterface ? referenceName(referenceNames, hardwareInterface.hardware_node_id) : "—"}</dd></div>
         <div><dt>Diagnoseadresse</dt><dd>{parentHardware && "formatted_logical_node_address" in parentHardware ? parentHardware.formatted_logical_node_address ?? "nicht zugewiesen" : "—"}</dd></div>
-        <div><dt>Technologie</dt><dd>{signalParameterValue(hardwareInterface.technology)}</dd></div>
+        <div><dt>Technologie</dt><dd>{technologyLabel(hardwareInterface.technology)}</dd></div>
         <div><dt>Controller / Channel</dt><dd>{signalParameterValue("controller_ref" in hardwareInterface ? hardwareInterface.controller_ref : null)} / {signalParameterValue("channel_index" in hardwareInterface ? hardwareInterface.channel_index : null)}</dd></div>
         <div><dt>Physical Port</dt><dd>{signalParameterValue("physical_port_ref" in hardwareInterface ? hardwareInterface.physical_port_ref : null)}</dd></div>
-        <div><dt>Network</dt><dd>{signalParameterValue("network_ref" in hardwareInterface ? hardwareInterface.network_ref : null)}</dd></div>
+        <div><dt>Physischer Bus</dt><dd>{hardwareInterface.network_ref ? referenceNames[hardwareInterface.network_ref] ?? hardwareInterface.network_ref : "Nicht zugeordnet"}</dd></div>
         <div><dt>Bitrate</dt><dd>{signalParameterValue("bitrate" in hardwareInterface ? hardwareInterface.bitrate : null, "bit/s")}</dd></div>
         <div><dt>Data Bitrate</dt><dd>{signalParameterValue("data_bitrate" in hardwareInterface ? hardwareInterface.data_bitrate : null, "bit/s")}</dd></div>
         <div><dt>Messages</dt><dd>{messages.length}</dd></div>
@@ -3025,16 +3052,16 @@ function HardwareInterfaceOverview({
         <div><dt>Statische Last</dt><dd>{signalParameterValue("static_load" in hardwareInterface ? hardwareInterface.static_load : null, "%")}</dd></div>
         <div><dt>Runtime Last</dt><dd>{signalParameterValue("runtime_load" in hardwareInterface ? hardwareInterface.runtime_load : null, "%")}</dd></div>
         <div><dt>Reserve</dt><dd>{hardwareInterface.target_load_limit !== null && hardwareInterface.static_load !== null ? `${Math.max(0, hardwareInterface.target_load_limit - hardwareInterface.static_load).toFixed(1)} %` : "—"}</dd></div>
-        <div><dt>Status</dt><dd>{"status" in hardwareInterface ? hardwareInterface.status : "—"}</dd></div>
+        <div><dt>Status</dt><dd>{physicalBindingStatus(hardwareInterface)}</dd></div>
       </dl>
 
       <div className="section-title signal-parameter-heading">
-        <span>Nachrichten auf diesem Hardware Interface</span>
+        <span>Nachrichten auf diesem Physischer Anschluss</span>
       </div>
       {messages.length === 0 ? (
-        <p className="eng-inline-empty">Noch keine Message ist physisch auf dieses Hardware Interface gelegt.</p>
+        <p className="eng-inline-empty">Noch keine Message ist physisch auf dieses Physischer Anschluss gelegt.</p>
       ) : (
-        <div className="interface-message-list" aria-label="Messages auf Hardware Interface">
+        <div className="interface-message-list" aria-label="Messages auf Physischer Anschluss">
           {messages.map((message) => (
             <button className="interface-message-link" key={message.id} onClick={() => onNavigate("messages", message.id)} type="button">
               <strong>{message.name}<small>{message.interface_id ? referenceName(referenceNames, message.interface_id) : "ohne logisches Interface"}</small></strong>
@@ -3235,7 +3262,24 @@ function RequirementFields({ prefix, defaults = {} }: { prefix: string; defaults
   );
 }
 
-function SignalValueDomainFields({ item }: { item: EngSignal }) {
+function SignalTransportContext({ message, ports, busNames }: { message?: EngineeringObject; ports: EngineeringObject[]; busNames: Record<string, string> }) {
+  if (!message || !("hardware_interface_id" in message)) return <p>Bitte eine Nachricht zuordnen.</p>;
+  const bindings = (message.configuration as { physical_transmit_bindings?: { hardware_interface_id?: string }[] })?.physical_transmit_bindings ?? [];
+  const ids = new Set([message.hardware_interface_id, ...bindings.map(binding => binding.hardware_interface_id)]);
+  const boundPorts = ports.filter(port => ids.has(port.id) && "technology" in port);
+  return <fieldset className="eng-requirement-fields">
+    <legend>Übertragung / Lastberechnung</legend>
+    <p>{message.name} · {message.dlc ?? "?"} Byte · Zyklus: {message.cycle_ms ?? "nicht festgelegt"} ms</p>
+    {boundPorts.length ? boundPorts.map(port => <p key={port.id}>
+      {"technology" in port ? technologyLabel(port.technology) : ""} · Bus: {"network_ref" in port && port.network_ref ? busNames[port.network_ref] ?? port.network_ref : "Nicht zugeordnet"}
+      {"bitrate" in port && port.bitrate ? ` · ${port.bitrate} bit/s` : ""}
+      {"data_bitrate" in port && port.data_bitrate ? ` · Datenphase ${port.data_bitrate} bit/s` : ""}
+    </p>) : <p className="notice warning">Kein physischer Anschluss zugeordnet. Bustyp und Buslast sind noch nicht bestimmbar.</p>}
+    <p className="field-hint">Der Bustyp folgt dem physischen Anschluss der Nachricht. Für die Buslast zählen Nachrichtenlänge, Zyklus bzw. Ereignisrate und das Protokoll; Signale derselben Nachricht werden gemeinsam übertragen.</p>
+  </fieldset>;
+}
+
+function SignalValueDomainFields({ item }: { item: Partial<EngSignal> }) {
   const canonical = buildCanonicalSignalDefinition(item);
   const enumRows = Object.entries(canonical.valueDomain.enumValues)
     .map(([state, code]) => ({ state, code, kind: "defined" }));
@@ -3248,20 +3292,21 @@ function SignalValueDomainFields({ item }: { item: EngSignal }) {
   ];
   return (
     <fieldset className="eng-requirement-fields eng-signal-edit-group">
-      <legend>Wertcodierung</legend>
+      <legend>Signalart und Wertcodierung</legend>
+      <p className="field-hint">Physikalische Messgrößen verwenden Einheit, Faktor und Offset. Logische Zustände und Befehle verwenden definierte Werte und Codes. Beide werden als codierte Bits in einer Nachricht übertragen.</p>
       <div className="signal-value-domain-editor">
         <div className="signal-value-domain-controls">
           <div className="field">
-            <label htmlFor="edit_semantic_type">Semantik</label>
+            <label htmlFor="edit_semantic_type">Signalart</label>
             <select defaultValue={canonical.semantic.semanticType} id="edit_semantic_type" name="edit_semantic_type">
               {["NUMERIC", "STATE", "ENUM", "BOOLEAN", "BITFIELD", "COUNTER", "FLAG", "RAW", "STRING", "BYTE_ARRAY", "CUSTOM"].map((type) => (
-                <option key={type}>{type}</option>
+                <option key={type} value={type}>{({ NUMERIC: "Physikalisch · Messgröße", STATE: "Logisch · Zustand / Befehl", ENUM: "Logisch · Aufzählung", BOOLEAN: "Logisch · Ja / Nein", BITFIELD: "Logisch · Bitfeld", COUNTER: "Logisch · Zähler", FLAG: "Logisch · Kennzeichen", RAW: "Rohwert", STRING: "Text", BYTE_ARRAY: "Bytefolge", CUSTOM: "Benutzerdefiniert" } as Record<string, string>)[type]}</option>
               ))}
             </select>
           </div>
           <div className="field">
             <label htmlFor="edit_default_value">Default</label>
-            <input defaultValue={signalValueText(canonical.valueDomain.defaultValue)} id="edit_default_value" name="edit_default_value" type="text" />
+            <input defaultValue={canonical.valueDomain.defaultValue == null ? "" : signalValueText(canonical.valueDomain.defaultValue)} id="edit_default_value" name="edit_default_value" type="text" />
           </div>
           <div className="field">
             <label htmlFor="edit_invalid_values">Ungültig</label>
@@ -3541,7 +3586,7 @@ function EditObjectForm({
 
       {resource === "interfaces" && "interface_type" in item && (
         <div className="field">
-          <label htmlFor="edit_interface_type">Interface-Typ</label>
+          <label htmlFor="edit_interface_type">Technologie</label>
           <select defaultValue={item.interface_type} id="edit_interface_type" name="edit_interface_type" required>
             {(schema?.interface_types ?? [item.interface_type]).map((type) => <option key={type}>{type}</option>)}
           </select>
@@ -3552,7 +3597,7 @@ function EditObjectForm({
         <>
         <div className="form-grid">
           <div className="field">
-            <label htmlFor="edit_hardware_interface_id">Hardware Interface</label>
+            <label htmlFor="edit_hardware_interface_id">Physischer Anschluss</label>
             <select defaultValue={item.hardware_interface_id ?? ""} id="edit_hardware_interface_id" name="edit_hardware_interface_id">
               <option value="">Noch nicht zugewiesen</option>
               {referenceObjects.filter(isHardwareNetworkInterface).map((hardwareInterface) => (

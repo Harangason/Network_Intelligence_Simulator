@@ -35,6 +35,8 @@ def validate_effective_model(changes):
     for identifier, message in graph['Message'].items():
         logical = graph['Interface'].get(str(message.get('interface_id')), {})
         related = [('Interface', str(message.get('interface_id'))), ('HardwareNetworkInterface', str(message.get('hardware_interface_id'))), ('Function', str(logical.get('function_id')))]
+        related.extend(('HardwareNetworkInterface', str(binding.get('hardware_interface_id'))) for binding in
+            (message.get('configuration') or {}).get('physical_transmit_bindings') or [] if isinstance(binding, dict))
         if any(ref in touched for ref in related):
             touched.setdefault(('Message', identifier), next(touched[ref] for ref in related if ref in touched))
     from ..workflow.service import WorkflowStatusService
@@ -83,6 +85,14 @@ def validate_effective_model(changes):
                     if str(physical['hardware_node_id']) != str(hardware_id) or physical['technology'] != logical['interface_type']:
                         raise ValueError('Physisches und logisches Interface benötigen dieselbe Hardware und Technologie.')
                     affected_ports.add(port_id)
+                for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or []:
+                    physical = parent('HardwareNetworkInterface', binding['hardware_interface_id'])
+                    hardware_id = parent('Function', logical['function_id'])['hardware_node_id'] if logical.get('function_id') else logical.get('hardware_node_id')
+                    if (str(physical['hardware_node_id']) != str(hardware_id)
+                            or physical['technology'] != logical['interface_type']
+                            or not binding.get('network_id') or str(physical.get('network_ref') or '') != str(binding['network_id'])):
+                        raise ValueError('Zusätzliche Sendebindungen benötigen dieselbe Hardware, Technologie und ein passendes physisches Netz.')
+                    affected_ports.add(str(binding['hardware_interface_id']))
                 if item.get('message_id_hex'):
                     value = int(str(item['message_id_hex']), 16)
                     if not 0 <= value <= 0x1fffffff:
@@ -112,7 +122,24 @@ def validate_effective_model(changes):
     for identifier in affected_ports:
         port = graph['HardwareNetworkInterface'][identifier]
         parameters = {key: port[key] for key in ('bitrate', 'data_bitrate') if port.get(key)}
-        load = sum(utilization_percent(estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters).transmission_time_s, float(item.get('cycle_ms') or 10)) for item in graph['Message'].values() if str(item.get('hardware_interface_id')) == identifier)
+        load = sum(utilization_percent(estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters).transmission_time_s, float(item.get('cycle_ms') or 10)) for item in graph['Message'].values()
+            if str(item.get('hardware_interface_id')) == identifier or any(str(binding.get('hardware_interface_id')) == identifier
+                for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or []))
         if load > float(port.get('target_load_limit') or 60):
             findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': f'Interface-Auslastung {load:.2f}% überschreitet die zulässige Zielauslastung.'})
+    from ..physical_ports import topology_port_findings
+    for index, change in enumerate(changes):
+        if change['object_type'] == 'NetworkTopology':
+            findings.extend({**finding, 'index': index} for finding in topology_port_findings(
+                (change.get('data') or {}).get('topology') or {},
+                list(graph['HardwareNode'].values()), list(graph['HardwareNetworkInterface'].values())))
+    from ..device_communication import communication_findings
+    for finding in communication_findings(graph):
+        key = (finding['object_type'], finding['object_id'])
+        if key in touched or (key[0] == 'Message' and key[1] in affected_messages):
+            findings.append({**finding, 'index': touched.get(key)})
+    from ..wizard_communication import contract_findings
+    for finding in contract_findings(graph):
+        if (finding['kind'], finding['id']) in touched:
+            findings.append(finding)
     return findings

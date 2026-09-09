@@ -1,4 +1,12 @@
 import assert from "node:assert/strict";
+
+test('standard status replaces a generated legacy duplicate and class two has status', () => {
+  const base = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
+  const chain = { ...base, hardware_name: 'Smart', signal_name: 'SmartStatus', device_class: 2, device_type: 'SensorController', data: { enum_values: { OK: 0, ERROR: 1 } } };
+  const status = expandEngineeringSignalModel([chain]).filter(signal => signal.signal_name === 'SmartStatus');
+  assert.equal(status.length, 1);
+  assert.deepEqual(status[0].data.enum_values, { OFF: 0, INIT: 1, READY: 2, ACTIVE: 3, DEGRADED: 4, ERROR: 5 });
+});
 import test from "node:test";
 import { reconcileConfirmedGraphDevices } from "./engineering-specification.ts";
 
@@ -453,9 +461,9 @@ test("derived user-facing names use the normalized hardware name", () => {
 
   assert.ok(chain);
   assert.equal(chain.device_type, "ECU");
-  assert.equal(chain.function_name, "Airbag_Steuerung");
-  assert.equal(chain.interface_name, "Airbag_1");
-  assert.equal(chain.message_name, "AirbagSteuerungData");
+  assert.equal(chain.function_name, "Airbag");
+  assert.equal(chain.interface_name, "Airbag");
+  assert.equal(chain.message_name, "Airbag");
   assert.equal(chain.signal_name, "AirbagStatus");
   assert.equal(chain.signal_display_name, "AirbagStatus");
   assert.equal([chain.hardware_name, chain.function_name, chain.interface_name, chain.message_name, chain.signal_name].some((value) => /steuerger(?:ä|ae|a|�)t/i.test(value)), false);
@@ -504,8 +512,8 @@ test("direct prose creation request extracts front camera engineering chain", ()
   assert.equal(result.chains[0].domain, "automotive");
   assert.equal(result.chains[0].function_name, "Frontkamera_Umfelderfassung");
   assert.equal(result.chains[0].interface_type, "Ethernet");
-  assert.equal(result.chains[0].interface_name, "Frontkamera_1");
-  assert.equal(result.chains[0].message_name, "FrontkameraUmfelderfassungData");
+  assert.equal(result.chains[0].interface_name, "Frontkamera");
+  assert.equal(result.chains[0].message_name, "Frontkamera Umfelderfassung");
   assert.equal(result.chains[0].signal_name, "ObjektErkannt");
   assert.equal(result.chains[0].length_bits, 1);
   assert.equal(result.chains[0].dlc, 1);

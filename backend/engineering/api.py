@@ -89,6 +89,7 @@ from .intelligence.resource_policy import planning_policy
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
 from .project_context import activate_project, current_project_id, normalize_context_project_id, reset_project
+from .pagination import all_pages
 from .workloads import EngineeringWorkloadOrchestrator
 from .simulation import (
     FAULTS_BY_SCOPE,
@@ -214,7 +215,10 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
         )
     topology = {"nodes": nodes, "edges": edges}
     kinds = {"ecu": "ECU", "gateway": "Gateway", "sensor": "SensorController", "actuator": "ActuatorController"}
-    hardware = [{"id": node.get("engineeringId") or node["id"], "name": node.get("name"), "device_type": kinds.get(node.get("kind"))} for node in nodes]
+    canonical_hardware = {str(item["id"]): item for item in all_pages(list_objects, "HardwareNode")}
+    hardware = [{**canonical_hardware.get(str(node.get("engineeringId") or node["id"]), {}),
+                 "id": node.get("engineeringId") or node["id"], "name": node.get("name"),
+                 "device_type": canonical_hardware.get(str(node.get("engineeringId") or node["id"]), {}).get("device_type") or kinds.get(node.get("kind"))} for node in nodes]
     owners = system_owners(hardware, topology)
     for node in nodes:
         hardware_id = str(node.get("engineeringId") or node["id"])
@@ -607,6 +611,62 @@ def _sync_topology_with_invalidation(topology: dict, project_id: str):
     return result
 
 
+def _prepare_manual_topology_save(topology: dict, project_id: str, *, actor: str):
+    """Persist the user's physical channels with the canvas in one request unit."""
+    from .physical_ports import materialize_physical_ports
+    result = _sync_topology_with_invalidation(topology, project_id)
+    logical_bindings = {str(port["topology_port_id"]): port for node in result.get("nodes", [])
+        for port in node.get("interfaces", []) if port.get("object_type") != "HardwareNetworkInterface"}
+    linked = _topology_with_engineering_links(topology, result)
+    workflow = WorkflowStatusService(project_id)
+    state = workflow.get()
+    try:
+        physical, changes = materialize_physical_ports(linked,
+            all_pages(list_objects, "HardwareNode"), all_pages(list_objects, "HardwareNetworkInterface"),
+            state["parameters"].get("networks") or [], prune_unconnected=False,
+            routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"))
+    except ValueError as error:
+        raise EngineeringValidationError(str(error)) from error
+    networks = list(state["parameters"].get("networks") or [])
+    networks.extend(change["data"] for change in changes if change["object_type"] == "Network")
+    if networks != state["parameters"].get("networks", []):
+        workflow.save_parameters({**state["parameters"], "networks": networks}, actor=actor)
+    resolved = {}
+    def resolve(value):
+        if isinstance(value, dict):
+            return {key: resolve(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [resolve(item) for item in value]
+        return resolved.get(value, value) if isinstance(value, str) else value
+    for change in changes:
+        if change["object_type"] == "Network":
+            continue
+        data = resolve(change["data"])
+        if change.get("action") == "UPDATE":
+            saved = update_object(change["object_type"], change["object_id"], data)
+        else:
+            saved = create_object(change["object_type"], data)
+        resolved["$" + change["local_ref"]] = str(saved["id"])
+    logical_ports = {str(port["id"]): port for node in linked["nodes"] for port in node.get("ports") or []}
+    for node in physical["nodes"]:
+        for port in node.get("ports") or []:
+            for key in ("engineeringId", "hardwareInterfaceId"):
+                port[key] = resolved.get(port.get(key), port.get(key))
+            previous = logical_ports.get(str(port["id"]), {})
+            if previous.get("engineeringId") and previous.get("engineeringId") != previous.get("hardwareInterfaceId"):
+                port["engineeringId"] = previous["engineeringId"]
+    if physical != linked or changes:
+        # Reconcile connection endpoints with the just-created canonical HWIs.
+        result = _sync_topology_with_invalidation({**physical, "topology_id": topology.get("topology_id") or "studio-network"}, project_id)
+        for node in result.get("nodes", []):
+            for port in node.get("interfaces", []):
+                previous = logical_bindings.get(str(port["topology_port_id"]))
+                if previous:
+                    port.update({key: previous[key] for key in ("engineering_id", "engineering_name", "object_type") if key in previous})
+        physical = _topology_with_engineering_links(physical, result)
+    return physical, result
+
+
 def _synchronize_network_routes_with_workflow(
     project_id: str,
     topology: dict,
@@ -637,9 +697,8 @@ def sync_topology_route():
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     project_id = _project_id()
     check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["topology"])
-    result = _sync_topology_with_invalidation(payload, project_id)
     if payload.get("persist_workflow", True) is not False:
-        topology = _topology_with_engineering_links(payload, result)
+        topology, result = _prepare_manual_topology_save(payload, project_id, actor=str(payload.get("actor") or "network-editor"))
         WorkflowStatusService(project_id).save_topology(
             topology,
             actor=str(payload.get("actor") or "network-editor"),
@@ -650,6 +709,8 @@ def sync_topology_route():
             actor=str(payload.get("actor") or "network-editor"),
         )
         _auto_recalculate_capacity(project_id)
+    else:
+        result = _sync_topology_with_invalidation(payload, project_id)
     return jsonify(result)
 
 
@@ -741,6 +802,26 @@ def update_workflow_parameters_route():
     return jsonify(WorkflowStatusService(project_id).get())
 
 
+@engineering_api.route("/workflow/simulation-scope", methods=["PATCH"])
+def update_simulation_scope_route():
+    from .simulation_scope import normalize_simulation_scope
+    from .simulation_coverage import simulation_coverage
+
+    payload = _routing_payload()
+    scope = normalize_simulation_scope(payload.get("simulation_scope"), require_reason=True)
+    coverage = simulation_coverage(all_pages(list_objects, "Message"), all_pages(list_objects, "Signal"), [], scope)
+    if coverage["errors"]:
+        raise EngineeringValidationError(" ".join(coverage["errors"]))
+    project_id = _project_id()
+    workflow = WorkflowStatusService(project_id)
+    state = workflow.get()
+    if normalize_simulation_scope(state["parameters"].get("simulation_scope")) == scope:
+        return jsonify(state)
+    workflow.save_parameters({**state["parameters"], "simulation_scope": scope}, actor=payload.get("actor") or "simulation-scope")
+    _auto_recalculate_capacity(project_id)
+    return jsonify(workflow.get())
+
+
 @engineering_api.route("/workflow/topology", methods=["GET"])
 def workflow_topology_route():
     state = WorkflowStatusService(_project_id()).get()
@@ -758,22 +839,22 @@ def update_workflow_topology_route():
     workflow = WorkflowStatusService(project_id)
     current_state = workflow.get()
     check_edit_token(payload.get("expected_token"), current_state["topology"])
-    if current_state["topology"] == topology:
+    physical_complete = current_state.get("artifact_checks", {}).get("network_editor", {}).get("complete", False)
+    if current_state["topology"] == topology and physical_complete:
         current_state = workflow.save_topology(topology, actor=actor)
         current_state["routing_sync"] = {
             "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
             "skipped": [],
         }
         return jsonify(current_state)
-    if is_topology_layout_only_change(current_state["topology"], topology):
+    if is_topology_layout_only_change(current_state["topology"], topology) and physical_complete:
         state = workflow.save_topology(topology, actor=actor)
         state["routing_sync"] = {
             "counts": {"created": 0, "outdated": 0, "unchanged": 0, "skipped": 0},
             "skipped": [],
         }
         return jsonify(state)
-    sync_result = _sync_topology_with_invalidation(topology, project_id)
-    topology = _topology_with_engineering_links(topology, sync_result)
+    topology, sync_result = _prepare_manual_topology_save(topology, project_id, actor=actor)
     workflow.save_topology(topology, actor=actor)
     routing_sync = _synchronize_network_routes_with_workflow(
         project_id,
@@ -1381,8 +1462,10 @@ def import_routing_route():
 
 @engineering_api.route("/routing/approved/config", methods=["GET"])
 def approved_routing_config_route():
-    routes = list_routes(approval_state="APPROVED", limit=500)
-    return jsonify(CommunicationConfigBuilder().build(routes))
+    from .pagination import all_pages
+    routes = all_pages(list_routes, approval_state="APPROVED")
+    state = WorkflowStatusService(_project_id()).get()
+    return jsonify(CommunicationConfigBuilder().build(routes, topology=state["topology"], parameters=state["parameters"]))
 
 
 @engineering_api.route("/routing/proposals", methods=["GET"])

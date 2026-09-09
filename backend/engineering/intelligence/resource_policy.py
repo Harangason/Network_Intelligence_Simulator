@@ -7,8 +7,10 @@ from .network_planning import canonical_protocol, physical_network_inventory, co
 
 
 def planning_inventory(state: dict, prompt: str = '') -> dict:
-    wizard = (state.get('context') or {}).get('agent_wizard_status') or {}
-    return communication_system_inventory(wizard.get('agent_prompt') or prompt)
+    context = state.get('context') or {}
+    request = context.get('wizard_request') or {}
+    wizard = context.get('agent_wizard_status') or {}
+    return communication_system_inventory(request.get('prompt') or wizard.get('agent_prompt') or prompt)
 
 
 def planning_policy(state: dict) -> dict:

@@ -17,6 +17,26 @@ def reasoning_workload_progress(step: int, max_steps: int) -> dict[str, int]:
     return {"completed": min(max(0, int(step)) + 1, total), "total": total}
 
 
+def requests_model_change(prompt: str) -> bool:
+    """Conservative intent boundary; model prose cannot grant itself a write."""
+    # Explanations about editing are read requests, unlike "Kannst du ... anlegen?".
+    if re.match(r'\s*(?:wie\b|warum\b|wann\b|weshalb\b|erkläre\b|erkl[aä]r\b|welche\b|zeige\b|liste\b|how\b|why\b|explain\b|show\b|list\b)', prompt, re.I) and not re.search(r'\b(?:und|and|then|anschließend)\s+(?:erstell|erzeug|änder|lösch|entfern|create|update|delete|remove)\w*', prompt, re.I):
+        return False
+    return bool(re.search(
+        r'\b(?:erzeug\w*|erstell\w*|anleg\w*|anzulegen|lege\b.{0,180}\ban\b|'
+        r'hinzufüg\w*|hinzufueg\w*|füg\w*|fueg\w*|änder\w*|aender\w*|'
+        r'lösch\w*|loesch\w*|entfern\w*|ersetz\w*|benenn\w*|umbauen|'
+        r'implementier\w*|reparier\w*|beheb\w*|generier\w*|modellier\w*|benötige|brauche|'
+        r'create\w*|add|update\w*|delete\w*|remove\w*|replace\w*|rename\w*|fix|build|generate\w*)\b',
+        prompt, re.I | re.S,
+    ))
+
+
+def unsupported_change_claim(text: str) -> bool:
+    return bool(re.search(r'\b(?:angelegt|erstellt|erzeugt|geändert|gelöscht|entfernt|übernommen|'
+                          r'created|updated|deleted|removed|applied)\b', text, re.I))
+
+
 class EngineeringAgent:
     async def analyze_trace_root_cause(self, job_id: str, **options):
         return await self.client.call("analyze_trace_root_cause", {"job_id": job_id, **options})
@@ -163,8 +183,57 @@ class EngineeringAgent:
             return {'run_id': run_id, 'status': 'COMPLETED', 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': []}
         if confirmed_wizard and target_index >= workflow_order.index('routing') and not routing_complete:
+            if project.data.get('wizard_communication', {}).get('complete') is False:
+                result = await call('generate_wizard_communication_contract', {'prompt': prompt})
+                if result.success and result.data.get('status') != 'UNCHANGED':
+                    proposal = await validate_proposal(result.data)
+                    valid = proposal.get('status') == 'VALIDATED'
+                    text = 'Kommunikationsplan vor dem Routing prüfen und übernehmen.'
+                    event('APPROVAL', proposal=proposal, text=text)
+                    status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
+                    event('RESULT', status=status, text=text)
+                    return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
+                if not result.success:
+                    text = 'Kommunikationsplanung unvollständig: ' + '; '.join(str(f.get('message', '')) for f in result.findings)
+                    event('RESULT', status='INCOMPLETE', text=text)
+                    return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            routing_check = project.data.get('artifact_checks', {}).get('routing', {})
+            counts = routing_check.get('counts') or {}
+            coverage = routing_check.get('coverage') or {}
+            if (counts.get('total', 0) > 0 and counts.get('approved') == counts.get('total')
+                    and counts.get('valid') == counts.get('total') and coverage.get('complete') is False
+                    and not project.data.get('wizard_communication', {}).get('complete')):
+                text = (f"Alle {counts['total']} vorhandenen Routen sind bereits valide und freigegeben. "
+                        f"Im Simulationsumfang fehlen bestätigte Transporte für {len(coverage.get('missing_message_ids') or [])} Nachrichten "
+                        f"und {len(coverage.get('missing_signal_ids') or [])} Signale. "
+                        "Bitte die fehlenden Empfänger bzw. Transportanforderungen fachlich bestätigen oder "
+                        "im Preflight einen begründeten kleineren Simulationsumfang speichern. "
+                        "Bereits freigegebene Routen werden nicht erneut erzeugt.")
+                event('FINDING', severity='ERROR', text=text, metadata={'coverage': coverage})
+                event('RESULT', status='INCOMPLETE', text=text)
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             event('PROGRESS', status='PLANNING', text='Routing aus dem bestätigten Systemcluster-Graph vorbereiten.')
             result = await call('generate_wizard_routing', {'prompt': prompt})
+            if result.success and result.data.get('status') in {'APPLIED', 'UNCHANGED'}:
+                routing_check = project.data.get('artifact_checks', {}).get('routing', {})
+                coverage = routing_check.get('coverage') or {}
+                missing_messages = len(coverage.get('missing_message_ids') or [])
+                missing_signals = len(coverage.get('missing_signal_ids') or [])
+                details = (f'{missing_messages} Nachrichten und {missing_signals} Signale ohne abgedeckten Transport '
+                           'im gespeicherten Simulationsumfang.' if coverage and not coverage.get('complete') else
+                           f"Noch offene Routing-Prüfungen: {routing_check.get('counts') or {}}.")
+                text = ('Die Routen aus diesem bestätigten Auftrag wurden bereits übernommen. '
+                        f'Die Routing-Prüfung ist weiterhin unvollständig: {details} '
+                        'Bitte die fehlenden Empfänger bzw. Transportanforderungen fachlich bestätigen oder '
+                        'im Preflight einen begründeten kleineren Simulationsumfang speichern. '
+                        'Der bestehende Vorschlag wird nicht erneut zur Freigabe angeboten.')
+                event('FINDING', severity='ERROR', text=text, metadata={'coverage': coverage})
+                event('RESULT', status='INCOMPLETE', text=text)
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             if result.success:
                 proposal = await validate_proposal(result.data)
                 valid = proposal.get('status') == 'VALIDATED'
@@ -271,7 +340,7 @@ class EngineeringAgent:
                 )
                 if segment_rule_missing or local_io_rule_missing:
                     repair = await call('generate_wizard_network', {'prompt': prompt})
-                    if repair.success:
+                    if repair.success and repair.data.get('status') not in {'APPLIED', 'UNCHANGED'}:
                         proposal = await validate_proposal(repair.data)
                         valid = proposal.get('status') == 'VALIDATED'
                         event('APPROVAL', proposal=proposal, text=proposal['rationale'])
@@ -583,15 +652,33 @@ class EngineeringAgent:
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
+            change_requested = requests_model_change(prompt)
+            evidence_retries = 0
             status, text = "INCOMPLETE", "Bitte beschreibe das gewünschte Engineering-Ergebnis oder wähle ein Objekt aus."
             if self.reasoner:
                 for step in range(self.max_steps):
                     decision = await self.reasoner.next(messages, context, allowed)
                     if not decision.get("calls"):
+                        reviewed_changes = bool(proposals) and all(p.get('status') == 'VALIDATED' and p.get('changes') for p in proposals.values())
+                        if change_requested and not proposals and evidence_retries < min(2, self.max_repairs) and step + 1 < self.max_steps:
+                            evidence_retries += 1
+                            messages.append(decision.get('assistant_message') or {'role': 'assistant', 'content': decision.get('text', '')})
+                            messages.append({'role': 'system', 'content':
+                                'Für den Änderungsauftrag fehlt ein durch Werkzeuge erzeugter und validierter Vorschlag. '
+                                'Nutze discover_engineering_tools und einen passenden Generator oder stelle mit ask_engineering_question eine notwendige Fachfrage. '
+                                'Behaupte keine Erstellung oder Übernahme anhand einer Textantwort.'})
+                            continue
                         if confirmed_wizard_run and not proposals:
                             text = ("Der bestätigte Auftrag wurde analysiert, aber es wurde kein prüfbarer Änderungs- oder Workload-Aufruf erzeugt. "
                                     "Der kanonische Projektstand ist unverändert; die Massenanlage benötigt einen passenden serverseitigen Generator.")
                             status = "INCOMPLETE"
+                        elif proposals:
+                            status = 'READY_FOR_REVIEW' if reviewed_changes else 'INCOMPLETE'
+                            text = ('Der Änderungsvorschlag wurde erzeugt und validiert. Die Änderungen warten auf deine Freigabe und Übernahme.'
+                                    if reviewed_changes else 'Der Änderungsvorschlag ist noch nicht vollständig validiert. Bitte die konkreten Findings prüfen.')
+                        elif change_requested or unsupported_change_claim(decision.get('text') or ''):
+                            status = 'INCOMPLETE'
+                            text = 'Für die gewünschte Änderung liegt noch kein validierter Vorschlag vor. Es wurde keine Modelländerung übernommen. Bitte die fehlenden Angaben oder verfügbaren Werkzeuge prüfen.'
                         else:
                             text = decision.get("text") or text
                             # A language-model sentence cannot mark the workload complete.
@@ -604,7 +691,7 @@ class EngineeringAgent:
                             result = ToolResult(success=False,status="PERMISSION_DENIED",findings=[{"message":"Werkzeug nicht verfügbar."}])
                         else:
                             result = await call(name, arguments.get("request", arguments))
-                        messages.append({"role":"tool","tool_call_id":tool_call["id"],"content":result.model_dump_json()})
+                        messages.append({"role":"tool","tool_call_id":tool_call["id"],"tool_name":name,"content":result.model_dump_json()})
                         if result.success and isinstance(result.data,dict):
                             if name == "discover_engineering_tools":
                                 discovered = {item["name"] for item in result.data.get("tools",[])}

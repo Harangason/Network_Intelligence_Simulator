@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import re
+from copy import deepcopy
 
 from . import model, proposal_service
 from .. import proposals as proposal_store
@@ -15,6 +16,9 @@ from ..device_classification import DeviceClassificationRegistry
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from ..workflow.service import WorkflowStatusService
 from ..project_context import current_project_id
+from ..physical_ports import materialize_physical_ports
+from ..naming import concise_name
+from ..message_bindings import message_hardware_interface_ids
 from ..routing.generation import RoutingGenerationService
 from ..routing.validation import PROTOCOL_CAPACITY
 from ..capacity.service import CapacityTimingService
@@ -28,9 +32,9 @@ from backend.app.simulation_service import SimulationService
 
 
 _TOPOLOGY_BUS_BY_PROTOCOL = {
-    'CAN': 'can_fd',
+    'CAN': 'can',
     'CAN_FD': 'can_fd',
-    'CAN_XL': 'can_fd',
+    'CAN_XL': 'can_xl',
     'LIN': 'lin',
     'FLEXRAY': 'flexray',
     'ETHERNET': 'automotive_ethernet',
@@ -184,7 +188,7 @@ def generate_parameters(arguments: dict) -> dict:
 
 
 def generate(arguments: dict) -> dict:
-    fingerprint = hashlib.sha256(('technology-binding-v6-local-actuator-transport\n' + arguments['prompt']).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('technology-binding-v11-physical-communication-plan\n' + arguments['prompt']).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
@@ -192,11 +196,40 @@ def generate(arguments: dict) -> dict:
                 and (contract.get('validation_result') or {}).get('valid') is True):
             return proposal_service.envelope(row)
     spec = extract_specification(arguments['prompt'])
+    # Gateway status uses a real controller backbone, not an unconnected
+    # catalogue-default transport. Resolve this before creating messages.
+    # Commit the approved physical partition at model creation, before any
+    # message binding or route is created. Later topology must not invent a
+    # competing set of network IDs for the same canonical hardware ports.
+    segment_memberships = _confirmed_segment_memberships(arguments['prompt'])
+    local_memberships = _confirmed_local_io_memberships(arguments['prompt'])
+    for chain in spec['chains']:
+        name = str(chain['hardware_name']).casefold()
+        hardware = {'name': chain['hardware_name'], 'device_type': chain['device_type']}
+        bus = _topology_bus(chain['interface_type'])
+        if name in local_memberships:
+            owner = local_memberships[name][0]
+            network = _local_io_physical_network(bus, local_memberships, hardware, {'name': owner})
+        else:
+            network = _segmented_physical_network(bus, segment_memberships, hardware)
+        if network:
+            chain['transport_network_ref'] = network[0]
+    graph_match = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])', arguments['prompt'], re.M)
+    if graph_match:
+        controller_names = {str(c.get('ecu', '')).casefold() for cluster in json.loads(graph_match.group(1))
+                            for c in cluster.get('controllers') or []}
+        backbones = sorted({(c['interface_type'], c['transport_network_ref']) for c in spec['chains']
+                            if c['hardware_name'].casefold() in controller_names and c.get('transport_network_ref')})
+        for chain in spec['chains']:
+            if chain['device_type'] == 'Gateway' and backbones:
+                technology, network = next((pair for pair in backbones if pair[0] == chain['interface_type']), backbones[0])
+                chain.update(interface_type=technology, transport_network_ref=network)
     changes, refs = [], {}
     kinds = ('HardwareNode', 'Function', 'HardwareNetworkInterface', 'Interface', 'Message', 'Signal')
     existing = {kind: model.objects(kind) for kind in kinds}
 
     def ensure(kind, name, data, parent=None):
+        name = concise_name(kind, name)
         signature = (kind, name.casefold(), data.get(parent) if parent else None)
         if signature in refs:
             return refs[signature]
@@ -246,7 +279,7 @@ def generate(arguments: dict) -> dict:
         hardware_refs[str(chain['hardware_name']).casefold()] = hw
         fn = None
         if profile.requires_function_model:
-            fn = ensure('Function', chain['function_name'], {
+            fn = ensure('Function', concise_name('Function', chain['function_name']), {
                 'hardware_node_id': hw, 'domain': spec['domain'], 'description': chain['function_description']}, 'hardware_node_id')
         function_refs[str(chain['hardware_name']).casefold()] = fn
         port = ensure('HardwareNetworkInterface', chain['interface_name'], {
@@ -257,10 +290,10 @@ def generate(arguments: dict) -> dict:
                 'technology_stack': technology_contract['stack'],
                 **technology_contract['capabilities'],
             }}, 'hardware_node_id')
-        interface = ensure('Interface', chain['interface_name'], {
+        interface = ensure('Interface', concise_name('Interface', chain['interface_name']), {
             **({'function_id': fn} if fn else {'hardware_node_id': hw}),
             'interface_type': chain['interface_type']}, 'function_id' if fn else 'hardware_node_id')
-        message = ensure('Message', chain['message_name'], {
+        message = ensure('Message', concise_name('Message', chain['message_name']), {
             'interface_id': interface, 'hardware_interface_id': port,
             **{key: chain[key] for key in ('message_id_hex', 'direction', 'cycle_ms', 'dlc')},
             'configuration': {
@@ -303,6 +336,43 @@ def generate(arguments: dict) -> dict:
     # translated through the central gateway by the route generator.
     graph_raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', arguments['prompt'], re.M)
     if graph_raw:
+        # A single central gateway must terminate the confirmed controller
+        # backbones before routing can validate them. Local sensor/actuator
+        # buses belong to their controller and are deliberately excluded.
+        gateways = {hardware_refs[str(chain['hardware_name']).casefold()]
+                    for chain in spec['chains'] if chain['device_type'] == 'Gateway'}
+        if len(gateways) == 1:
+            gateway_ref = next(iter(gateways))
+            backbones = sorted({
+                (chain['interface_type'], chain['transport_network_ref'])
+                for cluster in json.loads(graph_raw.group(1))
+                for controller in cluster.get('controllers') or []
+                for chain in [chain_by_name.get(str(controller.get('ecu') or '').casefold())]
+                if chain and chain.get('transport_network_ref')
+            })
+            for channel_index, (technology, network_ref) in enumerate(backbones, start=1):
+                gateway_name = next(chain['hardware_name'] for chain in spec['chains'] if chain['device_type'] == 'Gateway')
+                gateway_function = function_refs.get(gateway_name.casefold())
+                primary_type = next(chain['interface_type'] for chain in spec['chains'] if chain['device_type'] == 'Gateway')
+                if technology != primary_type:
+                    ensure('Interface', f'{gateway_name} {technology}', {
+                        **({'function_id': gateway_function} if gateway_function else {'hardware_node_id': gateway_ref}),
+                        'interface_type': technology,
+                    }, 'function_id' if gateway_function else 'hardware_node_id')
+                ports = [change['data'] for change in changes
+                         if change['object_type'] == 'HardwareNetworkInterface'
+                         and change['data'].get('hardware_node_id') == gateway_ref
+                         and change['data'].get('technology') == technology]
+                if any(port.get('network_ref') == network_ref for port in ports):
+                    continue
+                unbound = next((port for port in ports if not port.get('network_ref')), None)
+                if unbound is not None:
+                    unbound.update(network_ref=network_ref, name=network_ref)
+                else:
+                    ensure('HardwareNetworkInterface', network_ref, {
+                        'hardware_node_id': gateway_ref, 'technology': technology,
+                        'channel_index': channel_index, 'network_ref': network_ref,
+                    }, 'hardware_node_id')
         for cluster in json.loads(graph_raw.group(1)):
             for controller in cluster.get('controllers') or []:
                 if not isinstance(controller, dict):
@@ -323,7 +393,7 @@ def generate(arguments: dict) -> dict:
                 for channel_index, (interface_type, network_ref) in enumerate(sorted(local_bindings), start=2):
                     technology_contract = _technology_contract(interface_type)
                     interface_name = f'{controller_name}_{interface_type}_IO'
-                    port = ensure('HardwareNetworkInterface', interface_name, {
+                    port = ensure('HardwareNetworkInterface', network_ref, {
                         'hardware_node_id': hw,
                         'technology': interface_type,
                         'channel_index': channel_index,
@@ -356,7 +426,7 @@ def generate(arguments: dict) -> dict:
                         ]
                         cycle_ms = min(float(chain.get('cycle_ms') or 10) for chain in actuator_chains)
                         dlc = max(int(chain.get('dlc') or 8) for chain in actuator_chains)
-                        ensure('Message', f'{interface_name}_Command', {
+                        command_ref = ensure('Message', f'{interface_name}_Command', {
                             'interface_id': interface,
                             'hardware_interface_id': port,
                             'direction': 'tx',
@@ -379,17 +449,81 @@ def generate(arguments: dict) -> dict:
                                 },
                             },
                         }, 'interface_id')
+                        command_change = next((item for item in changes if '$' + item.get('local_ref', '') == command_ref), None)
+                        if command_change:
+                            config = command_change['data']['configuration']
+                            transport = config['transport_unit']
+                            transport['consumer_refs'] = list(dict.fromkeys([*transport['consumer_refs'], *actuator_refs]))
+                            bindings = config.setdefault('physical_transmit_bindings', [])
+                            if not any(binding['hardware_interface_id'] == port for binding in bindings):
+                                bindings.append({'hardware_interface_id': port, 'network_id': network_ref})
+    from ..device_communication import complete_new_actuator_messages
+    command_raw = re.search(r'^- Aktor-Befehle:\s*(\{[^\r\n]*\})\s*$', arguments['prompt'], re.M)
+    command_definitions = json.loads(command_raw.group(1)) if command_raw else {}
+    complete_new_actuator_messages(changes, existing, command_definitions)
+    # Persist the confirmed graph as identity references, independently of the
+    # physical routing derived later. Never replace an explicit existing edit.
+    hardware_changes = {"$" + change["local_ref"]: change for change in changes if change["object_type"] == "HardwareNode"}
+    existing_hardware = {str(item["id"]): item for item in existing["HardwareNode"]}
+    for endpoint, (owner, _network, _label, _index) in _confirmed_local_io_memberships(arguments["prompt"]).items():
+        endpoint_ref, owner_ref = hardware_refs.get(endpoint), hardware_refs.get(owner)
+        if not endpoint_ref or not owner_ref:
+            raise ValueError(f"Bestätigte Systemzuordnung fehlt im Modell: {endpoint} → {owner}")
+        new_change = hardware_changes.get(endpoint_ref)
+        current = new_change["data"] if new_change else existing_hardware[endpoint_ref]
+        identity = current.get("identity") or {}
+        if identity.get("system_owner_id") or identity.get("systemOwnerId"):
+            continue
+        identity = {**identity, "system_owner_id": owner_ref, "system_owner_source": "wizard-confirmed",
+                    "system_owner_evidence": {"source": "confirmed-systemcluster-graph", "endpoint_name": endpoint, "controller_name": owner}}
+        if new_change:
+            new_change["data"]["identity"] = identity
+        else:
+            changes.append({"object_type": "HardwareNode", "action": "UPDATE", "object_id": endpoint_ref,
+                            "local_ref": f"ownership-{len(changes)}", "data": {"identity": identity}})
+    from ..wizard_communication import attach_new_message_contracts
+    attach_new_message_contracts(arguments['prompt'], changes, existing)
+    # Owners precede their endpoints so nested local references resolve on apply.
+    new_hardware = [change for change in changes if change["object_type"] == "HardwareNode" and change.get("action", "CREATE") == "CREATE"]
+    new_hardware.sort(key=lambda change: bool((change["data"].get("identity") or {}).get("system_owner_id")))
+    changes = new_hardware + [change for change in changes if change not in new_hardware]
     if not changes:
         raise ValueError('Die abgeleiteten Modellobjekte sind bereits vorhanden; vorhandenen Modellstand prüfen.')
     return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
         f"Engineering-Modell aus bestätigten Wizard-Vorgaben: {len(changes)} vorgeschlagene Änderungen. "
         "Noch keine Änderungen am kanonischen Modell; Freigabe und Übernahme sind erforderlich.",
         assumptions=['Technische Defaults und ergänzte Geräte stammen aus den Wizard-Branchenkatalogen und müssen geprüft werden.',
+                     'Alle Nachrichten erhalten vor dem Routing Empfänger. Gerätestatus geht an Diagnose, sonst an das zentrale Gateway bzw. einen anderen Controller; diese Simulationsvorgabe ist Bestandteil der Modellfreigabe.',
+                     'Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.',
+                     'Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).',
                      'Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe.'],
         evidence=[{'source': 'wizard-specification-generator', 'prompt_sha256': fingerprint, 'target_counts': spec['targetCounts'],
                    'communication_system_counts': spec['communicationSystemCounts'],
                    'model_type': spec.get('modelType') or spec.get('domain'),
                    'architecture': 'HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement'}])
+
+
+def generate_communication_contract(arguments: dict) -> dict:
+    from ..wizard_communication import communication_plan, KINDS
+    graph = {kind: {str(row['id']): row for row in model.objects(kind)} for kind in KINDS}
+    plan = communication_plan(arguments['prompt'], graph)
+    changes = [{'object_type': 'Message', 'action': 'UPDATE', 'object_id': identifier,
+        'data': {'configuration': config, 'expected_version': graph['Message'][identifier]['version']}}
+        for identifier, config in plan.items() if config != graph['Message'][identifier].get('configuration')]
+    if not changes:
+        return {'status': 'UNCHANGED'}
+    fingerprint = hashlib.sha256(json.dumps(changes, sort_keys=True).encode('utf-8')).hexdigest()
+    for row in proposal_store.list_proposals(limit=100):
+        contract = row.get('engineering_contract') or {}
+        if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
+                and contract.get('status') in {'PROPOSED', 'VALIDATED', 'APPROVED'}
+                and any(item.get('source') == 'wizard-communication-contract'
+                        and item.get('plan_sha256') == fingerprint for item in row.get('evidence') or [])):
+            return proposal_service.envelope(row)
+    return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
+        f'Kommunikationsplan vervollständigen: {len(changes)} Nachrichten erhalten explizite Empfänger und einen Kommunikationszweck.',
+        assumptions=['Gerätestatus wird von Diagnose, sonst Gateway bzw. einem anderen Controller überwacht. Bestehende explizite Empfänger bleiben erhalten.'],
+        evidence=[{'source': 'wizard-communication-contract', 'version': 1, 'plan_sha256': fingerprint}])
 
 
 def generate_routing(arguments: dict) -> dict:
@@ -400,7 +534,18 @@ def generate_routing(arguments: dict) -> dict:
     of route tools.
     """
     prompt = arguments['prompt']
-    fingerprint = hashlib.sha256(('wizard-routing-v3-local-actuator-transport\n' + prompt).encode('utf-8')).hexdigest()
+    hardware_interfaces = model.objects('HardwareNetworkInterface')
+    messages = model.objects('Message')
+    existing_routes = model.routes()
+    port_revision = sorted((str(port.get('id')), str(port.get('version')), str(port.get('network_ref')),
+                            str(port.get('technology')), str(port.get('hardware_node_id')))
+                           for port in hardware_interfaces)
+    message_revision = sorted((str(item['id']), str(item.get('version')),
+        json.dumps((item.get('configuration') or {}).get('transport_unit', {}).get('consumer_refs', []))) for item in messages)
+    route_revision = sorted((str(item.get('id')), str(item.get('revision'))) for item in existing_routes)
+    canonical_prompt = re.sub(r'\nFortsetzung des bestätigten Wizard-Auftrags:[^\r\n]*', '', prompt).strip()
+    fingerprint = hashlib.sha256(('wizard-routing-v6-communication-delta\n' + canonical_prompt
+        + json.dumps([port_revision, message_revision, route_revision])).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         if (row['proposal_type'] == 'WIZARD_ROUTING'
                 and any(item.get('prompt_sha256') == fingerprint for item in row.get('evidence') or [])):
@@ -411,8 +556,6 @@ def generate_routing(arguments: dict) -> dict:
     graph = json.loads(raw.group(1))
     nodes = model.objects('HardwareNode')
     interfaces = model.objects('Interface')
-    hardware_interfaces = model.objects('HardwareNetworkInterface')
-    messages = model.objects('Message')
     nodes_by_name = {str(item.get('name', '')).casefold(): item for item in nodes}
     interfaces_by_node: dict[str, list[dict]] = {}
     for item in interfaces:
@@ -443,12 +586,14 @@ def generate_routing(arguments: dict) -> dict:
     if missing:
         raise ValueError('Bestätigte Routing-Teilnehmer fehlen im kanonischen Modell: ' + ', '.join(missing[:30]))
 
-    def first_message(node_id: str):
-        for interface in interfaces_by_node.get(node_id, []):
-            candidates = messages_by_interface.get(str(interface['id']), [])
-            if candidates:
-                return str(candidates[0]['id'])
-        return None
+    def tx_messages(node_id: str, destination_id: str):
+        return [message for interface in interfaces_by_node.get(node_id, [])
+                for message in messages_by_interface.get(str(interface['id']), [])
+                if str(message.get('direction') or 'tx').casefold() in {'tx', 'bidirectional'}
+                and (not consumers(message) or destination_id in consumers(message))]
+
+    def consumers(message: dict) -> set[str]:
+        return {str(ref) for ref in ((message.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') or []}
 
     def local_tx_message(source_id: str, destination_id: str):
         source_ports = hardware_interfaces_by_node.get(source_id, [])
@@ -467,7 +612,7 @@ def generate_routing(arguments: dict) -> dict:
             message
             for interface in interfaces_by_node.get(source_id, [])
             for message in messages_by_interface.get(str(interface['id']), [])
-            if str(message.get('hardware_interface_id') or '') in shared_source_port_ids
+            if message_hardware_interface_ids(message) & shared_source_port_ids
             and str(message.get('direction') or '').casefold() == 'tx'
         ]
         targeted = [
@@ -479,28 +624,43 @@ def generate_routing(arguments: dict) -> dict:
             }
         ]
         selected = (targeted or candidates)
-        return bool(shared_source_port_ids), str(selected[0]['id']) if selected else None
+        return bool(shared_source_port_ids), [str(message['id']) for message in selected]
 
     route_service = RoutingGenerationService()
+    # The confirmed model cannot change during this proposal transaction.
+    # Reuse one physical graph instead of rebuilding all bus memberships for
+    # every message/consumer pair in a large project.
+    graph_snapshot = route_service._hardware_graph()
+    route_service._hardware_graph = lambda: graph_snapshot
     gateway = next((item for item in nodes if item.get('device_type') == 'Gateway'), None)
+    existing_keys = {(str((route.get('source') or {}).get('node_id')), str(destination.get('node_id')),
+                      str((route.get('payload') or {}).get('message_id')))
+                     for route in existing_routes for destination in route.get('destinations') or []}
     changes, seen = [], set()
 
-    def add_route(source, destination, *, local_actuator=False):
+    def add_routes(source, destination, *, local_actuator=False):
         if not source or not destination or str(source['id']) == str(destination['id']):
             return
         source_id = str(source['id'])
         destination_id = str(destination['id'])
-        has_local_transport, local_message_id = local_tx_message(source_id, destination_id) if local_actuator else (False, None)
-        message_id = local_message_id if has_local_transport else first_message(source_id)
-        if has_local_transport and not message_id:
+        has_local_transport, local_message_ids = local_tx_message(source_id, destination_id) if local_actuator else (False, [])
+        message_ids = local_message_ids if has_local_transport else [str(message['id']) for message in tx_messages(source_id, destination_id)]
+        if has_local_transport and not message_ids:
             raise ValueError(
                 f'Lokale Aktorroute {source["name"]} → {destination["name"]} besitzt keine TX-Message '
                 'auf einem gemeinsamen logischen und physischen Interface.'
             )
+        for message_id in message_ids:
+            add_route(source, destination, message_id)
+
+    def add_route(source, destination, message_id):
+        source_id, destination_id = str(source['id']), str(destination['id'])
         key = (source_id, destination_id, message_id)
         if key in seen:
             return
         seen.add(key)
+        if key in existing_keys:
+            return
         route = route_service.generate_route(source_node_id=key[0], destination_node_id=key[1], message_id=message_id)
         source_protocol = str(route.get('source', {}).get('protocol') or '')
         destination_protocol = str((route.get('destinations') or [{}])[0].get('protocol') or '')
@@ -522,12 +682,23 @@ def generate_routing(arguments: dict) -> dict:
         for controller in cluster.get('controllers') or []:
             ecu = node(controller.get('ecu'))
             for sensor_name in controller.get('sensors') or []:
-                add_route(node(sensor_name), ecu)
+                add_routes(node(sensor_name), ecu)
             for actuator_name in controller.get('actuators') or []:
-                add_route(ecu, node(actuator_name), local_actuator=True)
+                add_routes(ecu, node(actuator_name), local_actuator=True)
+                add_routes(node(actuator_name), ecu)
         for hmi_route in cluster.get('hmi_routes') or []:
-            add_route(node(hmi_route.get('source')), node(hmi_route.get('target')))
+            add_routes(node(hmi_route.get('source')), node(hmi_route.get('target')))
+    for interface_list in interfaces_by_node.values():
+        for interface in interface_list:
+            for message in messages_by_interface.get(str(interface['id']), []):
+                source = next((item for item in nodes if str(item['id']) == str(interface.get('hardware_node_id') or '')), None)
+                for consumer_id in sorted(consumers(message)):
+                    destination = next((item for item in nodes if str(item['id']) == consumer_id), None)
+                    if source and destination:
+                        add_route(source, destination, str(message['id']))
     if not changes:
+        if seen:
+            return {'status': 'UNCHANGED', 'existing_route_count': len(seen)}
         raise ValueError('Aus dem bestätigten Systemcluster-Graph konnten keine prüfbaren Routen abgeleitet werden.')
     return proposal_service.create(
         'WIZARD_ROUTING', changes,
@@ -620,6 +791,8 @@ def _confirmed_local_io_memberships(prompt: str) -> dict[str, tuple[str, str, st
             for index, endpoint in enumerate(endpoints):
                 key = str(endpoint or '').strip().casefold()
                 if key and owner:
+                    if key in memberships and memberships[key][0] != owner.casefold():
+                        raise ValueError(f'Endpunkt {endpoint} ist mehreren System-Ownern zugeordnet.')
                     memberships[key] = (owner.casefold(), base_id, label, index)
     return memberships
 
@@ -700,6 +873,15 @@ def generate_network_topology(arguments: dict) -> dict:
     segments share one edge and retain all contributing route IDs.
     """
     prompt = arguments['prompt']
+    workflow_state = WorkflowStatusService(current_project_id()).get()
+    existing_topology = workflow_state.get('topology') or {}
+    existing_nodes = {str(item.get('engineeringId') or ''): item for item in existing_topology.get('nodes') or []}
+    existing_node_ids = {str(item.get('id') or ''): str(item.get('engineeringId') or '') for item in existing_nodes.values()}
+    existing_segments = {}
+    for edge in existing_topology.get('edges') or []:
+        left, right = (existing_node_ids.get(str(edge.get(side) or ''), '') for side in ('source', 'target'))
+        if left and right:
+            existing_segments.setdefault((frozenset((left, right)), str(edge.get('bus') or '')), []).append(edge)
     hardware = sorted(model.objects('HardwareNode'), key=lambda item: (str(item.get('name', '')).casefold(), str(item['id'])))
     interfaces = model.objects('HardwareNetworkInterface')
     routes = [route for route in model.routes()
@@ -727,21 +909,40 @@ def generate_network_topology(arguments: dict) -> dict:
     node_data: dict[str, dict] = {}
     port_refs: dict[tuple[str, str, str], str] = {}
 
+    def reviewed_network(left, right, bus, *endpoints):
+        saved = existing_segments.get((frozenset((left, right)), bus), [])
+        preferred = [str(endpoint.get('network_id') or '') for endpoint in endpoints if endpoint.get('network_id')]
+        selected = next((edge for network in preferred for edge in saved if str(edge.get('physicalNetworkId') or '') == network), None)
+        if selected is None and len({str(edge.get('physicalNetworkId') or '') for edge in saved}) == 1:
+            selected = saved[0]
+        if selected and selected.get('physicalNetworkId'):
+            return str(selected['physicalNetworkId']), str(selected.get('physicalNetworkName') or selected['physicalNetworkId'])
+        for endpoint in endpoints:
+            network = str(endpoint.get('network_id') or '')
+            if network and all(any(str(interface.get('network_ref') or '') == network and _topology_bus(interface.get('technology')) == bus
+                    for interface in interfaces_by_node.get(node_id, [])) for node_id in (left, right)):
+                return network, str(endpoint.get('network_name') or network)
+        return None
+
     def ensure_port(node_id: str, bus: str, network_id: str = '', network_name: str = '') -> str:
         key = (node_id, bus, network_id)
         if key in port_refs:
             return port_refs[key]
         candidates = interfaces_by_node.get(node_id, [])
         matching = [item for item in candidates if _topology_bus(item.get('technology')) == bus]
-        interface = matching[0] if matching else (candidates[0] if candidates else None)
+        saved_port = next((port for port in existing_nodes.get(node_id, {}).get('ports') or []
+            if str(port.get('bus') or '') == bus and str(port.get('physicalNetworkId') or '') == network_id), None)
+        interface = next((item for item in matching if str(item['id']) == str((saved_port or {}).get('hardwareInterfaceId') or '')),
+            next((item for item in matching if str(item.get('network_ref') or '') == network_id), next((item for item in matching if not item.get('network_ref')), None)))
         network_suffix = f'-{network_id}' if network_id else ''
-        port_id = f'topology-port-{node_id}-{bus}{network_suffix}'
+        port_id = str((saved_port or {}).get('id') or f'topology-port-{node_id}-{bus}{network_suffix}')
         port = {
+            **deepcopy(saved_port or {}),
             'id': port_id,
             'name': network_name or str(interface.get('name') if interface else f'{bus}-Port'),
             'bus': bus,
-            'side': 'right',
-            'offset': 0.5,
+            'side': (saved_port or {}).get('side', 'right'),
+            'offset': (saved_port or {}).get('offset', 0.5),
         }
         if network_id:
             port['physicalNetworkId'] = network_id
@@ -751,8 +952,6 @@ def generate_network_topology(arguments: dict) -> dict:
                 'engineeringId': str(interface['id']),
                 'hardwareInterfaceId': str(interface['id']),
             })
-            if not matching:
-                port['requestedTechnology'] = bus
         node_data[node_id]['ports'].append(port)
         port_refs[key] = port_id
         return port_id
@@ -760,11 +959,12 @@ def generate_network_topology(arguments: dict) -> dict:
     for index, item in enumerate(hardware):
         identifier = str(item['id'])
         node_data[identifier] = {
-            'id': f'topology-node-{identifier}',
+            **deepcopy(existing_nodes.get(identifier) or {}),
+            'id': str((existing_nodes.get(identifier) or {}).get('id') or f'topology-node-{identifier}'),
             'name': item['name'],
             'kind': kind_by_type.get(str(item.get('device_type')), 'ecu'),
-            'x': 80 + (index % 10) * 220,
-            'y': 80 + (index // 10) * 150,
+            'x': (existing_nodes.get(identifier) or {}).get('x', 80 + (index % 10) * 220),
+            'y': (existing_nodes.get(identifier) or {}).get('y', 80 + (index // 10) * 150),
             'ports': [],
             'engineeringId': identifier,
         }
@@ -785,6 +985,10 @@ def generate_network_topology(arguments: dict) -> dict:
             for segment_index, (left, right) in enumerate(zip(path, path[1:])):
                 bus = source_bus if segment_index == 0 else destination_bus
                 network = (
+                    reviewed_network(left, right, bus,
+                        *((route.get('source') or {},) if segment_index == 0 else ()),
+                        *((route['destinations'][destination_index],) if right == destination else ()))
+                    or
                     _local_io_physical_network(
                         bus, local_io_memberships, hardware_by_id[left], hardware_by_id[right]
                     )
@@ -813,8 +1017,11 @@ def generate_network_topology(arguments: dict) -> dict:
                     continue
                 source_port = ensure_port(left, bus, network_id, network_name)
                 target_port = ensure_port(right, bus, network_id, network_name)
-                edge_id = f'topology-edge-{len(segments) + 1:04d}'
+                saved_edge = next((edge for edge in existing_segments.get((frozenset((left, right)), bus), [])
+                    if str(edge.get('physicalNetworkId') or '') == network_id), {})
+                edge_id = str(saved_edge.get('id') or 'topology-edge-' + hashlib.sha256(json.dumps(key).encode()).hexdigest()[:16])
                 segments[key] = {
+                    **deepcopy(saved_edge),
                     'id': edge_id,
                     'name': f'{hardware_by_id[left]["name"]} — {hardware_by_id[right]["name"]}',
                     'source': node_data[left]['id'],
@@ -842,66 +1049,77 @@ def generate_network_topology(arguments: dict) -> dict:
 
     if not segments:
         raise ValueError('Aus den freigegebenen Routen konnten keine physischen Segmente erzeugt werden.')
-    # A physical topology must not leave canonical participants floating merely
-    # because they have no dedicated logical route. Attach such nodes to the
-    # closest already connected peer on the same bus. These edges deliberately
-    # remain distinguishable from route-derived segments.
-    connected = {node_id for left, right, _bus, _network in segments for node_id in (left, right)}
+    # Physical connectivity is independent of route approval. Preserve reviewed
+    # wiring even when a payload is invalid or no logical traffic uses it.
     fallback_count = 0
-    for node_id, node in node_data.items():
-        if node_id in connected:
+    for edge in existing_topology.get('edges') or []:
+        left = existing_node_ids.get(str(edge.get('source') or ''))
+        right = existing_node_ids.get(str(edge.get('target') or ''))
+        network = str(edge.get('physicalNetworkId') or '')
+        bus = str(edge.get('bus') or '')
+        if left not in node_data or right not in node_data or not network:
             continue
-        candidate = (interfaces_by_node.get(node_id) or [None])[0]
-        if candidate is None:
-            raise ValueError(f'Hardwareknoten {hardware_by_id[node_id]["name"]} besitzt kein physisches Interface.')
-        bus = _topology_bus(candidate.get('technology'))
-        anchors = [other_id for other_id in connected if other_id != node_id and any(
-            _topology_bus(interface.get('technology')) == bus for interface in interfaces_by_node.get(other_id, []))]
-        if not anchors:
-            anchors = [other_id for other_id in connected if other_id != node_id]
-        if not anchors:
-            raise ValueError(f'Für Hardwareknoten {hardware_by_id[node_id]["name"]} wurde kein physischer Netzpartner gefunden.')
-        name = str(hardware_by_id[node_id].get('name') or '')
-        anchor = max(anchors, key=lambda other_id: (
-            SequenceMatcher(None, name.casefold(), str(hardware_by_id[other_id].get('name') or '').casefold()).ratio(),
-            1 if hardware_by_id[other_id].get('device_type') in {'ECU', 'Gateway'} else 0,
-            str(hardware_by_id[other_id].get('name') or ''),
-        ))
-        network = (
-            _local_io_physical_network(
-                bus, local_io_memberships, hardware_by_id[node_id], hardware_by_id[anchor]
-            )
-            or
-            _segmented_physical_network(
-                bus, segment_memberships, hardware_by_id[node_id], hardware_by_id[anchor]
-            )
-            or _semantic_physical_network(bus, hardware_by_id[node_id], hardware_by_id[anchor])
-        )
-        network_id, network_name = network or ('', '')
-        source_port = ensure_port(node_id, bus, network_id, network_name)
-        target_port = ensure_port(anchor, bus, network_id, network_name)
-        fallback_count += 1
-        edge_id = f'topology-edge-{len(segments) + 1:04d}'
-        relation_id = f'physical-completeness:{node_id}:{anchor}:{bus}'
-        segments[(node_id, anchor, bus, network_id)] = {
-            'id': edge_id,
-            'name': f'{hardware_by_id[node_id]["name"]} — {hardware_by_id[anchor]["name"]}',
-            'source': node_data[node_id]['id'],
-            'sourcePort': source_port,
-            'target': node_data[anchor]['id'],
-            'targetPort': target_port,
-            'bus': bus,
-            **({'physicalNetworkId': network_id, 'physicalNetworkName': network_name} if network_id else {}),
-            'direction': 'BIDIRECTIONAL',
-            'relationType': 'CONNECTED_VIA',
-            'engineeringRelationId': relation_id,
-            'routingEntryIds': [],
-            'routingMetadata': {},
-            'origin': 'WIZARD_PHYSICAL_COMPLETENESS',
-        }
-        connected.add(node_id)
+        if (left, right, bus, network) in segments or (right, left, bus, network) in segments:
+            continue
+        preserved = deepcopy(edge)
+        preserved.update(sourcePort=ensure_port(left, bus, network, edge.get('physicalNetworkName') or network),
+                         targetPort=ensure_port(right, bus, network, edge.get('physicalNetworkName') or network),
+                         routingEntryIds=[], routingMetadata={}, origin='PRESERVED_PHYSICAL_TOPOLOGY')
+        preserved.pop('routingEntryId', None)
+        segments[(left, right, bus, network)] = preserved
+    # Do not fabricate wiring from spelling similarity or protocol alone.
+    # Isolated hardware remains visibly isolated until a binding is specified.
+    # A controller's declared message port exists independently of consumers.
+    # Keep such ports visible even when the routing model has no receiver yet.
+    declared_network_names = {str(n['id']): str(n.get('name') or n['id']) for n in model.networks()}
+    message_ports = {str(message.get('hardware_interface_id') or '') for message in model.objects('Message')}
+    saved_ports = {str(port.get('hardwareInterfaceId') or '') for node in existing_nodes.values() for port in node.get('ports') or []}
+    for interface in interfaces:
+        node_id = str(interface.get('hardware_node_id') or '')
+        network_id = str(interface.get('network_ref') or '')
+        if node_id in node_data and network_id and str(interface['id']) in message_ports | saved_ports:
+            ensure_port(node_id, _topology_bus(interface.get('technology')), network_id,
+                        declared_network_names.get(network_id, network_id))
+    # A shared canonical network is explicit physical membership, even without
+    # traffic. Connect its components; never cross networks by name similarity.
+    bus_members = {}
+    for (node_id, bus, network), port_id in port_refs.items():
+        if network:
+            bus_members.setdefault((bus, network), []).append((node_id, port_id))
+    for (bus, network), members in bus_members.items():
+        members.sort(key=lambda member: (hardware_by_id[member[0]].get('device_type') != 'Gateway', member[0]))
+        if len(members) < 2:
+            continue
+        anchor, anchor_port = members[0]
+        adjacency = {}
+        for (left, right, edge_bus, edge_network) in segments:
+            if edge_bus == bus and edge_network == network:
+                adjacency.setdefault(left, set()).add(right)
+                adjacency.setdefault(right, set()).add(left)
+        def reachable(start):
+            seen, todo = {start}, [start]
+            while todo:
+                for other in adjacency.get(todo.pop(), set()):
+                    if other not in seen:
+                        seen.add(other)
+                        todo.append(other)
+            return seen
+        for node_id, port_id in members[1:]:
+            if node_id in reachable(anchor):
+                continue
+            key = (anchor, node_id, bus, network)
+            identifier = 'canonical-bus-' + hashlib.sha256(json.dumps(key).encode()).hexdigest()[:16]
+            segments[key] = {'id': identifier, 'name': f'{hardware_by_id[anchor]["name"]} — {hardware_by_id[node_id]["name"]}',
+                'source': node_data[anchor]['id'], 'target': node_data[node_id]['id'],
+                'sourcePort': anchor_port, 'targetPort': port_id, 'bus': bus,
+                'physicalNetworkId': network, 'physicalNetworkName': declared_network_names.get(network, network),
+                'direction': 'BIDIRECTIONAL', 'relationType': 'CONNECTED_VIA',
+                'engineeringRelationId': identifier, 'routingEntryIds': [], 'routingMetadata': {}, 'origin': 'CANONICAL_BUS_BINDING'}
+            adjacency.setdefault(anchor, set()).add(node_id)
+            adjacency.setdefault(node_id, set()).add(anchor)
     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}
-    workflow_state = WorkflowStatusService(current_project_id()).get()
+    topology, physical_changes = materialize_physical_ports(topology, hardware, interfaces, model.networks(),
+        routes=routes, messages=model.objects('Message'), prune_unconnected=False)
     policy = planning_policy(workflow_state)
     resource_receipt = resource_decision(workflow_state.get('topology') or {}, topology,
         planning_inventory(workflow_state, prompt), policy)
@@ -911,7 +1129,7 @@ def generate_network_topology(arguments: dict) -> dict:
         'routes': [(item['id'], item.get('revision'), item.get('approval_state')) for item in routes],
         'resource_decision': resource_receipt,
     }, sort_keys=True).encode('utf-8')).hexdigest()
-    fingerprint = hashlib.sha256(('wizard-network-v6-resource-sizing\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-network-v7-physical-channels\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'
@@ -920,14 +1138,15 @@ def generate_network_topology(arguments: dict) -> dict:
             return proposal_service.envelope(row)
     return proposal_service.create(
         'WIZARD_NETWORK_TOPOLOGY',
-        [{'object_type': 'NetworkTopology', 'data': {'name': 'Wizard-Netzwerktopologie', 'topology': topology,
+        [*physical_changes, {'object_type': 'NetworkTopology', 'data': {'name': 'Wizard-Netzwerktopologie', 'topology': topology,
                                                   'resource_decision': resource_receipt}}],
         f'Physische Netzwerktopologie aus {len(routes)} freigegebenen Routen: '
         f'{len(topology["nodes"])} Geräte und {len(topology["edges"])} deduplizierte Segmente; '
         f'{fallback_count} Teilnehmer wurden ohne künstliche logische Route physisch ergänzt. '
         'Der Workflow-Stand bleibt bis zur menschlichen Freigabe unverändert. '
         + (decision_summary(resource_receipt) if policy['mode'] == 'AUTO_SIZE' else 'Der feste Ressourcenbestand bleibt verbindlich.'),
-        assumptions=['Busse folgen den validierten Endpunktprotokollen; gemeinsame physische Segmente bündeln ihre logischen Routen.'],
+        assumptions=['Busse folgen den validierten Endpunktprotokollen; gemeinsame physische Segmente bündeln ihre logischen Routen.',
+                     'Unabhängige Netze benötigen eigene Hardwarekanäle. Die aufgeführten Kanalergänzungen werden gemeinsam mit der Topologie freigegeben.'],
         evidence=[{'source': 'approved-routing-table', 'prompt_sha256': fingerprint,
                    'route_count': len(routes), 'node_count': len(topology['nodes']), 'edge_count': len(topology['edges']),
                    'physical_completion_edges': fallback_count}],
@@ -967,6 +1186,8 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
     topology, changed_edges = split_topology_by_distribution(state.get('topology') or {}, plan)
     if changed_edges <= 0:
         raise ValueError('Der Capacity-Plan konnte keiner physischen Route des überlasteten Zweigs zugeordnet werden.')
+    topology, physical_changes = materialize_physical_ports(topology, model.objects('HardwareNode'),
+        model.objects('HardwareNetworkInterface'), model.networks(), routes=model.routes(), messages=model.objects('Message'))
     policy = planning_policy(state)
     resource_receipt = resource_decision(state.get('topology') or {}, topology,
         planning_inventory(state, prompt), policy)
@@ -975,6 +1196,7 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
         'topology': state.get('topology') or {},
         'decisions': decisions,
         'resource_decision': resource_receipt,
+        'physical_changes': physical_changes,
     }, sort_keys=True).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
@@ -990,7 +1212,7 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
     )
     return proposal_service.create(
         'CAPACITY_NETWORK_REPAIR',
-        [{'object_type': 'NetworkTopology', 'data': {
+        [*physical_changes, {'object_type': 'NetworkTopology', 'data': {
             'name': 'Capacity-optimierte Netzwerktopologie', 'topology': topology,
             'resource_decision': resource_receipt,
         }}],

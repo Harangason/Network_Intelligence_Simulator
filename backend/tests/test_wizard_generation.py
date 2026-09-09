@@ -20,6 +20,16 @@ from backend.engineering.agent_tools import run_status
 import pytest
 
 
+def define_fixture_command_signals():
+    """Explicit test specification; production must never invent command bits."""
+    for message in model.objects('Message'):
+        if (((message.get('configuration') or {}).get('transport_unit') or {}).get('provenance') or {}).get('generator') == 'wizard-local-actuator-command' and not any(str(s.get('message_id')) == str(message['id']) for s in model.objects('Signal')):
+            create_object('Signal', {'name': 'FixtureCommand_' + str(message['id']),
+                'message_id': str(message['id']), 'start_bit': 0, 'length_bits': 1,
+                'byte_order': 'little_endian', 'data_type': 'unsigned', 'factor': 1,
+                'offset_value': 0, 'min_value': 0, 'max_value': 1})
+
+
 def test_capacity_repair_apply_releases_review_gate(monkeypatch):
     execution = {
         'run_id': 'capacity-repair-run-12345678',
@@ -74,6 +84,7 @@ def test_confirmed_names_generate_reviewable_model_and_complete_routing():
     prompt = '''- Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd)
 - Hardware-Sollwerte: {"gateways":1,"ecus":1,"sensors":1,"actuators":1}
+- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}
 - Systemcluster-Graph: [{"network_id":"can_fd","bus_name":"Drive","controllers":[{"ecu":"Motorsteuerung","sensors":["MotorTemperature"],"actuators":["MotorValve"]}]}]
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
 Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperatursensor und einem Stellglied.
@@ -87,13 +98,61 @@ Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperaturse
         approved = proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
             decision='approve', actor='test-human', trace_id=str(uuid4()))
         proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        define_fixture_command_signals()
         routing = wizard_generation.generate_routing({'prompt': prompt})
         routing = proposal_service.validate(routing['proposal_id'])
         assert routing['status'] == 'VALIDATED', routing['validation_result']
-        assert len(routing['changes']) == 2
+        assert len(routing['changes']) == 5  # Local I/O plus ECU and gateway status.
+        approved_routing = proposal_service.review(routing['proposal_id'], revision=routing['revision'],
+            decision='approve', actor='test-human', trace_id=str(uuid4()))
+        proposal_service.apply(approved_routing['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        assert wizard_generation.generate_routing({'prompt': prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'})['status'] == 'UNCHANGED'
         with pytest.raises(ValueError, match='Routing-Teilnehmer fehlen.*Unknown'):
             wizard_generation.generate_routing({'prompt': prompt.replace('MotorTemperature', 'Unknown')})
     result = execute(authority, 'test_confirmed_identity', Permission.GENERATE_PROPOSAL, {}, lambda _: generate_and_apply())
+    assert result.success, result
+
+
+@pytest.mark.parametrize('display_technology', ['can_fd', 'ethernet'])
+@pytest.mark.parametrize('segmented', [False, True])
+def test_confirmed_backbones_are_routable_before_topology_creation(display_technology, segmented):
+    authority = ToolAuthority(f'pytest-backbone-ports-{uuid4()}')
+    graph = [
+        {'network_id': 'can_fd', 'bus_name': 'Drive', 'controllers': [
+            {'ecu': 'Motorsteuerung', 'sensors': [], 'actuators': []}],
+         'hmi_routes': [{'source': 'Motorsteuerung', 'target': 'Anzeige'}]},
+        {'network_id': display_technology, 'bus_name': 'Display', 'controllers': [
+            {'ecu': 'Anzeige', 'sensors': [], 'actuators': []}]},
+    ]
+    prompt = '\n'.join([
+        '- Industrie: Automotive',
+        '- Netzwerktechnologien: CAN-FD (can_fd); Ethernet (ethernet)',
+        '- Hardware-Sollwerte: {"gateways":1,"ecus":2,"sensors":0,"actuators":0}',
+        '- Systemcluster-Graph: ' + json.dumps(graph),
+        'Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:',
+        'Motorsteuerung und Anzeige mit einem zentralen Gateway verbinden.',
+    ])
+    if segmented:
+        prompt += '\n- Netzarchitektur-ID: gateway_ecu_segments'
+
+    def check():
+        proposal = wizard_generation.generate({'prompt': prompt})
+        proposal = proposal_service.validate(proposal['proposal_id'])
+        assert proposal['status'] == 'VALIDATED', proposal['validation_result']
+        approved = proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
+            decision='approve', actor='test-human', trace_id=str(uuid4()))
+        proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        gateway = next(row for row in model.objects('HardwareNode') if row['device_type'] == 'Gateway')
+        ports = [row for row in model.objects('HardwareNetworkInterface') if str(row['hardware_node_id']) == str(gateway['id'])]
+        expected = {'Drive-S01', 'Display-S01'} if segmented else {'Drive', 'Display'}
+        assert expected <= {row['network_ref'] for row in ports}
+        route = wizard_generation.generate_routing({'prompt': prompt})
+        route = proposal_service.validate(route['proposal_id'])
+        assert route['status'] == 'VALIDATED', route['validation_result']
+        assert len(route['changes']) >= 3
+        assert any(change['data']['route']['gateways'] for change in route['changes'])
+
+    result = execute(authority, 'test_backbone_ports', Permission.GENERATE_PROPOSAL, {}, lambda _: check())
     assert result.success, result
 
 
@@ -129,6 +188,7 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
         'targetCounts': {'gateways': 0, 'ecus': 1, 'sensors': 0, 'actuators': 1},
         'communicationSystemCounts': {'can_fd': 1, 'lin': 1},
         'chains': [
+            chain('System', 'Gateway', 'CAN_FD', 'Antriebsstrang'),
             chain('Abgasnachbehandlung', 'ECU', 'CAN_FD', 'Antriebsstrang'),
             chain(
                 'AbgasnachbehandlungSchaltausgang',
@@ -170,12 +230,14 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
     local_port = next(
         item for item in changes
         if item['object_type'] == 'HardwareNetworkInterface'
-        and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO'
+        and item['data']['hardware_node_id'] == local_interface['data'].get('hardware_node_id',
+            by_ref[local_interface['data']['function_id']]['data']['hardware_node_id'])
+        and item['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin-S01'
     )
     local_message = next(
         item for item in changes
         if item['object_type'] == 'Message'
-        and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO_Command'
+        and item['data']['name'] == 'Abgasnachbehandlung LIN IO Befehl'
     )
     actuator = next(
         item for item in changes
@@ -184,17 +246,21 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
     )
     backbone_message = next(
         item for item in changes
-        if item['object_type'] == 'Message' and item['data']['name'] == 'AbgasnachbehandlungData'
+        if item['object_type'] == 'Message' and item['data']['name'] == 'Abgasnachbehandlung'
     )
 
     assert local_message['data']['direction'] == 'tx'
     assert by_ref[local_message['data']['interface_id']] is local_interface
     assert by_ref[local_message['data']['hardware_interface_id']] is local_port
     assert local_port['data']['technology'] == local_interface['data']['interface_type'] == 'LIN'
-    assert local_port['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin'
+    assert local_port['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin-S01'
     assert local_message['data']['configuration']['transport_unit']['consumer_refs'] == ['$' + actuator['local_ref']]
     assert backbone_message['data']['interface_id'] != local_message['data']['interface_id']
     assert backbone_message['data']['hardware_interface_id'] != local_message['data']['hardware_interface_id']
+    confirmed_owner = by_ref[actuator['data']['identity']['system_owner_id']]
+    assert confirmed_owner['data']['name'] == 'Abgasnachbehandlung'
+    assert actuator['data']['identity']['system_owner_source'] == 'wizard-confirmed'
+    assert changes.index(confirmed_owner) < changes.index(actuator)
 
 
 def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_message(monkeypatch):
@@ -251,6 +317,8 @@ def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_mes
     calls = []
 
     class FakeRoutingGenerationService:
+        def _hardware_graph(self):
+            return {}, {}
         def generate_route(self, *, source_node_id, destination_node_id, message_id):
             calls.append((source_node_id, destination_node_id, message_id))
             local = message_id == 'local-actuator-message'
@@ -277,6 +345,10 @@ def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_mes
                 'validation': {'valid': True},
             }
 
+    messages.extend([
+        {**messages[0], 'id': 'second-backbone-message'},
+        {'id': 'feedback-message', 'interface_id': 'actuator-lin', 'hardware_interface_id': 'actuator-lin-port', 'direction': 'tx'},
+    ])
     captured = {}
     monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
     monkeypatch.setattr(wizard_generation.model, 'objects', lambda kind: objects[kind])
@@ -289,11 +361,13 @@ def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_mes
     monkeypatch.setattr(wizard_generation.proposal_service, 'create', capture)
 
     proposal = wizard_generation.generate_routing({'prompt': prompt})
-    actuator_route, hmi_route = [item['data'] for item in proposal['changes']]
+    actuator_route, feedback_route, hmi_route, second_hmi = [item['data'] for item in proposal['changes']]
 
     assert calls == [
         ('ecu', 'actuator', 'local-actuator-message'),
+        ('actuator', 'ecu', 'feedback-message'),
         ('ecu', 'hmi', 'backbone-message'),
+        ('ecu', 'hmi', 'second-backbone-message'),
     ]
     assert actuator_route['payload']['message_id'] == 'local-actuator-message'
     assert actuator_route['source']['interface_id'] == 'ecu-lin'
@@ -427,6 +501,59 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     sensor = next(item for item in canonical_hardware if item['device_type'] == 'SensorController' and interface_by_node[str(item['id'])] == ecu_type)
     actuator = next(item for item in canonical_hardware if item['device_type'] == 'ActuatorController' and interface_by_node[str(item['id'])] == ecu_type)
     hmi = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] != ecu_type)
+    # This positive end-to-end fixture explicitly budgets shared LIN scheduling
+    # and the gateway hop. Strict deadline failures are covered separately; a
+    # random catalog sensor with timeout == cycle is not a valid success fixture.
+    def define_fixture_timing():
+        from backend.engineering.repository import update_object
+        define_fixture_command_signals()
+        # This fixture explicitly connects the selected participants to one
+        # test bus; protocol equality alone must no longer fabricate a path.
+        selected_nodes = {str(item['id']) for item in (ecu, sensor, actuator, hmi)}
+        for port in model.objects('HardwareNetworkInterface'):
+            network = 'fixture-confirmed-shared-bus' if port['technology'] == ecu_type else 'fixture-' + port['technology'].lower()
+            update_object('HardwareNetworkInterface', str(port['id']), {'network_ref': network})
+        gateway = next(item for item in canonical_hardware if item['device_type'] == 'Gateway')
+        all_ports = model.objects('HardwareNetworkInterface')
+        source_port = next(p for p in all_ports if str(p['hardware_node_id']) == str(ecu['id']) and p['technology'] == ecu_type)
+        target_port = next(p for p in all_ports if str(p['hardware_node_id']) == str(hmi['id']) and p['technology'] == interface_by_node[str(hmi['id'])])
+        update_object('HardwareNetworkInterface', str(target_port['id']), {'network_ref': 'fixture-hmi-bus'})
+        target_port = {**target_port, 'network_ref': 'fixture-hmi-bus'}
+        canvas_nodes = {}
+        edges = []
+        def fixture_canvas_port(node, port):
+            canvas = canvas_nodes.setdefault(str(node['id']), {'id': str(node['id']), 'engineeringId': str(node['id']), 'name': node['name'], 'kind': 'gateway' if node['device_type'] == 'Gateway' else 'ecu', 'x': 0, 'y': 0, 'ports': []})
+            bus = {'CAN_FD': 'can_fd', 'LIN': 'lin', 'Ethernet': 'automotive_ethernet'}.get(port['technology'], port['technology'].lower())
+            result = {'id': str(port['id']), 'hardwareInterfaceId': str(port['id']), 'engineeringId': str(port['id']), 'physicalNetworkId': port['network_ref'], 'bus': bus, 'name': port['name'], 'side': 'right', 'offset': 0.5}
+            canvas['ports'].append(result)
+            return result
+        for index, (node, endpoint) in enumerate([(ecu, source_port), (hmi, target_port)]):
+            gateway_port = create_object('HardwareNetworkInterface', {'hardware_node_id': str(gateway['id']), 'name': 'Fixture gateway ' + str(index), 'technology': endpoint['technology'], 'network_ref': endpoint['network_ref'], 'channel_index': 100 + index})
+            left, right = fixture_canvas_port(node, endpoint), fixture_canvas_port(gateway, gateway_port)
+            edges.append({'id': 'fixture-edge-' + str(index), 'source': str(node['id']), 'target': str(gateway['id']), 'sourcePort': left['id'], 'targetPort': right['id'], 'bus': left['bus'], 'physicalNetworkId': endpoint['network_ref'], 'engineeringRelationId': 'fixture-' + str(index), 'routingEntryIds': [], 'origin': 'TEST_SPECIFICATION'})
+        # Physical canonical bus membership is sufficient before the editor is generated.
+        from backend.engineering.repository import update_object
+        source_ids = {str(item['id']) for item in (sensor, actuator, ecu)}
+        selected_interfaces = {str(item['id']) for item in interfaces if str(item.get('hardware_node_id')) in source_ids}
+        configured = {}
+        aliases = {'maximum_latency_ms', 'maximum_latency', 'deadline_ms', 'deadline', 'maximum_jitter_ms',
+                   'maximum_jitter', 'timeout', 'data_freshness_limit'}
+        for message in model.objects('Message'):
+            if str(message.get('interface_id')) not in selected_interfaces:
+                continue
+            limits = {'max_latency_ms': 100, 'jitter_limit_ms': 20,
+                      'timeout_ms': max(500, 3 * float(message.get('cycle_ms') or 100)),
+                      'freshness_ms': max(500, 3 * float(message.get('cycle_ms') or 100))}
+            configuration = {key: value for key, value in (message.get('configuration') or {}).items() if key not in aliases}
+            update_object('Message', str(message['id']), {'configuration': {**configuration, **limits}})
+            configured[str(message['id'])] = limits
+        for signal in model.objects('Signal'):
+            limits = configured.get(str(signal.get('message_id')))
+            if limits:
+                communication = {key: value for key, value in (signal.get('communication') or {}).items() if key not in aliases}
+                update_object('Signal', str(signal['id']), {'communication': {**communication, **limits}})
+    timed = execute(authority, 'test_define_transport_requirements', Permission.READ_MODEL, {}, lambda _: define_fixture_timing())
+    assert timed.success, timed
     graph = json.dumps([{'cluster_id': 'test', 'controllers': [{
         'ecu': ecu['name'], 'sensors': [sensor['name']], 'actuators': [actuator['name']]}],
         'hmi_routes': [{'source': ecu['name'], 'target': hmi['name']}]}], separators=(',', ':'))
@@ -436,11 +563,13 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
             return await EngineeringAgent(client, reasoner=NoReasoner()).run(
                 continuation_prompt, AgentContext(active_project_id=authority.project_id))
     routed = asyncio.run(route_continuation())
+    if routed['status'] != 'READY_FOR_REVIEW':
+        print(json.dumps([p.get('validation_result') for p in routed.get('proposals', [])], default=str))
     assert routed['status'] == 'READY_FOR_REVIEW', routed
     routing_proposal = routed['proposals'][0]
     assert routing_proposal['proposal_type'] == 'WIZARD_ROUTING'
     assert routing_proposal['status'] == 'VALIDATED'
-    assert len(routing_proposal['changes']) == 3
+    assert len(routing_proposal['changes']) == 4  # Includes the actuator feedback transport
     hmi_route = routing_proposal['changes'][-1]['data']
     assert hmi_route['route']['gateways']
     assert hmi_route['route']['transformations'][0]['type'] == 'PROTOCOL_TRANSLATION'
@@ -453,7 +582,27 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
         routing_proposal['proposal_id'], actor='test-human', trace_id=str(uuid4())))
     assert route_applied.success and route_applied.data['status'] == 'APPLIED', route_applied
     routing_check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['routing']
+    assert not routing_check['complete']
+    assert routing_check['coverage']['missing_message_ids']
+    blocked_repeat = asyncio.run(route_continuation())
+    assert blocked_repeat['status'] == 'INCOMPLETE'
+    assert not blocked_repeat['proposals']
+    assert not any(event['type'] == 'APPROVAL' for event in blocked_repeat['events'])
+    # This mass-model test confirms four relationships only. The remaining
+    # devices do not acquire invented consumers merely to make the gate green.
+    selected_messages = sorted({message_id for change in routing_proposal['changes']
+                                for message_id in ([change['data']['payload']['message_id']]
+                                                   if change['data']['payload'].get('message_id') else
+                                                   change['data']['payload'].get('message_ids') or [])})
+    service = WorkflowStatusService(authority.project_id)
+    service.save_parameters({**service.get()['parameters'], 'simulation_scope': {
+        'mode': 'MESSAGE', 'include_all': False, 'message_ids': selected_messages, 'signal_ids': [],
+        'reason': 'Integrationstest der vier explizit bestätigten Transportbeziehungen im großen Modell.',
+    }})
+    routing_check = service.get(summary=True)['artifact_checks']['routing']
     assert routing_check['complete'], routing_check
+    assert routing_check['coverage']['scope_mode'] == 'SELECTED'
+    assert routing_check['coverage']['excluded_messages'] > 0
 
     network_prompt = prompt + f'\n- Systemcluster-Graph: {graph}\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'
     async def network_continuation():
@@ -465,7 +614,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     network_proposal = networked['proposals'][0]
     assert network_proposal['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'
     assert network_proposal['status'] == 'VALIDATED', network_proposal['validation_result']
-    topology = network_proposal['changes'][0]['data']['topology']
+    topology = next(change['data']['topology'] for change in network_proposal['changes'] if change['object_type'] == 'NetworkTopology')
     assert len(topology['nodes']) == len(canonical_hardware)
     assert len(topology['edges']) >= 3
     assert all(node['engineeringId'] for node in topology['nodes'])
@@ -495,7 +644,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
         WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution'],
     )[1])
     assert topology_status.success and topology_status.data['state'] == 'READY_TO_CONTINUE', topology_status
-    assert topology_status.data['step'] == 'capacity_timing', topology_status
+    assert topology_status.data['step'] == 'parameters', topology_status
 
     # A partial parameter draft used to send this continuation to the LLM and
     # leave the wizard blocked without a canonical change.
@@ -522,7 +671,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     capacity_status = WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['capacity_timing']
     assert capacity_status in {'COMPLETE', 'WARNING'}, capacity_status
     capacity_snapshot = WorkflowStatusService(authority.project_id).latest_analysis('capacity_timing')
-    assert capacity_snapshot['results']['overview']['route_count'] == 3
+    assert capacity_snapshot['results']['overview']['route_count'] == 4
     assert capacity_snapshot['results']['overview']['network_count'] >= 1
 
     from backend.engineering.agent_tools import simulation_gateway

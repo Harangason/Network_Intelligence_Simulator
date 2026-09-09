@@ -16,6 +16,7 @@ from ..physical_segments import physical_port_networks
 from .models import normalize_route
 from .repository import _audit, _insert_route, _route_code
 from .validation import RoutingValidator
+from .timing import generated_timing
 
 
 BUS_PROTOCOLS = {
@@ -343,8 +344,10 @@ def build_network_route_candidates(
                 "description": "Proposed from Network Editor",
                 "source": {
                     "node_id": _engineering_id(source_node),
-                    "port_id": str(source_port.get("id") or "") or None,
-                    "interface_id": str(source_port.get("engineeringId") or source_port.get("engineering_id") or "") or None,
+                    "port_id": str(source_port.get("hardwareInterfaceId") or source_port.get("id") or "") or None,
+                    "physical_port_ref": str(source_port.get("id") or "") or None,
+                    "interface_id": (str(source_port.get("engineeringId") or source_port.get("engineering_id") or "") or None)
+                        if source_port.get("engineeringId") != source_port.get("hardwareInterfaceId") else None,
                     "network_id": port_networks.get(str(source_port.get("id")), f"network-{buses[0]}"),
                     "protocol": protocol,
                 },
@@ -358,8 +361,10 @@ def build_network_route_candidates(
                 "destinations": [
                     {
                         "node_id": _engineering_id(target_node),
-                        "port_id": str(target_port.get("id") or "") or None,
-                        "interface_id": str(target_port.get("engineeringId") or target_port.get("engineering_id") or "") or None,
+                        "port_id": str(target_port.get("hardwareInterfaceId") or target_port.get("id") or "") or None,
+                        "physical_port_ref": str(target_port.get("id") or "") or None,
+                        "interface_id": (str(target_port.get("engineeringId") or target_port.get("engineering_id") or "") or None)
+                            if target_port.get("engineeringId") != target_port.get("hardwareInterfaceId") else None,
                         "network_id": port_networks.get(str(target_port.get("id")), f"network-{buses[-1]}"),
                         "protocol": target_protocol,
                     }
@@ -376,12 +381,7 @@ def build_network_route_candidates(
                     "transformations": transformations,
                     "priority": "NORMAL",
                 },
-                "timing": {
-                    "cycle_time_ms": max(BUS_CYCLES_MS.get(bus, 100.0) for bus in buses),
-                    "timeout_ms": 500.0,
-                    "max_latency_ms": 20.0,
-                    "jitter_limit_ms": 5.0,
-                },
+                "timing": generated_timing(max(BUS_CYCLES_MS.get(bus, 100.0) for bus in buses)),
                 "routing_policy": {
                     "routing_type": "GATEWAY_ROUTED" if gateways else "UNICAST",
                     "redundancy": "NONE",

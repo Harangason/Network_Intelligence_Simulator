@@ -5,6 +5,8 @@ import re
 
 def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools"}
+    if re.search(r'\b(ändere|aendere|bearbeite|aktualisiere|update|modify)\b', prompt, re.I):
+        names.add('update_object_via_proposal')
     groups = [
         (r"signal|semantik|semantics|encoding", {"inspect_signal","generate_signals","validate_signal","classify_signal_semantics","calculate_signal_bit_length","resolve_signal_emulator","generate_signal_behavior_proposal","find_similar_signals"}),
         (r"nachricht|message|pack", {"generate_messages","pack_function_messages","validate_message","calculate_message_size","calculate_bus_load","allocate_message_identifier"}),

@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai";
-import { uniqueMessagesById } from "@/lib/agent-message-history";
+import { uniqueMessagesById } from "./agent-message-history.ts";
 
 const DB_NAME = "communication-simulator-agent-chat";
 const STORE_NAME = "project-histories";
@@ -47,6 +47,22 @@ function compactValue(value: unknown, depth = 0): unknown {
     return value.length > 64_000 ? `${value.slice(0, 64_000)}\n[Cache-Ausgabe gekuerzt]` : value;
   }
   if (value === null || typeof value !== "object") return value;
+  // Review data is canonical, never a truncated chat snapshot. Keep a typed
+  // reference that the review card must resolve before enabling any action.
+  if (!Array.isArray(value)) {
+    const proposal = value as Record<string, unknown>;
+    if (typeof proposal.proposal_id === "string" && typeof proposal.revision === "string" && Array.isArray(proposal.changes)) {
+      return {
+        proposal_id: proposal.proposal_id, proposal_type: proposal.proposal_type,
+        revision: proposal.revision, status: proposal.status,
+        rationale: String(proposal.rationale ?? "").slice(0, 2000),
+        content_state: "REFERENCE", change_count: proposal.change_count ?? proposal.changes.length,
+        canonical_count: proposal.canonical_count ?? (Array.isArray(proposal.canonical_ids) ? proposal.canonical_ids.length : 0),
+        assumptions: [], changes: [], validation_result: {}, canonical_ids: [],
+        ...(proposal.workload_id ? { workload_id: proposal.workload_id } : {}),
+      };
+    }
+  }
   if (depth >= 8) return "[Cache-Tiefe begrenzt]";
   if (Array.isArray(value)) {
     const compacted = value.slice(0, 100).map((item) => compactValue(item, depth + 1));
@@ -60,7 +76,7 @@ function compactValue(value: unknown, depth = 0): unknown {
   );
 }
 
-function transportMessages(messages: UIMessage[]) {
+export function transportMessages(messages: UIMessage[]) {
   const selected = uniqueMessagesById(messages)
     .slice(-MAX_MESSAGES)
     .map((message) => compactValue(message) as UIMessage);

@@ -8,8 +8,11 @@ from typing import Any
 
 from ..repository import list_objects
 from ..pagination import all_pages
+from ..simulation_coverage import simulation_coverage
 from ..routing.repository import list_routes
 from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
+from ..routing.transport_segments import physical_route_segments
+from ..models import EngineeringValidationError
 from ..signal_audit import build_generation_signal_audit
 from ..workflow.models import WORKFLOW_LABELS, WORKFLOW_STEPS
 from ..workflow.service import WorkflowStatusService
@@ -162,6 +165,32 @@ def _requirement_value(
     return min(values) if values else None
 
 
+def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], network_ids: list[str]) -> list[dict[str, Any]]:
+    """Use physical ports when available; label provisional logical estimates."""
+    segments = []
+    for destination in route.get("destinations") or []:
+        try:
+            segments.extend(physical_route_segments(route, destination, topology))
+        except EngineeringValidationError:
+            # Capacity is also used while constructing an unfinished topology.
+            # Snapshot creation remains strict and rejects this provisional path.
+            pass
+    if not any(segment.get("topology_edge_ids") for segment in segments):
+        endpoints = [route.get("source") or {}, *(route.get("route") or {}).get("hops", []),
+            *(route.get("destinations") or [])]
+        endpoints = [item for item in endpoints if isinstance(item, dict)]
+        source = route.get("source") or {}
+        segments = [{"source": {**source, **next((item for item in endpoints if item.get("network_id") == network_id), {}),
+            "network_id": network_id}, "target": (route.get("destinations") or [{}])[0],
+            "physical_path_resolved": False} for network_id in network_ids]
+    unique = {}
+    for segment in segments:
+        network_id = str(segment["source"].get("network_id") or network_ids[0])
+        unique.setdefault(network_id, {**segment, "network_id": network_id,
+            "physical_path_resolved": bool(segment.get("topology_edge_ids"))})
+    return list(unique.values())
+
+
 def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: list[dict[str, Any]]) -> int:
     semantic = {
         "LOW": 20,
@@ -190,7 +219,7 @@ def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: lis
 
 
 class CapacityTimingService:
-    CALCULATION_VERSION = "2.1"
+    CALCULATION_VERSION = "2.2"
 
     def __init__(self, project_id: str = "default") -> None:
         self.workflow = WorkflowStatusService(project_id)
@@ -218,6 +247,7 @@ class CapacityTimingService:
         signals = {str(item["id"]): item for item in all_pages(list_objects, "Signal")}
         interfaces = {str(item["id"]): item for item in all_pages(list_objects, "Interface")}
         hardware = {str(item["id"]): item for item in all_pages(list_objects, "HardwareNode")}
+        hardware_interfaces = {str(item["id"]): item for item in all_pages(list_objects, "HardwareNetworkInterface")}
         route_metrics: list[dict[str, Any]] = []
         logical_route_metrics: list[dict[str, Any]] = []
         network_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -261,12 +291,19 @@ class CapacityTimingService:
             segment_network_ids = topology_networks.get(str(route.get("id") or "")) or _route_segment_network_ids(
                 source, route_path, destinations, network_id
             )
-            segment_count = max(1, len(segment_network_ids))
+            segment_specs = _capacity_route_segments(route, state.get("topology") or {}, segment_network_ids)
+            segment_network_ids = [segment["network_id"] for segment in segment_specs]
+            segment_count = len(segment_specs)
             payload_bytes = _payload_bytes(route, messages, default_payload)
             payload = route.get("payload") or {}
             message_id = str(payload.get("message_id") or "")
             message = messages.get(message_id, {})
             selected_signals = [signals[str(item)] for item in payload.get("signal_ids") or [] if str(item) in signals]
+            if not selected_signals:
+                message_ids = {str(item) for item in payload.get("message_ids") or []}
+                if message_id:
+                    message_ids.add(message_id)
+                selected_signals = [signal for signal in signals.values() if str(signal.get("message_id")) in message_ids]
             cycle_requirement = _requirement_value(
                 timing,
                 message,
@@ -275,26 +312,37 @@ class CapacityTimingService:
                 "cycle_time",
             )
             cycle_ms = cycle_requirement or _number(message.get("cycle_ms"), default_cycle)
-            interface = interfaces.get(str(source.get("interface_id") or ""), {})
-            route_parameters = parameters_for_protocol(protocol, parameters, interface.get("configuration"), network_id)
-            estimate = estimate_frame(protocol, payload_bytes, route_parameters)
-            average = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
-            peak = average * peak_factor
-            burst = average * burst_factor
             gateways = route_path.get("gateways") or []
             priority = _priority_value(route, message, selected_signals)
-            queue_ms = scheduled_queueing_delay_ms(
-                estimate.transmission_time_s,
-                average,
-                queue_policy,
-                priority,
-            )
-            transmission_ms = estimate.transmission_time_s * 1000.0
+            estimates = []
+            for segment in segment_specs:
+                endpoint = segment["source"]
+                segment_protocol = str(endpoint.get("protocol") or protocol)
+                interface = interfaces.get(str(endpoint.get("interface_id") or ""), {})
+                physical_interface = hardware_interfaces.get(str(endpoint.get("hardware_interface_id") or endpoint.get("port_id") or ""), {})
+                configuration = {**(interface.get("configuration") or {}), **(physical_interface.get("capabilities") or {})}
+                segment_parameters = parameters_for_protocol(segment_protocol, parameters, configuration, segment["network_id"])
+                frame = estimate_frame(segment_protocol, payload_bytes, segment_parameters)
+                segment_average = utilization_percent(frame.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
+                ethernet = frame.calculation_model == "ETHERNET_WIRE_ESTIMATE"
+                queue_ms = scheduled_queueing_delay_ms(frame.transmission_time_s, segment_average, queue_policy, priority)
+                estimates.append({"spec": segment, "frame": frame, "parameters": segment_parameters,
+                    "average": segment_average, "peak": segment_average * peak_factor, "burst": segment_average * burst_factor,
+                    "queue_ms": queue_ms * (2 if ethernet else 1),
+                    "transmission_ms": frame.transmission_time_s * 1000 * (2 if ethernet else 1),
+                    "ethernet": ethernet})
+                if frame.is_generic_estimate:
+                    generic_models.add(segment_protocol.upper())
+            estimate = estimates[0]["frame"]
+            route_parameters = estimates[0]["parameters"]
+            average = max(item["average"] for item in estimates)
+            peak = max(item["peak"] for item in estimates)
+            burst = max(item["burst"] for item in estimates)
             gateway_processing_ms = len(gateways) * gateway_delay
             gateway_queue_ms = len(gateways) * gateway_queue_delay
             conversion_ms = len(gateways) * protocol_conversion_delay
-            route_queue_ms = queue_ms * segment_count
-            route_transmission_ms = transmission_ms * segment_count
+            route_queue_ms = sum(item["queue_ms"] for item in estimates)
+            route_transmission_ms = sum(item["transmission_ms"] for item in estimates)
             route_propagation_ms = propagation_delay * segment_count
             end_to_end = (
                 source_processing_delay
@@ -389,12 +437,28 @@ class CapacityTimingService:
             if estimate.is_generic_estimate:
                 generic_models.add(protocol.upper())
             logical_route_metrics.append(metric)
-            for index, segment_network_id in enumerate(segment_network_ids):
+            for index, segment_data in enumerate(estimates):
+                segment_network_id = segment_network_ids[index]
+                segment_frame = segment_data["frame"]
+                segment_spec = segment_data["spec"]
                 segment_metric = {
                     **metric,
                     "network_id": segment_network_id,
                     "route_segment_index": index + 1,
                     "route_segment_count": segment_count,
+                    "protocol": segment_frame.protocol,
+                    "bitrate": _number(segment_data["parameters"].get("bitrate"), 1_000_000.0),
+                    "frame_bits": segment_frame.frame_bits,
+                    "calculation_model": segment_frame.calculation_model,
+                    "average_load_percent": round(segment_data["average"], 4),
+                    "peak_load_percent": round(segment_data["peak"], 4),
+                    "burst_load_percent": round(segment_data["burst"], 4),
+                    "status": classify_load(max(segment_data["average"], segment_data["peak"], segment_data["burst"]), thresholds),
+                    "segment_transmission_latency_ms": round(segment_data["transmission_ms"], 6),
+                    "segment_queueing_latency_ms": round(segment_data["queue_ms"], 6),
+                    "physical_path_resolved": segment_spec["physical_path_resolved"],
+                    "load_basis": "BUSIEST_FULL_DUPLEX_PORT" if segment_data["ethernet"] else "SHARED_BUS",
+                    "physical_source": segment_spec["source"], "physical_target": segment_spec["target"],
                 }
                 route_metrics.append(segment_metric)
                 network_groups[segment_network_id].append(segment_metric)
@@ -406,12 +470,28 @@ class CapacityTimingService:
             average = statistics["average_load_percent"]
             peak = statistics["peak_load_percent"]
             burst = statistics["burst_load_percent"]
+            port_metrics = []
+            if all(item.get("load_basis") == "BUSIEST_FULL_DUPLEX_PORT" for item in items):
+                port_groups = defaultdict(list)
+                for item in items:
+                    for endpoint_key, direction in (("physical_source", "TX"), ("physical_target", "RX")):
+                        endpoint = item.get(endpoint_key) or {}
+                        key = (str(endpoint.get("node_id") or ""), str(endpoint.get("physical_port_ref") or endpoint.get("port_id") or endpoint.get("interface_id") or ""), direction)
+                        port_groups[key].append(item)
+                for (node_id, port_id, direction), entries in port_groups.items():
+                    port_metrics.append({"hardware_id": node_id, "port_id": port_id, "direction": direction,
+                        **{field: round(sum(entry[field] for entry in entries), 4) for field in ("average_load_percent", "peak_load_percent", "burst_load_percent")}})
+                average = max((item["average_load_percent"] for item in port_metrics), default=0)
+                peak = max((item["peak_load_percent"] for item in port_metrics), default=0)
+                burst = max((item["burst_load_percent"] for item in port_metrics), default=0)
             governing_load = max(average, peak, burst)
             network_metrics.append(
                 {
                     "network_id": network_id,
                     "protocol": items[0]["protocol"],
                     "route_count": len(items),
+                    "load_basis": "BUSIEST_FULL_DUPLEX_PORT" if port_metrics else "SHARED_BUS",
+                    "port_metrics": port_metrics,
                     "bitrate": items[0]["bitrate"],
                     "average_load_percent": round(average, 4),
                     "peak_load_percent": round(peak, 4),
@@ -470,6 +550,12 @@ class CapacityTimingService:
             )
 
         findings: list[dict[str, Any]] = []
+        unresolved_routes = {item["route_id"] for item in route_metrics
+            if item["route_segment_count"] > 1 and not item["physical_path_resolved"]}
+        for route_id in sorted(unresolved_routes):
+            findings.append({"severity": "ERROR", "code": "PHYSICAL_ROUTE_UNRESOLVED",
+                "message": "Der Gateway-Pfad besitzt noch keine vollständig bestätigten physischen Segmente; die Kapazität ist nur vorläufig geschätzt.",
+                "object_type": "RoutingEntry", "object_id": route_id, "step": "network_editor"})
         for step, accepted in (
             ("engineering_model", {"COMPLETE"}),
             ("routing", {"APPROVED"}),
@@ -983,11 +1069,11 @@ class PreflightService:
                     step=step,
                 )
 
-        hardware = list_objects("HardwareNode", limit=1000)
-        functions = list_objects("Function", limit=1000)
+        hardware = all_pages(list_objects, "HardwareNode")
+        functions = all_pages(list_objects, "Function")
         interfaces = all_pages(list_objects, "Interface")
-        messages = list_objects("Message", limit=5000)
-        signals = list_objects("Signal", limit=10000)
+        messages = all_pages(list_objects, "Message")
+        signals = all_pages(list_objects, "Signal")
         for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
             add(
                 "addressing",
@@ -1025,7 +1111,14 @@ class PreflightService:
             if not item.get("message_id"):
                 add("engineering_model", "ERROR", "SIGNAL_PARENT_MISSING", f"Signal {item.get('name')} besitzt keine Message.")
 
-        routes = [route for route in list_routes(limit=1000) if route.get("status") not in {"REJECTED", "SUPERSEDED"}]
+        routes = [route for route in all_pages(list_routes) if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
+        coverage = simulation_coverage(messages, signals, routes, (state.get("parameters") or {}).get("simulation_scope"))
+        if not coverage["complete"]:
+            add("routing", "ERROR", "SIMULATION_SCOPE_UNCOVERED",
+                f"{len(coverage['missing_message_ids'])} Nachrichten und {len(coverage['missing_signal_ids'])} Signale "
+                "des Simulationsumfangs besitzen keinen ausführbaren Transportpfad.",
+                "Empfänger und Kommunikationspfade vervollständigen oder einen begründeten Teilumfang festlegen.",
+                coverage=coverage)
         if not routes:
             add("routing", "ERROR", "ROUTING_MISSING", "Es existieren keine aktiven Routing-Eintraege.")
         else:
@@ -1143,6 +1236,7 @@ class PreflightService:
             "capacity_snapshot_id": capacity.get("id") if capacity else None,
             "category_statuses": category_statuses,
             "category_checks": category_checks,
+            "scope_coverage": coverage,
         }
         snapshot = self.workflow.create_analysis_snapshot(
             "preflight",

@@ -46,6 +46,15 @@ def mark_model_changed() -> None:
         unit.model_changed = True
 
 
+def flush_model_changes(*, actor: str, reason: str) -> None:
+    """Invalidate dependencies before a reviewed downstream artifact is saved."""
+    unit = _request_unit.get()
+    if unit is not None and unit.model_changed:
+        from .workflow.service import WorkflowStatusService
+        WorkflowStatusService(unit.project_id).mark_changed('engineering_model', reason, actor=actor)
+        unit.model_changed = False
+
+
 class RequestUnit:
     """One lazy transaction for a complete API mutation, including invalidation.
 

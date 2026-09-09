@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   engineeringObjectTypeClass,
   engineeringObjectTypeLabel,
@@ -12,6 +12,11 @@ import { getPreflight, getWorkflow, runPreflight, type AnalysisFinding, type Pre
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 import { withProjectParam } from "@/lib/user-settings";
+import { listAllEngineeringObjects } from "@/lib/engineering-api";
+import type { EngMessage, EngSignal } from "@/lib/types";
+import { saveSimulationScope } from "@/lib/workflow-api";
+import { simulationScopeFrom, simulationScopeValid, sameSimulationScope } from "@/lib/simulation-scope";
+import { SimulationScopeSelector } from "./simulation-scope-selector";
 
 export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
@@ -25,20 +30,37 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
   const [outdated, setOutdated] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [messages, setMessages] = useState<EngMessage[]>([]);
+  const [signals, setSignals] = useState<EngSignal[]>([]);
+  const [scope, setScope] = useState(() => simulationScopeFrom(null));
+  const scopeEdited = useRef(false);
+  const loadedProject = useRef("");
 
   const load = useCallback(async () => {
     try {
-      const [nextWorkflow, nextRoutes, snapshot] = await Promise.all([
+      const [nextWorkflow, nextRoutes, snapshot, nextMessages, nextSignals] = await Promise.all([
         getWorkflow(),
         listRoutes(),
-        getPreflight(),
+        getPreflight().catch((caught: unknown) => {
+          if (caught && typeof caught === "object" && "status" in caught && caught.status === 404) return null;
+          throw caught;
+        }),
+        listAllEngineeringObjects("messages"),
+        listAllEngineeringObjects("signals"),
       ]);
       setWorkflow(nextWorkflow);
+      if (!scopeEdited.current || loadedProject.current !== nextWorkflow.project_id) {
+        setScope(simulationScopeFrom(nextWorkflow.parameters.simulation_scope));
+        scopeEdited.current = false;
+      }
+      loadedProject.current = nextWorkflow.project_id;
+      setMessages(nextMessages as EngMessage[]);
+      setSignals(nextSignals as EngSignal[]);
       setRoutes(nextRoutes);
-      setFindings(snapshot.findings);
-      setStatus(snapshot.status);
-      setOutdated(snapshot.is_outdated);
-      const results = snapshot.results as Partial<PreflightResults>;
+      setFindings(snapshot?.findings ?? []);
+      setStatus(snapshot?.status ?? null);
+      setOutdated(snapshot?.is_outdated ?? false);
+      const results = (snapshot?.results ?? {}) as Partial<PreflightResults>;
       setCategoryStatuses(results.category_statuses ?? {});
       setCategoryChecks(results.category_checks ?? {});
       setError("");
@@ -49,9 +71,14 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
   useWorkflowRefresh(load);
 
   async function validate() {
+    if (!workflow || !simulationScopeValid(scope)) return;
     setBusy(true);
     setError("");
     try {
+      if (!sameSimulationScope(scope, simulationScopeFrom(workflow.parameters.simulation_scope))) {
+        setWorkflow(await saveSimulationScope(scope));
+        setOutdated(true);
+      }
       const response = await runPreflight();
       setFindings(response.findings);
       setStatus(response.status);
@@ -60,6 +87,7 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
       setOutdated(false);
       setWorkflow(await getWorkflow());
       setRoutes(await listRoutes());
+      scopeEdited.current = false;
       notifyWorkflowChanged();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Preflight fehlgeschlagen.");
@@ -106,7 +134,8 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
     }
   }
 
-  const canSimulate = status === "APPROVED" || status === "WARNING";
+  const scopeDirty = !sameSimulationScope(scope, simulationScopeFrom(workflow?.parameters.simulation_scope));
+  const canSimulate = !scopeDirty && (status === "APPROVED" || status === "WARNING");
   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
   const warningCount = findings.filter((finding) => finding.severity === "WARNING").length;
   const errorCount = findings.filter((finding) => finding.severity === "ERROR").length;
@@ -133,8 +162,10 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
     <section className="analysis-workbench preflight-workbench">
       <div className="analysis-toolbar">
         <div><p className="eyebrow">Technical gate</p><h2>Validation / Preflight</h2><p>Prüft Modell, Routing, Netzwerk, Parameter und Capacity gegen denselben Versionsstand.</p></div>
-        <button className="button primary" disabled={busy} onClick={() => void validate()} type="button">{busy ? "Prüft …" : "Preflight ausführen"}</button>
+        <button className="button primary" disabled={busy || !workflow || !simulationScopeValid(scope)} onClick={() => void validate()} type="button">{busy ? "Prüft …" : scopeDirty ? "Umfang speichern und Preflight ausführen" : "Preflight ausführen"}</button>
       </div>
+      <SimulationScopeSelector scope={scope} onChange={(next) => { scopeEdited.current = true; setScope(next); }} messages={messages} signals={signals} disabled={busy} />
+      {scopeDirty && <p className="notice warning">Die geänderte Auswahl wird beim Ausführen gespeichert und erneut geprüft.</p>}
       {error && <div className="notice error">{error}</div>}
       {outdated && <div className="workflow-blocker warning"><strong>Preflight ist OUTDATED</strong><span>Ein vorgelagerter Schritt wurde geändert.</span></div>}
       <div className="preflight-status-grid">
@@ -161,6 +192,8 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
         <FindingDialog
           busy={busy}
           finding={selectedFinding}
+          messages={messages}
+          signals={signals}
           onClose={() => setSelectedFinding(null)}
           onPayloadDraft={setPayloadDraft}
           onSavePayload={() => void savePayloadFinding()}
@@ -173,8 +206,10 @@ export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId
   );
 }
 
-function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadDraft, onSavePayload, projectId }: {
+function FindingDialog({ finding, messages, signals, route, payloadDraft, busy, onClose, onPayloadDraft, onSavePayload, projectId }: {
   finding: AnalysisFinding;
+  messages: EngMessage[];
+  signals: EngSignal[];
   route: RoutingEntry | null;
   payloadDraft: string;
   busy: boolean;
@@ -184,8 +219,11 @@ function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadD
   projectId?: string;
 }) {
   const editablePayload = finding.object_type === "RoutingEntry" && finding.code === "PAYLOAD_UNSPECIFIED" && Boolean(route);
+  const missingMessages = finding.coverage?.missing_message_ids ?? [];
+  const missingSignals = finding.coverage?.missing_signal_ids ?? [];
   const problemHref = finding.object_type === "RoutingEntry" && finding.object_id
     ? `/studio/routing?route=${encodeURIComponent(finding.object_id)}&view=validation&edit=1`
+    : finding.code === "SIMULATION_SCOPE_UNCOVERED" ? "/studio/routing"
     : finding.step === "capacity_timing" || finding.category === "capacity"
       ? "/studio/capacity"
       : finding.category === "network"
@@ -210,6 +248,14 @@ function FindingDialog({ finding, route, payloadDraft, busy, onClose, onPayloadD
             <dt>Objekt</dt><dd>{finding.object_type ? <><span className={`eng-object-badge ${engineeringObjectTypeClass(finding.object_type)}`}>{engineeringObjectTypeLabel(finding.object_type)}</span> · {route?.route_code ?? finding.object_id ?? "unbekannt"}</> : "Workflow / Modell"}</dd>
             <dt>Empfehlung</dt><dd>{finding.recommendation ?? recommendationForFinding(finding)}</dd>
           </dl>
+          {missingMessages.length > 0 && <details open>
+            <summary>Nachrichten ohne ausführbaren Transport ({missingMessages.length})</summary>
+            <ul>{missingMessages.map((id) => <li key={id}><Link href={withProjectParam(`/studio/engineering?resource=messages&object=${encodeURIComponent(id)}`, projectId)}>{messages.find((item) => item.id === id)?.name ?? id}</Link></li>)}</ul>
+          </details>}
+          {missingSignals.length > 0 && <details>
+            <summary>Betroffene Signale ({missingSignals.length})</summary>
+            <ul>{missingSignals.map((id) => <li key={id}><Link href={withProjectParam(`/studio/engineering?resource=signals&object=${encodeURIComponent(id)}`, projectId)}>{signals.find((item) => item.id === id)?.name ?? id}</Link></li>)}</ul>
+          </details>}
           {editablePayload ? (
             <label className="finding-edit-field">
               <span>Payload / Data Object</span>

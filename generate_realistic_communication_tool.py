@@ -781,7 +781,7 @@ def _runtime_environment() -> dict[str, str]:
     environment.setdefault("DATABASE_URL", DEFAULT_DATABASE_URL)
     environment.setdefault(
         "SIMULATOR_BACKEND_API_URL",
-        f"http://{BACKEND_HOST}:{BACKEND_PORT}/api",
+        f"http://{BACKEND_HOST}:{environment.get('FLASK_PORT', BACKEND_PORT)}/api",
     )
     environment.setdefault("OLLAMA_MODELS", _config_text(paths, "ollama_models", r"I:\engineering-intelligence-platform\models\ollama"))
     environment.setdefault("OLLAMA_CONTEXT_LENGTH", str(_config_int(resources, "ollama_context_length", 8192)))

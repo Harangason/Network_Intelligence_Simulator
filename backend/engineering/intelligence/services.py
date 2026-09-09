@@ -450,7 +450,7 @@ class AnomalyDetectionService:
 
 
 class SystemHealthService:
-    CALCULATION_VERSION = "1.0"
+    CALCULATION_VERSION = "2.0"
 
     def calculate(
         self,
@@ -467,7 +467,8 @@ class SystemHealthService:
         preflight_results = preflight.get("results") or {}
         valid_routes = [
             route for route in routes
-            if route.get("status") not in {"CONFLICT", "REJECTED", "OUTDATED", "SUPERSEDED"}
+            if route.get("status") == "APPROVED"
+            and (route.get("validation") or {}).get("valid") is True
         ]
         route_signals = {
             str(signal_id)
@@ -496,6 +497,18 @@ class SystemHealthService:
         route_metrics = capacity_results.get("routes") or []
         current_runs = [item for item in simulations if not item.get("is_outdated")]
         completed = [item for item in current_runs if item.get("status") == "COMPLETED"]
+        from ..simulation_coverage import simulation_coverage, assess_simulation
+        coverage = simulation_coverage(objects["Message"], objects["Signal"], valid_routes)
+        latest_run = current_runs[0] if current_runs else {}
+        latest_result = latest_run.get("result") or {}
+        assessment = latest_result.get("assessment") or assess_simulation(latest_run.get("configuration") or {}, latest_result)
+        runtime_routes = (latest_result.get("runtime_metrics") or {}).get("routes") or []
+        runtime_passes = sum(item.get("status") == "PASS" for item in runtime_routes)
+        expected_routes = max(len(valid_routes), len(runtime_routes), 1)
+        observed_signals = assessment.get("observed_signal_count", 0)
+        observed_percent = _clamp(observed_signals / max(coverage["required_signals"], 1) * 100)
+        timing_evidence = [item for item in runtime_routes
+                           if any(value in {"PASS", "FAIL"} for value in (item.get("requirement_statuses") or {}).values())]
         categories = (preflight_results.get("category_statuses") or {}).values()
         category_values = list(categories)
         physical_nodes = topology.get("nodes") or []
@@ -507,8 +520,8 @@ class SystemHealthService:
         }
         networks = capacity_results.get("networks") or []
         metrics = {
-            "routing_coverage": _clamp(len(valid_routes) / max(len(routes), 1) * 100),
-            "signal_coverage": _clamp(len(route_signals) / max(len(objects["Signal"]), 1) * 100),
+            "routing_coverage": coverage["message_coverage_percent"],
+            "signal_coverage": coverage["signal_coverage_percent"],
             "interface_completeness": _clamp(
                 sum(
                     bool((item.get("function_id") or item.get("hardware_node_id")) and item.get("interface_type"))
@@ -519,11 +532,12 @@ class SystemHealthService:
             ),
             "network_reachability": _clamp(len(connected_ids) / max(len(physical_nodes), 1) * 100),
             "validation_pass_rate": _clamp(sum(value == "PASS" for value in category_values) / max(len(category_values), 1) * 100),
-            "timing_compliance": _clamp(sum(item.get("requirement_status") == "PASS" for item in route_metrics) / max(len(route_metrics), 1) * 100),
+            "timing_compliance": _clamp(runtime_passes / expected_routes * 100) if timing_evidence else 0.0,
             "capacity_reserve": _clamp(_number((capacity_results.get("overview") or {}).get("minimum_capacity_reserve_percent"))),
-            "simulation_pass_rate": _clamp(len(completed) / max(len(current_runs), 1) * 100),
+            "simulation_pass_rate": min(observed_percent, _clamp(runtime_passes / expected_routes * 100)) if timing_evidence else 0.0,
             "data_quality": data_quality["score"],
-            "requirement_coverage": _clamp(sum(bool((item.get("timing") or {}).get("max_latency_ms")) for item in routes) / max(len(routes), 1) * 100),
+            "requirement_coverage": min(coverage["signal_coverage_percent"], _clamp(
+                len(timing_evidence) / expected_routes * 100)),
         }
         return {
             "counts": {
@@ -533,12 +547,24 @@ class SystemHealthService:
                 "messages": len(objects["Message"]),
                 "signals": len(objects["Signal"]),
                 "routing_errors": sum(route.get("status") == "CONFLICT" for route in routes),
-                "timing_violations": sum(str(item.get("code", "")).startswith("TIMING_") for item in capacity_findings),
+                "timing_violations": sum(int(item.get(key) or 0) for item in runtime_routes
+                                         for key in ("jitter_violations", "latency_violations", "timeouts", "freshness_violations")),
                 "capacity_warnings": sum(str(item.get("code", "")).startswith("CAPACITY_") for item in capacity_findings),
-                "unmapped_signals": max(0, len(objects["Signal"]) - len(route_signals)),
-                "simulation_failures": sum(item.get("status") in {"FAILED", "CANCELED"} for item in simulations),
+                "unmapped_signals": len(coverage["missing_signal_ids"]),
+                "simulation_failures": sum(item.get("status") in {"FAILED", "CANCELED"} for item in simulations)
+                    + int(assessment.get("conformance") == "FAIL"),
             },
             "metrics": metrics,
+            "scope_coverage": coverage,
+            "simulation_assessment": assessment,
+            "metric_evidence": {
+                "routing_coverage": "Nachrichten mit Transportpfad / Nachrichten im Modell",
+                "signal_coverage": "Signale mit Transportpfad / Signale im Modell",
+                "requirement_coverage": "Durchgängige Abdeckung und übernommene Runtime-Anforderungen",
+                "timing_compliance": "Runtime-PASS / erwartete Routen; ungeprüfte Routen zählen nicht als bestanden",
+                "simulation_pass_rate": "Begrenzung durch beobachtete Signalabdeckung und bestandene Runtime-Routen",
+            },
+            "unevaluated_metrics": [] if timing_evidence else ["timing_compliance", "simulation_pass_rate", "requirement_coverage"],
             "score": _clamp(mean(metrics.values()) if metrics else 0),
             "calculation_version": self.CALCULATION_VERSION,
         }

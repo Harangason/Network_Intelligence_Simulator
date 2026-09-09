@@ -149,7 +149,7 @@ def test_data_quality_accepts_direct_hardware_owned_interfaces():
 def test_system_health_counts_signals_reached_through_routed_messages():
     health = SystemHealthService().calculate(
         _objects(),
-        [{"status": "APPROVED", "payload": {"message_id": "message-a", "signal_ids": []}}],
+        [{"status": "APPROVED", "validation": {"valid": True}, "payload": {"message_id": "message-a", "signal_ids": []}}],
         {"nodes": [], "edges": []},
         {"results": {"networks": [], "routes": [], "overview": {}}, "findings": []},
         {"results": {"category_statuses": {}}},

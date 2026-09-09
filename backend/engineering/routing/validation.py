@@ -101,9 +101,9 @@ class RoutingValidator:
         with get_connection() as connection:
             hardware_interfaces = connection.execute(
                 "SELECT hardware_node_id, network_ref FROM engineering_hardware_interfaces "
-                "WHERE hardware_node_id = ANY(%s::uuid[]) AND project_id = %s "
+                "WHERE project_id = %s "
                 "AND network_ref IS NOT NULL AND network_ref <> ''",
-                ([source_node_id, *destination_node_ids], project_id),
+                (project_id,),
             ).fetchall()
             networks_by_node: dict[str, set[str]] = {}
             for item in hardware_interfaces:
@@ -115,6 +115,21 @@ class RoutingValidator:
                 if not source_networks.intersection(networks_by_node.get(destination_id, set()))
             ]
             if source_networks and not hardware_unmapped:
+                return True, []
+            gateways = connection.execute(
+                "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s AND device_type = 'Gateway'",
+                (project_id,),
+            ).fetchall()
+            reachable_networks = set(source_networks)
+            while True:
+                before = len(reachable_networks)
+                for gateway in gateways:
+                    gateway_networks = networks_by_node.get(str(gateway['id']), set())
+                    if reachable_networks.intersection(gateway_networks):
+                        reachable_networks.update(gateway_networks)
+                if len(reachable_networks) == before:
+                    break
+            if reachable_networks and all(reachable_networks.intersection(networks_by_node.get(destination, set())) for destination in destination_node_ids):
                 return True, []
             row = connection.execute(
                 "SELECT topology FROM engineering_workflow_projects WHERE project_id = %s",
@@ -194,6 +209,17 @@ class RoutingValidator:
         expected = key(payload, destinations)
         return [row for row in rows if key(row["payload"], row["destinations"]) == expected]
 
+    def _messages_with_signals(self, message_ids: list[str]) -> set[str]:
+        if not message_ids:
+            return set()
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT DISTINCT message_id FROM engineering_signals "
+                "WHERE project_id = %s AND message_id = ANY(%s::uuid[])",
+                (self.project_id, message_ids),
+            ).fetchall()
+        return {str(row["message_id"]) for row in rows}
+
     def validate(self, route: dict[str, Any], *, exclude_route_id: str | None = None) -> dict[str, Any]:
         errors: list[dict[str, str]] = []
         warnings: list[dict[str, str]] = []
@@ -229,7 +255,7 @@ class RoutingValidator:
             destination_node_ids,
         )
         if physical_path_mapped is False:
-            warn(
+            error(
                 "UNMAPPED_ROUTE",
                 "Für diese Route existiert im Netzwerk-Editor noch kein physischer Pfad.",
             )
@@ -295,6 +321,12 @@ class RoutingValidator:
         for message_id in message_ids:
             if message_id not in messages:
                 error("MESSAGE_NOT_FOUND", f"Die referenzierte Message {message_id} existiert nicht.")
+        generated_commands = [mid for mid, item in messages.items()
+            if (((item.get("configuration") or {}).get("transport_unit") or {}).get("provenance") or {}).get("generator") == "wizard-local-actuator-command"]
+        defined_commands = self._messages_with_signals(generated_commands) if generated_commands else set()
+        for mid in generated_commands:
+            if mid not in defined_commands:
+                error("COMMAND_SIGNALS_MISSING", f"Befehl {messages[mid].get('name', mid)} ist unvollständig: Signale, Bitbelegung und Wertebereiche fehlen. Aktorfunktion nicht spezifiziert.")
         message = messages.get(message_ids[0]) if message_ids else None
         for message_id in message_ids:
             bound_message = messages.get(message_id)
@@ -309,7 +341,15 @@ class RoutingValidator:
                     f"die Route verwendet als Source {source_interface_id or 'kein logisches Interface'}.",
                 )
             message_hardware_interface_id = str(bound_message.get("hardware_interface_id") or "")
-            if message_hardware_interface_id and message_hardware_interface_id != source_port_id:
+            explicit_binding = any(
+                str(binding.get('hardware_interface_id') or '') == source_port_id
+                and str(binding.get('network_id') or '') == str(source.get('network_id') or '')
+                and bool(binding.get('network_id'))
+                and str((hardware_interfaces.get(source_port_id) or {}).get('network_ref') or '') == str(binding['network_id'])
+                for binding in (bound_message.get('configuration') or {}).get('physical_transmit_bindings') or []
+                if isinstance(binding, dict)
+            )
+            if message_hardware_interface_id and message_hardware_interface_id != source_port_id and not explicit_binding:
                 error(
                     "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH",
                     f"Message {message_name} ist an das physische Hardware Interface "
@@ -332,6 +372,8 @@ class RoutingValidator:
         if protocol not in PROTOCOL_CAPACITY:
             warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
             protocol = "CUSTOM"
+        if source.get("port_id") and any(not destination.get("port_id") for destination in destinations):
+            error("DESTINATION_PHYSICAL_PORT_MISSING", "Empfänger besitzt keinen nachgewiesenen Anschluss für diesen Transport.")
         source_network_id = str(source.get("network_id") or "").strip().casefold()
         destination_network_ids = [
             str(destination.get("network_id") or "").strip().casefold()
@@ -347,6 +389,8 @@ class RoutingValidator:
                 for network_id in destination_network_ids
             )
         )
+        if source_network_id and any(destination_network_ids) and not shared_network_transport and not path.get("gateways"):
+            error("INDEPENDENT_BUSES_WITHOUT_GATEWAY", "Unabhängige physische Busse benötigen einen expliziten Gateway-Pfad.")
         if shared_network_transport and path.get("gateways"):
             error(
                 "GATEWAY_ON_SHARED_NETWORK",
@@ -427,6 +471,18 @@ class RoutingValidator:
         message_cycle_ms = min(message_cycles) if message_cycles else None
         cycle_ms = float(timing.get("cycle_time_ms") or message_cycle_ms or 100.0)
         cycle_ms = cycle_ms or 100.0
+        requirement_sources = [timing, *[item.get("configuration") or {} for item in messages.values()],
+            *[item.get("communication") or {} for item in signals.values()]]
+        for field, code, label, aliases in (
+            ("timeout_ms", "TIMEOUT_BELOW_CYCLE_BUDGET", "Timeout", ("timeout_ms", "timeout")),
+            ("freshness_ms", "FRESHNESS_BELOW_CYCLE_BUDGET", "Freshness", ("freshness_ms", "data_freshness_limit")),
+        ):
+            limits = [float(source[key]) for source in requirement_sources for key in aliases
+                if source.get(key) is not None and float(source[key]) > 0]
+            if limits and min(limits) < cycle_ms + float(jitter or 0):
+                warn(code, f"{label} {min(limits):g} ms liegt unter Zyklus plus zulässigem Jitter "
+                    f"({cycle_ms:g} + {float(jitter or 0):g} ms). Der bestehende Grenzwert bleibt verbindlich; "
+                    "Sendeplan oder Anforderung müssen fachlich geprüft werden.")
         route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits else 0.0
         segment_ids = {
             str(item.get("network_id") or "").strip()

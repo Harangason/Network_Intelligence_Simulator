@@ -2,9 +2,10 @@ import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import type { EngineeringAgentUIMessage, EngineeringAgentEvent } from "@/lib/agent/engineering-agent";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { parseAgentResponse, type AgentInput } from "@/lib/agent/agent-response";
+import { backendEndpoints } from "@/lib/backend-endpoints";
 
 export const maxDuration = 300;
-const backend = process.env.SIMULATOR_ENGINEERING_API_URL ?? "http://127.0.0.1:15050/api/engineering";
+const { engineering: backend } = backendEndpoints(process.env);
 class AgentServiceError extends Error {}
 
 export async function POST(request: Request) {

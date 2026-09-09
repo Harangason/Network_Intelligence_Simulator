@@ -267,7 +267,8 @@ def save_validation(route_id: str, validation: dict[str, Any], actor: str | None
     with get_connection() as connection:
         row = connection.execute(
             "UPDATE engineering_routing_entries SET validation = %s, status = %s, "
-            "review_state = %s, modified_at = now(), modified_by = %s "
+            "review_state = %s, approval_state = 'PENDING', approved_at = NULL, approved_by = NULL, "
+            "modified_at = now(), modified_by = %s "
             "WHERE id = %s AND project_id = %s RETURNING *",
             (
                 Jsonb(validation),
@@ -351,6 +352,8 @@ def approve_routes(route_ids: list[str], *, actor: str | None = None, approve_al
             ).fetchone()
             if current is None:
                 raise NotFoundError(f"RoutingEntry {route_id} nicht gefunden.")
+            if current["status"] in ("REJECTED", "OUTDATED", "SUPERSEDED"):
+                raise EngineeringValidationError("Historische Routing-Revisionen können nicht freigegeben werden.")
             if not current.get("validation", {}).get("valid"):
                 raise EngineeringValidationError(
                     f"Route {current['route_code']} ist nicht valide und kann nicht freigegeben werden."

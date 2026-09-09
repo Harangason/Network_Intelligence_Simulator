@@ -26,6 +26,8 @@ RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci -
 
 COPY . /app
 
+RUN python /app/scripts/write-build-info.py
+
 RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build
 
 EXPOSE 13500 15050

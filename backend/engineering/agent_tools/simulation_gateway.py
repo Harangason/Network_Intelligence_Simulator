@@ -14,8 +14,18 @@ from ..repository import NotFoundError
 from ..workflow.service import WorkflowConflictError
 
 
+def job_api_base() -> str:
+    explicit = os.environ.get("SIMULATOR_JOB_API_URL")
+    if explicit:
+        return explicit.rstrip("/")
+    port = int(os.environ.get("FLASK_PORT", "15050"))
+    if not 1 <= port <= 65535:
+        raise ValueError("FLASK_PORT muss zwischen 1 und 65535 liegen.")
+    return f"http://127.0.0.1:{port}/api"
+
+
 def request_json(path: str, payload: dict | None = None):
-    base = os.environ.get("SIMULATOR_JOB_API_URL", "http://127.0.0.1:15050/api").rstrip("/")
+    base = job_api_base()
     if urlparse(base).scheme not in {"http","https"}:
         raise ValueError("SIMULATOR_JOB_API_URL benötigt HTTP oder HTTPS.")
     request = Request(base+path,data=json.dumps(payload).encode() if payload is not None else None,
@@ -48,7 +58,7 @@ def iter_trace(job_id: str):
     item = job(job_id)
     for artifact in item.get("artifact_downloads") or []:
         if artifact.get("name","").endswith("universal_trace.jsonl"):
-            base=os.environ.get("SIMULATOR_JOB_API_URL","http://127.0.0.1:15050/api").rstrip("/")
+            base=job_api_base()
             request=Request(base+f"/simulations/{quote(job_id,safe='')}/artifacts/{int(artifact['index'])}",headers={"X-Project-ID":current_project_id()})
             with urlopen(request,timeout=30) as response:
                 for line in response:

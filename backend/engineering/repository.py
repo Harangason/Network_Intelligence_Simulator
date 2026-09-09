@@ -21,6 +21,7 @@ from psycopg.types.json import Jsonb
 
 from .db import get_connection, ConcurrentUpdateError, check_revision, mark_model_changed
 from .project_context import current_project_id
+from .pagination import all_pages
 from .models import (
     ADDRESS_ASSIGNMENT_MODES,
     ADDRESS_STATUSES,
@@ -548,7 +549,7 @@ def list_objects(
 
     where_sql = sql.SQL(" WHERE ") + sql.SQL(" AND ").join(where_clauses)
     query = sql.SQL(
-        "SELECT * FROM {table}{where} ORDER BY created_at DESC LIMIT %s OFFSET %s"
+        "SELECT * FROM {table}{where} ORDER BY created_at DESC, id ASC LIMIT %s OFFSET %s"
     ).format(table=sql.Identifier(spec.table), where=where_sql)
     values.extend([limit, offset])
 
@@ -686,6 +687,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
                 updates["address_status"] = "ASSIGNED"
             updates["address_provenance"] = address_provenance
     parent_link = parent_link_for_payload(object_type, {**existing, **updates})
+    previous_parent_link = parent_link_for_payload(object_type, existing)
     parent = None
     if object_type == "Interface" and ("function_id" in updates or "hardware_node_id" in updates):
         next_function_id = updates.get("function_id", existing.get("function_id"))
@@ -694,6 +696,9 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             raise EngineeringValidationError("Pflichtfeld fehlt: 'function_id' oder 'hardware_node_id'")
         if not next_function_id and next_hardware_node_id:
             get_object("HardwareNode", str(next_hardware_node_id))
+        elif next_function_id:
+            owner_function = get_object("Function", str(next_function_id))
+            updates["hardware_node_id"] = owner_function["hardware_node_id"]
     if parent_link and parent_link[0] in updates:
         parent_field, parent_type, _ = parent_link
         if not updates.get(parent_field):
@@ -703,6 +708,26 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             updates["hardware_node_id"] = parent["hardware_node_id"]
     if object_type == "Message" and updates.get("hardware_interface_id"):
         get_object("HardwareNetworkInterface", str(updates["hardware_interface_id"]))
+    # Ownership edits must not strand the existing physical message bindings.
+    # A complete cross-device transfer requires a separately reviewed port mapping.
+    moved_interfaces = []
+    if object_type == "Function" and str(updates.get("hardware_node_id", existing.get("hardware_node_id"))) != str(existing.get("hardware_node_id")):
+        moved_interfaces = all_pages(list_objects, "Interface", filters={"function_id": object_id})
+    checked_interfaces = [existing] if object_type == "Interface" else moved_interfaces
+    for interface in checked_interfaces:
+        target_hardware = updates.get("hardware_node_id", interface.get("hardware_node_id"))
+        target_technology = updates.get("interface_type", interface.get("interface_type")) if object_type == "Interface" else interface.get("interface_type")
+        if str(target_hardware) == str(interface.get("hardware_node_id")) and target_technology == interface.get("interface_type"):
+            continue
+        for message in all_pages(list_objects, "Message", filters={"interface_id": str(interface["id"]) }):
+            if not message.get("hardware_interface_id"):
+                continue
+            port = get_object("HardwareNetworkInterface", str(message["hardware_interface_id"]))
+            if str(port["hardware_node_id"]) != str(target_hardware) or port["technology"] != target_technology:
+                raise EngineeringValidationError(
+                    f"{message['name']}: Der physische Anschluss {port['name']} gehört nicht zum neuen Eigentümer oder zur neuen Technologie. "
+                    "Eine vollständige Nachrichten-/Portzuordnung ist vor diesem Strukturtransfer erforderlich."
+                )
     if not updates:
         return existing
 
@@ -765,7 +790,11 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
             event = "ADDRESS_RELEASED" if row.get("logical_node_address") is None else "ADDRESS_CHANGED"
             allocator._audit(conn, object_id, event, actor, existing, row)
             allocator._mark_dependents_outdated(conn, object_id, existing, row, actor)
-        if parent_link and parent_link[0] in updates:
+        parent_changed = bool(parent_link and (
+            parent_link != previous_parent_link
+            or str(existing.get(parent_link[0]) or "") != str(row.get(parent_link[0]) or "")
+        ))
+        if parent_link and (parent_changed or parent_link[0] in updates):
             parent_field, parent_type, relation_type = parent_link
             project_id = current_project_id()
             conn.execute(
@@ -774,7 +803,6 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
                 "AND target_type = %s AND target_id = %s",
                 (project_id, relation_type, object_type, object_id),
             )
-            parent_changed = str(existing.get(parent_field) or "") != str(updates[parent_field])
             relation_source = data.get("relation_source") or (
                 "manual" if parent_changed else existing.get("source") or "manual"
             )
@@ -788,7 +816,7 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
                     project_id,
                     relation_type,
                     parent_type,
-                    updates[parent_field],
+                    row[parent_field],
                     object_type,
                     object_id,
                     Jsonb(data.get("relation_attributes", {})),
@@ -803,6 +831,16 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
         _write_version_snapshot(
             conn, spec, row, changed_by=actor, summary=data.get("change_summary", "updated")
         )
+        for interface in moved_interfaces:
+            moved = conn.execute(
+                "UPDATE engineering_interfaces SET hardware_node_id=%s, version=version+1, modified_at=now(), modified_by=%s "
+                "WHERE project_id=%s AND id=%s AND version=%s RETURNING *",
+                (row["hardware_node_id"], actor, current_project_id(), interface["id"], interface["version"]),
+            ).fetchone()
+            if moved is None:
+                raise ConcurrentUpdateError("Eine abhängige Schnittstelle wurde parallel geändert. Bitte neu laden.")
+            _write_version_snapshot(conn, get_spec("Interface"), _decorate_row(get_spec("Interface"), moved),
+                                    changed_by=actor, summary="Hardware-Eigentümer der Funktion übernommen")
     mark_model_changed()
     return row
 

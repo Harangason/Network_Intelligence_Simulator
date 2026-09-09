@@ -130,6 +130,7 @@ export type AnalysisFinding = {
   object_type?: string;
   object_id?: string;
   category?: PreflightCategory;
+  coverage?: import("./types").SimulationCoverage;
 };
 
 export type PreflightCategory =
@@ -385,6 +386,11 @@ export const saveWorkflowParameters = (parameters: Record<string, unknown>, expe
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
 
+export const saveSimulationScope = (simulationScope: import("./simulation-scope").SimulationScope) =>
+  request<WorkflowState>("/workflow/simulation-scope", {
+    method: "PATCH", body: JSON.stringify({ simulation_scope: simulationScope }), signal: AbortSignal.timeout(180000),
+  }).then(normalizeWorkflowState);
+
 export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "edges">, expectedToken?: string) =>
   request<WorkflowState>("/workflow/topology", {
     method: "PUT",
@@ -607,6 +613,10 @@ export type IntelligenceResults = {
     score: number;
     counts: Record<string, number>;
     metrics: Record<string, number>;
+    metric_evidence?: Record<string, string>;
+    unevaluated_metrics?: string[];
+    scope_coverage?: import("./types").SimulationCoverage;
+    simulation_assessment?: import("./types").SimulationAssessment | null;
   };
   maturity: {
     overall_score: number;

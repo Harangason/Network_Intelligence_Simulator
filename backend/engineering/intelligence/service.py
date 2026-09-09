@@ -13,6 +13,7 @@ from ..knowledge import CanonicalKnowledgeService
 from ..models import EngineeringValidationError
 from ..relations import list_relations
 from ..repository import list_objects
+from ..pagination import all_pages
 from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
 from ..workflow.service import WorkflowStatusService
@@ -57,19 +58,27 @@ class IntelligenceService:
 
     def _collect(self) -> dict[str, Any]:
         objects = {
-            object_type: list_objects(object_type, limit=5000)
+            object_type: all_pages(list_objects, object_type)
             for object_type in ("HardwareNode", "Function", "Interface", "Message", "Signal")
         }
         state = self.workflow.get()
+        simulations = state.get("simulation_snapshots") or []
+        # Score the newest current result. A summary row only proves that a job
+        # ended, not that its payload, coverage or requirements were evaluated.
+        current = next((item for item in simulations if not item.get("is_outdated")), None)
+        if current and current.get("id"):
+            details = self.workflow.get_simulation_snapshot(str(current["id"]))
+            if details:
+                simulations = [details, *[item for item in simulations if item.get("id") != current["id"]]]
         return {
             "state": state,
             "objects": objects,
-            "hardware_interfaces": list_objects("HardwareNetworkInterface", limit=5000),
-            "routes": list_routes(limit=5000),
+            "hardware_interfaces": all_pages(list_objects, "HardwareNetworkInterface"),
+            "routes": all_pages(list_routes),
             "relations": list_relations(limit=10000),
             "capacity": self.workflow.latest_analysis("capacity_timing", include_outdated=True) or {},
             "preflight": self.workflow.latest_analysis("preflight", include_outdated=True) or {},
-            "simulations": state.get("simulation_snapshots") or [],
+            "simulations": simulations,
             "history": self._history(),
             "review_history": list_optimization_proposals(self.project_id),
         }

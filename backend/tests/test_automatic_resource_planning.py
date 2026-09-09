@@ -85,12 +85,23 @@ def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
     """Real proposal store/validate/review/apply, isolated project, no user changes."""
     authority = ToolAuthority('pytest-auto-resources-' + str(uuid4()))
     def work():
+        from backend.engineering.repository import create_object
+        from backend.engineering.agent_tools import model
+        from backend.engineering.physical_ports import topology_port_findings
         workflow = WorkflowStatusService(authority.project_id)
         prompt = '- Kommunikationssystem-Sollwerte: [{"id":"lin","count":1}]'
         workflow.set_context({'agent_wizard_status': {'agent_prompt': prompt}})
         before = topology(shared=True)
         for node in before['nodes']:
             node.update(name=node['id'], kind='ecu')
+            physical_node = create_object('HardwareNode', {'name': node['name'], 'device_type': 'ECU'})
+            node['engineeringId'] = str(physical_node['id'])
+            for index, port in enumerate(node['ports'], start=1):
+                interface = create_object('HardwareNetworkInterface', {'name': f'LIN Kanal {index}',
+                    'hardware_node_id': str(physical_node['id']), 'technology': 'LIN', 'channel_index': index,
+                    'network_ref': 'network-lin'})
+                port.update(engineeringId=str(interface['id']), hardwareInterfaceId=str(interface['id']), physicalNetworkId='network-lin')
+        workflow.save_parameters({'networks': [{'id': 'network-lin', 'technology': 'LIN'}]})
         for index, edge in enumerate(before['edges']):
             edge.update(physicalNetworkId='network-lin', routingEntryId=f'r{index}',
                         routingEntryIds=[f'r{index}'], engineeringRelationId=f'relation-{index}')
@@ -98,10 +109,12 @@ def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
         plan = plan_network_distribution(capacity((40, 40)), hardware(), before, available_protocol_counts={'LIN': 1}, resource_policy=AUTO)
         after, count = split_topology_by_distribution(before, plan)
         assert count == 2
-        receipt = resource_decision(before, after, {'LIN': 1}, AUTO)
         monkeypatch.setattr(wizard_generation, 'plan_capacity_remediation', lambda arguments: deepcopy(plan))
         proposal = wizard_generation.generate_capacity_network_repair({'prompt': prompt})
-        assert proposal['changes'][0]['data']['resource_decision'] == receipt
+        topology_change = next(change for change in proposal['changes'] if change['object_type'] == 'NetworkTopology')
+        receipt = resource_decision(before, topology_change['data']['topology'], {'LIN': 1}, AUTO)
+        assert topology_change['data']['resource_decision'] == receipt
+        assert any(change['object_type'] == 'HardwareNetworkInterface' for change in proposal['changes'])
         assert 'Tool-Entscheidung:' in proposal['rationale']
         assert 'LIN 1 → 2' in proposal['rationale']
         validated = proposal_service.validate(proposal['proposal_id'])
@@ -110,7 +123,10 @@ def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
         approved = proposal_service.review(validated['proposal_id'], revision=validated['revision'], decision='approve', actor='test-human', trace_id=str(uuid4()))
         applied = proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
         assert applied['status'] == 'APPLIED'
-        assert workflow.get()['topology'] == after
+        persisted = workflow.get()['topology']
+        assert {edge['physicalNetworkId'] for edge in persisted['edges']} == {edge['physicalNetworkId'] for edge in after['edges']}
+        assert not topology_port_findings(persisted, model.objects('HardwareNode'), model.objects('HardwareNetworkInterface'))
+        assert all(not port['hardwareInterfaceId'].startswith('$') for node in persisted['nodes'] for port in node['ports'])
         assert receipt['resources'][0]['planned_count'] == 2
         assert receipt['additional_modeled_ports']
     result = execute(authority, 'test_auto_resource_apply', Permission.GENERATE_PROPOSAL, {}, lambda _: work())

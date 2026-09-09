@@ -1589,7 +1589,11 @@ function RoutingProposals({
 function RoutingValidationList({ routes, nodeNames, onSelect, conflicts = false }: { routes: RoutingEntry[]; nodeNames: Map<string, string>; onSelect: (route: RoutingEntry) => void; conflicts?: boolean }) {
   const filtered = conflicts ? routes.filter((route) => route.validation?.valid === false || route.status === "CONFLICT") : routes;
   if (!filtered.length) return <EmptyRouting text={conflicts ? "Keine Routing-Konflikte vorhanden." : "Noch keine Routen zur Validierung vorhanden."} />;
-  return <div className="routing-validation-list">{filtered.map((route) => <button key={route.id} onClick={() => onSelect(route)} type="button"><div><strong>{canonicalRouteLabel(route, nodeNames)}</strong><small>{route.route_code}{routeAlias(route, nodeNames) ? ` · ${route.name}` : ""}</small><span>{route.validation?.errors?.[0]?.message ?? route.validation?.warnings?.[0]?.message ?? "Technisch konsistent"}</span></div><Status value={route.validation?.valid ? "VALID" : route.validation?.valid === false ? "INVALID" : "PENDING"} /></button>)}</div>;
+  return <div className="routing-validation-list">{filtered.map((route) => <div key={route.id}>
+    <button onClick={() => onSelect(route)} type="button"><div><strong>{canonicalRouteLabel(route, nodeNames)}</strong><small>{route.route_code}{routeAlias(route, nodeNames) ? ` · ${route.name}` : ""}</small><span>{route.validation?.errors?.[0]?.message ?? route.validation?.warnings?.[0]?.message ?? "Technisch konsistent"}</span></div><Status value={route.validation?.valid ? "VALID" : route.validation?.valid === false ? "INVALID" : "PENDING"} /></button>
+    {route.validation?.errors?.some(issue => issue.code === "COMMAND_SIGNALS_MISSING") && routingMessageIds(route).map(id => <a className="button secondary tiny" key={id} href={`/studio/engineering?project=${encodeURIComponent(readActiveProjectId())}&resource=signals&create=1&parent=${encodeURIComponent(id)}`}>Befehlssignale ergänzen</a>)}
+    {route.validation?.valid === false && routingMessageIds(route).map(id => <a className="button secondary tiny" key={`message-${id}`} href={`/studio/engineering?project=${encodeURIComponent(readActiveProjectId())}&resource=messages&object=${encodeURIComponent(id)}&edit=1`}>Ursache: Nachricht bearbeiten</a>)}
+  </div>)}</div>;
 }
 
 function RoutingDetail({ route, nodeNames, messageNames, signalNames, interfaceNames, interfaceNetworks, onEdit, onWizard, onValidate, onApprove, onReject, projectId }: {
@@ -1624,7 +1628,9 @@ function RoutingDetail({ route, nodeNames, messageNames, signalNames, interfaceN
     .map((item) => typeof item === "string" ? nodeNames.get(item) ?? item : item.name ?? nodeNames.get(item.node_id ?? ""))
     .join(", ") || "Direkt";
   const isOutdated = route.status === "OUTDATED";
-  const isApproved = route.approval_state === "APPROVED";
+  const isApproved = route.approval_state === "APPROVED"
+    && (route.status === "APPROVED" || route.status === "RELEASED")
+    && route.validation?.valid === true;
   const isRejected = route.approval_state === "REJECTED" || route.status === "REJECTED";
   if (collapsed) {
     return (

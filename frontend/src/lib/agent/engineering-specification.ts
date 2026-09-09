@@ -1,4 +1,5 @@
 import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
+import { conciseGeneratedName } from "../engineering-names.ts";
 
 /** Device roles belong to device_type; technical identifiers remain unchanged. */
 export function normalizeHardwareName(value: string): string {
@@ -8,6 +9,7 @@ export function normalizeHardwareName(value: string): string {
 }
 
 export type ExtractedEngineeringChain = {
+  device_class?: number;
   hardware_name: string;
   hardware_description: string;
   device_type: string;
@@ -106,6 +108,7 @@ export function controllerDeviceTypeForModel(modelType: string): EngineeringCont
 }
 
 function requiresCompleteSignalModel(chain: ExtractedEngineeringChain) {
+  if (chain.device_class != null) return chain.device_class >= 2;
   if (INTELLIGENT_DEVICE_TYPES.has(chain.device_type)) return true;
   return /camera|kamera|vision|radar|lidar|scanner|ultrasonic|advanced[_ -]?imu/i.test(chain.hardware_name);
 }
@@ -137,7 +140,6 @@ export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]
   return chains.flatMap((chain) => {
     if (!requiresCompleteSignalModel(chain)) return [chain];
     const candidates = [
-      chain,
       companionSignal(chain, "Status", {
         length_bits: 4,
         data_type: "unsigned",
@@ -206,6 +208,7 @@ export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]
           reserved_values: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
         },
       }),
+      chain,
     ];
     const seen = new Set<string>();
     return candidates.filter((candidate) => {
@@ -337,19 +340,19 @@ function messageGroupKey(chain: ExtractedEngineeringChain) {
 }
 
 function packedMessageName(chain: ExtractedEngineeringChain, index: number) {
-  const suffix = index === 0 ? "Data" : `Data${index + 1}`;
-  return `${identifier(chain.function_name || chain.hardware_name)}${suffix}`;
+  const name = conciseGeneratedName('Message', `${identifier(chain.function_name || chain.hardware_name)}Data`);
+  return index === 0 ? name : `${name} Teil ${index + 1}`;
 }
 
 function packedInterfaceName(chain: ExtractedEngineeringChain, channel: number) {
-  return `${identifier(chain.hardware_name)}_${channel + 1}`;
+  return `${identifier(chain.hardware_name)}${channel === 0 ? '' : ` Kanal ${channel + 1}`}`;
 }
 
 export function packEngineeringChains(
   chains: ExtractedEngineeringChain[],
   targetLoadPercent = DEFAULT_INTERFACE_TARGET_LOAD_PERCENT,
 ) {
-  const packed = chains.map((chain) => ({ ...chain }));
+  const packed = chains.map((chain) => ({ ...chain, function_name: conciseGeneratedName('Function', chain.function_name) }));
   const grouped = new Map<string, ExtractedEngineeringChain[]>();
   for (const chain of packed) {
     const key = messageGroupKey(chain);

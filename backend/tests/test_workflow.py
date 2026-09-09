@@ -152,6 +152,9 @@ def test_routing_artifact_check_rejects_gateway_fanout_interfaces():
         def fetchone(self):
             return self.row
 
+        def fetchall(self):
+            return []
+
     class Connection:
         def __init__(self):
             self.calls = 0
@@ -298,9 +301,12 @@ def test_workflow_context_persists_agent_execution_without_losing_wizard(monkeyp
     monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
     monkeypatch.setattr(service, "_get_locked", lambda connection: state)
     monkeypatch.setattr(service, "get", lambda **kwargs: state)
-    saved = service.set_context({"agent_execution": run, "unknown_context_key": "ignored"})
+    request = {"version": 1, "prompt": "confirmed wizard request", "sha256": "request-hash"}
+    saved = service.set_context({"agent_execution": run, "wizard_request": request,
+                                 "unknown_context_key": "ignored"})
 
     assert saved["context"]["agent_execution"] == run
+    assert saved["context"]["wizard_request"] == request
     assert saved["context"]["agent_wizard_status"]["network_architecture"]["approved"] is True
     assert saved["context"]["engineering_scope_rules"]["hardware_counts"]["gateways"] == 1
     assert saved["context"]["active_project"] == "project-a"

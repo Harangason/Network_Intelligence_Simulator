@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import os
+import re
 from urllib.parse import urlparse
 from uuid import uuid4
 import httpx
@@ -63,6 +64,48 @@ def _reasoning_messages(messages):
     return prepared
 
 
+def _native_messages(messages):
+    """Keep the current user turn and serialize Ollama's native tool contract."""
+    prepared = _reasoning_messages(messages)
+    calls, native, instructions = {}, [], []
+    for message in prepared:
+        role = message.get('role')
+        if role == 'system':
+            instructions.append(str(message.get('content') or ''))
+            continue
+        item = {'role': role, 'content': str(message.get('content') or '')}
+        if role == 'assistant' and message.get('tool_calls'):
+            item['tool_calls'] = []
+            for call in message['tool_calls']:
+                function = call.get('function') or {}
+                calls[str(call.get('id') or '')] = str(function.get('name') or '')
+                item['tool_calls'].append({'function': function})
+        if role == 'tool':
+            item['tool_name'] = str(message.get('tool_name') or calls.get(str(message.get('tool_call_id') or ''), ''))
+        native.append(item)
+    if not any(item['role'] == 'user' and item['content'].strip() for item in native):
+        raise ValueError('Für die lokale KI fehlt die aktuelle Nutzeranforderung.')
+    return native, instructions
+
+
+def _tool_parameters(schema):
+    """Present business arguments; the MCP client owns its request envelope."""
+    definitions = schema.get('$defs') or schema.get('definitions') or {}
+    root = (schema.get('properties') or {}).get('request', schema)
+
+    def resolve(value, seen=()):
+        if isinstance(value, list):
+            return [resolve(item, seen) for item in value]
+        if not isinstance(value, dict):
+            return value
+        reference = value.get('$ref', '')
+        key = reference.rsplit('/', 1)[-1]
+        if reference.startswith(('#/$defs/', '#/definitions/')) and key in definitions and key not in seen:
+            return resolve({**definitions[key], **{name: item for name, item in value.items() if name != '$ref'}}, (*seen, key))
+        return {name: resolve(item, seen) for name, item in value.items() if name not in {'$defs', 'definitions', 'title'}}
+    return resolve(root)
+
+
 def _is_structured_wizard_request(messages) -> bool:
     for message in reversed(messages):
         if message.get("role") != "user":
@@ -85,6 +128,12 @@ def _is_semantic_fast_request(messages) -> bool:
         if len(content) > 16_000:
             return False
         normalized = content.casefold()
+        if re.search(r'\b(ändere|aendere|erzeuge|erstelle|lösche|loesche|entferne|implementiere|create|update|delete|modify)\b', normalized):
+            return False
+        if (len(content) <= 4000 and re.search(r'\b(hardware|geräte|geraete|devices?|gateways?)\b', normalized)
+                and re.match(r'\s*(prüfe|pruefe|zeige|liste|welche|wieviele|wie viele|inspect|list|show|check)\b', normalized)
+                and not re.search(r'\b(lege|füge|fuege|add|remove|setze|konfiguriere)\b', normalized)):
+            return True
         return any(token in normalized for token in (
             "semant", "klassifiz", "cluster", "zuordn", "mapping", "rag",
             "sensor", "aktor", "signal", "controller", "ecu",
@@ -101,6 +150,9 @@ class LocalEngineeringReasoner:
         self.fast_model = os.environ.get("LOCAL_AI_FAST_MODEL", "llama3.1:8b")
         self.keep_alive = os.environ.get("OLLAMA_KEEP_ALIVE", "10m")
         self.fast_keep_alive = os.environ.get("OLLAMA_FAST_KEEP_ALIVE", "30m")
+        # Tool schemas + results exceed Ollama's small device-dependent default.
+        # An explicit window keeps the user turn in Qwen's rendered chat template.
+        self.context_tokens = max(8192, min(int(os.environ.get('LOCAL_AI_CONTEXT_TOKENS', '32768')), 131072))
         timeout_seconds = max(90, min(int(os.environ.get("LOCAL_AI_TIMEOUT_SECONDS", "600")), 1200))
         self.chat_url = base_url.rstrip("/").removesuffix("/v1") + "/api/chat"
         self.client = httpx.AsyncClient(timeout=timeout_seconds)
@@ -125,14 +177,17 @@ class LocalEngineeringReasoner:
         )
         use_fast_model = _is_structured_wizard_request(messages) or _is_semantic_fast_request(messages)
         selected_model = self.fast_model if use_fast_model else self.model
+        native, instructions = _native_messages(messages)
+        if instructions:
+            system += '\n' + '\n'.join(instructions)
         response = await self.client.post(self.chat_url, json={
             "model": selected_model,
-            "messages": [{"role":"system","content":system}, *_reasoning_messages(messages)],
-            "tools": [{"type":"function","function":{"name":t["name"],"description":t["description"],"parameters":t["input_schema"]}} for t in tools],
+            "messages": [{"role":"system","content":system}, *native],
+            "tools": [{"type":"function","function":{"name":t["name"],"description":t["description"],"parameters":_tool_parameters(t["input_schema"])}} for t in tools],
             "think": False,
             "stream": False,
             "keep_alive": self.fast_keep_alive if use_fast_model else self.keep_alive,
-            "options": {"temperature": 0.2, "num_predict": 1600},
+            "options": {"temperature": 0.2, "num_predict": 1600, "num_ctx": self.context_tokens},
         })
         if response.is_error:
             try:
@@ -146,11 +201,19 @@ class LocalEngineeringReasoner:
             function = call.get("function") or {}
             arguments = function.get("arguments") or {}
             if isinstance(arguments, str):
-                arguments = json.loads(arguments)
+                try:
+                    arguments = json.loads(arguments)
+                except (ValueError, TypeError):
+                    arguments = {'invalid_json_arguments': arguments[:2000]}
             if not isinstance(arguments,dict):
-                raise ValueError("Werkzeugargumente müssen ein JSON-Objekt sein.")
+                arguments = {'invalid_json_arguments': arguments}
             if isinstance(arguments.get("request"),str):
-                arguments["request"] = json.loads(arguments["request"])
+                try:
+                    arguments['request'] = json.loads(arguments['request'])
+                except (ValueError, TypeError):
+                    # Let MCP's input validator return a repairable tool finding;
+                    # malformed model output must not terminate the agent loop.
+                    arguments = {'invalid_json_arguments': arguments['request'][:2000]}
             calls.append({"id":str(call.get("id") or uuid4()),"name":str(function.get("name") or ""),"arguments":arguments})
         assistant = {"role":"assistant","content":str(message.get("content") or "")}
         if calls:

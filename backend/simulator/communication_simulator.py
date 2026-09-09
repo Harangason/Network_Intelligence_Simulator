@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -26,7 +27,7 @@ ETHERNET_TECHNOLOGIES = {
     "modbus_tcp", "arinc664_afdx", "etb", "bacnet_ip", "iec61850",
     "someip", "doip", "dds_rtps", "ipv4", "ipv6", "udp", "tcp",
 }
-DEFAULT_GOLDEN_TRACE_EVENT_LIMIT = 10_000
+DEFAULT_GOLDEN_TRACE_EVENT_LIMIT = 0
 
 
 def _timestamp_slug() -> str:
@@ -259,7 +260,31 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     native_ethernet: dict[str, Any] = {}
 
     if not validate_only and validation["valid"]:
-        routes, events = generate_universal_events(config, profile)
+        trace_start = datetime.now(timezone.utc).timestamp()
+        routes, events = generate_universal_events(config, profile, start_utc=trace_start)
+        # A baseline is an independently scheduled normal run. Copying a faulty
+        # event cannot undo its payload, delivery history, queueing or timing.
+        golden_config = deepcopy(config)
+        golden_config["scenario"] = {**(golden_config.get("scenario") or {}), "mode": "NORMAL", "faults": []}
+        golden_config["faults"] = []
+        for source in [golden_config, golden_config.get("parameters") or {},
+                       *(golden_config.get("networks") or []), *(golden_config.get("communications") or [])]:
+            source["fault_model"] = {}
+            for key in ("dropout_probability", "corruption_probability", "duplicate_probability", "reordering_probability"):
+                source[key] = 0
+        _, golden_events = generate_universal_events(golden_config, normalize_hardware_config(golden_config), start_utc=trace_start)
+        golden_by_id = {event["event_id"]: event for event in golden_events}
+        for event in events:
+            baseline = golden_by_id.get(event["event_id"])
+            if baseline is None:
+                continue
+            baseline_signals = {sample["signal_id"]: sample for sample in baseline.get("signals") or []}
+            for sample in event.get("signals") or []:
+                if sample.get("signal_id") in baseline_signals:
+                    sample["golden_value"] = baseline_signals[sample["signal_id"]].get("value")
+            event["golden_time_s"] = baseline["time_s"]
+            if event.get("signals"):
+                event["golden_value"] = event["signals"][0].get("golden_value")
         if "universal-jsonl" in formats or "jsonl" in formats:
             written.append(write_jsonl(out_dir / "traces" / "universal_trace.jsonl", events))
         if "universal-csv" in formats:
@@ -272,26 +297,12 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
             encoding="utf-8",
         )
         written.append(model_trace_path)
-        if any(event.get("signals") for event in events):
-            golden_events = []
+        if events or golden_events:
             golden_limit = _int_option(config, "golden_trace_event_limit", DEFAULT_GOLDEN_TRACE_EVENT_LIMIT)
-            golden_source = events if golden_limit == 0 else events[:golden_limit]
-            for event in golden_source:
-                golden_signals = [
-                    {**signal, "value": signal.get("golden_value"), "faults": []}
-                    for signal in event.get("signals") or []
-                ]
-                golden_events.append({
-                    **event,
-                    "status": "transmitted",
-                    "faults": [],
-                    "signals": golden_signals,
-                    "signal_value": golden_signals[0].get("value") if golden_signals else None,
-                    "value": golden_signals[0].get("value") if golden_signals else None,
-                })
-            if golden_limit and len(events) > golden_limit:
-                warnings.append(f"Golden Trace wurde fuer interaktive Laufzeit auf {golden_limit} von {len(events)} Events begrenzt.")
-            written.append(write_jsonl(out_dir / "traces" / "golden_trace.jsonl", golden_events))
+            golden_source = golden_events if golden_limit == 0 else golden_events[:golden_limit]
+            if golden_limit and len(golden_events) > golden_limit:
+                warnings.append(f"Golden Trace wurde durch die konfigurierte Exportgrenze auf {golden_limit} von {len(golden_events)} Events begrenzt.")
+            written.append(write_jsonl(out_dir / "traces" / "golden_trace.jsonl", golden_source))
             if model_trace.get("scenario", {}).get("mode") != "NORMAL":
                 written.append(write_jsonl(out_dir / "traces" / "fault_trace.jsonl", events))
         model_trace_reference = _model_trace_manifest_reference(model_trace, model_trace_path)

@@ -62,6 +62,7 @@ export type ArtifactDownload = {
 };
 
 export type SimulationResultPayload = {
+  assessment?: SimulationAssessment;
   status: string;
   output_dir: string;
   warnings: string[];
@@ -79,6 +80,34 @@ export type SimulationResultPayload = {
   model_simulation?: ModelSimulationTrace;
   registry_truncated?: boolean;
   artifact_count?: number;
+};
+
+export type SimulationCoverage = {
+  complete: boolean;
+  scope_mode: string;
+  required_messages: number;
+  required_signals: number;
+  covered_messages: number;
+  covered_signals: number;
+  excluded_messages: number;
+  excluded_signals: number;
+  missing_message_ids: string[];
+  missing_signal_ids: string[];
+};
+
+export type SimulationAssessment = {
+  status: "COMPLETE" | "WARNING" | "ERROR";
+  execution_completed: boolean;
+  conformance: "PASS" | "FAIL" | "NOT_EVALUATED";
+  scope_coverage: SimulationCoverage;
+  observed_signal_count: number;
+  missing_observed_signal_ids: string[];
+  missing_observed_route_ids: string[];
+  missing_observed_network_ids: string[];
+  failed_route_count: number;
+  unevaluated_route_count: number;
+  evaluated_route_count: number;
+  expected_route_count: number;
 };
 
 export type ModelSignalPoint = {
@@ -149,6 +178,9 @@ export type RuntimeNetworkMetric = {
 };
 
 export type RuntimeRouteMetric = {
+  canonical_route_id?: string;
+  route_segment_count?: number;
+  requirement_statuses?: Record<string, "PASS" | "FAIL" | "NOT_EVALUATED">;
   route_id: string;
   route_name: string;
   network_id: string;
@@ -178,7 +210,7 @@ export type RuntimeRouteMetric = {
   average_queue_delay_ms: number;
   maximum_queue_delay_ms: number;
   timeouts: number;
-  status: "PASS" | "FAIL";
+  status: "PASS" | "FAIL" | "NOT_EVALUATED";
 };
 
 export type RuntimeMetrics = {
@@ -199,6 +231,9 @@ export type RuntimeMetrics = {
     latency_violations?: number;
     freshness_violations?: number;
     observed_duration_s: number;
+    route_status_counts?: Record<string, number>;
+    evaluated_route_count?: number;
+    expected_route_count?: number;
   };
   networks?: RuntimeNetworkMetric[];
   routes?: RuntimeRouteMetric[];

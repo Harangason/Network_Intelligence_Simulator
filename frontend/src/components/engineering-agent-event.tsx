@@ -7,7 +7,7 @@ import { WorkloadProgress } from "./workload-progress";
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
-import { applyReviewedProposal, approveAndApplyWizardProposal, refreshProposal } from '@/lib/agent/proposal-client';
+import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, refreshProposal } from '@/lib/agent/proposal-client';
 
 function LazyDetails({ title, children }: { title: string; children: () => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -41,18 +41,25 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
   const [editing, setEditing] = useState(false);
   const [names, setNames] = useState<Record<string, string>>({});
   const [rationale, setRationale] = useState(initial.rationale);
+  const [page, setPage] = useState(0);
   const base = `/api/engineering/agent/proposals/${encodeURIComponent(proposal.proposal_id)}`;
   useEffect(() => {
     if (busy) return;
     const controller = new AbortController();
-    const refresh = () => refreshProposal(proposal, projectId, controller.signal)
-      .then(result => { if (!controller.signal.aborted) { setProposal(result); setLoaded(true); if (result.status === "APPLIED") setError(""); } })
-      .catch(() => {});
+    const refresh = () => refreshProposal(proposal, projectId, controller.signal, !loaded)
+      .then(result => { if (!controller.signal.aborted) {
+        if (!loaded || proposal.revision !== result.revision || proposal.proposal_id !== result.proposal_id) {
+          setRationale(result.rationale); setNames({}); setEditing(false); setPage(0);
+        }
+        setProposal(result); setLoaded(true); setError("");
+      } })
+      .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } });
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [base, projectId, busy, proposal.revision]);
+  }, [base, projectId, busy, proposal.revision, loaded]);
   async function action(kind: "approve" | "approveApply" | "reject" | "apply" | "validate" | "revise") {
+    if (!loaded || !hasCompleteProposal(proposal) || busy) return;
     setBusy(true); setError("");
     try {
       const session = await fetch("/api/engineering/agent/review-session", { cache: "no-store" });
@@ -87,19 +94,27 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Aktion fehlgeschlagen."); }
     finally { setBusy(false); }
   }
-  const references = Object.fromEntries(proposal.changes.map(change => [`$${change.local_ref}`, String(change.data?.name ?? change.object_name ?? change.object_type)]));
+  const complete = loaded && hasCompleteProposal(proposal);
+  const review = proposalChangePage(complete ? proposal : { ...proposal, changes: [] }, page);
+  const references = Object.fromEntries((complete ? proposal.changes : []).map(change => [`$${change.local_ref}`, String(change.data?.name ?? change.object_name ?? change.object_type)]));
   return <section className="engineering-proposal-review" aria-label="Engineering-Vorschlag">
     <strong>{statusLabels[proposal.status]}</strong>
     <p>{proposal.rationale}</p>
-    <p>{proposal.changes.length} Änderungen</p>
-    <LazyDetails title="Änderungen prüfen">{() => <>
-      {proposal.changes.map((change, index) => <article key={index}>
+    <p>{proposal.change_count ?? proposal.changes.length} Änderungen</p>
+    {!complete && <p role="status">Vollständiger Vorschlag wird aus dem gespeicherten Modell geladen. Freigabe ist bis dahin gesperrt.</p>}
+    {complete && <LazyDetails title="Änderungen prüfen">{() => <>
+      {review.pages > 1 && <nav aria-label="Änderungen durchblättern">
+        <button type="button" disabled={review.page === 0} onClick={() => setPage(review.page - 1)}>Zurück</button>
+        <span>Seite {review.page + 1} von {review.pages} · Änderungen {review.offset + 1}–{review.offset + review.changes.length} von {proposal.changes.length}</span>
+        <button type="button" disabled={review.page + 1 === review.pages} onClick={() => setPage(review.page + 1)}>Weiter</button>
+      </nav>}
+      {review.changes.map((change, index) => <article key={`${proposal.revision}-${review.offset + index}`}>
         <h4>{change.action === "CREATE" ? "Anlegen" : change.action === "DELETE" ? "Löschen" : "Ändern"}: {String(change.data?.name ?? change.object_name ?? change.object_type)}</h4>
         <Value value={change.data ?? change.impact_analysis ?? change.object_id} references={references} />
       </article>)}
-    </>}</LazyDetails>
-    {!!proposal.assumptions.length && <details><summary>Annahmen ({proposal.assumptions.length})</summary><ul>{proposal.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>}
-    {proposal.validation_result.findings?.map((finding, index) => <p role="alert" key={index}>{finding.message}</p>)}
+    </>}</LazyDetails>}
+    {complete && !!proposal.assumptions.length && <details><summary>Annahmen ({proposal.assumptions.length})</summary><ul>{proposal.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>}
+    {complete && proposal.validation_result.findings?.map((finding, index) => <p role="alert" key={index}>{finding.message}</p>)}
     <div className="engineering-proposal-actions">
       {['PROPOSED', 'VALIDATED', 'APPROVED', 'OUTDATED'].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => setEditing(value => !value)}>Bearbeiten</button>}
       {proposal.status === "VALIDATED" && (wizardReview
@@ -111,14 +126,14 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       {["PROPOSED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("validate")}>Erneut prüfen</button>}
       {["PROPOSED", "VALIDATED", "APPROVED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("reject")}>Ablehnen</button>}
     </div>
-    {editing && <form className="engineering-proposal-editor" onSubmit={e => { e.preventDefault(); void action('revise'); }}>
+    {editing && complete && <form className="engineering-proposal-editor" onSubmit={e => { e.preventDefault(); void action('revise'); }}>
       <p>Eine bearbeitete Fassung wird neu validiert und benötigt eine neue Freigabe.</p>
       <label>Beschreibung<textarea required value={rationale} onChange={e => setRationale(e.target.value)} /></label>
-      {proposal.changes.filter(change => change.data?.name).map((change, index) => <label key={change.local_ref ?? index}>{change.object_type}<input required maxLength={200} value={names[change.local_ref ?? ''] ?? String(change.data?.name)} onChange={e => setNames(current => ({ ...current, [change.local_ref ?? '']: e.target.value }))} /></label>)}
+      {review.changes.filter(change => change.data?.name).map((change, index) => <label key={change.local_ref ?? index}>{change.object_type}<input required maxLength={200} value={names[change.local_ref ?? ''] ?? String(change.data?.name)} onChange={e => setNames(current => ({ ...current, [change.local_ref ?? '']: e.target.value }))} /></label>)}
       <button type="submit" disabled={busy}>Bearbeitete Fassung prüfen</button><button type="button" onClick={() => setEditing(false)}>Abbrechen</button>
     </form>}
-    <ContextLinks refs={proposal.canonical_ids.map((ref, index) => ({ ...ref, name: String(proposal.changes[index]?.data?.name ?? proposal.changes[index]?.object_name ?? ref.object_type) }))} projectId={projectId} />
-    {proposal.status === "APPLIED" && <p>{proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
+    {complete && <ContextLinks refs={proposal.canonical_ids.map((ref, index) => ({ ...ref, name: String(proposal.changes[index]?.data?.name ?? proposal.changes[index]?.object_name ?? ref.object_type) }))} projectId={projectId} />}
+    {proposal.status === "APPLIED" && <p>{proposal.canonical_count ?? proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

@@ -134,6 +134,12 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
     else:
         details = check.get('consistency') or check.get('invalid') or check.get('counts') or {}
         message = f'{artifact} übernommen, aber die Workflow-Prüfung meldet noch Lücken: {details}'
+        if artifact == 'routing' and check.get('coverage') and not check['coverage'].get('complete'):
+            coverage = check['coverage']
+            message = ('Routing übernommen. Im gespeicherten Simulationsumfang fehlen bestätigte Transporte für '
+                       f"{len(coverage.get('missing_message_ids') or [])} Nachrichten und "
+                       f"{len(coverage.get('missing_signal_ids') or [])} Signale. "
+                       'Empfänger bzw. Transportanforderungen bestätigen oder den Umfang im Preflight begründet einschränken.')
     service.set_context({'agent_execution': {
         **execution,
         'state': 'READY_TO_CONTINUE' if complete else 'BLOCKED',

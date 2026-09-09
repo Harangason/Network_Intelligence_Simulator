@@ -80,10 +80,13 @@ def load_engineering_simulation_model(project_id: str) -> dict[str, Any]:
 
 def _load_project_transport_config(project_id: str, routes: list[dict[str, Any]]) -> dict[str, Any]:
     from .routing.config_builder import CommunicationConfigBuilder
+    from .workflow.service import WorkflowStatusService
 
     token = activate_project(project_id)
     try:
-        return CommunicationConfigBuilder().build(routes).get("config") or {}
+        state = WorkflowStatusService(project_id).get()
+        return CommunicationConfigBuilder().build(routes, topology=state.get("topology") or {},
+            parameters=state.get("parameters") or {}).get("config") or {}
     finally:
         reset_project(token)
 
@@ -94,8 +97,15 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
     from .routing.network_sync import enrich_route_from_linked_topology
     from .physical_segments import physical_port_networks
     from .workflow.service import WorkflowStatusService
+    from .simulation_scope import normalize_simulation_scope
 
     state = WorkflowStatusService(project_id).get()
+    scope = normalize_simulation_scope((state.get("parameters") or {}).get("simulation_scope"))
+    scenario = config.get("scenario") or {}
+    for supplied in (config.get("simulation_scope"), scenario.get("simulation_scope")):
+        if supplied is not None and normalize_simulation_scope(supplied) != scope:
+            raise EngineeringValidationError("Der Simulationsumfang weicht vom gespeicherten Preflight-Umfang ab.")
+    config = {**config, "simulation_scope": scope, "scenario": {**scenario, "simulation_scope": scope}}
     model = load_engineering_simulation_model(project_id)
     messages = {str(item["id"]): item for item in model["messages"]}
     signals = {str(item["id"]): item for item in model["signals"]}
@@ -111,14 +121,32 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
         payload = route.get("payload") or {}
         message = messages.get(str(payload.get("message_id") or ""), {})
         selected = [signals[str(item)] for item in payload.get("signal_ids") or [] if str(item) in signals]
+        if not selected:
+            message_ids = {str(item) for item in payload.get("message_ids") or []}
+            if payload.get("message_id"):
+                message_ids.add(str(payload["message_id"]))
+            selected = [signal for signal in signals.values() if str(signal.get("message_id")) in message_ids]
         cycle = _requirement_value(route.get("timing") or {}, message, selected, "cycle_time_ms", "cycle_time")
         route.setdefault("timing", {})["cycle_time_ms"] = cycle or message.get("cycle_ms") or parameters.get("cycle_ms") or 100
+        for field, aliases in {
+            "max_latency_ms": ("max_latency_ms", "maximum_latency_ms", "maximum_latency", "deadline_ms", "deadline"),
+            "jitter_limit_ms": ("jitter_limit_ms", "maximum_jitter_ms", "maximum_jitter"),
+            "timeout_ms": ("timeout_ms", "timeout"), "freshness_ms": ("freshness_ms", "data_freshness_limit"),
+        }.items():
+            value = _requirement_value(route["timing"], message, selected, *aliases)
+            if value is not None:
+                route["timing"][field] = value
         route.setdefault("validation", {}).setdefault("metrics", {})["payload_bytes"] = _payload_bytes(route, messages, int(parameters.get("payload_bytes") or 8))
     transport = _load_project_transport_config(project_id, routes)
     if not transport.get("communications"):
         raise EngineeringValidationError("Keine freigegebenen Kommunikationspfade für den SimulationSnapshot.")
     for network in transport["networks"]:
-        communication = next(item for item in transport["communications"] if item["network_id"] == network["id"])
+        communication = next(item for item in transport["communications"] if item["network_id"] == network["id"]
+            or any(segment.get("network_id") == network["id"] for segment in item.get("segments") or []))
+        # The builder resolves every physical segment from its own interface and
+        # network parameters. Keep this fallback for older transport adapters.
+        if communication.get("segments"):
+            continue
         route = next(item for item in routes if str(item["id"]) == communication["routing_entry_id"])
         source = route.get("source") or {}
         interface = interfaces.get(str(source.get("interface_id") or ""), {})
@@ -239,33 +267,19 @@ def _simulation_scope(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def _apply_simulation_scope(config: dict[str, Any]) -> None:
+    from .simulation_coverage import simulation_coverage
     scope = _simulation_scope(config)
-    if not scope or bool(scope.get("include_all")) or str(scope.get("mode") or "ALL").upper() == "ALL":
-        return
-    selected_message_ids = _scope_values(scope.get("message_ids"))
-    selected_signal_ids = _scope_values(scope.get("signal_ids"))
-    if not selected_message_ids and not selected_signal_ids:
-        return
-
     model = config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {}
     messages = [item for item in model.get("messages") or [] if isinstance(item, dict)]
     signals = [item for item in model.get("signals") or [] if isinstance(item, dict)]
-    message_by_id = {str(item.get("id")): item for item in messages}
-    signals_by_message: dict[str, list[dict[str, Any]]] = {}
-    for signal in signals:
-        signals_by_message.setdefault(str(signal.get("message_id") or ""), []).append(signal)
-
-    if selected_signal_ids:
-        selected_signal_rows = [item for item in signals if str(item.get("id")) in selected_signal_ids]
-        selected_message_ids.update(str(item.get("message_id")) for item in selected_signal_rows if item.get("message_id"))
-    if selected_message_ids and not selected_signal_ids:
-        for message_id in selected_message_ids:
-            selected_signal_ids.update(str(item.get("id")) for item in signals_by_message.get(message_id, []) if item.get("id"))
-
-    selected_message_ids = {item for item in selected_message_ids if item in message_by_id}
-    selected_signal_ids = {item for item in selected_signal_ids if any(str(signal.get("id")) == item for signal in signals)}
-    if not selected_message_ids and not selected_signal_ids:
+    coverage = simulation_coverage(messages, signals, config.get("communications") or [], scope)
+    config["scope_coverage"] = coverage
+    if coverage["errors"]:
+        raise EngineeringValidationError(" ".join(coverage["errors"]))
+    if not scope or bool(scope.get("include_all")) or str(scope.get("mode") or "ALL").upper() == "ALL":
         return
+    selected_message_ids = set(coverage["required_message_ids"])
+    selected_signal_ids = set(coverage["required_signal_ids"])
 
     model["messages"] = [item for item in messages if str(item.get("id")) in selected_message_ids]
     model["signals"] = [item for item in signals if str(item.get("id")) in selected_signal_ids]
@@ -283,7 +297,10 @@ def _apply_simulation_scope(config: dict[str, Any]) -> None:
         communication_signal_ids = _scope_values(communication.get("signal_ids"))
         message_match = bool(communication_message_ids & selected_message_ids)
         signal_match = bool(communication_signal_ids & selected_signal_ids)
-        if not message_match and not signal_match:
+        # An explicit partial signal payload is authoritative. Matching its
+        # parent message must not turn an excluded partial route into an empty
+        # signal list, which the runtime interprets as a whole-message payload.
+        if not (signal_match if communication_signal_ids else message_match):
             continue
         if communication_message_ids:
             communication["message_ids"] = sorted(communication_message_ids & selected_message_ids)

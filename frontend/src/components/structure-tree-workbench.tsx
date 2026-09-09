@@ -1,4 +1,9 @@
 "use client";
+import { interfaceTraffic, missingCommandSignals } from "@/lib/interface-status";
+import { listRoutes } from "@/lib/routing-api";
+import { getWorkflow } from "@/lib/workflow-api";
+import type { RoutingEntry } from "@/lib/types";
+import { technologyLabel } from "@/lib/engineering-names";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EcuStructureTransferDialog } from "@/components/ecu-structure-transfer-dialog";
@@ -19,6 +24,7 @@ import {
   isMergedHardwareAlias,
 } from "@/lib/engineering-object-style";
 import { readActiveProjectId } from "@/lib/user-settings";
+import { canAssignEngineeringParent, engineeringParent, explicitSystemOwner, requiresFunctionModel } from "@/lib/engineering-ownership";
 import type {
   EngineeringObject,
   EngineeringObjectType,
@@ -42,39 +48,13 @@ type Level = {
 const LEVELS: Level[] = [
   { type: "HardwareNode", resource: "hardware-nodes", label: "Hardware", singular: "Hardware" },
   { type: "Function", resource: "functions", label: "Funktionen", singular: "Funktion", parentType: "HardwareNode", parentField: "hardware_node_id", relationType: "HAS_FUNCTION" },
-  { type: "Interface", resource: "interfaces", label: "Interfaces", singular: "Interface", parentType: "Function", parentField: "function_id", relationType: "HAS_INTERFACE" },
+  { type: "Interface", resource: "interfaces", label: "Kommunikationsschnittstellen", singular: "Schnittstelle", parentType: "Function", parentField: "function_id", relationType: "HAS_INTERFACE" },
   { type: "Message", resource: "messages", label: "Nachrichten", singular: "Nachricht", parentType: "Interface", parentField: "interface_id", relationType: "HAS_MESSAGE" },
   { type: "Signal", resource: "signals", label: "Signale", singular: "Signal", parentType: "Message", parentField: "message_id", relationType: "CONTAINS_SIGNAL" },
 ];
 
 const LEVEL_BY_TYPE = Object.fromEntries(LEVELS.map((level) => [level.type, level])) as Partial<Record<EngineeringObjectType, Level>>;
-const WIZARD_STEPS = [...LEVELS.map((level) => level.label), "KI-Prüfung"];
 const STRUCTURE_NAME_COLLATOR = new Intl.Collator("de-DE", { numeric: true, sensitivity: "base" });
-const SYSTEM_FRAME_FAMILIES: Array<{ sources: string[]; owners: string[] }> = [
-  { sources: ["airbag", "crash", "impact", "seatbelt", "gurt"], owners: ["airbag", "rueckhalt"] },
-  { sources: ["brake", "brems", "wheelspeed"], owners: ["bremsregelung"] },
-  { sources: ["damper", "daempfer"], owners: ["daempferregelung"] },
-  { sources: ["suspension", "wheelload", "verticalacceleration"], owners: ["fahrwerk"] },
-  { sources: ["steering", "wheelangle", "lenk"], owners: ["lenkung"] },
-  { sources: ["yaw", "pitch", "rollrate", "lateralacceleration", "longitudinalacceleration"], owners: ["stabilitaetsregelung"] },
-  { sources: ["cabintemperature", "ambienttemperature", "refrigerant", "innenraum", "klima"], owners: ["klima", "klimatisierung"] },
-  { sources: ["battery", "batterie", "cellvoltage"], owners: ["batteriemanagement"] },
-  { sources: ["transmission", "clutch", "gearselector"], owners: ["getriebesteuerung"] },
-  { sources: ["exhaust", "egrvalve", "urea", "abgas"], owners: ["abgasnachbehandlung"] },
-  { sources: ["motorspeed", "motorcurrent"], owners: ["elektromotorsteuerung"] },
-  { sources: ["engine", "boostpressure", "accelerator", "throttle", "turbo"], owners: ["motorsteuerung"] },
-  { sources: ["radar"], owners: ["radarverarbeitung"] },
-  { sources: ["camera", "kamera"], owners: ["kameraverarbeitung"] },
-  { sources: ["fuel", "kraftstoff"], owners: ["kraftstoffsystem"] },
-  { sources: ["tire", "reifen"], owners: ["reifendruckkontrolle"] },
-  { sources: ["wheelacceleration", "wheeltorque"], owners: ["stabilitaetsregelung", "fahrdynamik"] },
-  { sources: ["inverter", "dclink"], owners: ["invertersteuerung"] },
-  { sources: ["alternator", "accessorycurrent", "lowvoltage"], owners: ["energieversorgung"] },
-  { sources: ["rain", "washerfluid"], owners: ["wischersteuerung", "bodycontrol"] },
-  { sources: ["ambientlight"], owners: ["aussenlicht", "bodycontrol"] },
-  { sources: ["coolant", "oiltemperature", "intakeairtemperature", "oillevel", "temperature", "temperatur"], owners: ["thermal", "thermomanagement", "klimatisierung"] },
-];
-
 type StructureViewMode = "canonical" | "system-frames";
 
 type SystemFrameGroup = {
@@ -85,14 +65,13 @@ type SystemFrameGroup = {
   basis: "explicit" | "inferred" | "unassigned";
 };
 
-function objectParentId(item: EngineeringObject, level: Level) {
-  if (!level.parentField || !(level.parentField in item)) return null;
-  return String(item[level.parentField as keyof EngineeringObject] ?? "") || null;
+function objectParentId(item: EngineeringObject, _level: Level) {
+  return engineeringParent(item)?.id ?? null;
 }
 
 function objectDetail(item: EngineeringObject) {
   if ("device_type" in item) return item.domain || "Hardware-Objekt";
-  if ("interface_type" in item) return item.interface_type;
+  if ("interface_type" in item) return technologyLabel(item.interface_type);
   if ("message_id_hex" in item) return [item.message_id_hex, item.cycle_ms !== null ? `${item.cycle_ms} ms` : null].filter(Boolean).join(" · ") || "Message";
   if ("length_bits" in item) return [item.length_bits !== null ? `${item.length_bits} Bit` : null, item.unit].filter(Boolean).join(" · ") || "Signal";
   return item.domain || item.object_type;
@@ -123,43 +102,8 @@ function compareStructureObjects(left: EngineeringObject, right: EngineeringObje
     || left.id.localeCompare(right.id);
 }
 
-function systemFrameKey(value: unknown) {
-  let normalized = engineeringHardwareName(String(value || "")).toLowerCase();
-  for (const [source, target] of [["ä", "ae"], ["ö", "oe"], ["ü", "ue"], ["ß", "ss"]] as const) {
-    normalized = normalized.replaceAll(source, target);
-  }
-  return normalized.replace(/[^a-z0-9]/g, "");
-}
-
-function explicitSystemOwnerId(item: HardwareNode) {
-  const value = item.identity?.system_owner_id ?? item.identity?.systemOwnerId;
-  return typeof value === "string" && value ? value : null;
-}
-
-function inferredSystemOwner(item: HardwareNode, processors: HardwareNode[]) {
-  if (item.device_type === "Gateway") return null;
-  if (item.device_type === "ECU") return item;
-  const itemKey = systemFrameKey(item.name);
-  const scored = processors
-    .map((processor) => {
-      const ownerKey = systemFrameKey(processor.name);
-      let score = ownerKey.length > 3 && itemKey.startsWith(ownerKey) ? ownerKey.length + 2000 : 0;
-      for (const family of SYSTEM_FRAME_FAMILIES) {
-        const specificity = Math.max(...family.sources.map((token) => itemKey.includes(token) ? token.length : 0));
-        if (!specificity) continue;
-        for (const [index, owner] of family.owners.entries()) {
-          if (ownerKey.includes(owner)) score = Math.max(score, (owner === ownerKey ? 1200 : 800) + specificity * 20 - index * 80);
-        }
-      }
-      return { processor, score };
-    })
-    .filter((item) => item.score > 0)
-    .sort((left, right) => right.score - left.score);
-  return scored.length && (scored.length === 1 || scored[0].score > scored[1].score) ? scored[0].processor : null;
-}
-
 function buildSystemFrameGroups(hardware: HardwareNode[]) {
-  const processors = hardware.filter((item) => item.device_type === "ECU");
+  const processors = hardware.filter((item) => requiresFunctionModel(item) && !["SensorController", "ActuatorController", "Gateway"].includes(item.device_type));
   const byId = new Map(hardware.map((item) => [item.id, item]));
   const groups = new Map<string, SystemFrameGroup>();
   const ensureGroup = (owner: HardwareNode | null, basis: SystemFrameGroup["basis"]) => {
@@ -181,14 +125,11 @@ function buildSystemFrameGroups(hardware: HardwareNode[]) {
   };
   for (const item of hardware) {
     if (item.device_type === "Gateway") continue;
-    const explicitOwner = explicitSystemOwnerId(item);
-    const owner = explicitOwner && byId.get(explicitOwner)?.device_type === "ECU"
-      ? byId.get(explicitOwner) as HardwareNode
-      : inferredSystemOwner(item, processors);
-    const basis = explicitOwner && owner ? "explicit" : owner ? "inferred" : "unassigned";
+    const owner = explicitSystemOwner(item, byId);
+    const basis = owner ? "explicit" : "unassigned";
     ensureGroup(owner, basis).members.push(item);
   }
-  for (const processor of processors) ensureGroup(processor, "inferred");
+  for (const processor of processors) ensureGroup(processor, "explicit");
   return [...groups.values()].map((group) => ({
     ...group,
     members: [...new Map(group.members.map((member) => [member.id, member])).values()].sort(compareStructureObjects),
@@ -221,6 +162,8 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const [objects, setObjects] = useState<Record<EngineeringObjectType, EngineeringObject[]>>({
     ...emptyObjects(),
   });
+  const [routes, setRoutes] = useState<RoutingEntry[]>([]);
+  const [busNames, setBusNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -251,15 +194,19 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     setLoading(true);
     setError("");
     try {
-      const [groups, duplicates] = await Promise.all([
+      const [groups, duplicates, routing, workflow] = await Promise.all([
         Promise.all(LEVELS.map((level) => listAllEngineeringObjects(level.resource))),
         listSystemDuplicateCandidates(),
+        listRoutes(),
+        getWorkflow(),
       ]);
       const next = {
         ...emptyObjects(),
         ...Object.fromEntries(LEVELS.map((level, index) => [level.type, groups[index]])),
       } as Record<EngineeringObjectType, EngineeringObject[]>;
       setObjects(next);
+      setRoutes(routing);
+      setBusNames(Object.fromEntries((Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : []).map((network: { id: string; name: string }) => [network.id, network.name])));
       setSystemDuplicates(duplicates);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Structure Tree konnte nicht geladen werden.");
@@ -300,7 +247,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     for (const level of LEVELS.slice(1)) {
       for (const item of objects[level.type]) {
         const parentId = objectParentId(item, level);
-        if (!parentId) continue;
+        if (!parentId || objectMap.get(parentId)?.object_type !== engineeringParent(item)?.type) continue;
         const current = result.get(parentId) ?? [];
         current.push(item);
         result.set(parentId, current);
@@ -308,7 +255,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     }
     for (const items of result.values()) items.sort(compareStructureObjects);
     return result;
-  }, [objects]);
+  }, [objectMap, objects]);
 
   const children = useCallback(
     (parent: EngineeringObject) => childrenByParent.get(parent.id) ?? [],
@@ -334,7 +281,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const orphans = useMemo(() => LEVELS.slice(1).flatMap((level) => (
     objects[level.type].filter((item) => {
       const parentId = objectParentId(item, level);
-      return !parentId || !objectMap.has(parentId);
+      return !parentId || objectMap.get(parentId)?.object_type !== engineeringParent(item)?.type;
     })
   )).sort(compareStructureObjects), [objectMap, objects]);
 
@@ -363,9 +310,11 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   }
 
   async function assignByDrop(child: EngineeringObject, parent: EngineeringObject) {
-    const level = LEVEL_BY_TYPE[child.object_type];
-    if (!level) return;
-    if (!level.parentType || level.parentType !== parent.object_type || !level.parentField || !level.relationType) return;
+    if (!canAssignEngineeringParent(child, parent)) return;
+    const link = engineeringParent(child.object_type === "Interface"
+      ? { ...child, function_id: parent.object_type === "Function" ? parent.id : null, hardware_node_id: parent.object_type === "HardwareNode" ? parent.id : null } as EngineeringObject
+      : child);
+    if (!link) return;
     setBusy(true);
     setError("");
     try {
@@ -377,8 +326,8 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
           parent_type: parent.object_type,
           parent_id: parent.id,
           parent_name: parent.name,
-          parent_field: level.parentField,
-          relation_type: level.relationType,
+          parent_field: link.field,
+          relation_type: link.relation,
           confidence: 1,
           reason: "Manuelle Drag-and-drop-Zuordnung",
           current_name: child.name,
@@ -456,7 +405,8 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     if (draggedType === "HardwareNode") {
       return target.object_type === "HardwareNode" && draggedIdRef.current !== target.id;
     }
-    return LEVEL_BY_TYPE[draggedType]?.parentType === target.object_type;
+    const child = objectMap.get(draggedIdRef.current ?? "");
+    return Boolean(child && canAssignEngineeringParent(child, target));
   }
 
   function canDropOnSystemFrame(group: SystemFrameGroup) {
@@ -518,6 +468,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   function renderNode(item: EngineeringObject, depth: number): React.ReactNode {
     if (!treeVisible(item)) return null;
     const nodeChildren = children(item).filter(treeVisible);
+    const traffic = item.object_type === "Interface" ? interfaceTraffic(item.id, routes) : [];
     const isExpanded = expanded.has(item.id) || Boolean(normalizedQuery);
     const level = LEVEL_BY_TYPE[item.object_type] ?? LEVELS[0];
     const displayName = structureDisplayName(item);
@@ -602,6 +553,17 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
             <button className="button secondary tiny structure-rename" onClick={() => setRenaming({ type: item.object_type, id: item.id, value: displayName, version: item.version })} type="button">Name ändern</button>
           )}
         </div>
+        {missingCommandSignals(item, objects.Signal) && <p className="routing-issue warning" role="status">Befehl unvollständig: Signale, Bitbelegung und Wertebereiche fehlen. Transport angelegt; Aktorfunktion nicht spezifiziert.</p>}
+        {traffic.length > 0 && <details className="structure-traffic">
+          <summary>Kommunikation · {traffic.filter(t => t.direction === "TX").length} Senderouten (TX) · {traffic.filter(t => t.direction === "RX").length} Empfangsrouten (RX)</summary>
+          <p>Nachrichtenreferenzen aus dem Routing · Freigabe und Validierung sind kein Simulationsnachweis.</p>
+          {traffic.map(({ route, direction, messageIds }) => <div key={`${route.id}:${direction}`}>
+            <strong>{direction} · {route.name}</strong>
+            <p>Bus: {[...new Set((direction === "TX" ? [route.source] : route.destinations.filter(d => d.interface_id === item.id)).map(endpoint => endpoint.network_id ? busNames[endpoint.network_id] ?? endpoint.network_id : "Nicht zugeordnet"))].join(", ")} · {route.approval_state === "APPROVED" ? "Freigegeben" : "Nicht freigegeben"} · {route.validation.outdated_reason ? "Validierung veraltet" : route.validation.valid === true ? "Routing validiert" : route.validation.valid === false ? "Routing fehlerhaft" : "Nicht validiert"}</p>
+            {messageIds.map(id => <p key={id}>Nachricht: {objectMap.get(id)?.name ?? id} · Signale: {objects.Signal.filter(signal => "message_id" in signal && signal.message_id === id).map(signal => signal.name).join(", ") || "Keine definiert"}</p>)}
+            {[...(route.validation.errors ?? []), ...(route.validation.warnings ?? [])].map(issue => <p className="routing-issue warning" key={issue.code}>{issue.message}</p>)}
+          </div>)}
+        </details>}
         {isExpanded && nodeChildren.length > 0 && <ul>{nodeChildren.map((child) => renderNode(child, depth + 1))}</ul>}
       </li>
     );
@@ -811,8 +773,11 @@ function StructureWizard({
   const [applyHardwareAdjustment, setApplyHardwareAdjustment] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const level = LEVELS[Math.min(step, LEVELS.length - 1)];
-  const filteredObjects = step < LEVELS.length
+  const selectedHardware = objects.HardwareNode.find((item) => item.id === selection.HardwareNode[0]);
+  const wizardLevels = LEVELS.filter((item) => item.type !== "Function" || !selectedHardware || requiresFunctionModel(selectedHardware));
+  const wizardSteps = [...wizardLevels.map((item) => item.label), "KI-Prüfung"];
+  const level = wizardLevels[Math.min(step, wizardLevels.length - 1)];
+  const filteredObjects = step < wizardLevels.length
     ? objects[level.type].filter((item) => includesText(item, filter.trim().toLocaleLowerCase("de-DE")))
     : [];
 
@@ -835,7 +800,7 @@ function StructureWizard({
       const result = await evaluateEngineeringStructure(selection);
       setEvaluation(result);
       setAssignments(result.suggestions.map((suggestion) => ({ ...suggestion, name: suggestion.current_name })));
-      setStep(LEVELS.length);
+      setStep(wizardLevels.length);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "KI-Bewertung konnte nicht erzeugt werden.");
     } finally {
@@ -844,8 +809,8 @@ function StructureWizard({
   }
 
   function next() {
-    if (step === LEVELS.length - 1) { void evaluate(); return; }
-    setStep((current) => Math.min(LEVELS.length, current + 1));
+    if (step === wizardLevels.length - 1) { void evaluate(); return; }
+    setStep((current) => Math.min(wizardLevels.length, current + 1));
     setFilter("");
   }
 
@@ -885,7 +850,7 @@ function StructureWizard({
     }
   }
 
-  const canContinue = step < LEVELS.length && selection[level.type].length > 0;
+  const canContinue = step < wizardLevels.length && selection[level.type].length > 0;
 
   return (
     <div className="proposal-wizard-backdrop structure-wizard-backdrop" onMouseDown={(event) => event.target === event.currentTarget && !busy && onClose()} role="presentation">
@@ -894,15 +859,16 @@ function StructureWizard({
           <div><p className="eyebrow">Structure Wizard</p><h3>Abhängigkeiten geführt aufbauen</h3><span>Hardware einzeln, alle folgenden Stufen mit Mehrfachauswahl.</span></div>
           <button aria-label="Structure Wizard schließen" className="eng-dialog-close" disabled={busy} onClick={onClose} type="button">×</button>
         </header>
-        <nav className="proposal-wizard-steps" aria-label="Structure-Wizard-Schritte">{WIZARD_STEPS.map((label, index) => <button aria-current={step === index ? "step" : undefined} className={`${index < LEVELS.length ? `eng-object-accent ${engineeringObjectTypeClass(LEVELS[index].type)}` : ""} ${step === index ? "active" : ""}`} disabled={index > step || busy} key={label} onClick={() => { setStep(index); setFilter(""); }} type="button"><span>{index + 1}</span>{label}</button>)}</nav>
+        <nav className="proposal-wizard-steps" aria-label="Structure-Wizard-Schritte">{wizardSteps.map((label, index) => <button aria-current={step === index ? "step" : undefined} className={`${index < wizardLevels.length ? `eng-object-accent ${engineeringObjectTypeClass(wizardLevels[index].type)}` : ""} ${step === index ? "active" : ""}`} disabled={index > step || busy} key={label} onClick={() => { setStep(index); setFilter(""); }} type="button"><span>{index + 1}</span>{label}</button>)}</nav>
 
-        {step < LEVELS.length && (
+        {step < wizardLevels.length && (
           <div className="structure-wizard-selection">
             <div className="structure-wizard-filter"><label><span>{level.label} filtern</span><input autoFocus onChange={(event) => setFilter(event.target.value)} placeholder="Name, Domäne oder technischer Wert" type="search" value={filter} /></label><span>{selection[level.type].length} ausgewählt</span></div>
             <div className="structure-choice-list">
               {filteredObjects.map((item) => {
                 const checked = selection[level.type].includes(item.id);
-                const parentLevel = level.parentType ? LEVEL_BY_TYPE[level.parentType] : null;
+                const link = engineeringParent(item);
+                const parentLevel = link ? LEVEL_BY_TYPE[link.type] : null;
                 const parentId = objectParentId(item, level);
                 return <label className={`structure-choice eng-object-surface ${engineeringObjectTypeClass(item.object_type)} ${checked ? "selected" : ""}`} key={item.id}><input checked={checked} name={level.type === "HardwareNode" ? "structure-hardware" : undefined} onChange={() => toggle(level.type, item.id)} type={level.type === "HardwareNode" ? "radio" : "checkbox"} /><span><strong>{item.name}</strong><small>{objectDetail(item)}{parentLevel ? ` · aktuell: ${selectedName(parentLevel.type, parentId)}` : ""}</small></span><i>{item.approval_state === "approved" ? "freigegeben" : item.review_state}</i></label>;
               })}
@@ -911,7 +877,7 @@ function StructureWizard({
           </div>
         )}
 
-        {step === LEVELS.length && evaluation && (
+        {step === wizardLevels.length && evaluation && (
           <div className="structure-ai-review">
             <div className="structure-ai-score"><div><p className="eyebrow">KI-Bewertung</p><strong>{Math.round(evaluation.confidence * 100)} % Konfidenz</strong><span>{evaluation.model} v{evaluation.model_version}</span></div><dl><div><dt>Bestätigt</dt><dd>{evaluation.learning.accepted}</dd></div><div><dt>Abgelehnt</dt><dd>{evaluation.learning.rejected}</dd></div><div><dt>Lernbasis</dt><dd>{evaluation.learning.reviewed}</dd></div></dl></div>
             {evaluation.hardware_adjustments.map((item) => <label className="structure-hardware-adjustment" key={item.id}><input checked={applyHardwareAdjustment} onChange={(event) => setApplyHardwareAdjustment(event.target.checked)} type="checkbox" /><span><strong>{item.name}: {item.current_value} → {item.suggested_value}</strong><small>{item.reason}</small></span></label>)}
@@ -924,8 +890,8 @@ function StructureWizard({
 
         {error && <div className="inline-error structure-wizard-error">{error}</div>}
         <footer>
-          <div>{step === LEVELS.length && evaluation ? <><button className="button danger" disabled={busy} onClick={() => void reject()} type="button">Vorschlag ablehnen</button><button className="button secondary" disabled={busy} onClick={() => setAssignments((current) => current.map((item) => ({ ...item, name: item.recommended_name })))} type="button">Alle KI-Namen übernehmen</button></> : <button className="button secondary" disabled={busy} onClick={onClose} type="button">Abbrechen</button>}</div>
-          <div><button className="button secondary" disabled={step === 0 || busy} onClick={() => { setStep((current) => Math.max(0, current - 1)); setFilter(""); }} type="button">Zurück</button>{step < LEVELS.length ? <button className="button primary" disabled={!canContinue || busy} onClick={next} type="button">{step === LEVELS.length - 1 ? (busy ? "KI bewertet …" : "KI bewerten") : "Weiter"}</button> : <button className="button primary" disabled={busy || !assignments.length} onClick={() => void apply()} type="button">{busy ? "Wird übernommen …" : "Abhängigkeiten übernehmen"}</button>}</div>
+          <div>{step === wizardLevels.length && evaluation ? <><button className="button danger" disabled={busy} onClick={() => void reject()} type="button">Vorschlag ablehnen</button><button className="button secondary" disabled={busy} onClick={() => setAssignments((current) => current.map((item) => ({ ...item, name: item.recommended_name })))} type="button">Alle KI-Namen übernehmen</button></> : <button className="button secondary" disabled={busy} onClick={onClose} type="button">Abbrechen</button>}</div>
+          <div><button className="button secondary" disabled={step === 0 || busy} onClick={() => { setStep((current) => Math.max(0, current - 1)); setFilter(""); }} type="button">Zurück</button>{step < wizardLevels.length ? <button className="button primary" disabled={!canContinue || busy} onClick={next} type="button">{step === wizardLevels.length - 1 ? (busy ? "KI bewertet …" : "KI bewerten") : "Weiter"}</button> : <button className="button primary" disabled={busy || !assignments.length} onClick={() => void apply()} type="button">{busy ? "Wird übernommen …" : "Abhängigkeiten übernehmen"}</button>}</div>
         </footer>
       </section>
     </div>

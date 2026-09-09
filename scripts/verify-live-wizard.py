@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 from http.cookiejar import CookieJar
 import json
+import re
 from pathlib import Path
 import time
 from urllib.request import build_opener, HTTPCookieProcessor, Request
@@ -17,8 +18,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--base-url', default='http://127.0.0.1:13500')
     parser.add_argument('--report', type=Path)
+    parser.add_argument('--prompt-file', type=Path, help='Replay a real wizard specification in an isolated project.')
     parser.add_argument('--initial-can-fd-segments', type=int)
     parser.add_argument('--technology', choices=['can_fd', 'ethernet'], default='can_fd')
+    parser.add_argument('--complete-scope', action='store_true', help='Confirm consumers for both ECU status messages, so ALL is executable.')
     args = parser.parse_args()
     project = 'astra-e2e-' + uuid4().hex[:12]
     print(json.dumps({'phase': 'start', 'project': project}), flush=True)
@@ -42,11 +45,24 @@ def main():
 - Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd)
 - Hardware-Sollwerte: {{"gateways":1,"ecus":1,"sensors":1,"actuators":1}}
+- Aktor-Befehle: {{"MotorValve":{{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{{"semantic_type":"BOOLEAN"}},"data":{{"enum_values":{{"CLOSE":0,"OPEN":1}}}}}}}}
 - Systemcluster-Graph: [{{"cluster_id":"drive","label":"Motor","network_id":"can_fd","network_label":"CAN-FD","bus_name":"Drive","controllers":[{{"ecu":"Motorsteuerung","sensors":["MotorTemperature"],"actuators":["MotorValve"]}}]}}]
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
 Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Temperatursensor und einem Stellglied.
 '''
     applied = []
+    if args.complete_scope:
+        prompt = prompt.replace('"ecus":1', '"ecus":2')
+        lines = prompt.splitlines()
+        graph_index = next(i for i, line in enumerate(lines) if line.startswith('- Systemcluster-Graph:'))
+        graph = json.loads(lines[graph_index].split(': ', 1)[1])
+        graph[0]['controllers'].append({'ecu': 'Anzeige', 'sensors': [], 'actuators': []})
+        graph[0]['hmi_routes'] = [{'source': 'Motorsteuerung', 'target': 'Anzeige'},
+                                {'source': 'Anzeige', 'target': 'Motorsteuerung'},
+                                {'source': 'System', 'target': 'Anzeige'}]
+        lines[graph_index] = '- Systemcluster-Graph: ' + json.dumps(graph)
+        prompt = '\n'.join(lines).replace('einer Motorsteuerung, einem Temperatursensor',
+            'einer Motorsteuerung, einer Anzeige, einem Temperatursensor')
     if args.technology == 'ethernet':
         prompt = prompt.replace('CAN-FD', 'Ethernet').replace('can_fd', 'ethernet')
     if args.initial_can_fd_segments is not None:
@@ -55,6 +71,9 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
             '- Kommunikationssystem-Sollwerte: ' + json.dumps([{'id': 'can_fd', 'count': args.initial_can_fd_segments}])
             + '\n- Hardware-Sollwerte:')
     resource_decisions = []
+    if args.prompt_file:
+        prompt = args.prompt_file.read_text(encoding='utf-8')
+        prompt = re.sub(r'^- Lauf-ID:.*$', '- Lauf-ID: ' + run_id, prompt, flags=re.M)
     for attempt in range(8):
         message = prompt + ('\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.' if attempt else '')
         events = request('/api/engineering/agent/chat', {'prompt': message}, stream=True)
@@ -74,7 +93,7 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
                     assert any(item['increase_over_baseline'] > 0 for item in receipt['resources'])
                     assert 'Tool-Entscheidung:' in proposal['rationale']
                 resource_decisions.append(receipt)
-            if proposal['proposal_type'] == 'WIZARD_ENGINEERING_MODEL':
+            if proposal['proposal_type'] == 'WIZARD_ENGINEERING_MODEL' and not args.prompt_file:
                 names = {change['data']['name'] for change in proposal['changes'] if change['object_type'] == 'HardwareNode'}
                 assert {'Motorsteuerung', 'MotorTemperature', 'MotorValve'} <= names, names
             token = request('/api/engineering/agent/review-session')['csrf_token']
@@ -90,13 +109,25 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
         raise AssertionError('Wizard did not finish within eight review boundaries.')
     jobs = request('/api/simulations')['jobs']
     completed = next(job for job in jobs if job['status'] == 'completed')
+    snapshots = request('/api/engineering/workflow/snapshots')
+    snapshot = next(item for item in snapshots['simulations'] if item.get('job_id') == completed['id'])
+    full_snapshot = request('/api/engineering/workflow/simulation-snapshots/' + snapshot['id'])
+    assessment = (full_snapshot.get('result') or {}).get('assessment')
+    if args.complete_scope or args.prompt_file:
+        assert assessment and assessment['scope_coverage']['complete'], assessment
+        assert assessment['scope_coverage']['scope_mode'] == 'ALL', assessment
+        assert not assessment['missing_observed_signal_ids'], assessment
+        assert not assessment['missing_observed_route_ids'], assessment
+        assert not assessment['missing_observed_network_ids'], assessment
     print(json.dumps({'phase': 'simulation', 'project': project, 'job_id': completed['id'], 'artifacts': (completed.get('result') or {}).get('artifacts')}), flush=True)
     trace = request('/api/simulations/' + completed['id'] + '/trace-window?limit=5')
-    assert trace['count'] > 0 and trace['events'][0]['signals'], trace
+    assert trace['count'] > 0 and any(event.get('signals') for event in trace['events']), {
+        'count': trace['count'], 'signal_events': sum(bool(event.get('signals')) for event in trace['events'])}
     repeated = request('/api/engineering/agent/chat', {'prompt': prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'}, stream=True)
     assert any(event.get('type') == 'RESULT' and event.get('status') == 'COMPLETED' for event in repeated), repeated[-3:]
     assert len(request('/api/simulations')['jobs']) == len(jobs), 'Retry created a duplicate simulation.'
     report = {'project': project, 'run_id': run_id, 'job_id': completed['id'], 'statuses': workflow['statuses'],
+              'assessment': assessment,
               'resource_decisions': resource_decisions,
               'applied': applied, 'trace_window_count': trace['count'], 'http': evidence,
               'browser_url': args.base_url + '/studio/results?project=' + project,

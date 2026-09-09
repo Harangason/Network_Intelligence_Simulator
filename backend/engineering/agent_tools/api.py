@@ -20,7 +20,7 @@ from backend.agent_core.api.tool_contract import Permission
 from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner
 from backend.simulator_engineering_mcp.server import create_server
 from ..db import ConcurrentUpdateError
-from ..project_context import normalize_context_project_id
+from ..project_context import normalize_context_project_id, activate_project, reset_project
 from .runtime import ToolAuthority, DEFAULT_PERMISSIONS, execute
 from .services import TOOLS
 from . import proposal_service as proposals
@@ -34,6 +34,7 @@ from backend.agent_core.api.agent_response import validate_response
 agent_api = Blueprint("engineering_agent_api", __name__)
 _executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="engineering-agent")
 _slots = threading.BoundedSemaphore(4)
+_HEARTBEAT_SECONDS = 30.0
 COOKIE = "engineering_review_csrf"
 _PROPOSAL_STATUS_FIELDS = (
     "proposal_id", "proposal_type", "revision", "status", "validation_result", "canonical_ids", "workload_id",
@@ -44,6 +45,20 @@ _WIZARD_REVIEW_PROPOSAL_TYPES = {
     "WIZARD_NETWORK_TOPOLOGY",
     "CAPACITY_NETWORK_REPAIR",
 }
+
+
+def renew_conversation_lease(authority: ToolAuthority, run_id: str) -> None:
+    """Renew the scoped lease without competing for the model mutation lock.
+
+    The dedicated heartbeat thread has its own connection. The conditional
+    update in renew still checks both project and run ownership atomically.
+    """
+    token = activate_project(authority.project_id)
+    try:
+        if not conversation.renew(run_id):
+            raise ConcurrentUpdateError('Der Agentenlauf besitzt dieses Gespräch nicht mehr.')
+    finally:
+        reset_project(token)
 
 
 def _project() -> str:
@@ -317,17 +332,21 @@ def chat():
             await reasoner.close()
     def worker():
         heartbeat_stop = threading.Event()
+        heartbeat_failure = []
         def heartbeat():
-            while not heartbeat_stop.wait(30):
+            while not heartbeat_stop.wait(_HEARTBEAT_SECONDS):
                 if cancellation.cancelled.is_set():
                     return
                 try:
-                    conversation.renew(run_id)
+                    renew_conversation_lease(authority, run_id)
                     if tracker:
                         tracker.heartbeat()
                 except Exception:
                     import logging
                     logging.getLogger(__name__).exception('Agent heartbeat failed (%s)', run_id)
+                    heartbeat_failure.append('Die Gesprächssperre konnte nicht bestätigt werden. Der Hintergrundlauf wurde angehalten; bitte den aktuellen Gesprächsstand laden.')
+                    request_cancel(project_id, wizard_run_id or run_id)
+                    return
         heartbeat_thread = threading.Thread(target=heartbeat, name=f"agent-heartbeat-{run_id[:8]}", daemon=True)
         heartbeat_thread.start()
         try:
@@ -335,8 +354,14 @@ def chat():
             if tracker:
                 tracker.finished(result)
         except asyncio.CancelledError:
-            queue.put(validate_response({'type': 'RESULT', 'status': 'CANCELED',
-                'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'}))
+            if heartbeat_failure:
+                if tracker:
+                    tracker.failed(heartbeat_failure[0])
+                queue.put(validate_response({'type': 'ERROR', 'status': 'BLOCKED',
+                    'text': heartbeat_failure[0], 'metadata': {'run_id': run_id}}))
+            else:
+                queue.put(validate_response({'type': 'RESULT', 'status': 'CANCELED',
+                    'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'}))
         except Exception as error:
             import logging
             logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)

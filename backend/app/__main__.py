@@ -38,6 +38,19 @@ def _server_settings() -> tuple[str, int, bool]:
     return host, port, debug
 
 
+def _exclusive_listener(host: str, port: int) -> socket.socket:
+    """Bind before Waitress can enable SO_REUSEADDR on a Windows listener."""
+    listener = socket.socket(socket.AF_INET6 if ":" in host else socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        listener.bind((host, port))
+        return listener
+    except BaseException:
+        listener.close()
+        raise
+
+
 def main() -> int:
     host, port, debug = _server_settings()
     app = create_app()
@@ -57,13 +70,9 @@ def main() -> int:
             flush=True,
         )
         try:
-            serve(
-                app,
-                host=host,
-                port=port,
-                threads=settings.api_threads,
-                clear_untrusted_proxy_headers=True,
-            )
+            with _exclusive_listener(host, port) as listener:
+                serve(app, sockets=[listener], threads=settings.api_threads,
+                      clear_untrusted_proxy_headers=True)
         except OSError as error:
             print(
                 f"Simulator-Backend nicht gestartet: {host}:{port} ist bereits belegt.",

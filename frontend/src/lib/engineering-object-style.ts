@@ -2,9 +2,9 @@ import type { EngineeringObjectType, EngineeringResource } from "@/lib/types";
 
 export const ENGINEERING_OBJECT_LABELS: Record<EngineeringObjectType, string> = {
   HardwareNode: "Hardware",
-  HardwareNetworkInterface: "Hardware Interface",
+  HardwareNetworkInterface: "Physischer Anschluss",
   Function: "Funktion",
-  Interface: "Interface",
+  Interface: "Kommunikationsschnittstelle",
   Message: "Nachricht",
   Signal: "Signal",
 };

@@ -19,14 +19,14 @@ import {
   mergeSimulationFormats,
   simulationFormatDefinitions,
 } from "@/lib/simulation-formats";
-import { listAllEngineeringObjects } from "@/lib/engineering-api";
 import { topologyToConfig, type NetworkTopology } from "@/lib/topology";
 import { createSimulationSnapshot, getWorkflow, setWorkflowContext, type SimulationSnapshot, type WorkflowState } from "@/lib/workflow-api";
-import type { Catalog, EngMessage, EngSignal, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
+import type { Catalog, ModelSignalSeries, ModelSimulationTrace, RuntimeNetworkMetric, SimulationJob } from "@/lib/types";
 import { SimulationResult } from "./simulation-result";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
 import { withProjectParam } from "@/lib/user-settings";
+import { simulationScopeFrom, simulationScopeValid } from "@/lib/simulation-scope";
 import {
   filterSignalSeries,
   formatSignalValue,
@@ -38,7 +38,6 @@ import {
 import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/lib/simulation-network-view";
 
 type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
-type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
 type ScenarioFault = {
   id: string;
   scope: "SIGNAL" | "MESSAGE" | "NETWORK";
@@ -72,12 +71,6 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   const [seed, setSeed] = useState(42);
   const [formats, setFormats] = useState(defaultSimulationFormats);
   const [formatPickerOpen, setFormatPickerOpen] = useState(false);
-  const [messages, setMessages] = useState<EngMessage[]>([]);
-  const [signals, setSignals] = useState<EngSignal[]>([]);
-  const [scopeMode, setScopeMode] = useState<SimulationScopeMode>("ALL");
-  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(() => new Set());
-  const [selectedSignalIds, setSelectedSignalIds] = useState<Set<string>>(() => new Set());
-  const [scopeSearch, setScopeSearch] = useState("");
   const [faults, setFaults] = useState<ScenarioFault[]>([]);
   const [faultScope, setFaultScope] = useState<keyof typeof FAULT_TYPES>("SIGNAL");
   const [faultType, setFaultType] = useState<string>(FAULT_TYPES.SIGNAL[0]);
@@ -109,16 +102,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   useEffect(() => {
     if (!workflow?.project_id) return;
     void listSimulationFaultProposals(workflow.project_id).then((response) => setProposals(response.items)).catch(() => undefined);
-    void Promise.all([
-      listAllEngineeringObjects("messages"),
-      listAllEngineeringObjects("signals"),
-    ]).then(([nextMessages, nextSignals]) => {
-      setMessages(nextMessages as EngMessage[]);
-      setSignals(nextSignals as EngSignal[]);
-    }).catch(() => {
-      setMessages([]);
-      setSignals([]);
-    });
+
   }, [workflow?.project_id, workflow?.versions.engineering_model]);
 
   useEffect(() => {
@@ -173,18 +157,8 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
     () => formats.map((format) => describeSimulationFormat(format).label),
     [formats],
   );
-  const simulationScope = useMemo(() => {
-    const messageIds = scopeMode === "MESSAGE" ? [...selectedMessageIds] : [];
-    const signalIds = scopeMode === "SIGNAL" ? [...selectedSignalIds] : [];
-    return {
-      mode: scopeMode,
-      include_all: scopeMode === "ALL",
-      message_ids: messageIds,
-      signal_ids: signalIds,
-      selected_count: scopeMode === "ALL" ? messages.length + signals.length : messageIds.length + signalIds.length,
-    };
-  }, [messages.length, scopeMode, selectedMessageIds, selectedSignalIds, signals.length]);
-  const scopeValid = simulationScope.include_all || simulationScope.selected_count > 0;
+  const simulationScope = simulationScopeFrom(workflow?.parameters.simulation_scope);
+  const scopeValid = simulationScopeValid(simulationScope);
 
   function buildScenario(name?: string) {
     const scenarioMode = mode === "GOLDEN" ? "NORMAL" : mode;
@@ -431,18 +405,12 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
       </form>
       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
 
-      <SimulationScopeSelector
-        messages={messages}
-        mode={scopeMode}
-        onMode={setScopeMode}
-        onSearch={setScopeSearch}
-        onSelectedMessages={setSelectedMessageIds}
-        onSelectedSignals={setSelectedSignalIds}
-        search={scopeSearch}
-        selectedMessageIds={selectedMessageIds}
-        selectedSignalIds={selectedSignalIds}
-        signals={signals}
-      />
+      <section className="panel simulation-scope-panel">
+        <div className="compact-heading"><div><p className="eyebrow">Geprüfter Simulationsumfang</p><h2>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</h2></div><Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link></div>
+        <p>{simulationScope.include_all ? "Alle aktiven Modellnachrichten und Signale müssen durch bestätigte Routen abgedeckt sein." : simulationScope.reason}</p>
+        <p>Die Simulation verwendet genau den gespeicherten und vorab geprüften Umfang. Ausgewählte Nachrichten schließen ihre enthaltenen Signale ein.</p>
+        {!scopeValid && <p className="notice warning">Der gespeicherte Umfang braucht eine gültige Auswahl und Begründung. Bitte im Preflight ergänzen.</p>}
+      </section>
 
       <section className="panel fault-editor">
           <div className="compact-heading"><div><p className="eyebrow">Fault scenario</p><h2>Fehler gezielt injizieren</h2></div><button className="button secondary" disabled={busy || !workflow} onClick={() => void askAgentForFaults()} type="button">KI-Vorschläge</button></div>
@@ -478,100 +446,6 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
           jobId={job.id}
           onJobChange={handleJobChange}
         />
-      )}
-    </section>
-  );
-}
-
-function SimulationScopeSelector({
-  messages,
-  mode,
-  onMode,
-  onSearch,
-  onSelectedMessages,
-  onSelectedSignals,
-  search,
-  selectedMessageIds,
-  selectedSignalIds,
-  signals,
-}: {
-  messages: EngMessage[];
-  mode: SimulationScopeMode;
-  onMode: (mode: SimulationScopeMode) => void;
-  onSearch: (value: string) => void;
-  onSelectedMessages: (value: Set<string>) => void;
-  onSelectedSignals: (value: Set<string>) => void;
-  search: string;
-  selectedMessageIds: Set<string>;
-  selectedSignalIds: Set<string>;
-  signals: EngSignal[];
-}) {
-  const normalizedSearch = search.trim().toLowerCase();
-  const signalCountByMessage = useMemo(() => {
-    const counts = new Map<string, number>();
-    signals.forEach((signal) => {
-      if (!signal.message_id) return;
-      counts.set(signal.message_id, (counts.get(signal.message_id) ?? 0) + 1);
-    });
-    return counts;
-  }, [signals]);
-  const filteredMessages = messages
-    .filter((item) => !normalizedSearch || [item.name, item.message_id_hex, item.id].some((value) => String(value ?? "").toLowerCase().includes(normalizedSearch)))
-    .slice(0, 80);
-  const filteredSignals = signals
-    .filter((item) => !normalizedSearch || [item.display_name, item.name, item.unit, item.id].some((value) => String(value ?? "").toLowerCase().includes(normalizedSearch)))
-    .slice(0, 120);
-  const selectedCount = mode === "ALL" ? messages.length + signals.length : mode === "MESSAGE" ? selectedMessageIds.size : selectedSignalIds.size;
-
-  function toggle(set: Set<string>, id: string, checked: boolean) {
-    const next = new Set(set);
-    if (checked) next.add(id);
-    else next.delete(id);
-    return next;
-  }
-
-  return (
-    <section className="panel simulation-scope-panel">
-      <div className="compact-heading">
-        <div>
-          <p className="eyebrow">Simulation scope</p>
-          <h2>Signale und Botschaften auswählen</h2>
-        </div>
-        <span>{mode === "ALL" ? "Default: alles" : `${selectedCount} ausgewählt`}</span>
-      </div>
-      <div className="simulation-scope-toolbar" role="group" aria-label="Simulationsumfang">
-        <button className={mode === "ALL" ? "active" : ""} onClick={() => onMode("ALL")} type="button">Alle</button>
-        <button className={mode === "MESSAGE" ? "active" : ""} onClick={() => onMode("MESSAGE")} type="button">Botschaften</button>
-        <button className={mode === "SIGNAL" ? "active" : ""} onClick={() => onMode("SIGNAL")} type="button">Signale</button>
-        <input aria-label="Signale und Botschaften suchen" onChange={(event) => onSearch(event.target.value)} placeholder="Suche nach Signal, Message, ID" value={search} />
-      </div>
-      {mode === "ALL" ? (
-        <div className="simulation-scope-summary">
-          <strong>Alle freigegebenen, gerouteten Botschaften und Signale werden simuliert.</strong>
-          <span>{messages.length} Botschaften · {signals.length} Signale im Modell; interne oder ungeroutete Signale erzeugen keine Buslast.</span>
-        </div>
-      ) : mode === "MESSAGE" ? (
-        <div className="simulation-scope-list">
-          {filteredMessages.map((message) => (
-            <label className={selectedMessageIds.has(message.id) ? "selected" : ""} key={message.id}>
-              <input checked={selectedMessageIds.has(message.id)} onChange={(event) => onSelectedMessages(toggle(selectedMessageIds, message.id, event.target.checked))} type="checkbox" />
-              <span>{message.name}</span>
-              <small>{message.message_id_hex ?? "Message"} · {signalCountByMessage.get(message.id) ?? 0} Signale · {message.cycle_ms ?? "-"} ms</small>
-            </label>
-          ))}
-          {!filteredMessages.length && <p>Keine Botschaften gefunden.</p>}
-        </div>
-      ) : (
-        <div className="simulation-scope-list dense">
-          {filteredSignals.map((signal) => (
-            <label className={selectedSignalIds.has(signal.id) ? "selected" : ""} key={signal.id}>
-              <input checked={selectedSignalIds.has(signal.id)} onChange={(event) => onSelectedSignals(toggle(selectedSignalIds, signal.id, event.target.checked))} type="checkbox" />
-              <span>{signal.display_name || signal.name}</span>
-              <small>{signal.unit || "unitless"} · {signal.length_bits ?? "-"} bit · {signal.message_id ?? "ohne Message"}</small>
-            </label>
-          ))}
-          {!filteredSignals.length && <p>Keine Signale gefunden.</p>}
-        </div>
       )}
     </section>
   );

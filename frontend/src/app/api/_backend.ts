@@ -1,4 +1,5 @@
-const BACKEND_BASE = process.env.SIMULATOR_API_URL ?? "http://127.0.0.1:15050/api";
+import { backendEndpoints } from "@/lib/backend-endpoints";
+const { simulator: BACKEND_BASE } = backendEndpoints(process.env);
 
 export function projectIdFromRequest(
   request: Request,

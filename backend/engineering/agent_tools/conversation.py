@@ -103,6 +103,18 @@ def begin(prompt, context, raw_input=None):
         state['current_requirement'] = prompt
         state['active_proposal'] = None
     state['selected_context'] = selected
+    if ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
+            and 'per Wizard-Uebernehmen bestaetigt' in prompt):
+        import re
+        import hashlib
+        from ..workflow.service import WorkflowStatusService
+        canonical_prompt = re.sub(r'\nFortsetzung des bestätigten Wizard-Auftrags:[^\r\n]*', '', prompt).strip()
+        request_contract = {'version': 1, 'prompt': canonical_prompt,
+            'sha256': hashlib.sha256(canonical_prompt.encode('utf-8')).hexdigest()}
+        workflow = WorkflowStatusService(current_project_id())
+        saved = workflow.get(summary=True)
+        if saved.get('context', {}).get('wizard_request') != request_contract:
+            workflow.set_context({'wizard_request': request_contract}, summary=True)
     state['run_id'] = str(uuid4())
     state['lease_until'] = (now + timedelta(seconds=300)).isoformat()
     write(state)
@@ -137,8 +149,9 @@ def record_event(run_id, event):
     if event.get('proposal'):
         state['active_proposal'] = event['proposal']['proposal_id']
         state['pending_approvals'] = list(dict.fromkeys([*state['pending_approvals'], state['active_proposal']]))[-100:]
-    if event.get('workload'):
-        state['active_workload'] = event['workload'].get('workload_id')
+    workload_id = (event.get('workload') or {}).get('workload_id')
+    if isinstance(workload_id, str) and workload_id.strip():
+        state['active_workload'] = workload_id
     if event['type'] == 'FINDING':
         state.setdefault('findings', {})[event['id']] = event
         state['findings'] = dict(list(state['findings'].items())[-100:])
@@ -193,6 +206,26 @@ def decide(finding_id, decision, rationale, review_on_change):
     return write(state)['decisions'][finding_id]
 
 
+def _history_proposal_references(messages):
+    """A chat cache carries references, never partial human-review contents."""
+    result = deepcopy(messages)
+    for message in result:
+        for part in message.get('parts', []):
+            data = part.get('data') if isinstance(part, dict) else None
+            proposal = data.get('proposal') if isinstance(data, dict) else None
+            if not isinstance(proposal, dict) or not proposal.get('proposal_id'):
+                continue
+            data['proposal'] = {
+                **{key: proposal[key] for key in ('proposal_id', 'proposal_type', 'revision', 'status', 'workload_id') if key in proposal},
+                'rationale': str(proposal.get('rationale', ''))[:2000],
+                'content_state': 'REFERENCE',
+                'change_count': proposal.get('change_count', len(proposal.get('changes') or [])),
+                'canonical_count': proposal.get('canonical_count', len(proposal.get('canonical_ids') or [])),
+                'changes': [], 'canonical_ids': [], 'assumptions': [], 'validation_result': {},
+            }
+    return result
+
+
 def history(messages=None, *, clear=False):
     state = read()
     if clear:
@@ -227,10 +260,10 @@ def history(messages=None, *, clear=False):
             if previous is None or len(message['parts']) > len(previous['parts']):
                 existing[message['id']] = message
         complete_questions = {_question_id(part) for message in existing.values() if not message['id'].startswith('restored-question-') for part in message['parts']}
-        state['ui_history'] = [message for message in existing.values() if not (message['id'].startswith('restored-question-') and message['id'].removeprefix('restored-question-') in complete_questions)][-60:]
+        state['ui_history'] = _history_proposal_references([message for message in existing.values() if not (message['id'].startswith('restored-question-') and message['id'].removeprefix('restored-question-') in complete_questions)][-60:])
         state['ui_updated_at'] = int(datetime.now(timezone.utc).timestamp() * 1000)
         write(state)
-    result = list(state.get('ui_history', []))
+    result = _history_proposal_references(state.get('ui_history', []))
     question_id = state.get('current_question')
     if not clear and question_id and not any(_question_id(part) == question_id for message in result for part in message['parts']):
         question = state['questions'][question_id]

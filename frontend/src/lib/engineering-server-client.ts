@@ -5,18 +5,9 @@
 import "server-only";
 
 import { currentAgentProjectId } from "@/lib/agent/request-context";
+import { backendEndpoints } from "@/lib/backend-endpoints";
 
-const DEFAULT_ENGINEERING_BASE = "http://127.0.0.1:15050/api/engineering";
-const configuredEngineeringBase =
-  process.env.SIMULATOR_ENGINEERING_API_URL ?? process.env.ENGINEERING_API_URL;
-const ENGINEERING_BASE = configuredEngineeringBase?.includes("/api/engineering")
-  ? configuredEngineeringBase.replace(/\/$/, "")
-  : DEFAULT_ENGINEERING_BASE;
-const DEFAULT_SIMULATOR_BASE = "http://127.0.0.1:15050/api";
-const configuredSimulatorBase = process.env.SIMULATOR_API_URL;
-const SIMULATOR_BASE = configuredSimulatorBase?.includes("/api")
-  ? configuredSimulatorBase.replace(/\/$/, "")
-  : DEFAULT_SIMULATOR_BASE;
+const { engineering: ENGINEERING_BASE, simulator: SIMULATOR_BASE } = backendEndpoints(process.env);
 
 type EngineeringRequestInit = RequestInit & { timeoutMs?: number };
 

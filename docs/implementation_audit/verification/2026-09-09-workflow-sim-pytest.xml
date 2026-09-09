@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="135" time="6.819" timestamp="2026-09-09T11:04:27.765830+02:00" hostname="Haranga"><testcase classname="tests.test_workflow" name="test_topology_artifact_accepts_canonical_hardware_interface_ports" time="0.001" /><testcase classname="tests.test_workflow" name="test_engineering_change_marks_existing_dependent_results_outdated" time="0.001" /><testcase classname="tests.test_workflow" name="test_parameter_change_only_invalidates_calculation_and_later_steps" time="0.001" /><testcase classname="tests.test_workflow" name="test_parameters_are_approved_by_default_and_ignore_upstream_changes" time="0.001" /><testcase classname="tests.test_workflow" name="test_parameter_artifact_approves_defaults_and_complete_configuration" time="0.001" /><testcase classname="tests.test_workflow" name="test_empty_future_steps_stay_empty_until_a_result_exists" time="0.001" /><testcase classname="tests.test_workflow" name="test_routing_artifact_check_rejects_gateway_fanout_interfaces" time="0.000" /><testcase classname="tests.test_workflow" name="test_completed_simulation_drops_previous_recalculation_reason" time="0.000" /><testcase classname="tests.test_workflow" name="test_can_fd_uses_separate_arbitration_and_data_phases" time="0.000" /><testcase classname="tests.test_workflow" name="test_ethernet_applies_minimum_wire_footprint" time="0.000" /><testcase classname="tests.test_workflow" name="test_unknown_protocol_is_explicitly_generic" time="0.000" /><testcase classname="tests.test_workflow" name="test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed" time="0.001" /><testcase classname="tests.test_workflow" name="test_utilization_queueing_and_thresholds_are_monotonic" time="0.000" /><testcase classname="tests.test_workflow" name="test_scheduling_policy_and_priority_change_queueing_estimate" time="0.000" /><testcase classname="tests.test_workflow" name="test_clock_drift_is_reported_in_milliseconds" time="0.000" /><testcase classname="tests.test_workflow" name="test_workflow_state_always_exposes_complete_agent_context" time="0.010" /><testcase classname="tests.test_workflow" name="test_workflow_context_persists_agent_execution_without_losing_wizard" time="0.001" /><testcase classname="tests.test_workflow" name="test_engineering_wizard_settings_are_normalized_and_project_persistent" time="0.001" /><testcase classname="tests.test_workflow" name="test_engineering_wizard_settings_fall_back_to_safe_complete_defaults" time="0.001" /><testcase classname="tests.test_workflow" name="test_canceled_wizard_run_is_terminal_for_late_status_writes" time="0.001" /><testcase classname="tests.test_workflow" name="test_workflow_state_hides_stale_reason_after_step_is_complete" time="0.000" /><testcase classname="tests.test_workflow" name="test_workflow_summary_omits_heavy_simulation_and_model_payloads" time="0.001" /><testcase classname="tests.test_workflow" name="test_topology_layout_change_ignores_only_visual_fields" time="0.000" /><testcase classname="tests.test_workflow" name="test_topology_layout_is_stored_as_project_scoped_node_rows" time="0.001" /><testcase classname="tests.test_workflow" name="test_preflight_maps_network_editor_status_to_network_category" time="2.050"><failure message="psycopg_pool.PoolTimeout: couldn't get a connection after 2.00 sec">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022164B46B50&gt;
+
+    def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
+        state = {
+            "versions": default_versions(),
+            "statuses": {
+                **default_statuses(),
+                "engineering_model": "COMPLETE",
+                "routing": "COMPLETE",
+                "network_editor": "IN_PROGRESS",
+                "parameters": "COMPLETE",
+                "capacity_timing": "COMPLETE",
+            },
+            "parameters": {},
+            "topology": {"nodes": [], "edges": []},
+        }
+        service = PreflightService("analysis-project")
+        monkeypatch.setattr(service.workflow, "get", lambda: state)
+        monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(
+            service.workflow,
+            "create_analysis_snapshot",
+            lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+        )
+        monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+        monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+    
+&gt;       response = service.run()
+                   ^^^^^^^^^^^^^
+
+backend\tests\test_workflow.py:571: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\engineering\capacity\service.py:991: in run
+    for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\engineering\addressing.py:441: in findings
+    policy = self.policy()
+             ^^^^^^^^^^^^^
+backend\engineering\addressing.py:185: in policy
+    with self._scope(connection) as conn:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+backend\engineering\db.py:185: in get_connection
+    pool = get_pool()
+           ^^^^^^^^^^
+backend\engineering\db.py:162: in get_pool
+    with candidate.connection() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\psycopg_pool\pool.py:184: in connection
+    conn = self.getconn(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;psycopg_pool.pool.ConnectionPool 'pool-1' at 0x22164b517f0&gt;
+timeout = 2.0
+
+    def getconn(self, timeout: float | None = None) -&gt; CT:
+        """Obtain a connection from the pool.
+    
+        You should preferably use `connection()`. Use this function only if
+        it is not possible to use the connection as context manager.
+    
+        After using this function you *must* call a corresponding `putconn()`:
+        failing to do so will deplete the pool. A depleted pool is a sad pool:
+        you don't want a depleted pool.
+        """
+        if timeout is None:
+            timeout = self.timeout
+        deadline = monotonic() + timeout
+    
+        logger.info("connection requested from %r", self.name)
+        self._stats[self._REQUESTS_NUM] += 1
+    
+        self._check_open_getconn()
+    
+        try:
+            return self._getconn_with_check_loop(deadline)
+        # Re-raise the timeout exception presenting the user the global
+        # timeout, not the per-attempt one.
+        except PoolTimeout:
+&gt;           raise PoolTimeout(
+                f"couldn't get a connection after {timeout:.2f} sec"
+            ) from None
+E           psycopg_pool.PoolTimeout: couldn't get a connection after 2.00 sec
+
+backend\.venv\Lib\site-packages\psycopg_pool\pool.py:218: PoolTimeout</failure></testcase><testcase classname="tests.test_workflow" name="test_preflight_accepts_interface_owned_directly_by_hardware" time="2.045"><failure message="psycopg_pool.PoolTimeout: couldn't get a connection after 2.00 sec">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000022164B47850&gt;
+
+    def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):
+        state = {
+            "versions": default_versions(),
+            "statuses": {
+                **default_statuses(),
+                "engineering_model": "COMPLETE",
+                "routing": "COMPLETE",
+                "network_editor": "COMPLETE",
+                "parameters": "COMPLETE",
+                "capacity_timing": "COMPLETE",
+            },
+            "parameters": {},
+            "topology": {"nodes": [], "edges": []},
+        }
+        objects = {
+            "HardwareNode": [{"id": "hardware", "name": "Basic sensor"}],
+            "Function": [],
+            "Interface": [{"id": "interface", "name": "Basic sensor interface", "hardware_node_id": "hardware", "function_id": None}],
+            "Message": [],
+            "Signal": [],
+        }
+        service = PreflightService("analysis-project")
+        monkeypatch.setattr(service.workflow, "get", lambda: state)
+        monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+        monkeypatch.setattr(
+            service.workflow,
+            "create_analysis_snapshot",
+            lambda *_args, **_kwargs: {"id": "preflight-snapshot"},
+        )
+        monkeypatch.setattr(
+            capacity_service_module,
+            "list_objects",
+            lambda object_type, **_kwargs: objects[object_type],
+        )
+        monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+    
+&gt;       response = service.run()
+                   ^^^^^^^^^^^^^
+
+backend\tests\test_workflow.py:613: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+backend\engineering\capacity\service.py:991: in run
+    for address_finding in LogicalNodeAddressAllocator(self.project_id).findings():
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend\engineering\addressing.py:441: in findings
+    policy = self.policy()
+             ^^^^^^^^^^^^^
+backend\engineering\addressing.py:185: in policy
+    with self._scope(connection) as conn:
+         ^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+backend\engineering\db.py:185: in get_connection
+    pool = get_pool()
+           ^^^^^^^^^^
+backend\engineering\db.py:162: in get_pool
+    with candidate.connection() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\marti\anaconda3\Lib\contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+backend\.venv\Lib\site-packages\psycopg_pool\pool.py:184: in connection
+    conn = self.getconn(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;psycopg_pool.pool.ConnectionPool 'pool-2' at 0x22164c00690&gt;
+timeout = 2.0
+
+    def getconn(self, timeout: float | None = None) -&gt; CT:
+        """Obtain a connection from the pool.
+    
+        You should preferably use `connection()`. Use this function only if
+        it is not possible to use the connection as context manager.
+    
+        After using this function you *must* call a corresponding `putconn()`:
+        failing to do so will deplete the pool. A depleted pool is a sad pool:
+        you don't want a depleted pool.
+        """
+        if timeout is None:
+            timeout = self.timeout
+        deadline = monotonic() + timeout
+    
+        logger.info("connection requested from %r", self.name)
+        self._stats[self._REQUESTS_NUM] += 1
+    
+        self._check_open_getconn()
+    
+        try:
+            return self._getconn_with_check_loop(deadline)
+        # Re-raise the timeout exception presenting the user the global
+        # timeout, not the per-attempt one.
+        except PoolTimeout:
+&gt;           raise PoolTimeout(
+                f"couldn't get a connection after {timeout:.2f} sec"
+            ) from None
+E           psycopg_pool.PoolTimeout: couldn't get a connection after 2.00 sec
+
+backend\.venv\Lib\site-packages\psycopg_pool\pool.py:218: PoolTimeout</failure></testcase><testcase classname="tests.test_workflow" name="test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_and_sync" time="0.002" /><testcase classname="tests.test_workflow" name="test_capacity_load_is_counted_once_per_physical_network_segment" time="0.001" /><testcase classname="tests.test_workflow" name="test_capacity_prefers_reviewed_topology_segment_over_logical_network" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[CONSTANT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[STEP]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[RAMP]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[LINEAR]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[SINE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[TRIANGLE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[SAWTOOTH]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[PULSE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[RANDOM_WALK]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[BOUNDED_RANDOM]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[STATE_DEPENDENT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[FORMULA]" time="0.002" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[LOOKUP_TABLE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[EXTERNAL_SERIES]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[PHYSICS_MODEL]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[STATE_MACHINE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_all_required_behavior_models_are_bounded_and_deterministic[STATUS_MODEL]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_physical_temperature_respects_rate_limits" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_counter_signal_wraps_by_modulus" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_emulation_preflight_blocks_invalid_formula" time="0.005" /><testcase classname="tests.test_model_based_simulation" name="test_signal_emulation_preflight_blocks_dependency_cycle" time="0.004" /><testcase classname="tests.test_model_based_simulation" name="test_signal_emulation_preflight_blocks_encoding_overflow" time="0.002" /><testcase classname="tests.test_model_based_simulation" name="test_motor_end_to_end_physics_model_produces_plausible_trace" time="0.104" /><testcase classname="tests.test_model_based_simulation" name="test_message_codec_encodes_engineering_factor_offset_and_start_bit" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_STUCK]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_OFFSET]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_DRIFT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_SPIKE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_DROPOUT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_NOISE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_OUT_OF_RANGE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_FROZEN]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_DELAYED]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_WRONG_SCALE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[SIGNAL_INVALID_VALUE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[INVALID_STATE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[STUCK_STATE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[WRONG_TRANSITION]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[DELAYED_TRANSITION]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[STUCK_TRUE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[STUCK_FALSE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[TOGGLE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[COUNTER_SKIP]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[COUNTER_RESET]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_signal_fault_catalog_is_executable[COUNTER_WRONG_INCREMENT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_LOSS]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_DELAY]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_JITTER]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_DUPLICATION]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_CORRUPTION]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_WRONG_CYCLE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[MESSAGE_TIMEOUT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[BURST_TRAFFIC]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[FRAME_ERROR]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[ROUTING_FAILURE]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[NETWORK_OVERLOAD]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[BUS_OFF]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[LINK_DOWN]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[GATEWAY_DELAY]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[GATEWAY_DROP]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[QUEUE_OVERFLOW]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[CONGESTION]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_transport_fault_catalog_is_executable[TEMPORARY_DISCONNECT]" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_same_seed_produces_byte_identical_signal_trace" time="0.007" /><testcase classname="tests.test_model_based_simulation" name="test_different_seed_changes_stochastic_trace" time="0.009" /><testcase classname="tests.test_model_based_simulation" name="test_model_run_writes_decoded_golden_fault_and_comparison_artifacts" time="0.017" /><testcase classname="tests.test_model_based_simulation" name="test_fresh_job_directory_writes_model_trace_without_universal_format" time="0.028" /><testcase classname="tests.test_model_based_simulation" name="test_project_enrichment_reconstructs_transport_config_server_side" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_runtime_load_is_derived_from_transmitted_frames" time="0.017" /><testcase classname="tests.test_model_based_simulation" name="test_engine_uses_min_max_unit_resolution_and_cycle" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_ai_fault_cannot_be_activated_without_review" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_cycle_time_and_resolution_are_visible_in_generated_trace" time="0.004" /><testcase classname="tests.test_model_based_simulation" name="test_fault_starts_and_ends_at_configured_time" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_fault_modifies_only_target_signal" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_formula_dependency_reacts_consistently" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_route_signals_are_ordered_before_derived_sampling" time="0.003" /><testcase classname="tests.test_model_based_simulation" name="test_signed_big_endian_message_roundtrip" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_normal_mode_suppresses_intentional_transport_faults" time="0.004" /><testcase classname="tests.test_model_based_simulation" name="test_stress_mode_increases_event_rate" time="0.007" /><testcase classname="tests.test_model_based_simulation" name="test_live_event_rows_have_required_analysis_context" time="0.016" /><testcase classname="tests.test_model_based_simulation" name="test_model_trace_limits_stored_samples_without_losing_totals" time="0.008" /><testcase classname="tests.test_model_based_simulation" name="test_model_trace_decimates_each_signal_across_full_duration" time="0.018" /><testcase classname="tests.test_model_based_simulation" name="test_universal_trace_reaches_configured_duration_when_event_budget_allows" time="0.055" /><testcase classname="tests.test_model_based_simulation" name="test_signal_engine_services_are_available_as_separate_contracts" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_gateway_state_machine_lifecycle_and_transition_validation" time="0.000" /><testcase classname="tests.test_model_based_simulation" name="test_motor_physics_is_state_dependent_and_continuous" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_short_drive_cycle_makes_exhaust_and_damper_signals_dynamic" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_german_rotational_speed_uses_the_shared_drive_cycle" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_coarse_rpm_resolution_does_not_deadlock_dense_sampling_at_zero" time="0.008" /><testcase classname="tests.test_model_based_simulation" name="test_mode_signal_exposes_the_operating_state_label" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_missing_low_level_behavior_is_completed_by_semantic_inference" time="0.002" /><testcase classname="tests.test_model_based_simulation" name="test_dependency_graph_rejects_cycles_and_reports_dirty_dependents" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_trace_marks_discrete_samples_as_step_lanes" time="0.003" /><testcase classname="tests.test_model_based_simulation" name="test_fault_catalog_describes_handlers_constraints_and_targets" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_fault_scenario_validator_checks_target_time_and_normal_mode" time="0.001" /><testcase classname="tests.test_model_based_simulation" name="test_contract_demo_scenarios_a_to_e_are_complete_and_review_gated" time="0.001" /><testcase classname="tests.test_simulation_service" name="test_workflow_simulation_caps_interactive_event_volume" time="0.003" /><testcase classname="tests.test_simulation_service" name="test_standalone_simulation_keeps_explicit_event_volume" time="0.002" /><testcase classname="tests.test_trace_contract_stability" name="test_seed_zero_is_not_silently_replaced_by_default" time="0.003" /><testcase classname="tests.test_trace_contract_stability" name="test_trace_keeps_canonical_route_ref_and_explicit_zero_jitter" time="0.005" /><testcase classname="tests.test_trace_contract_stability" name="test_gateway_fault_targets_are_validated_against_canonical_nodes" time="0.001" /><testcase classname="tests.test_acceptance_scenarios" name="test_cross_industry_normal_fault_trace_and_root_cause[A-CAN-FD-gateway-technologies0-fault0]" time="0.317" /><testcase classname="tests.test_acceptance_scenarios" name="test_cross_industry_normal_fault_trace_and_root_cause[B-industrial-technologies1-fault1]" time="0.037" /><testcase classname="tests.test_acceptance_scenarios" name="test_cross_industry_normal_fault_trace_and_root_cause[C-DDS-technologies2-fault2]" time="0.024" /><testcase classname="tests.test_acceptance_scenarios" name="test_cross_industry_normal_fault_trace_and_root_cause[D-mixed-gateway-technologies3-fault3]" time="0.040" /><testcase classname="tests.test_acceptance_scenarios" name="test_golden_comparison_aligns_delayed_frames_and_preserves_evidence" time="0.001" /></testsuite></testsuites>

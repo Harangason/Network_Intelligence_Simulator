@@ -39,3 +39,14 @@ export function symbolicProgressAt(from: number, to: number, elapsedMs: number) 
   const eased = 1 - (1 - elapsed) ** 3;
   return Math.round(Math.max(0, Math.min(100, from + (to - from) * eased)));
 }
+export function parametersAreWorking(
+  pending: boolean,
+  execution: { step: string; state: string } | null,
+  toolState?: string,
+) {
+  if (!pending) return false;
+  // Persisted execution is authoritative; old tool parts can survive a pause
+  // or a transition into another step.
+  if (execution) return execution.step === "parameters" && execution.state === "RUNNING";
+  return toolState === "input-streaming" || toolState === "input-available";
+}

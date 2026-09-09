@@ -419,10 +419,15 @@ class FaultInjectionEngine:
         for fault in self.faults:
             fault_type = normalize_fault_type(fault.get("type"))
             valid = fault_type in MESSAGE_FAULTS or fault_type in NETWORK_FAULTS
+            if fault_type in MESSAGE_FAULTS and (int(event.get("segment_index") or 0) > 0 or event.get("traffic_type") == "CONTROL"):
+                continue
             target_id = str(event.get("route_id") if fault_type in MESSAGE_FAULTS else event.get("network"))
             expected_target = str(_mapping(fault.get("target")).get("id") or "")
             message_targets = {str(item) for item in _sequence(event.get("message_ids"))}
-            target_matches = self._target_matches(fault, object_id=target_id, name=str(event.get("route_name") or "")) or bool(expected_target and expected_target in message_targets)
+            route_targets = {str(event.get("route_ref") or ""), str(event.get("canonical_route_id") or ""),
+                *[str(item) for item in _sequence(event.get("route_refs"))]}
+            target_matches = self._target_matches(fault, object_id=target_id, name=str(event.get("route_name") or "")) or bool(expected_target and (
+                expected_target in message_targets or (fault_type in MESSAGE_FAULTS and expected_target in route_targets)))
             if fault_type in {'GATEWAY_DROP', 'GATEWAY_DELAY'}:
                 target_matches = target_matches or bool(expected_target and expected_target in {
                     str(item) for item in _sequence(event.get('gateway_ids'))
@@ -546,7 +551,7 @@ class ModelBasedSimulationEngine:
             return self.derived.order(self.by_message[message_id])
         sender_interface = str(_mapping(route.get("sender")).get("interface_id") or "")
         engineering = _mapping(metadata.get("engineering"))
-        message_ids = [str(item) for item in _sequence(engineering.get("message_ids"))]
+        message_ids = [str(item) for item in _sequence(metadata.get("message_ids") or engineering.get("message_ids"))]
         if message_ids:
             return self.derived.order([signal for message in message_ids for signal in self.by_message.get(message, [])])
         candidates = [signal for signal in self.signals if str(signal.parameters.get("interface_id") or "") == sender_interface]

@@ -196,6 +196,26 @@ def test_identical_topology_can_be_reconfirmed_after_routing_edit(workspace):
     assert response.get_json()["statuses"]["network_editor"] == "COMPLETE"
 
 
+def test_manual_network_save_creates_physical_channels_and_preserves_unused_ports(workspace):
+    _, call = workspace
+    canvas = topology()
+    canvas["nodes"][0]["ports"].append({"id": "spare", "bus": "lin", "name": "Spare LIN"})
+    response = call("PUT", "/workflow/topology", {"topology": canvas})
+    assert response.status_code == 200, response.get_json()
+    saved = response.get_json()
+    ports = [port for node in saved["topology"]["nodes"] for port in node["ports"]]
+    assert {port["id"] for port in ports} == {"a-p", "b-p", "spare"}
+    physical = {item["id"]: item for item in call("GET", "/hardware-interfaces").get_json()["items"]}
+    for port in ports:
+        channel = physical[port["hardwareInterfaceId"]]
+        assert channel["network_ref"] == port["physicalNetworkId"]
+        assert channel["channel_index"] > 0 and channel["physical_port_ref"]
+    assert saved["artifact_checks"]["network_editor"]["complete"]
+    again = call("PUT", "/workflow/topology", {"topology": saved["topology"]})
+    assert again.status_code == 200, again.get_json()
+    assert call("GET", "/hardware-interfaces").get_json()["count"] == len(physical)
+
+
 def test_parallel_simulation_start_uses_one_frozen_snapshot(workspace, monkeypatch):
     from importlib import import_module
     simulation_api = import_module("backend.app.api")
@@ -270,7 +290,9 @@ def test_canonical_transport_has_executable_ports_and_produces_frames(workspace,
     project, call = workspace
     assert call("PUT", "/workflow/topology", {"topology": topology()}).status_code == 200
     route = call("GET", "/routing").get_json()["items"][0]
-    assert call("POST", f"/routing/{route['id']}/validate", {}).status_code == 200
+    validation = call("POST", f"/routing/{route['id']}/validate", {})
+    assert validation.status_code == 200, validation.get_json()
+    assert validation.get_json()["validation"]["valid"], validation.get_json()["validation"]
     approved = call("POST", "/routing/approve-selected", {"route_ids": [route["id"]], "actor": "test-reviewer"})
     assert approved.status_code == 200, approved.get_json()
     config = prepare_workflow_simulation_config({"duration_s": 0.1, "formats": ["universal-jsonl"], "seed": 42, "output_dir": str(tmp_path)}, project)

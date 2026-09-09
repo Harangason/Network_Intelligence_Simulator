@@ -21,6 +21,7 @@ from .models import (
     transition_state,
 )
 from ..project_context import activate_project
+from ..simulation_coverage import simulation_coverage, assess_simulation
 
 DEFAULT_PROJECT_ID = "default"
 
@@ -401,7 +402,7 @@ class WorkflowStatusService:
             "consistency": consistency,
         }
 
-    def _routing_artifact_check(self, connection) -> dict[str, Any]:
+    def _routing_artifact_check(self, connection, scope: dict | None = None) -> dict[str, Any]:
         counts = connection.execute(
             """
             SELECT COUNT(*) AS total,
@@ -453,13 +454,25 @@ class WorkflowStatusService:
         ).fetchone()
         fanout_routes = int(fanout["routes"] or 0)
         fanout_interfaces = int(fanout["interfaces"] or 0)
-        complete = total > 0 and approved == total and valid == total
+        messages = connection.execute(
+            "SELECT id, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+        ).fetchall()
+        signals = connection.execute(
+            "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
+        ).fetchall()
+        routes = connection.execute(
+            "SELECT id, payload, status FROM engineering_routing_entries WHERE project_id = %s "
+            "AND approval_state = 'APPROVED' AND validation ->> 'valid' = 'true'", (self.project_id,),
+        ).fetchall()
+        coverage = simulation_coverage(messages, signals, routes, scope)
+        complete = total > 0 and approved == total and valid == total and coverage["complete"]
         status = "APPROVED" if complete else (
             "ERROR" if invalid or fanout_routes else ("WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY"))
         )
         return {
             "status": status,
             "complete": complete,
+            "coverage": coverage,
             "counts": {
                 "total": total,
                 "approved": approved,
@@ -610,9 +623,19 @@ class WorkflowStatusService:
                     check["status"] = "IN_PROGRESS"
             return check
         if step == "routing":
-            return self._routing_artifact_check(connection)
+            return self._routing_artifact_check(connection, (state.get("parameters") or {}).get("simulation_scope"))
         if step == "network_editor":
-            return self._topology_artifact_check(state.get("topology") or {})
+            topology = state.get("topology") or {}
+            check = self._topology_artifact_check(topology)
+            if topology.get("nodes"):
+                from ..physical_ports import topology_port_findings
+                hardware = connection.execute("SELECT * FROM engineering_hardware_nodes WHERE project_id = %s", (self.project_id,)).fetchall()
+                interfaces = connection.execute("SELECT * FROM engineering_hardware_interfaces WHERE project_id = %s", (self.project_id,)).fetchall()
+                findings = topology_port_findings(topology, hardware, interfaces)
+                check["physical_findings"] = findings
+                if findings:
+                    check.update(complete=False, status="IN_PROGRESS")
+            return check
         if step == "parameters":
             return self._parameter_artifact_check(state.get("parameters") or {})
         raise ValueError(f"Kein Quellen-Artefaktcheck fuer {step!r}.")
@@ -780,6 +803,7 @@ class WorkflowStatusService:
         allowed = {
             "agent_execution",
             "agent_wizard_status",
+            "wizard_request",
             "active_workflow_step",
             "engineering_wizard_settings",
             "engineering_scope_rules",
@@ -841,6 +865,20 @@ class WorkflowStatusService:
             raise ValueError("parameters muss ein nicht-leeres Objekt sein.")
         with get_connection() as connection:
             state = self._get_locked(connection)
+            explicit_scope = "simulation_scope" in parameters
+            if not explicit_scope and "simulation_scope" in (state.get("parameters") or {}):
+                parameters = {**parameters, "simulation_scope": state["parameters"]["simulation_scope"]}
+            if explicit_scope:
+                from ..simulation_scope import normalize_simulation_scope
+                normalized_scope = normalize_simulation_scope(parameters["simulation_scope"])
+                previous_scope = (state.get("parameters") or {}).get("simulation_scope")
+                if normalize_simulation_scope(previous_scope) != normalized_scope:
+                    normalized_scope = normalize_simulation_scope(parameters["simulation_scope"], require_reason=True)
+                elif "simulation_scope" in state["parameters"]:
+                    # Preserve an unchanged legacy selection without forcing an
+                    # unrelated parameter edit to supply a new justification.
+                    normalized_scope = previous_scope
+                parameters = {**parameters, "simulation_scope": normalized_scope}
             unchanged = state["parameters"] == parameters
             check = self._parameter_artifact_check(parameters)
             already_current = state["statuses"]["parameters"] == check["status"]
@@ -1090,11 +1128,40 @@ class WorkflowStatusService:
         return self._serialize_row(row) if row else None
 
     def create_simulation_snapshot(self, configuration: dict[str, Any]) -> dict[str, Any]:
+        from ...app.build_info import build_info
+        from ..simulation_scope import normalize_simulation_scope
+        configuration = {**configuration, "release": build_info()}
         validation = self.latest_analysis("preflight")
         if not validation or validation["status"] not in {"COMPLETE", "APPROVED", "WARNING"}:
             raise WorkflowConflictError("Ein aktueller, erfolgreicher Preflight ist erforderlich.")
         with get_connection() as connection:
             state = self._get_locked(connection)
+            persisted_scope = normalize_simulation_scope((state.get("parameters") or {}).get("simulation_scope"))
+            scenario = configuration.get("scenario") or {}
+            for supplied_scope in (configuration.get("simulation_scope"), scenario.get("simulation_scope")):
+                if supplied_scope is not None and normalize_simulation_scope(supplied_scope) != persisted_scope:
+                    raise WorkflowConflictError("Der Simulationsumfang weicht vom Preflight ab. Umfang speichern und erneut prüfen.")
+            configuration = {**configuration, "simulation_scope": persisted_scope,
+                             "scenario": {**scenario, "simulation_scope": persisted_scope}}
+            model = configuration.get("engineering_model") or {}
+            if model:
+                # Scope filtering has already reduced the runtime model. Count
+                # against the canonical inventory while holding this project's
+                # lock; a supplied coverage claim is never an authorization.
+                messages = connection.execute(
+                    "SELECT id, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+                ).fetchall()
+                signals = connection.execute(
+                    "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
+                ).fetchall()
+                coverage = simulation_coverage(messages, signals,
+                                               configuration.get("communications") or [], persisted_scope)
+                if not coverage["complete"]:
+                    raise WorkflowConflictError(
+                        f"Simulationsumfang nicht vollständig ausführbar: {len(coverage['missing_message_ids'])} Nachrichten "
+                        f"und {len(coverage['missing_signal_ids'])} Signale ohne Transport. " + " ".join(coverage["errors"])
+                    )
+                configuration = {**configuration, "scope_coverage": coverage}
             validation_sources = validation["source_versions"]
             if any(
                 validation_sources.get(step) != state["versions"].get(step)
@@ -1202,6 +1269,14 @@ class WorkflowStatusService:
             )
             step = "simulation"
             if status == "COMPLETED":
+                assessment = assess_simulation(updated.get("configuration") or {}, result)
+                if isinstance(result, dict):
+                    result["assessment"] = assessment
+                    connection.execute(
+                        "UPDATE engineering_simulation_snapshots SET result = %s::jsonb WHERE id = %s AND project_id = %s",
+                        (_json(result), snapshot_id, self.project_id),
+                    )
+                next_state = set_step_status(next_state, "simulation", assessment["status"])
                 has_evidence = isinstance(result, dict) and bool(
                     result.get("runtime_metrics")
                     or result.get("trace")
@@ -1209,7 +1284,7 @@ class WorkflowStatusService:
                     or result.get("warnings")
                 )
                 if has_evidence:
-                    next_state = set_step_status(next_state, "results_analysis", "COMPLETE")
+                    next_state = set_step_status(next_state, "results_analysis", assessment["status"])
                     next_state["versions"]["results_analysis"] = int(
                         next_state["versions"].get("results_analysis", 0)
                     ) + 1
@@ -1233,6 +1308,11 @@ class WorkflowStatusService:
                         }
                         for item in warnings
                     ]
+                    if assessment["conformance"] != "PASS":
+                        findings.append({"severity": "ERROR" if assessment["conformance"] == "FAIL" else "WARNING",
+                                         "code": "SIMULATION_CONFORMANCE_" + assessment["conformance"],
+                                         "message": "Lauf beendet; Anforderungserfüllung oder vollständige Abdeckung ist nicht nachgewiesen.",
+                                         "assessment": assessment})
                     summary = {
                         "simulation_snapshot_id": str(snapshot_id),
                         "job_id": job_id or updated.get("job_id"),
@@ -1241,6 +1321,7 @@ class WorkflowStatusService:
                         "trace": result.get("trace") or {},
                         "hardware_validation": result.get("hardware_validation") or {},
                         "warning_count": len(warnings),
+                        "assessment": assessment,
                     }
                     connection.execute(
                         """
@@ -1248,7 +1329,7 @@ class WorkflowStatusService:
                             (project_id, analysis_type, source_versions, input_data, results,
                              findings, provenance, status)
                         VALUES (%s, 'results_analysis', %s::jsonb, %s::jsonb, %s::jsonb,
-                                %s::jsonb, %s::jsonb, 'COMPLETE')
+                                %s::jsonb, %s::jsonb, %s)
                         """,
                         (
                             self.project_id,
@@ -1264,6 +1345,7 @@ class WorkflowStatusService:
                                 "job_id": job_id or updated.get("job_id"),
                                 "timestamp": _now(),
                             }),
+                            assessment["status"],
                         ),
                     )
                     if next_state["statuses"].get("data_science_intelligence") != "EMPTY":

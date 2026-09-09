@@ -68,6 +68,16 @@ def test_structured_wizard_request_uses_fast_orchestration_path():
     assert _is_semantic_fast_request([{'role': 'user', 'content': 'Schreibe eine umfassende Systemarchitektur'}]) is False
 
 
+@pytest.mark.parametrize('prompt,fast', [
+    ('Prüfe das aktuelle Engineering-Modell und erkläre anhand des tatsächlichen Projektstands, welche Hardware-Knoten bereits vorhanden sind.', True),
+    ('Liste die vorhandenen Gateways.', True),
+    ('Erstelle 200 ECUs und konfiguriere ihre Interfaces.', False),
+    ('Prüfe die Hardware und ändere danach alle Kanalbindungen.', False),
+])
+def test_bounded_hardware_inventory_uses_fast_model_but_mutations_keep_main_reasoner(prompt, fast):
+    assert _is_semantic_fast_request([{'role': 'user', 'content': prompt}]) is fast
+
+
 def test_local_reasoner_does_not_duplicate_the_full_requirement_in_system_context():
     context = AgentContext(active_project_id='reasoner-context', current_requirement='X' * 20_000)
     serialized = _context_for_reasoning(context)
@@ -103,6 +113,60 @@ def test_local_reasoner_uses_native_non_thinking_tool_contract():
     assert captured['keep_alive'] == '10m'
     assert captured['messages'][-1]['content'].endswith('/no_think')
     assert result['calls'] == [{'id':'call-1', 'name':'inspect_project', 'arguments':{}}]
+
+
+def test_local_reasoner_keeps_user_query_and_native_tool_result_on_second_turn(monkeypatch):
+    captured = []
+    monkeypatch.setenv('LOCAL_AI_CONTEXT_TOKENS', '32768')
+
+    def handler(request):
+        payload = json.loads(request.content)
+        captured.append(payload)
+        assert payload['options']['num_ctx'] == 32768
+        assert sum(message['role'] == 'system' for message in payload['messages']) == 1
+        if len(captured) == 1:
+            return httpx.Response(200, json={'message': {'content': '', 'tool_calls': [
+                {'function': {'name': 'inspect_project', 'arguments': {}}}]}})
+        assert any(message['role'] == 'user' and 'Prüfe mein Projekt' in message['content'] for message in payload['messages'])
+        tool = next(message for message in payload['messages'] if message['role'] == 'tool')
+        assert tool['tool_name'] == 'inspect_project'
+        assert len(tool['content']) < 5000
+        return httpx.Response(200, json={'message': {'content': 'Das Projekt enthält zwei Hardwareknoten.'}})
+
+    async def invoke():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        try:
+            context = AgentContext(active_project_id='native-roundtrip')
+            messages = [{'role': 'user', 'content': 'Prüfe mein Projekt'}]
+            first = await reasoner.next(messages, context, [])
+            messages.extend([first['assistant_message'], {'role': 'tool', 'tool_call_id': first['calls'][0]['id'],
+                'content': json.dumps({'hardware': [{'name': 'Hardware' * 100} for _ in range(500)]})},
+                {'role': 'system', 'content': 'Nutze die tatsächlichen Daten.'}])
+            return await reasoner.next(messages, context, [])
+        finally:
+            await reasoner.close()
+    assert asyncio.run(invoke())['text'] == 'Das Projekt enthält zwei Hardwareknoten.'
+
+
+def test_native_schema_unwraps_mcp_request_and_malformed_model_arguments_are_repairable():
+    from backend.agent_core.orchestration.local_reasoner import _tool_parameters
+    schema = {'type': 'object', 'properties': {'request': {'$ref': '#/$defs/Input'}}, 'required': ['request'],
+        '$defs': {'Input': {'type': 'object', 'properties': {'hardware_id': {'type': 'string'}}, 'required': ['hardware_id']}}}
+    assert _tool_parameters(schema) == {'type': 'object', 'properties': {'hardware_id': {'type': 'string'}}, 'required': ['hardware_id']}
+
+    async def invoke():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(200, json={'message': {
+            'tool_calls': [{'function': {'name': 'inspect_hardware', 'arguments': {'request': 'please inspect the hardware'}}}]}})))
+        try:
+            return await reasoner.next([{'role': 'user', 'content': 'Zeige Hardware'}], AgentContext(active_project_id='bad-model-arguments'), [])
+        finally:
+            await reasoner.close()
+    result = asyncio.run(invoke())
+    assert result['calls'][0]['arguments'] == {'invalid_json_arguments': 'please inspect the hardware'}
 
 
 def test_local_reasoner_keeps_fast_semantic_model_warm(monkeypatch):

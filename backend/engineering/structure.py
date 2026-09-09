@@ -16,7 +16,7 @@ from .proposals import (
     validate_proposal,
 )
 from .relations import list_relations
-from .repository import PARENT_LINKS, get_object, update_object
+from .repository import PARENT_LINKS, get_object, update_object, parent_link_for_payload
 from .structure_rules import (
     infer_device_type,
     recommend_structure_name,
@@ -26,6 +26,14 @@ from .structure_rules import (
 STRUCTURE_TYPES = ("HardwareNode", "Function", "Interface", "Message", "Signal")
 STRUCTURE_MODEL = "structure-learner"
 STRUCTURE_MODEL_VERSION = "1.0"
+
+
+def _assignment_link(child_type: str, parent_type: str):
+    payload = {"function_id": "parent"} if parent_type == "Function" else {"hardware_node_id": "parent"}
+    link = parent_link_for_payload(child_type, payload)
+    if not link or link[1] != parent_type:
+        raise EngineeringValidationError(f"Ungültige Hierarchiekante: {parent_type} -> {child_type}.")
+    return link
 
 
 def _learning_key(child: dict[str, Any], parent: dict[str, Any], relation_type: str) -> str:
@@ -74,7 +82,13 @@ def _selection_objects(data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         result[object_type] = [get_object(object_type, object_id) for object_id in unique_ids]
     if len(result["HardwareNode"]) != 1:
         raise EngineeringValidationError("Genau ein Hardware-Knoten muss ausgewählt sein.")
+    hardware = result["HardwareNode"][0]
+    direct = hardware.get("device_class") in (0, 1, 2)
     for object_type in STRUCTURE_TYPES[1:]:
+        if object_type == "Function" and direct:
+            if result[object_type]:
+                raise EngineeringValidationError("Klasse 0–2: Schnittstellen direkt an Hardware zuordnen; keine eigene Funktion erforderlich.")
+            continue
         if not result[object_type]:
             raise EngineeringValidationError(f"Mindestens ein {object_type}-Objekt muss ausgewählt sein.")
     return result
@@ -87,7 +101,8 @@ def evaluate_structure(data: dict[str, Any]) -> dict[str, Any]:
     proposed_objects: list[dict[str, Any]] = []
 
     for child_type in STRUCTURE_TYPES[1:]:
-        parent_field, parent_type, relation_type = PARENT_LINKS[child_type]
+        parent_type = "HardwareNode" if child_type == "Interface" and not selections["Function"] else PARENT_LINKS[child_type][1]
+        parent_field, parent_type, relation_type = _assignment_link(child_type, parent_type)
         parents = selections[parent_type]
         for child in selections[child_type]:
             ranked: list[tuple[float, dict[str, Any], list[str], str]] = []
@@ -226,13 +241,11 @@ def apply_structure(data: dict[str, Any]) -> dict[str, Any]:
         child_id = str(assignment.get("child_id") or "")
         parent_type = str(assignment.get("parent_type") or "")
         parent_id = str(assignment.get("parent_id") or "")
-        parent_link = PARENT_LINKS.get(child_type)
-        if not parent_link or parent_link[1] != parent_type:
-            raise EngineeringValidationError(
-                f"Ungültige Hierarchiekante: {parent_type} -> {child_type}."
-            )
+        _assignment_link(child_type, parent_type)
         get_object(child_type, child_id)
-        get_object(parent_type, parent_id)
+        parent = get_object(parent_type, parent_id)
+        if child_type == "Interface" and parent_type == "HardwareNode" and parent.get("device_class") not in (0, 1, 2):
+            raise EngineeringValidationError("Dieses Gerät benötigt ein Funktionsmodell. Wähle eine seiner Funktionen.")
 
     for raw_update in data.get("object_updates") or []:
         if not isinstance(raw_update, dict):
@@ -265,15 +278,13 @@ def apply_structure(data: dict[str, Any]) -> dict[str, Any]:
         child_id = str(assignment.get("child_id") or "")
         parent_type = str(assignment.get("parent_type") or "")
         parent_id = str(assignment.get("parent_id") or "")
-        parent_link = PARENT_LINKS.get(child_type)
-        if not parent_link or parent_link[1] != parent_type:
-            raise EngineeringValidationError(
-                f"Ungültige Hierarchiekante: {parent_type} -> {child_type}."
-            )
+        parent_link = _assignment_link(child_type, parent_type)
         parent_field, _, relation_type = parent_link
         child = get_object(child_type, child_id)
         parent = get_object(parent_type, parent_id)
         updates: dict[str, Any] = {parent_field: parent_id}
+        if child_type == "Interface" and parent_type == "HardwareNode":
+            updates["function_id"] = None
         requested_name = str(assignment.get("name") or "").strip()
         if requested_name and requested_name != child.get("name"):
             updates["name"] = requested_name

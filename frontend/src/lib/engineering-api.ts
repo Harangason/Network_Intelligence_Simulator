@@ -428,9 +428,9 @@ export function rejectEngineeringProposal(id: string): Promise<EngineeringPropos
 
 export const RESOURCE_LABELS: Record<EngineeringResource, string> = {
   "hardware-nodes": "Hardware-Knoten",
-  "hardware-interfaces": "Hardware Interfaces",
+  "hardware-interfaces": "Physische Anschlüsse",
   functions: "Funktionen",
-  interfaces: "Interfaces",
+  interfaces: "Kommunikationsschnittstellen",
   messages: "Nachrichten",
   signals: "Signale",
 };

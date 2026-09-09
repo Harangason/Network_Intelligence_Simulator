@@ -25,6 +25,9 @@ export type EngineeringAgentEvent = {
   created_at?: string;
 };
 export type EngineeringProposal = {
+  content_state?: "REFERENCE" | "FULL";
+  change_count?: number;
+  canonical_count?: number;
   proposal_id: string;
   proposal_type: string;
   revision: string;

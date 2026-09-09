@@ -181,7 +181,7 @@ function Overview({ snapshot, proposals, onCreate, onApprove, onApproveAll }: { 
       <div className="intelligence-overview-grid">
         <section className="intelligence-section">
           <div className="section-heading"><div><p className="eyebrow">System health</p><h3>Coverage & Compliance</h3></div></div>
-          <div className="score-list">{Object.entries(health.metrics).map(([name, value]) => <ScoreBar key={name} label={METRIC_LABELS[name] ?? label(name)} value={value} />)}</div>
+          <div className="score-list">{Object.entries(health.metrics).map(([name, value]) => <ScoreBar key={name} label={METRIC_LABELS[name] ?? label(name)} value={value} evaluated={!health.unevaluated_metrics?.includes(name)} evidence={health.metric_evidence?.[name]} />)}</div>
         </section>
         <section className="intelligence-section">
           <div className="section-heading"><div><p className="eyebrow">Maturity</p><h3>{maturity.level} {maturity.level_name}</h3></div><strong>{maturity.overall_score.toFixed(0)} %</strong></div>
@@ -364,8 +364,8 @@ function RecordList({ data }: { data: Record<string, unknown> }) {
   return <dl className="overview-list">{rows.map(([key, value]) => <div key={key}><dt>{label(key)}</dt><dd>{Array.isArray(value) ? value.length : typeof value === "object" ? Object.keys(value as object).length : formatValue(value)}</dd></div>)}</dl>;
 }
 
-function ScoreBar({ label: barLabel, value }: { label: string; value: number }) {
-  return <div className="score-row"><div><span>{barLabel}</span><strong>{value.toFixed(1)} %</strong></div><div className="score-track"><i style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></div></div>;
+function ScoreBar({ label: barLabel, value, evaluated = true, evidence }: { label: string; value: number; evaluated?: boolean; evidence?: string }) {
+  return <div className="score-row" title={evidence}><div><span>{barLabel}</span><strong>{evaluated ? `${value.toFixed(1)} %` : "Nicht geprüft"}</strong></div><div className="score-track"><i style={{ width: `${evaluated ? Math.max(0, Math.min(100, value)) : 0}%` }} /></div></div>;
 }
 
 function Status({ value }: { value: string }) {

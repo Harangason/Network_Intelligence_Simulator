@@ -1,6 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parameterProgressTarget, symbolicProgressAt } from "./wizard-progress.ts";
+import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt } from "./wizard-progress.ts";
+
+test("only running step four animates, including a resumed backend run", () => {
+  for (const step of ["engineering_model", "routing", "network_editor", "capacity_timing", "validation", "simulation", "results_analysis", "data_science_intelligence"]) {
+    assert.equal(parametersAreWorking(true, { step, state: "RUNNING" }, "input-available"), false, step);
+  }
+  assert.equal(parametersAreWorking(true, { step: "parameters", state: "RUNNING" }), true);
+  for (const state of ["BLOCKED", "REVIEW_REQUIRED", "READY_TO_CONTINUE", "COMPLETED", "CANCELED"]) {
+    assert.equal(parametersAreWorking(true, { step: "parameters", state }, "input-available"), false, state);
+  }
+  assert.equal(parametersAreWorking(false, { step: "parameters", state: "RUNNING" }), false);
+  assert.equal(parametersAreWorking(true, null, "input-streaming"), true);
+  assert.equal(parametersAreWorking(true, null, "output-available"), false);
+});
 
 test("approved default parameters use the canonical workflow completion", () => {
   assert.equal(parameterProgressTarget(false, undefined, 100), 100);

@@ -480,14 +480,13 @@ function displayRoutesForClusters(clusters: EquipmentCluster[], allDevices: Extr
   for (const cluster of clusters) {
     if (!/powertrain|traction|antrieb/.test(`${cluster.id} ${cluster.label}`.toLowerCase())) continue;
     const sources = cluster.devices.filter((chain) => isEngineeringControllerDevice(chain.device_type));
-    cluster.hmiRoutes = sources.slice(0, 4).flatMap((source) => hmis.slice(0, 2).map((target) => ({
+    cluster.hmiRoutes = sources.flatMap((source) => hmis.filter(target => target.hardware_name !== source.hardware_name).map((target) => ({
       source: source.hardware_name,
       target: target.hardware_name,
       signals: cluster.devices
-        .filter((chain) => chain.hardware_name === source.hardware_name || chain.device_type === "SensorController")
+        .filter((chain) => chain.hardware_name === source.hardware_name)
         .map((chain) => chain.signal_display_name || chain.signal_name)
-        .filter(Boolean)
-        .slice(0, 4),
+        .filter(Boolean),
       path: [source.hardware_name, cluster.recommendedNetworkLabel, "Gateway", target.hardware_name],
     })));
   }

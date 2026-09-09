@@ -9,7 +9,7 @@ from copy import deepcopy
 from uuid import uuid4
 from psycopg.types.json import Jsonb
 from backend.agent_core.api.tool_contract import EngineeringProposal
-from ..db import get_connection, ConcurrentUpdateError, check_revision, mark_model_changed
+from ..db import get_connection, ConcurrentUpdateError, check_revision, flush_model_changes
 from ..project_context import current_project_id
 from .. import proposals as legacy
 from ..repository import ENTITY_SPECS, get_object, create_object, update_object, delete_object, parent_link_for_payload
@@ -22,6 +22,32 @@ from .audit import record
 
 ARTIFACT_TYPES = {"StatusModel", "DataObject", "SignalBehavior"}
 MAX_PROPOSAL_CHANGES = 10_000
+
+
+def order_change_dependencies(changes: list[dict]) -> list[dict]:
+    """Use the same nested references for review ordering and sequential apply."""
+    from graphlib import TopologicalSorter, CycleError
+
+    def references(value):
+        if isinstance(value, str) and value.startswith('$'):
+            return {value[1:]}
+        if isinstance(value, dict):
+            return set().union(*(references(item) for item in value.values()))
+        if isinstance(value, list):
+            return set().union(*(references(item) for item in value))
+        return set()
+
+    indexed = {change['local_ref']: change for change in changes}
+    if len(indexed) != len(changes):
+        raise EngineeringValidationError('Doppelte lokale Referenz.')
+    dependencies = {key: references(change.get('data') or {}) for key, change in indexed.items()}
+    missing = set().union(*dependencies.values()) - indexed.keys()
+    if missing:
+        raise EngineeringValidationError('Nicht aufgelöste Referenzen: ' + ', '.join(sorted(missing)))
+    try:
+        return [indexed[key] for key in TopologicalSorter(dependencies).static_order()]
+    except CycleError as error:
+        raise EngineeringValidationError('Zyklische lokale Referenzen im Vorschlag.') from error
 
 
 def _write(proposal_id: str, contract: dict, *, legacy_status: str | None = None) -> dict:
@@ -86,6 +112,7 @@ def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptio
             target = get_object(change["object_type"], change["object_id"])
             change["expected_version"] = target["version"]
             change["object_name"] = target["name"]
+    normalized = order_change_dependencies(normalized)
     row = legacy.create_proposal({"proposal_type": proposal_type, "prompt": rationale,
         "proposed_objects": normalized, "evidence": evidence or [], "confidence": confidence,
         "model": "python-engineering-core", "created_by": "engineering-agent"})
@@ -103,6 +130,7 @@ def _validate_changes(changes: list[dict]) -> dict:
         try:
             kind, action = change["object_type"], change["action"]
             data = change.get("data") or {}
+            _resolve(data, {key: '$' + key for key in known})
             if action not in {"CREATE", "UPDATE", "DELETE"}:
                 raise ValueError("Unbekannte Änderung.")
             ref = change["local_ref"]
@@ -186,10 +214,10 @@ def _validate_topology_inventory(row: dict, changes: list[dict]) -> list[dict]:
     if row.get('proposal_type') not in {'CAPACITY_NETWORK_REPAIR', 'WIZARD_NETWORK_TOPOLOGY'}:
         return []
     from ..intelligence.network_planning import communication_system_inventory, physical_network_inventory
-    from ..intelligence.resource_policy import planning_policy, resource_decision
+    from ..intelligence.resource_policy import planning_policy, planning_inventory, resource_decision
     state = WorkflowStatusService(current_project_id()).get()
     wizard = (state.get('context') or {}).get('agent_wizard_status') or {}
-    inventory = communication_system_inventory(wizard.get('agent_prompt') or '')
+    inventory = planning_inventory(state)
     policy = planning_policy(state)
     findings = []
     for change in changes:
@@ -312,7 +340,12 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             item = approve_routes([str(item["id"])],actor=contract["approved_by"])[0]
         elif kind == "NetworkTopology":
             topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
+            flush_model_changes(actor=actor, reason='Freigegebene Hardwarekanäle für die physische Topologie übernommen.')
             WorkflowStatusService(current_project_id()).save_topology(topology, actor=actor)
+            from ..routing.network_sync import reconcile_linked_routes
+            reconcile_linked_routes(current_project_id(), topology, actor=actor)
+            WorkflowStatusService(current_project_id()).refresh_source_status('routing', actor=actor,
+                reason='Freigegebene Routen mit den bestätigten physischen Hardwarekanälen geprüft.')
             item = {"id": "workflow-network-topology", "name": data.get("name") or "Netzwerktopologie"}
         elif kind == "SimulationScenario":
             item = save_scenario({**data, "created_by": contract["approved_by"]})
@@ -347,8 +380,6 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     if contract.get("workload_id"):
         from ..workloads import EngineeringWorkloadOrchestrator
         EngineeringWorkloadOrchestrator(current_project_id()).evaluate_workload_completion(contract["workload_id"], actor=actor)
-    if any(change["object_type"] in ENTITY_SPECS for change in contract["changes"]):
-        mark_model_changed()
     record(trace_id, actor, "APPLY", "apply_approved_proposal", "APPLIED", {"proposal_id": proposal_id, "canonical_ids": canonical})
     return result
 
