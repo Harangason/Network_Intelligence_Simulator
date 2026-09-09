@@ -296,6 +296,26 @@ class RoutingValidator:
             if message_id not in messages:
                 error("MESSAGE_NOT_FOUND", f"Die referenzierte Message {message_id} existiert nicht.")
         message = messages.get(message_ids[0]) if message_ids else None
+        for message_id in message_ids:
+            bound_message = messages.get(message_id)
+            if bound_message is None:
+                continue
+            message_name = str(bound_message.get("name") or message_id)
+            message_interface_id = str(bound_message.get("interface_id") or "")
+            if message_interface_id and message_interface_id != source_interface_id:
+                error(
+                    "MESSAGE_SOURCE_INTERFACE_MISMATCH",
+                    f"Message {message_name} ist an das logische Interface {message_interface_id} gebunden; "
+                    f"die Route verwendet als Source {source_interface_id or 'kein logisches Interface'}.",
+                )
+            message_hardware_interface_id = str(bound_message.get("hardware_interface_id") or "")
+            if message_hardware_interface_id and message_hardware_interface_id != source_port_id:
+                error(
+                    "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH",
+                    f"Message {message_name} ist an das physische Hardware Interface "
+                    f"{message_hardware_interface_id} gebunden; die Route verwendet als Source "
+                    f"{source_port_id or 'kein physisches Hardware Interface'}.",
+                )
 
         signal_ids = [str(item) for item in payload.get("signal_ids", []) if item]
         signals = self._rows("engineering_signals", signal_ids)

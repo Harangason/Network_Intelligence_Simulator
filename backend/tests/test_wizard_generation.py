@@ -97,6 +97,213 @@ Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperaturse
     assert result.success, result
 
 
+def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monkeypatch):
+    def chain(name, device_type, interface_type, network_ref):
+        return {
+            'hardware_name': name,
+            'hardware_description': f'{name} hardware',
+            'device_type': device_type,
+            'device_class': 3 if device_type == 'ECU' else 1,
+            'function_name': f'{name}Function',
+            'function_description': f'{name} function',
+            'interface_name': f'{name}_{interface_type}',
+            'interface_type': interface_type,
+            'transport_network_ref': network_ref,
+            'message_name': f'{name}Data',
+            'message_id_hex': None,
+            'direction': 'tx',
+            'cycle_ms': 20,
+            'dlc': 8,
+            'signal_name': f'{name}Status',
+            'start_bit': 0,
+            'length_bits': 8,
+            'byte_order': 'little_endian',
+            'data_type': 'uint8',
+            'factor': 1,
+            'offset_value': 0,
+        }
+
+    spec = {
+        'domain': 'Automotive',
+        'modelType': 'automotive',
+        'targetCounts': {'gateways': 0, 'ecus': 1, 'sensors': 0, 'actuators': 1},
+        'communicationSystemCounts': {'can_fd': 1, 'lin': 1},
+        'chains': [
+            chain('Abgasnachbehandlung', 'ECU', 'CAN_FD', 'Antriebsstrang'),
+            chain(
+                'AbgasnachbehandlungSchaltausgang',
+                'ActuatorController',
+                'LIN',
+                'Antriebsstrang-IO-abgasnachbehandlung-lin',
+            ),
+        ],
+    }
+    graph = [{
+        'network_id': 'can_fd',
+        'bus_name': 'Antriebsstrang',
+        'controllers': [{
+            'ecu': 'Abgasnachbehandlung',
+            'sensors': [],
+            'actuators': ['AbgasnachbehandlungSchaltausgang'],
+        }],
+    }]
+    prompt = '- Systemcluster-Graph: ' + json.dumps(graph, separators=(',', ':'))
+    captured = {}
+
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda _kind: [])
+    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _prompt: spec)
+
+    def capture(proposal_type, changes, summary, **metadata):
+        captured.update(proposal_type=proposal_type, changes=changes, summary=summary, metadata=metadata)
+        return captured
+
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create', capture)
+
+    proposal = wizard_generation.generate({'prompt': prompt})
+    changes = proposal['changes']
+    by_ref = {'$' + item['local_ref']: item for item in changes if item.get('local_ref')}
+    local_interface = next(
+        item for item in changes
+        if item['object_type'] == 'Interface' and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO'
+    )
+    local_port = next(
+        item for item in changes
+        if item['object_type'] == 'HardwareNetworkInterface'
+        and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO'
+    )
+    local_message = next(
+        item for item in changes
+        if item['object_type'] == 'Message'
+        and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO_Command'
+    )
+    actuator = next(
+        item for item in changes
+        if item['object_type'] == 'HardwareNode'
+        and item['data']['name'] == 'AbgasnachbehandlungSchaltausgang'
+    )
+    backbone_message = next(
+        item for item in changes
+        if item['object_type'] == 'Message' and item['data']['name'] == 'AbgasnachbehandlungData'
+    )
+
+    assert local_message['data']['direction'] == 'tx'
+    assert by_ref[local_message['data']['interface_id']] is local_interface
+    assert by_ref[local_message['data']['hardware_interface_id']] is local_port
+    assert local_port['data']['technology'] == local_interface['data']['interface_type'] == 'LIN'
+    assert local_port['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin'
+    assert local_message['data']['configuration']['transport_unit']['consumer_refs'] == ['$' + actuator['local_ref']]
+    assert backbone_message['data']['interface_id'] != local_message['data']['interface_id']
+    assert backbone_message['data']['hardware_interface_id'] != local_message['data']['hardware_interface_id']
+
+
+def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_message(monkeypatch):
+    nodes = [
+        {'id': 'ecu', 'name': 'Abgasnachbehandlung', 'device_type': 'ECU'},
+        {'id': 'actuator', 'name': 'AbgasnachbehandlungSchaltausgang', 'device_type': 'ActuatorController'},
+        {'id': 'hmi', 'name': 'Kombiinstrument', 'device_type': 'ECU'},
+        {'id': 'gateway', 'name': 'System', 'device_type': 'Gateway'},
+    ]
+    interfaces = [
+        {'id': 'ecu-can', 'name': 'Abgasnachbehandlung_CAN_FD', 'hardware_node_id': 'ecu', 'interface_type': 'CAN_FD'},
+        {'id': 'ecu-lin', 'name': 'Abgasnachbehandlung_LIN_IO', 'hardware_node_id': 'ecu', 'interface_type': 'LIN'},
+        {'id': 'actuator-lin', 'name': 'Schaltausgang_LIN', 'hardware_node_id': 'actuator', 'interface_type': 'LIN'},
+        {'id': 'hmi-ethernet', 'name': 'Kombiinstrument_Ethernet', 'hardware_node_id': 'hmi', 'interface_type': 'Ethernet'},
+    ]
+    hardware_interfaces = [
+        {'id': 'ecu-can-port', 'hardware_node_id': 'ecu', 'technology': 'CAN_FD', 'network_ref': 'Antriebsstrang'},
+        {'id': 'ecu-lin-port', 'hardware_node_id': 'ecu', 'technology': 'LIN', 'network_ref': 'Local-LIN'},
+        {'id': 'actuator-lin-port', 'hardware_node_id': 'actuator', 'technology': 'LIN', 'network_ref': 'Local-LIN'},
+        {'id': 'hmi-ethernet-port', 'hardware_node_id': 'hmi', 'technology': 'Ethernet', 'network_ref': 'Infotainment'},
+    ]
+    messages = [
+        {
+            'id': 'backbone-message',
+            'name': 'AbgasnachbehandlungData',
+            'interface_id': 'ecu-can',
+            'hardware_interface_id': 'ecu-can-port',
+            'direction': 'tx',
+        },
+        {
+            'id': 'local-actuator-message',
+            'name': 'Abgasnachbehandlung_LIN_IO_Command',
+            'interface_id': 'ecu-lin',
+            'hardware_interface_id': 'ecu-lin-port',
+            'direction': 'tx',
+            'configuration': {'transport_unit': {'consumer_refs': ['actuator']}},
+        },
+    ]
+    objects = {
+        'HardwareNode': nodes,
+        'Interface': interfaces,
+        'HardwareNetworkInterface': hardware_interfaces,
+        'Message': messages,
+    }
+    graph = [{
+        'controllers': [{
+            'ecu': 'Abgasnachbehandlung',
+            'sensors': [],
+            'actuators': ['AbgasnachbehandlungSchaltausgang'],
+        }],
+        'hmi_routes': [{'source': 'Abgasnachbehandlung', 'target': 'Kombiinstrument'}],
+    }]
+    prompt = '- Systemcluster-Graph: ' + json.dumps(graph, separators=(',', ':'))
+    calls = []
+
+    class FakeRoutingGenerationService:
+        def generate_route(self, *, source_node_id, destination_node_id, message_id):
+            calls.append((source_node_id, destination_node_id, message_id))
+            local = message_id == 'local-actuator-message'
+            destination_protocol = 'LIN' if destination_node_id == 'actuator' else 'ETHERNET'
+            return {
+                'name': f'{source_node_id} to {destination_node_id}',
+                'source': {
+                    'node_id': source_node_id,
+                    'interface_id': 'ecu-lin' if local else 'ecu-can',
+                    'port_id': 'ecu-lin-port' if local else 'ecu-can-port',
+                    'network_id': 'Local-LIN' if local else 'Antriebsstrang',
+                    'protocol': 'LIN' if local else 'CAN_FD',
+                },
+                'payload': {'message_id': message_id, 'signal_ids': []},
+                'destinations': [{'node_id': destination_node_id, 'protocol': destination_protocol}],
+                'route': {
+                    'hops': [{'node_id': source_node_id}, {'node_id': destination_node_id}],
+                    'gateways': [],
+                    'transformations': [],
+                    'priority': 'NORMAL',
+                },
+                'timing': {},
+                'routing_policy': {},
+                'validation': {'valid': True},
+            }
+
+    captured = {}
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda kind: objects[kind])
+    monkeypatch.setattr(wizard_generation, 'RoutingGenerationService', FakeRoutingGenerationService)
+
+    def capture(proposal_type, changes, summary, **metadata):
+        captured.update(proposal_type=proposal_type, changes=changes, summary=summary, metadata=metadata)
+        return captured
+
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create', capture)
+
+    proposal = wizard_generation.generate_routing({'prompt': prompt})
+    actuator_route, hmi_route = [item['data'] for item in proposal['changes']]
+
+    assert calls == [
+        ('ecu', 'actuator', 'local-actuator-message'),
+        ('ecu', 'hmi', 'backbone-message'),
+    ]
+    assert actuator_route['payload']['message_id'] == 'local-actuator-message'
+    assert actuator_route['source']['interface_id'] == 'ecu-lin'
+    assert actuator_route['source']['port_id'] == 'ecu-lin-port'
+    assert actuator_route['route']['gateways'] == []
+    assert hmi_route['payload']['message_id'] == 'backbone-message'
+    assert hmi_route['route']['gateways'] == [{'node_id': 'gateway', 'name': 'System'}]
+    assert hmi_route['route']['transformations'][0]['type'] == 'PROTOCOL_TRANSLATION'
+
+
 def test_semantic_network_assignment_keeps_powertrain_on_one_named_can():
     motor = {'name': 'Motorsteuerung', 'device_type': 'ECU'}
     fuel = {'name': 'Kraftstoffsystem', 'device_type': 'ECU'}
@@ -229,7 +436,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
             return await EngineeringAgent(client, reasoner=NoReasoner()).run(
                 continuation_prompt, AgentContext(active_project_id=authority.project_id))
     routed = asyncio.run(route_continuation())
-    assert routed['status'] == 'READY_FOR_REVIEW', routed.get('proposals', [{}])[0].get('validation_result', routed)
+    assert routed['status'] == 'READY_FOR_REVIEW', routed
     routing_proposal = routed['proposals'][0]
     assert routing_proposal['proposal_type'] == 'WIZARD_ROUTING'
     assert routing_proposal['status'] == 'VALIDATED'

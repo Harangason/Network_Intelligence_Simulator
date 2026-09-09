@@ -14,10 +14,14 @@ SOURCE = "00000000-0000-0000-0000-000000000001"
 TARGET = "00000000-0000-0000-0000-000000000002"
 SOURCE_INTERFACE = "00000000-0000-0000-0000-000000000011"
 TARGET_INTERFACE = "00000000-0000-0000-0000-000000000012"
+OTHER_SOURCE_INTERFACE = "00000000-0000-0000-0000-000000000013"
 MESSAGE = "00000000-0000-0000-0000-000000000021"
 MESSAGE_2 = "00000000-0000-0000-0000-000000000022"
 SIGNAL = "00000000-0000-0000-0000-000000000031"
 GATEWAY = "00000000-0000-0000-0000-000000000041"
+SOURCE_PORT = "00000000-0000-0000-0000-000000000051"
+TARGET_PORT = "00000000-0000-0000-0000-000000000052"
+OTHER_SOURCE_PORT = "00000000-0000-0000-0000-000000000053"
 
 
 def route_payload(**overrides):
@@ -35,11 +39,20 @@ def route_payload(**overrides):
 
 
 class FakeValidator(RoutingValidator):
-    def __init__(self, *, signal_bits=32, source_type="CAN_FD", target_type="CAN_FD", gateway=False):
+    def __init__(
+        self,
+        *,
+        signal_bits=32,
+        source_type="CAN_FD",
+        target_type="CAN_FD",
+        gateway=False,
+        message_bindings=None,
+    ):
         self.signal_bits = signal_bits
         self.source_type = source_type
         self.target_type = target_type
         self.gateway = gateway
+        self.message_bindings = message_bindings or {}
 
     def _rows(self, table, ids):
         rows = {}
@@ -50,11 +63,24 @@ class FakeValidator(RoutingValidator):
                 rows[item_id] = {
                     "id": item_id,
                     "name": item_id,
-                    "hardware_node_id": SOURCE if item_id == SOURCE_INTERFACE else TARGET,
-                    "interface_type": self.source_type if item_id == SOURCE_INTERFACE else self.target_type,
+                    "hardware_node_id": TARGET if item_id == TARGET_INTERFACE else SOURCE,
+                    "interface_type": self.target_type if item_id == TARGET_INTERFACE else self.source_type,
                 }
             elif table == "engineering_messages":
-                rows[item_id] = {"id": item_id, "name": "BatteryStatus", "dlc": 8, "cycle_ms": 10}
+                rows[item_id] = {
+                    "id": item_id,
+                    "name": "BatteryStatus",
+                    "dlc": 8,
+                    "cycle_ms": 10,
+                    **self.message_bindings.get(item_id, {}),
+                }
+            elif table == "engineering_hardware_interfaces":
+                rows[item_id] = {
+                    "id": item_id,
+                    "name": item_id,
+                    "hardware_node_id": TARGET if item_id == TARGET_PORT else SOURCE,
+                    "technology": self.target_type if item_id == TARGET_PORT else self.source_type,
+                }
             elif table == "engineering_signals":
                 rows[item_id] = {"id": item_id, "name": "BatteryVoltage", "message_id": MESSAGE, "length_bits": self.signal_bits}
         return rows
@@ -96,6 +122,90 @@ def test_routing_validator_accepts_signals_from_any_selected_message():
     }))
 
     assert not any(error["code"] in {"MESSAGE_NOT_FOUND", "SIGNAL_MESSAGE_MISMATCH"} for error in result["errors"])
+
+
+def test_routing_validator_accepts_message_bound_to_source_endpoints():
+    result = FakeValidator(message_bindings={
+        MESSAGE: {
+            "interface_id": SOURCE_INTERFACE,
+            "hardware_interface_id": SOURCE_PORT,
+        },
+    }).validate(route_payload(
+        source={
+            "node_id": SOURCE,
+            "interface_id": SOURCE_INTERFACE,
+            "port_id": SOURCE_PORT,
+            "protocol": "CAN_FD",
+        },
+        destinations=[{
+            "node_id": TARGET,
+            "interface_id": TARGET_INTERFACE,
+            "port_id": TARGET_PORT,
+            "protocol": "CAN_FD",
+        }],
+    ))
+
+    binding_errors = {
+        "MESSAGE_SOURCE_INTERFACE_MISMATCH",
+        "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH",
+    }
+    assert not any(error["code"] in binding_errors for error in result["errors"])
+
+
+def test_routing_validator_rejects_message_bound_to_other_source_endpoints():
+    result = FakeValidator(message_bindings={
+        MESSAGE: {
+            "interface_id": SOURCE_INTERFACE,
+            "hardware_interface_id": SOURCE_PORT,
+        },
+    }).validate(route_payload(source={
+        "node_id": SOURCE,
+        "interface_id": OTHER_SOURCE_INTERFACE,
+        "port_id": OTHER_SOURCE_PORT,
+        "protocol": "CAN_FD",
+    }))
+
+    errors_by_code = {error["code"]: error["message"] for error in result["errors"]}
+    assert "MESSAGE_SOURCE_INTERFACE_MISMATCH" in errors_by_code
+    assert "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH" in errors_by_code
+    assert SOURCE_INTERFACE in errors_by_code["MESSAGE_SOURCE_INTERFACE_MISMATCH"]
+    assert SOURCE_PORT in errors_by_code["MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH"]
+
+
+def test_routing_validator_checks_every_bound_message_but_allows_legacy_unbound_messages():
+    result = FakeValidator(message_bindings={
+        MESSAGE: {},
+        MESSAGE_2: {
+            "name": "SecondBoundMessage",
+            "interface_id": OTHER_SOURCE_INTERFACE,
+            "hardware_interface_id": OTHER_SOURCE_PORT,
+        },
+    }).validate(route_payload(
+        source={
+            "node_id": SOURCE,
+            "interface_id": SOURCE_INTERFACE,
+            "port_id": SOURCE_PORT,
+            "protocol": "CAN_FD",
+        },
+        payload={
+            "message_id": MESSAGE,
+            "message_ids": [MESSAGE, MESSAGE_2],
+            "signal_ids": [SIGNAL],
+        },
+    ))
+
+    binding_errors = [
+        error for error in result["errors"]
+        if error["code"] in {
+            "MESSAGE_SOURCE_INTERFACE_MISMATCH",
+            "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH",
+        }
+    ]
+    assert {error["code"] for error in binding_errors} == {
+        "MESSAGE_SOURCE_INTERFACE_MISMATCH",
+        "MESSAGE_SOURCE_HARDWARE_INTERFACE_MISMATCH",
+    }
+    assert all("SecondBoundMessage" in error["message"] for error in binding_errors)
 
 
 def test_network_editor_governance_values_are_supported():

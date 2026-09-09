@@ -671,7 +671,7 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
   nodeNames: Map<string, string>;
   interfaceNames: Map<string, string>;
   messageNames: Map<string, string>;
-  onSelect: (route: RoutingEntry) => void;
+  onSelect: (route: RoutingEntry | null) => void;
   onRepair: (seed: RoutingEditorSeed) => void;
 }) {
   const networkAliases = useMemo(() => buildNetworkAliases(interfaces, hardware), [hardware, interfaces]);
@@ -721,7 +721,7 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
   const pagination = useMemo(() => communicationPage(rows, page), [page, rows]);
   const selectedRow = pagination.items.find((row) => row.key === selectedRowKey) ?? pagination.items[0] ?? rows[0] ?? null;
   const selectedAssessment = selectedRow?.assessment ?? null;
-  const selectedRoute = selectedRow?.route ?? null;
+  const selectedRoute = selectedAssessment?.state === "not_routed" ? null : selectedRow?.route ?? null;
 
   useEffect(() => {
     setPage(1);
@@ -729,14 +729,14 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
   }, [receiverId, senderId]);
 
   useEffect(() => {
-    if (selectedRoute) onSelect(selectedRoute);
+    onSelect(selectedRoute);
   }, [onSelect, selectedRoute]);
 
   if (routes.length === 0) return <EmptyRouting text="TX/RX-Beziehungen werden sichtbar, sobald Routen existieren." />;
 
   function selectRow(row: CommunicationRow) {
     setSelectedRowKey(row.key);
-    onSelect(row.route);
+    onSelect(row.assessment.state === "not_routed" ? null : row.route);
   }
 
   function repair(row: CommunicationRow) {
@@ -810,7 +810,7 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
                 const gatewayNames = hasRouteToReceiver ? row.route.route.gateways.map((gateway) => typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway") : [];
                 return (
                   <tr className={selectedRow?.key === row.key ? "selected" : ""} key={row.key} onClick={() => selectRow(row)}>
-                    <td><strong>{row.messageLabel}</strong><small>{row.route.route_code} · {interfaceNames.get(row.route.source.interface_id ?? "") ?? row.route.source.interface_id ?? "ohne Interface"}</small></td>
+                    <td><strong>{row.messageLabel}</strong><small>{hasRouteToReceiver ? `${row.route.route_code} · ${interfaceNames.get(row.route.source.interface_id ?? "") ?? row.route.source.interface_id ?? "ohne Interface"}` : "Kein Routeintrag für diesen Consumer"}</small></td>
                     <td><strong>{hasRouteToReceiver ? row.route.source.protocol ?? "—" : "—"}</strong><small>{hasRouteToReceiver ? `${gatewayNames.length ? `via ${gatewayNames.join(" → ")}` : "Direktverbindung"} · ${row.route.timing.cycle_time_ms ?? "—"} ms` : "Kein Routingpfad zu diesem Consumer"}</small></td>
                     <td><strong>{nodeNames.get(receiverId) ?? receiverId}</strong><small>{assessment.detail}</small></td>
                     <td><span className={`routing-communication-state ${assessment.state}`}>{assessment.label}</span></td>

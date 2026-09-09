@@ -184,7 +184,7 @@ def generate_parameters(arguments: dict) -> dict:
 
 
 def generate(arguments: dict) -> dict:
-    fingerprint = hashlib.sha256(('technology-binding-v5-confirmed-device-identities\n' + arguments['prompt']).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('technology-binding-v6-local-actuator-transport\n' + arguments['prompt']).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
@@ -323,7 +323,7 @@ def generate(arguments: dict) -> dict:
                 for channel_index, (interface_type, network_ref) in enumerate(sorted(local_bindings), start=2):
                     technology_contract = _technology_contract(interface_type)
                     interface_name = f'{controller_name}_{interface_type}_IO'
-                    ensure('HardwareNetworkInterface', interface_name, {
+                    port = ensure('HardwareNetworkInterface', interface_name, {
                         'hardware_node_id': hw,
                         'technology': interface_type,
                         'channel_index': channel_index,
@@ -334,10 +334,51 @@ def generate(arguments: dict) -> dict:
                             **technology_contract['capabilities'],
                         },
                     }, 'hardware_node_id')
-                    ensure('Interface', interface_name, {
+                    interface = ensure('Interface', interface_name, {
                         **({'function_id': fn} if fn else {'hardware_node_id': hw}),
                         'interface_type': interface_type,
                     }, 'function_id' if fn else 'hardware_node_id')
+                    actuator_chains = [
+                        chain_by_name.get(str(actuator_name or '').casefold())
+                        for actuator_name in controller.get('actuators') or []
+                    ]
+                    actuator_chains = [
+                        chain for chain in actuator_chains
+                        if chain
+                        and str(chain.get('interface_type') or '') == interface_type
+                        and str(chain.get('transport_network_ref') or '') == network_ref
+                    ]
+                    if actuator_chains:
+                        actuator_refs = [
+                            hardware_refs[str(chain['hardware_name']).casefold()]
+                            for chain in actuator_chains
+                            if str(chain.get('hardware_name') or '').casefold() in hardware_refs
+                        ]
+                        cycle_ms = min(float(chain.get('cycle_ms') or 10) for chain in actuator_chains)
+                        dlc = max(int(chain.get('dlc') or 8) for chain in actuator_chains)
+                        ensure('Message', f'{interface_name}_Command', {
+                            'interface_id': interface,
+                            'hardware_interface_id': port,
+                            'direction': 'tx',
+                            'cycle_ms': cycle_ms,
+                            'dlc': dlc,
+                            'configuration': {
+                                'model_type': 'TransportUnit',
+                                'technology_binding': technology_contract,
+                                'transport_unit': {
+                                    'transport_unit_type': technology_contract['transport_unit_type'],
+                                    'producer_ref': hw,
+                                    'consumer_refs': actuator_refs,
+                                    'payload_size': dlc,
+                                    'timing': {'cycle_ms': cycle_ms},
+                                    'status': 'PROPOSED',
+                                    'provenance': {
+                                        'source': 'wizard',
+                                        'generator': 'wizard-local-actuator-command',
+                                    },
+                                },
+                            },
+                        }, 'interface_id')
     if not changes:
         raise ValueError('Die abgeleiteten Modellobjekte sind bereits vorhanden; vorhandenen Modellstand prüfen.')
     return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
@@ -359,7 +400,7 @@ def generate_routing(arguments: dict) -> dict:
     of route tools.
     """
     prompt = arguments['prompt']
-    fingerprint = hashlib.sha256(('wizard-routing-v2\n' + prompt).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-routing-v3-local-actuator-transport\n' + prompt).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         if (row['proposal_type'] == 'WIZARD_ROUTING'
                 and any(item.get('prompt_sha256') == fingerprint for item in row.get('evidence') or [])):
@@ -370,6 +411,7 @@ def generate_routing(arguments: dict) -> dict:
     graph = json.loads(raw.group(1))
     nodes = model.objects('HardwareNode')
     interfaces = model.objects('Interface')
+    hardware_interfaces = model.objects('HardwareNetworkInterface')
     messages = model.objects('Message')
     nodes_by_name = {str(item.get('name', '')).casefold(): item for item in nodes}
     interfaces_by_node: dict[str, list[dict]] = {}
@@ -380,6 +422,11 @@ def generate_routing(arguments: dict) -> dict:
     messages_by_interface: dict[str, list[dict]] = {}
     for item in messages:
         messages_by_interface.setdefault(str(item.get('interface_id') or ''), []).append(item)
+    hardware_interfaces_by_node: dict[str, list[dict]] = {}
+    for item in hardware_interfaces:
+        node_id = str(item.get('hardware_node_id') or '')
+        if node_id:
+            hardware_interfaces_by_node.setdefault(node_id, []).append(item)
 
     def node(name):
         return nodes_by_name.get(str(name or '').casefold())
@@ -403,15 +450,54 @@ def generate_routing(arguments: dict) -> dict:
                 return str(candidates[0]['id'])
         return None
 
+    def local_tx_message(source_id: str, destination_id: str):
+        source_ports = hardware_interfaces_by_node.get(source_id, [])
+        destination_ports = hardware_interfaces_by_node.get(destination_id, [])
+        shared_source_port_ids = {
+            str(source_port['id'])
+            for source_port in source_ports
+            if source_port.get('network_ref')
+            and any(
+                source_port.get('network_ref') == destination_port.get('network_ref')
+                and source_port.get('technology') == destination_port.get('technology')
+                for destination_port in destination_ports
+            )
+        }
+        candidates = [
+            message
+            for interface in interfaces_by_node.get(source_id, [])
+            for message in messages_by_interface.get(str(interface['id']), [])
+            if str(message.get('hardware_interface_id') or '') in shared_source_port_ids
+            and str(message.get('direction') or '').casefold() == 'tx'
+        ]
+        targeted = [
+            message for message in candidates
+            if destination_id in {
+                str(ref) for ref in (
+                    ((message.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') or []
+                )
+            }
+        ]
+        selected = (targeted or candidates)
+        return bool(shared_source_port_ids), str(selected[0]['id']) if selected else None
+
     route_service = RoutingGenerationService()
     gateway = next((item for item in nodes if item.get('device_type') == 'Gateway'), None)
     changes, seen = [], set()
 
-    def add_route(source, destination):
+    def add_route(source, destination, *, local_actuator=False):
         if not source or not destination or str(source['id']) == str(destination['id']):
             return
-        message_id = first_message(str(source['id']))
-        key = (str(source['id']), str(destination['id']), message_id)
+        source_id = str(source['id'])
+        destination_id = str(destination['id'])
+        has_local_transport, local_message_id = local_tx_message(source_id, destination_id) if local_actuator else (False, None)
+        message_id = local_message_id if has_local_transport else first_message(source_id)
+        if has_local_transport and not message_id:
+            raise ValueError(
+                f'Lokale Aktorroute {source["name"]} → {destination["name"]} besitzt keine TX-Message '
+                'auf einem gemeinsamen logischen und physischen Interface.'
+            )
+        key = (source_id, destination_id, message_id)
         if key in seen:
             return
         seen.add(key)
@@ -438,7 +524,7 @@ def generate_routing(arguments: dict) -> dict:
             for sensor_name in controller.get('sensors') or []:
                 add_route(node(sensor_name), ecu)
             for actuator_name in controller.get('actuators') or []:
-                add_route(ecu, node(actuator_name))
+                add_route(ecu, node(actuator_name), local_actuator=True)
         for hmi_route in cluster.get('hmi_routes') or []:
             add_route(node(hmi_route.get('source')), node(hmi_route.get('target')))
     if not changes:
