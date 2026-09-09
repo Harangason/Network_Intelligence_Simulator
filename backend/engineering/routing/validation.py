@@ -312,11 +312,27 @@ class RoutingValidator:
         if protocol not in PROTOCOL_CAPACITY:
             warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
             protocol = "CUSTOM"
-        shared_network_transport = bool(source.get("network_id")) and all(
-            destination.get("network_id") == source.get("network_id")
-            for destination in destinations
+        source_network_id = str(source.get("network_id") or "").strip().casefold()
+        destination_network_ids = [
+            str(destination.get("network_id") or "").strip().casefold()
             if isinstance(destination, dict)
+            else ""
+            for destination in destinations
+        ]
+        shared_network_transport = bool(
+            source_network_id
+            and destination_network_ids
+            and all(
+                network_id and network_id == source_network_id
+                for network_id in destination_network_ids
+            )
         )
+        if shared_network_transport and path.get("gateways"):
+            error(
+                "GATEWAY_ON_SHARED_NETWORK",
+                "Source und alle Destinations liegen explizit im selben Netzwerk; "
+                "ein Gateway-Hop ist für diesen direkten Pfad nicht zulässig.",
+            )
         protocol_interfaces = hardware_interfaces.values() if hardware_interface_ids \
             else [] if shared_network_transport \
             else interfaces.values()

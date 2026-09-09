@@ -33,9 +33,10 @@ import { routingApprovalProgress } from "@/lib/routing-approval";
 import {
   assessCommunication,
   communicationPage,
+  groupCommunicationRoutes,
   relevantReceiverIds,
   ROUTING_COMMUNICATION_PAGE_SIZE,
-  routeMessageIds as communicationMessageIds,
+  selectCommunicationRoute,
 } from "@/lib/routing-communication";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import { notifyWorkflowChanged } from "./workflow-header";
@@ -660,6 +661,7 @@ type CommunicationRow = {
   key: string;
   messageLabel: string;
   route: RoutingEntry;
+  assessment: ReturnType<typeof assessCommunication>;
 };
 
 function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, interfaceNames, messageNames, onSelect, onRepair }: {
@@ -706,25 +708,29 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
     setReceiverId(receiverOptions[0]?.id ?? "");
   }, [receiverId, receiverOptions]);
 
-  const rows = useMemo<CommunicationRow[]>(() => senderRoutes.flatMap((route) => {
-    const messageIds = communicationMessageIds(route);
-    const payloads = messageIds.length ? messageIds : [""];
-    return payloads.map((messageId, index) => ({
-      key: `${route.id}:${messageId || index}`,
-      messageLabel: messageId
-        ? messageNames.get(messageId) ?? messageId
-        : route.payload.topic ?? route.payload.data_object ?? route.name,
-      route,
-    }));
-  }), [messageNames, senderRoutes]);
+  const rows = useMemo<CommunicationRow[]>(() => groupCommunicationRoutes(senderRoutes).flatMap((group) => {
+    const selection = receiverId ? selectCommunicationRoute(group.routes, receiverId) : null;
+    if (!selection) return [];
+    return [{
+      key: group.key,
+      messageLabel: group.messageId ? messageNames.get(group.messageId) ?? group.messageId : group.fallbackLabel,
+      route: selection.route,
+      assessment: selection.assessment,
+    }];
+  }), [messageNames, receiverId, senderRoutes]);
   const pagination = useMemo(() => communicationPage(rows, page), [page, rows]);
   const selectedRow = pagination.items.find((row) => row.key === selectedRowKey) ?? pagination.items[0] ?? rows[0] ?? null;
-  const selectedAssessment = selectedRow && receiverId ? assessCommunication(selectedRow.route, receiverId) : null;
+  const selectedAssessment = selectedRow?.assessment ?? null;
+  const selectedRoute = selectedRow?.route ?? null;
 
   useEffect(() => {
     setPage(1);
     setSelectedRowKey("");
   }, [receiverId, senderId]);
+
+  useEffect(() => {
+    if (selectedRoute) onSelect(selectedRoute);
+  }, [onSelect, selectedRoute]);
 
   if (routes.length === 0) return <EmptyRouting text="TX/RX-Beziehungen werden sichtbar, sobald Routen existieren." />;
 
@@ -799,12 +805,13 @@ function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, int
             <table className="routing-communication-table">
               <thead><tr><th>TX Botschaft / Topic</th><th>Übertragung</th><th>RX Consumer</th><th>Ergebnis</th><th>Aktion</th></tr></thead>
               <tbody>{pagination.items.map((row) => {
-                const assessment = assessCommunication(row.route, receiverId);
-                const gatewayNames = row.route.route.gateways.map((gateway) => typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway");
+                const assessment = row.assessment;
+                const hasRouteToReceiver = assessment.state !== "not_routed";
+                const gatewayNames = hasRouteToReceiver ? row.route.route.gateways.map((gateway) => typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway") : [];
                 return (
                   <tr className={selectedRow?.key === row.key ? "selected" : ""} key={row.key} onClick={() => selectRow(row)}>
                     <td><strong>{row.messageLabel}</strong><small>{row.route.route_code} · {interfaceNames.get(row.route.source.interface_id ?? "") ?? row.route.source.interface_id ?? "ohne Interface"}</small></td>
-                    <td><strong>{row.route.source.protocol ?? "—"}</strong><small>{gatewayNames.length ? `via ${gatewayNames.join(" → ")}` : "Direktverbindung"} · {row.route.timing.cycle_time_ms ?? "—"} ms</small></td>
+                    <td><strong>{hasRouteToReceiver ? row.route.source.protocol ?? "—" : "—"}</strong><small>{hasRouteToReceiver ? `${gatewayNames.length ? `via ${gatewayNames.join(" → ")}` : "Direktverbindung"} · ${row.route.timing.cycle_time_ms ?? "—"} ms` : "Kein Routingpfad zu diesem Consumer"}</small></td>
                     <td><strong>{nodeNames.get(receiverId) ?? receiverId}</strong><small>{assessment.detail}</small></td>
                     <td><span className={`routing-communication-state ${assessment.state}`}>{assessment.label}</span></td>
                     <td>{assessment.repairable ? <button className="routing-ai-repair" onClick={(event) => { event.stopPropagation(); repair(row); }} type="button">Mit KI beheben</button> : <button className="routing-open-route" onClick={(event) => { event.stopPropagation(); selectRow(row); }} type="button">Route prüfen</button>}</td>
@@ -845,7 +852,7 @@ function CommunicationPathGraph({ row, assessment, senderId, receiverId, nodeNam
   receiverId: string;
   nodeNames: Map<string, string>;
 }) {
-  const gatewayNodes = row.route.route.gateways.map((gateway, index) => ({
+  const gatewayNodes = (assessment.state === "not_routed" ? [] : row.route.route.gateways).map((gateway, index) => ({
     id: typeof gateway === "string" ? gateway : gateway.node_id ?? `gateway-${index}`,
     label: typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway",
   }));

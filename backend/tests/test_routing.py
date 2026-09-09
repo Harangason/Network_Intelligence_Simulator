@@ -17,6 +17,7 @@ TARGET_INTERFACE = "00000000-0000-0000-0000-000000000012"
 MESSAGE = "00000000-0000-0000-0000-000000000021"
 MESSAGE_2 = "00000000-0000-0000-0000-000000000022"
 SIGNAL = "00000000-0000-0000-0000-000000000031"
+GATEWAY = "00000000-0000-0000-0000-000000000041"
 
 
 def route_payload(**overrides):
@@ -206,6 +207,31 @@ def test_routing_loop_detection():
     assert detect_routing_loop([SOURCE, TARGET, SOURCE]) == [SOURCE]
     result = FakeValidator().validate(route_payload(route={"hops": [SOURCE, TARGET, SOURCE], "gateways": []}))
     assert any(error["code"] == "ROUTING_LOOP" for error in result["errors"])
+
+
+def test_gateway_on_explicitly_shared_network_is_rejected():
+    result = FakeValidator(gateway=True).validate(route_payload(
+        source={
+            "node_id": SOURCE,
+            "interface_id": SOURCE_INTERFACE,
+            "protocol": "LIN",
+            "network_id": "  Lin-Segment  ",
+        },
+        destinations=[{
+            "node_id": TARGET,
+            "interface_id": TARGET_INTERFACE,
+            "protocol": "LIN",
+            "network_id": "lin-segment",
+        }],
+        route={
+            "hops": [SOURCE, GATEWAY, TARGET],
+            "gateways": [{"node_id": GATEWAY}],
+            "transformations": [],
+            "priority": "HIGH",
+        },
+    ))
+
+    assert any(error["code"] == "GATEWAY_ON_SHARED_NETWORK" for error in result["errors"])
 
 
 def test_protocol_validation_requires_translation():
