@@ -37,7 +37,7 @@ import {
 } from "@/lib/simulation-signal-view";
 import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/lib/simulation-network-view";
 
-type SimulationView = "network" | "signals" | "load" | "events";
+type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
 type SimulationScopeMode = "ALL" | "MESSAGE" | "SIGNAL";
 type ScenarioFault = {
   id: string;
@@ -231,7 +231,10 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
         const cycleMs = Math.max(0.001, Number(communication.cycle_ms ?? communication.period_ms ?? 100));
         return sum + Math.ceil(duration / (cycleMs / 1000));
       }, 0);
-      const maxEvents = Math.min(100_000, Math.max(1, Math.ceil(estimatedEventCount * 1.15)));
+      const receiverCount = communicationRows.reduce((sum, communication) => sum + Math.max(1, Array.isArray(communication.receiver_interfaces) ? communication.receiver_interfaces.length : 1), 0);
+      const heartbeatFrames = Math.floor(duration / 0.5) * 2 * receiverCount;
+      const sessionFrames = estimatedEventCount + receiverCount * 3 + heartbeatFrames;
+      const maxEvents = Math.min(100_000, Math.max(1, Math.ceil((estimatedEventCount + sessionFrames) * 1.1)));
       config = {
         ...config,
         ...workflow.parameters,
@@ -244,6 +247,13 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
         model_trace_points_per_signal: 800,
         model_trace_event_limit: 10_000,
         golden_trace_event_limit: 10_000,
+        restbus_session: {
+          enabled: true,
+          handshake: true,
+          acknowledge_data: true,
+          heartbeat_interval_s: 0.5,
+          response_delay_ms: 1,
+        },
         simulation_scope: simulationScope,
         scenario: { ...scenario, scenario_id: storedScenario.scenario_id },
       };
@@ -451,11 +461,12 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
       <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} onMagnitude={(id, value) => setProposalMagnitude((current) => ({ ...current, [id]: value }))} onReview={reviewProposal} />
       {error && <div className="notice error">{error}</div>}
 
-      <div className="simulation-view-tabs" role="tablist">{(["network", "signals", "load", "events"] as SimulationView[]).map((item) => <button className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
+      <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
       <section className="panel synchronized-simulation-view">
         <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} onChange={setPlayhead} />
         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
         {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} topology={workflow?.topology} />}
+        {modelTrace && view === "sequence" && <SequenceView trace={modelTrace} playhead={playhead} />}
         {modelTrace && view === "signals" && <SignalsView trace={modelTrace} playhead={playhead} />}
         {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} playhead={playhead} projectId={projectIdForLinks} topology={workflow?.topology} trace={modelTrace} />}
         {modelTrace && view === "events" && <EventsView trace={modelTrace} playhead={playhead} />}
@@ -596,7 +607,84 @@ function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | 
   const delivered = visibleFrames.filter((frame) => frame.status !== "dropped").length;
   const currentLoads = networks.map((network) => (trace.bus_load ?? []).filter((point) => point.network_id === network.network_id && point.time_s <= playhead + 0.000001).at(-1)?.load_percent ?? 0);
   const currentLoad = currentLoads.length ? Math.max(...currentLoads) : 0;
-  return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list"><div className="runtime-route-heading"><span>Route</span><span>TX</span><span>RX</span><span>Takt</span><span>Frames</span><span>Status</span></div>{routes.slice(0, 12).map((route) => { const routeFrames = framesByRoute.get(route.route_id) ?? []; const presentation = runtimeRoutePresentation(route, routeFrames, topology); return <div className="runtime-route-row" key={route.route_id}><strong>{presentation.name}<small>{route.route_id}</small></strong><span><b>TX</b>{presentation.sender}</span><span><b>RX</b>{formatParticipants(presentation.receivers, 2)}</span><span>{route.configured_cycle_ms} ms</span><span>{routeFrames.filter((frame) => frame.time_s <= playhead + 0.000001).length} / {route.event_count}</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>; })}</div><div className="runtime-frame-list"><strong>Frame-Trace am Zeitzeiger</strong>{visibleFrames.slice(-20).reverse().map((frame, index) => <div key={`${frame.route_id}:${frame.time_s}:${index}`}><time>{frame.time_s.toFixed(4)} s</time><span>TX {frame.source_logical_address ?? "—"} · {frame.source_name ?? frame.sender}</span><span>RX {(frame.destination_logical_addresses ?? []).map((address, receiverIndex) => `${address ?? "—"} · ${frame.destination_names?.[receiverIndex] ?? frame.receivers?.[receiverIndex] ?? "unbekannt"}`).join(", ")}</span><span>{frame.route_name} · {frame.network}</span></div>)}</div></div>;
+  return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list"><div className="runtime-route-heading"><span>Route</span><span>TX</span><span>RX</span><span>Takt</span><span>Frames</span><span>Status</span></div>{routes.slice(0, 12).map((route) => { const routeFrames = framesByRoute.get(route.route_id) ?? []; const dataFrames = routeFrames.filter((frame) => (frame.traffic_type ?? "DATA") === "DATA"); const presentation = runtimeRoutePresentation(route, dataFrames, topology); return <div className="runtime-route-row" key={route.route_id}><strong>{presentation.name}<small>{route.route_id}</small></strong><span><b>TX</b>{presentation.sender}</span><span><b>RX</b>{formatParticipants(presentation.receivers, 2)}</span><span>{route.configured_cycle_ms} ms</span><span>{dataFrames.filter((frame) => frame.time_s <= playhead + 0.000001).length} / {route.event_count}</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>; })}</div><div className="runtime-frame-list"><strong>Frame-Trace am Zeitzeiger</strong>{visibleFrames.slice(-20).reverse().map((frame, index) => <div key={`${frame.route_id}:${frame.time_s}:${index}`}><time>{frame.time_s.toFixed(4)} s</time><span>TX {frame.source_logical_address ?? "—"} · {frame.source_name ?? frame.sender}</span><span>RX {(frame.destination_logical_addresses ?? []).map((address, receiverIndex) => `${address ?? "—"} · ${frame.destination_names?.[receiverIndex] ?? frame.receivers?.[receiverIndex] ?? "unbekannt"}`).join(", ")}</span><span>{frame.route_name} · {frame.network}</span></div>)}</div></div>;
+}
+
+const SEQUENCE_EVENT_LABELS: Record<string, string> = {
+  TCP_SYN: "SYN",
+  TCP_SYN_ACK: "SYN + ACK",
+  TCP_ACK: "ACK · Session established",
+  SESSION_HELLO: "HELLO",
+  SESSION_HELLO_ACK: "HELLO ACK · Session established",
+  DATA: "DATA",
+  DATA_ACK: "DATA ACK",
+  HEARTBEAT: "ALIVE?",
+  HEARTBEAT_ACK: "ALIVE · Partner present",
+};
+
+function SequenceView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
+  const sequenceFrames = useMemo(() => (trace.frames ?? [])
+    .filter((frame) => frame.session_id && frame.protocol_event)
+    .sort((left, right) => left.time_s - right.time_s), [trace.frames]);
+  const sessionIds = useMemo(() => [...new Set(sequenceFrames.map((frame) => String(frame.session_id)))], [sequenceFrames]);
+  const [selectedSession, setSelectedSession] = useState(sessionIds[0] ?? "");
+  useEffect(() => {
+    if (!sessionIds.includes(selectedSession)) setSelectedSession(sessionIds[0] ?? "");
+  }, [selectedSession, sessionIds]);
+
+  if (!sequenceFrames.length) {
+    return <div className="simulation-empty-state"><strong>Keine IP-Session im Trace</strong><span>Das Sequenzdiagramm wird für geroutete IPv4/IPv6-Kommunikation erzeugt. Dafür müssen mindestens zwei IP-fähige Schnittstellen und eine freigegebene Route vorhanden sein.</span></div>;
+  }
+
+  const frames = sequenceFrames.filter((frame) => frame.session_id === selectedSession);
+  const firstForward = frames.find((frame) => ["TCP_SYN", "SESSION_HELLO", "DATA"].includes(String(frame.protocol_event))) ?? frames[0];
+  const clientName = firstForward.source_name ?? firstForward.sender;
+  const clientIp = firstForward.src_ip ?? "—";
+  const partnerName = firstForward.destination_names?.[0] ?? firstForward.receivers?.[0] ?? "Partner";
+  const partnerIp = firstForward.dst_ips?.[0] ?? "—";
+  const visibleFrames = frames.filter((frame) => frame.time_s <= playhead + 0.000001);
+  const shownFrames = visibleFrames.slice(-160);
+  const session = trace.restbus_summary?.sessions.find((item) => item.session_id === selectedSession);
+  const visibleKinds = visibleFrames.map((frame) => frame.protocol_event);
+  const handshakeComplete = visibleKinds.includes("TCP_ACK") || visibleKinds.includes("SESSION_HELLO_ACK");
+  const dataCount = visibleKinds.filter((kind) => kind === "DATA").length;
+  const ackCount = visibleKinds.filter((kind) => kind === "DATA_ACK").length;
+  const latestHeartbeat = visibleFrames.findLast((frame) => frame.protocol_event === "HEARTBEAT");
+  const latestHeartbeatAck = visibleFrames.findLast((frame) => frame.protocol_event === "HEARTBEAT_ACK");
+  const partnerState = !latestHeartbeat ? "WAITING" : latestHeartbeatAck && latestHeartbeatAck.time_s >= latestHeartbeat.time_s ? "ONLINE" : "CHECKING";
+  const protocol = `${firstForward.ip_version ? `IPv${firstForward.ip_version}` : "IP"} / ${String(firstForward.transport_protocol ?? "transport").toUpperCase()}`;
+
+  return <div className="sequence-workbench">
+    <header className="sequence-toolbar">
+      <div><span>RESTBUS SESSION · {protocol}</span><strong>{firstForward.route_name}</strong><small>{firstForward.network} · echte Kontroll- und Datenframes</small></div>
+      <label><span>Session</span><select aria-label="IP-Session auswählen" value={selectedSession} onChange={(event) => setSelectedSession(event.target.value)}>{sessionIds.map((id) => { const item = trace.restbus_summary?.sessions.find((candidate) => candidate.session_id === id); return <option key={id} value={id}>{item?.route_name ?? id}</option>; })}</select></label>
+    </header>
+    <div className="sequence-status-strip">
+      <div><span>Handshake</span><strong className={handshakeComplete ? "pass" : "pending"}>{handshakeComplete ? "ESTABLISHED" : "CONNECTING"}</strong></div>
+      <div><span>Daten bestätigt</span><strong>{ackCount} / {dataCount}</strong></div>
+      <div><span>Partnerstatus</span><strong className={partnerState === "ONLINE" ? "pass" : "pending"}>{partnerState}</strong></div>
+      <div><span>Heartbeat</span><strong>{session?.heartbeat_replies ?? 0} / {session?.heartbeat_checks ?? 0}</strong></div>
+    </div>
+    <div className="sequence-diagram" aria-label={`Sequenzdiagramm ${clientName} und ${partnerName}`}>
+      <div className="sequence-participants"><span /><article><strong>{clientName}</strong><small>{clientIp}</small></article><article><strong>{partnerName}</strong><small>{partnerIp}</small></article><span /></div>
+      <div className="sequence-events">
+        {shownFrames.map((frame, index) => {
+          const reverse = frame.src_ip ? frame.src_ip !== clientIp : (frame.source_name ?? frame.sender) !== clientName;
+          const source = frame.source_name ?? frame.sender;
+          const target = frame.destination_names?.[0] ?? frame.receivers?.[0] ?? "Partner";
+          return <div className="sequence-event-row" key={`${frame.session_id}:${frame.time_s}:${frame.protocol_event}:${index}`}>
+            <time>{frame.time_s.toFixed(4)} s</time>
+            <div className={`sequence-message ${reverse ? "reverse" : "forward"}`} title={`${source} → ${target}`}>
+              <span className="sequence-source">{source}</span><div className="sequence-arrow"><b>{SEQUENCE_EVENT_LABELS[String(frame.protocol_event)] ?? frame.protocol_event}</b><small>{frame.payload_bytes ?? 0} B · {frame.status}</small></div><span className="sequence-target">{target}</span>
+            </div>
+            <b className={frame.traffic_type === "CONTROL" ? "control" : "data"}>{frame.traffic_type}</b>
+          </div>;
+        })}
+        {!visibleFrames.length && <p>Noch keine Session-Ereignisse am aktuellen Zeitzeiger.</p>}
+        {visibleFrames.length > shownFrames.length && <p>{shownFrames.length} von {visibleFrames.length} Ereignissen am Zeitzeiger dargestellt.</p>}
+      </div>
+    </div>
+  </div>;
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
@@ -619,7 +707,38 @@ function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhea
   const filteredIds = filtered.map((series) => series.signal_id);
   const selectFiltered = () => setSelected((current) => [...new Set([...current, ...filteredIds])]);
   const clearFiltered = () => setSelected((current) => current.filter((id) => !filteredIds.includes(id)));
-  return <div className="signal-plot-workbench"><div className="signal-plot-controls"><div className="signal-filter-primary"><input aria-label="Signale durchsuchen" placeholder="Signal, Einheit oder Modell suchen …" value={search} onChange={(event) => setSearch(event.target.value)} /><select aria-label="Dynamik filtern" value={behavior} onChange={(event) => setBehavior(event.target.value as SignalBehaviorFilter)}><option value="ALL">Alle Verläufe</option><option value="DYNAMIC">Nur dynamisch</option><option value="STATIC">Nur statisch</option></select><select aria-label="Signaltyp filtern" value={kind} onChange={(event) => setKind(event.target.value as SignalKindFilter)}><option value="ALL">Alle Typen</option><option value="STATE">Zustände</option><option value="PHYSICAL">Physikalisch</option><option value="OTHER">Weitere</option></select><button className="button secondary tiny" onClick={() => setSelectorOpen((current) => !current)} type="button">{selectorOpen ? "Auswahl schließen" : "Signale auswählen"}</button></div><div className="signal-selector-actions"><button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button><button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button><span>{visibleSelected.length} sichtbar · {selected.length} gewählt · {filtered.length} Treffer</span></div>{selectorOpen && <div className="signal-selector">{filtered.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, series.signal_id])] : current.filter((id) => id !== series.signal_id))} /><span>{series.signal}<small>{series.semantic_type ?? series.behavior_type} · {series.unit || "ohne Einheit"}</small></span></label>)}{!filtered.length && <p>Keine Signale für diesen Filter.</p>}</div>}<div className="signal-time-controls"><label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label><label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label></div></div><div className="signal-lanes">{visibleSelected.slice(0, 60).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{visibleSelected.length > 60 && <div className="simulation-result-note">60 von {visibleSelected.length} Treffern dargestellt. Filter weiter eingrenzen.</div>}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div></div>;
+  return <div className="signal-plot-workbench">
+    <div className="signal-plot-controls">
+      <div className="signal-filter-primary">
+        <label className="signal-filter-field signal-filter-search">
+          <span>Suche</span>
+          <input aria-label="Signale durchsuchen" placeholder="Signal, Einheit oder Modell suchen …" value={search} onChange={(event) => setSearch(event.target.value)} />
+        </label>
+        <label className="signal-filter-field">
+          <span>Verlauf</span>
+          <select aria-label="Dynamik filtern" value={behavior} onChange={(event) => setBehavior(event.target.value as SignalBehaviorFilter)}><option value="ALL">Alle Verläufe</option><option value="DYNAMIC">Nur dynamisch</option><option value="STATIC">Nur statisch</option></select>
+        </label>
+        <label className="signal-filter-field">
+          <span>Signaltyp</span>
+          <select aria-label="Signaltyp filtern" value={kind} onChange={(event) => setKind(event.target.value as SignalKindFilter)}><option value="ALL">Alle Typen</option><option value="STATE">Zustände</option><option value="PHYSICAL">Physikalisch</option><option value="OTHER">Weitere</option></select>
+        </label>
+        <button className="button secondary tiny signal-selector-toggle" onClick={() => setSelectorOpen((current) => !current)} type="button">{selectorOpen ? "Auswahl schließen" : "Signale auswählen"}</button>
+      </div>
+      <div className="signal-filter-secondary">
+        <div className="signal-selector-actions">
+          <button className="button secondary tiny" onClick={selectFiltered} type="button">Treffer wählen</button>
+          <button className="button secondary tiny" onClick={clearFiltered} type="button">Treffer abwählen</button>
+        </div>
+        <output className="signal-filter-summary">{visibleSelected.length} sichtbar <i /> {selected.length} gewählt <i /> {filtered.length} Treffer</output>
+        <div className="signal-time-controls">
+          <label><span>Zoom {zoom.toFixed(1)}x</span><input max="8" min="1" step="0.5" type="range" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setPan(0); }} /></label>
+          <label><span>Pan</span><input disabled={zoom === 1} max={Math.max(0, trace.scenario.duration_s - windowDuration)} min="0" step="0.01" type="range" value={windowStart} onChange={(event) => setPan(Number(event.target.value))} /></label>
+        </div>
+      </div>
+      {selectorOpen && <div className="signal-selector">{filtered.map((series) => <label key={series.signal_id}><input checked={selected.includes(series.signal_id)} type="checkbox" onChange={(event) => setSelected((current) => event.target.checked ? [...new Set([...current, series.signal_id])] : current.filter((id) => id !== series.signal_id))} /><span>{series.signal}<small>{series.semantic_type ?? series.behavior_type} · {series.unit || "ohne Einheit"}</small></span></label>)}{!filtered.length && <p>Keine Signale für diesen Filter.</p>}</div>}
+    </div>
+    <div className="signal-lanes">{visibleSelected.slice(0, 60).map((series) => <SignalLane key={series.signal_id} series={series} windowStart={windowStart} windowEnd={windowEnd} playhead={playhead} />)}{visibleSelected.length > 60 && <div className="simulation-result-note">60 von {visibleSelected.length} Treffern dargestellt. Filter weiter eingrenzen.</div>}{!trace.signals.length && <div className="simulation-empty-state"><strong>Keine Signalzuordnung gefunden</strong><span>Die Frames wurden simuliert, aber kein Engineering-Signal ist dem Kommunikationspfad zugeordnet.</span></div>}{trace.signals.length > 0 && visibleSelected.length === 0 && <div className="simulation-empty-state"><strong>Keine ausgewählten Treffer</strong><span>Filter ändern oder „Treffer wählen“ verwenden.</span></div>}</div>
+  </div>;
 }
 
 function SignalLane({ series, windowStart, windowEnd, playhead }: { series: ModelSignalSeries; windowStart: number; windowEnd: number; playhead: number }) {

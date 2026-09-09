@@ -128,7 +128,8 @@ def analyze_runtime_trace(
     by_route: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
         by_network[str(event.get("network") or "unknown")].append(event)
-        by_route[str(event.get("route_id") or "unknown")].append(event)
+        if str(event.get("traffic_type") or "DATA").upper() == "DATA":
+            by_route[str(event.get("route_id") or "unknown")].append(event)
 
     network_metrics: list[dict[str, Any]] = []
     for network_id, items in by_network.items():

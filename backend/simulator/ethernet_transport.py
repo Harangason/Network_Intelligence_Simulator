@@ -1,7 +1,7 @@
 """Project-bound IPv4/IPv6 data-plane emulation; never sends real network traffic.
 
-RFC 791 / 8200 / 768 headers. This is a packet/port model, not an ARP, NDP,
-TCP connection-management or industrial application-protocol implementation.
+RFC 791 / 8200 / 768 headers. ARP and NDP remain out of scope. Optional
+rest-bus sessions add deterministic TCP or application-level control frames.
 """
 from __future__ import annotations
 
@@ -134,9 +134,10 @@ def packet_bytes(event, receiver_index=0):
         transport = struct.pack("!HHHH", sport, dport, 8 + len(payload), 0)
         checksum_offset = 6
     else:
-        # Explicitly a TCP data segment, not a fabricated connection handshake.
         sequence = int(event.get("transport_sequence_bytes", int(event["sequence"]) * len(payload))) & 0xffffffff
-        transport = struct.pack("!HHIIBBHHH", sport, dport, sequence, 0, 5 << 4, 0x08, 65535, 0, 0)
+        acknowledgement = int(event.get("transport_ack_number") or 0) & 0xffffffff
+        flags = int(event.get("tcp_flags", 0x18 if payload else 0x10)) & 0xff
+        transport = struct.pack("!HHIIBBHHH", sport, dport, sequence, acknowledgement, 5 << 4, flags, 65535, 0, 0)
         checksum_offset = 16
     length = len(transport) + len(payload)
     total_length = (20 if version == 4 else 40) + length

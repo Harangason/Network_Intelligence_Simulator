@@ -224,6 +224,7 @@ class SimulationService:
                 "project_id", "scenario", "duration_s", "seed", "formats", "max_events",
                 "model_trace_frame_limit", "model_trace_signal_point_limit", "model_trace_points_per_signal",
                 "model_trace_event_limit", "golden_trace_event_limit",
+                "restbus_session",
                 "dropout_probability", "corruption_probability", "duplicate_probability",
                 "reordering_probability",
             ):

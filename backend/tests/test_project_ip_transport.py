@@ -9,6 +9,7 @@ from ethernet_transport import packet_bytes, checksum
 from communication_simulator import run_simulation
 from hardware_profile import normalize_hardware_config
 from universal_trace import generate_universal_events
+from model_based_simulation import build_model_trace
 
 
 def ip_config(tmp_path, version=4):
@@ -101,6 +102,67 @@ def test_missing_addresses_are_stable_and_never_modify_input(tmp_path):
     a, b = events(config), events(config)
     assert a == b and config == original
     assert a[0]["ethernet"]["source"]["ip_provenance"] == "simulation_derived"
+
+
+@pytest.mark.parametrize("protocol,handshake", [
+    ("tcp", ["TCP_SYN", "TCP_SYN_ACK", "TCP_ACK"]),
+    ("udp", ["SESSION_HELLO", "SESSION_HELLO_ACK"]),
+])
+def test_restbus_session_generates_handshake_ack_and_periodic_liveness_frames(tmp_path, protocol, handshake):
+    config = ip_config(tmp_path)
+    config["duration_s"] = 0.2
+    config["max_events"] = 100
+    config["communications"][0]["transport_protocol"] = protocol
+    config["restbus_session"] = {
+        "enabled": True,
+        "handshake": True,
+        "acknowledge_data": True,
+        "heartbeat_interval_s": 0.005,
+        "response_delay_ms": 0.1,
+    }
+
+    generated = events(config)
+    kinds = [event.get("protocol_event") for event in generated]
+
+    assert all(item in kinds for item in handshake)
+    assert "DATA" in kinds
+    assert "DATA_ACK" in kinds
+    assert kinds.count("HEARTBEAT") >= 3
+    assert kinds.count("HEARTBEAT") == kinds.count("HEARTBEAT_ACK")
+    assert all(event.get("session_id") == "session:project-message" for event in generated)
+    assert all(event["time_s"] <= config["duration_s"] + 0.002 for event in generated)
+    event_times = {kind: min(event["time_s"] for event in generated if event.get("protocol_event") == kind) for kind in set(handshake + ["DATA", "DATA_ACK"])}
+    assert [event_times[kind] for kind in handshake] == sorted(event_times[kind] for kind in handshake)
+    assert event_times[handshake[-1]] < event_times["DATA"] < event_times["DATA_ACK"]
+    heartbeat_times = [event["time_s"] for event in generated if event.get("protocol_event") == "HEARTBEAT"]
+    heartbeat_reply_times = [event["time_s"] for event in generated if event.get("protocol_event") == "HEARTBEAT_ACK"]
+    assert all(request < reply for request, reply in zip(heartbeat_times, heartbeat_reply_times))
+
+    trace = build_model_trace(generated, config)
+    session = trace["restbus_summary"]["sessions"][0]
+    assert session["state"] == "ESTABLISHED"
+    assert session["handshake_complete"] is True
+    assert session["data_acknowledgements"] > 0
+    assert session["heartbeat_checks"] == session["heartbeat_replies"]
+
+
+def test_tcp_restbus_control_frames_have_real_handshake_flags(tmp_path):
+    config = ip_config(tmp_path)
+    config["communications"][0]["transport_protocol"] = "tcp"
+    config["restbus_session"] = {"enabled": True, "heartbeat_interval_s": 1}
+
+    generated = events(config)
+    handshake = {event["protocol_event"]: event for event in generated if event.get("protocol_event") in {"TCP_SYN", "TCP_SYN_ACK", "TCP_ACK"}}
+
+    def flags(event):
+        packet = packet_bytes(event)
+        return packet[14 + 20 + 13]
+
+    assert flags(handshake["TCP_SYN"]) == 0x02
+    assert flags(handshake["TCP_SYN_ACK"]) == 0x12
+    assert flags(handshake["TCP_ACK"]) == 0x10
+    assert handshake["TCP_SYN_ACK"]["src_ip"] == "192.0.2.20"
+    assert handshake["TCP_SYN_ACK"]["dst_ips"] == ["192.0.2.10"]
 
 
 def test_runtime_load_is_busiest_physical_direction_not_sum_of_ports(tmp_path):

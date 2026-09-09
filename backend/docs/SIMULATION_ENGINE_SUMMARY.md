@@ -31,7 +31,13 @@ Die Simulationsfunktion bildet das freigegebene Engineering-Modell als ausführb
 5. `universal_trace.py` erzeugt alle Ereignisse entlang der Kommunikationspfade.
 6. `ModelBasedSimulationEngine` berechnet pro Ereignis die zugeordneten Signale und deren Werte.
 7. Artefakte wie `universal_trace.jsonl`, `universal_trace.csv`, `model_trace.json` und native Formate werden geschrieben.
-8. Das Frontend visualisiert Network/ECU, Signale, Buslast und Events synchron auf einer Zeitachse.
+8. Das Frontend visualisiert Network/ECU, IP-Sequenzen, Signale, Buslast und Events synchron auf einer Zeitachse.
+
+## IPv4/IPv6 Restbus-Session
+
+Workflow-gesteuerte IP-Simulationen aktivieren ein deterministisches Session-Modell auf derselben Ereignisquelle wie Universal Trace, Laufzeitlast und PCAP/PCAPNG. TCP-Routen erzeugen einen echten Drei-Wege-Handshake (`SYN`, `SYN+ACK`, `ACK`); UDP-Routen verwenden einen expliziten Application-Handshake (`HELLO`, `HELLO_ACK`). Erfolgreiche Datenübertragungen werden bestätigt. Alle 500 ms fragt ein `HEARTBEAT` den Partnerstatus ab und erhält ein `HEARTBEAT_ACK`.
+
+Die Ereignisse tragen `traffic_type`, `protocol_event` und `session_id`. Kontrollframes werden mit ihrem tatsächlichen IPv4/IPv6- und Transport-Overhead in Portauslastung und PCAP berücksichtigt. Das Frontend stellt sie im Tab `SEQUENCE` entlang derselben Simulationszeit dar. Der Simulator sendet dabei niemals realen Netzwerkverkehr.
 
 ## Ergebnisdaten
 

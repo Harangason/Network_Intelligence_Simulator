@@ -643,6 +643,13 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
                 "retransmission_count": event.get("retransmission_count"),
                 "duplicate_injected": event.get("duplicate_injected"),
                 "reordered": event.get("reordered"),
+                "traffic_type": event.get("traffic_type"),
+                "protocol_event": event.get("protocol_event"),
+                "session_id": event.get("session_id"),
+                "ip_version": event.get("ip_version"),
+                "transport_protocol": event.get("transport_protocol"),
+                "src_ip": event.get("src_ip"),
+                "dst_ips": event.get("dst_ips") or [],
             })
         for sample in _sequence(event.get("signals")):
             if not isinstance(sample, dict):
@@ -755,6 +762,32 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
     }
     numeric_summary, numeric_acceleration = trace_statistics(deltas, load_by_network)
     changed_samples = int(numeric_summary["changed_samples"])
+    session_frames = [event for event in events if event.get("session_id")]
+    session_ids = sorted({str(event["session_id"]) for event in session_frames})
+    restbus_sessions = []
+    for session_id in session_ids:
+        items = [event for event in session_frames if str(event.get("session_id")) == session_id]
+        protocol_events = [str(event.get("protocol_event") or "") for event in items]
+        first = items[0]
+        heartbeat_checks = protocol_events.count("HEARTBEAT")
+        heartbeat_replies = protocol_events.count("HEARTBEAT_ACK")
+        data_frames = protocol_events.count("DATA")
+        data_acknowledgements = protocol_events.count("DATA_ACK")
+        handshake_complete = "TCP_ACK" in protocol_events or "SESSION_HELLO_ACK" in protocol_events
+        restbus_sessions.append({
+            "session_id": session_id,
+            "route_id": first.get("route_id"),
+            "route_name": first.get("route_name"),
+            "network": first.get("network"),
+            "ip_version": first.get("ip_version"),
+            "transport_protocol": first.get("transport_protocol"),
+            "state": "ESTABLISHED" if handshake_complete and heartbeat_checks == heartbeat_replies else "DEGRADED",
+            "handshake_complete": handshake_complete,
+            "data_frames": data_frames,
+            "data_acknowledgements": data_acknowledgements,
+            "heartbeat_checks": heartbeat_checks,
+            "heartbeat_replies": heartbeat_replies,
+        })
     return {
         "schema": "communication-simulator.model-trace.v1",
         "signal_emulation_validation": config.get("signal_emulation_validation") or {
@@ -808,6 +841,13 @@ def build_model_trace(events: list[dict[str, Any]], config: dict[str, Any]) -> d
             "peak_percent": numeric_summary["peak_percent"],
             "burst_percent": numeric_summary["burst_percent"],
             "networks": numeric_summary["networks"],
+        },
+        "restbus_summary": {
+            "enabled": bool(restbus_sessions),
+            "model": "IP_SESSION_CONTROL_V1",
+            "sessions": restbus_sessions,
+            "control_frames": sum(str(event.get("traffic_type")) == "CONTROL" for event in session_frames),
+            "data_frames": sum(str(event.get("traffic_type")) == "DATA" for event in session_frames),
         },
         "numeric_acceleration": numeric_acceleration,
         "first_anomaly": ordered_events[0] if ordered_events else None,

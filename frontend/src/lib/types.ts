@@ -115,9 +115,16 @@ export type ModelSimulationTrace = {
   scenario: { name: string; mode: string; duration_s: number; speed: number; seed: number; trace_formats: string[] };
   signals: ModelSignalSeries[];
   events: Array<{ time_s: number; severity: string; event_type: string; scope: string; target: string; node?: string; message?: string; signal?: string; network?: string; description: string; faults: string[] }>;
-  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; status: string; sender: string; receivers: string[]; source_name?: string; source_logical_address?: string | null; destination_names?: string[]; destination_logical_addresses?: Array<string | null> }>;
+  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; status: string; sender: string; receivers: string[]; source_name?: string; source_logical_address?: string | null; destination_names?: string[]; destination_logical_addresses?: Array<string | null>; payload_bytes?: number; traffic_type?: "DATA" | "CONTROL"; protocol_event?: "TCP_SYN" | "TCP_SYN_ACK" | "TCP_ACK" | "SESSION_HELLO" | "SESSION_HELLO_ACK" | "DATA" | "DATA_ACK" | "HEARTBEAT" | "HEARTBEAT_ACK"; session_id?: string; ip_version?: number; transport_protocol?: "tcp" | "udp"; src_ip?: string; dst_ips?: string[] }>;
   bus_load: Array<{ network_id: string; time_s: number; load_percent: number; window_ms: number }>;
   comparison: { available: boolean; changed_samples: number; rmse: number; baseline: string; candidate: string };
+  restbus_summary?: {
+    enabled: boolean;
+    model: string;
+    control_frames: number;
+    data_frames: number;
+    sessions: Array<{ session_id: string; route_id: string; route_name: string; network: string; ip_version: number; transport_protocol: "tcp" | "udp"; state: "ESTABLISHED" | "DEGRADED"; handshake_complete: boolean; data_frames: number; data_acknowledgements: number; heartbeat_checks: number; heartbeat_replies: number }>;
+  };
   model_labels: string[];
   clock: string;
 };

@@ -30,10 +30,17 @@ import type {
 import { setWorkflowContext } from "@/lib/workflow-api";
 import { resumePendingEngineeringAgentTask } from "@/lib/agent-task-events";
 import { routingApprovalProgress } from "@/lib/routing-approval";
+import {
+  assessCommunication,
+  communicationPage,
+  relevantReceiverIds,
+  ROUTING_COMMUNICATION_PAGE_SIZE,
+  routeMessageIds as communicationMessageIds,
+} from "@/lib/routing-communication";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import { notifyWorkflowChanged } from "./workflow-header";
 
-const VIEWS = ["Table", "Matrix", "Graph", "AI Proposals", "Validation", "Conflicts"] as const;
+const VIEWS = ["Table", "Matrix", "TX / RX", "Graph", "AI Proposals", "Validation", "Conflicts"] as const;
 type RoutingView = (typeof VIEWS)[number];
 type RoutingEditorSeed = {
   sourceNodeId?: string;
@@ -277,6 +284,18 @@ export function RoutingWorkbench({
               onSelect={setSelected}
               routes={routes}
               signalNames={signalNames}
+            />
+          )}
+          {view === "TX / RX" && (
+            <RoutingCommunicationView
+              hardware={hardware}
+              interfaceNames={interfaceNames}
+              interfaces={interfaces}
+              messageNames={messageNames}
+              nodeNames={nodeNames}
+              onRepair={(seed) => setEditor({ mode: "ai", seed })}
+              onSelect={setSelected}
+              routes={routes}
             />
           )}
           {view === "AI Proposals" && (
@@ -635,6 +654,220 @@ function RoutingGraph({ routes, nodeNames, signalNames, onSelect }: { routes: Ro
     ];
     return <div className="routing-graph-route" key={route.id}><button className="routing-graph-code" onClick={() => onSelect(route)} type="button"><strong>{canonicalRouteLabel(route, nodeNames)}</strong>{routeAlias(route, nodeNames) && <small>{routeAlias(route, nodeNames)}</small>}<span>{route.route_code}</span></button><div className="routing-graph-path">{path.map((item, index) => <span className="routing-graph-step" key={`${item.kind}-${index}`}><button onClick={() => onSelect(route)} type="button"><small>{item.kind}</small><strong>{item.label}</strong></button>{index < path.length - 1 && <i aria-hidden="true">→</i>}</span>)}</div></div>;
   })}</div>;
+}
+
+type CommunicationRow = {
+  key: string;
+  messageLabel: string;
+  route: RoutingEntry;
+};
+
+function RoutingCommunicationView({ routes, hardware, interfaces, nodeNames, interfaceNames, messageNames, onSelect, onRepair }: {
+  routes: RoutingEntry[];
+  hardware: HardwareNode[];
+  interfaces: EngInterface[];
+  nodeNames: Map<string, string>;
+  interfaceNames: Map<string, string>;
+  messageNames: Map<string, string>;
+  onSelect: (route: RoutingEntry) => void;
+  onRepair: (seed: RoutingEditorSeed) => void;
+}) {
+  const networkAliases = useMemo(() => buildNetworkAliases(interfaces, hardware), [hardware, interfaces]);
+  const senderIds = useMemo(() => [...new Set(routes.map((route) => route.source.node_id))]
+    .sort((left, right) => compareGerman(nodeNames.get(left) ?? left, nodeNames.get(right) ?? right)), [nodeNames, routes]);
+  const [senderId, setSenderId] = useState("");
+  const [receiverId, setReceiverId] = useState("");
+  const [receiverQuery, setReceiverQuery] = useState("");
+  const [showAllReceivers, setShowAllReceivers] = useState(false);
+  const [page, setPage] = useState(1);
+  const [selectedRowKey, setSelectedRowKey] = useState("");
+
+  const senderRoutes = useMemo(() => routes.filter((route) => route.source.node_id === senderId), [routes, senderId]);
+  const relevantIds = useMemo(() => relevantReceiverIds(routes, senderId), [routes, senderId]);
+  const relevantSet = useMemo(() => new Set(relevantIds), [relevantIds]);
+  const receiverExpression = useMemo(() => parseMatrixSearchQuery(receiverQuery), [receiverQuery]);
+  const receiverOptions = useMemo(() => sortedHardwareNodes(hardware)
+    .filter((node) => node.id !== senderId)
+    .filter((node) => showAllReceivers || relevantSet.has(node.id))
+    .filter((node) => searchExpressionMatches(destinationSearchLabels(node, interfaces, networkAliases), receiverExpression))
+    .sort((left, right) =>
+      Number(relevantSet.has(right.id)) - Number(relevantSet.has(left.id))
+      || searchExpressionScore(destinationSearchLabels(right, interfaces, networkAliases), receiverExpression)
+        - searchExpressionScore(destinationSearchLabels(left, interfaces, networkAliases), receiverExpression)
+      || compareGerman(left.name, right.name),
+    ), [hardware, interfaces, networkAliases, receiverExpression, relevantSet, senderId, showAllReceivers]);
+
+  useEffect(() => {
+    if (!senderIds.includes(senderId)) setSenderId(senderIds[0] ?? "");
+  }, [senderId, senderIds]);
+
+  useEffect(() => {
+    if (receiverOptions.some((node) => node.id === receiverId)) return;
+    setReceiverId(receiverOptions[0]?.id ?? "");
+  }, [receiverId, receiverOptions]);
+
+  const rows = useMemo<CommunicationRow[]>(() => senderRoutes.flatMap((route) => {
+    const messageIds = communicationMessageIds(route);
+    const payloads = messageIds.length ? messageIds : [""];
+    return payloads.map((messageId, index) => ({
+      key: `${route.id}:${messageId || index}`,
+      messageLabel: messageId
+        ? messageNames.get(messageId) ?? messageId
+        : route.payload.topic ?? route.payload.data_object ?? route.name,
+      route,
+    }));
+  }), [messageNames, senderRoutes]);
+  const pagination = useMemo(() => communicationPage(rows, page), [page, rows]);
+  const selectedRow = pagination.items.find((row) => row.key === selectedRowKey) ?? pagination.items[0] ?? rows[0] ?? null;
+  const selectedAssessment = selectedRow && receiverId ? assessCommunication(selectedRow.route, receiverId) : null;
+
+  useEffect(() => {
+    setPage(1);
+    setSelectedRowKey("");
+  }, [receiverId, senderId]);
+
+  if (routes.length === 0) return <EmptyRouting text="TX/RX-Beziehungen werden sichtbar, sobald Routen existieren." />;
+
+  function selectRow(row: CommunicationRow) {
+    setSelectedRowKey(row.key);
+    onSelect(row.route);
+  }
+
+  function repair(row: CommunicationRow) {
+    const existingDestination = row.route.destinations.find((destination) => destination.node_id === receiverId);
+    const compatibleDestination = compatibleInterfaceForNode(interfaces, receiverId, row.route.source.protocol);
+    onRepair({
+      sourceNodeId: senderId,
+      destinationNodeId: receiverId,
+      sourceInterfaceId: row.route.source.interface_id ?? undefined,
+      destinationInterfaceId: existingDestination?.interface_id ?? compatibleDestination?.id,
+      name: `${nodeNames.get(senderId) ?? senderId} → ${nodeNames.get(receiverId) ?? receiverId}`,
+      topic: row.route.payload.topic ?? undefined,
+    });
+  }
+
+  return (
+    <div className="routing-communication">
+      <header className="routing-communication-heading">
+        <div>
+          <p className="eyebrow">Communication Inspector</p>
+          <h3>TX / RX-Beziehung prüfen</h3>
+          <p>Wähle Sender und Consumer. Modellierte Empfänger stehen zuerst; weitere ECUs lassen sich gezielt einblenden.</p>
+        </div>
+        <div className="routing-communication-legend" aria-label="Statuslegende">
+          <span className="received">Empfangen</span>
+          <span className="via_gateway">Via Gateway</span>
+          <span className="blocked">Unterbrochen</span>
+        </div>
+      </header>
+
+      <div className="routing-communication-filters">
+        <section>
+          <div className="routing-communication-filter-title"><span>Filter A</span><strong>TX · Sender</strong></div>
+          <label>
+            <span>Sendende ECU</span>
+            <select aria-label="TX Sender auswählen" onChange={(event) => setSenderId(event.target.value)} value={senderId}>
+              {senderIds.map((id) => <option key={id} value={id}>{nodeNames.get(id) ?? id}</option>)}
+            </select>
+          </label>
+          <small>{senderRoutes.length} Routen · {rows.length} Botschaften/Topics</small>
+        </section>
+        <section>
+          <div className="routing-communication-filter-title"><span>Filter B</span><strong>RX · Consumer</strong></div>
+          <label>
+            <span>Empfänger filtern</span>
+            <input aria-label="RX Consumer filtern" onChange={(event) => setReceiverQuery(event.target.value)} placeholder="z.B. Abgasnachbehandlung" type="search" value={receiverQuery} />
+          </label>
+          <div className="routing-receiver-options" role="listbox" aria-label="Mögliche Empfänger">
+            {receiverOptions.map((node) => (
+              <button aria-selected={receiverId === node.id} className={receiverId === node.id ? "selected" : ""} key={node.id} onClick={() => setReceiverId(node.id)} role="option" type="button">
+                <strong>{node.name}</strong>
+                <small>{relevantSet.has(node.id) ? "Modellierter Empfänger" : node.device_type || "Weitere ECU"}</small>
+              </button>
+            ))}
+            {receiverOptions.length === 0 && <p>Kein Consumer passt zum Filter.</p>}
+          </div>
+          <button className="button secondary tiny routing-show-receivers" onClick={() => setShowAllReceivers((value) => !value)} type="button">
+            {showAllReceivers ? "Nur mögliche Empfänger" : `Weitere Empfänger anzeigen (${Math.max(0, hardware.length - relevantIds.length - 1)})`}
+          </button>
+        </section>
+      </div>
+
+      {receiverId ? (
+        <>
+          <div className="routing-communication-table-wrap">
+            <table className="routing-communication-table">
+              <thead><tr><th>TX Botschaft / Topic</th><th>Übertragung</th><th>RX Consumer</th><th>Ergebnis</th><th>Aktion</th></tr></thead>
+              <tbody>{pagination.items.map((row) => {
+                const assessment = assessCommunication(row.route, receiverId);
+                const gatewayNames = row.route.route.gateways.map((gateway) => typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway");
+                return (
+                  <tr className={selectedRow?.key === row.key ? "selected" : ""} key={row.key} onClick={() => selectRow(row)}>
+                    <td><strong>{row.messageLabel}</strong><small>{row.route.route_code} · {interfaceNames.get(row.route.source.interface_id ?? "") ?? row.route.source.interface_id ?? "ohne Interface"}</small></td>
+                    <td><strong>{row.route.source.protocol ?? "—"}</strong><small>{gatewayNames.length ? `via ${gatewayNames.join(" → ")}` : "Direktverbindung"} · {row.route.timing.cycle_time_ms ?? "—"} ms</small></td>
+                    <td><strong>{nodeNames.get(receiverId) ?? receiverId}</strong><small>{assessment.detail}</small></td>
+                    <td><span className={`routing-communication-state ${assessment.state}`}>{assessment.label}</span></td>
+                    <td>{assessment.repairable ? <button className="routing-ai-repair" onClick={(event) => { event.stopPropagation(); repair(row); }} type="button">Mit KI beheben</button> : <button className="routing-open-route" onClick={(event) => { event.stopPropagation(); selectRow(row); }} type="button">Route prüfen</button>}</td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+            {rows.length === 0 && <div className="routing-filter-empty">Dieser Sender hat noch keine ausgehenden Botschaften.</div>}
+          </div>
+          {rows.length > 0 && (
+            <div className="routing-pagination">
+              <span>Seite {pagination.currentPage} von {pagination.totalPages} · {rows.length} Treffer · {ROUTING_COMMUNICATION_PAGE_SIZE} pro Seite</span>
+              <div>
+                <button className="button secondary tiny" disabled={pagination.currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} type="button">Zurück</button>
+                <button className="button secondary tiny" disabled={pagination.currentPage === pagination.totalPages} onClick={() => setPage((value) => Math.min(pagination.totalPages, value + 1))} type="button">Weiter</button>
+              </div>
+            </div>
+          )}
+          {selectedRow && selectedAssessment && (
+            <CommunicationPathGraph
+              assessment={selectedAssessment}
+              nodeNames={nodeNames}
+              receiverId={receiverId}
+              row={selectedRow}
+              senderId={senderId}
+            />
+          )}
+        </>
+      ) : <div className="routing-filter-empty">Wähle oder suche einen Consumer, um die Kommunikation zu prüfen.</div>}
+    </div>
+  );
+}
+
+function CommunicationPathGraph({ row, assessment, senderId, receiverId, nodeNames }: {
+  row: CommunicationRow;
+  assessment: ReturnType<typeof assessCommunication>;
+  senderId: string;
+  receiverId: string;
+  nodeNames: Map<string, string>;
+}) {
+  const gatewayNodes = row.route.route.gateways.map((gateway, index) => ({
+    id: typeof gateway === "string" ? gateway : gateway.node_id ?? `gateway-${index}`,
+    label: typeof gateway === "string" ? nodeNames.get(gateway) ?? gateway : gateway.name ?? nodeNames.get(gateway.node_id ?? "") ?? "Gateway",
+  }));
+  const nodes = [
+    { id: senderId, kind: "TX", label: nodeNames.get(senderId) ?? senderId },
+    ...gatewayNodes.map((gateway) => ({ ...gateway, kind: "Gateway" })),
+    ...(!gatewayNodes.some((gateway) => gateway.id === receiverId) ? [{ id: receiverId, kind: "RX", label: nodeNames.get(receiverId) ?? receiverId }] : []),
+  ];
+  return (
+    <section className={`routing-communication-graph ${assessment.state}`} aria-label="Kommunikationspfad">
+      <header><div><span>Pfaddarstellung</span><strong>{row.messageLabel}</strong></div><span className={`routing-communication-state ${assessment.state}`}>{assessment.label}</span></header>
+      <div className="routing-communication-path">
+        {nodes.map((node, index) => (
+          <span className="routing-communication-node" key={`${node.id}-${index}`}>
+            <span><small>{node.kind}</small><strong>{node.label}</strong></span>
+            {index < nodes.length - 1 && <i className={index === nodes.length - 2 && assessment.repairable ? "broken" : ""} aria-hidden="true">→</i>}
+          </span>
+        ))}
+      </div>
+      <p>{assessment.detail}{assessment.repairable ? " Die KI kann daraus einen vorbefüllten Reparaturvorschlag erzeugen." : " Der vollständige Pfad ist im Modell vorhanden."}</p>
+    </section>
+  );
 }
 
 type RoutingMatrixMode = "ecu" | "function" | "interface";
