@@ -164,6 +164,26 @@ test("specification extraction is stable over 25 project-creation passes", () =>
   }
 });
 
+test("completeness-first expansion retains every controller referenced by generated endpoints", () => {
+  const result = extractEngineeringSpecification(
+    "Industrie: Automotive\n- Lichtsteuergerät",
+    { sensors: 100, actuators: 100, ecus: 50, gateways: 1 },
+    "automotive",
+    true,
+  );
+  const controllerNames = new Set(result.chains
+    .filter((chain) => !["SensorController", "ActuatorController", "Gateway"].includes(chain.device_type))
+    .map((chain) => chain.hardware_name));
+  const ownedEndpoints = result.chains.filter((chain) =>
+    (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
+    && chain.configuration?.functional_owner);
+
+  assert.equal(controllerNames.has("Licht"), true);
+  assert.equal(controllerNames.has("HeadUpDisplay"), true);
+  assert.equal(controllerNames.size, 51);
+  assert.equal(ownedEndpoints.every((chain) => controllerNames.has(chain.configuration.functional_owner)), true);
+});
+
 test("wizard architecture ids are extracted without ambiguity", () => {
   assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: sensor_ecu_actuator"), "sensor_ecu_actuator");
   assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: eva"), "eva");

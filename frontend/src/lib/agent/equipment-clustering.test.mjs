@@ -106,6 +106,30 @@ test("the raised endpoint budget closes every automotive controller branch", () 
   assert.equal(clusters.reduce((count, cluster) => count + cluster.unassigned.length, 0), 0);
 });
 
+test("an extra named ECU cannot orphan the last catalog controller and its actuators", () => {
+  const extracted = extractEngineeringSpecification(
+    "Industrie: Automotive\n- Lichtsteuergerät",
+    { sensors: 100, actuators: 100, ecus: 50, gateways: 1 },
+    "automotive",
+    true,
+  );
+  const clusters = buildEquipmentClusters(extracted.chains, [
+    { id: "automotive-can_fd", label: "Automotive CAN-FD", count: 10 },
+    { id: "automotive-lin", label: "Automotive LIN", count: 25 },
+    { id: "automotive-ethernet", label: "Automotive Ethernet", count: 5 },
+  ], "automotive");
+  const headUpDisplay = clusters
+    .flatMap((cluster) => cluster.controllers)
+    .find((controller) => controller.name === "HeadUpDisplay");
+
+  assert.ok(headUpDisplay);
+  assert.deepEqual(
+    headUpDisplay.actuators.map((actuator) => actuator.name).sort(),
+    ["HeadUpDisplaySchaltausgang", "HeadUpDisplayStellglied"],
+  );
+  assert.equal(clusters.reduce((count, cluster) => count + cluster.unassigned.length, 0), 0);
+});
+
 test("cluster summaries keep the user network choice visible for the agent prompt", () => {
   const summary = equipmentClusterSummary([{
     cluster_id: "rule:climate",

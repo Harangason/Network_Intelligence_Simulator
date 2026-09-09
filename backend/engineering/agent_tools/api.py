@@ -19,6 +19,7 @@ from backend.agent_core.api.mcp_client import EngineeringMCPClient
 from backend.agent_core.api.tool_contract import Permission
 from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner
 from backend.simulator_engineering_mcp.server import create_server
+from ..db import ConcurrentUpdateError
 from ..project_context import normalize_context_project_id
 from .runtime import ToolAuthority, DEFAULT_PERMISSIONS, execute
 from .services import TOOLS
@@ -37,6 +38,12 @@ COOKIE = "engineering_review_csrf"
 _PROPOSAL_STATUS_FIELDS = (
     "proposal_id", "proposal_type", "revision", "status", "validation_result", "canonical_ids", "workload_id",
 )
+_WIZARD_REVIEW_PROPOSAL_TYPES = {
+    "WIZARD_ENGINEERING_MODEL",
+    "WIZARD_ROUTING",
+    "WIZARD_NETWORK_TOPOLOGY",
+    "CAPACITY_NETWORK_REPAIR",
+}
 
 
 def _project() -> str:
@@ -100,6 +107,55 @@ def proposal_apply(proposal_id):
         return proposal
     result = execute(authority,"apply_approved_proposal",Permission.APPLY_APPROVED_PROPOSAL,{"proposal_id":proposal_id},
                      apply_and_reconcile)
+    payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
+    return jsonify(payload),200 if result.success else 409
+
+
+@agent_api.post("/proposals/<proposal_id>/approve-apply")
+def proposal_approve_apply(proposal_id):
+    """Commit one explicit wizard review as approval and apply atomically.
+
+    The two governed lifecycle transitions remain separate in the audit trail,
+    but the reviewer does not have to confirm the same proposal twice.  This
+    endpoint is intentionally limited to proposals surfaced by the wizard; the
+    generic review UI keeps its existing two-step contract.
+    """
+    if not _human_intent():
+        return jsonify({"error":"Die bewusste Freigabe und Übernahme in der Wizard-Oberfläche ist erforderlich."}),403
+    data = request.get_json(silent=True) or {}
+    revision = str(data.get("revision") or "")
+    authority = ToolAuthority(_project(),"local-human",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
+
+    def approve_apply_and_reconcile(args):
+        current = proposals.get(args["proposal_id"])
+        if current.get("proposal_type") not in _WIZARD_REVIEW_PROPOSAL_TYPES:
+            raise PermissionError("Die Ein-Klick-Freigabe ist ausschließlich für Wizard-Vorschläge zulässig.")
+        # A lost HTTP response must not cause a second write.  APPLIED is the
+        # durable success record of the original reviewed action.
+        if current.get("status") == "APPLIED":
+            return current
+        if revision != current.get("revision"):
+            raise ConcurrentUpdateError("Der Vorschlag wurde inzwischen geändert.")
+        if current.get("status") == "VALIDATED":
+            current = proposals.review(
+                args["proposal_id"], revision=revision, decision="approve",
+                actor=authority.actor, trace_id=args["_trace_id"],
+            )
+        if current.get("status") != "APPROVED":
+            return current
+        proposal = proposals.apply(args["proposal_id"], actor=authority.actor, trace_id=args["_trace_id"])
+        # Keep proposal mutation and durable wizard continuation in the same
+        # project transaction.  A reconciliation failure rolls both back.
+        reconcile_model_apply(authority.project_id, proposal)
+        return proposal
+
+    result = execute(
+        authority,
+        "human_review_and_apply",
+        Permission.APPLY_APPROVED_PROPOSAL,
+        {"proposal_id":proposal_id},
+        approve_apply_and_reconcile,
+    )
     payload = _proposal_status_payload(result) if request.args.get("view") == "status" else result.model_dump(mode="json")
     return jsonify(payload),200 if result.success else 409
 

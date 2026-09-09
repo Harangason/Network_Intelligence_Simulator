@@ -16,7 +16,15 @@ import {
   withProjectParam,
   type UserSettings,
 } from "@/lib/user-settings";
-import { getWorkflow, saveWorkflowParameters } from "@/lib/workflow-api";
+import {
+  DEFAULT_ENGINEERING_WIZARD_SETTINGS,
+  normalizeEngineeringWizardSettings,
+  REQUIRED_WIZARD_PROCESS_ID,
+  WIZARD_PROCESS_GROUP,
+  WIZARD_SCOPE_GROUP,
+  type EngineeringWizardSettings,
+} from "@/lib/engineering-wizard-settings";
+import { getWorkflow, saveWorkflowParameters, setWorkflowContext } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { TraceStorageSettingsPanel } from "./trace-storage-settings";
 
@@ -28,6 +36,10 @@ export function SettingsPanel() {
   const [catalog, setCatalog] = useState(localCatalog);
   const [formatsSaving, setFormatsSaving] = useState(false);
   const [formatsMessage, setFormatsMessage] = useState("");
+  const [wizardSettings, setWizardSettings] = useState<EngineeringWizardSettings>(DEFAULT_ENGINEERING_WIZARD_SETTINGS);
+  const [wizardProjectNameDraft, setWizardProjectNameDraft] = useState("");
+  const [wizardSettingsSaving, setWizardSettingsSaving] = useState(false);
+  const [wizardSettingsMessage, setWizardSettingsMessage] = useState("");
 
   useEffect(() => {
     const stored = readUserSettings();
@@ -40,6 +52,15 @@ export function SettingsPanel() {
       setCatalog(nextCatalog);
       setWorkflowParameters(workflow.parameters ?? {});
       setParameterToken(workflow.edit_tokens?.parameters);
+      const fallbackModelType = typeof workflow.parameters?.industry === "string"
+        ? workflow.parameters.industry
+        : DEFAULT_ENGINEERING_WIZARD_SETTINGS.model_type;
+      const nextWizardSettings = normalizeEngineeringWizardSettings(
+        workflow.context?.engineering_wizard_settings,
+        fallbackModelType,
+      );
+      setWizardSettings(nextWizardSettings);
+      setWizardProjectNameDraft(nextWizardSettings.project_name);
     }).catch((error) => setFormatsMessage(error instanceof Error ? error.message : "Projekt konnte nicht geladen werden."));
   }, []);
 
@@ -107,6 +128,42 @@ export function SettingsPanel() {
     } finally {
       setFormatsSaving(false);
     }
+  }
+
+  async function saveWizardSettings(next: EngineeringWizardSettings, successMessage: string) {
+    if (wizardSettingsSaving) return;
+    const previous = wizardSettings;
+    setWizardSettings(next);
+    setWizardSettingsSaving(true);
+    setWizardSettingsMessage("");
+    try {
+      const workflow = await setWorkflowContext({ engineering_wizard_settings: next });
+      const saved = normalizeEngineeringWizardSettings(workflow.context?.engineering_wizard_settings, next.model_type);
+      setWizardSettings(saved);
+      setWizardProjectNameDraft(saved.project_name);
+      notifyWorkflowChanged();
+      setWizardSettingsMessage(successMessage);
+    } catch (error) {
+      setWizardSettings(previous);
+      setWizardProjectNameDraft(previous.project_name);
+      setWizardSettingsMessage(error instanceof Error ? error.message : "Wizard-Vorgaben konnten nicht gespeichert werden.");
+    } finally {
+      setWizardSettingsSaving(false);
+    }
+  }
+
+  function toggleWizardSetting(key: "scope_ids" | "process_ids", id: string) {
+    if (key === "process_ids" && id === REQUIRED_WIZARD_PROCESS_ID) {
+      setWizardSettingsMessage("Freigabe und Übernahme sind bewusst in einer einzigen Bestätigung verbunden.");
+      return;
+    }
+    const current = wizardSettings[key];
+    const values = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+    if (!values.length) {
+      setWizardSettingsMessage("Mindestens eine Option muss aktiv bleiben.");
+      return;
+    }
+    void saveWizardSettings({ ...wizardSettings, [key]: values }, "Wizard-Vorgabe gespeichert.");
   }
 
   return (
@@ -179,6 +236,101 @@ export function SettingsPanel() {
           <button className="button secondary settings-reset" onClick={reset} type="button">
             Standard wiederherstellen
           </button>
+        </section>
+
+        <section className="panel settings-panel settings-wizard" aria-labelledby="wizard-settings">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Projektanlage</p>
+              <h2 id="wizard-settings">Wizard-Vorgaben</h2>
+            </div>
+            <span className="settings-wizard-state">{wizardSettingsSaving ? "Speichert …" : "Projektbezogen"}</span>
+          </div>
+          <p className="settings-wizard-intro">
+            Diese Vorgaben gelten für neue Engineering-Läufe in diesem Projekt. Ein bereits gestarteter Lauf behält seinen bestätigten Stand.
+          </p>
+          <div className="settings-wizard-project-name">
+            <label htmlFor="wizard-project-name">
+              <strong>Projektname</strong>
+              <small>Die lesbare Bezeichnung; die technische Projekt-ID bleibt unverändert.</small>
+            </label>
+            <div className="settings-project-control">
+              <input
+                id="wizard-project-name"
+                maxLength={120}
+                onChange={(event) => setWizardProjectNameDraft(event.target.value)}
+                placeholder="z. B. NIS Restbussimulation"
+                value={wizardProjectNameDraft}
+              />
+              <button
+                className="button secondary"
+                disabled={wizardSettingsSaving || wizardProjectNameDraft.trim() === wizardSettings.project_name}
+                onClick={() => void saveWizardSettings(
+                  { ...wizardSettings, project_name: wizardProjectNameDraft.trim() },
+                  "Projektname gespeichert.",
+                )}
+                type="button"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+          <fieldset className="settings-wizard-group">
+            <legend>Projekt-Modelltyp</legend>
+            <p>Steuert Domänenkatalog, Gerätebegriffe und verfügbare Netztechnologien.</p>
+            <div className="settings-wizard-grid model-types">
+              {catalog.domains.map((domain) => (
+                <label className={wizardSettings.model_type === domain.id ? "selected" : ""} key={domain.id}>
+                  <input
+                    checked={wizardSettings.model_type === domain.id}
+                    disabled={wizardSettingsSaving}
+                    name="wizard-model-type"
+                    onChange={() => void saveWizardSettings(
+                      { ...wizardSettings, model_type: domain.id },
+                      `Modelltyp ${domain.label} gespeichert.`,
+                    )}
+                    type="radio"
+                  />
+                  <span><strong>{domain.label}</strong><small>{domain.technologies.length} Technologien verfügbar</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="settings-wizard-group">
+            <legend>{WIZARD_SCOPE_GROUP.label}</legend>
+            <p>Legt fest, bis zu welchen Studio-Artefakten der Agent arbeiten soll.</p>
+            <div className="settings-wizard-grid workflow-scope">
+              {WIZARD_SCOPE_GROUP.options.map((option) => (
+                <label className={wizardSettings.scope_ids.includes(option.id) ? "selected" : ""} key={option.id}>
+                  <input
+                    checked={wizardSettings.scope_ids.includes(option.id)}
+                    disabled={wizardSettingsSaving}
+                    onChange={() => toggleWizardSetting("scope_ids", option.id)}
+                    type="checkbox"
+                  />
+                  <span><strong>{option.label}</strong><small>{option.detail}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="settings-wizard-group">
+            <legend>{WIZARD_PROCESS_GROUP.label}</legend>
+            <p>Definiert Standardisierung, Review-Gate und Übernahmeverhalten.</p>
+            <div className="settings-wizard-grid">
+              {WIZARD_PROCESS_GROUP.options.map((option) => (
+                <label className={wizardSettings.process_ids.includes(option.id) ? "selected" : ""} key={option.id}>
+                  <input
+                    checked={wizardSettings.process_ids.includes(option.id)}
+                    disabled={wizardSettingsSaving || option.id === REQUIRED_WIZARD_PROCESS_ID}
+                    onChange={() => toggleWizardSetting("process_ids", option.id)}
+                    type="checkbox"
+                  />
+                  <span><strong>{option.label}</strong><small>{option.detail}</small></span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {wizardSettingsMessage && <p className="settings-format-message" role="status">{wizardSettingsMessage}</p>}
         </section>
 
         <TraceStorageSettingsPanel key={settings.activeProject} project={settings.activeProject} />

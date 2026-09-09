@@ -50,9 +50,16 @@ import { approveRoutes, listRoutes } from "@/lib/routing-api";
 import { routingApprovalProgress } from "@/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
+import {
+  normalizeEngineeringWizardSettings,
+  wizardQuestionnaireSteps,
+  WIZARD_PROCESS_GROUP as PROCESS_GROUP,
+  WIZARD_SCOPE_GROUP as SCOPE_GROUP,
+} from "@/lib/engineering-wizard-settings";
 import { topologyClusterKnowledgeSummary } from "@/lib/topology-cluster-knowledge";
 import {
   createOptimizationProposal,
+  getWorkflow,
   getWorkflowSummary,
   setWorkflowContext,
   type IntelligenceRecommendation,
@@ -71,8 +78,6 @@ const EQUIPMENT_CATEGORIES = [
   { key: "sensors", label: "Sensoren", type: "SensorController" },
   { key: "actuators", label: "Aktoren", type: "ActuatorController" },
 ] as const;
-
-const WIZARD_STATUS_INDEX = 7;
 
 function suggestedClusterBusName(label: string, index: number, needsNumber: boolean) {
   const cluster = label
@@ -606,79 +611,6 @@ const STATIC_INDUSTRY_DOMAINS: TechnologyDomain[] = [
   { id: "custom", label: "Custom / Proprietary", technologies: [] },
 ];
 
-const SCOPE_GROUP: ChoiceGroup = {
-    id: "scope",
-    label: "Workflowumfang",
-    multi: true,
-    options: [
-      {
-        id: "engineering_model",
-        label: "1 Engineering-Modell",
-        detail: "Hardware-Knoten, Funktionen, Interfaces, Messages, Signals und Relations.",
-        value: "Workflow 1 Engineering-Modell: HardwareNodes, Functions, Interfaces, Messages, Signals und Relations anlegen",
-      },
-      {
-        id: "routing",
-        label: "2 Routing-Tabelle",
-        detail: "Producer, Consumer, Payload, Signal, Gateway, Protokoll und Pfad.",
-        value: "Workflow 2 Routing-Tabelle: Kommunikationspfade mit Producer, Consumer, Payload, Signal, Gateway, Protokoll und Pfad erstellen",
-      },
-      {
-        id: "network_editor",
-        label: "3 Netzwerk-Editor",
-        detail: "Physische Topologie, Ports, Verbindungen, Gateway-Übergänge und Layout.",
-        value: "Workflow 3 Netzwerk-Editor: physische Topologie, Ports, Verbindungen und Gateway-Uebergaenge erzeugen",
-      },
-      {
-        id: "parameters",
-        label: "4 Parameter",
-        detail: "Bitrate, Payload, Zyklus, Latenz, Jitter, Queueing und Safety-Defaults.",
-        value: "Workflow 4 Parameter: technologieabhaengige Bitrate, Payload, Zyklus, Latenz, Jitter, Queueing und Safety-Defaults setzen",
-      },
-      {
-        id: "capacity_timing",
-        label: "5 Capacity & Timing",
-        detail: "Last, Reserve, Gateway-Load, E2E-Latenz, Bottlenecks und Timing prüfen.",
-        value: "Workflow 5 Capacity & Timing: Last, Reserve, Gateway-Load, E2E-Latenz, Bottlenecks und Timing berechnen",
-      },
-      {
-        id: "validation",
-        label: "6 Validation / Preflight",
-        detail: "Konsistenz, fehlende Interfaces, Payloads, Duplikate und Blocker prüfen.",
-        value: "Workflow 6 Validation/Preflight: Konsistenz, fehlende Interfaces, Payloads, Duplikate und Blocker pruefen",
-      },
-      {
-        id: "simulation",
-        label: "7 Simulation",
-        detail: "Simulationssnapshot mit aktuellem Preflight und berechneter Konfiguration anlegen.",
-        value: "Workflow 7 Simulation: Simulationssnapshot nach aktuellem erfolgreichem Preflight anlegen",
-      },
-      {
-        id: "results_analysis",
-        label: "8 Results / Analysis",
-        detail: "Simulationsergebnisse, Artefakte, Nachweise und Ergebnisvergleich auswerten.",
-        value: "Workflow 8 Results/Analysis: Simulationsergebnisse, Artefakte, Nachweise und Ergebnisvergleich auswerten",
-      },
-      {
-        id: "data_science_intelligence",
-        label: "9 Data Science & Intelligence",
-        detail: "Systembewertung, Reifegrad, Issues, Anomalien und Optimierungsvorschläge.",
-        value: "Workflow 9 Data Science & Intelligence: Systembewertung, Reifegrad, Issues, Anomalien und Optimierungsvorschlaege erzeugen",
-      },
-    ],
-};
-
-const PROCESS_GROUP: ChoiceGroup = {
-    id: "process",
-    label: "Arbeitsweise",
-    multi: true,
-    options: [
-      { id: "defaults", label: "Leere Felder füllen", detail: "Technikabhängige Defaults verwenden.", value: "Leere Pflichtfelder mit technologieabhängigen Defaults füllen" },
-      { id: "review_gate", label: "Bis Review-Gate arbeiten", detail: "Alle nötigen Proposals erzeugen und validieren.", value: "Selbstständig bis zum Human-Review-Gate arbeiten" },
-      { id: "approve_after_allow", label: "Nach Allow übernehmen", detail: "Valide Vorschläge nach Freigabe ins Modell schreiben.", value: "Nach Allow valide Vorschläge übernehmen" },
-    ],
-};
-
 type NetworkArchitectureId = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai";
 
 type NetworkArchitectureOption = {
@@ -756,7 +688,9 @@ type AgentWizardContext = {
   notes: string;
   parameters: string;
   process: string[];
+  process_ids: string[];
   project_id: string;
+  project_name: string;
   resume_count?: number;
   automatic_resume_count?: number;
   run_id: string;
@@ -815,7 +749,9 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
     notes: String(context.notes ?? ""),
     parameters: String(context.parameters ?? "Technologie-Defaults verwenden"),
     process: strings("process"),
+    process_ids: strings("process_ids"),
     project_id: projectId,
+    project_name: String(context.project_name ?? "").trim(),
     resume_count: Number.isFinite(Number(context.resume_count)) ? Math.max(0, Number(context.resume_count)) : 0,
     automatic_resume_count: Number.isFinite(Number(context.automatic_resume_count)) ? Math.max(0, Number(context.automatic_resume_count)) : 0,
     run_id: String(context.run_id),
@@ -1154,10 +1090,10 @@ export function EngineeringAgentWizard({
 }) {
   const [domains, setDomains] = useState<TechnologyDomain[]>(STATIC_INDUSTRY_DOMAINS);
   const [step, setStep] = useState(0);
+  const [projectName, setProjectName] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("automotive");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
   const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("gateway_direct");
-  const [architectureApproved, setArchitectureApproved] = useState(false);
   const [architectureAiProposal, setArchitectureAiProposal] = useState("");
   const [scope, setScope] = useState<string[]>(SCOPE_GROUP.options.map((option) => option.id));
   const [process, setProcess] = useState<string[]>(PROCESS_GROUP.options.map((option) => option.id));
@@ -1238,6 +1174,7 @@ export function EngineeringAgentWizard({
     transport: wizardTransport,
   });
   const [phase, setPhase] = useState<"questionnaire" | "status">("questionnaire");
+  const [wizardPreferencesReady, setWizardPreferencesReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittedAt, setSubmittedAt] = useState(0);
   const [runId, setRunId] = useState("");
@@ -1256,6 +1193,7 @@ export function EngineeringAgentWizard({
   const [statusRefreshError, setStatusRefreshError] = useState("");
   const [inlineAnswer, setInlineAnswer] = useState("");
   const [answeredQuestionKey, setAnsweredQuestionKey] = useState("");
+  const questionnaireSteps = useMemo(() => wizardQuestionnaireSteps(mode), [mode]);
   const workflowSignatureRef = useRef("");
   const loggedQuestionRef = useRef("");
   const missingResponseLogRef = useRef(false);
@@ -1264,6 +1202,7 @@ export function EngineeringAgentWizard({
   const statusRefreshErrorRef = useRef("");
   const clusterDiagnosticRef = useRef("");
   const automaticRecoveryRef = useRef("");
+  const readyContinuationRef = useRef("");
   const selectedDomain = useMemo(
     () => domains.find((domain) => domain.id === selectedIndustry) ?? domains[0],
     [domains, selectedIndustry],
@@ -1292,9 +1231,20 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     let active = true;
-    void getWorkflowSummary().then((nextWorkflow) => {
+    void getWorkflow().then((nextWorkflow) => {
       if (!active) return;
       setWorkflow(nextWorkflow);
+      const fallbackModelType = typeof nextWorkflow.parameters?.industry === "string"
+        ? nextWorkflow.parameters.industry
+        : undefined;
+      const preferences = normalizeEngineeringWizardSettings(
+        nextWorkflow.context.engineering_wizard_settings,
+        fallbackModelType,
+      );
+      setProjectName(preferences.project_name);
+      setSelectedIndustry(preferences.model_type);
+      setScope(preferences.scope_ids);
+      setProcess(preferences.process_ids);
       const legacyContext = takeLegacyWizardContext(projectId);
       const restored = restoredWizardContext(nextWorkflow.context.agent_wizard_status, projectId)
         ?? legacyContext;
@@ -1302,10 +1252,13 @@ export function EngineeringAgentWizard({
       setSubmittedContext(restored);
       setRunId(restored.run_id);
       setScope(restored.scope_ids);
+      setProcess(restored.process_ids.length ? restored.process_ids : preferences.process_ids);
+      setProjectName(restored.project_name || preferences.project_name);
+      setSelectedIndustry(restored.model_type || preferences.model_type);
       setTaskText(restored.task);
       setSubmittedAt(0);
       setPhase("status");
-      setStep(WIZARD_STATUS_INDEX);
+      setStep(wizardQuestionnaireSteps(restored.mode).length);
       void writeWizardDiagnostic("workflow", {
         projectId,
         runId: restored.run_id,
@@ -1313,7 +1266,9 @@ export function EngineeringAgentWizard({
         event: "popup-status-restored",
         details: "Die Statusübersicht wurde aus dem gespeicherten Projektkontext wiederhergestellt.",
       }).catch(() => undefined);
-    }).catch(() => undefined);
+    }).catch(() => undefined).finally(() => {
+      if (active) setWizardPreferencesReady(true);
+    });
     return () => {
       active = false;
     };
@@ -1531,18 +1486,6 @@ export function EngineeringAgentWizard({
     return () => window.clearTimeout(timer);
   }, [currentQuestion, phase, projectId, runId, workflow]);
 
-  const industryGroup: ChoiceGroup = useMemo(() => ({
-    id: "industry",
-    label: "Projekt-Modelltyp",
-    multi: false,
-    options: domains.map((domain) => ({
-      id: domain.id,
-      label: domain.label,
-      detail: `${domain.device_types?.slice(0, 4).join(", ") || "generische Hardware"} · ${domain.technologies.filter((technology) => technology.implementation_status !== "PLANNED").length}/${domain.technologies.length || "?"} ausführbar`,
-      value: domain.label,
-    })),
-  }), [domains]);
-
   const technologyGroup: ChoiceGroup = useMemo(() => ({
     id: "technologies",
     label: "Netzwerktechnologien",
@@ -1724,20 +1667,11 @@ export function EngineeringAgentWizard({
   const activeEquipmentCluster = equipmentClusters.find((cluster) => cluster.id === activeEquipmentClusterId)
     ?? equipmentClusters[0];
   const detectedDomainOption = domains.find((domain) => canonicalWizardDomain(domain.id) === detectedDomain.domain);
-  const questionnaireSteps = [
-    ...(mode === "full" ? [{ id: "industry", label: "Modelltyp" }] : []),
-    { id: "technologies", label: "Technologien" },
-    { id: "architecture", label: "Netzarchitektur" },
-    ...(mode === "can" ? [{ id: "parameters", label: "Parameter" }] : []),
-    { id: "scope", label: "Umfang" },
-    { id: "process", label: "Arbeitsweise" },
-    { id: "task", label: "Aufgabe" },
-    { id: "equipment", label: "Geräteumfang" },
-  ];
   const visibleSteps = [...questionnaireSteps, { id: "status", label: "Statusübersicht" }];
   const atLastStep = phase === "questionnaire" && step === questionnaireSteps.length - 1;
+  const projectReady = projectName.trim().length > 0;
   const taskReady = taskText.trim().length > 0 || taskFiles.length > 0;
-  const effectiveBusy = busy || submitting;
+  const effectiveBusy = busy || submitting || !wizardPreferencesReady;
   const selectedArchitecture = architectureOption(networkArchitecture);
   const plannedNetworkConnections = plannedNetworkConnectionCount({
     architectureId: selectedArchitecture?.id,
@@ -1746,7 +1680,6 @@ export function EngineeringAgentWizard({
   });
   const architectureReady = Boolean(
     selectedArchitecture
-    && architectureApproved
     && (networkArchitecture !== "hybrid_ai" || architectureAiProposal.trim()),
   );
   const architectureStepIndex = questionnaireSteps.findIndex((item) => item.id === "architecture");
@@ -1782,20 +1715,8 @@ export function EngineeringAgentWizard({
   }, [clusterDiagnosticSignature, detectedDomain, domainMismatch, domainMismatchAccepted, equipmentClusterAssignments, plannedEquipment.chains.length, previewDomain, projectId, runId, selectedDomainId]);
 
   function toggle(group: ChoiceGroup, optionId: string) {
-    if (group.id === "industry") {
-      setSelectedIndustry(optionId);
-      return;
-    }
     if (group.id === "technologies") {
       setSelectedTechnologies((current) => toggleSelection(current, optionId));
-      return;
-    }
-    if (group.id === "scope") {
-      setScope((current) => toggleSelection(current, optionId));
-      return;
-    }
-    if (group.id === "process") {
-      setProcess((current) => toggleSelection(current, optionId));
     }
   }
 
@@ -1843,7 +1764,6 @@ export function EngineeringAgentWizard({
 
   function selectNetworkArchitecture(id: NetworkArchitectureId) {
     setNetworkArchitecture(id);
-    setArchitectureApproved(false);
     if (id !== "hybrid_ai") setArchitectureAiProposal("");
   }
 
@@ -1853,7 +1773,6 @@ export function EngineeringAgentWizard({
       .map((option) => option.label)
       .join(", ");
     setNetworkArchitecture("hybrid_ai");
-    setArchitectureApproved(false);
     setArchitectureAiProposal(
       `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren dem fachlich zuständigen Controller zu. ` +
       `Binde zentrale, diagnoseorientierte oder hochbandbreitige Teilnehmer direkt an ein System-Gateway an. ` +
@@ -1863,7 +1782,7 @@ export function EngineeringAgentWizard({
   }
 
   async function submitQuestionnaire() {
-    if (!taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !architectureReady || !selectedArchitecture || submitting || (domainMismatch && !domainMismatchAccepted)) return;
+    if (!projectReady || !taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !architectureReady || !selectedArchitecture || submitting || (domainMismatch && !domainMismatchAccepted)) return;
     setSubmitting(true);
     setStatusError("");
     const selectedTechnologyValues = technologyGroup.options
@@ -1874,7 +1793,7 @@ export function EngineeringAgentWizard({
     const parameterSummary = parameterMode === "defaults"
       ? "Technologie-Defaults verwenden"
       : `Nutzerdefiniert: Bitrate=${customParameters.bitrate || "Default"}; Payload=${customParameters.payload || "Default"}; Cycle=${customParameters.cycleMs || "Default"} ms; SamplePoint=${customParameters.samplePoint || "Default"} %`;
-    const note = notes.trim() ? `\n- Weitere Hinweise: ${notes.trim()}` : "";
+    const note = notes.trim() ? `- Weitere Hinweise: ${notes.trim()}\n` : "";
     const attachments = taskFiles.length
       ? `\n\nAufgaben-Anlagen:\n${taskFiles.map((file) => formatTaskAttachment(file)).join("\n")}`
       : "";
@@ -1899,7 +1818,9 @@ export function EngineeringAgentWizard({
       notes: notes.trim(),
       parameters: parameterSummary,
       process: selectedProcessValues,
+      process_ids: process,
       project_id: projectId,
+      project_name: projectName.trim(),
       run_id: nextRunId,
       scope: selectedScopeValues,
       scope_ids: scope,
@@ -1915,6 +1836,7 @@ export function EngineeringAgentWizard({
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
         `- Lauf-ID: ${nextRunId}\n` +
+        `- Projektname: ${projectName.trim()}\n` +
         `- Abfrage erfolgt: true\n` +
         `- Abfrage-Modus: ${mode === "can" ? "reduziert fuer CAN/CAN-FD" : "vollstaendig"}\n` +
         `- Industrie: ${mode === "can" ? "aus Projektkontext ableiten" : selectedDomain?.label ?? selectedIndustry}\n` +
@@ -1932,13 +1854,14 @@ export function EngineeringAgentWizard({
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
-        `- Netzarchitektur-Freigabe: explizit durch den Nutzer erteilt am ${confirmedAt}\n` +
+        `- Netzarchitektur-Freigabe: gemeinsam mit dem Engineering-Auftrag durch den Nutzer bestätigt am ${confirmedAt}\n` +
         `- Hardware-Sollwerte: ${JSON.stringify(equipmentCounts)}\n` +
         `- Vollstaendigkeitsprinzip: System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten; diese sind Mindestumfang, keine Obergrenze. Fehlende Low-Level-Klassen, Sensoren, Aktoren und Signale fuer ausgewaehlte Systeme muessen fachlich ergaenzt werden.\n` +
         `${architectureAiProposal.trim() ? `- KI-Architekturvorgabe: ${architectureAiProposal.trim()}\n` : ""}` +
         `- Parameter: ${parameterSummary}\n` +
         `- Workflowumfang: ${selectedScopeValues.length ? selectedScopeValues.join("; ") : "nicht vorgegeben, Ziel aus Nutzeranfrage ableiten"}\n` +
-        `- Arbeitsweise: ${selectedProcessValues.length ? selectedProcessValues.join("; ") : "nicht vorgegeben, vorsichtig mit Review-Gate arbeiten"}${note}\n` +
+        `- Arbeitsweise: ${selectedProcessValues.length ? selectedProcessValues.join("; ") : "nicht vorgegeben, vorsichtig mit Review-Gate arbeiten"}\n` +
+        note +
         "\nKonkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:\n" +
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
@@ -1971,11 +1894,18 @@ export function EngineeringAgentWizard({
         });
       }
       await setWorkflowContext({
+        engineering_wizard_settings: {
+          project_name: projectName.trim(),
+          model_type: mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry,
+          scope_ids: scope,
+          process_ids: process,
+        },
         agent_wizard_status: {
           ...nextContext,
           status: "RUNNING",
         },
       });
+      window.dispatchEvent(new Event(WORKFLOW_CHANGED_EVENT));
       await Promise.all([
         writeWizardDiagnostic("workflow", {
           projectId,
@@ -2026,6 +1956,7 @@ export function EngineeringAgentWizard({
       return;
     }
     setStep((current) => {
+      if (questionnaireSteps[current]?.id === "project" && !projectReady) return current;
       if (questionnaireSteps[current]?.id === "architecture" && !architectureReady) return current;
       return Math.min(current + 1, questionnaireSteps.length - 1);
     });
@@ -2080,20 +2011,14 @@ export function EngineeringAgentWizard({
   }
 
   function selectedFor(group: ChoiceGroup) {
-    if (group.id === "industry") return [selectedIndustry];
     if (group.id === "technologies") return selectedTechnologies;
-    if (group.id === "scope") return scope;
-    if (group.id === "process") return process;
     return [];
   }
 
   function activeGroupForStep() {
     if (phase === "status") return null;
     const id = questionnaireSteps[step]?.id;
-    if (id === "industry") return industryGroup;
     if (id === "technologies") return technologyGroup;
-    if (id === "scope") return SCOPE_GROUP;
-    if (id === "process") return PROCESS_GROUP;
     return null;
   }
 
@@ -2133,19 +2058,25 @@ export function EngineeringAgentWizard({
     }
   }
 
-  async function retryPopupRun(automatic = false) {
+  async function retryPopupRun(automatic = false, reason: "recovery" | "review" = "recovery") {
     if (agentPending || !runId) return;
     const modelComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
     const workflowTarget = modelComplete
       ? !routingReview.complete ? "routing" : [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
       : undefined;
-    const prompt = wizardContinuationPrompt({ automatic, runId, workflowTarget });
+    const prompt = reason === "review"
+      ? [
+          `Der geprüfte Wizard-Vorschlag wurde mit einer menschlichen Entscheidung freigegeben und ins Modell übernommen. Lauf-ID: ${runId}.`,
+          `Setze den bestätigten Engineering-Auftrag jetzt am nächsten offenen Schritt fort${workflowTarget ? `; Ziel: ${workflowTarget}` : ""}.`,
+          "Keine weitere Bestätigung für denselben Vorschlag anfordern. Neue oder fachlich geänderte Vorschläge bleiben reviewpflichtig.",
+        ].join("\n")
+      : wizardContinuationPrompt({ automatic, runId, workflowTarget });
     setStatusError("");
     try {
       const resumedContext = submittedContext ? {
         ...submittedContext,
         resume_count: resumeCount + 1,
-        automatic_resume_count: automatic ? automaticResumeCount + 1 : automaticResumeCount,
+        automatic_resume_count: automatic && reason === "recovery" ? automaticResumeCount + 1 : automaticResumeCount,
       } : null;
       if (resumedContext) {
         const nextWorkflow = await setWorkflowContext({
@@ -2162,7 +2093,7 @@ export function EngineeringAgentWizard({
         projectId,
         runId,
         step: "agent-start",
-        event: automatic ? "popup-agent-auto-recovered" : "popup-agent-resumed",
+        event: reason === "review" ? "popup-agent-review-continued" : automatic ? "popup-agent-auto-recovered" : "popup-agent-resumed",
         details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
       }).catch(() => undefined);
       await sendWizardMessage({ text: prompt }, workflowTarget ? { body: { workflowTarget } } : undefined);
@@ -2266,7 +2197,8 @@ export function EngineeringAgentWizard({
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
   const primaryDisabled = effectiveBusy
-    || (atLastStep && (!taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !communicationSystemReady || (domainMismatch && !domainMismatchAccepted)))
+    || (atLastStep && (!projectReady || !taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !communicationSystemReady || (domainMismatch && !domainMismatchAccepted)))
+    || (activeStepId === "project" && !projectReady)
     || (activeStepId === "task" && !taskReady)
     || (activeStepId === "architecture" && !architectureReady);
   const visibleQuestion = currentQuestion?.key === answeredQuestionKey ? null : currentQuestion;
@@ -2346,6 +2278,14 @@ export function EngineeringAgentWizard({
     automaticRecoveryRef.current = runId;
     void retryPopupRun(true);
   }, [needsAutomaticRecovery, runId]);
+  useEffect(() => {
+    const key = execution?.state === "READY_TO_CONTINUE"
+      ? `${execution.run_id}:${execution.step}:${execution.updated_at}`
+      : "";
+    if (!key || agentPending || !hasResumablePrompt || readyContinuationRef.current === key) return;
+    readyContinuationRef.current = key;
+    void retryPopupRun(true, "review");
+  }, [agentPending, execution?.run_id, execution?.state, execution?.step, execution?.updated_at, hasResumablePrompt]);
   const lastAssistantText = [...currentRunMessages].reverse()
     .find((message) => message.role === "assistant" && textFromParts(message.parts).trim());
   const runMessage = execution?.state === "RUNNING" && executionStopped
@@ -2487,6 +2427,7 @@ export function EngineeringAgentWizard({
               effectiveBusy
               || phase === "status"
               || item.id === "status"
+              || (index > 0 && !projectReady)
               || (item.id === "equipment" && !taskReady)
               || (index > architectureStepIndex && !architectureReady)
             }
@@ -2499,6 +2440,24 @@ export function EngineeringAgentWizard({
           </button>
         ))}
       </div>
+      {activeStepId === "project" && (
+        <fieldset className="agent-choice-group agent-project-name-step">
+          <legend>Projekt benennen</legend>
+          <label htmlFor="engineering-project-name">
+            <span>Projektname</span>
+            <input
+              autoFocus
+              disabled={effectiveBusy}
+              id="engineering-project-name"
+              maxLength={120}
+              onChange={(event) => setProjectName(event.target.value)}
+              placeholder="z. B. NIS Restbussimulation"
+              value={projectName}
+            />
+            <small>Die lesbare Bezeichnung wird im Projektkontext gespeichert. Die technische Projekt-ID bleibt unverändert.</small>
+          </label>
+        </fieldset>
+      )}
       {activeGroup && (
         <fieldset className="agent-choice-group">
           <legend>{activeGroup.label}</legend>
@@ -2631,45 +2590,14 @@ export function EngineeringAgentWizard({
               <span>KI-Leitplanke</span>
               <textarea
                 disabled={effectiveBusy}
-                onChange={(event) => {
-                  setArchitectureAiProposal(event.target.value);
-                  setArchitectureApproved(false);
-                }}
+                onChange={(event) => setArchitectureAiProposal(event.target.value)}
                 placeholder="Beschreibe, welche Teilnehmer lokal über einen Controller oder direkt über ein System-Gateway geführt werden sollen."
                 rows={3}
                 value={architectureAiProposal}
               />
             </label>
           )}
-          <label className={`agent-architecture-approval ${architectureApproved ? "approved" : ""}`}>
-            <input
-              checked={architectureApproved}
-              disabled={
-                effectiveBusy
-                || !selectedArchitecture
-                || (networkArchitecture === "hybrid_ai" && !architectureAiProposal.trim())
-              }
-              onChange={(event) => setArchitectureApproved(event.target.checked)}
-              type="checkbox"
-            />
-            <span>
-              <strong>Netzarchitektur verbindlich freigeben</strong>
-              <small>Der Schritt kann erst nach Auswahl und ausdrücklicher Freigabe verlassen werden.</small>
-            </span>
-          </label>
         </fieldset>
-      )}
-      {activeStepId === "process" && (
-        <label className="agent-questionnaire-note">
-          <span>Weitere Hinweise</span>
-          <textarea
-            disabled={busy}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="Optional: besondere Protokolle, Safety, Timing, Herstellerlogik ..."
-            rows={2}
-            value={notes}
-          />
-        </label>
       )}
       {activeStepId === "task" && (
         <fieldset className="agent-choice-group">
@@ -2684,6 +2612,16 @@ export function EngineeringAgentWizard({
               value={taskText}
             />
           </label>
+          <label className="agent-questionnaire-note">
+            <span>Weitere Hinweise</span>
+            <textarea
+              disabled={busy}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Optional: besondere Protokolle, Safety, Timing oder Herstellerlogik …"
+              rows={2}
+              value={notes}
+            />
+          </label>
           <label className="agent-file-drop">
             <input
               accept={SUPPORTED_EVIDENCE_ACCEPT}
@@ -2695,6 +2633,9 @@ export function EngineeringAgentWizard({
               }}
               type="file"
             />
+            <svg aria-hidden="true" className="agent-file-drop-icon" viewBox="0 0 24 24">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" />
+            </svg>
             <span>
               <strong>Text, PDF, PowerPoint oder Bild hinzufügen</strong>
               <small>Text/SVG wird direkt gelesen. PDF, Office und Bilder werden als Evidence in den Auftrag aufgenommen.</small>
@@ -3019,6 +2960,7 @@ export function EngineeringAgentWizard({
 
           <dl className="agent-wizard-context">
             <div><dt>Aktueller Schritt</dt><dd>{currentStatusStep}</dd></div>
+            <div><dt>Projektname</dt><dd>{submittedContext.project_name || projectId}</dd></div>
             <div><dt>Parameter</dt><dd>{submittedContext.parameters}</dd></div>
             <div><dt>Arbeitsweise</dt><dd>{submittedContext.process.join(" · ") || "Review-Gate"}</dd></div>
             <div><dt>Lauf-ID</dt><dd className="mono">{submittedContext.run_id}</dd></div>
@@ -3128,10 +3070,12 @@ export function EngineeringAgentWizard({
           </button>
           <span>{activeStepId === "task"
             ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt"
+            : activeStepId === "project"
+              ? projectReady ? "Projektname bereit" : "Projektname fehlt"
             : activeStepId === "equipment"
               ? equipmentReady && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, Busse und Controller-Zuordnung prüfen"
             : activeStepId === "architecture"
-              ? architectureReady ? "Verbindlich freigegeben" : selectedArchitecture ? "Freigabe fehlt" : "Auswahl erforderlich"
+              ? architectureReady ? "Architektur gewählt" : "Auswahl erforderlich"
               : activeGroup
                 ? `${selectedFor(activeGroup).length} ausgewählt`
                 : parameterMode === "defaults" ? "Defaults ausgewählt" : "Eigene Werte ausgewählt"}</span>
@@ -3888,7 +3832,7 @@ function WizardModelReview({ onProposalLoaded, projectId, runId }: { onProposalL
     return () => controller.abort();
   }, [onProposalLoaded, projectId, runId]);
   if (error) return <p role="alert">{error}</p>;
-  return proposal ? <EngineeringAgentEventCard event={{ type: "APPROVAL", proposal }} projectId={projectId} />
+  return proposal ? <EngineeringAgentEventCard event={{ type: "APPROVAL", proposal }} projectId={projectId} wizardReview />
     : <p>Modellvorschlag wird geladen …</p>;
 }
 

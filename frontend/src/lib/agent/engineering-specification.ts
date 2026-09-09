@@ -1188,6 +1188,50 @@ function expandArchitectureChains(
       }
     }
   }
+  if (completenessFirst) {
+    // Hardware targets are minimums in completeness-first mode. A named ECU
+    // may consume the final target slot while catalog endpoints still refer to
+    // a later controller. Close those ownership references explicitly instead
+    // of leaving otherwise valid sensors or actuators orphaned in clustering.
+    const controllerNames = new Set(chains
+      .filter((chain) => isEngineeringControllerDevice(chain.device_type))
+      .map((chain) => normalized(normalizeHardwareName(chain.hardware_name))));
+    const requiredOwners = new Map<string, { name: string; endpoint: ExtractedEngineeringChain }>();
+    for (const chain of chains) {
+      if (chain.device_type !== "SensorController" && chain.device_type !== "ActuatorController") continue;
+      const owner = typeof chain.configuration?.functional_owner === "string"
+        ? normalizeHardwareName(chain.configuration.functional_owner)
+        : "";
+      const key = normalized(owner);
+      if (key && !controllerNames.has(key) && !requiredOwners.has(key)) {
+        requiredOwners.set(key, { name: owner, endpoint: chain });
+      }
+    }
+    for (const [key, { name: ownerName, endpoint }] of requiredOwners) {
+      const catalogTemplate = templates.find((template) =>
+        isEngineeringControllerDevice(template.deviceType)
+        && normalized(normalizeHardwareName(template.hardwareName)) === key);
+      const preferredInterfaceType = catalogTemplate?.interfaceType || systemInterfaceType(ownerName, domain) || endpoint.interface_type;
+      const template: ArchitectureTemplate = catalogTemplate ?? {
+        hardwareName: ownerName,
+        deviceType: targetControllerType,
+        signalName: `${identifier(ownerName)}Status`,
+        interfaceType: preferredInterfaceType,
+        cycleMs: preferredInterfaceType === "LIN" ? 100 : preferredInterfaceType === "Ethernet" ? 20 : 10,
+        unit: "code",
+        minValue: 0,
+        maxValue: 255,
+        factor: 1,
+      };
+      const interfaceType = communicationSystems.some((system) => communicationSystemAllowsTemplateInterface(system, preferredInterfaceType))
+        || !communicationSystems.length
+        ? preferredInterfaceType
+        : communicationSystems[chains.length % communicationSystems.length];
+      chains.push(chainFromTemplate({ ...template, hardwareName: ownerName, interfaceType }, chains.length, domain));
+      names.add(key);
+      controllerNames.add(key);
+    }
+  }
   return { chains, targets };
 }
 

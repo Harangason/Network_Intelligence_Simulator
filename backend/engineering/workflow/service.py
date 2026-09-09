@@ -24,6 +24,50 @@ from ..project_context import activate_project
 
 DEFAULT_PROJECT_ID = "default"
 
+WIZARD_SCOPE_IDS = (
+    "engineering_model",
+    "routing",
+    "network_editor",
+    "parameters",
+    "capacity_timing",
+    "validation",
+    "simulation",
+    "results_analysis",
+    "data_science_intelligence",
+)
+WIZARD_PROCESS_IDS = ("defaults", "review_gate", "approve_after_allow")
+
+
+def normalize_engineering_wizard_settings(value: Any) -> dict[str, Any]:
+    source = value if isinstance(value, dict) else {}
+
+    def selected_ids(key: str, allowed: tuple[str, ...]) -> list[str]:
+        raw = source.get(key)
+        if not isinstance(raw, list):
+            return list(allowed)
+        result: list[str] = []
+        for item in raw:
+            normalized = str(item)
+            if normalized in allowed and normalized not in result:
+                result.append(normalized)
+        return result or list(allowed)
+
+    raw_model_type = source.get("model_type")
+    model_type = raw_model_type.strip()[:64] if isinstance(raw_model_type, str) else "automotive"
+    if not model_type or any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for character in model_type):
+        model_type = "automotive"
+    raw_project_name = source.get("project_name")
+    project_name = raw_project_name.strip()[:120] if isinstance(raw_project_name, str) else ""
+    process_ids = selected_ids("process_ids", WIZARD_PROCESS_IDS)
+    if "approve_after_allow" not in process_ids:
+        process_ids.append("approve_after_allow")
+    return {
+        "project_name": project_name,
+        "model_type": model_type,
+        "scope_ids": selected_ids("scope_ids", WIZARD_SCOPE_IDS),
+        "process_ids": process_ids,
+    }
+
 
 def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=True, separators=(",", ":"))
@@ -737,6 +781,7 @@ class WorkflowStatusService:
             "agent_execution",
             "agent_wizard_status",
             "active_workflow_step",
+            "engineering_wizard_settings",
             "engineering_scope_rules",
             "selected_object",
             "selected_route",
@@ -748,6 +793,10 @@ class WorkflowStatusService:
         if "engineering_scope_rules" in cleaned:
             cleaned["engineering_scope_rules"] = normalize_engineering_scope_rules(
                 cleaned["engineering_scope_rules"]
+            )
+        if "engineering_wizard_settings" in cleaned:
+            cleaned["engineering_wizard_settings"] = normalize_engineering_wizard_settings(
+                cleaned["engineering_wizard_settings"]
             )
         active_step = cleaned.get("active_workflow_step")
         if active_step:

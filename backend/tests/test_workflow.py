@@ -13,7 +13,11 @@ from backend.engineering.capacity import service as capacity_service_module
 from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol
 from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
 from backend.engineering.workflow import service as workflow_service_module
-from backend.engineering.workflow.service import WorkflowStatusService, is_topology_layout_only_change
+from backend.engineering.workflow.service import (
+    WorkflowStatusService,
+    is_topology_layout_only_change,
+    normalize_engineering_wizard_settings,
+)
 
 
 def test_topology_artifact_accepts_canonical_hardware_interface_ports():
@@ -301,6 +305,61 @@ def test_workflow_context_persists_agent_execution_without_losing_wizard(monkeyp
     assert saved["context"]["engineering_scope_rules"]["hardware_counts"]["gateways"] == 1
     assert saved["context"]["active_project"] == "project-a"
     assert "unknown_context_key" not in saved["context"]
+
+
+def test_engineering_wizard_settings_are_normalized_and_project_persistent(monkeypatch):
+    state = {"active_step": "engineering_model", "context": {
+        "agent_wizard_status": {"run_id": "run-a"},
+    }}
+
+    class Connection:
+        def execute(self, query, parameters):
+            state["context"] = json.loads(parameters[1])
+
+    service = WorkflowStatusService("project-a")
+    monkeypatch.setattr(workflow_service_module, "get_connection", lambda: nullcontext(Connection()))
+    monkeypatch.setattr(service, "_get_locked", lambda connection: state)
+    monkeypatch.setattr(service, "get", lambda **kwargs: state)
+    saved = service.set_context({
+        "engineering_wizard_settings": {
+            "project_name": "  NIS Restbussimulation  ",
+            "model_type": "automotive",
+            "scope_ids": ["routing", "routing", "invalid", "simulation"],
+            "process_ids": ["review_gate", "invalid"],
+            "unknown": "ignored",
+        },
+    })
+
+    assert saved["context"]["engineering_wizard_settings"] == {
+        "project_name": "NIS Restbussimulation",
+        "model_type": "automotive",
+        "scope_ids": ["routing", "simulation"],
+        "process_ids": ["review_gate", "approve_after_allow"],
+    }
+    assert saved["context"]["agent_wizard_status"]["run_id"] == "run-a"
+    assert saved["context"]["active_project"] == "project-a"
+
+
+def test_engineering_wizard_settings_fall_back_to_safe_complete_defaults():
+    normalized = normalize_engineering_wizard_settings({
+        "project_name": 17,
+        "model_type": "not valid!",
+        "scope_ids": [],
+        "process_ids": ["unknown"],
+    })
+
+    assert normalized["project_name"] == ""
+    assert normalized["model_type"] == "automotive"
+    assert normalized["scope_ids"] == list(workflow_service_module.WIZARD_SCOPE_IDS)
+    assert normalized["process_ids"] == list(workflow_service_module.WIZARD_PROCESS_IDS)
+
+
+def test_engineering_wizard_settings_keep_one_click_approval_mandatory():
+    normalized = normalize_engineering_wizard_settings({
+        "process_ids": ["defaults"],
+    })
+
+    assert normalized["process_ids"] == ["defaults", "approve_after_allow"]
 
 
 def test_canceled_wizard_run_is_terminal_for_late_status_writes(monkeypatch):

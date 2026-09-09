@@ -13,6 +13,7 @@ import {
 } from "@/lib/workflow-api";
 import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
 import { traceViewHref } from "@/lib/trace-navigation";
+import { normalizeEngineeringWizardSettings } from "@/lib/engineering-wizard-settings";
 
 const LINKS: Record<WorkflowStepId, string> = {
   engineering_model: "/studio/engineering",
@@ -215,6 +216,7 @@ function WorkflowHeaderContent({ initialProjectId = "" }: { initialProjectId?: s
   });
   const activeStepStatus = displayedSteps.find((step) => step.id === activeStep)?.status;
   const projectIdForLinks = workflow?.project_id ?? initialProjectId;
+  const projectName = normalizeEngineeringWizardSettings(workflow?.context?.engineering_wizard_settings).project_name;
   const activeStaleReason = activeStepStatus === "OUTDATED"
     ? displayedSteps.find((step) => step.id === activeStep)?.reason
     : undefined;
@@ -227,7 +229,11 @@ function WorkflowHeaderContent({ initialProjectId = "" }: { initialProjectId?: s
           <strong>Define → Route → Connect → Configure → Calculate → Validate → Simulate → Analyze → Assess</strong>
         </div>
         <div className="workflow-heading-status">
-          {workflow?.project_id && <span className="workflow-project mono">Projekt: {workflow.project_id}</span>}
+          {workflow?.project_id && (
+            <span className="workflow-project mono" title={`Technische Projekt-ID: ${workflow.project_id}`}>
+              Projekt: {projectName || workflow.project_id}
+            </span>
+          )}
           {error && <span className="workflow-api-error">Status nicht verfügbar</span>}
         </div>
       </div>

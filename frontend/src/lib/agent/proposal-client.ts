@@ -49,3 +49,26 @@ export async function applyReviewedProposal(
     throw new Error(`Übernahme nicht bestätigt. Der gespeicherte Stand wird beim nächsten Abruf erneut geprüft; bitte nicht blind wiederholen.${detail}`);
   }
 }
+
+/** One explicit wizard review performs both governed transitions atomically. */
+export async function approveAndApplyWizardProposal(
+  proposal: EngineeringProposal, projectId: string, csrfToken: string,
+): Promise<EngineeringProposal> {
+  try {
+    const result = await readResult(await fetch(
+      `/api/engineering/agent/proposals/${encodeURIComponent(proposal.proposal_id)}/approve-apply?view=status`,
+      { method: "POST", headers: { "Content-Type": "application/json", "X-Project-ID": projectId,
+        "X-Review-CSRF": csrfToken, "X-Human-Review": "confirmed" },
+        body: JSON.stringify({ revision: proposal.revision }) },
+    ));
+    return { ...proposal, ...result };
+  } catch (cause) {
+    try {
+      const persisted = await refreshProposal(proposal, projectId);
+      if (persisted.proposal_id === proposal.proposal_id && persisted.status === "APPLIED") return persisted;
+    } catch { /* Preserve the uncertain write outcome; do not invent success. */ }
+    const detail = cause instanceof Error && !/fetch|network|load failed/i.test(cause.message)
+      ? ` ${cause.message}` : "";
+    throw new Error(`Freigabe und Übernahme nicht bestätigt. Der gespeicherte Stand wird beim nächsten Abruf erneut geprüft; bitte nicht blind wiederholen.${detail}`);
+  }
+}

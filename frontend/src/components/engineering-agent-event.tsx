@@ -7,7 +7,7 @@ import { WorkloadProgress } from "./workload-progress";
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
-import { applyReviewedProposal, refreshProposal } from '@/lib/agent/proposal-client';
+import { applyReviewedProposal, approveAndApplyWizardProposal, refreshProposal } from '@/lib/agent/proposal-client';
 
 function LazyDetails({ title, children }: { title: string; children: () => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -33,7 +33,7 @@ function Value({ value, references = {} }: { value: unknown; references?: Record
   return <span>{value == null ? "—" : (references[String(value)] ?? String(value))}</span>;
 }
 
-function ProposalReview({ initial, projectId }: { initial: EngineeringProposal; projectId: string }) {
+function ProposalReview({ initial, projectId, wizardReview = false }: { initial: EngineeringProposal; projectId: string; wizardReview?: boolean }) {
   const [proposal, setProposal] = useState(initial);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,14 +52,16 @@ function ProposalReview({ initial, projectId }: { initial: EngineeringProposal; 
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
   }, [base, projectId, busy, proposal.revision]);
-  async function action(kind: "approve" | "reject" | "apply" | "validate" | "revise") {
+  async function action(kind: "approve" | "approveApply" | "reject" | "apply" | "validate" | "revise") {
     setBusy(true); setError("");
     try {
       const session = await fetch("/api/engineering/agent/review-session", { cache: "no-store" });
       if (!session.ok) throw new Error("Review-Sitzung konnte nicht geöffnet werden.");
       const { csrf_token } = await session.json();
-      if (kind === "apply") {
-        const persisted = await applyReviewedProposal(proposal, projectId, csrf_token);
+      if (kind === "apply" || kind === "approveApply") {
+        const persisted = kind === "approveApply"
+          ? await approveAndApplyWizardProposal(proposal, projectId, csrf_token)
+          : await applyReviewedProposal(proposal, projectId, csrf_token);
         setProposal(persisted);
         setEditing(false);
         if (persisted.status === "APPLIED") {
@@ -100,8 +102,12 @@ function ProposalReview({ initial, projectId }: { initial: EngineeringProposal; 
     {proposal.validation_result.findings?.map((finding, index) => <p role="alert" key={index}>{finding.message}</p>)}
     <div className="engineering-proposal-actions">
       {['PROPOSED', 'VALIDATED', 'APPROVED', 'OUTDATED'].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => setEditing(value => !value)}>Bearbeiten</button>}
-      {proposal.status === "VALIDATED" && <button disabled={busy || !loaded} onClick={() => void action("approve")}>Vorschlag freigeben</button>}
-      {proposal.status === "APPROVED" && <button disabled={busy || !loaded} onClick={() => void action("apply")}>Ins Modell übernehmen</button>}
+      {proposal.status === "VALIDATED" && (wizardReview
+        ? <button disabled={busy || !loaded} onClick={() => void action("approveApply")}>Freigeben, übernehmen &amp; fortfahren</button>
+        : <button disabled={busy || !loaded} onClick={() => void action("approve")}>Vorschlag freigeben</button>)}
+      {proposal.status === "APPROVED" && (wizardReview
+        ? <button disabled={busy || !loaded} onClick={() => void action("approveApply")}>Übernehmen &amp; fortfahren</button>
+        : <button disabled={busy || !loaded} onClick={() => void action("apply")}>Ins Modell übernehmen</button>)}
       {["PROPOSED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("validate")}>Erneut prüfen</button>}
       {["PROPOSED", "VALIDATED", "APPROVED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("reject")}>Ablehnen</button>}
     </div>
@@ -205,9 +211,9 @@ function FindingDecision({ event, projectId, onAnswer }: { event: EngineeringAge
   </div>}</LazyDetails>;
 }
 
-export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void }) {
+export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; wizardReview?: boolean }) {
   if (event.type === 'CONTEXT' || event.type === 'HEARTBEAT') return null;
-  if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} />;
+  if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} />;
   if (event.question) return <section data-response-type={event.type}>{event.title && <h4>{event.title}</h4>}{event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}<EngineeringQuestion question={event.question} projectId={projectId} onAnswer={onAnswer} /></section>;
   const text = event.text ?? '';
   const summary = text.length > 700 ? `${text.slice(0, 700)}…` : text;

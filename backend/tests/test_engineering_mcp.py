@@ -169,6 +169,130 @@ def test_browser_approval_requires_separate_intent(authority):
     assert "changes" not in status.json["data"]
 
 
+def wizard_review_proposal(authority):
+    """Create a small validated proposal with a wizard-only proposal type."""
+    generated = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen."})
+    assert generated.success, generated
+    created = execute(
+        authority,
+        "wizard-review-fixture",
+        Permission.READ_MODEL,
+        {},
+        lambda _: proposals.create(
+            "WIZARD_ENGINEERING_MODEL",
+            generated.data["changes"],
+            "Wizard-Freigabe testen.",
+        ),
+    )
+    assert created.success, created
+    validated = call(authority, "validate_proposal", {"proposal_id": created.data["proposal_id"]})
+    assert validated.success, validated
+    assert validated.data["status"] == "VALIDATED", validated
+    return validated.data
+
+
+def wizard_review_client(authority):
+    from backend.app import create_app
+
+    client = create_app(testing=True).test_client()
+    csrf = client.get("/api/engineering/agent/review-session").json["csrf_token"]
+    return client, {
+        "X-Project-ID": authority.project_id,
+        "X-Review-CSRF": csrf,
+        "X-Human-Review": "confirmed",
+    }
+
+
+def test_wizard_review_approves_and_applies_once_with_explicit_human_intent(authority, monkeypatch):
+    from backend.engineering.agent_tools import api as agent_api_module
+
+    proposal = wizard_review_proposal(authority)
+    client, headers = wizard_review_client(authority)
+    path = f"/api/engineering/agent/proposals/{proposal['proposal_id']}/approve-apply?view=status"
+    assert client.post(path, headers={"X-Project-ID": authority.project_id},
+                       json={"revision": proposal["revision"]}).status_code == 403
+    reconciled = []
+    monkeypatch.setattr(agent_api_module, "reconcile_model_apply", lambda project_id, item: reconciled.append((project_id, item)))
+
+    response = client.post(path, headers=headers, json={"revision": proposal["revision"]})
+    assert response.status_code == 200, response.json
+    assert response.json["data"]["status"] == "APPLIED"
+    assert response.json["data"]["canonical_ids"]
+    assert "changes" not in response.json["data"]
+    assert len(reconciled) == 1
+    assert reconciled[0][0] == authority.project_id
+
+    # A network loss may make the browser retry with its old revision.  APPLIED
+    # is the durable idempotency record and must not execute reconciliation twice.
+    repeated = client.post(path, headers=headers, json={"revision": proposal["revision"]})
+    assert repeated.status_code == 200, repeated.json
+    assert repeated.json["data"]["status"] == "APPLIED"
+    assert repeated.json["data"]["canonical_ids"] == response.json["data"]["canonical_ids"]
+    assert len(reconciled) == 1
+
+
+def test_wizard_review_keeps_revision_and_base_model_guards(authority, monkeypatch):
+    from backend.engineering.agent_tools import api as agent_api_module
+    from backend.engineering.repository import create_object
+
+    proposal = wizard_review_proposal(authority)
+    client, headers = wizard_review_client(authority)
+    path = f"/api/engineering/agent/proposals/{proposal['proposal_id']}/approve-apply?view=status"
+    reconciled = []
+    monkeypatch.setattr(agent_api_module, "reconcile_model_apply", lambda project_id, item: reconciled.append((project_id, item)))
+
+    stale = client.post(path, headers=headers, json={"revision": "stale-browser-revision"})
+    assert stale.status_code == 409, stale.json
+    unchanged = client.get(path.removesuffix("/approve-apply?view=status") + "?view=status", headers=headers)
+    assert unchanged.json["data"]["status"] == "VALIDATED", unchanged.json
+
+    changed = execute(
+        authority,
+        "concurrent-model-change",
+        Permission.READ_MODEL,
+        {},
+        lambda _: create_object("HardwareNode", {"name": "ConcurrentController", "device_type": "ECU"}),
+    )
+    assert changed.success, changed
+    outdated = client.post(path, headers=headers, json={"revision": proposal["revision"]})
+    assert outdated.status_code == 200, outdated.json
+    assert outdated.json["data"]["status"] == "OUTDATED"
+    assert outdated.json["data"]["canonical_ids"] == []
+    assert reconciled == []
+
+
+def test_wizard_review_rolls_back_approval_when_apply_reconciliation_fails(authority, monkeypatch):
+    from backend.engineering.agent_tools import api as agent_api_module
+    from backend.engineering.models import EngineeringValidationError
+
+    proposal = wizard_review_proposal(authority)
+    client, headers = wizard_review_client(authority)
+    path = f"/api/engineering/agent/proposals/{proposal['proposal_id']}/approve-apply?view=status"
+
+    def fail_reconciliation(_project_id, _proposal):
+        raise EngineeringValidationError("Fortsetzungsstatus konnte nicht gespeichert werden.")
+
+    monkeypatch.setattr(agent_api_module, "reconcile_model_apply", fail_reconciliation)
+    response = client.post(path, headers=headers, json={"revision": proposal["revision"]})
+    assert response.status_code == 409, response.json
+    persisted = client.get(path.removesuffix("/approve-apply?view=status") + "?view=status", headers=headers)
+    assert persisted.status_code == 200, persisted.json
+    assert persisted.json["data"]["status"] == "VALIDATED"
+    assert persisted.json["data"]["canonical_ids"] == []
+
+
+def test_wizard_review_endpoint_rejects_generic_proposals(authority):
+    proposal = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen."}).data
+    proposal = call(authority, "validate_proposal", {"proposal_id": proposal["proposal_id"]}).data
+    client, headers = wizard_review_client(authority)
+    path = f"/api/engineering/agent/proposals/{proposal['proposal_id']}/approve-apply?view=status"
+    response = client.post(path, headers=headers, json={"revision": proposal["revision"]})
+    assert response.status_code == 409, response.json
+    assert response.json["status"] == "PERMISSION_DENIED"
+    persisted = client.get(path.removesuffix("/approve-apply?view=status") + "?view=status", headers=headers)
+    assert persisted.json["data"]["status"] == "VALIDATED"
+
+
 def test_trace_correlation_and_message_group_uniqueness(authority):
     result=call(authority,"correlate_signals",{"events":[{"time_s":t,"signals":{"x":t,"y":2*t}} for t in range(5)]})
     assert result.success,result.model_dump()
