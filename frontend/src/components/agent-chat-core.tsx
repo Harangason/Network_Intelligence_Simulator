@@ -26,7 +26,7 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
@@ -2135,25 +2135,11 @@ export function EngineeringAgentWizard({
 
   async function retryPopupRun(automatic = false) {
     if (agentPending || !runId) return;
-    const originalPrompt = currentRunMessages
-      .find((message) => message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`));
-    const originalText = originalPrompt ? textFromParts(originalPrompt.parts).trim() : submittedContext?.agent_prompt?.trim() ?? "";
     const modelComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
     const workflowTarget = modelComplete
       ? !routingReview.complete ? "routing" : [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
       : undefined;
-    const prompt = workflowTarget
-      ? `${automatic ? "Automatische Wiederaufnahme nach einem unterbrochenen Backend-Prozess. " : ""}Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`
-      : [
-        automatic
-          ? "Automatische Wiederaufnahme: Der bestätigte Wizard-Lauf wurde durch einen Backend-Prozesswechsel unterbrochen. Keine Human-Review-Entscheidung automatisch treffen."
-          : "Fortsetzung-Freigabe: Der Nutzer hat im Popup ausdrücklich Auftrag fortsetzen gewählt.",
-        `Lauf-ID: ${runId}.`,
-        "Wenn nach der Nachbearbeitung weiterhin reine Soll/Ist-Abweichungen im Geräteumfang bestehen, dokumentiere die fehlenden Teilnehmer im Wizard-Kontext und arbeite genau einmal weiter. Bei technischen Anlagefehlern stoppen. Keine automatische Endlosschleife.",
-        "",
-        originalText,
-      ].join("\n");
-    if (!prompt) return;
+    const prompt = wizardContinuationPrompt({ automatic, runId, workflowTarget });
     setStatusError("");
     try {
       const resumedContext = submittedContext ? {

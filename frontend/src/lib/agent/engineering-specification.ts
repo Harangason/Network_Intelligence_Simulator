@@ -1672,6 +1672,10 @@ export function confirmedHardwareCounts(text: string): Partial<EngineeringHardwa
   return counts;
 }
 
+export function hardwareTargetsAreMinimums(text: string) {
+  return /Vollstaendigkeitsprinzip:\s*System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten;\s*diese sind Mindestumfang, keine Obergrenze/i.test(text);
+}
+
 type ConfirmedClusterGraph = Array<{
   network_id?: string;
   network_label?: string;
@@ -1730,8 +1734,9 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   const counts = { sensors: 0, actuators: 0, ecus: 0, gateways: 0 };
   for (const device of desired.values()) counts[roleKey(device.role)] += 1;
   const confirmed = confirmedHardwareCounts(prompt);
+  const minimumTargets = hardwareTargetsAreMinimums(prompt);
   for (const key of ["sensors", "actuators", "ecus", "gateways"] as const) {
-    if (confirmed[key] !== undefined && counts[key] > confirmed[key]) {
+    if (!minimumTargets && confirmed[key] !== undefined && counts[key] > confirmed[key]) {
       throw new Error(`Bestätigter Graph überschreitet Hardware-Sollwert ${key}: ${counts[key]} > ${confirmed[key]}`);
     }
   }

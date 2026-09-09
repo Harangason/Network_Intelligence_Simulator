@@ -62,6 +62,27 @@ export function wizardRunCanRetry(runPaused: boolean, hasResumablePrompt: boolea
   return runPaused && hasResumablePrompt && run?.state !== "CANCELED";
 }
 
+export function wizardContinuationPrompt({
+  automatic,
+  runId,
+  workflowTarget,
+}: {
+  automatic: boolean;
+  runId: string;
+  workflowTarget?: AgentBuildProgress['step'];
+}) {
+  if (workflowTarget) {
+    return `${automatic ? "Automatische Wiederaufnahme nach einem unterbrochenen Backend-Prozess. " : ""}Setze den bestaetigten Engineering-Auftrag am letzten erreichten Schritt fort. Lauf-ID: ${runId}. Ziel: ${workflowTarget}.`;
+  }
+  return [
+    automatic
+      ? "Automatische Wiederaufnahme: Der bestätigte Wizard-Lauf wurde durch einen Backend-Prozesswechsel unterbrochen. Keine Human-Review-Entscheidung automatisch treffen."
+      : "Fortsetzung-Freigabe: Der Nutzer hat im Popup ausdrücklich Auftrag fortsetzen gewählt.",
+    `Lauf-ID: ${runId}.`,
+    "Wenn nach der Nachbearbeitung weiterhin reine Soll/Ist-Abweichungen im Geräteumfang bestehen, dokumentiere die fehlenden Teilnehmer im Wizard-Kontext und arbeite genau einmal weiter. Bei technischen Anlagefehlern stoppen. Keine automatische Endlosschleife.",
+  ].join("\n");
+}
+
 export function wizardRunNeedsAutomaticRecovery({
   runPaused,
   hasResumablePrompt,

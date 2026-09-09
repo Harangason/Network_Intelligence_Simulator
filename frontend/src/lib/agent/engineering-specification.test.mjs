@@ -27,6 +27,18 @@ test("confirmed graph rejects conflicting identities and excess hardware before 
     '- Hardware-Sollwerte: {"ecus":1,"sensors":0,"actuators":0,"gateways":1}\n- Systemcluster-Graph: [{"controllers":[{"ecu":"Drive","sensors":["Temp"]}]}]'), /Hardware-Sollwert sensors/);
 });
 
+test("confirmed graph may exceed targets declared as minimum scope for system completeness", () => {
+  const prompt = `- Hardware-Sollwerte: {"ecus":1,"sensors":1,"actuators":0,"gateways":0}
+- Vollstaendigkeitsprinzip: System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten; diese sind Mindestumfang, keine Obergrenze.
+- Systemcluster-Graph: [{"controllers":[{"ecu":"Fahrerassistenz","sensors":["FrontCamera","RearCamera"]}]}]`;
+  const spec = extractEngineeringSpecification(prompt);
+  const chains = reconcileConfirmedGraphDevices(spec, prompt);
+  assert.deepEqual(
+    chains.filter(c => c.device_type === "SensorController").map(c => c.hardware_name).sort(),
+    ["FrontCamera", "RearCamera"],
+  );
+});
+
 import { applyConfirmedClusterGraph, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
 
 test("domain evidence detects rail content independently from a conflicting wizard header", () => {

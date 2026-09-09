@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "./agent-run-status.ts";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "./agent-run-status.ts";
 
 const run = {
   run_id: "wizard-run", state: "RUNNING", step: "routing", completed: 36, total: 150,
@@ -73,6 +73,17 @@ test("an explicit retry remains available after earlier failed continuations", (
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "READY_TO_CONTINUE" }), true);
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "CANCELED" }), false);
   assert.equal(wizardRunCanRetry(false, true, { ...run, state: "BLOCKED" }), false);
+});
+
+test("wizard continuation stays compact so the backend can restore the durable request", () => {
+  const prompt = wizardContinuationPrompt({ automatic: false, runId: "wizard-run" });
+  assert.match(prompt, /Lauf-ID: wizard-run\./);
+  assert.doesNotMatch(prompt, /Strukturierte Vorgaben fuer den Engineering-Agenten/);
+  assert.ok(prompt.length < 1000);
+
+  const targeted = wizardContinuationPrompt({ automatic: true, runId: "wizard-run", workflowTarget: "simulation" });
+  assert.match(targeted, /Ziel: simulation\./);
+  assert.ok(targeted.length < 300);
 });
 
 test("only an interrupted backend run is resumed automatically once", () => {
