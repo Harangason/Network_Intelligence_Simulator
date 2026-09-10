@@ -55,6 +55,13 @@ export function inspectSignal(signal: InspectionObject, message?: InspectionObje
   const factor = canonical.encoding.factor, offset = canonical.encoding.offset;
   const dataType = canonical.encoding.rawDatatype.toLowerCase();
   const byteOrder = canonical.encoding.endianness;
+  const codes = [...Object.values(canonical.valueDomain.enumValues), ...canonical.valueDomain.reservedValues, ...canonical.valueDomain.invalidValues];
+  if (bits !== null && bits > 0 && bits <= 64 && codes.some((code) => typeof code !== "number" || !Number.isInteger(code) || code < 0 || code >= 2 ** bits)) add("CODE_OUT_OF_RANGE", "ERROR", "Ein definierter Rohcode passt nicht in die Bitbreite.");
+  const physicalUnit = !["", "code", "bool", "boolean", "enum", "state", "not_applicable", "1"].includes(text(signal.unit).toLowerCase());
+  if (physicalUnit && (["STATE", "ENUM", "BOOLEAN", "FLAG"].includes(semanticType) || Object.keys(canonical.valueDomain.enumValues).length)) add("SEMANTIC_ENCODING_CONFLICT", "ERROR", "Physikalische Messgröße und Zustandskodierung sind vermischt.");
+  const enumCodes = new Set(Object.values(canonical.valueDomain.enumValues));
+  const reservedCodes = new Set(canonical.valueDomain.reservedValues);
+  if (canonical.valueDomain.reservedValues.some((code) => enumCodes.has(code)) || canonical.valueDomain.invalidValues.some((code) => enumCodes.has(code) || reservedCodes.has(code))) add("CODE_DOMAIN_OVERLAP", "ERROR", "Gültige, reservierte und ungültige Rohcodes überschneiden sich.");
   const dlc = numeric(message?.dlc);
   const validBits = bits !== null && Number.isInteger(bits) && bits > 0 && bits <= 65536;
   const validStart = start !== null && Number.isInteger(start) && start >= 0 && start <= 65536;
@@ -107,12 +114,13 @@ export function inspectSignal(signal: InspectionObject, message?: InspectionObje
         }
       }
     }
-    if (record(signal.configuration).reserved_values != null || data.reserved_values != null) add("RESERVED_VALUES", "OPEN", "Reservierte Codes müssen vor einer Verkleinerung separat bestätigt werden.");
+    if ((Array.isArray(data.reserved_values) && data.reserved_values.length > 0) || (Array.isArray(record(signal.configuration).reserved_values) && (record(signal.configuration).reserved_values as unknown[]).length > 0)) add("RESERVED_VALUES", "OPEN", "Reservierte Codes müssen vor einer Verkleinerung separat bestätigt werden.");
     const raw = values.map((value) => (value - offset) / factor);
     if (raw.some((value) => !Number.isSafeInteger(Math.round(value)))) add("NUMERIC_PRECISION", "OPEN", "Rohwerte überschreiten die exakt prüfbare Ganzzahlpräzision.");
     else if (raw.some((value) => Math.abs(value - Math.round(value)) > Math.max(1e-8, Math.abs(value) * Number.EPSILON * 4))) add("QUANTIZATION", "ERROR", "Grenz- oder Sonderwerte sind bei dieser Skalierung nicht exakt darstellbar.");
     else {
-      const rawMin = Math.min(...raw.map(Math.round)), rawMax = Math.max(...raw.map(Math.round));
+      const explicitCodes = codes.filter((code): code is number => typeof code === "number" && Number.isInteger(code));
+      const rawMin = Math.min(...raw.map(Math.round), ...explicitCodes), rawMax = Math.max(...raw.map(Math.round), ...explicitCodes);
       if (!isSigned && rawMin < 0) add("UNSIGNED_NEGATIVE", "ERROR", "Unsigned-Signal benötigt negative Rohwerte; Datentyp oder Offset korrigieren.");
       else {
         for (let width = 1; width <= 64; width++) {

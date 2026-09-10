@@ -6876,6 +6876,27 @@ a {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+/* Conversation and notices scroll together; the composer always stays visible. */
+.eng-agent-chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; flex: 1; }
+.eng-agent-chat .eng-agent-thread { align-content: start; min-height: 0; overscroll-behavior: contain; }
+.eng-agent-chat .eng-agent-thread > .empty-result { min-height: 0; }
+.eng-agent-chat .eng-agent-composer { display: flex; flex-direction: column; flex: 0 0 auto; min-width: 0; border-top: 1px solid var(--border); padding-top: 10px; }
+.eng-agent-chat .eng-agent-composer textarea { flex: 0 0 auto; width: 100%; max-height: 120px; min-height: 58px; }
+.eng-agent-composer-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.eng-agent-composer-actions .button { min-height: 34px; }
+.eng-agent-composer small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.eng-agent-attachments { max-height: 110px; overflow-y: auto; font-size: 12px; }
+.eng-agent-attachments:empty { display: none; }
+.eng-agent-attachment { display: flex; align-items: start; gap: 8px; padding: 4px 0; }
+.eng-agent-attachment details { flex: 1; min-width: 0; }
+.eng-agent-attachment summary, .eng-agent-attachment-source summary { overflow-wrap: anywhere; cursor: pointer; }
+.eng-agent-attachment button { flex-shrink: 0; min-width: 26px; min-height: 26px; }
+.eng-agent-attachment pre, .eng-agent-attachment-source pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; max-height: 180px; overflow-y: auto; }
+.eng-agent-pending-task { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+.eng-agent-pending-task p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.eng-agent-pending-task details { margin-bottom: 10px; }
+.eng-agent-examples summary { cursor: pointer; color: var(--muted); margin-bottom: 8px; }
+
 /* ============================================================
    NETWORK EDITOR
    ============================================================ */
@@ -7327,6 +7348,78 @@ a {
 .network-view-tabs button.active {
   background: var(--accent);
   color: #071006;
+}
+
+.hardware-explorer .hardware-explorer-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 285px;
+  align-items: start;
+  gap: 12px;
+}
+.hardware-explorer .hardware-topology-canvas { min-height: 0; }
+.hardware-explorer .hardware-topology-stage {
+  height: clamp(560px, 67vh, 900px);
+  min-width: 0;
+  overflow: hidden;
+}
+.hardware-explorer-svg { display: block; touch-action: none; outline: none; }
+.hardware-explorer-svg:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.hardware-explorer-edge { fill: none; stroke-width: 1.3; stroke-opacity: .7; cursor: pointer; vector-effect: non-scaling-stroke; }
+.hardware-explorer-edge.hierarchy { stroke-opacity: .45; }
+.hardware-explorer-edge.mapping { stroke-dasharray: 5 4; }
+.hardware-explorer-edge:hover, .hardware-explorer-edge.selected { stroke-width: 3; stroke-opacity: 1; }
+.hardware-explorer-node { cursor: pointer; outline: none; }
+.hardware-explorer-node circle { fill: var(--surface); stroke: currentColor; stroke-width: 2; }
+.hardware-explorer-node.selected circle, .hardware-explorer-node:focus circle { fill: currentColor; stroke: white; stroke-width: 3; }
+.hardware-explorer-node.dimmed { opacity: .35; }
+.hardware-explorer-label { fill: var(--text); stroke: var(--surface); stroke-width: 3px; paint-order: stroke; font: 600 12px var(--font-geist-sans), sans-serif; }
+.hardware-explorer-filters { display: grid; grid-template-columns: minmax(200px, 1fr) 170px 170px auto; align-items: end; gap: 10px; }
+.hardware-explorer-filters label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+.hardware-explorer-filters input, .hardware-explorer-filters select { min-width: 0; width: 100%; height: 37px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); }
+.hardware-explorer-filters button, .hardware-explorer-details button, .hardware-explorer-notice button { border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); padding: 8px 10px; cursor: pointer; font-size: 11px; }
+.hardware-explorer button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hardware-explorer button:hover:not(:disabled), .hardware-explorer button.selected { border-color: var(--accent); }
+.hardware-explorer-navigation { justify-content: flex-start; gap: 6px; }
+.hardware-explorer-navigation button { padding: 5px 8px; font-size: 11px; }
+.hardware-explorer-navigation output { min-width: 48px; text-align: center; font: 700 11px monospace; }
+.hardware-toolbar-divider { border-left: 1px solid var(--border); height: 24px; margin: 0 6px; }
+.hardware-explorer-caption { padding: 10px 12px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: var(--muted); border-top: 1px solid var(--border); font-size: 10px; }
+.hardware-explorer-details { max-height: clamp(610px, 72vh, 960px); overflow: auto; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); display: grid; align-content: start; gap: 12px; }
+.hardware-explorer-details h3, .hardware-explorer-details h4, .hardware-explorer-details p { margin: 0; overflow-wrap: anywhere; }
+.hardware-explorer-details h3 { font-size: 16px; line-height: 1.45; }
+.hardware-explorer-details h4 { font-size: 12px; margin-top: 8px; }
+.hardware-explorer-details p { font-size: 12px; line-height: 1.6; color: var(--muted); }
+.hardware-explorer-details small { color: var(--muted); font-size: 10px; }
+.hardware-explorer-path { display: flex; flex-wrap: wrap; gap: 5px; }
+.hardware-explorer-path button { padding: 4px 6px; font-size: 10px; }
+.hardware-explorer-details ul { padding: 0; list-style: none; margin: 0; }
+.hardware-explorer-details li { display: grid; gap: 4px; border-bottom: 1px solid var(--border); padding: 7px 0; font-size: 11px; overflow-wrap: anywhere; }
+.hardware-explorer-details li span { color: var(--muted); }
+.hardware-explorer-details code { display: block; margin-top: 8px; font-size: 10px; overflow-wrap: anywhere; }
+.hardware-explorer-details summary { cursor: pointer; color: var(--muted); font-size: 11px; }
+.hardware-explorer-neighbors, .hardware-explorer-results > div { display: grid; gap: 5px; }
+.hardware-explorer-results > div { max-height: 250px; overflow: auto; margin-top: 10px; }
+.hardware-explorer-results button, .hardware-explorer-neighbors button { display: grid; gap: 4px; text-align: left; overflow-wrap: anywhere; }
+.hardware-explorer-key { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--border); padding-top: 12px; }
+.hardware-explorer-key h4 { width: 100%; }
+.hardware-explorer-key button { display: flex; align-items: center; gap: 6px; padding: 4px 7px; }
+.hardware-explorer-key button[aria-pressed="true"] { border-color: var(--accent); }
+.hardware-explorer-key i { width: 7px; height: 7px; border-radius: 50%; }
+.hardware-explorer-footnote { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.hardware-three-host { position: absolute; inset: 0; touch-action: none; }
+.hardware-three-host canvas { display: block; touch-action: none; }
+.hardware-three-labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.hardware-three-labels button { position: absolute; top: 0; left: 0; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; padding: 3px 6px; font: 600 11px var(--font-geist-sans), sans-serif; color: var(--text); background: color-mix(in srgb, var(--surface) 90%, transparent); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+.hardware-three-labels button[hidden] { display: none; }
+.hardware-three-labels button.selected { color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hardware-explorer-notice { position: absolute; inset: 30% 15% auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 22px; display: grid; gap: 14px; text-align: center; }
+.hardware-explorer:fullscreen { background: var(--background); padding: 18px; overflow: auto; }
+.hardware-explorer:fullscreen .hardware-topology-stage { height: calc(100vh - 240px); }
+@media (max-width: 1000px) {
+  .hardware-explorer .hardware-explorer-workspace { grid-template-columns: minmax(0, 1fr); }
+  .hardware-explorer-details { max-height: 460px; }
+  .hardware-explorer-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .hardware-explorer .hardware-topology-header { flex-wrap: wrap; }
 }
 
 .hardware-topology-view {
@@ -7932,6 +8025,14 @@ a {
   text-overflow: ellipsis;
 }
 
+.net-system-frame-label {
+  flex: 0 0 auto;
+  color: #dbaf66;
+  font: inherit;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
 .net-eva-cluster-handle span {
   flex: 0 0 auto;
   min-width: 19px;
@@ -8426,6 +8527,16 @@ a {
   background: transparent;
 }
 
+/* Free connectors must remain visible and usable in the saved bus view. */
+.net-editor.large-topology .net-port:not(.linked) {
+  border: 2px solid var(--bus, var(--accent));
+  background: var(--background);
+}
+
+.net-editor.large-topology .net-node:has(.net-port:not(.linked)) {
+  contain: layout style;
+}
+
 .net-port.top.compatible,
 .net-port.bottom.compatible {
   transform: translateX(-50%) scale(1.14);
@@ -8559,6 +8670,26 @@ a {
 
 .net-relationship-dialog {
   width: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+
+.net-relationship-dialog > header,
+.net-relationship-dialog > footer {
+  position: sticky;
+  z-index: 1;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.net-relationship-dialog > header { top: 0; }
+.net-relationship-dialog > footer { bottom: 0; }
+
+.net-relationship-fields > .notice {
+  margin: 0;
+  padding: 10px 12px;
 }
 
 .net-relationship-endpoints {
@@ -8860,6 +8991,36 @@ a {
   overflow: auto;
   overscroll-behavior-inline: contain;
   scrollbar-gutter: stable;
+}
+
+.routing-drag-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.routing-table-scroll,
+.routing-communication-table-wrap {
+  max-height: min(1100px, 75vh);
+}
+
+.routing-drag-scroll {
+  cursor: grab;
+  scroll-behavior: auto;
+}
+
+.routing-drag-scroll :is(td, th, [data-drag-scroll-handle]) {
+  cursor: grab;
+}
+
+.routing-drag-scroll.is-drag-pending,
+.routing-drag-scroll.is-drag-pending * {
+  user-select: none;
+}
+
+.routing-drag-scroll.is-panning,
+.routing-drag-scroll.is-panning * {
+  cursor: grabbing !important;
 }
 
 .routing-communication {
@@ -9854,7 +10015,7 @@ a {
 
 .routing-matrix {
   --routing-matrix-axis-width: 220px;
-  --routing-matrix-cell-width: 156px;
+  --routing-matrix-cell-width: 117px;
   width: max-content;
   min-width: 100%;
   border-collapse: separate;
@@ -9865,7 +10026,7 @@ a {
 .routing-matrix-wrap {
   position: relative;
   isolation: isolate;
-  max-height: 680px;
+  max-height: 1360px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(8, 14, 23, 0.72);
@@ -9929,26 +10090,27 @@ a {
 
 .routing-matrix-axis-text {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.routing-matrix-axis-label.row {
+  display: flex;
+  max-width: 100%;
 }
 
 .routing-matrix-axis-label.column .routing-matrix-axis-text {
-  bottom: 26px;
   color: var(--text);
   font-size: 11px;
   font-weight: 800;
-  left: 50%;
   letter-spacing: 0;
   line-height: 1.2;
-  max-width: none;
-  position: absolute;
+  max-width: 100%;
   text-align: left;
   text-transform: uppercase;
-  transform: translateX(-50%) rotate(-90deg);
-  transform-origin: center;
-  width: 112px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  height: 112px;
 }
 
 .routing-matrix-role {
@@ -9990,20 +10152,20 @@ a {
   text-align: center;
   position: relative;
   z-index: 0;
-  padding: 6px 7px;
+  padding: 4px 5px;
 }
 
 .routing-matrix-cell {
   display: grid;
-  gap: 5px;
+  gap: 3px;
   box-sizing: border-box;
-  width: calc(var(--routing-matrix-cell-width) - 20px);
+  width: calc(var(--routing-matrix-cell-width) - 15px);
   margin: 0 auto;
 }
 
 .routing-matrix-cell-button {
   width: 100%;
-  min-height: 38px;
+  min-height: 29px;
   border: 1px solid rgba(117, 169, 255, 0.4);
   border-radius: 5px;
   background: rgba(117, 169, 255, 0.08);
@@ -10012,7 +10174,7 @@ a {
   display: grid;
   gap: 3px;
   place-items: center;
-  padding: 5px 8px;
+  padding: 3px 6px;
 }
 
 .routing-matrix-cell-button:hover {
@@ -10038,7 +10200,7 @@ a {
 
 .routing-matrix-cell-edit {
   width: 100%;
-  min-height: 24px;
+  min-height: 18px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: rgba(9, 17, 28, 0.9);
@@ -10059,8 +10221,8 @@ a {
 
 .routing-matrix-empty-button {
   box-sizing: border-box;
-  width: calc(var(--routing-matrix-cell-width) - 20px);
-  min-height: 67px;
+  width: calc(var(--routing-matrix-cell-width) - 15px);
+  min-height: 50px;
   margin: 0 auto;
   border: 1px dashed rgba(117, 169, 255, 0.26);
   border-radius: 5px;
@@ -10068,9 +10230,9 @@ a {
   color: rgba(164, 181, 205, 0.72);
   cursor: pointer;
   display: grid;
-  gap: 4px;
+  gap: 2px;
   place-items: center;
-  padding: 8px;
+  padding: 5px;
 }
 
 .routing-matrix-empty-button:hover,
@@ -10944,6 +11106,8 @@ a {
   grid-column: 2;
   grid-row: 2;
   min-height: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
   overflow: auto;
   padding-right: 8px;
   border: 1px solid var(--border);
@@ -10952,8 +11116,28 @@ a {
 }
 
 .routing-wizard-targets-step .routing-endpoint-fields {
-  grid-template-columns: minmax(120px, 0.7fr) minmax(210px, 1.2fr) minmax(150px, 1fr) auto minmax(120px, 0.75fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  align-items: start;
   padding: 12px;
+}
+
+.routing-wizard-targets-step .routing-endpoint-fields > strong,
+.routing-wizard-targets-step .routing-endpoint-fields > label:first-of-type {
+  grid-column: 1 / -1;
+}
+
+.routing-endpoint-fields > *,
+.routing-wizard-grid label {
+  min-width: 0;
+}
+
+.routing-ai-suggestions button.conflict {
+  border-color: #d89a40;
+}
+
+.routing-ai-suggestions button.conflict > strong {
+  color: #e5b56d;
 }
 
 .routing-wizard-targets-step .routing-endpoint-fields:first-child {
@@ -14641,3 +14825,93 @@ a {
 .structure-traffic summary { cursor: pointer; color: #9bd4ff; }
 .structure-traffic > div { padding: 8px 0; border-top: 1px solid #344352; }
 .structure-traffic p { margin: 5px 0; overflow-wrap: anywhere; }
+
+/* Persisted physical buses: role labels and bus technology have distinct meanings. */
+.settings-bus-limits { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin:16px 0; }
+.settings-bus-limits label { display:grid; gap:8px; }
+.settings-bus-limits input { width:100%; }
+.persisted-scene .net-domain-cluster { border:1px solid #477485; border-radius:22px; }
+.persisted-scene .net-domain-cluster > span { font-size:11px; background:var(--surface); padding:4px 8px; }
+.persisted-scene .net-eva-cluster { border:1px solid #986b43; border-radius:16px; background:rgba(20,30,39,.3); }
+.persisted-scene .net-node { border-left-color:#91a3b3; }
+.persisted-scene .net-node-kind { font-size:10px; color:var(--muted); }
+.persisted-scene .net-node-name { overflow-wrap:anywhere; font-size:12px; line-height:1.25; }
+.net-node-bus-types { display:block; margin-top:6px; color:var(--muted); font:10px var(--font-geist-mono),monospace; }
+.net-bus-trunk, .net-bus-branch { fill:none; stroke-width:2; stroke-linejoin:round; }
+.net-wire-bridges { pointer-events:none; }
+.net-wire-bridge, .net-wire-bridge-mask { fill:none; stroke-width:2; }
+.net-wire-bridge-mask { stroke:var(--surface); stroke-width:7; }
+.net-bus-trunk, .net-bus-junction { pointer-events:none; }
+.net-bus-label { pointer-events:bounding-box; cursor:pointer; }
+.net-bus-trunk-hit { cursor:ew-resize; }
+.net-bus-branch-hit, .net-bus-branch { cursor:ns-resize; }
+.net-bus-branch { pointer-events:stroke; }
+.net-physical-bus.selected > .net-bus-trunk { stroke-width:3; }
+.net-physical-bus.connection-target .net-bus-trunk,
+.net-physical-bus.connection-target .net-bus-branch { stroke-width:4; filter:drop-shadow(0 0 4px currentColor); }
+.net-wire.pending { pointer-events:none; }
+.net-editor .net-port.compatible { border:2px solid var(--bus); background:var(--bus); box-shadow:0 0 0 5px #ffffff38; }
+.net-connection-hint { position:sticky; bottom:0; background:var(--panel, #101820); padding:8px 12px; }
+.net-bus-branch:hover { stroke-width:4; }
+.net-bus-branch.selected { stroke-width:4; filter:drop-shadow(0 0 4px currentColor); }
+.net-bus-junction { stroke:var(--surface); stroke-width:1; }
+.net-bus-label { fill:var(--text); font:11px var(--font-geist-mono),monospace; paint-order:stroke; stroke:var(--surface); stroke-width:4px; }
+.net-scene-error { color:var(--danger); padding:12px; }
+.net-scene-missing { min-height:360px; display:grid; place-content:center; gap:16px; }
+
+.net-surface { cursor: grab; touch-action: none; }
+.net-surface.is-panning, .net-surface.is-panning * { cursor: grabbing !important; user-select: none; }
+.net-lasso-layer { position:absolute; inset:0; z-index:30; cursor:crosshair; touch-action:none; }
+.net-lasso-rectangle { position:absolute; border:2px dashed #83cfff; background:rgba(83,176,255,.12); pointer-events:none; }
+.net-assignment-dialog { position:fixed; inset:0; margin:auto; width:min(860px,calc(100vw - 40px)); max-height:85dvh; overflow:auto; padding:24px; border:1px solid var(--border); border-radius:12px; color:var(--text); background:var(--surface); }
+.net-assignment-dialog::backdrop { background:rgba(0,0,0,.72); }
+.net-frame-device-dialog { width:min(620px,calc(100vw - 40px)); }
+.net-frame-device-kinds { display:flex; flex-wrap:wrap; gap:12px; margin:24px 0; }
+.net-frame-device-name { display:grid; gap:8px; font-size:13px; }
+.net-frame-device-name input { width:100%; padding:12px; color:var(--text); background:var(--background); border:1px solid var(--border); border-radius:6px; }
+.net-assignment-dialog header, .net-assignment-dialog footer { display:flex; gap:16px; align-items:center; justify-content:space-between; }
+.net-assignment-dialog footer { position:sticky; bottom:-24px; margin-top:20px; padding:16px 0; background:var(--surface); }
+.net-assignment-dialog p, .net-assignment-dialog li { font-size:13px; line-height:1.55; }
+.net-assignment-dialog button, .net-assignment-dialog select { padding:10px 14px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); }
+.net-assignment-dialog button.primary { background:var(--accent); color:#102000; }
+.net-assignment-dialog button:disabled { opacity:.5; }
+.net-transfer-entry { display:grid; align-content:start; justify-items:start; gap:8px; min-width:0; }
+.net-transfer-entry > span, .net-transfer-entry small { color:var(--muted); font-size:12px; }
+.net-transfer-entry strong { overflow-wrap:anywhere; font-size:13px; }
+.net-assignment-fields { display:grid; grid-template-columns:1fr 2fr; gap:16px; margin:20px 0; }
+.net-assignment-fields label { display:grid; gap:6px; font-size:12px; }
+.net-assignment-dialog table { width:100%; border-collapse:collapse; font-size:12px; }
+.net-assignment-dialog th, .net-assignment-dialog td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--border); overflow-wrap:anywhere; }
+.net-assignment-dialog caption { text-align:left; margin:12px 0; font-weight:bold; }
+.net-assignment-dialog small { display:block; color:var(--muted); margin-top:4px; }
+.net-assignment-error { color:var(--danger); }
+@media(max-width:600px) { .net-assignment-fields { grid-template-columns:1fr; } .net-assignment-dialog footer { align-items:stretch; flex-direction:column; } }
+
+.net-editor .net-port.selected { border:2px solid var(--bus); background:var(--background); box-shadow:0 0 0 4px #ffffff60; }
+
+.net-connection-choice-hint { margin:16px 20px; color:var(--muted); }
+.net-connection-choices { display:grid; gap:10px; padding:0 20px 20px; max-height:50dvh; overflow:auto; }
+.net-connection-choices button { display:grid; gap:6px; text-align:left; padding:12px; color:var(--text); background:var(--surface); border:1px solid var(--border); border-radius:6px; overflow-wrap:anywhere; }
+.net-connection-choices button:hover, .net-connection-choices button:focus-visible { border-color:var(--accent); }
+.net-connection-choices small { color:var(--muted); }
+
+.net-device-dialog { width:min(640px, 100%); max-height:calc(100dvh - 48px); display:flex; flex-direction:column; }
+.net-device-dialog > header, .net-device-dialog > footer { flex-shrink:0; }
+.net-device-fields { min-height:0; overflow:auto; }
+.net-device-ports { margin:22px 18px 0; }
+.net-device-ports h3 { display:flex; align-items:center; gap:8px; margin:0 0 12px; font-size:13px; }
+.net-device-ports h3 span { border:1px solid var(--border); border-radius:4px; padding:2px 6px; color:var(--muted); font:11px var(--font-geist-mono), monospace; }
+.net-device-port-table { width:100%; table-layout:fixed; border-collapse:collapse; text-align:left; }
+.net-device-port-table th { color:var(--muted); font-size:10px; font-weight:500; }
+.net-device-port-table th, .net-device-port-table td { padding:10px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+.net-device-port-table td { font-size:12px; overflow-wrap:anywhere; }
+.net-device-port-table th:last-child { width:116px; }
+.net-device-port-table tbody tr:last-child td { border-bottom:0; }
+.net-device-port-technology { display:inline-flex; align-items:center; gap:7px; white-space:nowrap; font-size:11px; }
+.net-device-port-technology i { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+.net-bus-name-dialog { position:fixed; inset:0; margin:auto; width:min(520px, calc(100vw - 48px)); max-height:calc(100dvh - 48px); overflow:auto; color:var(--text); }
+.net-bus-name-dialog::backdrop { background:rgba(3,7,12,.72); backdrop-filter:blur(8px); }
+.net-bus-name-dialog .net-bus-name-error { margin:0 18px; }
+
+.net-bus-name-hint { margin:0 18px; color:var(--muted); font-size:12px; }

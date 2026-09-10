@@ -3,6 +3,7 @@ import type { EngineeringAgentUIMessage, EngineeringAgentEvent } from "@/lib/age
 import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { parseAgentResponse, type AgentInput } from "@/lib/agent/agent-response";
 import { backendEndpoints } from "@/lib/backend-endpoints";
+import { chatDocumentContext, validateChatAttachment } from "@/lib/agent/chat-attachments";
 
 export const maxDuration = 300;
 const { engineering: backend } = backendEndpoints(process.env);
@@ -16,6 +17,11 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Ungültiger Gesprächsverlauf.' }, { status: 400 });
   const messages = uniqueMessagesById(payload.messages ?? []);
   const lastUser = [...messages].reverse().find(message => message.role === "user");
+  try {
+    for (const message of messages) chatDocumentContext(message.parts);
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : 'Ungültiger Dokumentanhang.' }, { status: 400 });
+  }
   const prompt = lastUser?.parts.filter(part => part.type === "text").map(part => part.text).join("\n").trim();
   if (!prompt && !payload.input) return Response.json({ error: "Eine Anforderung wird erwartet." }, { status: 400 });
   const projectId = request.headers.get("X-Project-ID") ?? "default";
@@ -27,8 +33,10 @@ export async function POST(request: Request) {
       : part.type === "data-engineering" && part.data.type === "APPROVAL" && part.data.proposal
         ? [`Vorschlag ${part.data.proposal.proposal_id}: ${part.data.proposal.rationale}`] : []).join("\n").slice(0, 8000),
   })).filter(message => (message.role === "user" || message.role === "assistant") && message.content);
+  const sourceMessage = [...messages].reverse().find(message => message.role === 'user' && message.parts.some(part => part.type === 'data-attachment'));
+  const documents = sourceMessage?.parts.filter(part => part.type === 'data-attachment').map(part => validateChatAttachment(part.data)) ?? [];
   const context = { ...(previousContext?.type === "data-engineering" ? previousContext.data.context : {}),
-    ...payload.context, active_project_id: projectId };
+    ...payload.context, active_project_id: projectId, document_sources: documents };
   const stream = createUIMessageStream<EngineeringAgentUIMessage>({
     originalMessages: messages,
     execute: async ({ writer }) => {

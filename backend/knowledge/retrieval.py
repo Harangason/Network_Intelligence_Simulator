@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import re
 from typing import Any
 
+from .semantic_vocabulary import engineering_tokens
 from .stores import GraphStore, LocalGraphStore, LocalVectorStore, VectorStore
 from .transformers import LocalTransformerService, TransformerService
 
@@ -25,7 +26,7 @@ APPROVAL_WEIGHTS = {
 
 
 def _tokens(value: str) -> set[str]:
-    return {token for token in re.findall(r"[a-z0-9]+", value.lower()) if len(token) > 1}
+    return set(engineering_tokens(value))
 
 
 @dataclass(frozen=True)

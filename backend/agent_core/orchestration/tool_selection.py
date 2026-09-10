@@ -5,6 +5,9 @@ import re
 
 def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools"}
+    spatial = bool(re.search(r'raum|spatial|zonal|einbauort|rotor|drohn|cluster|architecture|architektur|roboter|robot', prompt, re.I))
+    if spatial:
+        names.add('inspect_spatial_architecture')
     if re.search(r'\b(ändere|aendere|bearbeite|aktualisiere|update|modify)\b', prompt, re.I):
         names.add('update_object_via_proposal')
     groups = [
@@ -26,4 +29,4 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
         names.update(reasoning_names)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: tool["name"] not in reasoning_names)[:24]
+    return sorted(selected, key=lambda tool: (tool['name'] != 'inspect_spatial_architecture', tool["name"] not in reasoning_names))[:24]

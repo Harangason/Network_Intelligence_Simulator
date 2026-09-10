@@ -607,3 +607,28 @@ test("explicit model types select their native controller classes", () => {
     assert.equal(result.chains[0].device_type, expectedType, modelType);
   }
 });
+
+
+test("planning limit keys never select a different communication technology", () => {
+  const prompt = "SPS mit Temperaturmessung über PROFINET.";
+  const metadata = '\n- Bus-Teilnehmergrenzen: {"lin":128,"can_fd":64,"automotive_ethernet":256}\n';
+  const before = extractEngineeringSpecification(prompt);
+  const after = extractEngineeringSpecification(prompt + metadata);
+  assert.deepEqual(after, before);
+  assert.deepEqual(after.communicationSystems ?? after.communication_systems, before.communicationSystems ?? before.communication_systems);
+});
+
+
+test("companion domains do not inherit percentage, boolean or state metadata", () => {
+  const base = extractEngineeringSpecification("Motorsteuergeraet mit CAN-FD und Signal Motordrehzahl").chains[0];
+  const signals = expandEngineeringSignalModel([{ ...base, device_class: 3, hardware_name: "Motor",
+    data: { enum_values: { OK: 0, ERROR: 1 }, resolution: 1, invalid_values: [15] } }]);
+  const quality = signals.find(s => s.signal_name === "MotorQuality");
+  const counter = signals.find(s => s.signal_name === "MotorAliveCounter");
+  assert.deepEqual(quality.data.enum_values, {});
+  assert.equal(quality.data.resolution, .5);
+  assert.deepEqual(quality.data.invalid_values, []);
+  assert.deepEqual(counter.data.enum_values, {});
+  assert.equal(counter.data.maximum, 15);
+  assert.equal(counter.configuration.bit_length, 4);
+});

@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 from http.cookiejar import CookieJar
 import json
+import hashlib
 import re
 from pathlib import Path
 import time
@@ -119,6 +120,8 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
         assert not assessment['missing_observed_signal_ids'], assessment
         assert not assessment['missing_observed_route_ids'], assessment
         assert not assessment['missing_observed_network_ids'], assessment
+        assert assessment['conformance'] == 'PASS', assessment
+        assert assessment['failed_route_count'] == 0, assessment
     print(json.dumps({'phase': 'simulation', 'project': project, 'job_id': completed['id'], 'artifacts': (completed.get('result') or {}).get('artifacts')}), flush=True)
     trace = request('/api/simulations/' + completed['id'] + '/trace-window?limit=5')
     assert trace['count'] > 0 and any(event.get('signals') for event in trace['events']), {
@@ -126,7 +129,31 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
     repeated = request('/api/engineering/agent/chat', {'prompt': prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'}, stream=True)
     assert any(event.get('type') == 'RESULT' and event.get('status') == 'COMPLETED' for event in repeated), repeated[-3:]
     assert len(request('/api/simulations')['jobs']) == len(jobs), 'Retry created a duplicate simulation.'
+    network_view = request('/api/engineering/workflow/network-view')
+    topology = network_view['topology']
+    scene = topology.get('scene') or {}
+    assert scene.get('version', 0) >= 2 and scene.get('buses'), 'Wizard did not persist the complete network scene.'
+    semantic_nodes = [{k: v for k, v in node.items() if k not in {'x', 'y', 'width', 'height', 'ports'}} | {
+        'ports': [{k: v for k, v in port.items() if k not in {'side', 'offset'}} for port in node.get('ports', [])]
+    } for node in topology['nodes']]
+    signature = hashlib.sha256(json.dumps({'nodes': semantic_nodes, 'edges': topology['edges']},
+        sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    assert scene['modelSignature'] == signature, 'Saved scene does not match canonical topology.'
+    ports = {(node['id'], port['id']): port for node in topology['nodes'] for port in node.get('ports', [])}
+    expected = {(edge[side], edge[side + 'Port']) for edge in topology['edges'] for side in ('source', 'target')}
+    actual = set()
+    for bus in scene['buses']:
+        for branch in bus['branches']:
+            key = branch['nodeId'], branch['portId']
+            assert key not in actual, 'A physical port is drawn on multiple buses.'
+            actual.add(key)
+            assert ports[key]['physicalNetworkId'] == bus['id'] and ports[key]['bus'] == bus['technology']
+        assert bus['participantCount'] == len({branch['nodeId'] for branch in bus['branches']})
+    assert actual == expected, 'Saved scene omits or invents physical branches.'
+    scene_summary = {'version': scene['version'], 'nodes': len(topology['nodes']), 'buses': len(scene['buses']),
+        'frames': len(scene['frames']), 'branches': len(actual), 'model_signature_verified': True}
     report = {'project': project, 'run_id': run_id, 'job_id': completed['id'], 'statuses': workflow['statuses'],
+              'network_scene': scene_summary,
               'assessment': assessment,
               'resource_decisions': resource_decisions,
               'applied': applied, 'trace_window_count': trace['count'], 'http': evidence,

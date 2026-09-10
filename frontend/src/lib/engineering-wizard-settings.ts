@@ -1,3 +1,5 @@
+import { DEFAULT_BUS_PARTICIPANT_LIMITS, normalizeBusLimits } from "./bus-settings.ts";
+
 export type WizardChoiceOption = {
   id: string;
   label: string;
@@ -92,6 +94,7 @@ export type EngineeringWizardSettings = {
   model_type: string;
   scope_ids: string[];
   process_ids: string[];
+  bus_participant_limits: Record<string, number>;
 };
 
 export type WizardQuestionnaireStep = {
@@ -104,6 +107,7 @@ export const DEFAULT_ENGINEERING_WIZARD_SETTINGS: EngineeringWizardSettings = {
   model_type: "automotive",
   scope_ids: WIZARD_SCOPE_GROUP.options.map((option) => option.id),
   process_ids: WIZARD_PROCESS_GROUP.options.map((option) => option.id),
+  bus_participant_limits: DEFAULT_BUS_PARTICIPANT_LIMITS,
 };
 
 function normalizedIds(value: unknown, options: WizardChoiceOption[], fallback: string[]): string[] {
@@ -136,6 +140,7 @@ export function normalizeEngineeringWizardSettings(
     model_type: modelType || DEFAULT_ENGINEERING_WIZARD_SETTINGS.model_type,
     scope_ids: normalizedIds(source.scope_ids, WIZARD_SCOPE_GROUP.options, DEFAULT_ENGINEERING_WIZARD_SETTINGS.scope_ids),
     process_ids: processIds,
+    bus_participant_limits: normalizeBusLimits(source.bus_participant_limits),
   };
 }
 

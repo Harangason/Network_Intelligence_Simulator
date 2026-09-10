@@ -154,7 +154,17 @@ export type PreflightResults = {
 };
 
 export type CapacityNetwork = {
-  network_id: string;
+  evaluation?: {
+    payload: { status: string; signal_count: number; errors: number; open: number };
+    capacity: { status: string; load_percent: number; basis: string };
+    schedule: { status: string; slot_load_percent?: number };
+    stress: { status: string; peak_percent: number; burst_percent: number };
+    functional: { status: string; explanation: string };
+  };
+    network_id: string;
+    network_name?: string;
+    timing_verified?: boolean;
+    response_time_bound_ms?: number | null;
   protocol: string;
   route_count: number;
   average_load_percent: number;
@@ -173,6 +183,9 @@ export type CapacityNetwork = {
 };
 
 export type CapacityRoute = {
+  timing_verified?: boolean;
+  response_time_bound_ms?: number | null;
+  jitter_bound_ms?: number | null;
   route_id: string;
   route_code?: string;
   name: string;
@@ -196,9 +209,9 @@ export type CapacityRoute = {
   max_latency_ms?: number | null;
   timeout_ms?: number | null;
   freshness_ms?: number | null;
-  latency_status?: "PASS" | "FAIL";
-  jitter_status?: "PASS" | "FAIL";
-  requirement_status?: "PASS" | "FAIL";
+  latency_status?: "PASS" | "FAIL" | "UNVERIFIED";
+  jitter_status?: "PASS" | "FAIL" | "UNVERIFIED";
+  requirement_status?: "PASS" | "FAIL" | "UNVERIFIED";
   priority?: number;
   queue_policy?: string;
   breakdown?: Record<string, number>;
@@ -209,6 +222,9 @@ export type CapacityRoute = {
 
 export type CapacityResults = {
   overview: {
+    peak_factor?: number;
+    burst_factor?: number;
+    timing_verified?: boolean;
     network_count: number;
     route_count: number;
     route_segment_count?: number;
@@ -331,6 +347,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+export const getWorkflowNetworks = async () => {
+  const state = await request<{parameters: {networks?: Array<{id: string; name?: string}>}}>('/workflow/parameters');
+  return state.parameters.networks ?? [];
+};
+
 export const getWorkflow = () =>
   request<WorkflowState>("/workflow", { signal: AbortSignal.timeout(180000) }).then(normalizeWorkflowState);
 
@@ -397,6 +418,36 @@ export const saveWorkflowTopology = (topology: Pick<NetworkTopology, "nodes" | "
     body: JSON.stringify({ topology, expected_token: expectedToken }),
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);
+
+export type NetworkView = { project_id: string; topology: NetworkTopology; edit_tokens: { topology: string; parameters: string }; versions: Record<string, number> };
+export type NetworkAssignmentRequest = {node_ids:string[]; target_kind:'cluster'|'frame'|'bus'; target_id:string; source_network_id?:string; plan_token?:string};
+export type FrameDeviceRequest = {frame_id: string; kind: 'ecu' | 'sensor' | 'actuator'; name: string};
+export const createFrameDevice = (device: FrameDeviceRequest, expectedToken?: string) => request<WorkflowState>('/workflow/frame-device', {
+  method: 'POST', body: JSON.stringify({...device, expected_token: expectedToken}), signal: AbortSignal.timeout(60000),
+}).then(normalizeWorkflowState);
+export type NetworkAssignmentPreview = {token:string; target_name:string; node_ids:string[]; routes:number; messages:number; new_objects:number; new_commands:number; new_routes:number;
+  members:Array<{id:string; name:string; from_cluster:string; from_frame:string; to_cluster:string; to_frame:string}>;
+  connections:Array<{device:string; from:string; to:string; technology:string}>};
+export const previewNetworkAssignment = (assignment:NetworkAssignmentRequest, signal?:AbortSignal) => request<NetworkAssignmentPreview>('/workflow/network-assignment/preview', {
+  method:'POST',body:JSON.stringify(assignment),signal:signal??AbortSignal.timeout(180000),
+});
+export const saveNetworkAssignment = (assignment:NetworkAssignmentRequest, expectedToken?:string) => request<WorkflowState>('/workflow/network-assignment', {
+  method:'PUT',body:JSON.stringify({...assignment,expected_token:expectedToken}),signal:AbortSignal.timeout(180000),
+}).then(normalizeWorkflowState);
+export type BusChangePreview = { token: string; network_id: string; bus: string; networks: Array<{ id: string; name: string; previous_name: string }>; devices: number; messages: number; routes: number };
+export type BusChangeRequest = { network_id: string; bus: string; plan_token: string; edge: NetworkTopology["edges"][number] };
+export const previewBusChange = (networkId: string, bus: string) => request<BusChangePreview>("/workflow/bus-technology/preview", {
+  method: "POST", body: JSON.stringify({ network_id: networkId, bus }), signal: AbortSignal.timeout(180000),
+});
+export const saveBusChange = (change: BusChangeRequest, expectedToken?: string) => request<WorkflowState>("/workflow/bus-technology", {
+  method: "PUT", body: JSON.stringify({ ...change, expected_token: expectedToken }), signal: AbortSignal.timeout(180000),
+}).then(normalizeWorkflowState);
+export const renamePhysicalBus = (networkId: string, name: string, expectedToken?: string, expectedParametersToken?: string) => request<WorkflowState>('/workflow/bus-name', {
+  method: 'PUT', body: JSON.stringify({network_id: networkId, name, expected_token: expectedToken, expected_parameters_token: expectedParametersToken}),
+}).then(normalizeWorkflowState);
+export const getNetworkView = () => request<NetworkView>("/workflow/network-view");
+export const saveNetworkView = (positions: Record<string, unknown>, expectedToken?: string, reset = false, busRoutes?: NonNullable<NetworkTopology['scene']>['manualBusRoutes'], resetWires = false) =>
+  request<NetworkView>("/workflow/network-view", { method: "PUT", body: JSON.stringify({ positions, expected_token: expectedToken, reset, bus_routes: busRoutes, reset_wires: resetWires }) });
 
 export type WorkflowTopologyLayoutNode = {
   node_id: string;
@@ -516,6 +567,21 @@ export const optimizeCapacity = () =>
   request<{ proposals: Array<Record<string, unknown>> }>("/capacity/optimize", {
     method: "POST",
     body: "{}",
+    });
+
+export type CommunicationSizingPlan = {
+  source_token: string; status: string; history_matches: string[];
+  policy: Record<string, unknown>;
+  changes: Array<{message_id: string; name: string; before_ms: number; after_ms: number; evaluation?: string}>;
+  networks: Array<{network_id: string; network_name: string; protocol: string; status: string; explanation: string;
+    selected_floor_ms?: number; effective_periods_ms?: number[]; schedule?: {nominal_load_percent?: number; slot_load_percent?: number; assumptions?: string[]};
+    attempts: Array<{floor_ms: number; fits: boolean; load_percent?: number; slot_load_percent?: number; reasons: string[]}>}>;
+};
+export const dimensionCommunications = (policy?: Record<string, unknown>) =>
+  request<CommunicationSizingPlan>("/capacity/dimension", {method: "POST", body: JSON.stringify({policy})});
+export const applyCommunicationSizing = (plan: CommunicationSizingPlan) =>
+  request<{changed_messages: number; changed_routes: number; valid_routes: number; invalid_routes: string[]}>("/capacity/dimension/apply", {
+    method: "POST", body: JSON.stringify({source_token: plan.source_token, policy: plan.policy, approve_valid: true}),
   });
 
 export const getPreflight = () => request<AnalysisSnapshot>("/preflight");

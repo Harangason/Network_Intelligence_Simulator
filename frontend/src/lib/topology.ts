@@ -6,12 +6,13 @@ import {
 } from "./topology-cluster-knowledge.ts";
 
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
-export type BusType = "can_fd" | "lin" | "automotive_ethernet" | "flexray";
+export type BusType = "can" | "can_xl" | "can_fd" | "lin" | "automotive_ethernet" | "flexray";
 export type PortSide = "left" | "right" | "top" | "bottom";
 
 export type TopologyPort = {
   id: string;
   name: string;
+  nameSource?: "network" | "user";
   bus: BusType;
   side: PortSide;
   offset: number;
@@ -19,6 +20,7 @@ export type TopologyPort = {
   hardwareInterfaceId?: string;
   physicalNetworkId?: string;
   physicalNetworkName?: string;
+  physicalNetworkNameSource?: "user" | "generated";
 };
 
 export type TopologyNode = {
@@ -68,6 +70,7 @@ export type TopologyEdge = {
   routingMetadata?: Record<string, TopologyRouteMetadata>;
   physicalNetworkId?: string;
   physicalNetworkName?: string;
+  physicalNetworkNameSource?: "user" | "generated";
   origin?: "ROUTING_TABLE" | "WIZARD_PHYSICAL_COMPLETENESS";
 };
 
@@ -96,6 +99,7 @@ export type TopologySyncResult = {
 };
 
 export type NetworkTopology = {
+  scene?: import("./network-scene").NetworkScene;
   nodes: TopologyNode[];
   edges: TopologyEdge[];
 };
@@ -231,6 +235,8 @@ export function engineeringHardwareKind(
 }
 
 export const busProfiles: Record<BusType, { label: string; bitrate: number; cycleMs: number; payload: number; color: string }> = {
+  can: { label: "CAN", bitrate: 500_000, cycleMs: 10, payload: 8, color: "#70c48c" },
+  can_xl: { label: "CAN-XL", bitrate: 10_000_000, cycleMs: 10, payload: 2048, color: "#58bfc4" },
   can_fd: { label: "CAN FD", bitrate: 2_000_000, cycleMs: 10, payload: 64, color: "#9fea4e" },
   lin: { label: "LIN", bitrate: 19_200, cycleMs: 20, payload: 8, color: "#f2c94c" },
   automotive_ethernet: { label: "Ethernet", bitrate: 100_000_000, cycleMs: 5, payload: 1500, color: "#73a7ff" },

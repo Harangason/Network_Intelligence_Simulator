@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from backend.agent_core.context.limits import MAX_REQUIREMENT_LENGTH
 import os
 import re
 from datetime import datetime, timezone
@@ -27,7 +28,7 @@ def extract_wizard_run_id(prompt: str) -> str | None:
     return match.group(1).rstrip(".") if match else None
 
 
-def restore_wizard_continuation_prompt(prompt: str, wizard: dict | None, maximum: int = 30_000) -> str:
+def restore_wizard_continuation_prompt(prompt: str, wizard: dict | None, maximum: int = MAX_REQUIREMENT_LENGTH) -> str:
     """Reattach the durable confirmed request to compact continuation messages."""
     compact = str(prompt or "").strip()
     if not isinstance(wizard, dict) or "Strukturierte Vorgaben fuer den Engineering-Agenten:" in compact:

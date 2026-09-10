@@ -29,6 +29,12 @@ function targetFor(sensorName) {
   return semanticProcessorForSensor(sensor, processors)?.hardware_name;
 }
 
+test("gleichwertige Empfänger bleiben offen und Sitz wird nicht zu Fahrwerk", () => {
+  const chain = (hardware_name) => ({ hardware_name, function_name: hardware_name, interface_type: "LIN" });
+  assert.equal(semanticProcessorForSensor(chain("FrontLeftSuspensionTravel"), [chain("DaempferregelungA"), chain("DaempferregelungB")]), undefined);
+  assert.equal(semanticProcessorForSensor(chain("FahrersitzTemperatur"), [chain("Fahrwerk"), chain("Fahrersitz")])?.hardware_name, "Fahrersitz");
+});
+
 test("Bremsdruck wird fachlich der Bremsregelung und nicht der Klima-ECU zugeordnet", () => {
   assert.equal(targetFor("RearLeftBrakePressureSensor"), "Bremsregelung");
 });
@@ -36,7 +42,7 @@ test("Bremsdruck wird fachlich der Bremsregelung und nicht der Klima-ECU zugeord
 test("repräsentative Sensorfamilien werden ihren fachlichen ECUs zugeordnet", () => {
   assert.equal(targetFor("CabinTemperatureSensor"), "Klimatisierung");
   assert.equal(targetFor("FrontLeftTirePressureSensor"), "Reifendruckkontrolle");
-  assert.equal(targetFor("RearRightSuspensionTravelSensor"), "Fahrwerk");
+  assert.equal(targetFor("RearRightSuspensionTravelSensor"), "Daempferregelung");
   assert.equal(targetFor("SteeringAngleSensor"), "Lenkung");
   assert.equal(targetFor("FrontRadarDistanceSensor"), "Radarverarbeitung");
 });
@@ -110,9 +116,9 @@ test("Variante 0 bleibt beim lokalen Sensor-ECU-Aktor-Regelkreis", () => {
   assert.equal(actuatorDestinations.every((plan) => plan.source.device_type === "ECU"), true);
 });
 
-test("Variante 4 bündelt bis zu sechs ECUs pro Gateway-Segment", () => {
+test("Variante 4 nutzt die konfigurierbare Grenze inklusive Gateway", () => {
   const specification = extractEngineeringSpecification(`${SAMPLE}\n- 100 Aktoren\n`);
-  const plans = semanticRoutePlans(specification.chains, "gateway_ecu_segments");
+  const plans = semanticRoutePlans(specification.chains, "gateway_ecu_segments", {can_fd:7, can:7, automotive_ethernet:7, lin:7});
   const sensorPlans = plans.filter((plan) => plan.source.device_type === "SensorController");
   const gatewaySegments = plans.filter((plan) => plan.source.device_type === "Gateway");
   const actuatorPlans = plans.filter((plan) => /Actuator/i.test(plan.destinations[0]?.device_type ?? ""));

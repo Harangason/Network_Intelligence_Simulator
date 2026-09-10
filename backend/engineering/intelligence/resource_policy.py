@@ -34,7 +34,8 @@ def planning_policy(state: dict) -> dict:
 
 
 def topology_signature(topology: dict) -> str:
-    return hashlib.sha256(json.dumps(topology, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    from ..network_scene import model_signature
+    return model_signature(topology)
 
 
 def resource_decision(before: dict, after: dict, baseline: dict, policy: dict) -> dict:

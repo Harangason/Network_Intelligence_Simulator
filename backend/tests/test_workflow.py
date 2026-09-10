@@ -229,7 +229,7 @@ def test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed():
     assert ethernet["bitrate"] == 100_000_000
     assert lin["bitrate"] == 19_200
     assert "data_bitrate" not in ethernet
-    assert estimate_frame("LIN", 8, lin).transmission_time_s == 114 / 19_200
+    assert estimate_frame("LIN", 8, lin).transmission_time_s == 124 / 19_200
     assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
     assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
     assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600
@@ -341,6 +341,7 @@ def test_engineering_wizard_settings_are_normalized_and_project_persistent(monke
         "model_type": "automotive",
         "scope_ids": ["routing", "simulation"],
         "process_ids": ["review_gate", "approve_after_allow"],
+        "bus_participant_limits": {"can":64,"can_fd":64,"can_xl":64,"lin":64,"automotive_ethernet":256,"flexray":64},
     }
     assert saved["context"]["agent_wizard_status"]["run_id"] == "run-a"
     assert saved["context"]["active_project"] == "project-a"
@@ -760,9 +761,9 @@ def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch)
     networks = {item["network_id"]: item for item in results["networks"]}
     route_segments = {(item["route_id"], item["network_id"]) for item in results["routes"]}
 
-    assert networks["lin-shared"]["average_load_percent"] == 59.375
-    assert networks["lin-a"]["average_load_percent"] == 59.375
-    assert networks["lin-b"]["average_load_percent"] == 59.375
+    assert networks["lin-shared"]["average_load_percent"] == 64.5833
+    assert networks["lin-a"]["average_load_percent"] == 64.5833
+    assert networks["lin-b"]["average_load_percent"] == 64.5833
     assert networks["lin-shared"]["route_count"] == 1
     assert route_segments == {
         ("route-shared", "lin-shared"),

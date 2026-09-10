@@ -45,7 +45,7 @@ class LocalTransformerService(TransformerService):
     replace it through the same contract without changing knowledge or business code.
     """
 
-    model_name = "local-hashed-engineering-embedding-v2"
+    model_name = "local-hashed-engineering-embedding-v3"
 
     def __init__(
         self,

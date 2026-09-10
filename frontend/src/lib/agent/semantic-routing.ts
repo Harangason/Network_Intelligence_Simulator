@@ -1,3 +1,5 @@
+import { engineeringTokens, containsEngineeringTerm } from "../engineering-terms.ts";
+import { DEFAULT_BUS_PARTICIPANT_LIMITS, busBranchCapacity } from "../bus-settings.ts";
 import type { ExtractedEngineeringChain, NetworkArchitectureMode } from "./engineering-specification";
 import {
   compareTopologyClusterKeys,
@@ -26,7 +28,9 @@ const ROUTE_RULES: RouteRule[] = [
   { source: ["brakepressure", "bremsdruck", "braketemperature", "bremstemperatur", "brakepedal", "bremspedal"], targets: ["bremsregelung", "stabilitaetsregelung"] },
   { source: ["tirepressure", "reifendruck", "tiretemperature", "reifentemperatur", "tirewear", "reifenverschleiss"], targets: ["reifendruckkontrolle"] },
   { source: ["damperposition", "daempferposition"], targets: ["daempferregelung", "fahrwerk"] },
-  { source: ["suspensiontravel", "federweg", "wheelload", "radlast", "verticalacceleration", "vertikalbeschleunigung"], targets: ["fahrwerk", "daempferregelung"] },
+  { source: ["suspensiontravel", "federweg"], targets: ["daempferregelung", "fahrwerk"] },
+  { source: ["wheelload", "radlast", "verticalacceleration", "vertikalbeschleunigung"], targets: ["fahrwerk", "daempferregelung"] },
+  { source: ["oiltemperature", "oeltemperatur", "coolanttemperature", "kuehlmitteltemperatur", "oillevel", "coolantlevel", "intakeairtemperature"], targets: ["motorsteuerung", "thermomanagement"] },
   { source: ["wheelangle", "radwinkel", "steeringangle", "lenkwinkel", "steeringtorque", "lenkmoment"], targets: ["lenkung", "hinterachslenkung"] },
   { source: ["wheelacceleration", "radbeschleunigung", "wheeltorque", "raddrehmoment", "longitudinalacceleration", "laengsbeschleunigung", "lateralacceleration", "querbeschleunigung", "yawrate", "gierrate", "pitchrate", "nickrate", "rollrate"], targets: ["stabilitaetsregelung", "fahrdynamik"] },
   { source: ["wheelspeed", "raddrehzahl"], targets: ["bremsregelung", "stabilitaetsregelung", "fahrdynamik"] },
@@ -45,7 +49,6 @@ const ROUTE_RULES: RouteRule[] = [
   { source: ["ambientlight", "umgebungshelligkeit"], targets: ["aussenlicht", "bodycontrol"] },
 ];
 
-const GATEWAY_ECU_SEGMENT_SIZE = 6;
 
 const GENERIC_ROUTE_TOKENS = new Set([
   "automotive", "controller", "data", "ecu", "erfassung", "generated", "hardware",
@@ -68,20 +71,31 @@ function compactKey(value: string) {
 }
 
 function chainText(chain: ExtractedEngineeringChain) {
-  return compactKey([
+  return [
     chain.hardware_name,
     chain.hardware_description,
     chain.function_name,
     chain.function_description,
     chain.signal_name,
     chain.signal_display_name,
-  ].join(" "));
+  ].join(" ");
 }
 
 function meaningfulTokens(value: string) {
-  return semanticRouteKey(value)
-    .split(" ")
+  return engineeringTokens(value)
     .filter((token) => token.length > 3 && !GENERIC_ROUTE_TOKENS.has(token));
+}
+
+const SOURCE_RULE_CACHE = new Map<string, Array<{ rule: RouteRule; sourceSpecificity: number }>>();
+function matchingSourceRules(source: string) {
+  const known = SOURCE_RULE_CACHE.get(source);
+  if (known) return known;
+  const matches = ROUTE_RULES.map((rule) => ({ rule, sourceSpecificity: Math.max(0, ...rule.source
+    .filter((term) => containsEngineeringTerm(source, term)).map((term) => term.length)) }))
+    .filter((item) => item.sourceSpecificity > 0);
+  if (SOURCE_RULE_CACHE.size >= 1024) SOURCE_RULE_CACHE.delete(SOURCE_RULE_CACHE.keys().next().value!);
+  SOURCE_RULE_CACHE.set(source, matches);
+  return matches;
 }
 
 export function semanticRouteScore(
@@ -90,30 +104,26 @@ export function semanticRouteScore(
 ) {
   const source = chainText(sensor);
   const processorBase = compactKey(processor.hardware_name).replace(/ecu$/, "");
-  const target = compactKey(`${processor.hardware_name} ${processor.function_name} ${processor.hardware_description}`);
+  const target = `${processor.hardware_name} ${processor.function_name}`;
   let semanticScore = 0;
 
-  for (const rule of ROUTE_RULES) {
-    const sourceSpecificity = Math.max(0, ...rule.source
-      .filter((term) => source.includes(term))
-      .map((term) => term.length));
-    if (sourceSpecificity === 0) continue;
+  for (const { rule, sourceSpecificity } of matchingSourceRules(source)) {
     const exactTargetIndex = rule.targets.findIndex((term) => processorBase === term);
     if (exactTargetIndex >= 0) {
       semanticScore = Math.max(semanticScore, 1_000 + sourceSpecificity * 20 - exactTargetIndex * 80);
       continue;
     }
-    const relatedTargetIndex = rule.targets.findIndex((term) => target.includes(term));
+    const relatedTargetIndex = rule.targets.findIndex((term) => containsEngineeringTerm(target, term));
     if (relatedTargetIndex >= 0) {
       semanticScore = Math.max(semanticScore, 700 + sourceSpecificity * 20 - relatedTargetIndex * 60);
     }
   }
 
   const processorName = compactKey(processor.hardware_name);
-  if (processorName.length > 3 && source.includes(processorName)) semanticScore = Math.max(semanticScore, 900);
+  if (processorName.length > 3 && containsEngineeringTerm(source, processor.hardware_name)) semanticScore = Math.max(semanticScore, 900);
   const targetTokens = meaningfulTokens(processor.hardware_name);
   const commonTokens = meaningfulTokens(sensor.hardware_name).filter((token) => targetTokens.includes(token));
-  semanticScore += commonTokens.length * 60;
+  if (semanticScore > 0) semanticScore += commonTokens.length * 60;
 
   if (semanticScore <= 0) return 0;
   return semanticScore + (sensor.interface_type === processor.interface_type ? 20 : 0);
@@ -123,12 +133,14 @@ export function semanticProcessorForSensor(
   sensor: ExtractedEngineeringChain,
   processors: ExtractedEngineeringChain[],
 ) {
-  return processors
+  const candidates = processors
     .map((processor) => ({ processor, score: semanticRouteScore(sensor, processor) }))
     .filter((candidate) => candidate.score > 0)
     .sort((left, right) =>
       right.score - left.score || left.processor.hardware_name.localeCompare(right.processor.hardware_name, "de"),
-    )[0]?.processor;
+    );
+  if (candidates.length > 1 && candidates[0].score === candidates[1].score) return undefined;
+  return candidates[0]?.processor;
 }
 
 function gatewayForProcessor(
@@ -152,7 +164,7 @@ function gatewayForProcessor(
     )[0]?.gateway;
 }
 
-function processorSegments(processors: ExtractedEngineeringChain[], size = GATEWAY_ECU_SEGMENT_SIZE) {
+function processorSegments(processors: ExtractedEngineeringChain[], limits?: Record<string, number>) {
   const profile = inferTopologyClusterProfileFromText(
     processors.map((processor) => chainText(processor)).join(" "),
     processors[0]?.domain,
@@ -170,14 +182,15 @@ function processorSegments(processors: ExtractedEngineeringChain[], size = GATEW
   for (const processor of processors) {
     const cluster = processorCluster(processor);
     const family = topologyClusterFamilyForKey(cluster.key, profile);
-    const current = families.get(family.key) ?? {
+    const groupKey = limits ? `${family.key}:${canonicalInterfaceKey(processor.interface_type)}` : family.key;
+    const current = families.get(groupKey) ?? {
       key: family.key,
       label: family.label,
       clusterKey: cluster.key,
       processors: [],
     };
     current.processors.push(processor);
-    families.set(family.key, current);
+    families.set(groupKey, current);
   }
   return [...families.values()]
     .sort((left, right) => (
@@ -190,6 +203,7 @@ function processorSegments(processors: ExtractedEngineeringChain[], size = GATEW
         || canonicalInterfaceKey(left.interface_type).localeCompare(canonicalInterfaceKey(right.interface_type))
         || left.hardware_name.localeCompare(right.hardware_name, "de-DE", { numeric: true, sensitivity: "base" })
       ));
+      const size = limits ? busBranchCapacity(limits, ordered[0]?.interface_type ?? "can_fd") : Number.MAX_SAFE_INTEGER;
       const segments = [];
       for (let index = 0; index < ordered.length; index += size) {
         segments.push({
@@ -206,6 +220,7 @@ function processorSegments(processors: ExtractedEngineeringChain[], size = GATEW
 export function semanticRoutePlans(
   chains: ExtractedEngineeringChain[],
   architecture: NetworkArchitectureMode = "ecu_gateway",
+  participantLimits = DEFAULT_BUS_PARTICIPANT_LIMITS,
 ): SemanticRoutePlan[] {
   const sensors = chains.filter((chain) => semanticRouteKey(chain.device_type).includes("sensor"));
   const actuators = chains.filter((chain) => /actuator|aktor/.test(semanticRouteKey(chain.device_type)));
@@ -217,7 +232,7 @@ export function semanticRoutePlans(
     architecture === "gateway_direct" || architecture === "hybrid_ai"
       ? [...endpoints, ...processors]
       : processors,
-    architecture === "gateway_ecu_segments" ? GATEWAY_ECU_SEGMENT_SIZE : Number.MAX_SAFE_INTEGER,
+    architecture === "gateway_ecu_segments" ? participantLimits : undefined,
   );
   const segmentByParticipant = new Map(
     sharedSegments.flatMap((segment) => segment.processors.map((participant) => [
@@ -258,7 +273,7 @@ export function semanticRoutePlans(
     if (architecture === "sensor_ecu_actuator") {
       // Pure local control loop: endpoint <-> ECU only, no Gateway/BCM route layer.
     } else if (architecture === "gateway_ecu_segments") {
-      for (const segment of processorSegments(processors)) {
+      for (const segment of sharedSegments) {
         const gateway = gatewayForProcessor(segment.processors[0], gateways);
         if (gateway && segment.processors.length) {
           plans.push({

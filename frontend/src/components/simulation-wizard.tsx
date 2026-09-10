@@ -8,6 +8,7 @@ import { localCatalog } from "@/lib/local-simulator";
 import { listRoutes } from "@/lib/routing-api";
 import type { Catalog, EngFunction, HardwareNode, RoutingEntry, Technology, TechnologyParameterField } from "@/lib/types";
 import { NetworkEditor } from "./network-editor";
+import { HardwareTopologyView } from "./hardware-topology-view";
 import {
   busProfiles,
   collapsePhysicalEdges,
@@ -19,7 +20,8 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
-import { getWorkflow, saveWorkflowParameters, saveWorkflowTopology } from "@/lib/workflow-api";
+import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflow, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
+import { routingBusType as routingBus } from "@/lib/bus-technology";
 import { defaultSimulationFormats } from "@/lib/simulation-formats";
 import {
   notifyWorkflowChanged,
@@ -66,16 +68,6 @@ type RoutingNetworkSuggestion = {
 
 const inactiveRouteStatuses = new Set(["REJECTED", "OUTDATED", "SUPERSEDED", "DEPRECATED"]);
 const ROUTING_SUGGESTION_CHECK_DELAY_MS = 80;
-
-function routingBus(protocol?: string | null, networkId?: string | null): BusType {
-  const value = `${protocol ?? ""} ${networkId ?? ""}`.toUpperCase();
-  if (value.includes("FLEX")) return "flexray";
-  if (value.includes("LIN")) return "lin";
-  if (["ETH", "SOME", "TCP", "UDP", "DDS", "IP"].some((item) => value.includes(item))) {
-    return "automotive_ethernet";
-  }
-  return "can_fd";
-}
 
 function routeNodeId(value: string | { node_id?: string; name?: string }) {
   return typeof value === "string" ? value : value.node_id ?? "";
@@ -562,6 +554,7 @@ export function SimulationWizard({
   const [routingLinkRevision, setRoutingLinkRevision] = useState("");
   const localWorkflowChangeRef = useRef(false);
   const topologyRef = useRef(topology);
+  const savedLayoutRef = useRef(topology);
   const editTokensRef = useRef<{ topology?: string; parameters?: string }>({});
   const projectIdForLinks = initialProjectId;
 
@@ -580,16 +573,43 @@ export function SimulationWizard({
     setSyncRequest((request) => request + 1);
   }, []);
 
-  const persistNetworkRelationships = useCallback(async (next: NetworkTopology) => {
+  const persistNetworkLayout = useCallback(async (next: NetworkTopology, reset = false, resetWires = false) => {
+    const previous = new Map(savedLayoutRef.current.nodes.map(n => [n.id, n]));
+    const positions = Object.fromEntries(next.nodes.filter(n => {
+      const old = previous.get(n.id);
+      return resetWires || old && (old.x !== n.x || old.y !== n.y || old.width !== n.width || old.height !== n.height || JSON.stringify(old.ports) !== JSON.stringify(n.ports));
+    }).map(n => [n.id, {x:n.x, y:n.y, width:n.width, height:n.height, ports:Object.fromEntries(n.ports.map(p=>[p.id,{side:p.side,offset:p.offset}]))}]));
+    const state = await saveNetworkView(positions, editTokensRef.current.topology, reset, next.scene?.manualBusRoutes, resetWires);
+    editTokensRef.current.topology = state.edit_tokens.topology;
+    savedLayoutRef.current = state.topology;
+    setTopology(state.topology);
+  }, []);
+
+  const persistBusName = useCallback(async (networkId: string, name: string) => {
+    const state = await renamePhysicalBus(networkId, name, editTokensRef.current.topology, editTokensRef.current.parameters);
+    const saved = state.topology as NetworkTopology;
+    editTokensRef.current = state.edit_tokens ?? {};
+    savedLayoutRef.current = saved;
+    topologyRef.current = saved;
+    setTopology(saved);
+    localWorkflowChangeRef.current = true;
+    setModelRefreshPending(false);
+    notifyWorkflowChanged();
+    return saved;
+  }, []);
+
+  const persistNetworkRelationships = useCallback(async (next: NetworkTopology, busChange?: BusChangeRequest) => {
     setEngineeringSync((current) => ({ ...current, status: "syncing", error: "" }));
     setRoutingSyncMessage("Routing-Vorschläge werden abgeglichen …");
     try {
-      const state = await saveWorkflowTopology(normalizePhysicalTopology(next), editTokensRef.current.topology);
+      const state = busChange ? await saveBusChange(busChange, editTokensRef.current.topology)
+        : await saveWorkflowTopology(next.scene ? next : normalizePhysicalTopology(next), editTokensRef.current.topology);
       editTokensRef.current = state.edit_tokens ?? {};
       if (Array.isArray(state.topology.nodes) && Array.isArray(state.topology.edges)) {
-        const savedTopology = normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
+        const savedTopology: NetworkTopology = state.topology.scene ? {...state.topology, nodes: state.topology.nodes, edges: state.topology.edges} : normalizePhysicalTopology({ nodes: state.topology.nodes, edges: state.topology.edges });
         setRoutingLinkRevision(topologyRoutingLinkRevision(savedTopology));
         setTopology(savedTopology);
+        savedLayoutRef.current = savedTopology;
         setEngineeringSync({
           status: "synced",
           linked: savedTopology.nodes.filter((node) => node.engineeringId).length,
@@ -597,7 +617,9 @@ export function SimulationWizard({
         });
       }
       const counts = state.routing_sync?.counts;
-      if (!counts) {
+      if (busChange) {
+        setRoutingSyncMessage("Bustyp im Modell gespeichert und Routing-Prüfung aktualisiert. Betroffene Routen benötigen eine erneute Freigabe.");
+      } else if (!counts) {
         setRoutingSyncMessage("Netzwerkbeziehungen gespeichert.");
       } else if (counts.created > 0 || counts.outdated > 0) {
         setRoutingSyncMessage(
@@ -621,8 +643,47 @@ export function SimulationWizard({
       setRoutingSyncMessage(
         error instanceof Error ? error.message : "Routing-Synchronisierung fehlgeschlagen.",
       );
+      if (busChange) throw error;
       return false;
     }
+  }, []);
+
+  const persistNetworkAssignment = useCallback(async (request: NetworkAssignmentRequest) => {
+    const state = await saveNetworkAssignment(request, editTokensRef.current.topology);
+    if (!state.topology.nodes || !state.topology.edges) throw new Error('Die gespeicherte Zuordnung konnte nicht vollständig geladen werden. Bitte die Ansicht neu laden.');
+    const saved: NetworkTopology = {...state.topology,nodes:state.topology.nodes,edges:state.topology.edges};
+    editTokensRef.current = state.edit_tokens ?? {};
+    savedLayoutRef.current = saved;
+    topologyRef.current = saved;
+    setTopology(saved);
+    setRoutingLinkRevision(topologyRoutingLinkRevision(saved));
+    setRoutingSyncMessage(request.target_kind === 'bus'
+      ? 'Geräteanschluss auf den Zielbus umgehängt. Nachrichten und Ansicht sind gespeichert; betroffene Routen wurden validiert und können erneut freigegeben werden.'
+      : 'Zuordnung, Busanschlüsse und Nachrichten gespeichert. Betroffene Routen wurden erneut validiert und können in der Routing-Tabelle freigegeben werden.');
+    localWorkflowChangeRef.current = true;
+    setModelRefreshPending(false);
+    setEngineeringSync({status:'synced',linked:saved.nodes.filter(node=>node.engineeringId).length,error:''});
+    // The assignment endpoint already synchronized and stored the scene.
+    // Refresh read models only; a second topology sync would regenerate routes.
+    setRouteRefreshRequest(value=>value+1);
+    notifyWorkflowChanged();
+  }, []);
+
+  const persistFrameDevice = useCallback(async (request: FrameDeviceRequest) => {
+    const state = await createFrameDevice(request, editTokensRef.current.topology);
+    if (!state.topology.nodes || !state.topology.edges) throw new Error('Das Gerät wurde gespeichert. Bitte die Ansicht neu laden.');
+    const saved: NetworkTopology = {...state.topology, nodes: state.topology.nodes, edges: state.topology.edges};
+    editTokensRef.current = state.edit_tokens ?? {};
+    savedLayoutRef.current = saved;
+    topologyRef.current = saved;
+    setTopology(saved);
+    setRoutingLinkRevision(topologyRoutingLinkRevision(saved));
+    setRoutingSyncMessage(`„${request.name}“ im Systemrahmen angelegt. Anschlüsse und Gerätedetails können jetzt ergänzt werden.`);
+    localWorkflowChangeRef.current = true;
+    setModelRefreshPending(false);
+    setEngineeringSync({status: 'synced', linked: saved.nodes.filter(node => node.engineeringId).length, error: ''});
+    setRouteRefreshRequest(value => value + 1);
+    notifyWorkflowChanged();
   }, []);
 
   useEffect(() => {
@@ -638,6 +699,18 @@ export function SimulationWizard({
   }, []);
 
   useEffect(() => {
+    if (mode === "network") {
+      let active = true;
+      void getNetworkView().then(state => {
+        if (!active) return;
+        editTokensRef.current = state.edit_tokens;
+        savedLayoutRef.current = state.topology;
+        setTopology(state.topology);
+        setRoutingLinkRevision(topologyRoutingLinkRevision(state.topology));
+        setWorkflowLoaded(true);
+      }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Netzwerkansicht konnte nicht geladen werden."); });
+      return () => { active = false; };
+    }
     getWorkflow()
       .then((state) => {
         editTokensRef.current = state.edit_tokens ?? {};
@@ -658,7 +731,7 @@ export function SimulationWizard({
       .catch((error) => {
         setFormError(error instanceof Error ? error.message : "Workflow konnte nicht geladen werden.");
       });
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (mode !== "parameters") return;
@@ -666,7 +739,7 @@ export function SimulationWizard({
   }, [mode]);
 
   useEffect(() => {
-    if (mode !== "network") return;
+    if (mode !== "network" || !workflowLoaded) return;
     let active = true;
     const refreshRoutes = (event?: Event) => {
       if (event && workflowLoaded) {
@@ -703,7 +776,7 @@ export function SimulationWizard({
   }, [clearLocalWorkflowChangeSoon, mode, routeRefreshRequest, workflowLoaded]);
 
   useEffect(() => {
-    if (mode !== "network") return;
+    if (mode !== "network" || !workflowLoaded) return;
     let active = true;
     const loadHardware = (event?: Event) => {
       if (event && workflowLoaded && !localWorkflowChangeRef.current) return;
@@ -748,39 +821,15 @@ export function SimulationWizard({
         listAllEngineeringObjects("functions"),
         syncEngineeringTopology(topologyForSync, editTokensRef.current.topology),
       ])
-        .then(([items, functionItems, result]) => {
+        .then(async ([items, functionItems, result]) => {
+          const saved = await getNetworkView();
           if (cancelled) return;
           setModelHardware(items.filter((item): item is HardwareNode => "device_type" in item));
           setModelFunctions(functionItems.filter((item): item is EngFunction => item.object_type === "Function"));
-          const nodesById = new Map(result.nodes.map((node) => [node.topology_node_id, node]));
-          const edgesById = new Map(result.edges.map((edge) => [edge.topology_edge_id, edge]));
-          const currentTopology = topologyRef.current;
-          const nextTopology = {
-            nodes: currentTopology.nodes.map((node) => {
-              const linked = nodesById.get(node.id);
-              const interfacesById = new Map(
-                (linked?.interfaces ?? []).map((item) => [item.topology_port_id, item] as const),
-              );
-              return {
-                ...node,
-                name: linked?.engineering_name || node.name,
-                engineeringId: linked?.engineering_id,
-                engineeringFunctionId: linked?.function_id,
-                ports: node.ports.map((port) => {
-                  const linkedInterface = interfacesById.get(port.id);
-                  return {
-                    ...port,
-                    name: linkedInterface?.engineering_name || port.name,
-                    engineeringId: linkedInterface?.engineering_id,
-                  };
-                }),
-              };
-            }),
-            edges: currentTopology.edges.map((edge) => ({
-              ...edge,
-              engineeringRelationId: edgesById.get(edge.id)?.engineering_relation_id,
-            })),
-          };
+          const nextTopology = saved.topology;
+          editTokensRef.current = saved.edit_tokens;
+          savedLayoutRef.current = nextTopology;
+          topologyRef.current = nextTopology;
           setRoutingLinkRevision(topologyRoutingLinkRevision(nextTopology));
           setTopology(nextTopology);
           setEngineeringSync({
@@ -1086,9 +1135,15 @@ export function SimulationWizard({
               </div>
             </div>
             {networkView === "editor" ? (
+              !workflowLoaded ? <p role="status">Gespeicherte Netzwerkansicht wird geladen …</p> :
+              topology.nodes.length > 0 && !topology.scene ? <div className="net-scene-missing"><p>Für dieses ältere Projekt ist noch keine vorbereitete Busansicht gespeichert.</p><button className="button primary" type="button" onClick={() => void persistNetworkLayout(topology, true).catch(error => setFormError(error.message))}>Busansicht vorbereiten</button></div> :
               <NetworkEditor
                 modelHardware={modelHardware}
                 onChange={setTopology}
+                onLayoutChange={persistNetworkLayout}
+          onAssignmentChange={persistNetworkAssignment}
+          onFrameDeviceCreate={persistFrameDevice}
+          onBusRename={persistBusName}
                 onRelationshipsChange={persistNetworkRelationships}
                 routingEntries={routingEntries}
                 topology={topology}
@@ -1279,7 +1334,7 @@ export function SimulationWizard({
             <dl className="overview-list">
               <div><dt>Geräte</dt><dd>{topology.nodes.length}</dd></div>
               <div><dt>Verbindungen</dt><dd>{topology.edges.length}</dd></div>
-              <div><dt>Busse</dt><dd>{new Set(topology.edges.map((edge) => edge.bus)).size}</dd></div>
+              <div><dt>Physische Busse</dt><dd>{new Set(topology.edges.map((edge) => edge.physicalNetworkId)).size}</dd></div>
               <div><dt>Formate</dt><dd>{formats.length}</dd></div>
             </dl>
           </div>
@@ -1436,837 +1491,6 @@ function BusLoadParameterControl({
       )}
     </div>
   );
-}
-
-type HardwareGraphEdge = {
-  id: string;
-  source: string;
-  target: string;
-  bus: BusType;
-  count: number;
-};
-
-type HardwareDiagramMode = "hardware" | "functions" | "combined";
-type HardwareDiagramNodeKind = TopologyNode["kind"] | "root" | "group" | "function" | "unmapped";
-type HardwareDiagramLinkKind = "hierarchy" | "mapping";
-
-type HardwareSystemCluster = {
-  id: string;
-  name: string;
-  hardware: TopologyNode[];
-  functions: EngFunction[];
-};
-
-type HardwareTreeNode = {
-  id: string;
-  name: string;
-  kind: HardwareDiagramNodeKind;
-  children: HardwareTreeNode[];
-  bus?: BusType;
-  connectionCount: number;
-  functionRef?: EngFunction;
-  mappingTargetId?: string | null;
-};
-
-type HardwareRadialNode = HardwareTreeNode & {
-  angle: number;
-  radius: number;
-  depth: number;
-  collapsed?: boolean;
-  parent?: HardwareRadialNode;
-};
-
-type HardwareRadialLink = {
-  id: string;
-  source: HardwareRadialNode;
-  target: HardwareRadialNode;
-  bus: BusType;
-  kind: HardwareDiagramLinkKind;
-};
-
-const HARDWARE_RADIAL_ROOT_GAP = 14;
-const HARDWARE_RADIAL_CLUSTER_GAP = 7;
-const HARDWARE_RADIAL_GROUP_GAP = 3.5;
-const COMBINED_RADIAL_ROOT_GAP = 56;
-const COMBINED_RADIAL_CLUSTER_GAP = 28;
-const COMBINED_RADIAL_GROUP_GAP = 14;
-
-function HardwareTopologyView({ functions, topology }: { functions: EngFunction[]; topology: NetworkTopology }) {
-  const [zoom, setZoom] = useState(1.1);
-  const [diagramMode, setDiagramMode] = useState<HardwareDiagramMode>("hardware");
-  const [showLabels, setShowLabels] = useState(true);
-  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(() => new Set());
-  const [selectedNodeId, setSelectedNodeId] = useState("");
-  const [selectedLinkId, setSelectedLinkId] = useState("");
-  const [panning, setPanning] = useState(false);
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const panRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
-  const panMovedRef = useRef(false);
-  const graph = useMemo(() => buildHardwareRadialTree(topology, functions, diagramMode, collapsedNodeIds), [collapsedNodeIds, diagramMode, functions, topology]);
-  const focus = useMemo(() => hardwareFocusSets(graph.nodes, graph.links, selectedNodeId, selectedLinkId), [graph.links, graph.nodes, selectedLinkId, selectedNodeId]);
-  const selectedNode = graph.nodes.find((node) => node.id === selectedNodeId);
-  const selectedLink = graph.links.find((link) => link.id === selectedLinkId);
-  const selectedLabel = selectedLink
-    ? `${selectedLink.source.name} -> ${selectedLink.target.name} · ${busProfiles[selectedLink.bus].label}`
-    : selectedNode
-      ? `${selectedNode.name} · ${hardwareNodeRole(selectedNode.kind)} · ${selectedNode.connectionCount} Verbindung(en)`
-      : "";
-  const width = diagramMode === "combined" ? 4200 : 2600;
-  const height = diagramMode === "combined" ? 3600 : 2200;
-  const cx = width * 0.5;
-  const cy = height * 0.53;
-  const scaledWidth = Math.round(width * zoom);
-  const scaledHeight = Math.round(height * zoom);
-
-  const focusViewport = useCallback((point: { x: number; y: number }, nextZoom = Math.max(zoom, 1.25)) => {
-    const stage = stageRef.current;
-    if (!stage) return;
-    setZoom(nextZoom);
-    window.requestAnimationFrame(() => {
-      stage.scrollTo({
-        left: Math.max(0, point.x * nextZoom - stage.clientWidth / 2),
-        top: Math.max(0, point.y * nextZoom - stage.clientHeight / 2),
-        behavior: "smooth",
-      });
-    });
-  }, [zoom]);
-
-  const toggleCollapsed = useCallback((node: HardwareRadialNode) => {
-    if (panMovedRef.current) return;
-    if (node.children.length === 0) {
-      setSelectedNodeId(node.id);
-      setSelectedLinkId("");
-      return;
-    }
-    setCollapsedNodeIds((current) => {
-      const next = new Set(current);
-      if (next.has(node.id)) next.delete(node.id);
-      else next.add(node.id);
-      return next;
-    });
-    setSelectedNodeId(node.id);
-    setSelectedLinkId("");
-  }, []);
-
-  useEffect(() => {
-    if (!selectedNode && !selectedLink) return;
-    if (selectedLink) {
-      const source = radialPoint(selectedLink.source.angle, selectedLink.source.radius);
-      const target = radialPoint(selectedLink.target.angle, selectedLink.target.radius);
-      focusViewport({ x: cx + (source.x + target.x) / 2, y: cy + (source.y + target.y) / 2 });
-      return;
-    }
-    if (selectedNode) {
-      const point = radialPoint(selectedNode.angle, selectedNode.radius);
-      focusViewport({ x: cx + point.x, y: cy + point.y });
-    }
-  }, [cx, cy, focusViewport, selectedLink, selectedNode]);
-
-  const beginPan = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    panRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      left: event.currentTarget.scrollLeft,
-      top: event.currentTarget.scrollTop,
-    };
-    panMovedRef.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
-
-  const movePan = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const start = panRef.current;
-    if (!start) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-      panMovedRef.current = true;
-      setPanning(true);
-    }
-    event.currentTarget.scrollLeft = start.left - dx;
-    event.currentTarget.scrollTop = start.top - dy;
-  }, []);
-
-  const endPan = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (panRef.current) {
-      try {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      } catch {
-        // Pointer capture may already be released when leaving the canvas.
-      }
-    }
-    panRef.current = null;
-    setPanning(false);
-    window.setTimeout(() => {
-      panMovedRef.current = false;
-    }, 0);
-  }, []);
-
-  if (topology.nodes.length === 0 && functions.length === 0) {
-    return <div className="hardware-topology-empty">Keine Hardware-Topologie vorhanden.</div>;
-  }
-  return (
-    <section className="hardware-topology-view" aria-label="Hardware-Topologie">
-      <div className="hardware-topology-header">
-        <div>
-          <span>Hardware-Topologie</span>
-          <strong>{hardwareDiagramModeTitle(diagramMode)}</strong>
-        </div>
-        <div className="hardware-topology-toolbar" role="toolbar" aria-label="Hardware-Topologie Werkzeuge">
-          <button className={diagramMode === "hardware" ? "active" : ""} onClick={() => { setDiagramMode("hardware"); setCollapsedNodeIds(new Set()); setSelectedNodeId(""); setSelectedLinkId(""); }} type="button">
-            Hardware
-          </button>
-          <button className={diagramMode === "functions" ? "active" : ""} onClick={() => { setDiagramMode("functions"); setCollapsedNodeIds(new Set()); setSelectedNodeId(""); setSelectedLinkId(""); }} type="button">
-            Functions
-          </button>
-          <button className={diagramMode === "combined" ? "active" : ""} onClick={() => { setDiagramMode("combined"); setCollapsedNodeIds(new Set()); setSelectedNodeId(""); setSelectedLinkId(""); }} type="button">
-            Combined
-          </button>
-          <button aria-label="Verkleinern" disabled={zoom <= 0.7} onClick={() => setZoom((value) => Math.max(0.7, Number((value - 0.1).toFixed(1))))} type="button">−</button>
-          <strong>{Math.round(zoom * 100)} %</strong>
-          <button aria-label="Vergrößern" disabled={zoom >= 2} onClick={() => setZoom((value) => Math.min(2, Number((value + 0.1).toFixed(1))))} type="button">+</button>
-          <button onClick={() => setZoom(1.1)} type="button">Fit</button>
-          <button disabled={!selectedNodeId && !selectedLinkId} onClick={() => { setSelectedNodeId(""); setSelectedLinkId(""); }} type="button">Alle</button>
-          <button className={showLabels ? "active" : ""} onClick={() => setShowLabels((value) => !value)} type="button">
-            Labels
-          </button>
-        </div>
-      </div>
-      <div className="hardware-topology-canvas">
-        <div
-          className={`hardware-topology-stage ${panning ? "panning" : ""}`}
-          onPointerCancel={endPan}
-          onPointerDown={beginPan}
-          onPointerLeave={endPan}
-          onPointerMove={movePan}
-          onPointerUp={endPan}
-          ref={stageRef}
-        >
-          <svg
-            className="hardware-topology-svg"
-            role="img"
-            style={{ height: scaledHeight, width: scaledWidth }}
-            viewBox={`0 0 ${width} ${height}`}
-          >
-            <title>Radiale Hardware-Topologie</title>
-            <g transform={`translate(${cx} ${cy})`}>
-              <g className="hardware-topology-edges">
-                {graph.links.map((link) => {
-                  const active = focus.links.size === 0 || focus.links.has(link.id);
-                  const selected = selectedLinkId === link.id;
-                  return (
-                    <path
-                      className={`${link.kind} ${hardwareLinkTone(link)} ${active ? "active" : "dimmed"} ${selected ? "selected" : ""}`}
-                      d={radialLinkPath(link.source, link.target)}
-                      key={link.id}
-                      onClick={() => { if (panMovedRef.current) return; setSelectedLinkId(link.id); setSelectedNodeId(""); }}
-                      stroke={hardwareLinkStroke(link)}
-                    >
-                      <title>{`${link.source.name} -> ${link.target.name}`}</title>
-                    </path>
-                  );
-                })}
-              </g>
-              <g className="hardware-topology-nodes">
-                {graph.nodes.map((node) => {
-                  const point = radialPoint(node.angle, node.radius);
-                  const degrees = node.angle * 180 / Math.PI - 90;
-                  const flip = node.angle >= Math.PI;
-                  const active = focus.nodes.size === 0 || focus.nodes.has(node.id);
-                  const selected = selectedNodeId === node.id;
-                  const showNodeLabel = showLabels && hardwareShowNodeLabel(node, diagramMode, selected, focus.nodes.has(node.id), focus.nodes.size > 0);
-                  return (
-                    <g
-                      className={`hardware-node hardware-node-${node.kind} ${active ? "active" : "dimmed"} ${selected ? "selected" : ""}`}
-                      key={node.id}
-                    onClick={() => toggleCollapsed(node)}
-                    transform={`translate(${point.x} ${point.y})`}
-                  >
-                      <circle r={hardwareNodeRadius(node)} />
-                      <text aria-hidden="true" className="hardware-node-symbol" dy="3">
-                        {hardwareNodeSymbol(node.kind)}
-                      </text>
-                      <title>{`${node.name} · ${hardwareNodeRole(node.kind)} · ${node.connectionCount} Verbindung(en)`}</title>
-                      {showNodeLabel && (
-                      <text
-                        className="hardware-node-label"
-                          dy="0.31em"
-                          textAnchor={node.children.length ? "end" : flip ? "end" : "start"}
-                          transform={`rotate(${degrees}) translate(${hardwareNodeRadius(node) + 7},0) rotate(${flip ? 180 : 0})`}
-                          x={node.children.length ? -12 : 6}
-                      >
-                        {node.children.length ? `${node.collapsed ? "[+]" : "[-]"} ${shortHardwareLabel(node.name)}` : shortHardwareLabel(node.name)}
-                      </text>
-                      )}
-                    </g>
-                  );
-                })}
-              </g>
-            </g>
-          </svg>
-        </div>
-        {selectedLabel && <div className="hardware-topology-selection">{selectedLabel}</div>}
-        <div className="hardware-topology-legend" aria-label="Bus-Legende">
-          {(Object.keys(busProfiles) as BusType[]).map((bus) => (
-            <span key={bus}><i style={{ background: busProfiles[bus].color }} />{busProfiles[bus].label}</span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function buildHardwareRadialTree(
-  topology: NetworkTopology,
-  functions: EngFunction[],
-  mode: HardwareDiagramMode,
-  collapsedNodeIds: Set<string>,
-) {
-  const root = buildHardwareDiagramTree(topology, functions, mode);
-  const maxDepth = Math.max(1, hardwareTreeDepth(root));
-  const leafSlots = Math.max(1, hardwareVisibleLeafCount(root, collapsedNodeIds, mode));
-  const radiusStep = (mode === "combined" ? 1540 : 960) / maxDepth;
-  let cursor = 0;
-  const nodes: HardwareRadialNode[] = [];
-  const links: HardwareRadialLink[] = [];
-
-  function place(node: HardwareTreeNode, depth: number, parent?: HardwareRadialNode): HardwareRadialNode {
-    const collapsed = collapsedNodeIds.has(node.id);
-    const visibleChildren = collapsed ? [] : node.children;
-    const leaves = collapsed ? 1 : hardwareVisibleLeafCount(node, collapsedNodeIds, mode);
-    const start = cursor;
-    const sortedChildren = visibleChildren
-      .sort((left, right) => hardwareHierarchyRank(left.kind) - hardwareHierarchyRank(right.kind) || left.name.localeCompare(right.name, "de-DE"));
-    const childNodes = sortedChildren.map((child, index) => {
-      if (index > 0) cursor += hardwareChildGap(depth, mode);
-      return { child, placed: place(child, depth + 1) };
-    });
-    if (visibleChildren.length === 0) cursor += 1;
-    const middle = visibleChildren.length === 0 ? start + 0.5 : start + leaves / 2;
-    const placed: HardwareRadialNode = {
-      ...node,
-      angle: hardwareSlotAngle(middle, leafSlots, mode),
-      radius: depth * radiusStep,
-      depth,
-      collapsed,
-      parent,
-    };
-    nodes.push(placed);
-    childNodes.forEach(({ child, placed: childNode }) => {
-      childNode.parent = placed;
-      links.push({ id: `${node.id}->${child.id}`, source: placed, target: childNode, bus: child.bus ?? "can_fd", kind: "hierarchy" });
-    });
-    return placed;
-  }
-
-  place(root, 0);
-  if (mode === "combined") {
-    const byId = new Map(nodes.map((node) => [node.id, node]));
-    nodes.forEach((node) => {
-      if (node.kind !== "function" || !node.mappingTargetId) return;
-      const target = byId.get(node.mappingTargetId);
-      if (!target) return;
-      links.push({ id: `${node.id}->mapped:${target.id}`, source: node, target, bus: "can_fd", kind: "mapping" });
-    });
-  }
-  return {
-    nodes: nodes.sort((left, right) => left.depth - right.depth),
-    links: links.filter((link) => link.source && link.target),
-  };
-}
-
-function buildHardwareDiagramTree(topology: NetworkTopology, functions: EngFunction[], mode: HardwareDiagramMode): HardwareTreeNode {
-  const clusters = buildSystemClusters(topology, functions);
-  const systemChildren = clusters.map((cluster) => buildSystemClusterTree(cluster, topology, mode));
-  if (mode === "functions") {
-    return {
-      id: "functions-root",
-      name: "Functions",
-      kind: "root",
-      children: systemChildren,
-      connectionCount: functions.length,
-    };
-  }
-  return {
-    id: mode === "hardware" ? "hardware-root" : "combined-root",
-    name: "Central Gateway",
-    kind: "root",
-    children: systemChildren,
-    connectionCount: topology.edges.length + functions.length,
-  };
-}
-
-function buildSystemClusterTree(cluster: HardwareSystemCluster, topology: NetworkTopology, mode: HardwareDiagramMode): HardwareTreeNode {
-  const children: HardwareTreeNode[] = [];
-  if (mode === "functions" || mode === "combined") {
-    children.push(buildFunctionTree(cluster.functions, topology, `system:${cluster.id}`));
-  }
-  if (mode === "hardware" || mode === "combined") {
-    children.push({
-      id: `system:${cluster.id}:hardware`,
-      name: "Hardware",
-      kind: "group",
-      children: buildClusterHardwareTrees(cluster.hardware, topology),
-      connectionCount: cluster.hardware.length,
-    });
-  }
-  return {
-    id: `system:${cluster.id}`,
-    name: cluster.name,
-    kind: "group",
-    children,
-    connectionCount: cluster.hardware.length + cluster.functions.length,
-  };
-}
-
-function buildFunctionTree(functions: EngFunction[], topology?: NetworkTopology, idPrefix = "functions"): HardwareTreeNode {
-  const hardwareByEngineeringId = new Map((topology?.nodes ?? []).flatMap((node) => node.engineeringId ? [[node.engineeringId, node.id]] : []));
-  const mapped: HardwareTreeNode[] = [];
-  const unmapped: HardwareTreeNode[] = [];
-
-  functions
-    .slice()
-    .sort((left, right) => left.name.localeCompare(right.name, "de-DE"))
-    .forEach((item) => {
-      const mappingTargetId = item.hardware_node_id ? hardwareByEngineeringId.get(item.hardware_node_id) ?? null : null;
-      const node: HardwareTreeNode = {
-        id: `function:${item.id}`,
-        name: item.name,
-        kind: mappingTargetId ? "function" : "unmapped",
-        children: [],
-        connectionCount: mappingTargetId ? 1 : 0,
-        functionRef: item,
-        mappingTargetId,
-      };
-      if (mappingTargetId) mapped.push(node);
-      else unmapped.push(node);
-    });
-
-  const children: HardwareTreeNode[] = [
-    {
-      id: `${idPrefix}:functions:mapped`,
-      name: "Mapped Functions",
-      kind: "group",
-      children: mapped,
-      connectionCount: mapped.length,
-    },
-  ];
-  if (unmapped.length > 0) {
-    children.push({
-      id: `${idPrefix}:functions:unmapped`,
-      name: "Unmapped Functions",
-      kind: "unmapped",
-      children: unmapped,
-      connectionCount: unmapped.length,
-    });
-  }
-  if (functions.length === 0) {
-    children[0].children.push({
-      id: `${idPrefix}:functions:none`,
-      name: "Keine Core-Funktionen",
-      kind: "unmapped",
-      children: [],
-      connectionCount: 0,
-    });
-  }
-  return {
-    id: `${idPrefix}:functions`,
-    name: "Functions",
-    kind: "group",
-    children,
-    connectionCount: functions.length,
-  };
-}
-
-function buildSystemClusters(topology: NetworkTopology, functions: EngFunction[]): HardwareSystemCluster[] {
-  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
-  const nodeIdByEngineeringId = new Map(topology.nodes.flatMap((node) => node.engineeringId ? [[node.engineeringId, node.id]] : []));
-  const adjacency = topologyAdjacencyFromEdges(topology);
-  const clusters = new Map<string, HardwareSystemCluster>();
-
-  function ensureCluster(id: string, name: string) {
-    const current = clusters.get(id);
-    if (current) return current;
-    const next: HardwareSystemCluster = { id, name, hardware: [], functions: [] };
-    clusters.set(id, next);
-    return next;
-  }
-
-  function ownerForNode(node: TopologyNode) {
-    if (node.kind === "gateway") return { id: "gateway", name: node.name || "Central Gateway" };
-    const explicitOwnerId = node.systemOwnerId ? nodeIdByEngineeringId.get(node.systemOwnerId) ?? node.systemOwnerId : undefined;
-    const explicitOwner = explicitOwnerId ? nodesById.get(explicitOwnerId) : undefined;
-    if (explicitOwner) return systemClusterProfile(explicitOwner.name);
-    if (node.kind === "sensor" || node.kind === "actuator") {
-      const connectedOwner = [...(adjacency.get(node.id) ?? [])]
-        .map((id) => nodesById.get(id))
-        .find((candidate): candidate is TopologyNode => Boolean(candidate && candidate.kind === "ecu"));
-      if (connectedOwner) return systemClusterProfile(connectedOwner.name);
-    }
-    if (node.kind === "ecu") return systemClusterProfile(node.name);
-    if (node.kind === "sensor" || node.kind === "actuator") return systemClusterProfile(node.name);
-    return { id: "unassigned", name: "Nicht zugeordnet" };
-  }
-
-  topology.nodes
-    .filter((node) => node.kind !== "gateway")
-    .forEach((node) => {
-      const owner = ownerForNode(node);
-      ensureCluster(owner.id, owner.name).hardware.push(node);
-    });
-
-  functions.forEach((item) => {
-    const mappedNodeId = item.hardware_node_id ? nodeIdByEngineeringId.get(item.hardware_node_id) : undefined;
-    const mappedNode = mappedNodeId ? nodesById.get(mappedNodeId) : undefined;
-    const owner = mappedNode ? ownerForNode(mappedNode) : { id: "unmapped-functions", name: "Nicht zugeordnet" };
-    ensureCluster(owner.id, owner.name).functions.push(item);
-  });
-
-  if (clusters.size === 0) ensureCluster("empty", "Nicht zugeordnet");
-  return [...clusters.values()]
-    .map((cluster) => ({
-      ...cluster,
-      name: `${cluster.name} · ${cluster.hardware.length} HW · ${cluster.functions.length} F`,
-    }))
-    .sort((left, right) => left.name.localeCompare(right.name, "de-DE"));
-}
-
-function buildClusterHardwareTrees(clusterNodes: TopologyNode[], topology: NetworkTopology): HardwareTreeNode[] {
-  const clusterIds = new Set(clusterNodes.map((node) => node.id));
-  const byId = new Map(clusterNodes.map((node) => [node.id, node]));
-  const treeNodes = new Map<string, HardwareTreeNode>(
-    clusterNodes.map((node) => [node.id, {
-      id: node.id,
-      name: node.name,
-      kind: node.kind,
-      children: [],
-      connectionCount: 0,
-    }]),
-  );
-  const childIds = new Set<string>();
-
-  function attach(child: TopologyNode, parentId: string | undefined) {
-    if (!parentId || parentId === child.id || !clusterIds.has(parentId)) return false;
-    const parent = treeNodes.get(parentId);
-    const childNode = treeNodes.get(child.id);
-    if (!parent || !childNode) return false;
-    parent.children.push(childNode);
-    childIds.add(child.id);
-    return true;
-  }
-
-  clusterNodes.forEach((node) => {
-    const treeNode = treeNodes.get(node.id);
-    if (!treeNode) return;
-    treeNode.connectionCount = topology.edges.filter((edge) => edge.source === node.id || edge.target === node.id).length;
-  });
-
-  clusterNodes.forEach((node) => {
-    if (node.kind === "ecu") return;
-    const explicitOwner = node.systemOwnerId && clusterIds.has(node.systemOwnerId) ? node.systemOwnerId : undefined;
-    if (attach(node, explicitOwner)) return;
-    const connectedEcu = topology.edges
-      .flatMap((edge) => edge.source === node.id ? [edge.target] : edge.target === node.id ? [edge.source] : [])
-      .find((id) => byId.get(id)?.kind === "ecu");
-    attach(node, connectedEcu);
-  });
-
-  return [...treeNodes.values()]
-    .filter((node) => !childIds.has(node.id))
-    .sort((left, right) => hardwareHierarchyRank(left.kind) - hardwareHierarchyRank(right.kind) || left.name.localeCompare(right.name, "de-DE"));
-}
-
-function topologyAdjacencyFromEdges(topology: NetworkTopology) {
-  const adjacency = new Map(topology.nodes.map((node) => [node.id, new Set<string>()]));
-  topology.edges.forEach((edge) => {
-    adjacency.get(edge.source)?.add(edge.target);
-    adjacency.get(edge.target)?.add(edge.source);
-  });
-  return adjacency;
-}
-
-function systemClusterProfile(value: string) {
-  const name = systemClusterName(value);
-  return { id: `system-domain:${slugSystemCluster(name)}`, name };
-}
-
-function systemClusterName(value: string) {
-  const cleaned = value
-    .replace(/(?:[-_ ]?(?:ECU|Gateway|Sensor|Aktor|Aktuator|Actuator|Controller|Steuergeraet|Steuergerät))+([-_ ]\d+)?$/i, "$1")
-    .replace(/^[-_ ]+|[-_ ]+$/g, "");
-  const normalized = (cleaned || value || "System")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .toLowerCase();
-  const domains: Array<[RegExp, string]> = [
-    [/abgas|antrieb|motor|powertrain|getriebe|kraftstoff|inverter|elektromotor|oil|coolant|lambda|throttle|turbo|exhaust/, "Antrieb"],
-    [/brems|brake|abs|esp|stabil|fahrwerk|chassis|daempfer|dampfer|lenkung|steer|reifen|wheel|suspension/, "Chassis"],
-    [/airbag|crash|gurt|restraint|srs|occupant|safety/, "Sicherheit"],
-    [/batterie|battery|energie|bordnetz|power|current|voltage|charge|soc|bms/, "Energie"],
-    [/licht|light|wischer|scheiben|door|fenster|window|seat|mirror|body|karosserie|comfort|komfort|keyless|lock|climate|klima|thermal/, "Karosserie"],
-    [/adas|assist|radar|kamera|camera|lidar|parking|park|lane|cruise|acc|front|rear|ultrasonic/, "ADAS"],
-    [/infotainment|display|audio|navigation|hmi|media|connectivity|telematik|diagnose|diagnostic|ethernet|backbone|gateway/, "Connectivity"],
-  ];
-  return domains.find(([pattern]) => pattern.test(normalized))?.[1] ?? (cleaned || value || "System");
-}
-
-function slugSystemCluster(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "system";
-}
-
-function buildHardwareTree(topology: NetworkTopology): HardwareTreeNode {
-  const hardwareEdges = collapseHardwareEdges(topology);
-  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
-  const degree = new Map(topology.nodes.map((node) => [node.id, 0]));
-  hardwareEdges.forEach((edge) => {
-    degree.set(edge.source, (degree.get(edge.source) ?? 0) + edge.count);
-    degree.set(edge.target, (degree.get(edge.target) ?? 0) + edge.count);
-  });
-  const parentById = new Map<string, { parentId: string; bus: BusType }>();
-  hardwareEdges.forEach((edge) => {
-    if (!parentById.has(edge.target)) parentById.set(edge.target, { parentId: edge.source, bus: edge.bus });
-  });
-  const treeNodes = new Map<string, HardwareTreeNode>();
-  topology.nodes.forEach((node) => {
-    treeNodes.set(node.id, {
-      id: node.id,
-      name: node.name,
-      kind: node.kind,
-      children: [],
-      connectionCount: degree.get(node.id) ?? 0,
-    });
-  });
-  treeNodes.forEach((node, id) => {
-    const parent = parentById.get(id);
-    if (!parent || parent.parentId === id) return;
-    const parentNode = parent ? treeNodes.get(parent.parentId) : undefined;
-    if (!parentNode) return;
-    node.bus = parent.bus;
-    parentNode.children.push(node);
-  });
-  const attached = new Set([...parentById.keys()]);
-  const topLevel = [...treeNodes.entries()]
-    .filter(([id]) => !attached.has(id))
-    .map(([, node]) => node)
-    .sort((left, right) => hardwareHierarchyRank(left.kind) - hardwareHierarchyRank(right.kind) || left.name.localeCompare(right.name, "de-DE"));
-  if (topLevel.length === 1 && topLevel[0].kind === "gateway") return topLevel[0];
-  return {
-    id: "hardware-root",
-    name: "Hardware",
-    kind: "root",
-    children: topLevel,
-    connectionCount: topology.edges.length,
-  };
-}
-
-function collapseHardwareEdges(topology: NetworkTopology): HardwareGraphEdge[] {
-  const map = new Map<string, HardwareGraphEdge>();
-  const nodesById = new Map(topology.nodes.map((node) => [node.id, node]));
-  collapsePhysicalEdges(topology.edges).forEach((edge) => {
-    if (edge.source === edge.target) return;
-    const sourceRank = hardwareHierarchyRank(nodesById.get(edge.source)?.kind ?? "ecu");
-    const targetRank = hardwareHierarchyRank(nodesById.get(edge.target)?.kind ?? "ecu");
-    const [source, target] = sourceRank < targetRank
-      ? [edge.source, edge.target]
-      : targetRank < sourceRank
-        ? [edge.target, edge.source]
-        : [edge.source, edge.target].sort();
-    const key = `${edge.bus}:${source}:${target}`;
-    const current = map.get(key);
-    if (current) {
-      current.count += 1;
-      return;
-    }
-    map.set(key, { id: key, source, target, bus: edge.bus, count: 1 });
-  });
-  return [...map.values()].sort((left, right) => left.id.localeCompare(right.id));
-}
-
-function hardwareHierarchyRank(kind: HardwareDiagramNodeKind) {
-  if (kind === "root") return -1;
-  if (kind === "group") return 0;
-  if (kind === "gateway") return 0;
-  if (kind === "ecu") return 1;
-  if (kind === "function") return 1;
-  return 2;
-}
-
-function hardwareNodeRole(kind: HardwareDiagramNodeKind) {
-  if (kind === "root") return "Topologie";
-  if (kind === "group") return "Gruppe";
-  if (kind === "function") return "Funktion";
-  if (kind === "unmapped") return "Unmapped Function";
-  if (kind === "gateway") return "Gateway";
-  if (kind === "sensor") return "Sensor";
-  if (kind === "actuator") return "Aktor";
-  return "ECU";
-}
-
-function hardwareNodeRadius(node: HardwareRadialNode) {
-  if (node.kind === "root") return 15;
-  if (node.kind === "group") return 12;
-  if (node.kind === "gateway") return 12;
-  if (node.kind === "function" || node.kind === "unmapped") return 8;
-  if (node.kind === "ecu") return 8;
-  return 5.5;
-}
-
-function hardwareNodeSymbol(kind: HardwareDiagramNodeKind) {
-  if (kind === "root") return "HW";
-  if (kind === "group") return "G";
-  if (kind === "function") return "F";
-  if (kind === "unmapped") return "!";
-  if (kind === "gateway") return "GW";
-  if (kind === "sensor") return "S";
-  if (kind === "actuator") return "A";
-  return "E";
-}
-
-function hardwareDiagramModeTitle(mode: HardwareDiagramMode) {
-  if (mode === "functions") return "System -> Function -> Mapping-Status";
-  if (mode === "combined") return "Gateway -> System plus Function-Hardware-Mapping";
-  return "Gateway -> ECU -> Sensor | Aktor";
-}
-
-function hardwareLinkTone(link: HardwareRadialLink) {
-  if (link.kind === "mapping") return "mapping-link";
-  if (link.source.kind === "function" || link.target.kind === "function" || link.source.id.includes(":functions") || link.target.id.includes(":functions")) {
-    return "function-link";
-  }
-  if (link.source.kind === "ecu" || link.target.kind === "ecu" || link.source.kind === "sensor" || link.target.kind === "sensor" || link.source.kind === "actuator" || link.target.kind === "actuator" || link.source.kind === "gateway" || link.target.kind === "gateway") {
-    return "hardware-link";
-  }
-  return "system-link";
-}
-
-function hardwareLinkStroke(link: HardwareRadialLink) {
-  const tone = hardwareLinkTone(link);
-  if (tone === "mapping-link" || tone === "function-link") return "var(--eng-function)";
-  if (tone === "hardware-link") return "var(--eng-hardware)";
-  return "var(--accent)";
-}
-
-function hardwareShowNodeLabel(
-  node: HardwareRadialNode,
-  mode: HardwareDiagramMode,
-  selected: boolean,
-  focused: boolean,
-  hasFocus: boolean,
-) {
-  if (selected || (hasFocus && focused)) return true;
-  if (mode !== "combined") return true;
-  if (node.children.length > 0) return true;
-  return node.kind === "gateway" || node.kind === "group";
-}
-
-function hardwareLeafCount(node: HardwareTreeNode): number {
-  return node.children.length ? node.children.reduce((total, child) => total + hardwareLeafCount(child), 0) : 1;
-}
-
-function hardwareVisibleLeafCount(
-  node: HardwareTreeNode,
-  collapsedNodeIds: Set<string>,
-  mode: HardwareDiagramMode,
-): number {
-  if (collapsedNodeIds.has(node.id) || node.children.length === 0) return 1;
-  const childSlots = node.children.reduce((total, child) => total + hardwareVisibleLeafCount(child, collapsedNodeIds, mode), 0);
-  return childSlots + Math.max(0, node.children.length - 1) * hardwareChildGap(node.kind === "root" ? 0 : node.kind === "group" ? 1 : 2, mode);
-}
-
-function hardwareChildGap(depth: number, mode: HardwareDiagramMode) {
-  if (mode === "combined") {
-    if (depth === 0) return COMBINED_RADIAL_ROOT_GAP;
-    if (depth === 1) return COMBINED_RADIAL_CLUSTER_GAP;
-    return COMBINED_RADIAL_GROUP_GAP;
-  }
-  if (depth === 0) return HARDWARE_RADIAL_ROOT_GAP;
-  if (depth === 1) return HARDWARE_RADIAL_CLUSTER_GAP;
-  return HARDWARE_RADIAL_GROUP_GAP;
-}
-
-function hardwareSlotAngle(slot: number, totalSlots: number, mode: HardwareDiagramMode) {
-  const safeTotal = Math.max(1, totalSlots);
-  if (mode !== "combined") return (slot / safeTotal) * Math.PI * 2;
-  const span = Math.PI * 1.78;
-  const offset = (Math.PI * 2 - span) / 2;
-  return offset + (slot / safeTotal) * span;
-}
-
-function hardwareTreeDepth(node: HardwareTreeNode): number {
-  return node.children.length ? 1 + Math.max(...node.children.map(hardwareTreeDepth)) : 0;
-}
-
-function radialPoint(angle: number, radius: number) {
-  const adjusted = angle - Math.PI / 2;
-  return {
-    x: Math.cos(adjusted) * radius,
-    y: Math.sin(adjusted) * radius,
-  };
-}
-
-function radialLinkPath(source: HardwareRadialNode, target: HardwareRadialNode) {
-  const middleRadius = (source.radius + target.radius) / 2;
-  const start = radialPoint(source.angle, source.radius);
-  const first = radialPoint(source.angle, middleRadius);
-  const second = radialPoint(target.angle, middleRadius);
-  const end = radialPoint(target.angle, target.radius);
-  return `M${start.x},${start.y}C${first.x},${first.y} ${second.x},${second.y} ${end.x},${end.y}`;
-}
-
-function hardwareFocusSets(
-  nodes: HardwareRadialNode[],
-  links: HardwareRadialLink[],
-  selectedNodeId: string,
-  selectedLinkId: string,
-) {
-  const focusedNodes = new Set<string>();
-  const focusedLinks = new Set<string>();
-  if (selectedLinkId) {
-    const selected = links.find((link) => link.id === selectedLinkId);
-    if (selected) {
-      focusedLinks.add(selected.id);
-      focusedNodes.add(selected.source.id);
-      focusedNodes.add(selected.target.id);
-    }
-    return { nodes: focusedNodes, links: focusedLinks };
-  }
-  if (!selectedNodeId) return { nodes: focusedNodes, links: focusedLinks };
-  const byParent = new Map<string, HardwareRadialLink[]>();
-  links.forEach((link) => byParent.set(link.source.id, [...(byParent.get(link.source.id) ?? []), link]));
-  const selected = nodes.find((node) => node.id === selectedNodeId);
-  let current: HardwareRadialNode | undefined = selected;
-  while (current) {
-    focusedNodes.add(current.id);
-    if (current.parent) focusedLinks.add(`${current.parent.id}->${current.id}`);
-    current = current.parent;
-  }
-  const visitChildren = (nodeId: string) => {
-    for (const link of byParent.get(nodeId) ?? []) {
-      focusedLinks.add(link.id);
-      focusedNodes.add(link.target.id);
-      visitChildren(link.target.id);
-    }
-  };
-  visitChildren(selectedNodeId);
-  return { nodes: focusedNodes, links: focusedLinks };
-}
-
-function shortHardwareLabel(value: string) {
-  const trimmed = value.trim();
-  return trimmed.length > 22 ? `${trimmed.slice(0, 19)}...` : trimmed;
 }
 
 function NumberField({

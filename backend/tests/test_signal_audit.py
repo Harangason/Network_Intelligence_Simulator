@@ -123,7 +123,7 @@ def test_legacy_value_signal_requires_semantic_classification_before_optimizatio
     assert any(check["code"] == "SIGNAL_SEMANTIC_MISSING" for check in result["checks"])
 
 
-def test_legacy_status_signal_uses_conservative_state_domain():
+def test_legacy_status_signal_without_domain_stays_open():
     result = inspect_signal(
         {
             "id": "status",
@@ -142,9 +142,9 @@ def test_legacy_status_signal_uses_conservative_state_domain():
     )
 
     assert result["semantic_type"] == "STATE"
-    assert result["required_bits"] == 3
-    assert result["status"] == "PASS"
-    assert not any(check["code"] in {"SIGNAL_SEMANTIC_MISSING", "SIGNAL_BIT_NEED_OPEN"} for check in result["checks"])
+    assert result["required_bits"] is None
+    assert result["status"] == "OPEN"
+    assert any(check["code"] == "SIGNAL_BIT_NEED_OPEN" for check in result["checks"])
 
 
 def test_unit_based_semantic_classification_unblocks_numeric_bit_optimization():

@@ -1,3 +1,5 @@
+import { engineeringTokens, containsEngineeringTerm } from "./engineering-terms.ts";
+
 export type TopologyClusterProfileKey =
   | "generic"
   | "automotive"
@@ -67,7 +69,7 @@ const AUTOMOTIVE_RULES: TopologyClusterRule[] = [
   { key: "powertrain_transmission", label: "Getriebe", role: "plant", terms: ["getriebe", "gear", "transmission", "kupplung", "clutch", "torque", "moment"], related: ["powertrain_motor", "emobility"] },
   { key: "emobility", label: "E-Mobilitaet", role: "plant", terms: ["elektromotor", "emotor", "electricmotor", "inverter", "traction", "hv", "hochvolt", "charging", "laden", "ladesteuerung", "ladegeraet", "obc", "dcdc"], related: ["powertrain_motor", "powertrain_transmission", "energy"] },
   { key: "energy", label: "Energie / HV", role: "infrastructure", terms: ["energie", "energy", "batterie", "battery", "bms", "bordnetz", "alternator", "generator", "spannung", "voltage", "strom", "current", "zellspannung", "soc", "soh"], related: ["emobility", "powertrain_motor", "body_comfort"] },
-  { key: "chassis", label: "Fahrdynamik", role: "controller", terms: ["bremse", "brems", "brake", "lenkung", "steering", "fahrwerk", "suspension", "daempfer", "damper", "reifen", "tire", "rad", "wheel", "yaw", "pitch", "roll", "allrad", "stabilitaet", "anhaenger"], related: ["driver_assistance", "powertrain_motor"] },
+  { key: "chassis", label: "Fahrdynamik", role: "controller", terms: ["bremse", "brems", "bremsen", "brake", "lenkung", "steering", "fahrwerk", "suspension", "daempfer", "damper", "reifen", "tire", "rad", "wheel", "yaw", "pitch", "roll", "allrad", "stabilitaet", "anhaenger"], related: ["driver_assistance", "powertrain_motor"] },
   { key: "safety", label: "Passive Sicherheit", role: "controller", terms: ["airbag", "restraint", "rueckhalt", "crash", "impact", "seatbelt", "gurt"], related: ["chassis", "diagnostics"] },
   { key: "driver_assistance", label: "Fahrerassistenz", role: "source", terms: ["adas", "fahrerassistenz", "radar", "kamera", "camera", "lidar", "park", "parking", "spur", "lane", "ultraschall"], related: ["chassis", "body_comfort"] },
   { key: "body_comfort", label: "Karosserie / Komfort", role: "actuation", terms: ["karosserie", "body", "bodycontrol", "comfort", "komfort", "wischer", "wiper", "tuer", "tuere", "door", "fenster", "window", "seat", "sitz", "keyless", "wegfahrsperre", "heckklappe", "tailgate", "schiebedach", "sunroof"], related: ["energy", "lighting", "climate"] },
@@ -95,7 +97,7 @@ const INDUSTRY_RULES: Partial<Record<TopologyClusterProfileKey, TopologyClusterR
   rail: [
     { key: "train_control", label: "Zugsteuerung", role: "controller", terms: ["traincontrol", "zugsteuerung", "vehiclecontrol", "zugfuehrung"], related: ["traction", "brake", "signalling"] },
     { key: "traction", label: "Antrieb / Traktion", role: "actuation", terms: ["traction", "traktion", "antrieb", "motor", "drive"], related: ["train_control", "energy", "brake"] },
-    { key: "brake", label: "Bremse / Safety", role: "controller", terms: ["brake", "bremse", "brems", "safetyinterlock", "safety", "sicherheit"], related: ["traction", "running_gear", "train_control"] },
+    { key: "brake", label: "Bremse / Safety", role: "controller", terms: ["brake", "bremse", "brems", "bremsen", "safetyinterlock", "safety", "sicherheit"], related: ["traction", "running_gear", "train_control"] },
     { key: "running_gear", label: "Fahrwerk / Drehgestell", role: "plant", terms: ["axletemperature", "axleload", "axlevibration", "bearingtemperature", "bogietemperature", "bogie", "bogies", "drehgestell", "axle", "achse", "bearing", "lager", "vibration", "fahrwerk"], related: ["brake", "traction"] },
     { key: "doors_coupling", label: "Türen / Kupplung", role: "actuation", terms: ["door", "tuer", "coupling", "kupplung", "access"], related: ["passenger", "train_control"] },
     { key: "passenger", label: "Fahrgast / HMI", role: "service", terms: ["passenger", "fahrgast", "information", "display", "hmi", "lighting", "licht"], related: ["doors_coupling", "climate", "wayside"] },
@@ -188,17 +190,7 @@ const PROFILE_SYSTEM_ALIASES: Partial<Record<TopologyClusterProfileKey, Record<s
 };
 
 export function normalizeTopologyClusterText(value: unknown) {
-  return String(value ?? "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
+  return engineeringTokens(value).join(" ");
 }
 
 function compact(value: unknown) {
@@ -226,7 +218,7 @@ export function inferTopologyClusterProfileFromText(text: string, industry?: str
       score: (INDUSTRY_RULES[profile] ?? []).reduce((total, rule) => (
         total + rule.terms.reduce((subtotal, term) => {
           const needle = compact(term);
-          return subtotal + (needle.length >= 4 && (compactText.includes(needle) || normalized.includes(normalizeTopologyClusterText(term))) ? 1 : 0);
+          return subtotal + (needle.length >= 4 && containsEngineeringTerm(text, term) ? 1 : 0);
         }, 0)
       ), 0),
     }))
@@ -241,13 +233,14 @@ export function topologyClusterForText(text: string, industry?: string) {
   const orderedTokens = normalized.split(/\s+/).filter(Boolean);
   const tokens = new Set(orderedTokens);
   const leadingToken = orderedTokens[0] ?? "";
+  const identity = String(text).trim().split(/\s+/)[0] ?? "";
   const scoreRules = (rules: TopologyClusterRule[]) => rules
     .map((rule, index) => ({
       index,
       rule,
       score: rule.terms.reduce((total, term) => {
         const needle = compact(term);
-        const matched = tokens.has(needle) || (needle.length >= 4 && compactText.includes(needle));
+        const matched = containsEngineeringTerm(text, term);
         if (!matched) return total;
         // Hardware names conventionally start with the owning system (for example
         // AxleTemperature). A trailing measurement qualifier must not outweigh
@@ -256,7 +249,7 @@ export function topologyClusterForText(text: string, industry?: string) {
         // stronger evidence than generic words from descriptions/system frames.
         // This keeps Airbag out of Energy and Door/Seat out of Chassis even if
         // surrounding German metadata contains several weaker family terms.
-        return total + needle.length + (leadingToken === needle ? 1_000 : 0);
+        return total + needle.length + (leadingToken === needle ? 2_000 : containsEngineeringTerm(identity, term) ? 1_000 : 0);
       }, 0),
     }))
     .filter((item) => item.score > 0)

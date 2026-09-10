@@ -8,6 +8,7 @@ import heapq
 from copy import deepcopy
 import json
 import random
+from math import ceil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from bus_technologies import normalize_technology_id, resolve_technology, techno
 from hardware_profile import iter_network_interfaces
 from model_based_simulation import ModelBasedSimulationEngine
 from backend.engineering.capacity.calculators import estimate_frame
+from backend.engineering.capacity.transmission import release_grid
 from ethernet_transport import resolve_flow, wire_bytes, packet_bytes
 
 
@@ -302,7 +304,12 @@ def _build_routes(config: dict[str, Any], profile: dict[str, Any]) -> list[dict[
             segments = raw.get("segments") or []
             if len(segments) > 1:
                 for segment in segments:
+                    # A schedule belongs to one physical bus, not to the whole
+                    # end-to-end route. Do not poll a CAN hop in the LIN slot.
+                    local = raw if segment.get("network_id") == raw.get("network_id") else {}
                     expanded.append({**raw, **segment, "segments": [],
+                        "lin_slot": segment.get("lin_slot", local.get("lin_slot")),
+                        "phase_ms": segment.get("phase_ms", local.get("phase_ms", 0)),
                         "end_to_end_route_id": raw["id"], "origin_sender_hardware": raw.get("source"),
                         "origin_target_hardware": raw.get("target"), "name": raw.get("name") or raw["id"],
                         "gateways": segment.get("gateway_ids") or []})
@@ -432,6 +439,10 @@ def _serialize_event(event, config, trace_start, network_available_at, port_avai
         return
     available_at = network_available_at.get(network_id, 0.0)
     transmit_start = max(requested_at, available_at)
+    slot = event.get("lin_slot")
+    if slot:
+        period_s, offset_s = float(slot["period_ms"]) / 1000, float(slot["offset_ms"]) / 1000
+        transmit_start = offset_s + max(0, ceil((transmit_start - offset_s) / period_s - 1e-9)) * period_s
     queue_delay_s = max(0.0, transmit_start - requested_at)
     queue_depth = int(queue_delay_s / max(transmission_s, 0.000000001))
     queue_size = max(1, int(config.get("queue_size") or 256))
@@ -444,7 +455,9 @@ def _serialize_event(event, config, trace_start, network_available_at, port_avai
         completion = requested_at
     else:
         completion = transmit_start + transmission_s
-        network_available_at[network_id] = completion
+        network_available_at[network_id] = max(completion, transmit_start + float(slot["duration_ms"]) / 1000) if slot else completion
+    event["tx_start_s"] = transmit_start
+    event["tx_end_s"] = completion
     event["queue_delay_ms"] = queue_delay_s * 1000.0
     event["queue_depth_estimate"] = queue_depth
     event["transmission_latency_ms"] = transmission_s * 1000.0
@@ -557,10 +570,22 @@ def _generate_universal_events(
             # network arbitration/serialization still contributes real jitter.
             configured_jitter = route["metadata"].get("source_jitter_ms", network_metadata.get("source_jitter_ms", config.get("source_jitter_ms")))
             jitter_amplitude_s = max(0.0, float(configured_jitter)) / 1000 if configured_jitter is not None else 0.0
-        while relative_time <= duration_s and len(events) < max_events:
+        contract = deepcopy(route["metadata"].get("transmission_contract") or {})
+        mode = str(contract.get("mode") or "CYCLIC").upper()
+        if mode == "CYCLIC":
+            contract["period_ms"] = cycle_s * 1000
+        candidates = [0.0] if is_forwarding else release_grid(contract, cycle_s * 1000, duration_s * 1000,
+            relative_time * 1000, max_events)
+        last_payload, last_sent = None, None
+        for release_ms in candidates:
+            if len(events) >= max_events:
+                break
+            relative_time = release_ms / 1000
             jitter = rng.uniform(-jitter_amplitude_s, jitter_amplitude_s) if sequence and not is_forwarding else 0.0
             reordered = not is_forwarding and rng.random() < reordering_probability
             event_time = max(0.0, relative_time + jitter + latency_s + (cycle_s * 0.5 if reordered else 0.0))
+            if route["metadata"].get("lin_slot"):
+                event_time = max(0.0, relative_time + jitter)
             status = "transmitted"
             retransmission_count = 0
             if not is_forwarding and rng.random() < dropout_probability:
@@ -579,6 +604,16 @@ def _generate_universal_events(
                 if model_payload.get("signals")
                 else _payload(route["id"], sequence, payload_size)
             )
+            if not is_forwarding and mode in {"EVENT", "MIXED"} and contract.get("trigger") == "on_change":
+                if not model_payload.get("signals"):
+                    raise ValueError("on_change benötigt modellierte Signale; Zufallspayload ist kein Zustandsereignis.")
+                heartbeat = mode == "MIXED" and last_sent is not None and release_ms - last_sent >= float(contract["period_ms"]) - 1e-8
+                first_sample = last_payload is None
+                changed = payload_hex != last_payload
+                last_payload = payload_hex
+                if not heartbeat and (not changed or (first_sample and contract.get("send_initial") is False)):
+                    continue
+            last_sent = release_ms
             if status == "corrupted" and payload_hex:
                 payload_hex = ("FF" + payload_hex[2:]) if len(payload_hex) >= 2 else "FF"
             event = {
@@ -596,6 +631,8 @@ def _generate_universal_events(
                 "time_s": event_time,
                 "scheduled_time_s": relative_time,
                 "configured_cycle_ms": cycle_s * 1000.0,
+                "release_mode": mode,
+                "release_basis": "scenario_application_request" if mode == "ON_REQUEST" else "model_change" if mode == "EVENT" else "periodic_or_mixed",
                 "deadline_ms": route["metadata"].get("deadline_ms") or (route["metadata"].get("timing") or {}).get("deadline_ms") or config.get("deadline_ms"),
                 "configured_latency_ms": latency_s * 1000.0,
                 "injected_jitter_ms": jitter * 1000.0,
@@ -629,6 +666,8 @@ def _generate_universal_events(
                 "frame_calculation_model": frame.calculation_model,
                 "base_transmission_time_s": frame.transmission_time_s,
                 "priority": route.get("priority"),
+                "arbitration_id": route.get("metadata", {}).get("arbitration_id"),
+                "lin_slot": route.get("metadata", {}).get("lin_slot"),
                 "status": status,
                 "retransmission_count": retransmission_count,
                 "duplicate_injected": not is_forwarding and rng.random() < duplicate_probability,
@@ -683,7 +722,7 @@ def _generate_universal_events(
                     "duplicate_of": sequence,
                 })
             sequence += 1
-            relative_time = round(relative_time + max(0.001, float(event['configured_cycle_ms'])) / 1000.0, 12)
+
         if len(events) >= max_events:
             break
 
@@ -717,9 +756,45 @@ def _generate_universal_events(
     heapq.heapify(pending)
     events = []
     serial = len(pending)
+    physical_frames = {}
     while pending and len(events) < max_events:
-        _, _, event = heapq.heappop(pending)
-        _serialize_event(event, config, trace_start, network_available_at, port_available_at)
+        due, _, event = heapq.heappop(pending)
+        # At a CAN bus grant, arbitrate over ALL already pending requests,
+        # including requests arriving while the previous frame was on the wire.
+        if event.get("technology") in {"can", "can_fd"}:
+            grant = max(float(event["time_s"]), network_available_at.get(str(event["network"]), 0))
+            if due < grant - 1e-12:
+                serial += 1
+                heapq.heappush(pending, (grant, serial, event))
+                continue
+            eligible = [(index, queued) for index, (_, _, queued) in enumerate(pending)
+                        if queued.get("network") == event.get("network") and float(queued["time_s"]) <= grant + 1e-12]
+            def arbitration_key(queued):
+                identifier = queued.get("arbitration_id")
+                return (int(identifier) if identifier is not None else 0x20000000, str(queued["route_id"]))
+            winner = min(eligible, key=lambda pair: arbitration_key(pair[1]), default=None)
+            if winner and arbitration_key(winner[1]) < arbitration_key(event):
+                index, selected = winner
+                serial += 1
+                pending[index] = (float(event["time_s"]), serial, event)
+                heapq.heapify(pending)
+                event = selected
+        physical_key = None
+        if not event.get("ethernet") and event.get("message_ids") and not event.get("duplicate_injected"):
+            physical_key = (event["network"], event["sender_hardware"], event["sender_port"],
+                            tuple(event["message_ids"]), round(float(event.get("origin_scheduled_time_s", 0)), 9), event["sequence"])
+        previous = physical_frames.get(physical_key) if physical_key else None
+        if previous:
+            for field in ("time_s", "timestamp_unix", "timestamp_utc", "tx_start_s", "tx_end_s", "queue_delay_ms", "queue_depth_estimate",
+                          "end_to_end_latency_ms", "transmission_latency_ms", "status", "payload_hex", "physical_transmission_id"):
+                if field in previous:
+                    event[field] = previous[field]
+            event["shared_transmission_observation"] = True
+        else:
+            _serialize_event(event, config, trace_start, network_available_at, port_available_at)
+            if physical_key:
+                event["physical_transmission_id"] = hashlib.sha256(repr(physical_key).encode()).hexdigest()[:24]
+                physical_frames[physical_key] = dict(event)
         if int(event.get("segment_count") or 1) > 1:
             event["end_to_end_latency_ms"] = max(0.0, (float(event["time_s"]) - float(event["origin_release_time_s"])) * 1000)
         if event.get("transmission_attempted") is False:
@@ -789,7 +864,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     columns = [
         "timestamp_utc", "timestamp_unix", "time_s", "scheduled_time_s",
-        "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms",
+        "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms", "release_mode", "release_basis",
         "deadline_ms",
         "event_id", "sequence", "transport_sequence_bytes", "route_id", "route_name", "route_ref", "route_refs",
         "end_to_end_event_id", "end_to_end_route_id", "canonical_route_id", "segment_index", "segment_count",
@@ -802,6 +877,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         "receiver_ports", "ip_version", "src_ip", "dst_ips", "transport_protocol", "ethernet", "tx_start_s", "tx_end_s", "rx_ports", "port_model",
         "destination_names", "destination_logical_addresses",
         "payload_hex", "priority", "status", "configured_bitrate", "queue_delay_ms",
+        "arbitration_id", "lin_slot", "physical_transmission_id", "shared_transmission_observation",
         "frame_bits", "frame_calculation_model", "base_transmission_time_s",
         "queue_depth_estimate", "transmission_latency_ms", "end_to_end_latency_ms",
         "gateway_ids", "retransmission_count", "duplicate_injected", "reordered",
@@ -822,6 +898,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
                     "gateway_ids": ",".join(event.get("gateway_ids") or []),
                     "message_ids": ",".join(str(item) for item in event.get("message_ids") or []),
                     "signals": json.dumps(event.get("signals") or [], ensure_ascii=False),
+                    "lin_slot": json.dumps(event.get("lin_slot")),
                     "ethernet": json.dumps(event.get("ethernet"), ensure_ascii=False),
                     "rx_ports": json.dumps(event.get("rx_ports") or [], ensure_ascii=False),
                     "dst_ips": json.dumps(event.get("dst_ips") or []),

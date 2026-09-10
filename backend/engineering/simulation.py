@@ -127,7 +127,8 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
                 message_ids.add(str(payload["message_id"]))
             selected = [signal for signal in signals.values() if str(signal.get("message_id")) in message_ids]
         cycle = _requirement_value(route.get("timing") or {}, message, selected, "cycle_time_ms", "cycle_time")
-        route.setdefault("timing", {})["cycle_time_ms"] = cycle or message.get("cycle_ms") or parameters.get("cycle_ms") or 100
+        from .capacity.dimensioning import effective_period
+        route.setdefault("timing", {})["cycle_time_ms"] = effective_period(message, cycle or message.get("cycle_ms") or parameters.get("cycle_ms") or 100)
         for field, aliases in {
             "max_latency_ms": ("max_latency_ms", "maximum_latency_ms", "maximum_latency", "deadline_ms", "deadline"),
             "jitter_limit_ms": ("jitter_limit_ms", "maximum_jitter_ms", "maximum_jitter"),
@@ -154,6 +155,17 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
         for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
             if key in resolved:
                 network[key] = resolved[key]
+    if parameters.get("communication_schedule"):
+        # Recompute against current buses under the snapshot transaction.
+        # Stale SQL slot widths must never be reused after parameter changes.
+        from .capacity.service import CapacityTimingService
+        from .capacity.dimensioning import VERSION
+        current = CapacityTimingService(project_id).calculate(persist=False)["results"]["networks"]
+        invalid_lin = [item for item in current if item["protocol"] == "LIN" and not item["timing_verified"]]
+        if invalid_lin:
+            raise EngineeringValidationError("LIN-Sendeplan muss neu dimensioniert werden: " + ", ".join(item["network_name"] for item in invalid_lin))
+        parameters = {**parameters, "communication_schedule": {"version": VERSION, "networks": [
+            {"network_id": item["network_id"], **item["communication_schedule"]} for item in current if item["timing_verified"]]}}
     frozen = {**config, "topology": state["topology"], "parameters": parameters}
     for key in ("networks", "hardware", "communications", "routing_entry_ids"):
         frozen[key] = transport[key]
@@ -245,6 +257,8 @@ def enrich_simulation_config(config: dict[str, Any], project_id: str, *, model: 
                 for route in linked_routes for hop in (route.get('route') or {}).get('gateways') or []
                 if hop and (not isinstance(hop, dict) or hop.get('node_id') or hop.get('id'))
             })
+    from .capacity.runtime_plan import apply_runtime_plan
+    apply_runtime_plan(enriched, model["messages"])
     _apply_simulation_scope(enriched)
     signal_validation = validate_signal_emulation_model(enriched)
     enriched["signal_emulation_validation"] = signal_validation

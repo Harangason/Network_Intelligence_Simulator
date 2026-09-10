@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CommunicationSizingPanel } from "./communication-sizing-panel";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   assessIntelligence,
@@ -136,6 +137,7 @@ export function IntelligenceWorkbench() {
   const results = snapshot.results;
   return (
     <section className="intelligence-workbench">
+      <CommunicationSizingPanel />
       <header className="intelligence-toolbar">
         <div>
           <p className="eyebrow">09 Intelligence</p>

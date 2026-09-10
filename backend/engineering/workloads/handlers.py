@@ -231,6 +231,9 @@ def _default_value(minimum: float, maximum: float) -> float:
 
 
 def _semantic_type_for_signal(name: str, unit: str, minimum: float, maximum: float) -> str:
+    from ..signal_integrity import physical_unit
+    if physical_unit(unit):
+        return "NUMERIC"
     key = f"{name} {unit}".lower()
     if minimum == 0 and maximum == 1 and any(token in key for token in ("status", "flag", "aktiv", "enable", "boolean")):
         return "BOOLEAN"
@@ -292,7 +295,7 @@ def _state_value_domain(name: str) -> dict[str, Any]:
             {"state": "READY", "from_s": 1.4, "to_s": 2.0},
             {"state": "RUNNING", "from_s": 2.0, "to_s": None},
         ]
-    reserved_values = [value for value in range(0, 16) if value not in set(enum_values.values())]
+    reserved_values = [value for value in range(0, 15) if value not in set(enum_values.values())]
     return {
         "enum_values": enum_values,
         "allowed_values": list(enum_values),
@@ -341,7 +344,7 @@ def _canonical_signal_layers(
             "resolution": resolution,
             "allowed_values": [],
             "enum_values": {},
-            "invalid_values": [maximum + resolution],
+            "invalid_values": [],
             "reserved_values": [],
             "default_value": _default_value(minimum, maximum),
         }

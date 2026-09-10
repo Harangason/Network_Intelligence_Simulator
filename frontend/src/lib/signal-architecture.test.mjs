@@ -57,13 +57,13 @@ test("legacy uint8 min max values remain unknown until semantically classified",
   assert.match(result.reason, /Semantik fehlt/);
 });
 
-test("legacy status names are treated as conservative state signals", () => {
+test("legacy status names do not fabricate a value domain", () => {
   const result = requirement({ id: "status", name: "ProcessStatus", data_type: "unsigned", min_value: 0, max_value: 255, factor: 1, offset_value: 0, length_bits: 8 });
 
   assert.equal(result.semanticType, "STATE");
-  assert.equal(result.valueCount, 16);
-  assert.equal(result.requiredBits, 4);
-  assert.equal(result.status, "OVERDIMENSIONED");
+  assert.equal(result.valueCount, 0);
+  assert.equal(result.requiredBits, null);
+  assert.equal(result.status, "UNKNOWN");
 });
 
 test("optimization proposals describe savings without mutating the signal", () => {
@@ -80,4 +80,12 @@ test("optimization proposals describe savings without mutating the signal", () =
   assert.equal(proposal.requiredBits, 3);
   assert.equal(proposal.potentialSavingBits, 5);
   assert.equal(proposal.status, "OVERDIMENSIONED");
+});
+
+
+test("sparse raw codes determine width without renumbering or invented states", () => {
+  const canonical = buildCanonicalSignalDefinition({ name: "DriveStatus", length_bits: 8,
+    semantic: { semantic_type: "STATE" }, data: { enum_values: { OK: 0, ERROR: 32 }, invalid_values: [255] } });
+  assert.deepEqual(canonical.valueDomain.enumValues, { OK: 0, ERROR: 32 });
+  assert.equal(calculateSignalBitRequirement(canonical).requiredBits, 8);
 });

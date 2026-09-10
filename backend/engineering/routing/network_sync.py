@@ -20,6 +20,8 @@ from .timing import generated_timing
 
 
 BUS_PROTOCOLS = {
+    "can": "CAN",
+    "can_xl": "CAN_XL",
     "can_fd": "CAN_FD",
     "lin": "LIN",
     "automotive_ethernet": "ETHERNET",
@@ -27,6 +29,8 @@ BUS_PROTOCOLS = {
 }
 
 BUS_CYCLES_MS = {
+    "can": 10.0,
+    "can_xl": 10.0,
     "can_fd": 10.0,
     "lin": 20.0,
     "automotive_ethernet": 5.0,
@@ -127,6 +131,7 @@ def enrich_route_from_linked_topology(
         )
         return {
             **endpoint,
+            "protocol": BUS_PROTOCOLS.get(bus, endpoint.get("protocol")),
             "port_id": hardware_interface_id or port_id or endpoint.get("port_id"),
             "physical_port_ref": port_id or endpoint.get("physical_port_ref"),
             "interface_id": logical_interface_id,

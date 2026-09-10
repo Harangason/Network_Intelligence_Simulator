@@ -143,7 +143,7 @@ def test_hybrid_retrieval_combines_vector_keyword_metadata_and_multihop_graph():
     assert {"vector", "keyword", "metadata", "graph"}.issubset(signal["retrieval_sources"])
     assert signal["graph_path"] == ["powertrain", "battery-function", "battery-soc"]
     assert signal["evidence"] == [{"source": "battery.dbc", "line": 41}]
-    assert signal["metadata"]["embedding_model"] == "local-hashed-engineering-embedding-v2"
+    assert signal["metadata"]["embedding_model"] == "local-hashed-engineering-embedding-v3"
 
 
 def test_context_builder_prioritizes_selected_objects_and_respects_budget():

@@ -7,6 +7,7 @@ from ..requirement_expansion_modules.engine import expand_requirement
 from ..message_packing import SignalCandidate, pack_signals
 from ..signal_audit import required_signal_bits
 from ..device_classification import DeviceClassificationRegistry
+from ..device_communication import complete_new_controller_status
 from ..repository import get_object
 from . import proposal_service as proposals
 
@@ -45,8 +46,9 @@ def functions(arguments: dict) -> dict:
         changes.append({"object_type": "Function", "local_ref": f"function-{index}", "data": {
             "name": function["name"], "hardware_node_id": hardware_id, "domain": arguments.get("domain", "automotive"),
             "description": ", ".join(function.get("subfunctions") or [])}})
+    complete_new_controller_status(changes)
     return proposals.create("FUNCTION_STRUCTURE", changes, arguments["prompt"],
-                            assumptions=[str(item) for item in expansion["assumptions"]],
+                            assumptions=[*[str(item) for item in expansion["assumptions"]], "Neue Controller senden den einheitlichen Betriebsstatus vorläufig alle 100 ms über CAN-FD; Buszuordnung und Timing vor Routing prüfen."],
                             evidence=[{"source": "requirement_expansion", "interpretation": expansion["interpretation"]}])
 
 
@@ -114,6 +116,12 @@ def mapping(arguments: dict) -> dict:
 def network(arguments: dict) -> dict:
     data = {**(arguments.get("configuration") or {}), "id": arguments.get("network_id") or str(uuid4()), "name": arguments["name"],
             "technology": arguments.get("technology", "CAN_FD")}
+    from ..naming import is_ethernet, new_bus_name
+    from . import model
+    if is_ethernet(data['technology']) and data.get('name_source') != 'user':
+        context = data.get('name_context') or arguments['name']
+        data.update(name=new_bus_name(data['id'], model.networks(), technology=data['technology'], context=context),
+                    name_source='generated', name_context=context)
     return proposals.create("NETWORK", [{"object_type": "Network", "data": data}], arguments.get("prompt") or "Netzwerk vorschlagen.")
 
 
@@ -151,8 +159,9 @@ def camera_architecture(arguments: dict) -> dict:
             'fields': [{'name':'timestamp', 'data_type':'uint64', 'unit':'us'},
                 {'name': {'objects':'objects','free_space':'regions','raw_image':'pixels','status':'state'}[output],
                  'data_type':'uint8' if output == 'status' else 'array', 'dimension_status':'UNSPECIFIED'}]}})
+    complete_new_controller_status(changes)
     return proposals.create('CAMERA_ARCHITECTURE', changes, arguments.get('prompt') or 'Kameraarchitektur',
-        assumptions=[f'Explizite Auswahl: {coverage}, Sensorprofil {profile}, Ausgaben {", ".join(outputs)}.',
+        assumptions=['Neue Controller senden den einheitlichen Betriebsstatus vorläufig alle 100 ms über Ethernet; Timing vor Routing prüfen.', f'Explizite Auswahl: {coverage}, Sensorprofil {profile}, Ausgaben {", ".join(outputs)}.',
             '100° horizontale Sicht bei vier Weitwinkelkameras bzw. 190° bei zwei Fisheye-Kameras sind Planungsannahmen; Montage und Überlappung validieren.',
             'Ethernet-Datenpfade sind strukturell vorbereitet. Auflösung, Bildrate, Kodierung, Netzwerktopologie und Timing müssen vor Routing und Simulation dimensioniert werden.'],
         evidence=[{'source':'structured_camera_decisions','coverage':coverage,'profile':profile,'outputs':outputs}])

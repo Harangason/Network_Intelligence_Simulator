@@ -7,6 +7,7 @@ from math import ceil, log2
 from typing import Any
 
 from .semantic_intelligence import SemanticClassificationService
+from .signal_integrity import integrity_checks, raw_codes
 
 _SEMANTIC_SERVICE: SemanticClassificationService | None = None
 
@@ -122,8 +123,10 @@ def required_signal_bits(signal: dict[str, Any]) -> int | None:
         return 1
     if semantic_type in {"ENUM", "STATE"}:
         count = max(len(domain["enum_values"]), len(domain["allowed_values"])) + len(domain["reserved_values"])
-        if not count and semantic_type == "STATE" and _looks_like_state_signal(_text(signal.get("display_name") or signal.get("name"))):
-            count = 8
+        codes = raw_codes(_as_dict(signal.get("data")))
+        numeric_codes = [_number(code) for code in codes]
+        if codes and all(code is not None and code >= 0 and code == int(code) for code in numeric_codes):
+            return _ceil_log2(max(numeric_codes) + 1)
         return _ceil_log2(count) if count else None
     if semantic_type == "BITFIELD":
         members = _as_list((_as_dict(signal.get("quality")).get("bit_members") or _as_dict(signal.get("configuration")).get("bit_members") or _as_dict(signal.get("data")).get("bit_members")))
@@ -155,11 +158,15 @@ def required_signal_bits(signal: dict[str, Any]) -> int | None:
         return None
     if data_type in {"float", "double", "float32", "float64", "enum"}:
         return None
-    signed = data_type in {"signed", "int", "int8", "int16", "int32", "int64", "sint8", "sint16", "sint32", "sint64"} or minimum < 0
+    signed = data_type in {"signed", "int", "int8", "int16", "int32", "int64", "sint8", "sint16", "sint32", "sint64"}
     raw_min = round((minimum - offset) / factor)
     raw_max = round((maximum - offset) / factor)
     if abs(raw_min - ((minimum - offset) / factor)) > 1e-8 or abs(raw_max - ((maximum - offset) / factor)) > 1e-8:
         return None
+    special = [_number(code) for code in raw_codes(_as_dict(signal.get("data")))]
+    if any(code is None or code != int(code) for code in special):
+        return None
+    raw_min, raw_max = min(raw_min, raw_max, *special), max(raw_min, raw_max, *special)
     for width in range(1, 65):
         if signed:
             if raw_min >= -(2 ** (width - 1)) and raw_max < 2 ** (width - 1):
@@ -186,7 +193,7 @@ def occupied_signal_bits(signal: dict[str, Any]) -> set[int] | None:
 
 
 def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None) -> dict[str, Any]:
-    checks: list[dict[str, Any]] = []
+    checks: list[dict[str, Any]] = integrity_checks(signal)
 
     def add(code: str, severity: str, text: str) -> None:
         checks.append({"code": code, "severity": severity, "text": text})

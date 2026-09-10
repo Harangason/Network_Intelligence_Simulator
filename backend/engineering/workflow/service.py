@@ -22,6 +22,7 @@ from .models import (
 )
 from ..project_context import activate_project
 from ..simulation_coverage import simulation_coverage, assess_simulation
+from ..bus_settings import normalize_bus_limits
 
 DEFAULT_PROJECT_ID = "default"
 
@@ -67,6 +68,7 @@ def normalize_engineering_wizard_settings(value: Any) -> dict[str, Any]:
         "model_type": model_type,
         "scope_ids": selected_ids("scope_ids", WIZARD_SCOPE_IDS),
         "process_ids": process_ids,
+        "bus_participant_limits": normalize_bus_limits(source.get("bus_participant_limits")),
     }
 
 
@@ -117,7 +119,7 @@ def is_topology_layout_only_change(current: Any, candidate: Any) -> bool:
 
         edges = [edge for edge in topology.get("edges", []) if isinstance(edge, dict)]
         return {
-            **{key: value for key, value in topology.items() if key not in {"nodes", "edges"}},
+            **{key: value for key, value in topology.items() if key not in {"nodes", "edges", "scene"}},
             "nodes": sorted(nodes, key=lambda node: (str(node.get("id", "")), _json(node))),
             "edges": sorted(edges, key=lambda edge: (str(edge.get("id", "")), _json(edge))),
         }
@@ -801,6 +803,8 @@ class WorkflowStatusService:
 
     def set_context(self, context: dict[str, Any], *, summary: bool = False) -> dict[str, Any]:
         allowed = {
+            "communication_sizing_history",
+            "communication_sizing_receipt",
             "agent_execution",
             "agent_wizard_status",
             "wizard_request",
@@ -861,11 +865,21 @@ class WorkflowStatusService:
         return self.get(summary=summary)
 
     def save_parameters(self, parameters: dict[str, Any], actor: str | None = None) -> dict[str, Any]:
+        if isinstance(parameters, dict) and 'spatial_architecture' in parameters:
+            from ..spatial_architecture import architecture_from
+            parameters = {**parameters, 'spatial_architecture': architecture_from(parameters)}
+        if "communication_sizing" in parameters:
+            from ..capacity.dimensioning import policy_for
+            policy_for(parameters)
         if not isinstance(parameters, dict) or not parameters:
             raise ValueError("parameters muss ein nicht-leeres Objekt sein.")
         with get_connection() as connection:
             state = self._get_locked(connection)
             explicit_scope = "simulation_scope" in parameters
+            # Parameter forms must not erase the separately confirmed architecture.
+            for key in ('spatial_architecture', 'spatial_zoning'):
+                if key not in parameters and key in state['parameters']:
+                    parameters = {**parameters, key: state['parameters'][key]}
             if not explicit_scope and "simulation_scope" in (state.get("parameters") or {}):
                 parameters = {**parameters, "simulation_scope": state["parameters"]["simulation_scope"]}
             if explicit_scope:
@@ -896,11 +910,32 @@ class WorkflowStatusService:
             actor=actor,
         )
 
-    def save_topology(self, topology: dict[str, Any], actor: str | None = None) -> dict[str, Any]:
+    def save_topology(self, topology: dict[str, Any], actor: str | None = None, *, layout_positions: dict | None = None) -> dict[str, Any]:
         if not isinstance(topology, dict) or not isinstance(topology.get("nodes"), list):
             raise ValueError("topology.nodes muss eine Liste sein.")
+        if not topology['nodes']:
+            topology = {**topology, 'edges': []}
+            topology.pop('scene', None)
         with get_connection() as connection:
             state = self._get_locked(connection)
+            if topology.get('nodes') and isinstance(topology.get('edges', []), list) and all(e.get('physicalNetworkId') for e in topology.get('edges', [])):
+                zoning = state['parameters'].get('spatial_zoning') or {}
+                if zoning.get('enabled'):
+                    from ..spatial_zoning import zone_findings
+                    from ..pagination import all_pages
+                    from ..repository import list_objects
+                    findings = zone_findings(topology, all_pages(list_objects, 'HardwareNode'),
+                        prompt=(state.get('context', {}).get('wizard_request') or {}).get('prompt', ''),
+                        driving_side=zoning.get('driving_side'), parameters=state['parameters'])
+                    if findings:
+                        raise ValueError('Einbauzonen dürfen nicht auf einem lokalen Bus gemischt werden. ' + findings[0]['message'])
+                from ..network_scene import build_network_scene, model_signature, SCENE_VERSION
+                old_scene = state['topology'].get('scene') or {}
+                scene = topology.get('scene') or {}
+                if scene != old_scene or scene.get('version') != SCENE_VERSION or scene.get('modelSignature') != model_signature(topology):
+                    context = state.get('context') or {}
+                    prompt = (context.get('wizard_request') or {}).get('prompt', '')
+                    topology = build_network_scene(topology, prompt, positions=old_scene.get('manualPositions') if layout_positions is None else layout_positions)
             unchanged = state["topology"] == topology
             layout_only = is_topology_layout_only_change(state["topology"], topology)
             check = self._topology_artifact_check(topology)
@@ -920,6 +955,78 @@ class WorkflowStatusService:
             status=check["status"],
             actor=actor,
         )
+
+    def network_view(self) -> dict:
+        """Read the prepared scene without analyses, simulation results or layout writes."""
+        with get_connection() as connection:
+            row = connection.execute(
+                'SELECT topology, parameters, versions FROM engineering_workflow_projects WHERE project_id = %s',
+                (self.project_id,),
+            ).fetchone()
+        topology = (row or {}).get('topology') or {'nodes': [], 'edges': []}
+        return {'project_id': self.project_id, 'topology': topology,
+                'edit_tokens': {'topology': edit_token(topology), 'parameters': edit_token((row or {}).get('parameters') or {})}, 'versions': (row or {}).get('versions') or {}}
+
+    def rename_network(self, network_id: str, name: str, *, expected_token, expected_parameters_token):
+        from ..network_naming import rename_network_with_interfaces
+        if not expected_token or not expected_parameters_token:
+            raise ValueError('Die aktuelle Projektversion fehlt. Bitte die Ansicht neu laden.')
+        with get_connection() as connection:
+            state = self._get_locked(connection)
+            check_edit_token(expected_token, state['topology'])
+            check_edit_token(expected_parameters_token, state['parameters'])
+            parameters, topology = rename_network_with_interfaces(state, network_id, name)
+            # A label edit does not change communication or invalidate timing results.
+            connection.execute(
+                'UPDATE engineering_workflow_projects SET parameters = %s::jsonb, topology = %s::jsonb, updated_at = now() WHERE project_id = %s',
+                (_json(parameters), _json(topology), self.project_id),
+            )
+        return self.get()
+
+    def normalize_ethernet_names(self, *, expected_token, expected_parameters_token):
+        from ..naming import ethernet_names
+        from ..network_naming import rename_network_with_interfaces
+        if not expected_token or not expected_parameters_token:
+            raise ValueError('Die aktuelle Projektversion fehlt. Bitte die Ansicht neu laden.')
+        with get_connection() as connection:
+            state = self._get_locked(connection)
+            check_edit_token(expected_token, state['topology'])
+            check_edit_token(expected_parameters_token, state['parameters'])
+            named = ethernet_names(state['parameters'].get('networks', []), topology=state['topology'])
+            for network_id, row in named.items():
+                old = next(n for n in state['parameters']['networks'] if n['id'] == network_id)
+                if old.get('name') == row.get('name'):
+                    continue
+                parameters, topology = rename_network_with_interfaces(state, network_id, row['name'], name_source='generated')
+                next(n for n in parameters['networks'] if n['id'] == network_id).update(name_context=row['name_context'])
+                state.update(parameters=parameters, topology=topology)
+            connection.execute(
+                'UPDATE engineering_workflow_projects SET parameters = %s::jsonb, topology = %s::jsonb, updated_at = now() WHERE project_id = %s',
+                (_json(state['parameters']), _json(state['topology']), self.project_id))
+        return self.get()
+
+    def prepare_network_view(self, *, expected_token=None, positions: dict | None = None, reset=False, bus_routes=None, reset_wires=False) -> dict:
+        """Explicit rebuild or manual layout save, atomic and independent of model status."""
+        from ..network_scene import build_network_scene
+        with get_connection() as connection:
+            state = self._get_locked(connection)
+            check_edit_token(expected_token, state['topology'])
+            old = state['topology'].get('scene') or {}
+            manual = {} if reset else {**old.get('manualPositions', {})}
+            if not reset:
+                for node_id, position in (positions or {}).items():
+                    if not isinstance(position, dict):
+                        raise ValueError('Jede Knotenposition muss ein Objekt sein.')
+                    manual[node_id] = {**manual.get(node_id, {}), **position}
+            if reset_wires:
+                connected = {edge[side + 'Port'] for edge in state['topology'].get('edges', []) for side in ('source', 'target')}
+                manual = {key: {**value, 'ports': {port: placement for port, placement in (value.get('ports') or {}).items() if port not in connected}}
+                          for key, value in manual.items()}
+            topology = build_network_scene(state['topology'], (state['context'].get('wizard_request') or {}).get('prompt', ''),
+                                           positions=manual, bus_routes={} if reset or reset_wires else bus_routes)
+            connection.execute('UPDATE engineering_workflow_projects SET topology = %s::jsonb WHERE project_id = %s',
+                               (_json(topology), self.project_id))
+        return self.network_view()
 
     def get_topology_layout(self, topology_key: str, layout_version: int) -> dict[str, Any]:
         key = str(topology_key or "").strip()

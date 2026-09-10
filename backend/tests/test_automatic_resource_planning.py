@@ -106,6 +106,7 @@ def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
             edge.update(physicalNetworkId='network-lin', routingEntryId=f'r{index}',
                         routingEntryIds=[f'r{index}'], engineeringRelationId=f'relation-{index}')
         workflow.save_topology(before)
+        before = workflow.get()["topology"]
         plan = plan_network_distribution(capacity((40, 40)), hardware(), before, available_protocol_counts={'LIN': 1}, resource_policy=AUTO)
         after, count = split_topology_by_distribution(before, plan)
         assert count == 2

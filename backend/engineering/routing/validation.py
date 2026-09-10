@@ -41,6 +41,7 @@ PROTOCOL_CAPACITY = {
 INTERFACE_PROTOCOLS = {
     "CAN": {"CAN"},
     "CAN_FD": {"CAN", "CAN_FD"},
+    "CAN_XL": {"CAN", "CAN_FD", "CAN_XL"},
     "LIN": {"LIN"},
     "FlexRay": {"FLEXRAY"},
     "Ethernet": {"ETHERNET", "SOME_IP", "TCP", "UDP", "DDS", "ROS_2", "OPC_UA"},
@@ -312,6 +313,15 @@ class RoutingValidator:
                 error("DESTINATION_HARDWARE_INTERFACE_NOT_FOUND", f"Hardware Interface {port_id} existiert nicht.")
             elif str(port.get("hardware_node_id") or "") != str(destination.get("node_id") or ""):
                 error("DESTINATION_HARDWARE_INTERFACE_MISMATCH", "Ein physisches Destination Interface gehört nicht zum gewählten Node.")
+
+        # A valid hardware port does not excuse a stale logical interface after
+        # a bus change. Check each endpoint's own protocol (gateway paths may differ).
+        for role, endpoint in [("SOURCE", source), *[("DESTINATION", item) for item in destinations]]:
+            interface = interfaces.get(str(endpoint.get("interface_id") or ""))
+            endpoint_protocol = str(endpoint.get("protocol") or source.get("protocol") or "CUSTOM").upper()
+            if interface and endpoint_protocol not in INTERFACE_PROTOCOLS.get(interface.get("interface_type"), set(PROTOCOL_CAPACITY)):
+                error(f"{role}_LOGICAL_PROTOCOL_MISMATCH",
+                      f"Kommunikationsschnittstelle {interface.get('name')} ({interface.get('interface_type')}) passt nicht zum {endpoint_protocol}-Anschluss.")
 
         message_ids = list(dict.fromkeys([
             *[str(item) for item in payload.get("message_ids", []) if item],

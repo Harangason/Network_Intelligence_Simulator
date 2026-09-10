@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   busProfiles,
@@ -13,9 +13,23 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
+import { busJunctions, moveSceneWire, previewNetworkScene, type SceneBranch, type SceneBus } from "@/lib/network-scene";
+import { withWireCrossings } from '@/lib/network-crossings';
+import { deleteNetworkSelection, type NetworkSelection } from '@/lib/network-deletion';
+import { findConnectionTarget, planNetworkConnection, type ConnectionEndpoint } from '@/lib/network-connections';
+import { networkLabel, branchPath } from "@/lib/network-names";
+import { NetworkLasso } from './network-lasso';
+import { NetworkAssignmentDialog } from './network-assignment-dialog';
+import { NetworkFrameDeviceDialog } from './network-frame-device-dialog';
+import { NetworkBusNameDialog } from './network-bus-name-dialog';
+import { NetworkBusTransferDialog } from './network-bus-transfer-dialog';
+import type { NetworkAssignmentRequest, FrameDeviceRequest } from '@/lib/workflow-api';
 import type { HardwareNode, RoutingEntry } from "@/lib/types";
 import {
   getWorkflowTopologyLayout,
+  previewBusChange,
+  type BusChangePreview,
+  type BusChangeRequest,
   saveWorkflowTopologyLayout,
   setWorkflowContext,
   type WorkflowTopologyLayout,
@@ -88,27 +102,10 @@ function normalizeWireAlignmentOffset(value: number) {
   );
 }
 
-const busOrder: BusType[] = ["can_fd", "lin", "automotive_ethernet", "flexray"];
-
-function wireMarkerId(bus: BusType, position: "start" | "end") {
-  return `net-wire-arrow-${position}-${bus}`;
-}
-
-function wireMarkerStart(edge: TopologyEdge) {
-  const direction = edge.direction ?? "BIDIRECTIONAL";
-  return direction === "BIDIRECTIONAL" || direction === "TARGET_TO_SOURCE"
-    ? `url(#${wireMarkerId(edge.bus, "start")})`
-    : undefined;
-}
-
-function wireMarkerEnd(edge: TopologyEdge) {
-  const direction = edge.direction ?? "BIDIRECTIONAL";
-  return direction === "BIDIRECTIONAL" || direction === "SOURCE_TO_TARGET"
-    ? `url(#${wireMarkerId(edge.bus, "end")})`
-    : undefined;
-}
+const busOrder: BusType[] = ["can", "can_fd", "can_xl", "lin", "automotive_ethernet", "flexray"];
 
 type DragState =
+  | { mode: "move-bus"; busId: string; portId?: string; startX: number; startY: number; coordinate: number; baseline: NetworkTopology }
   | { mode: "move"; nodeId: string; offsetX: number; offsetY: number }
   | {
       mode: "move-cluster";
@@ -119,11 +116,13 @@ type DragState =
     }
   | { mode: "resize"; nodeId: string; startX: number; startY: number; startWidth: number; startHeight: number }
   | { mode: "move-port"; nodeId: string; portId: string }
-  | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number };
+  | { mode: "wire"; nodeId: string; portId: string; bus: BusType; x: number; y: number; startX: number; startY: number };
 
 type MenuState = { nodeId: string; x: number; y: number; side: PortSide; offset: number };
 type RelationshipDraft = {
+  connection?: { source: ConnectionEndpoint; target: ConnectionEndpoint };
   edge: TopologyEdge;
+  bus?: BusType;
   isNew: boolean;
   name: string;
   sourceInterfaceName: string;
@@ -172,6 +171,7 @@ let counter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
 const interfaceNameSuffix: Record<BusType, string> = {
+  can: "CAN", can_xl: "CAN_XL",
   can_fd: "CAN_FD",
   lin: "LIN",
   automotive_ethernet: "Ethernet",
@@ -235,7 +235,7 @@ function nodeContentHeight(node: TopologyNode) {
 }
 
 function nodeHeight(node: TopologyNode) {
-  return Math.max(nodeContentHeight(node), node.height ?? NODE_MIN_HEIGHT);
+  return Math.max(NODE_MIN_HEIGHT, node.height ?? nodeContentHeight(node));
 }
 
 function endpointNameHeight(name: string) {
@@ -274,6 +274,27 @@ function nearestPortPlacement(node: TopologyNode, point: { x: number; y: number 
   const axisLength = horizontalAxis ? width : height;
   const offset = Math.max(0, Math.min(1, (coordinate - PORT_SAFE_INSET) / Math.max(1, axisLength - PORT_SAFE_INSET * 2)));
   return { side, offset };
+}
+
+function unusedPortPlacement(node: TopologyNode, preferred: { side: PortSide; offset: number }) {
+  const point = (port: { side: PortSide; offset: number }) => {
+    const horizontal = port.side === "top" || port.side === "bottom";
+    const axis = horizontal ? nodeWidth(node) : nodeHeight(node);
+    const along = PORT_SAFE_INSET + port.offset * (axis - 2 * PORT_SAFE_INSET);
+    return horizontal
+      ? { x: along, y: port.side === "top" ? 0 : nodeHeight(node) }
+      : { x: port.side === "left" ? 0 : nodeWidth(node), y: along };
+  };
+  const desired = point(preferred);
+  const candidates = [preferred];
+  for (const side of ["left", "right", "top", "bottom"] as PortSide[]) {
+    const axis = side === "top" || side === "bottom" ? nodeWidth(node) : nodeHeight(node);
+    const intervals = Math.max(1, Math.floor((axis - 2 * PORT_SAFE_INSET) / PORT_CENTER_GAP));
+    for (let i = 0; i <= intervals; i++) candidates.push({ side, offset: i / intervals });
+  }
+  const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+  return candidates.sort((a, b) => distance(point(a), desired) - distance(point(b), desired))
+    .find(candidate => node.ports.every(port => distance(point(candidate), point(port)) >= PORT_CENTER_GAP));
 }
 
 function connectedPortSide(topology: NetworkTopology, node: TopologyNode, port: TopologyPort): PortSide {
@@ -325,6 +346,7 @@ function connectedNodesForPort(topology: NetworkTopology, node: TopologyNode, po
 }
 
 const gatewayBusLabels: Record<BusType, string> = {
+  can: "CAN", can_xl: "CAN-XL",
   can_fd: "CAN",
   lin: "LIN",
   automotive_ethernet: "Ethernet",
@@ -367,6 +389,10 @@ function gatewayInterfaceNames(topology: NetworkTopology) {
   topology.nodes.filter((node) => node.kind === "gateway").forEach((gateway) => {
     const occurrences = new Map<string, number>();
     gateway.ports.forEach((port) => {
+      if ((port.hardwareInterfaceId || port.engineeringId) && port.name.trim()) {
+        names.set(`${gateway.id}\u0000${port.id}`, port.name);
+        return;
+      }
       const baseName = semanticGatewayInterfaceName(topology, gateway, port);
       const occurrence = (occurrences.get(baseName) ?? 0) + 1;
       occurrences.set(baseName, occurrence);
@@ -2070,30 +2096,126 @@ export function NetworkEditor({
   routingEntries,
   onChange,
   onRelationshipsChange,
+  onLayoutChange,
+  onAssignmentChange,
+  onFrameDeviceCreate,
+  onBusRename,
 }: {
   topology: NetworkTopology;
   modelHardware: HardwareNode[];
   routingEntries: RoutingEntry[];
   onChange: (next: NetworkTopology) => void;
-  onRelationshipsChange?: (next: NetworkTopology) => void | boolean | Promise<void | boolean>;
+  onLayoutChange?: (next: NetworkTopology, reset?: boolean, resetWires?: boolean) => Promise<void>;
+  onAssignmentChange?: (request: NetworkAssignmentRequest) => Promise<void>;
+  onFrameDeviceCreate?: (request: FrameDeviceRequest) => Promise<void>;
+  onBusRename?: (networkId: string, name: string) => Promise<NetworkTopology>;
+  onRelationshipsChange?: (next: NetworkTopology, busChange?: BusChangeRequest) => void | boolean | Promise<void | boolean>;
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null);
+  const panRef = useRef<{ pointerId: number; x: number; y: number; left: number; top: number } | null>(null);
+  const [panning, setPanning] = useState(false);
+  const [lasso, setLasso] = useState(false);
+  useEffect(() => {
+    if (!lasso) return;
+    const cancel = (event: KeyboardEvent) => { if (event.key === 'Escape') setLasso(false); };
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, [lasso]);
+  const [assignmentSelection, setAssignmentSelection] = useState<string[]>([]);
+  const [createInFrame, setCreateInFrame] = useState<{id: string; label: string} | null>(null);
+  useEffect(() => {
+    const move = (event: PointerEvent) => {
+      const start = panRef.current, surface = surfaceRef.current;
+      if (!start || !surface || start.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      surface.scrollLeft = start.left - (event.clientX - start.x);
+      surface.scrollTop = start.top - (event.clientY - start.y);
+    };
+    const finish = () => { panRef.current = null; setPanning(false); };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+    window.addEventListener("blur", finish);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      window.removeEventListener("blur", finish);
+    };
+  }, []);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [connectionTarget, setConnectionTarget] = useState<ConnectionEndpoint | null>(null);
+  const [connectionHint, setConnectionHint] = useState('');
   const [dragTopology, setDragTopology] = useState<NetworkTopology | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const [selectedBus, setSelectedBus] = useState<string | null>(null);
+  const [selectedPort, setSelectedPort] = useState<{nodeId:string; portId:string} | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<{busId:string; portId:string} | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const portSavePending = useRef(false);
+  const [portSaving, setPortSaving] = useState(false);
+  const [portMessage, setPortMessage] = useState("");
+  const [portError, setPortError] = useState("");
+  const deletePending = useRef(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
   const [addMenu, setAddMenu] = useState<NodeKind | null>(null);
   const [rename, setRename] = useState<{ nodeId: string; name: string } | null>(null);
+  const devicePorts = [...new Map(
+    (topology.nodes.find(node => node.id === rename?.nodeId)?.ports ?? [])
+      .map(port => [port.hardwareInterfaceId || port.id, port]),
+  ).values()].sort((a, b) => a.name.localeCompare(b.name, 'de', {numeric: true}) || a.id.localeCompare(b.id));
   const [relationship, setRelationship] = useState<RelationshipDraft | null>(null);
+  const [relationshipChoices, setRelationshipChoices] = useState<{busName: string; edgeIds: string[]} | null>(null);
+  const [busNameDraft, setBusNameDraft] = useState<{id: string; name: string} | null>(null);
+  const [busTransferOpen, setBusTransferOpen] = useState(false);
   const [relationshipSaving, setRelationshipSaving] = useState(false);
   const [relationshipError, setRelationshipError] = useState("");
+  const [busPreview, setBusPreview] = useState<BusChangePreview | null>(null);
+  const [busPreviewError, setBusPreviewError] = useState("");
+  const busChanged = Boolean(relationship?.bus && relationship.bus !== relationship.edge.bus);
+  const relationshipModified = Boolean(relationship && (() => {
+    const e = relationship.edge;
+    const from = topology.nodes.find(n => n.id === e.source), to = topology.nodes.find(n => n.id === e.target);
+    return relationship.name !== (e.name || `${from?.name ?? "Quelle"} ↔ ${to?.name ?? "Ziel"}`)
+      || relationship.description !== (e.description ?? "") || relationship.direction !== (e.direction ?? "BIDIRECTIONAL")
+      || relationship.relationType !== (e.relationType ?? "CONNECTED_TO")
+      || relationship.sourceInterfaceName !== relationshipInterfaceName(e.sourceInterfaceName, from, e.sourcePort, e.bus)
+      || relationship.targetInterfaceName !== relationshipInterfaceName(e.targetInterfaceName, to, e.targetPort, e.bus);
+  })());
+  const previewNetworkId = relationship?.edge.physicalNetworkId;
+  const previewBus = busChanged ? relationship?.bus : undefined;
+  useEffect(() => {
+    let cancelled = false;
+    setBusPreview(null);
+    setBusPreviewError("");
+    if (previewBus && previewNetworkId) {
+      previewBusChange(previewNetworkId, previewBus).then(result => {
+        if (cancelled) return;
+        setBusPreview(result);
+        const network = result.networks.find(n => n.id === previewNetworkId);
+        if (network) setRelationship(current => {
+          if (!current || current.bus !== previewBus || current.edge.physicalNetworkId !== previewNetworkId) return current;
+          const defaults = new Set([network.previous_name, networkLabel(previewNetworkId, previewBus), networkLabel(previewNetworkId, current.edge.bus)]);
+          return {...current, sourceInterfaceName: defaults.has(current.sourceInterfaceName) ? network.name : current.sourceInterfaceName,
+            targetInterfaceName: defaults.has(current.targetInterfaceName) ? network.name : current.targetInterfaceName};
+        });
+      })
+        .catch(error => { if (!cancelled) setBusPreviewError(error instanceof Error ? error.message : "Buswechsel konnte nicht geprüft werden."); });
+    }
+    return () => { cancelled = true; };
+  }, [previewBus, previewNetworkId]);
   const [surfaceWidth, setSurfaceWidth] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [wireAlignmentOffsetX, setWireAlignmentOffsetX] = useState(WIRE_ALIGNMENT_DEFAULT_OFFSET);
   const [fullscreen, setFullscreen] = useState(false);
   const [contextOverlay, setContextOverlay] = useState<NetworkContextOverlay | null>(null);
   const [visibleCanvasBounds, setVisibleCanvasBounds] = useState<CanvasViewportBounds | null>(null);
+  const [layoutSaving, setLayoutSaving] = useState(false);
+  const [layoutError, setLayoutError] = useState("");
+  const failedLayoutRef = useRef<NetworkTopology | null>(null);
   const [loadedLayoutKey, setLoadedLayoutKey] = useState("");
   const arrangedStructureRef = useRef("");
   const activeDragRef = useRef<DragState | null>(null);
@@ -2116,6 +2238,10 @@ export function NetworkEditor({
   }, []);
 
   const displayTopology = dragTopology ?? topology;
+  const savedScene = useMemo(() => topology.scene && (topology.scene.crossingVersion === 1 ? topology.scene : withWireCrossings(topology.scene)), [topology.scene]);
+  const scene = useMemo(() => savedScene && dragTopology
+    ? drag?.mode === 'move-bus' ? dragTopology.scene : previewNetworkScene(savedScene, topology, dragTopology)
+    : savedScene, [savedScene, topology, dragTopology, drag?.mode]);
 
   const flushDragTopology = useCallback(() => {
     if (dragFrameRef.current) {
@@ -2127,9 +2253,20 @@ export function NetworkEditor({
     dragTopologyRef.current = null;
     if (pending) {
       topologyRef.current = pending;
-      onChange(pending);
+      if (topology.scene && onLayoutChange) {
+        setLayoutSaving(true);
+        setLayoutError("");
+        const next = {...pending, scene: activeDragRef.current?.mode === 'move-bus' ? pending.scene : previewNetworkScene(topology.scene, topology, pending)};
+        failedLayoutRef.current = next;
+        void onLayoutChange(next).then(() => {failedLayoutRef.current = null;}).catch(error => {
+          onChange(topology);
+          topologyRef.current = topology;
+          setLayoutError(error instanceof Error ? error.message : "Layout konnte nicht gespeichert werden.");
+        }).finally(() => setLayoutSaving(false));
+        onChange(next);
+      } else onChange(pending);
     }
-  }, [onChange]);
+  }, [onChange, onLayoutChange, topology]);
 
   const scheduleDragTopology = useCallback((next: NetworkTopology) => {
     pendingDragTopologyRef.current = next;
@@ -2160,7 +2297,7 @@ export function NetworkEditor({
       edge: edge ? { id: edge.id, bus: edge.bus } : null,
       node: node ? { id: node.id, name: node.name, network: node.ports[0]?.bus ?? null } : null,
     });
-    if (workflowSelectionSignatureRef.current === signature) return;
+    if (workflowSelectionSignatureRef.current === signature || (!workflowSelectionSignatureRef.current && !node && !edge)) return;
     workflowSelectionSignatureRef.current = signature;
     void setWorkflowContext({
       selected_object: node ? { id: node.id, type: "NetworkNode", name: node.name } : null,
@@ -2177,6 +2314,32 @@ export function NetworkEditor({
     };
   }, [zoom]);
 
+  function beginBusDrag(event: ReactPointerEvent<SVGElement>, bus: SceneBus, branch?: SceneBranch) {
+    event.stopPropagation();
+    if (event.button !== 0 || !onLayoutChange || lasso || layoutSaving || portSaving || relationshipSaving || deleting) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = pointFromEvent(event);
+    const segment = branch?.points.slice(1).map((b, index) => {
+      const a = branch.points[index];
+      const distance = Math.hypot(point.x - Math.max(Math.min(a.x, b.x), Math.min(Math.max(a.x, b.x), point.x)),
+        point.y - Math.max(Math.min(a.y, b.y), Math.min(Math.max(a.y, b.y), point.y)));
+      return {horizontal: a.y === b.y && a.x !== b.x, distance};
+    }).sort((a, b) => a.distance - b.distance)[0];
+    const portId = segment?.horizontal ? branch?.portId : undefined;
+    const last = (branch ?? bus.branches[0]).points.at(-1)!;
+    const nextDrag: DragState = {mode: 'move-bus', busId: bus.id, portId, startX: point.x, startY: point.y,
+      coordinate: portId ? last.y : last.x, baseline: topology};
+    setSelectedBus(bus.id);
+    setSelectedPort(null);
+    setSelectedBranch(branch ? {busId:bus.id, portId:branch.portId} : null);
+    if (!branch) {setSelectedNode(null); setSelectedEdge(null);}
+    setMenu(null);
+    setContextOverlay(null);
+    activeDragRef.current = nextDrag;
+    setDrag(nextDrag);
+  }
+
   useEffect(() => {
     const surface = surfaceRef.current;
     if (!surface) return;
@@ -2191,7 +2354,7 @@ export function NetworkEditor({
     if (!fullscreen || typeof document === "undefined") return undefined;
     const previousOverflow = document.body.style.overflow;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setFullscreen(false);
+      if (event.key === "Escape" && !document.querySelector('dialog[open]')) setFullscreen(false);
     };
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
@@ -2209,14 +2372,6 @@ export function NetworkEditor({
     [displayTopology.nodes],
   );
 
-  const commitRelationships = useCallback(
-    (next: NetworkTopology) => {
-      onChange(next);
-      onRelationshipsChange?.(next);
-    },
-    [onChange, onRelationshipsChange],
-  );
-
   useEffect(() => {
     function move(event: PointerEvent) {
       const activeDrag = activeDragRef.current;
@@ -2224,7 +2379,26 @@ export function NetworkEditor({
       event.preventDefault();
       const point = pointFromEvent(event);
       const currentTopology = topologyRef.current;
-      if (activeDrag.mode === "move-cluster") {
+      if (activeDrag.mode === 'wire' || activeDrag.mode === 'move-bus') {
+        const target = surfaceRef.current && findConnectionTarget(surfaceRef.current, event.clientX, event.clientY, activeDrag.mode === 'move-bus');
+        const source: ConnectionEndpoint = activeDrag.mode === 'wire'
+          ? {kind:'port', nodeId:activeDrag.nodeId, portId:activeDrag.portId} : {kind:'bus', busId:activeDrag.busId};
+        try {
+          if (target) planNetworkConnection(activeDrag.mode === 'move-bus' ? activeDrag.baseline : currentTopology, source, target, 'preview');
+          setConnectionTarget(target);
+          setConnectionHint(target ? 'Loslassen, um die Verbindung zu definieren.' : 'Auf einen Port oder eine Buslinie desselben Typs ziehen.');
+        } catch (error) {
+          setConnectionTarget(null);
+          setConnectionHint(error instanceof Error ? error.message : 'Kein passender Anschluss.');
+        }
+      }
+      if (activeDrag.mode === 'move-bus') {
+        if (Math.hypot(point.x - activeDrag.startX, point.y - activeDrag.startY) * zoom < 5 && !dragTopologyRef.current && !pendingDragTopologyRef.current) return;
+        const delta = activeDrag.portId ? point.y - activeDrag.startY : point.x - activeDrag.startX;
+        scheduleDragTopology(moveSceneWire(activeDrag.baseline, activeDrag.busId, activeDrag.coordinate + delta, activeDrag.portId));
+      } else if (activeDrag.mode === "move-cluster") {
+        if (!dragTopologyRef.current && !pendingDragTopologyRef.current &&
+            Math.hypot(point.x - activeDrag.startX, point.y - activeDrag.startY) * zoom < 5) return;
         const minimumX = Math.min(...activeDrag.members.map((member) => member.x));
         const minimumY = Math.min(...activeDrag.members.map((member) => member.y));
         const deltaX = Math.max(
@@ -2298,49 +2472,44 @@ export function NetworkEditor({
       const activeDrag = activeDragRef.current;
       if (!activeDrag) return;
       event.preventDefault();
-      flushDragTopology();
-      if (activeDrag.mode === "wire") {
-        const currentTopology = topologyRef.current;
-        const target = document
-          .elementFromPoint(event.clientX, event.clientY)
-          ?.closest<HTMLElement>("[data-port-id]");
-        const targetNodeId = target?.getAttribute("data-node-id");
-        const targetPortId = target?.getAttribute("data-port-id");
-        const targetBus = target?.getAttribute("data-port-bus") as BusType | null;
-        const validTarget =
-          targetNodeId &&
-          targetPortId &&
-          targetNodeId !== activeDrag.nodeId &&
-          targetBus === activeDrag.bus;
-        if (validTarget) {
-          const alreadyUsed = currentTopology.edges.some(
-            (edge) => edge.sourcePort === targetPortId || edge.targetPort === targetPortId || edge.sourcePort === activeDrag.portId || edge.targetPort === activeDrag.portId,
-          );
-          if (!alreadyUsed) {
-            const sourceNode = currentTopology.nodes.find((node) => node.id === activeDrag.nodeId);
-            const targetNode = currentTopology.nodes.find((node) => node.id === targetNodeId);
-            setRelationshipError("");
-            setRelationship({
-              edge: {
-                id: nextId("edge"),
-                source: activeDrag.nodeId,
-                sourcePort: activeDrag.portId,
-                target: targetNodeId,
-                targetPort: targetPortId,
-                bus: activeDrag.bus,
-              },
-              isNew: true,
-              name: `${sourceNode?.name ?? "Quelle"} ↔ ${targetNode?.name ?? "Ziel"}`,
-              sourceInterfaceName: automaticInterfaceName(sourceNode?.name ?? "Quelle", activeDrag.bus),
-              targetInterfaceName: automaticInterfaceName(targetNode?.name ?? "Ziel", activeDrag.bus),
-              relationType: "CONNECTED_TO",
-              description: "",
-              direction: "BIDIRECTIONAL",
-            });
-          }
+      if (activeDrag.mode === 'wire') {
+        const point = pointFromEvent(event);
+        if (Math.hypot(point.x - activeDrag.startX, point.y - activeDrag.startY) * zoom < 4) {
+          activeDragRef.current = null;
+          setDrag(null); setConnectionTarget(null); setConnectionHint('');
+          return;
         }
-      } else if (activeDrag.mode === "move" || activeDrag.mode === "resize" || activeDrag.mode === "move-port") {
-        setSelectedNode(activeDrag.nodeId);
+      }
+      const drop = surfaceRef.current && findConnectionTarget(surfaceRef.current, event.clientX, event.clientY, activeDrag.mode === 'move-bus');
+      const connecting = activeDrag.mode === 'wire' || (activeDrag.mode === 'move-bus' && drop?.kind === 'port');
+      if (connecting) {
+        // A connection must not persist the provisional line movement as a layout edit.
+        if (dragFrameRef.current) window.cancelAnimationFrame(dragFrameRef.current);
+        dragFrameRef.current = 0;
+        pendingDragTopologyRef.current = null;
+        dragTopologyRef.current = null;
+        const currentTopology = activeDrag.mode === 'move-bus' ? activeDrag.baseline : topologyRef.current;
+        topologyRef.current = currentTopology;
+        const source: ConnectionEndpoint = activeDrag.mode === 'move-bus'
+          ? {kind:'bus', busId:activeDrag.busId}
+          : {kind:'port', nodeId:activeDrag.nodeId, portId:activeDrag.portId};
+        try {
+          if (!drop) throw new Error('Kein Anschluss gefunden. Bitte auf einem Port oder einer Buslinie desselben Typs loslassen.');
+          const plan = planNetworkConnection(currentTopology, source, drop, nextId('edge'));
+          setPortError('');
+          setPortMessage('');
+          setRelationshipError('');
+          setRelationship({edge:plan.edge, connection:{source, target:drop}, isNew:true,
+            name:`${plan.sourceName} ↔ ${plan.targetName}`, sourceInterfaceName:plan.networkName,
+            targetInterfaceName:plan.networkName, relationType:'CONNECTED_VIA', description:'', direction:'BIDIRECTIONAL'});
+        } catch (error) {
+          setPortError(error instanceof Error ? error.message : 'Die Verbindung ist nicht möglich.');
+        }
+      } else {
+        flushDragTopology();
+      }
+      if (activeDrag.mode === "move" || activeDrag.mode === "resize" || activeDrag.mode === "move-port") {
+        setSelectedNode(activeDrag.nodeId); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
         setSelectedEdge(null);
       } else if (activeDrag.mode === "move-cluster") {
         const currentTopology = topologyRef.current;
@@ -2368,16 +2537,38 @@ export function NetworkEditor({
         setSelectedEdge(null);
       }
       activeDragRef.current = null;
+      setConnectionTarget(null);
+      setConnectionHint('');
       setDrag(null);
       setDragTopology(null);
     }
+    function cancel() {
+      if (!activeDragRef.current) return;
+      if (dragFrameRef.current) window.cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = 0;
+      pendingDragTopologyRef.current = null;
+      dragTopologyRef.current = null;
+      topologyRef.current = topology;
+      activeDragRef.current = null;
+      setConnectionTarget(null);
+      setConnectionHint('');
+      setDragTopology(null);
+      setDrag(null);
+    }
+    function escape(event: KeyboardEvent) { if (event.key === 'Escape') cancel(); }
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', cancel);
+    window.addEventListener('keydown', escape);
     return () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', cancel);
+      window.removeEventListener('keydown', escape);
     };
-  }, [commitRelationships, drag, flushDragTopology, scheduleDragTopology, onChange, pointFromEvent, routingEntries, surfaceWidth]);
+  }, [drag, flushDragTopology, scheduleDragTopology, onChange, pointFromEvent, routingEntries, surfaceWidth, topology, zoom]);
 
   useEffect(() => {
     if (!menu && !addMenu) return;
@@ -2410,13 +2601,22 @@ export function NetworkEditor({
       engineeringId: hardware?.id,
     };
     onChange({ ...topology, nodes: [...topology.nodes, node] });
-    setSelectedNode(node.id);
+    setSelectedNode(node.id); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
     setAddMenu(null);
   }
 
-  function addPort(nodeId: string, bus: BusType) {
+  async function addPort(nodeId: string, bus: BusType) {
+    if (portSavePending.current) return;
     const position = menu;
-    onChange({
+    const sourceNode = topology.nodes.find(node => node.id === nodeId);
+    if (!sourceNode) return;
+    const nodeName = sourceNode.name;
+    const placement = unusedPortPlacement(sourceNode, position ?? { side: "right", offset: 0.5 });
+    if (!placement) {
+      setPortError("Kein freier Platz am Gerät. Bitte die Karte vergrößern oder vorhandene Ports verschieben.");
+      return;
+    }
+    const next = {
       ...topology,
       nodes: topology.nodes.map((node) => {
         if (node.id !== nodeId) return node;
@@ -2426,42 +2626,78 @@ export function NetworkEditor({
             id: nextId("port"),
             name: busProfiles[bus].label,
             bus,
-            side: position?.side ?? "right",
-            offset: position?.offset ?? 0.5,
+            side: placement.side,
+            offset: placement.offset,
           }],
         };
       }),
-    });
-    setMenu(null);
-  }
-
-  function removePort(nodeId: string, portId: string) {
-    const next = {
-      nodes: topology.nodes.map((node) =>
-        node.id === nodeId ? { ...node, ports: node.ports.filter((p) => p.id !== portId) } : node,
-      ),
-      edges: topology.edges.filter((edge) => edge.sourcePort !== portId && edge.targetPort !== portId),
     };
-    if (next.edges.length !== topology.edges.length) commitRelationships(next);
-    else onChange(next);
+    portSavePending.current = true;
+    setPortSaving(true);
+    setPortError("");
+    setPortMessage("");
+    try {
+      // Port creation changes the physical model, not just canvas coordinates.
+      // Keep the previous topology until the canonical save has succeeded.
+      if (onRelationshipsChange) {
+        const saved = await onRelationshipsChange(next);
+        if (saved === false) throw new Error("Port konnte nicht gespeichert werden. Bitte den Modellabgleich prüfen und erneut versuchen.");
+      } else {
+        onChange(next);
+      }
+      setSelectedNode(nodeId);
+      setSelectedEdge(null);
+      setMenu(null);
+      setPortMessage(`${busProfiles[bus].label}-Port an „${nodeName}“ ${onRelationshipsChange ? "gespeichert" : "angelegt"}. Zum Verbinden auf einen Port oder Bus desselben Typs ziehen.`);
+    } catch (error) {
+      setPortError(error instanceof Error ? error.message : "Port konnte nicht gespeichert werden.");
+    } finally {
+      portSavePending.current = false;
+      setPortSaving(false);
+    }
   }
 
-  function removeSelected() {
-    if (selectedEdge) {
-      commitRelationships({ ...topology, edges: topology.edges.filter((edge) => edge.id !== selectedEdge) });
-      setSelectedEdge(null);
-      return;
-    }
-    if (selectedNode) {
-      const next = {
-        nodes: topology.nodes.filter((node) => node.id !== selectedNode),
-        edges: topology.edges.filter((edge) => edge.source !== selectedNode && edge.target !== selectedNode),
-      };
-      if (next.edges.length !== topology.edges.length) commitRelationships(next);
-      else onChange(next);
-      setSelectedNode(null);
-    }
-  }
+  const removeSelected = useCallback(async (explicit?: NetworkSelection) => {
+    if (deletePending.current || layoutSaving || portSaving || relationshipSaving || activeDragRef.current) return;
+    const selection: NetworkSelection | undefined = explicit ?? (selectedPort ? {kind:'port', ...selectedPort}
+      : selectedBranch ? {kind:'branch', ...selectedBranch} : selectedEdge ? {kind:'edge', edgeId:selectedEdge}
+      : selectedBus ? {kind:'bus', busId:selectedBus} : selectedNode ? {kind:'node', nodeId:selectedNode} : undefined);
+    if (!selection) return;
+    const next = deleteNetworkSelection(topology, selection);
+    if (next.edges.length === topology.edges.length && next.nodes.length === topology.nodes.length &&
+        next.nodes.every((n,i)=>n.ports.length===topology.nodes[i].ports.length)) return;
+    deletePending.current = true;
+    setDeleting(true); setDeleteError(''); setDeleteMessage(''); setPortError(''); setPortMessage(''); setContextOverlay(null);
+    try {
+      if (onRelationshipsChange) {
+        const saved = await onRelationshipsChange(next);
+        if (saved === false) throw new Error('Löschung konnte nicht gespeichert werden. Die Auswahl bleibt erhalten.');
+      } else onChange(next);
+      setSelectedEdge(null); setSelectedNode(null); setSelectedBus(null); setSelectedPort(null); setSelectedBranch(null);
+      setMenu(null);
+      setDeleteMessage(selection.kind === 'port' ? 'Port und zugehörige Verbindungen gelöscht.'
+        : selection.kind === 'bus' ? 'Buslinien gelöscht. Die Ports bleiben als freie Anschlüsse erhalten.'
+        : selection.kind === 'node' ? 'Gerät aus der Netzwerktopologie entfernt.' : 'Verbindung aus der Netzwerktopologie gelöscht.');
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Löschung konnte nicht gespeichert werden.');
+    } finally { deletePending.current = false; setDeleting(false); }
+  }, [layoutSaving, portSaving, relationshipSaving, topology, selectedPort, selectedBranch, selectedBus, selectedEdge, selectedNode, onRelationshipsChange, onChange]);
+
+  useEffect(() => {
+    const remove = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' || event.repeat || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey ||
+          (!selectedNode && !selectedEdge && !selectedBus && !selectedPort && !selectedBranch)) return;
+      const editable = (element: EventTarget | null) => element instanceof Element &&
+        Boolean(element.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'));
+      if (event.composedPath().some(editable) || editable(document.activeElement) ||
+          document.querySelector('dialog[open], [role="dialog"][aria-modal="true"], [role="alertdialog"]')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void removeSelected();
+    };
+    window.addEventListener('keydown', remove);
+    return () => window.removeEventListener('keydown', remove);
+  }, [selectedNode, selectedEdge, selectedBus, selectedPort, selectedBranch, removeSelected]);
 
   function openRenameNode(id: string) {
     const current = topology.nodes.find((node) => node.id === id);
@@ -2479,10 +2715,20 @@ export function NetworkEditor({
 
   async function saveRelationship() {
     if (!relationship?.name.trim() || !relationship.sourceInterfaceName.trim() || !relationship.targetInterfaceName.trim()) return;
+    if (busChanged && (!busPreview || busPreview.bus !== relationship.bus)) return;
+    let connectionPlan: ReturnType<typeof planNetworkConnection> | undefined;
+    if (relationship.connection) {
+      try {
+        connectionPlan = planNetworkConnection(topology, relationship.connection.source, relationship.connection.target, relationship.edge.id);
+      } catch (error) {
+        setRelationshipError(error instanceof Error ? error.message : 'Die Anschlusszuordnung hat sich geändert.');
+        return;
+      }
+    }
     const sourceInterfaceName = relationship.sourceInterfaceName.trim();
     const targetInterfaceName = relationship.targetInterfaceName.trim();
     const edge: TopologyEdge = {
-      ...relationship.edge,
+      ...(connectionPlan?.edge ?? relationship.edge),
       name: relationship.name.trim(),
       sourceInterfaceName,
       targetInterfaceName,
@@ -2490,26 +2736,49 @@ export function NetworkEditor({
       description: relationship.description.trim() || undefined,
       direction: relationship.direction,
     };
-    const edges = relationship.isNew
+    const changedEdges = relationship.isNew
       ? [...topology.edges, edge]
       : topology.edges.map((item) => item.id === edge.id ? edge : item);
-    const nodes = topology.nodes.map((node) => ({
+    const connectionNodes = connectionPlan?.nodes ?? topology.nodes;
+    const interfaceNames = new Map<string, string>();
+    const renamedPorts = new Set<string>();
+    for (const side of ["source", "target"] as const) {
+      const node = connectionNodes.find(item => item.id === edge[side]);
+      const endpoint = node?.ports.find(port => port.id === edge[`${side}Port`]);
+      for (const port of node?.ports ?? []) {
+        if (port.id === endpoint?.id || (endpoint?.hardwareInterfaceId && port.hardwareInterfaceId === endpoint.hardwareInterfaceId)) {
+          const nextName = side === 'source' ? sourceInterfaceName : targetInterfaceName;
+          interfaceNames.set(port.id, nextName);
+          if (nextName !== endpoint?.name) renamedPorts.add(port.id);
+        }
+      }
+    }
+    const edges = changedEdges.map(item => {
+      const next = { ...item };
+      for (const side of ["source", "target"] as const) {
+        const name = interfaceNames.get(item[`${side}Port`]);
+        if (name) next[`${side}InterfaceName`] = name;
+      }
+      return next;
+    });
+    const nodes = connectionNodes.map((node) => ({
       ...node,
       ports: node.ports.map((port) => {
-        if (node.id === edge.source && port.id === edge.sourcePort) return { ...port, name: sourceInterfaceName };
-        if (node.id === edge.target && port.id === edge.targetPort) return { ...port, name: targetInterfaceName };
+        const name = interfaceNames.get(port.id);
+        if (name) return { ...port, name, ...(renamedPorts.has(port.id) ? {nameSource: "user" as const} : {}) };
         return port;
       }),
     }));
     const next = normalizePortSides({ ...topology, nodes, edges });
     setRelationshipSaving(true);
     setRelationshipError("");
-    onChange(next);
+    if (!busChanged) onChange(next);
     try {
-      const persisted = await onRelationshipsChange?.(next);
+      const persisted = await onRelationshipsChange?.(next, busChanged && busPreview
+        ? { network_id: busPreview.network_id, bus: busPreview.bus, plan_token: busPreview.token, edge } : undefined);
       if (persisted === false) throw new Error("Die Engineering-Relation konnte nicht gespeichert werden.");
       setSelectedEdge(edge.id);
-      setSelectedNode(null);
+      setSelectedNode(null); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
       setRelationship(null);
     } catch (error) {
       onChange(topology);
@@ -2520,6 +2789,11 @@ export function NetworkEditor({
   }
 
   function editRelationship(edge: TopologyEdge) {
+    if (deleting || layoutSaving || portSaving || relationshipSaving) return;
+    setRelationshipChoices(null);
+    setContextOverlay(null);
+    setMenu(null);
+    setBusTransferOpen(false);
     const from = topology.nodes.find((node) => node.id === edge.source);
     const to = topology.nodes.find((node) => node.id === edge.target);
     setRelationshipError("");
@@ -2533,6 +2807,37 @@ export function NetworkEditor({
       description: edge.description ?? "",
       direction: edge.direction ?? "BIDIRECTIONAL",
     });
+  }
+
+  function openBusName(busId: string) {
+    if (!onBusRename || deleting || layoutSaving || portSaving || relationshipSaving) return;
+    const bus = scene?.buses.find(item => item.id === busId);
+    if (bus) {setContextOverlay(null); setBusNameDraft({id: bus.id, name: bus.name});}
+  }
+
+  function editBusRelationships(busId: string, portId?: string) {
+    if (deleting || layoutSaving || portSaving || relationshipSaving) return;
+    const bus = scene?.buses.find(item => item.id === busId);
+    if (!bus) return;
+    const edges = topology.edges.filter(edge => bus.edgeIds.includes(edge.id)
+      && (!portId || edge.sourcePort === portId || edge.targetPort === portId));
+    if (edges.length === 1) editRelationship(edges[0]);
+    else if (edges.length > 1) {
+      setContextOverlay(null);
+      setMenu(null);
+      setRelationshipChoices({busName: bus.name, edgeIds: edges.map(edge => edge.id)});
+    }
+  }
+
+  function selectRelationshipBus(bus: BusType) {
+    if (!relationship) return;
+    const id = relationship.edge.physicalNetworkId;
+    const previousName = networkLabel(id, relationship.bus ?? relationship.edge.bus);
+    const nextName = networkLabel(id, bus);
+    setRelationship({ ...relationship, bus,
+      sourceInterfaceName: relationship.sourceInterfaceName === previousName ? nextName : relationship.sourceInterfaceName,
+      targetInterfaceName: relationship.targetInterfaceName === previousName ? nextName : relationship.targetInterfaceName });
+    setRelationshipError("");
   }
 
   const connectedPortIds = useMemo(() => new Set(
@@ -2555,7 +2860,7 @@ export function NetworkEditor({
     centralGatewayArchitectureRef.current = centralGatewayArchitecture;
   }, [centralGatewayArchitecture]);
   const preparedTopology = useMemo(() => {
-    if (!centralGatewayArchitecture || !primaryGatewayId) return topology;
+    if (topology.scene || !centralGatewayArchitecture || !primaryGatewayId) return topology;
     const primaryGateway = topology.nodes.find((node) => node.id === primaryGatewayId);
     if (!primaryGateway) return topology;
     const nextWidth = primaryGatewayManualSpan(topology, surfaceWidth, primaryGatewayId);
@@ -2604,7 +2909,10 @@ export function NetworkEditor({
   const topologyLayoutKey = useMemo(() => compactLayoutKey(cacheSignature), [cacheSignature]);
   const layoutSignature = useMemo(() => topologyLayoutSignature(effectiveTopology), [effectiveTopology]);
   const preparedEvaGroups = useMemo(
-    () => buildEvaGroups(preparedTopology, routingEntries),
+    () => preparedTopology.scene ? preparedTopology.scene.frames.map(frame => {
+      const members = new Map(preparedTopology.nodes.map(n=>[n.id,n]));
+      return {anchor: members.get(frame.id)!, processors: [], inputs: frame.memberIds.map(id=>members.get(id)!).filter(n=>n?.kind==="sensor"), outputs: frame.memberIds.map(id=>members.get(id)!).filter(n=>n?.kind==="actuator")};
+    }) : buildEvaGroups(preparedTopology, routingEntries),
     [preparedTopology, routingEntries],
   );
   const evaGroups = useMemo(() => {
@@ -2619,20 +2927,20 @@ export function NetworkEditor({
     }));
   }, [dragTopology, effectiveTopology.nodes, preparedEvaGroups]);
   const evaStable = useMemo(
-    () => Boolean(dragTopology) || (
+    () => Boolean(scene) || Boolean(dragTopology) || (
       effectiveTopology.nodes.length > 0
       && surfaceWidth > 0
       && !hasLayoutProblems(effectiveTopology, surfaceWidth, routingEntries, evaGroups)
     ),
-    [dragTopology, effectiveTopology, evaGroups, routingEntries, surfaceWidth],
+    [scene, dragTopology, effectiveTopology, evaGroups, routingEntries, surfaceWidth],
   );
   const evaClusters = useMemo(
-    () => evaClusterLayouts(effectiveTopology, routingEntries, evaGroups),
-    [effectiveTopology, evaGroups, routingEntries],
+    () => scene?.frames ?? evaClusterLayouts(effectiveTopology, routingEntries, evaGroups),
+    [scene, effectiveTopology, evaGroups, routingEntries],
   );
   const evaDomainClusters = useMemo(
-    () => evaDomainClusterLayouts(effectiveTopology, routingEntries, evaClusters),
-    [effectiveTopology, evaClusters, routingEntries],
+    () => scene?.clusters ?? evaDomainClusterLayouts(effectiveTopology, routingEntries, evaClusters),
+    [scene, effectiveTopology, evaClusters, routingEntries],
   );
   const wireClusters = useMemo<WireClusterLayout[]>(
     () => [...evaClusters, ...evaDomainClusters],
@@ -2683,7 +2991,7 @@ export function NetworkEditor({
     setContextOverlay({
       ...position,
       accent: busProfiles[port.bus].color,
-      title: `${port.name} Port`,
+      title: `${networkLabel(port.name, port.bus)} Port`,
       subtitle: node.name,
       rows: [
         { label: "Bus", value: busProfiles[port.bus].label },
@@ -2740,7 +3048,7 @@ export function NetworkEditor({
   }, [arrangeCurrentTopology]);
 
   useEffect(() => {
-    if (surfaceWidth <= 0 || topology.nodes.length < 2) return undefined;
+    if (topology.scene || surfaceWidth <= 0 || topology.nodes.length < 2) return undefined;
     let canceled = false;
     const restore = async () => {
       let cached: CachedNetworkLayout | null = null;
@@ -2769,7 +3077,7 @@ export function NetworkEditor({
   }, [onChange, structureSignature, surfaceWidth, topology.nodes.length, topologyLayoutKey]);
 
   useEffect(() => {
-    if (loadedLayoutKey !== topologyLayoutKey) return;
+    if (topology.scene || loadedLayoutKey !== topologyLayoutKey) return;
     if (drag || surfaceWidth <= 0 || topology.nodes.length < 2) return;
     if (arrangedStructureRef.current === structureSignature) return;
     arrangedStructureRef.current = structureSignature;
@@ -2777,7 +3085,7 @@ export function NetworkEditor({
   }, [arrangeCurrentTopology, drag, evaStable, loadedLayoutKey, structureSignature, surfaceWidth, topology.nodes.length, topologyLayoutKey]);
 
   useEffect(() => {
-    if (loadedLayoutKey !== topologyLayoutKey || drag) return undefined;
+    if (topology.scene || loadedLayoutKey !== topologyLayoutKey || drag) return undefined;
     if (surfaceWidth <= 0 || topology.nodes.length === 0) return undefined;
     const timeout = window.setTimeout(() => {
       const nodes = workflowLayoutNodes(effectiveTopology);
@@ -2788,16 +3096,19 @@ export function NetworkEditor({
   }, [drag, effectiveTopology, layoutSignature, loadedLayoutKey, surfaceWidth, topology.nodes.length, topologyLayoutKey]);
 
   const surfaceHeight = Math.max(
-    620,
+    scene?.height ?? 620,
     ...effectiveTopology.nodes.map((node) => node.y + nodeHeight(node) + CANVAS_EXTRA_SPACE),
   );
-  const layoutGuideWidth = horizontalLayoutWidth(effectiveTopology, surfaceWidth);
+  const layoutGuideWidth = scene?.width ?? horizontalLayoutWidth(effectiveTopology, surfaceWidth);
   const canvasWidth = Math.max(
     surfaceWidth + CANVAS_EXTRA_SPACE,
     layoutGuideWidth + CANVAS_EXTRA_SPACE,
     ...effectiveTopology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
-  const layoutStatus = centralGatewayArchitecture
+  const layoutStatus = scene ? {
+    className: "stable", label: layoutSaving ? "Ansicht wird gespeichert …" : "Gespeicherte Busansicht",
+    semantics: "persisted-physical-buses", title: "Gemeinsame physische Busse aus dem gespeicherten Projektstand",
+  } : centralGatewayArchitecture
     ? {
         className: "target",
         label: "Zielbild · Fixiert",
@@ -2993,6 +3304,7 @@ export function NetworkEditor({
     ));
   }, [drag, effectiveTopology.nodes, largeTopology, primaryGatewayId, selectedNode, visibleCanvasBounds]);
   const visibleRenderedEdges = useMemo(() => {
+    if (scene) return [];
     return effectiveTopology.edges.flatMap((edge) => {
       const from = nodesById.get(edge.source);
       const to = nodesById.get(edge.target);
@@ -3001,10 +3313,10 @@ export function NetworkEditor({
       if (!from || !to || !fromPort || !toPort) return [];
       return [{ edge, path: routedEdgePath(effectiveTopology, edge, from, fromPort, to, toPort, wireClusters) }];
     });
-  }, [effectiveTopology, nodesById, wireClusters]);
+  }, [scene, effectiveTopology, nodesById, wireClusters]);
 
   const editor = (
-    <div className={`net-editor ${largeTopology ? "large-topology" : ""} ${fullscreen ? "fullscreen" : ""}`}>
+    <div className={`net-editor ${scene ? "persisted-scene" : ""} ${largeTopology ? "large-topology" : ""} ${fullscreen ? "fullscreen" : ""}`}>
       <div className="net-toolbar">
         <div className="net-palette" role="group" aria-label="Geräte hinzufügen">
           {(Object.keys(kindLabels) as NodeKind[]).map((kind) => {
@@ -3049,6 +3361,12 @@ export function NetworkEditor({
           })}
         </div>
         <div className="net-toolbar-actions">
+          {scene && onLayoutChange && <button type="button" className="net-add" disabled={layoutSaving || deleting || portSaving || relationshipSaving || Boolean(drag)}
+            title="Buslinien und verbundene Anschlusspositionen automatisch führen. Gerätepositionen beibehalten."
+            onClick={() => {setLayoutSaving(true); setLayoutError(''); failedLayoutRef.current = null;
+              void onLayoutChange(topology, false, true).catch(error => setLayoutError(error instanceof Error ? error.message : 'Linienführung fehlgeschlagen.')).finally(() => setLayoutSaving(false));}}>Linien automatisch</button>}
+          {scene && onAssignmentChange && <button type="button" className="net-add" aria-pressed={lasso} onClick={()=>{setLasso(!lasso);setAssignmentSelection([]);setLayoutError('');}} title="Rechteck um Geräte oder Systemrahmen ziehen">{lasso?'Markieren beenden':'Lasso · Zuordnen'}</button>}
+          {selectedNode && onAssignmentChange && <button type="button" className="net-add" onClick={()=>setAssignmentSelection([selectedNode])}>Gerät zuordnen</button>}
           <div aria-label="Zoom" className="net-zoom-controls" role="group">
             <button aria-label="Verkleinern" disabled={zoom <= MIN_ZOOM} onClick={() => changeZoom(zoom - ZOOM_STEP)} title="Verkleinern" type="button">−</button>
             <button aria-label="Zoom auf 100 Prozent zurücksetzen" className="net-zoom-value" onClick={() => changeZoom(1)} title="Zoom zurücksetzen" type="button">{Math.round(zoom * 100)} %</button>
@@ -3072,15 +3390,29 @@ export function NetworkEditor({
             <i aria-hidden="true" />
             {layoutStatus.label}
           </span>
+          {onBusRename && scene && <button className="net-add" type="button"
+            disabled={(!selectedBus && !selectedBranch && !selectedRelationship?.physicalNetworkId) || deleting || layoutSaving || portSaving || relationshipSaving}
+            onClick={() => {const id = selectedBranch?.busId ?? selectedBus ?? selectedRelationship?.physicalNetworkId; if (id) openBusName(id);}}>Bus umbenennen</button>}
+          <button className="net-add" type="button"
+            disabled={(!selectedBus && !selectedBranch && !selectedEdge) || deleting || layoutSaving || portSaving || relationshipSaving}
+            onClick={() => {
+              if (selectedBranch) editBusRelationships(selectedBranch.busId, selectedBranch.portId);
+              else if (selectedBus) editBusRelationships(selectedBus);
+              else {
+                const edge = topology.edges.find(item => item.id === selectedEdge);
+                if (edge) editRelationship(edge);
+              }
+            }}>Verbindung bearbeiten</button>
           <button
             className="net-add danger"
-            disabled={!selectedNode && !selectedEdge}
-            onClick={removeSelected}
+            disabled={(!selectedNode && !selectedEdge && !selectedBus && !selectedPort && !selectedBranch) || deleting || layoutSaving || portSaving || relationshipSaving}
+            onClick={() => void removeSelected()}
+            title="Auswahl löschen (Entf)"
             type="button"
           >
-            Auswahl löschen
+            {deleting ? 'Wird gelöscht …' : 'Auswahl löschen'}
           </button>
-          {!centralGatewayArchitecture && (
+          {!scene && !centralGatewayArchitecture && (
             <button
               className="net-add net-eva-action"
               disabled={effectiveTopology.nodes.length < 2}
@@ -3095,11 +3427,16 @@ export function NetworkEditor({
       </div>
 
       <div
-        className="net-surface"
+        className={`net-surface${panning ? " is-panning" : ""}`}
         onContextMenu={(event) => event.preventDefault()}
-        onPointerDown={() => {
+        onPointerDown={(event) => {
+          if (event.button !== 0 || activeDragRef.current || (event.target as Element).closest("button, input, select, textarea, a, .net-node")) return;
+          event.preventDefault();
+          event.currentTarget.setPointerCapture(event.pointerId);
+          panRef.current = {pointerId:event.pointerId, x:event.clientX, y:event.clientY, left:event.currentTarget.scrollLeft, top:event.currentTarget.scrollTop};
+          setPanning(true);
           setSelectedNode(null);
-          setSelectedEdge(null);
+          setSelectedEdge(null); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
           setMenu(null);
           setAddMenu(null);
           setContextOverlay(null);
@@ -3111,6 +3448,7 @@ export function NetworkEditor({
           style={{ height: Math.max(960, surfaceHeight * zoom), width: Math.max(surfaceWidth, canvasWidth * zoom) }}
         >
           <div className="net-canvas" style={{ height: surfaceHeight, transform: `scale(${zoom})`, width: canvasWidth }}>
+          {lasso && <NetworkLasso topology={effectiveTopology} zoom={zoom} onSelect={ids=>{setLasso(false);if(ids.length)setAssignmentSelection(ids);else setLayoutError('Keine Geräte markiert. Bitte einen Bereich um Geräte oder Systemrahmen ziehen.');}}/>}
           <div className="net-domain-clusters">
             {renderedEvaDomainClusters.map((cluster) => (
               <div
@@ -3124,7 +3462,7 @@ export function NetworkEditor({
                 }}
               >
                 <span>{cluster.label}</span>
-                <div
+                {!scene && <div
                   aria-label={`${cluster.busLabel} mit ${domainBusJunctions.get(cluster.id)?.systems.length ?? 0} Systemknoten`}
                   className="net-domain-bus"
                   role="img"
@@ -3144,7 +3482,7 @@ export function NetworkEditor({
                       title={`${cluster.busLabel} ist mit dem zentralen Gateway verbunden`}
                     />
                   )}
-                </div>
+                </div>}
               </div>
             ))}
           </div>
@@ -3161,10 +3499,26 @@ export function NetworkEditor({
                 }}
               >
                 <button
-                  aria-label={`${cluster.label} verschieben`}
+                  aria-label={`Systemrahmen ${cluster.label} verschieben`}
                   className="net-eva-cluster-handle"
+                  onDoubleClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (!onFrameDeviceCreate || cluster.kind !== 'ecu' || layoutSaving || portSaving || relationshipSaving) return;
+                    setMenu(null);
+                    setAddMenu(null);
+                    setContextOverlay(null);
+                    setCreateInFrame({id: cluster.id, label: cluster.label});
+                  }}
+                  onKeyDown={(event) => {
+                    if ((event.key === 'Enter' || event.key === ' ') && onFrameDeviceCreate && cluster.kind === 'ecu' && !layoutSaving && !portSaving && !relationshipSaving) {
+                      event.preventDefault();
+                      setMenu(null);
+                      setCreateInFrame({id: cluster.id, label: cluster.label});
+                    }
+                  }}
                   onPointerDown={(event) => {
-                    if (event.button !== 0) return;
+                    if (event.button !== 0 || layoutSaving || portSaving || relationshipSaving) return;
                     event.preventDefault();
                     event.stopPropagation();
                     event.currentTarget.setPointerCapture(event.pointerId);
@@ -3187,9 +3541,10 @@ export function NetworkEditor({
                     activeDragRef.current = nextDrag;
                     setDrag(nextDrag);
                   }}
-                  title="Gruppe verschieben"
+                  title={`Systemrahmen ${cluster.label}: ziehen zum Verschieben; Doppelklick zum Hinzufügen von ECU, Sensor oder Aktor.`}
                   type="button"
                 >
+                  <small className="net-system-frame-label">Systemrahmen</small>
                   <strong>{cluster.label}</strong>
                   <span>{cluster.inputs} E</span>
                   <span>{cluster.processors} V</span>
@@ -3204,43 +3559,29 @@ export function NetworkEditor({
             preserveAspectRatio="none"
             viewBox={`0 0 ${canvasWidth} ${surfaceHeight}`}
           >
-          <defs>
-            {busOrder.map((bus) => (
-              <marker
-                id={wireMarkerId(bus, "end")}
-                key={`${bus}-end`}
-                markerHeight="7"
-                markerUnits="strokeWidth"
-                markerWidth="8"
-                orient="auto"
-                refX="7.5"
-                refY="0"
-                viewBox="0 -5 10 10"
-              >
-                <path d="M 0 -4 L 8 0 L 0 4 z" fill={busProfiles[bus].color} />
-              </marker>
-            ))}
-            {busOrder.map((bus) => (
-              <marker
-                id={wireMarkerId(bus, "start")}
-                key={`${bus}-start`}
-                markerHeight="7"
-                markerUnits="strokeWidth"
-                markerWidth="8"
-                orient="auto"
-                refX="0.5"
-                refY="0"
-                viewBox="0 -5 10 10"
-              >
-                <path d="M 8 -4 L 0 0 L 8 4 z" fill={busProfiles[bus].color} />
-              </marker>
-            ))}
-          </defs>
           <g
             className="net-wire-layer"
             data-wire-step={WIRE_ALIGNMENT_STEP.toFixed(1)}
             data-wire-offset-x="0.0"
           >
+            {scene?.buses.filter(bus => !visibleCanvasBounds || canvasRectangleIsVisible(bus.bounds, visibleCanvasBounds)).map(bus => (
+              <g key={bus.id} className={`net-physical-bus ${selectedBus === bus.id ? 'selected' : ''} ${connectionTarget?.kind === 'bus' && connectionTarget.busId === bus.id ? 'connection-target' : ''}`} data-physical-network-id={bus.id} data-bus-type={bus.technology} onDoubleClick={event => {event.stopPropagation(); editBusRelationships(bus.id);}}>
+                <title>{bus.name} · {busProfiles[bus.technology]?.label ?? bus.technology} · {bus.participantCount} Teilnehmer</title>
+                <path className="net-wire-hit net-bus-trunk-hit" d={bus.path} onPointerDown={event => beginBusDrag(event, bus)} />
+                <path className="net-bus-trunk" d={bus.displayPath ?? bus.path} stroke={busProfiles[bus.technology]?.color ?? "#9fea4e"} />
+                <text className="net-bus-label" onDoubleClick={onBusRename ? event => {event.stopPropagation(); openBusName(bus.id);} : undefined} onPointerDown={event => beginBusDrag(event, bus)} textAnchor="end" x={bus.label.x} y={bus.label.y} transform={`rotate(-90 ${bus.label.x} ${bus.label.y})`}>{bus.labelText ?? (bus.local ? `${busProfiles[bus.technology]?.label ?? bus.technology} ${bus.name.match(/(?: |\_)(\d+(?:\.\d+)?)$/)?.[1] ?? bus.id.match(/-S(\d+)$/)?.[1] ?? ""}` : networkLabel(bus.name))}</text>
+                {bus.branches.map(branch => {
+                  const edge = edgesByPortId.get(branch.portId)?.find(e => bus.edgeIds.includes(e.id));
+                  return <g key={`${branch.nodeId}:${branch.portId}`} data-connection-id={edge?.id} data-branch-node-id={branch.nodeId} onPointerDown={event=>{beginBusDrag(event,bus,branch);if(edge && !deleting){setSelectedEdge(edge.id);setSelectedNode(null);}}} onDoubleClick={event=>{event.stopPropagation(); editBusRelationships(bus.id, branch.portId);}}
+                    onPointerEnter={event=>{if(activeDragRef.current)return;const node=nodesById.get(branch.nodeId); const port=node?.ports.find(p=>p.id===branch.portId); if(node && port) showPortOverlay(node,port,event.clientX,event.clientY);}}
+                    onPointerLeave={()=>setContextOverlay(null)}>
+                    <path className="net-wire-hit net-bus-branch-hit" d={branchPath(branch.points)} />
+                    <path className={`net-bus-branch ${selectedBranch ? selectedBranch.busId === bus.id && selectedBranch.portId === branch.portId ? 'selected' : '' : edge && selectedEdge === edge.id ? 'selected' : ''}`} d={branch.displayPath ?? branchPath(branch.points)} stroke={busProfiles[bus.technology]?.color ?? "#9fea4e"} />
+                  </g>;
+                })}
+                {busJunctions(bus.branches).map((point,index)=><circle key={index} className="net-bus-junction" cx={point.x} cy={point.y} r="4" fill={busProfiles[bus.technology]?.color ?? "#9fea4e"} />)}
+              </g>
+            ))}
             {visibleRenderedEdges.map(({ edge, path }) => {
               return (
                 <g
@@ -3258,7 +3599,7 @@ export function NetworkEditor({
                       editRelationship(edge);
                       return;
                     }
-                    setSelectedEdge(edge.id);
+                    setSelectedEdge(edge.id); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
                     setSelectedNode(null);
                     setMenu(null);
                   }}
@@ -3267,13 +3608,20 @@ export function NetworkEditor({
                   <path
                     className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
                     d={path}
-                    markerEnd={wireMarkerEnd(edge)}
-                    markerStart={wireMarkerStart(edge)}
                     stroke={busProfiles[edge.bus].color}
                   />
                 </g>
               );
             })}
+            <g className="net-wire-bridges" aria-hidden="true">
+              {scene?.wireBridges?.map((bridge,index) => {
+                const bus = scene.buses.find(bus=>bus.id===bridge.busId);
+                return <g key={`${bridge.busId}:${index}`} data-bridge-bus-id={bridge.busId}>
+                  <path className="net-wire-bridge-mask" d={bridge.path}/>
+                  <path className="net-wire-bridge" d={bridge.path} stroke={busProfiles[bus?.technology ?? 'lin'].color}/>
+                </g>;
+              })}
+            </g>
             {drag?.mode === "wire" &&
               (() => {
                 const from = effectiveTopology.nodes.find((node) => node.id === drag.nodeId);
@@ -3292,18 +3640,16 @@ export function NetworkEditor({
 
           {renderedNodes.map((node) => {
           const height = nodeHeight(node);
-          const visiblePorts = largeTopology && selectedNode !== node.id
-            ? node.ports.filter((port) => connectedPortIds.has(port.id))
-            : node.ports;
+          const visiblePorts = node.ports;
           return (
             <div
-              className={`net-node ${node.kind} eva-${evaRole(node)} ${node.id === primaryGatewayId ? "eva-hub" : ""} ${selectedNode === node.id ? "selected" : ""}`}
+              className={`net-node ${node.kind} eva-${evaRole(node)} ${node.id === primaryGatewayId ? "eva-hub" : ""} ${selectedNode === node.id || assignmentSelection.includes(node.id) ? "selected" : ""}`}
               data-node-id={node.id}
               key={node.id}
               onContextMenu={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setSelectedNode(node.id);
+                setSelectedNode(node.id); setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
                 setSelectedEdge(null);
                 const point = pointFromEvent(event);
                 const { side, offset } = nearestPortPlacement(node, point);
@@ -3311,10 +3657,11 @@ export function NetworkEditor({
               }}
               onDoubleClick={() => openRenameNode(node.id)}
               onPointerDown={(event) => {
-                if (event.button !== 0) return;
+                if (event.button !== 0 || layoutSaving || portSaving || deleting) return;
                 event.preventDefault();
                 event.stopPropagation();
                 event.currentTarget.setPointerCapture(event.pointerId);
+                setSelectedPort(null); setSelectedBranch(null); setSelectedBus(null);
                 setMenu(null);
                 const point = pointFromEvent(event);
                 const nextDrag = { mode: "move" as const, nodeId: node.id, offsetX: point.x - node.x, offsetY: point.y - node.y };
@@ -3330,7 +3677,7 @@ export function NetworkEditor({
               }}
             >
               <span className="net-node-kind">
-                {kindLabels[node.kind]}{node.id === primaryGatewayId ? " · EVA-Zentrum" : ""}
+                {kindLabels[node.kind]}{node.id === primaryGatewayId && !scene ? " · EVA-Zentrum" : ""}
               </span>
               {node.engineeringId && (
                 <span
@@ -3340,11 +3687,12 @@ export function NetworkEditor({
                 />
               )}
               <strong className="net-node-name">{node.name}</strong>
+              {scene && <span className="net-node-bus-types">{[...new Set(node.ports.map(p=>busProfiles[p.bus]?.label ?? p.bus))].join(" · ")}</span>}
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
               {visiblePorts.map((port) => {
                 const portSide = port.side;
                 const compatible =
-                  drag?.mode === "wire" && drag.bus === port.bus && drag.nodeId !== node.id && !portIsConnected(port.id);
+                  connectionTarget?.kind === 'port' && connectionTarget.portId === port.id;
                 const sideLabel: Record<PortSide, string> = {
                   left: "links",
                   right: "rechts",
@@ -3356,35 +3704,39 @@ export function NetworkEditor({
                   : { [portSide]: -PORT_OFFSET, top: portTop(node, port) };
                 return (
                   <button
-                    aria-label={`${port.name}-Port ${sideLabel[portSide]}`}
-                    className={`net-port ${portSide} ${compatible ? "compatible" : ""} ${portIsConnected(port.id) ? "linked" : ""} ${drag?.mode === "move-port" && drag.portId === port.id ? "dragging" : ""}`}
+                    aria-label={`${networkLabel(port.name, port.bus)}-Port ${sideLabel[portSide]}`}
+                    aria-pressed={selectedPort?.portId === port.id}
+                    className={`net-port ${portSide} ${selectedPort?.portId === port.id ? "selected" : ""} ${compatible ? "compatible" : ""} ${portIsConnected(port.id) ? "linked" : ""} ${drag?.mode === "move-port" && drag.portId === port.id ? "dragging" : ""}`}
                     data-node-id={node.id}
                     data-port-bus={port.bus}
                     data-port-id={port.id}
                     key={port.id}
+                    onDoubleClick={event => event.stopPropagation()}
                     onBlur={() => setContextOverlay(null)}
                     onContextMenu={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      removePort(node.id, port.id);
+                      setSelectedPort({nodeId:node.id,portId:port.id}); setSelectedBranch(null); setSelectedNode(null); setSelectedEdge(null); setSelectedBus(null);
+                      void removeSelected({kind:'port',nodeId:node.id,portId:port.id});
                     }}
                     onFocus={(event) => {
                       const rect = event.currentTarget.getBoundingClientRect();
                       showPortOverlay(node, port, rect.right, rect.top);
                     }}
-                    onPointerEnter={(event) => showPortOverlay(node, port, event.clientX, event.clientY)}
+                    onPointerEnter={(event) => {if (!activeDragRef.current) showPortOverlay(node, port, event.clientX, event.clientY);}}
                     onPointerLeave={() => setContextOverlay(null)}
                     onPointerDown={(event) => {
-                      if (event.button !== 0) return;
+                      if (event.button !== 0 || layoutSaving || portSaving || relationshipSaving || deleting) return;
                       event.preventDefault();
                       event.stopPropagation();
                       event.currentTarget.setPointerCapture(event.pointerId);
                       setMenu(null);
                       setContextOverlay(null);
                       const point = pointFromEvent(event);
-                      const nextDrag = event.shiftKey || portIsConnected(port.id)
+                      setSelectedPort({nodeId:node.id,portId:port.id}); setSelectedBranch(null); setSelectedNode(null); setSelectedEdge(null); setSelectedBus(null);
+                      const nextDrag = event.shiftKey
                         ? { mode: "move-port" as const, nodeId: node.id, portId: port.id }
-                        : { mode: "wire" as const, nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y };
+                        : { mode: "wire" as const, nodeId: node.id, portId: port.id, bus: port.bus, x: point.x, y: point.y, startX: point.x, startY: point.y };
                       activeDragRef.current = nextDrag;
                       setDrag(nextDrag);
                     }}
@@ -3392,11 +3744,7 @@ export function NetworkEditor({
                       ...portStyle,
                       ["--bus" as string]: busProfiles[port.bus].color,
                     }}
-                    title={
-                      portIsConnected(port.id)
-                        ? `${port.name} · Ziehen zum Verschieben · Rechtsklick zum Entfernen`
-                        : `${port.name} · zu einem gleichfarbigen Port ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`
-                    }
+                    title={`${networkLabel(port.name, port.bus)} · Klicken und Entf zum Löschen · Ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`}
                     type="button"
                   />
                 );
@@ -3405,7 +3753,7 @@ export function NetworkEditor({
                 aria-label={`${node.name} Größe ändern`}
                 className="net-node-resize"
                 onPointerDown={(event) => {
-                  if (event.button !== 0) return;
+                  if (event.button !== 0 || layoutSaving) return;
                   event.preventDefault();
                   event.stopPropagation();
                   const point = pointFromEvent(event);
@@ -3451,11 +3799,14 @@ export function NetworkEditor({
                 }}
               >
                 <p className="net-menu-title">Port anlegen an „{node.name}"</p>
+                {portSaving && <p role="status">Port wird gespeichert …</p>}
+                {portError && <p role="alert">{portError}</p>}
                 {busOrder.map((bus) => (
                   <button
                     className="net-menu-item"
                     key={bus}
-                    onClick={() => addPort(node.id, bus)}
+                    disabled={portSaving || layoutSaving || relationshipSaving}
+                    onClick={() => void addPort(node.id, bus)}
                     role="menuitem"
                     style={{ ["--bus" as string]: busProfiles[bus].color }}
                     type="button"
@@ -3470,6 +3821,13 @@ export function NetworkEditor({
         </div>
       </div>
 
+      {portSaving && <p className="net-hint" role="status">Port wird im Modell gespeichert …</p>}
+      {portMessage && <p className="net-hint" role="status">{portMessage}</p>}
+      {connectionHint && <p className="net-hint net-connection-hint" role="status">{connectionHint}</p>}
+      {portError && !menu && <p className="net-hint" role="alert">{portError}</p>}
+      {deleting && <p className="net-hint" role="status">Auswahl wird gelöscht …</p>}
+      {deleteMessage && <p className="net-hint" role="status">{deleteMessage}</p>}
+      {deleteError && <p className="net-hint" role="alert">{deleteError}</p>}
       {contextOverlay && (
         <aside
           className="net-context-overlay"
@@ -3499,8 +3857,12 @@ export function NetworkEditor({
         </aside>
       )}
 
+      {layoutError && <p role="alert" className="net-scene-error">{layoutError} {failedLayoutRef.current && <button type="button" disabled={layoutSaving} onClick={()=>{if(onLayoutChange && failedLayoutRef.current) {setLayoutSaving(true); void onLayoutChange(failedLayoutRef.current).then(()=>{setLayoutError(""); failedLayoutRef.current = null;}).catch(error=>setLayoutError(error.message)).finally(()=>setLayoutSaving(false));}}}>Speichern erneut versuchen</button>}</p>}
+      {scene?.routingWarnings?.map(message => <p key={message} className="net-scene-error" role="status">{message}</p>)}
+      {scene && <p className="net-hint"><strong>Linien ziehen:</strong> senkrechte Buslinie seitlich, waagerechten Abzweig nach oben oder unten. Doppelklick auf Linien öffnet die Verbindung, auf Beschriftungen den Busnamen. Escape bricht das Verschieben ab. „Linien automatisch“ ordnet Leitungen und Anschlüsse neu.</p>}
       <p className="net-hint">
-        Karte ziehen zum Verschieben · Doppelklick auf Gerät zum Umbenennen · Doppelklick auf Verbindung zum Bearbeiten · <strong>Port zu einem gleichfarbigen Port ziehen</strong> zum Verdrahten · Shift + Port ziehen zum Versetzen · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Rechtsklick auf einen Port entfernt ihn.
+        <strong>Lasso · Zuordnen</strong>: Bereich mit gedrückter linker Maustaste markieren, Ziel wählen und bestätigen. Escape beendet das Markieren.{' '}
+        Freie Zeichenfläche mit linker Maustaste ziehen zum Navigieren · Karte ziehen zum Verschieben · Doppelklick auf Gerät zum Umbenennen · Doppelklick auf Verbindung zum Bearbeiten · <strong>Port zu einem passenden Port oder Bus ziehen</strong> zum Verdrahten · Buslinie auf einen freien Port ziehen zum Anschließen, sonst zum Verschieben · Shift + Port ziehen zum Versetzen · Rechtsklick auf einen Block legt einen Port an der Klickposition an · Port oder Linie anklicken und Entf drücken zum Löschen · Rechtsklick auf einen Port entfernt ihn.
       </p>
       {selectedRelationship && (
         <div className="net-relationship-summary">
@@ -3533,16 +3895,17 @@ export function NetworkEditor({
           <section
             aria-labelledby="net-rename-title"
             aria-modal="true"
-            className="net-rename-dialog"
+            className="net-rename-dialog net-device-dialog"
             role="dialog"
           >
             <header>
               <div>
-                <p className="eyebrow">Netzwerk-Node</p>
-                <h2 id="net-rename-title">Gerät umbenennen</h2>
+                <p className="eyebrow">Netzwerk-Gerät</p>
+                <h2 id="net-rename-title">Gerät und Ports</h2>
               </div>
               <button aria-label="Dialog schließen" onClick={() => setRename(null)} type="button">×</button>
             </header>
+            <div className="net-device-fields">
             <label>
               <span>Name</span>
               <input
@@ -3558,6 +3921,21 @@ export function NetworkEditor({
                 value={rename.name}
               />
             </label>
+            <section className="net-device-ports" aria-labelledby="net-device-ports-title">
+              <h3 id="net-device-ports-title">Ports <span>{devicePorts.length}</span></h3>
+              {devicePorts.length ? (
+                <table className="net-device-port-table" aria-labelledby="net-device-ports-title">
+                  <thead><tr><th scope="col">Name</th><th scope="col">Technik</th></tr></thead>
+                  <tbody>{devicePorts.map(port => (
+                    <tr key={port.hardwareInterfaceId || port.id}>
+                      <td>{port.name || 'Unbenannter Port'}</td>
+                      <td><span className="net-device-port-technology"><i aria-hidden="true" style={{backgroundColor: busProfiles[port.bus].color}} />{busProfiles[port.bus].label}</span></td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              ) : <p className="muted">Für dieses Gerät sind noch keine Ports angelegt.</p>}
+            </section>
+            </div>
             <footer>
               <button className="button secondary" onClick={() => setRename(null)} type="button">Abbrechen</button>
               <button className="button primary" disabled={!rename.name.trim()} onClick={saveRenamedNode} type="button">Speichern</button>
@@ -3565,8 +3943,49 @@ export function NetworkEditor({
           </section>
         </div>
       )}
+      {assignmentSelection.length>0 && onAssignmentChange && <NetworkAssignmentDialog topology={topology} nodeIds={assignmentSelection} onClose={()=>setAssignmentSelection([])} onApply={onAssignmentChange}/>}
+      {createInFrame && onFrameDeviceCreate && <NetworkFrameDeviceDialog frame={createInFrame} onClose={() => setCreateInFrame(null)} onCreate={onFrameDeviceCreate} />}
+      {busNameDraft && onBusRename && <NetworkBusNameDialog name={busNameDraft.name}
+        onClose={() => setBusNameDraft(null)} onSave={async name => {
+          const saved = await onBusRename(busNameDraft.id, name);
+          setRelationship(current => {
+            if (!current || current.isNew) return current;
+            const edge = saved.edges.find(item => item.id === current.edge.id);
+            if (!edge) return current;
+            const from = saved.nodes.find(node => node.id === edge.source);
+            const to = saved.nodes.find(node => node.id === edge.target);
+            return {...current, edge,
+              sourceInterfaceName: relationshipInterfaceName(edge.sourceInterfaceName, from, edge.sourcePort, edge.bus),
+              targetInterfaceName: relationshipInterfaceName(edge.targetInterfaceName, to, edge.targetPort, edge.bus)};
+          });
+        }} />}
+      {relationshipChoices && (
+        <div className="net-rename-backdrop" role="presentation" onPointerDown={event => {
+          if (event.target === event.currentTarget) setRelationshipChoices(null);
+        }}>
+          <section className="net-rename-dialog net-relationship-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="net-connection-choices-title" onPointerDown={event => event.stopPropagation()}
+            onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setRelationshipChoices(null); } }}>
+            <header>
+              <div><p className="eyebrow">{relationshipChoices.busName}</p><h2 id="net-connection-choices-title">Verbindung auswählen</h2></div>
+              <button autoFocus type="button" aria-label="Dialog schließen" onClick={() => setRelationshipChoices(null)}>×</button>
+            </header>
+            <p className="net-connection-choice-hint">Dieser Leitungsabschnitt gehört zu mehreren Verbindungen. Welche möchtest du bearbeiten?</p>
+            <div className="net-connection-choices">
+              {topology.edges.filter(edge => relationshipChoices.edgeIds.includes(edge.id)).map(edge => ({edge,
+                endpoints: `${topology.nodes.find(node => node.id === edge.source)?.name ?? edge.source} ↔ ${topology.nodes.find(node => node.id === edge.target)?.name ?? edge.target}`,
+              })).sort((a, b) => a.endpoints.localeCompare(b.endpoints, 'de', {numeric: true}) || a.edge.id.localeCompare(b.edge.id))
+                .map(({edge, endpoints}) => <button key={edge.id} type="button" onClick={() => editRelationship(edge)}>
+                  <strong>{endpoints}</strong><span>{edge.name || 'Verbindung bearbeiten'}</span>
+                  <small>{edge.sourceInterfaceName} · {edge.targetInterfaceName}</small>
+                </button>)}
+            </div>
+            <footer><button className="button secondary" type="button" onClick={() => setRelationshipChoices(null)}>Abbrechen</button></footer>
+          </section>
+        </div>
+      )}
       {relationship && (
-        <div className="net-rename-backdrop" onPointerDown={(event) => event.target === event.currentTarget && setRelationship(null)} role="presentation">
+        <div className="net-rename-backdrop" onPointerDown={(event) => !relationshipSaving && event.target === event.currentTarget && setRelationship(null)} role="presentation">
           <section
             aria-labelledby="net-relationship-title"
             aria-modal="true"
@@ -3582,9 +4001,9 @@ export function NetworkEditor({
               <button aria-label="Dialog schließen" disabled={relationshipSaving} onClick={() => setRelationship(null)} type="button">×</button>
             </header>
             <div className="net-relationship-endpoints">
-              <div><span>Quelle</span><strong>{topology.nodes.find((node) => node.id === relationship.edge.source)?.name ?? relationship.edge.source}</strong><small>{topology.nodes.find((node) => node.id === relationship.edge.source)?.ports.find((port) => port.id === relationship.edge.sourcePort)?.name ?? relationship.edge.sourcePort}</small></div>
+              <div><span>Quelle</span><strong>{topology.nodes.find((node) => node.id === relationship.edge.source)?.name ?? relationship.edge.source}</strong><small>{topology.nodes.find((node) => node.id === relationship.edge.source)?.ports.find((port) => port.id === relationship.edge.sourcePort)?.name ?? ""}</small></div>
               <span aria-hidden="true">→</span>
-              <div><span>Ziel</span><strong>{topology.nodes.find((node) => node.id === relationship.edge.target)?.name ?? relationship.edge.target}</strong><small>{topology.nodes.find((node) => node.id === relationship.edge.target)?.ports.find((port) => port.id === relationship.edge.targetPort)?.name ?? relationship.edge.targetPort}</small></div>
+              <div><span>Ziel</span><strong>{topology.nodes.find((node) => node.id === relationship.edge.target)?.name ?? relationship.edge.target}</strong><small>{topology.nodes.find((node) => node.id === relationship.edge.target)?.ports.find((port) => port.id === relationship.edge.targetPort)?.name ?? ""}</small></div>
             </div>
             <div className="net-relationship-fields">
               <label className="full-width"><span>Name</span><input autoFocus onChange={(event) => setRelationship({ ...relationship, name: event.target.value })} value={relationship.name} /></label>
@@ -3592,17 +4011,26 @@ export function NetworkEditor({
               <label><span>Richtung</span><select onChange={(event) => setRelationship({ ...relationship, direction: event.target.value as RelationshipDraft["direction"] })} value={relationship.direction}><option value="BIDIRECTIONAL">Bidirektional</option><option value="SOURCE_TO_TARGET">Quelle → Ziel</option><option value="TARGET_TO_SOURCE">Ziel → Quelle</option></select></label>
               <label><span>Quell-Interface</span><input onChange={(event) => setRelationship({ ...relationship, sourceInterfaceName: event.target.value })} value={relationship.sourceInterfaceName} /></label>
               <label><span>Ziel-Interface</span><input onChange={(event) => setRelationship({ ...relationship, targetInterfaceName: event.target.value })} value={relationship.targetInterfaceName} /></label>
-              <label><span>Bus</span><input readOnly value={busProfiles[relationship.edge.bus].label} /></label>
+              <label><span>Bustyp</span><select disabled={relationshipSaving || relationship.isNew || !relationship.edge.physicalNetworkId} onChange={(event) => selectRelationshipBus(event.target.value as BusType)} value={relationship.bus ?? relationship.edge.bus}>{busOrder.map(bus => <option key={bus} value={bus}>{busProfiles[bus].label}</option>)}</select></label>
+              {relationship.connection && <div className="full-width"><span>Zielbus</span><strong>{relationship.edge.physicalNetworkName}</strong></div>}
+              {onAssignmentChange && topology.scene && relationship.edge.physicalNetworkId && !relationship.isNew && <div className="net-transfer-entry"><span>Physischer Bus</span><strong>{topology.scene.buses.find(b => b.id === relationship.edge.physicalNetworkId)?.name ?? relationship.edge.physicalNetworkId}</strong>{onBusRename && <button className="button secondary" type="button" disabled={relationshipSaving || busChanged || relationshipModified} onClick={() => openBusName(relationship.edge.physicalNetworkId!)}>Bus umbenennen</button>}<button className="button secondary" type="button" disabled={relationshipSaving || busChanged || relationshipModified} onClick={() => setBusTransferOpen(true)}>Bus umhängen …</button>{(busChanged || relationshipModified) && <small>Änderungen an der Beziehung zuerst übernehmen.</small>}</div>}
+              {!relationship.edge.physicalNetworkId && <p className="full-width muted">Verbindung zuerst speichern, um den physischen Bustyp zu ändern.</p>}
+              {busChanged && <div className="full-width notice" role="status">{busPreviewError || (busPreview && busPreview.bus === relationship.bus ? <><strong>Buswechsel auf {busProfiles[relationship.bus!].label}</strong><p>{busPreview.networks.map(n => n.name).join(" · ")}</p><p>{busPreview.devices} Geräte · {busPreview.messages} Nachrichten · {busPreview.routes} Routen. Gemeinsam genutzte Nachrichten werden auf allen zugehörigen Bussen umgestellt. Betroffene Routen benötigen danach eine erneute Freigabe.</p></> : "Betroffene Busse und Nachrichten werden geprüft …")}</div>}
               <label className="full-width"><span>Beschreibung</span><textarea onChange={(event) => setRelationship({ ...relationship, description: event.target.value })} placeholder="Technischer Zweck, Randbedingungen oder Verantwortlichkeit" rows={3} value={relationship.description} /></label>
             </div>
-            {relationshipError && <div className="notice error net-relationship-error">{relationshipError}</div>}
+            {relationshipError && <div className="notice error net-relationship-error" role="alert">{relationshipError}</div>}
             <footer>
               <button className="button secondary" disabled={relationshipSaving} onClick={() => setRelationship(null)} type="button">Abbrechen</button>
-              <button className="button primary" disabled={relationshipSaving || !relationship.name.trim() || !relationship.sourceInterfaceName.trim() || !relationship.targetInterfaceName.trim()} onClick={() => void saveRelationship()} type="button">{relationshipSaving ? "Wird gespeichert …" : "Beziehung übernehmen"}</button>
+              <button className="button primary" disabled={relationshipSaving || (busChanged && (!busPreview || busPreview.bus !== relationship.bus || Boolean(busPreviewError))) || !relationship.name.trim() || !relationship.sourceInterfaceName.trim() || !relationship.targetInterfaceName.trim()} onClick={() => void saveRelationship()} type="button">{relationshipSaving ? "Wird gespeichert …" : "Beziehung übernehmen"}</button>
             </footer>
           </section>
         </div>
       )}
+      {relationship && busTransferOpen && onAssignmentChange && <NetworkBusTransferDialog topology={topology} edge={relationship.edge}
+        onClose={() => setBusTransferOpen(false)} onApply={async request => {
+          await onAssignmentChange(request);
+          setBusTransferOpen(false); setRelationship(null); setSelectedEdge(null);
+        }} />}
     </div>
   );
 

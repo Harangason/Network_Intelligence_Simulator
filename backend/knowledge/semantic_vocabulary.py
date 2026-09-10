@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+from functools import lru_cache
 from unicodedata import normalize
 
 
@@ -18,17 +19,44 @@ _GERMAN_TRANSLITERATION = str.maketrans({
 })
 
 
+_COMPOUND_PARTS = frozenset('fahrwerk fahrdynamik fahrer beifahrer sitz tuer tuere fond links rechts vorne hinten daempfer regelung steuerung brems bremse lenkung hinterachs allrad anhaenger motor elektro abgas nachbehandlung getriebe kraftstoff reifen druck kontrolle bordnetz management batterie energie versorgung kuehl mittel kreislauf oel temperatur innen aussen licht raum wischer heck klappe schiebe dach assistenz ultraschall schalt ausgang stellglied erfassung zustand befehl status funktion signal sensor controller actuator front rear left right upper lower engine electric oil coolant exhaust gas temperature suspension travel damper position wheel speed load angle torque acceleration pressure brake tire seatbelt seat door radar lidar camera voltage current battery fuel level throttle turbo boost transmission clutch gear selector cabin ambient light rain cell min max urea valve egr intake air yaw pitch roll rate longitudinal lateral vertical control body comfort power train inverter charging charge thermal heating cooling axle bearing bogie vibration traction diagnostic gateway input output data health quality mode robot motion arm conveyor belt spindle pump room floor hvac water tank powertrain system sound dc link accelerator pedal washer fluid'.split())
+_COMPOUND_PARTS = _COMPOUND_PARTS | {'bremsen', 'sensorik', 'rotor', 'propeller', 'drohne', 'drone',
+    'oben', 'unten', 'mitte', 'center', 'centre', 'etage', 'halle', 'zelle', 'gebaeude'}
+_SORTED_PARTS = sorted(_COMPOUND_PARTS, key=lambda part: (-len(part), part))
+
+@lru_cache(maxsize=4096)
+def _compound_tokens(word: str) -> tuple[str, ...]:
+    if word in _COMPOUND_PARTS:
+        return (word,)
+    @lru_cache(maxsize=None)
+    def split(offset):
+        if offset == len(word):
+            return ()
+        for part in _SORTED_PARTS:
+            if word.startswith(part, offset):
+                tail = split(offset + len(part))
+                if tail is not None:
+                    return (part, *tail)
+        return None
+    return split(0) or (word,)
+
+
 def normalize_engineering_text(value: str) -> str:
     """Normalizes German text, identifiers and CamelCase into stable words."""
 
-    text = str(value).translate(_GERMAN_TRANSLITERATION)
-    text = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", text)
+    text = re.sub(r"([A-ZÄÖÜ]+)([A-ZÄÖÜ][a-zäöüß])", r"\1 \2", str(value))
+    text = re.sub(r"([a-zäöüß0-9])([A-ZÄÖÜ])", r"\1 \2", text).translate(_GERMAN_TRANSLITERATION)
     text = normalize("NFKD", text).encode("ascii", "ignore").decode("ascii").lower()
     return " ".join(re.findall(r"[a-z0-9]+", text))
 
 
 def engineering_tokens(value: str) -> list[str]:
-    return [token for token in normalize_engineering_text(value).split() if len(token) > 1]
+    return [part for token in normalize_engineering_text(value).split() if len(token) > 1 for part in _compound_tokens(token)]
+
+
+def engineering_phrase_match(value: str, phrase: str) -> bool:
+    tokens, expected = engineering_tokens(value), engineering_tokens(phrase)
+    return bool(expected) and any(tokens[i:i + len(expected)] == expected for i in range(len(tokens)))
 
 
 @dataclass(frozen=True)
@@ -39,6 +67,11 @@ class SemanticConcept:
 
 
 ENGINEERING_CONCEPTS = (
+    SemanticConcept("domain:seat", ("fahrersitz", "beifahrersitz", "seat"), 2.8),
+    SemanticConcept("domain:chassis", ("fahrwerk", "daempfer", "damper", "suspension", "federweg"), 2.8),
+    SemanticConcept("domain:exhaust", ("abgas", "exhaust", "egr", "urea"), 2.8),
+    SemanticConcept("domain:engine", ("motorsteuerung", "engine", "oil temperature", "oeltemperatur"), 2.8),
+
     SemanticConcept(
         "intent:relation_mutation",
         (

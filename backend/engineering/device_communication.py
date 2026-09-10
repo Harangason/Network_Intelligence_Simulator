@@ -5,6 +5,50 @@ ECU_STATES = {'OFF': 0, 'INIT': 1, 'READY': 2, 'ACTIVE': 3, 'DEGRADED': 4, 'ERRO
 EXECUTION_STATES = {'IDLE': 0, 'ACCEPTED': 1, 'EXECUTING': 2, 'COMPLETED': 3, 'FAILED': 4}
 
 
+def complete_new_controller_status(changes):
+    """Give newly proposed controllers the same status contract as the wizard.
+
+    Used by the function and camera generators. Existing hardware and its
+    reviewed communications remain outside this completion step.
+    """
+    created = [c for c in changes if c.get('action', 'CREATE') == 'CREATE']
+    for node in [c for c in created if c['object_type'] == 'HardwareNode']:
+        data = node['data']
+        profile = DeviceClassificationRegistry().resolve_profile(
+            name=data['name'], device_type=data['device_type'], device_class=data.get('device_class'))
+        if not profile.requires_status_model:
+            continue
+        node_ref = '$' + node['local_ref']
+        function = next((c for c in created if c['object_type'] == 'Function'
+                         and c['data'].get('hardware_node_id') == node_ref), None)
+        if function is None:
+            continue  # The ordinary validator reports the missing function.
+        function_ref = '$' + function['local_ref']
+        logical = next((c for c in created if c['object_type'] == 'Interface'
+                        and c['data'].get('function_id') == function_ref), None)
+        base = node['local_ref'] + '-status'
+        if logical is None:
+            logical = {'object_type': 'Interface', 'local_ref': base + '-logical', 'data': {
+                'name': data['name'] + ' Status', 'function_id': function_ref, 'interface_type': 'CAN_FD'}}
+            changes.append(logical)
+        technology = logical['data']['interface_type']
+        physical = next((c for c in created if c['object_type'] == 'HardwareNetworkInterface'
+                         and c['data'].get('hardware_node_id') == node_ref
+                         and c['data'].get('technology') == technology), None)
+        if physical is None:
+            physical = {'object_type': 'HardwareNetworkInterface', 'local_ref': base + '-port', 'data': {
+                'name': data['name'] + ' Status', 'hardware_node_id': node_ref,
+                'technology': technology, 'channel_index': 1}}
+            changes.append(physical)
+        changes.append({'object_type': 'Message', 'local_ref': base + '-message', 'data': {
+            'name': data['name'] + ' Status', 'interface_id': '$' + logical['local_ref'],
+            'hardware_interface_id': '$' + physical['local_ref'], 'direction': 'tx', 'cycle_ms': 100, 'dlc': 1,
+            'configuration': {'generation_role': 'DEVICE_STATUS', 'requires_hardware_adaptation': True,
+                              'transport_unit': {'producer_ref': node_ref}}}})
+    complete_new_actuator_messages(changes, {kind: [] for kind in
+        ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface', 'Message', 'Signal')})
+
+
 def actuator_command_template(node):
     """Explicit generic simulator roles only; never guess arbitrary device commands."""
     name = str(node.get('name') or '')

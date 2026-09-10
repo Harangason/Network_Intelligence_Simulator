@@ -119,17 +119,22 @@ function companionSignal(
   overrides: Partial<ExtractedEngineeringChain>,
 ): ExtractedEngineeringChain {
   const base = identifier(chain.hardware_name);
-  return {
+  const result = {
     ...chain,
     signal_name: `${base}${suffix}`,
     signal_display_name: `${base}${suffix}`,
     start_bit: 0,
     ...overrides,
-    configuration: {
-      ...(chain.configuration ?? {}),
-      generation_role: suffix.toUpperCase(),
-    },
   };
+  // Companion signals have their own domain and encoding, never the parent's.
+  const metadata = signalArchitectureMetadata({ signalName: result.signal_name, hardwareName: result.hardware_name,
+    interfaceType: result.interface_type, cycleMs: result.cycle_ms, dataType: result.data_type,
+    lengthBits: result.length_bits, startBit: 0, byteOrder: "little_endian", factor: result.factor,
+    offset: result.offset_value, unit: result.unit, minValue: result.min_value, maxValue: result.max_value });
+  return { ...result, ...metadata, semantic: overrides.semantic ?? metadata.semantic,
+    data: overrides.data ?? metadata.data,
+    configuration: { ...chain.configuration, ...metadata.configuration, generation_role: suffix.toUpperCase() } };
+
 }
 
 /**
@@ -317,7 +322,7 @@ function estimateMessageLoadPercent(interfaceType: string, payloadBytes: number,
     return (frameBits / 500_000) / cycleSeconds * 100;
   }
   if (technology.includes("lin")) {
-    return ((34 + payloadBytes * 10) / 19_200) / cycleSeconds * 100;
+    return ((34 + (payloadBytes + 1) * 10) / 19_200) / cycleSeconds * 100;
   }
   if (technology.includes("ethernet") || technology.includes("someip")) {
     const wireBytes = Math.max(84, payloadBytes + 74);
@@ -394,6 +399,8 @@ export function packEngineeringChains(
       }
       chain.message_name = message.name;
       chain.start_bit = message.usedBits;
+      chain.configuration = { ...chain.configuration, start_bit: chain.start_bit, bit_length: chain.length_bits,
+        factor: chain.factor, offset: chain.offset_value, raw_datatype: chain.data_type, signed: chain.data_type === "signed" };
       message.usedBits += signalBits;
       const dlc = validPayloadBytes(chain.interface_type, Math.ceil(message.usedBits / 8));
       message.dlc = dlc ?? maxPayloadBytes(chain.interface_type);
@@ -458,6 +465,8 @@ type SignalArchitectureInput = {
 };
 
 function generatedSignalSemanticType(input: SignalArchitectureInput) {
+  // Physical quantity wins over words such as Status or Quality in a name.
+  if (input.unit && !["code", "bool", "boolean", "enum", "state", "not_applicable", "1"].includes(input.unit.toLowerCase())) return "NUMERIC";
   const key = normalized(`${input.signalName} ${input.hardwareName} ${input.unit ?? ""}`);
   if ((input.lengthBits === 1 || (input.minValue === 0 && input.maxValue === 1)) && /status|flag|schaltausgang|stellglied|aktiv|enable|boolean/.test(key)) {
     return "BOOLEAN";
@@ -497,8 +506,8 @@ function stateDomain(input: SignalArchitectureInput) {
   return {
     enum_values: enumValues,
     allowed_values: Object.keys(enumValues),
-    reserved_values: [4, 5, 6, 7],
-    invalid_values: [15],
+    reserved_values: [4, 5, 6],
+    invalid_values: [7],
     default_value: "OK",
     resolution: 1,
   };
@@ -526,7 +535,7 @@ function signalArchitectureMetadata(input: SignalArchitectureInput) {
           resolution: input.factor,
           allowed_values: [],
           enum_values: {},
-          invalid_values: input.maxValue == null ? [] : [input.maxValue + input.factor],
+          invalid_values: [],
           reserved_values: [],
           default_value: input.minValue != null && input.maxValue != null && input.minValue <= 0 && input.maxValue >= 0 ? 0 : input.minValue ?? null,
         };
@@ -537,7 +546,7 @@ function signalArchitectureMetadata(input: SignalArchitectureInput) {
       category: normalized(input.hardwareName),
       meaning: `${input.signalName} beschreibt ${input.hardwareName}.`,
       unit: input.unit ?? (isNumeric ? "" : "not_applicable"),
-      generated_by: "engineering-specification-parser-v2",
+      generated_by: "engineering-specification-parser-v3",
       assumptions: isNumeric ? [] : ["Diskretes Signal wurde als explizite Value-Domain modelliert."],
     },
     data: valueDomain,
@@ -1347,8 +1356,13 @@ function protocolFrom(text: string) {
   return "CAN";
 }
 
+function withoutPlanningLimits(text: string) {
+  // Listing available settings does not select those protocols for the model.
+  return text.replace(/^- Bus-Teilnehmergrenzen:[^\r\n]*(?:\r?\n|$)/gm, "");
+}
+
 export function extractCommunicationSystems(text: string) {
-  const key = normalized(text);
+  const key = normalized(withoutPlanningLimits(text));
   const systems: string[] = [];
   if (/\blin\b/.test(key)) systems.push("LIN");
   if (/\bcan fd\b|\bcanfd\b/.test(key)) systems.push("CAN_FD");
@@ -1589,6 +1603,7 @@ export function extractEngineeringSpecification(
   domainOverride?: string,
   completenessFirst = false,
 ): ExtractedEngineeringSpecification {
+  text = withoutPlanningLimits(text);
   const lines = specificationBody(text).split(/\r?\n/);
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));

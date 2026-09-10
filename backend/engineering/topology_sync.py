@@ -26,6 +26,7 @@ NODE_KIND_TO_DEVICE_TYPE = {
 BUS_TO_INTERFACE_TYPE = {
     "can": "CAN",
     "can_fd": "CAN_FD",
+    "can_xl": "CAN_XL",
     "lin": "LIN",
     "automotive_ethernet": "Ethernet",
     "flexray": "FlexRay",
@@ -432,10 +433,28 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                     capabilities["topology_port_id"] = linked_port_ids[0]
                 else:
                     capabilities["topology_port_ids"] = linked_port_ids
+                # Several canvas anchors can represent the same physical channel.
+                # Custom names stay independent; inherited names follow their network.
+                channel_names = {
+                    str(requested_interface_names.get(str(port.get("id"))) or port.get("name") or "").strip()
+                    for port in raw_ports
+                    if str(port.get("id")) in linked_port_ids
+                } - {""}
+                if len(channel_names) > 1:
+                    raise EngineeringValidationError(
+                        f"Widerspruechliche Namen fuer denselben physischen Anschluss an {name!r}."
+                    )
+                channel_name = next(iter(channel_names), hardware_interface["name"])
+                # Explicit interface edits break name inheritance, including clients
+                # predating nameSource. Saving unrelated fields keeps the binding.
+                if channel_name != hardware_interface["name"] or any(
+                    port.get("nameSource") == "user" for port in raw_ports if str(port.get("id")) in linked_port_ids
+                ):
+                    capabilities["name_source"] = "user"
+                    capabilities.pop("name_network_id", None)
                 hardware_interface = _update_if_changed(
-                    "HardwareNetworkInterface",
-                    hardware_interface,
-                    {"capabilities": capabilities},
+                    "HardwareNetworkInterface", hardware_interface,
+                    {"capabilities": capabilities, "name": channel_name},
                 )
                 claimed_interface_ports[str(hardware_interface["id"])] = port_id
                 interface_by_port[port_id] = {
@@ -516,7 +535,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                         **configuration,
                     }
                 }
-                if kind == "gateway" and requested_interface_names.get(port_id):
+                if requested_interface_names.get(port_id):
                     reused_changes["name"] = port_name
                 interface = _update_if_changed(
                     "Interface",

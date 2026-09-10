@@ -62,6 +62,7 @@ ADDRESS_STATUSES = ("UNASSIGNED", "PROPOSED", "ASSIGNED", "CONFLICT", "RESERVED"
 INTERFACE_TYPES = (
     "CAN",
     "CAN_FD",
+    "CAN_XL",
     "LIN",
     "FlexRay",
     "Ethernet",

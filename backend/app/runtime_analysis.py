@@ -113,6 +113,9 @@ def analyze_runtime_trace(
 
     network_metrics: list[dict[str, Any]] = []
     for network_id, items in by_network.items():
+        # Several logical consumers observe one physical broadcast. Preserve
+        # their route evidence, but count serialized bus occupancy only once.
+        items = [item for item in items if not item.get("shared_transmission_observation")]
         network_definition = network_definitions.get(network_id, {})
         senders = _participant_names([item.get("sender_hardware") or item.get("sender") for item in items], hardware_names)
         receivers = _participant_names(

@@ -12,6 +12,9 @@ if (process.env.NODE_ENV === "production") {
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_NETWORKIS_BUILD_ID: frontendBuildId },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // Large, atomic engineering applies share the bounded agent request budget.
+  // Next's 30-second default can otherwise discard an already committed reply.
+  experimental: { proxyTimeout: 180_000 },
   distDir: configuredDistDir ?? ".next-networkis",
   turbopack: {
     root: process.cwd(),

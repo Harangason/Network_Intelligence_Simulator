@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CommunicationSizingPanel } from "./communication-sizing-panel";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   calculateCapacity,
@@ -49,7 +50,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [scenarioBitrate, setScenarioBitrate] = useState("");
-  const [scenarioBurst, setScenarioBurst] = useState("1.25");
+  const [scenarioBurst, setScenarioBurst] = useState("1.5");
   const [scenarioQueuePolicy, setScenarioQueuePolicy] = useState("FIFO");
   const [scenario, setScenario] = useState<CapacityResults | null>(null);
   const [scenarioImpact, setScenarioImpact] = useState<CapacityImpact | null>(null);
@@ -190,6 +191,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
       )}
       {scenario && <div className="workflow-blocker info"><strong>What-if-Szenario</strong><span>Nur Vergleich, Quelldaten bleiben unverändert.</span><button className="button primary tiny" disabled={busy} onClick={() => void applyScenario()} type="button">Auf Draft anwenden</button></div>}
       {error && <div className="notice error">{error}</div>}
+      <CommunicationSizingPanel />
 
       <div className="analysis-scenario-row">
         <label>
@@ -197,7 +199,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
           <input inputMode="numeric" onChange={(event) => setScenarioBitrate(event.target.value)} placeholder="aktuellen Wert verwenden" value={scenarioBitrate} />
         </label>
         <label>
-          <span>Burst-Faktor</span>
+          <span>Stress-Faktor für Szenario</span>
           <input min="1" onChange={(event) => setScenarioBurst(event.target.value)} step="0.05" type="number" value={scenarioBurst} />
         </label>
         <label><span>Queue Policy</span><select onChange={(event) => setScenarioQueuePolicy(event.target.value)} value={scenarioQueuePolicy}><option>FIFO</option><option>STRICT_PRIORITY</option><option>WRR</option><option>TAS</option><option>CBS</option></select></label>
@@ -208,10 +210,11 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
 
       {shown ? (
         <>
+          <p>Ø Load beschreibt den nominalen Busbedarf. Peak und Stresslast sind rechnerische Varianten mit Faktor {shown.overview.peak_factor ?? 1.15} und {shown.overview.burst_factor ?? 1.5}; keine gleichzeitig sendenden Teilnehmer und keine Messwerte.</p>
           <div className="metric-strip">
             <Metric label="Peak Load" value={`${shown.overview.max_peak_load_percent.toFixed(2)} %`} />
             <Metric label="Kapazitätsreserve" value={`${shown.overview.minimum_capacity_reserve_percent.toFixed(2)} %`} />
-            <Metric label="Worst E2E" value={`${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms`} />
+            <Metric label="E2E-Antwortgrenze" value={shown.overview.timing_verified ? `${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms` : "Nicht nachgewiesen"} />
             <Metric label="Netze / Routen" value={`${shown.overview.network_count} / ${shown.overview.route_count}`} />
             <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
           </div>
@@ -240,10 +243,10 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
             <div className="analysis-sort-row"><label htmlFor="capacity-network-sort">Sortierung</label><select id="capacity-network-sort" onChange={(event) => { setNetworkSort(event.target.value as typeof networkSort); setSelectedNetworkId(null); }} value={networkSort}><option value="burst">Burst Load</option><option value="reserve">Geringste Reserve</option><option value="latency">Worst E2E</option></select></div>
             <NetworkTable key={networkSort} items={sortedNetworks} routes={shown.routes} onSelect={setSelectedNetworkId} selectedId={selectedNetworkId} sourceVersions={sourceVersions} />
           </>}
-          {view === "messages" && <MessageTable items={shown.messages} />}
-          {view === "routes" && <RouteTable items={shown.routes} />}
+          {view === "messages" && <MessageTable items={shown.messages} networks={shown.networks} />}
+          {view === "routes" && <RouteTable items={shown.routes} networks={shown.networks} />}
           {view === "timing" && <TimingAnalysis results={shown} />}
-          {view === "critical" && <RouteTable items={critical} />}
+          {view === "critical" && <RouteTable items={critical} networks={shown.networks} />}
           {view === "gateways" && (
             shown.gateways.length ? <PaginatedResults items={shown.gateways} label="Gateways">{(entries) => <div className="analysis-list">
               {entries.map((gateway, index) => (
@@ -274,6 +277,11 @@ function emptyWarningInfo(): ViewWarningInfo {
 function addWarning(info: ViewWarningInfo, view: View, reason: string) {
   info[view].count += 1;
   if (!info[view].reasons.includes(reason)) info[view].reasons.push(reason);
+}
+
+function capacityNetworkName(item: { network_id?: unknown; network_name?: unknown }, networks: CapacityNetwork[] = []) {
+  const network = networks.find((candidate) => candidate.network_id === item.network_id);
+  return String(network?.network_name || item.network_name || item.network_id || "—");
 }
 
 function readableCapacityFinding(message: string) {
@@ -313,8 +321,8 @@ function buildCapacityWarningInfo(
   for (const network of results.networks) {
     if (network.status !== "NORMAL" || network.target_status === "EXCEEDED") {
       const target = network.target_bus_load_percent == null ? "" : ` Ziel ${network.target_bus_load_percent.toFixed(2)} %`;
-      addWarning(info, "networks", `${network.network_id}: ${network.status}, Burst ${network.burst_load_percent.toFixed(2)} %.${target}`);
-      addWarning(info, "overview", `${network.network_id} verursacht Netz-Warnung.`);
+      addWarning(info, "networks", `${capacityNetworkName(network)}: ${network.status}, Burst ${network.burst_load_percent.toFixed(2)} %.${target}`);
+      addWarning(info, "overview", `${capacityNetworkName(network)} verursacht Netz-Warnung.`);
     }
   }
 
@@ -365,6 +373,19 @@ function buildCapacityWarningInfo(
       addWarning(info, "overview", affectedLabels
         ? `Workflowstatus ${effectiveStatus}: Ursache in ${affectedLabels} sichtbar.`
         : `Workflowstatus ${effectiveStatus}: Kein konkreter Capacity-Befund im Ergebnis enthalten; Berechnung und Workflow-Quelle synchronisieren.`);
+    }
+  }
+  // Stored snapshots can still contain technical IDs in their finding text.
+  // Resolve complete IDs against this snapshot without changing stored keys.
+  const names = new Map(results.networks.filter((network) => network.network_id && network.network_name)
+    .map((network) => [network.network_id, capacityNetworkName(network)]));
+  if (names.size) {
+    const identifiers = [...names.keys()].sort((a, b) => b.length - a.length)
+      .map((identifier) => identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp(`(^|[^\\w-])(${identifiers.join("|")})(?![\\w-])`, "g");
+    for (const view of CAPACITY_VIEWS) {
+      info[view].reasons = info[view].reasons.map((reason) => reason.replace(pattern,
+        (_match, prefix: string, identifier: string) => `${prefix}${names.get(identifier)}`));
     }
   }
   return info;
@@ -516,15 +537,15 @@ function CapacityProposal({ proposal, index }: { proposal: Record<string, unknow
 function NetworkTable({ items, routes, onSelect, selectedId, sourceVersions }: { items: CapacityResults["networks"]; routes: CapacityResults["routes"]; onSelect: (id: string | null) => void; selectedId: string | null; sourceVersions: Record<string, number> | null }) {
   if (!items.length) return <EmptyAnalysis text="Keine Netze mit zugeordneten Routen vorhanden." />;
   return (
-    <PaginatedResults items={items} label="Netze" onPageChange={() => onSelect(null)}>{(entries) => <div className="analysis-table-wrap"><table className="analysis-table capacity-network-table"><thead><tr><th>Netz</th><th>Technologie</th><th>Ø Load</th><th>Peak</th><th>Reserve</th><th>Worst E2E</th><th>Status</th></tr></thead><tbody>
+    <PaginatedResults items={items} label="Netze" onPageChange={() => onSelect(null)}>{(entries) => <div className="analysis-table-wrap"><table className="analysis-table capacity-network-table"><thead><tr><th>Netz</th><th>Technologie</th><th>Ø Load</th><th>Peak</th><th>Reserve</th><th>Bus-Antwortgrenze</th><th>Status</th></tr></thead><tbody>
       {entries.map((item) => {
         const expanded = selectedId === item.network_id;
         const detailId = `capacity-network-${item.network_id}`;
         const toggle = () => onSelect(expanded ? null : item.network_id);
         return <Fragment key={item.network_id}>
           <tr className={`capacity-network-row${expanded ? " selected" : ""}`} onClick={toggle}>
-            <td><button aria-controls={expanded ? detailId : undefined} aria-expanded={expanded} className="capacity-network-toggle" onClick={(event) => { event.stopPropagation(); toggle(); }} title={expanded ? "Netzdetails schließen" : "Netzdetails öffnen"} type="button"><span aria-hidden="true">{expanded ? "▾" : "▸"}</span><strong>{item.network_id}</strong></button></td>
-            <td>{item.protocol}</td><td>{item.average_load_percent.toFixed(2)} %</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.capacity_reserve_percent.toFixed(2)} %</td><td>{item.worst_end_to_end_latency_ms.toFixed(3)} ms</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td>
+            <td><button aria-controls={expanded ? detailId : undefined} aria-expanded={expanded} className="capacity-network-toggle" onClick={(event) => { event.stopPropagation(); toggle(); }} title={expanded ? "Netzdetails schließen" : "Netzdetails öffnen"} type="button"><span aria-hidden="true">{expanded ? "▾" : "▸"}</span><strong>{capacityNetworkName(item)}</strong></button></td>
+            <td>{item.protocol}</td><td>{item.average_load_percent.toFixed(2)} %</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.capacity_reserve_percent.toFixed(2)} %</td><td>{item.timing_verified && item.response_time_bound_ms != null ? `${item.response_time_bound_ms.toFixed(3)} ms` : "Nicht nachgewiesen"}</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td>
           </tr>
           {expanded && <tr className="capacity-network-detail-row"><td colSpan={7}><NetworkDetail id={detailId} network={item} routes={routes.filter((route) => route.network_id === item.network_id)} sourceVersions={sourceVersions} /></td></tr>}
         </Fragment>;
@@ -536,12 +557,22 @@ function NetworkTable({ items, routes, onSelect, selectedId, sourceVersions }: {
 function NetworkDetail({ id, network, routes, sourceVersions }: { id: string; network: CapacityNetwork; routes: CapacityResults["routes"]; sourceVersions: Record<string, number> | null }) {
   const contributors = network.top_contributors ?? routes.slice(0, 5).map((route) => ({ route_id: route.route_id, name: route.name, load_percent: route.average_load_percent }));
   return (
-    <section aria-label={`Netzdetails ${network.network_id}`} className="network-capacity-detail" id={id}>
-      <div><p className="eyebrow">Network drilldown</p><h3>{network.network_id}</h3><span>{network.protocol} · {network.bitrate ? `${network.bitrate.toLocaleString("de-DE")} bit/s` : "historischer Snapshot"}</span></div>
+    <section aria-label={`Netzdetails ${capacityNetworkName(network)}`} className="network-capacity-detail" id={id}>
+      <div><p className="eyebrow">Netzdetails</p><h3>{capacityNetworkName(network)}</h3><span>{network.protocol} · {network.bitrate ? `${network.bitrate.toLocaleString("de-DE")} bit/s` : "historischer Snapshot"}</span></div>
       <dl className="overview-list"><div><dt>Burst</dt><dd>{network.burst_load_percent.toFixed(2)} %</dd></div><div><dt>Margin</dt><dd>{(network.capacity_margin_percent ?? 100 - network.burst_load_percent).toFixed(2)} %</dd></div><div><dt>Routen</dt><dd>{routes.length}</dd></div></dl>
+      {network.evaluation && <div className="capacity-evaluation" aria-label="Getrennte Netzbewertung">
+        <dl className="overview-list">
+          <div><dt>Nutzlast / Kodierung</dt><dd>{network.evaluation.payload.status === "PASS" ? "Passend" : network.evaluation.payload.status === "FAIL" ? `${network.evaluation.payload.errors} Fehler` : "Offen"}</dd></div>
+          <div><dt>{network.evaluation.capacity.basis === "BOUNDED_EVENT_DEMAND" ? "Begrenzter Ereignisbedarf" : "Nominaler Kapazitätsbedarf"}</dt><dd>{network.evaluation.capacity.load_percent.toFixed(2)} %</dd></div>
+          <div><dt>Busplan</dt><dd>{network.evaluation.schedule.status === "FEASIBLE_UNDER_ASSUMPTIONS" ? "Machbar unter Annahmen" : "Nicht nachgewiesen"}{network.evaluation.schedule.slot_load_percent != null && ` · ${network.evaluation.schedule.slot_load_percent.toFixed(2)} % Slots`}</dd></div>
+          <div><dt>Stressszenario</dt><dd>{network.evaluation.stress.status === "PASS" ? "Im Planungsziel" : "Planungsziel überschritten"}</dd></div>
+          <div><dt>Funktionale Reaktionszeit</dt><dd>{network.evaluation.functional.status === "PASS" ? "Vorgabe eingehalten" : network.evaluation.functional.status === "FAIL" ? "Vorgabe verletzt" : "Nicht nachgewiesen"}</dd></div>
+        </dl>
+        <p className="muted">Slotreservierung und Stressfaktor sind verschiedene Bewertungen. {network.evaluation.functional.explanation}</p>
+      </div>}
       <NetworkSignalInspection networkId={network.network_id} sourceVersions={sourceVersions} />
       <PaginatedResults items={contributors} label="Lastbeiträge">{(entries) => <div className="capacity-contributors"><strong>Top Contributors</strong>{entries.map((item) => <span key={item.route_id}>{item.name}<b>{item.load_percent.toFixed(2)} %</b></span>)}</div>}</PaginatedResults>
-      <RouteTable items={routes} />
+      <RouteTable items={routes} networks={[network]} />
     </section>
   );
 }
@@ -597,20 +628,24 @@ function NetworkSignalInspection({ networkId, sourceVersions }: { networkId: str
   </div>;
 }
 
-function RouteTable({ items }: { items: CapacityResults["routes"] }) {
+function responseBound(route: CapacityResults["routes"][number]) {
+  return route.timing_verified && route.response_time_bound_ms != null ? `${route.response_time_bound_ms.toFixed(3)} ms` : "Nicht nachgewiesen";
+}
+
+function RouteTable({ items, networks }: { items: CapacityResults["routes"]; networks: CapacityNetwork[] }) {
   if (!items.length) return <EmptyAnalysis text="Keine passenden Routen vorhanden." />;
   return (
-    <PaginatedResults items={items} label="Routen">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Payload / Cycle</th><th>Peak</th><th>E2E</th><th>Modell</th></tr></thead><tbody>
-      {entries.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{item.network_id}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{item.end_to_end_latency_ms.toFixed(3)} ms</td><td><code>{item.calculation_model}</code></td></tr>)}
+    <PaginatedResults items={items} label="Routen">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Payload / Cycle</th><th>Peak</th><th>E2E-Antwortgrenze</th><th>Modell</th></tr></thead><tbody>
+      {entries.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{capacityNetworkName(item, networks)}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.peak_load_percent.toFixed(2)} %</td><td>{responseBound(item)}</td><td><code>{item.calculation_model}</code></td></tr>)}
     </tbody></table></div>}</PaginatedResults>
   );
 }
 
-function MessageTable({ items }: { items: CapacityResults["messages"] }) {
+function MessageTable({ items, networks }: { items: CapacityResults["messages"]; networks: CapacityNetwork[] }) {
   if (!items.length) return <EmptyAnalysis text="Keine Messages mit Timingdaten vorhanden." />;
   return (
     <PaginatedResults items={items} label="Messages">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Message</th><th>Netz</th><th>Technologie</th><th>Payload / Cycle</th><th>Ø Load</th><th>Peak</th><th>Modell</th></tr></thead><tbody>
-      {entries.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{String(item.network_id ?? "—")}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{Number(item.average_load_percent ?? 0).toFixed(2)} %</td><td>{Number(item.peak_load_percent ?? 0).toFixed(2)} %</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
+      {entries.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{capacityNetworkName(item, networks)}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{Number(item.average_load_percent ?? 0).toFixed(2)} %</td><td>{Number(item.peak_load_percent ?? 0).toFixed(2)} %</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
     </tbody></table></div>}</PaginatedResults>
   );
 }
@@ -627,15 +662,15 @@ function TimingAnalysis({ results }: { results: CapacityResults }) {
   return (
     <div className="timing-analysis">
       <div className="metric-strip compact">
-        <Metric label="Worst Queueing" value={`${worstQueue.toFixed(3)} ms`} />
-        <Metric label="Worst Jitter" value={`${worstJitter.toFixed(3)} ms`} />
+        <Metric label="Geschätztes Queueing" value={`${worstQueue.toFixed(3)} ms`} />
+        <Metric label="Geschätzter Jitter" value={`${worstJitter.toFixed(3)} ms`} />
         <Metric label="Queue Policy" value={timing?.queue_policy ?? "FIFO"} />
         <Metric label="Retransmission" value={`${((reliability?.configured_retransmission_rate ?? 0) * 100).toFixed(2)} %`} />
         <Metric label="Clock Drift" value={`${synchronization?.clock_drift_ppm ?? 0} ppm`} />
         <Metric label="Sync Precision" value={`${synchronization?.sync_precision_ms ?? 0} ms`} />
       </div>
-      <PaginatedResults items={results.routes} label="Timing">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Transmission</th><th>Queueing</th><th>Gateway</th><th>E2E</th><th>Jitter / Budget</th><th>Deadline</th></tr></thead><tbody>
-        {entries.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{(route.transmission_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.queueing_latency_ms.toFixed(3)} ms</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.end_to_end_latency_ms.toFixed(3)} ms</td><td>{(route.estimated_jitter_ms ?? 0).toFixed(3)} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
+      <PaginatedResults items={results.routes} label="Timing">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Transmission</th><th>Queueing (Schätzung)</th><th>Gateway</th><th>E2E-Antwortgrenze</th><th>Jitter (Schätzung) / Budget</th><th>Deadline</th></tr></thead><tbody>
+        {entries.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{(route.transmission_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.queueing_latency_ms.toFixed(3)} ms</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{responseBound(route)}</td><td>{(route.estimated_jitter_ms ?? 0).toFixed(3)} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
       </tbody></table></div>}</PaginatedResults>
       {synchronization && (
         <p className="analysis-footnote">Maximale Drift im Beobachtungsfenster: <strong>{synchronization.max_drift_over_observation_ms.toFixed(3)} ms</strong> bei {synchronization.observation_s} s.</p>

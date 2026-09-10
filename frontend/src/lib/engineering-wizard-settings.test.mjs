@@ -22,6 +22,7 @@ test("wizard settings keep only supported ids and normalize the project metadata
     model_type: "automotive",
     scope_ids: ["routing", "simulation"],
     process_ids: ["review_gate", "approve_after_allow"],
+    bus_participant_limits: DEFAULT_ENGINEERING_WIZARD_SETTINGS.bus_participant_limits,
   });
 });
 

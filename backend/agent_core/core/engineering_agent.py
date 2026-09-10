@@ -347,7 +347,7 @@ class EngineeringAgent:
                         status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
                         text = (
                             ('Die freigegebene Gateway-Segmentregel war in der physischen Topologie noch nicht '
-                             'materialisiert. Die korrigierte Netzaufteilung mit höchstens sechs Controllern je '
+                             'materialisiert. Die korrigierte Netzaufteilung mit den konfigurierten Teilnehmergrenzen je '
                              'Segment ist geprüft und wartet auf Übernahme.'
                              if segment_rule_missing else
                              'Sensor-/Aktor-I/O war noch dem gemeinsamen Controller-Backbone zugerechnet. '

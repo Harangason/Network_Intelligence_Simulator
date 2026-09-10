@@ -1,6 +1,7 @@
 """Reviewable load distribution with system clusters and explicit residual risks."""
 
 from collections import defaultdict
+from ..capacity.lin_schedule import lin_schedule_check
 from copy import deepcopy
 import json
 from math import ceil, isfinite
@@ -227,7 +228,7 @@ def plan_network_distribution(
     ordered_networks = sorted(metrics_by_network.items(), key=lambda item: (-_load(item[1]), item[0]))
     for network_id, rows in ordered_networks:
         before = _load(rows)
-        if before <= target:
+        if before <= target and lin_schedule_check(rows)["status"] != "FAIL":
             continue
         protocol = canonical_protocol(rows[0].get("protocol") or "UNKNOWN")
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -240,7 +241,7 @@ def plan_network_distribution(
             owner = next((item for item in owners.values() if item["id"] == cluster_id), {"name": cluster_id, "basis": "unassigned"})
             bins: list[list[dict[str, Any]]] = []
             for row in sorted(members, key=lambda item: (-_load([item]), str(item["route_id"]))):
-                destination = next((bucket for bucket in bins if _load([*bucket, row]) <= target), None)
+                destination = next((bucket for bucket in bins if _load([*bucket, row]) <= target and lin_schedule_check([*bucket, row])["status"] != "FAIL"), None)
                 if destination is None:
                     destination = []
                     bins.append(destination)
@@ -257,6 +258,7 @@ def plan_network_distribution(
                     "load_components": {key: sum(_number(row.get(key)) for row in bucket) for key in LOAD_KEYS},
                     "projected_load_percent": round(load, 4),
                     "load_check": "PASS" if load <= target else "EXCEEDED",
+                    "lin_schedule": lin_schedule_check(bucket),
                     "alternatives": [],
                 }
                 if load > target:
@@ -278,7 +280,7 @@ def plan_network_distribution(
         for segment in sorted(segments, key=lambda item: (-item["projected_load_percent"], item["cluster_id"])):
             destination = next((item for item in packed if max(
                 item["load_components"][key] + segment["load_components"][key] for key in LOAD_KEYS
-            ) <= target), None)
+            ) <= target and lin_schedule_check([row for row in rows if str(row["route_id"]) in {*item["route_ids"], *segment["route_ids"]}])["status"] != "FAIL"), None)
             if destination is None:
                 packed.append(segment)
                 continue
@@ -287,6 +289,7 @@ def plan_network_distribution(
             destination["load_components"] = {key: destination["load_components"][key] + segment["load_components"][key] for key in LOAD_KEYS}
             destination["projected_load_percent"] = round(max(destination["load_components"].values()), 4)
             destination["cluster_name"] = ", ".join(destination["cluster_names"])
+            destination["lin_schedule"] = lin_schedule_check([row for row in rows if str(row["route_id"]) in destination["route_ids"]])
             if segment["ownership_basis"] != "explicit":
                 destination["ownership_basis"] = segment["ownership_basis"]
         segments = packed
@@ -300,7 +303,7 @@ def plan_network_distribution(
         }
         technology_candidates = _technology_candidates(rows, protocol, target, parameters, available_inventory)
         selected_technology = next((item for item in technology_candidates if item["fits_target"]), None)
-        fits_same_protocol = max(item['projected_load_percent'] for item in segments) <= target
+        fits_same_protocol = max(item['projected_load_percent'] for item in segments) <= target and all(item["lin_schedule"]["status"] != "FAIL" for item in segments)
         can_expand = auto_size and (protocol not in hard_limits or
             used_protocols.get(protocol, 0) + allocated[protocol] + additional <= hard_limits[protocol])
         resource_action = 'USE_EXISTING_SEGMENTS'
@@ -327,6 +330,7 @@ def plan_network_distribution(
         plan["networks"].append({
             "network_id": network_id, "protocol": protocol,
             "current_load_percent": round(before, 4), "current_segments": 1,
+            "lin_schedule": lin_schedule_check(rows),
             "proposed_segments": len(segments), "additional_segments": additional,
             "projected_max_load_percent": max(item["projected_load_percent"] for item in segments),
             "available_additional_segments": same_protocol_free,

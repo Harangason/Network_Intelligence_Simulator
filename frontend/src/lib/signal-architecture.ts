@@ -212,11 +212,7 @@ export function buildCanonicalSignalDefinition(signal: SignalRecord): CanonicalS
   const offset = number(signal.offset_value ?? configuration.offset);
   const enumValues = record(data.enum_values ?? configuration.enum_values);
   const allowedValues = array(data.allowed_values ?? configuration.allowed_values);
-  const useDefaultStateDomain = semanticType === "STATE" && looksLikeStateSignal(signalLabel(signal)) && entriesCount(enumValues) === 0 && allowedValues.length === 0;
-  const useExpandedStateDomain = useDefaultStateDomain || (semanticType === "STATE" && looksLikeStateSignal(signalLabel(signal)) && isLegacyGenericStateDomain(enumValues));
-  const expandedStateEnumValues = defaultStateEnumValues(signalLabel(signal));
-  const expandedReservedValues = Array.from({ length: 16 }, (_, index) => index)
-    .filter((value) => !Object.values(expandedStateEnumValues).includes(value));
+
 
   return {
     id: text(signal.id),
@@ -234,11 +230,11 @@ export function buildCanonicalSignalDefinition(signal: SignalRecord): CanonicalS
       minimum: number(signal.min_value ?? signal.minimum ?? data.minimum),
       maximum: number(signal.max_value ?? signal.maximum ?? data.maximum),
       resolution: number(data.resolution ?? signal.resolution ?? factor),
-      allowedValues: useExpandedStateDomain ? Object.keys(expandedStateEnumValues) : allowedValues,
-      enumValues: useExpandedStateDomain ? expandedStateEnumValues : enumValues,
+      allowedValues: allowedValues,
+      enumValues: enumValues,
       invalidValues: array(data.invalid_values ?? configuration.invalid_values ?? (data.invalid_value == null ? [] : [data.invalid_value])),
-      reservedValues: useExpandedStateDomain ? expandedReservedValues : array(data.reserved_values ?? configuration.reserved_values),
-      defaultValue: useExpandedStateDomain ? Object.keys(expandedStateEnumValues)[0] : data.default_value ?? signal.default_value ?? null,
+      reservedValues: array(data.reserved_values ?? configuration.reserved_values),
+      defaultValue: data.default_value ?? signal.default_value ?? null,
     },
     encoding: {
       rawDatatype,
@@ -284,14 +280,25 @@ export function calculateSignalBitRequirement(
       reason = "Minimum ist größer als Maximum.";
     } else {
       valueCount = Math.floor((domain.maximum - domain.minimum) / domain.resolution) + 1 + reserve;
-      requiredBits = ceilLog2(valueCount);
-      reason = `${valueCount} gültige Werte aus Range und Resolution.`;
+      const special = [...domain.reservedValues, ...domain.invalidValues];
+      const raw = encoding.factor !== null && encoding.factor !== 0 && encoding.offset !== null
+        ? [(domain.minimum - encoding.offset) / encoding.factor, (domain.maximum - encoding.offset) / encoding.factor, ...special] : [];
+      if (raw.length && raw.every((code) => typeof code === "number" && Number.isFinite(code) && Math.abs(code - Math.round(code)) < 1e-8)) {
+        const minimum = Math.min(...raw as number[]), maximum = Math.max(...raw as number[]);
+        for (let width = 1; width <= 64; width++) {
+          if (encoding.signed ? minimum >= -(2 ** (width - 1)) && maximum < 2 ** (width - 1) : minimum >= 0 && maximum < 2 ** width) { requiredBits = width; break; }
+        }
+      }
+      reason = requiredBits === null ? "Rohwerte, Skalierung oder Sondercodes sind nicht vollständig darstellbar."
+        : `${valueCount} gültige Werte; Rohkodierung und explizite Sondercodes bestimmen die Bitbreite.`;
     }
   } else if (semanticType === "ENUM" || semanticType === "STATE") {
     valueCount = Math.max(entriesCount(domain.enumValues), domain.allowedValues.length) + reserve;
     if (valueCount > 0) {
-      requiredBits = ceilLog2(valueCount);
-      reason = `${valueCount} definierte Zustände inklusive Reserve.`;
+      const codes = [...Object.values(domain.enumValues), ...domain.reservedValues, ...domain.invalidValues];
+      requiredBits = codes.length && codes.every((code) => typeof code === "number" && Number.isInteger(code) && code >= 0)
+        ? ceilLog2(Math.max(...codes as number[]) + 1) : ceilLog2(valueCount);
+      reason = `${valueCount} definierte Zustände; explizite Rohcodes bestimmen die Bitbreite.`;
     } else {
       reason = `${semanticType} benötigt allowed_values oder enum_values.`;
     }

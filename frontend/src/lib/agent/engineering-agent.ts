@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai";
 import type { InteractiveQuestion } from "./agent-response";
+import type { ChatAttachment } from "./chat-attachments";
 
 /** Transport contracts only. Engineering orchestration lives in Python Agent Core. */
 export type EngineeringAgentEvent = {
@@ -39,4 +40,4 @@ export type EngineeringProposal = {
   canonical_ids: { object_type: string; id: string }[];
   workload_id?: string;
 };
-export type EngineeringAgentUIMessage = UIMessage<unknown, { engineering: EngineeringAgentEvent }, Record<string, { input: Record<string, unknown>; output: unknown }>>;
+export type EngineeringAgentUIMessage = UIMessage<unknown, { engineering: EngineeringAgentEvent; attachment: ChatAttachment }, Record<string, { input: Record<string, unknown>; output: unknown }>>;

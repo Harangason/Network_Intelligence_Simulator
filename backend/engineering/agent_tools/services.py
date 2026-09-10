@@ -21,7 +21,7 @@ from ..intelligence import IntelligenceService
 from ..addressing import AddressResolutionService, LogicalNodeAddressAllocator
 from backend.intelligence.ml import MLInferenceService
 from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
-from .catalog import TOOLS, register, ID, TEXT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
+from .catalog import TOOLS, register, ID, TEXT, PROMPT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
 
 def _inspect_project(_arguments):
@@ -44,6 +44,21 @@ def _validation(data: dict) -> ToolResult:
         valid = data.get("status") not in {"ERROR", "OPEN", "FAILED", "BLOCKED"}
     return ToolResult(success=bool(valid), status=ToolStatus.SUCCESS if valid else ToolStatus.VALIDATION_FAILED,
                       data=access.json_safe(data), findings=access.json_safe(findings))
+
+
+def _spatial_architecture(arguments):
+    from ..spatial_zoning import spatial_assessment
+    from ..spatial_architecture import REASONING_RULES
+    state = WorkflowStatusService(current_project_id()).get()
+    assessment = spatial_assessment(state, access.objects('HardwareNode'))
+    query = str(arguments.get('query') or '').casefold()
+    if query:
+        assessment['decisions'] = [d for d in assessment['decisions'] if query in d['name'].casefold() or query == d['hardware_id']]
+    return {**assessment, 'reasoning_rules': REASONING_RULES,
+            'input_contract': 'parameters.spatial_architecture oder - Raumarchitektur: JSON im Wizard-Prompt; '
+                'reference_frame, zones [{id, label, parent_id?}], assignments {Hardware-ID oder exakter Name: Zonen-ID}. '
+                'Einbauorte alternativ in HardwareNode.identity.installation_zone; Quelle und Bezugsrahmen angeben. '
+                'Benannte Zonen müssen deklariert sein. Bestehende Bestätigungen dürfen nicht still überschrieben werden.'}
 
 
 def _device(a):
@@ -239,6 +254,7 @@ def register_tools():
     if TOOLS:
         return
     register("inspect_project", "Aktiven Workflow und Projektstand lesen.", P.READ_MODEL, _inspect_project)
+    register("inspect_spatial_architecture", "Raumcluster, Einbauorte, Quellen, offene Zuordnungen und lokale Buskonflikte branchenübergreifend prüfen; query grenzt Gerätedetails ein.", P.READ_MODEL, _spatial_architecture, query=(str, ''))
     register("inspect_object", "Kanonisches Objekt im aktiven Projekt lesen.", P.READ_MODEL, lambda a: get_object(a["object_type"], a["object_id"]), object_type=TEXT, object_id=ID)
     for name, kind in {"inspect_function":"Function", "inspect_hardware":"HardwareNode", "inspect_function_interface":"Interface", "inspect_hardware_interface":"HardwareNetworkInterface", "inspect_signal":"Signal", "inspect_message":"Message"}.items():
         register(name, f"{kind} im aktiven Projekt lesen.", P.READ_MODEL, lambda a, k=kind: get_object(k,a["object_id"]), object_id=ID)
@@ -267,15 +283,15 @@ def register_tools():
     register("search_model", "Objekte über Typen hinweg nach Namen suchen.", P.READ_MODEL, lambda a: {"items": [
         {**item,"object_type":kind} for kind in ([a["object_type"]] if a.get("object_type") else ENTITY_SPECS)
         for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(str|None,None), limit=LIMIT)
-    register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=TEXT, domain=(str,"automotive"))
+    register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str,"automotive"))
     for name in ["generate_functions", "generate_function_structure", "decompose_function"]:
         register(name, "Funktionen aus der Anforderung als gemeinsamen Proposal erzeugen.", P.GENERATE_PROPOSAL,
-                 lambda a,n=name: generation.functions({**a,"decompose":n=="decompose_function"}), prompt=TEXT, hardware_id=(str|None,None), count=(int|None,Field(default=None,ge=1,le=100)), domain=(str,"automotive"))
+                 lambda a,n=name: generation.functions({**a,"decompose":n=="decompose_function"}), prompt=PROMPT, hardware_id=(str|None,None), count=(int|None,Field(default=None,ge=1,le=100)), domain=(str,"automotive"))
     register("generate_function_interfaces", "Logische Interfaces einer Funktion vorschlagen.", P.GENERATE_PROPOSAL, generation.interfaces, function_id=ID, count=COUNT, technology=TECHNOLOGY, name=(str,"Interface"))
     for name in ["generate_hardware_interfaces", "create_hardware_interface_proposal"]:
         register(name, "Physische Hardware-Schnittstellen vorschlagen.", P.GENERATE_PROPOSAL, lambda a:generation.interfaces(a,physical=True), hardware_id=ID, count=COUNT, technology=TECHNOLOGY, name=(str,"Port"))
     for name,kind in [("generate_status_models","StatusModel"),("generate_data_objects","DataObject")]:
-        register(name, "Fachliches Modell aus der Anforderung vorschlagen.", P.GENERATE_PROPOSAL, lambda a,k=kind:generation.data_models(a,k), prompt=TEXT, domain=(str,"automotive"))
+        register(name, "Fachliches Modell aus der Anforderung vorschlagen.", P.GENERATE_PROPOSAL, lambda a,k=kind:generation.data_models(a,k), prompt=PROMPT, domain=(str,"automotive"))
     for name in ["classify_device", "get_device_class_profile", "get_device_capabilities", "inspect_hardware_capabilities"]:
         register(name, "Geräteklasse und Fähigkeiten mit dem Python-Register bestimmen.", P.READ_MODEL, _device, device=(dict[str,Any]|None,None), hardware_id=(str|None,None))
     register("generate_device_capabilities", "Bestimmte Gerätefähigkeiten zur Freigabe vorschlagen.", P.GENERATE_PROPOSAL,
@@ -346,13 +362,13 @@ def register_tools():
     register("inspect_proposal","Gemeinsamen Proposal-Vertrag lesen.",P.READ_MODEL,lambda a:proposals.get(a["proposal_id"]),proposal_id=ID)
     register("validate_proposal","Proposal und referenzierten Modellstand validieren.",P.VALIDATE,lambda a:proposals.validate(a["proposal_id"]),proposal_id=ID)
     register("apply_approved_proposal","Ausschließlich menschlich freigegebenen, aktuellen Proposal atomar anwenden.",P.APPLY_APPROVED_PROPOSAL,lambda a:proposals.apply(a["proposal_id"],actor=a["_actor"],trace_id=a["_trace_id"]),proposal_id=ID)
-    register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=TEXT)
-    register("generate_wizard_routing", "Bestätigten Systemcluster-Graph deterministisch in einen prüfbaren Routing-Vorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_routing, prompt=TEXT)
-    register("generate_wizard_communication_contract", "Fehlende Kommunikationsabsichten als prüfbare Modelländerung ergänzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_communication_contract, prompt=TEXT)
-    register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=TEXT)
-    register("generate_wizard_parameters", "Bestätigte technologieabhängige Wizard-Defaults deterministisch aus der zentralen Registry speichern.", P.VALIDATE, wizard_generation.generate_parameters, prompt=TEXT)
-    register("plan_capacity_remediation", "Überlastete physische Zweige paketweise analysieren und gegen freie Bussegmente sowie geeignete Technologien planen.", P.READ_MODEL, wizard_generation.plan_capacity_remediation, prompt=TEXT)
-    register("generate_capacity_network_repair", "Segmentanzahl automatisch aus Last bestimmen, vorhandene Ressourcen zuerst nutzen und zusätzlichen Bedarf als prüfbaren Topologie-Vorschlag ausweisen; explizite harte Grenzen bleiben verbindlich.", P.GENERATE_PROPOSAL, wizard_generation.generate_capacity_network_repair, prompt=TEXT)
+    register("generate_wizard_model", "Bestätigte Wizard-Spezifikation mit den Branchenvorlagen in einen prüfbaren Modellvorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate, prompt=PROMPT)
+    register("generate_wizard_routing", "Bestätigten Systemcluster-Graph deterministisch in einen prüfbaren Routing-Vorschlag umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_routing, prompt=PROMPT)
+    register("generate_wizard_communication_contract", "Fehlende Kommunikationsabsichten als prüfbare Modelländerung ergänzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_communication_contract, prompt=PROMPT)
+    register("generate_wizard_network", "Freigegebene Wizard-Routen deterministisch in eine prüfbare physische Netzwerktopologie umsetzen.", P.GENERATE_PROPOSAL, wizard_generation.generate_network_topology, prompt=PROMPT)
+    register("generate_wizard_parameters", "Bestätigte technologieabhängige Wizard-Defaults deterministisch aus der zentralen Registry speichern.", P.VALIDATE, wizard_generation.generate_parameters, prompt=PROMPT)
+    register("plan_capacity_remediation", "Überlastete physische Zweige paketweise analysieren und gegen freie Bussegmente sowie geeignete Technologien planen.", P.READ_MODEL, wizard_generation.plan_capacity_remediation, prompt=PROMPT)
+    register("generate_capacity_network_repair", "Segmentanzahl automatisch aus Last bestimmen, vorhandene Ressourcen zuerst nutzen und zusätzlichen Bedarf als prüfbaren Topologie-Vorschlag ausweisen; explizite harte Grenzen bleiben verbindlich.", P.GENERATE_PROPOSAL, wizard_generation.generate_capacity_network_repair, prompt=PROMPT)
     register("create_workload","Messbaren Auftrag mit Sollzahlen planen und speichern.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload(a["request"]),request=OBJECT)
     register("generate_signals","Signalauftrag durch vorhandenen Workload-Generator planen.",P.GENERATE_PROPOSAL,lambda a:_workloads().create_workload({**a["request"],"workload_type":"SIGNAL_GENERATION"}),request=OBJECT)
     for name,method in [("start_workload","start_workload"),("validate_workload","validate_workload"),("repair_workload","retry_invalid"),("generate_missing","generate_missing"),("inspect_workload","get_workload"),("get_workload_progress","progress")]:
@@ -362,7 +378,7 @@ def register_tools():
     register("discover_engineering_tools","Weitere verfügbare Werkzeuge nach Begriff suchen.",P.READ_MODEL,
              lambda a:{"tools":[{"name":item.name,"description":item.description} for item in TOOLS.values() if a["query"].casefold() in (item.name+" "+item.description).casefold()][:12]},query=TEXT)
     register('generate_camera_architecture', 'Explizit ausgewählte Kameraarchitektur als prüfbaren Vorschlag erzeugen.', P.GENERATE_PROPOSAL,
-             generation.camera_architecture, coverage=TEXT, profile=TEXT, outputs=(list[str],Field(min_length=1,max_length=4)), prompt=TEXT)
+             generation.camera_architecture, coverage=TEXT, profile=TEXT, outputs=(list[str],Field(min_length=1,max_length=4)), prompt=PROMPT)
     register("ask_engineering_question","Eine gezielte Auswahlfrage stellen und auf die Nutzerentscheidung warten.",P.READ_MODEL,
              _ask_question, question_id=ID,question=TEXT,multiple=(bool,False),options=(list[dict[str,Any]],Field(min_length=2,max_length=4)),
              question_description=(str,Field(default='',max_length=2000)), required=(bool,True),

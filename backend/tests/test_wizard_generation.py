@@ -137,6 +137,13 @@ def test_confirmed_backbones_are_routable_before_topology_creation(display_techn
 
     def check():
         proposal = wizard_generation.generate({'prompt': prompt})
+        for change in proposal['changes']:
+            data = change.get('data') or {}
+            if change['object_type'] == 'Network' and data.get('technology') == 'ETHERNET':
+                assert data['name'].startswith('ETH_') and data['name_source'] == 'generated'
+                channels = [item['data'] for item in proposal['changes'] if item['object_type'] == 'HardwareNetworkInterface'
+                            and item['data'].get('network_ref') == data['id']]
+                assert channels and all(channel['name'] == data['name'] for channel in channels)
         proposal = proposal_service.validate(proposal['proposal_id'])
         assert proposal['status'] == 'VALIDATED', proposal['validation_result']
         approved = proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
@@ -390,7 +397,7 @@ def test_semantic_network_assignment_keeps_powertrain_on_one_named_can():
     )
 
 
-def test_confirmed_gateway_architecture_splits_controllers_after_six():
+def test_confirmed_gateway_architecture_honors_configured_seven_total_participants():
     controllers = [
         {'ecu': f'Controller{i}', 'sensors': [f'Sensor{i}'], 'actuators': [f'Actuator{i}']}
         for i in range(1, 8)
@@ -403,6 +410,7 @@ def test_confirmed_gateway_architecture_splits_controllers_after_six():
     }], separators=(',', ':'))
     prompt = (
         '- Netzarchitektur-ID: gateway_ecu_segments\n'
+        '- Bus-Teilnehmergrenzen: {"can_fd":7}\n'
         f'- Systemcluster-Graph: {graph}\n'
     )
 
@@ -648,8 +656,13 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
 
     # A partial parameter draft used to send this continuation to the LLM and
     # leave the wizard blocked without a canonical change.
+    # This fixture explicitly uses shared cross-system transports to exercise
+    # gateway translation. Declare that architecture; it is not a local branch.
+    shared_networks = execute(authority, 'test_shared_networks', Permission.READ_MODEL, {},
+                              lambda _: model.networks()).data
     WorkflowStatusService(authority.project_id).save_parameters(
-        {'target_bus_load_percent': 60}, actor='test-human'
+        {'target_bus_load_percent': 60,
+         'networks': [{**network, 'spatial_scope': 'backbone'} for network in shared_networks]}, actor='test-human'
     )
     assert not WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['parameters']['complete']
 
@@ -692,7 +705,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     monkeypatch.setattr(simulation_gateway, 'request_json', local_http)
 
     simulation_result = asyncio.run(network_continuation())
-    assert simulation_result['status'] == 'COMPLETED', simulation_result
+    assert simulation_result['status'] == 'COMPLETED', json.dumps(simulation_result, default=str)
     simulation_tools = [item['tool'] for item in simulation_result['trace']]
     assert 'validate_simulation_preflight' in simulation_tools
     assert 'create_simulation_snapshot' in simulation_tools

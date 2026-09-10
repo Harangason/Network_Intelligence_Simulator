@@ -26,6 +26,7 @@ import {
 } from "@/lib/engineering-wizard-settings";
 import { getWorkflow, saveWorkflowParameters, setWorkflowContext } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
+import { BUS_SETTING_LABELS } from "@/lib/bus-settings";
 import { TraceStorageSettingsPanel } from "./trace-storage-settings";
 
 export function SettingsPanel() {
@@ -38,7 +39,9 @@ export function SettingsPanel() {
   const [formatsMessage, setFormatsMessage] = useState("");
   const [wizardSettings, setWizardSettings] = useState<EngineeringWizardSettings>(DEFAULT_ENGINEERING_WIZARD_SETTINGS);
   const [wizardProjectNameDraft, setWizardProjectNameDraft] = useState("");
+  const [busLimitsDraft, setBusLimitsDraft] = useState(DEFAULT_ENGINEERING_WIZARD_SETTINGS.bus_participant_limits);
   const [wizardSettingsSaving, setWizardSettingsSaving] = useState(false);
+  const [wizardSettingsLoaded, setWizardSettingsLoaded] = useState(false);
   const [wizardSettingsMessage, setWizardSettingsMessage] = useState("");
 
   useEffect(() => {
@@ -61,6 +64,8 @@ export function SettingsPanel() {
       );
       setWizardSettings(nextWizardSettings);
       setWizardProjectNameDraft(nextWizardSettings.project_name);
+      setBusLimitsDraft(nextWizardSettings.bus_participant_limits);
+      setWizardSettingsLoaded(true);
     }).catch((error) => setFormatsMessage(error instanceof Error ? error.message : "Projekt konnte nicht geladen werden."));
   }, []);
 
@@ -131,7 +136,7 @@ export function SettingsPanel() {
   }
 
   async function saveWizardSettings(next: EngineeringWizardSettings, successMessage: string) {
-    if (wizardSettingsSaving) return;
+    if (!wizardSettingsLoaded || wizardSettingsSaving) return;
     const previous = wizardSettings;
     setWizardSettings(next);
     setWizardSettingsSaving(true);
@@ -264,7 +269,7 @@ export function SettingsPanel() {
               />
               <button
                 className="button secondary"
-                disabled={wizardSettingsSaving || wizardProjectNameDraft.trim() === wizardSettings.project_name}
+                disabled={!wizardSettingsLoaded || wizardSettingsSaving || wizardProjectNameDraft.trim() === wizardSettings.project_name}
                 onClick={() => void saveWizardSettings(
                   { ...wizardSettings, project_name: wizardProjectNameDraft.trim() },
                   "Projektname gespeichert.",
@@ -283,7 +288,7 @@ export function SettingsPanel() {
                 <label className={wizardSettings.model_type === domain.id ? "selected" : ""} key={domain.id}>
                   <input
                     checked={wizardSettings.model_type === domain.id}
-                    disabled={wizardSettingsSaving}
+                    disabled={!wizardSettingsLoaded || wizardSettingsSaving}
                     name="wizard-model-type"
                     onChange={() => void saveWizardSettings(
                       { ...wizardSettings, model_type: domain.id },
@@ -304,7 +309,7 @@ export function SettingsPanel() {
                 <label className={wizardSettings.scope_ids.includes(option.id) ? "selected" : ""} key={option.id}>
                   <input
                     checked={wizardSettings.scope_ids.includes(option.id)}
-                    disabled={wizardSettingsSaving}
+                    disabled={!wizardSettingsLoaded || wizardSettingsSaving}
                     onChange={() => toggleWizardSetting("scope_ids", option.id)}
                     type="checkbox"
                   />
@@ -321,7 +326,7 @@ export function SettingsPanel() {
                 <label className={wizardSettings.process_ids.includes(option.id) ? "selected" : ""} key={option.id}>
                   <input
                     checked={wizardSettings.process_ids.includes(option.id)}
-                    disabled={wizardSettingsSaving || option.id === REQUIRED_WIZARD_PROCESS_ID}
+                    disabled={!wizardSettingsLoaded || wizardSettingsSaving || option.id === REQUIRED_WIZARD_PROCESS_ID}
                     onChange={() => toggleWizardSetting("process_ids", option.id)}
                     type="checkbox"
                   />
@@ -329,6 +334,19 @@ export function SettingsPanel() {
                 </label>
               ))}
             </div>
+          </fieldset>
+          <fieldset className="settings-wizard-group">
+            <legend>Teilnehmergrenzen je Bustyp</legend>
+            <p>Maximale Teilnehmer je physischem Bussegment, einschließlich Gateway oder Controller. 0 bedeutet unbegrenzt. Die Vorgaben gelten für neue Planungen; bestehende Verbindungen werden beim Speichern nicht automatisch umgebaut.</p>
+            <div className="settings-bus-limits">
+              {Object.entries(BUS_SETTING_LABELS).map(([key, label]) => (
+                <label key={key}>{label}<input aria-label={`${label} Teilnehmergrenze`} type="number" min="0" max="100000" step="1"
+                  value={wizardSettingsLoaded ? busLimitsDraft[key] ?? 0 : ""} disabled={!wizardSettingsLoaded || wizardSettingsSaving}
+                  onChange={event => setBusLimitsDraft(current => ({...current, [key]: Number(event.target.value)}))} /></label>
+              ))}
+            </div>
+            <button className="button secondary" type="button" disabled={!wizardSettingsLoaded || wizardSettingsSaving || Object.values(busLimitsDraft).some(n => !Number.isInteger(n) || n < 0 || n === 1 || n > 100000)}
+              onClick={() => void saveWizardSettings({...wizardSettings, bus_participant_limits: busLimitsDraft}, "Bus-Teilnehmergrenzen gespeichert.")}>Busgrenzen speichern</button>
           </fieldset>
           {wizardSettingsMessage && <p className="settings-format-message" role="status">{wizardSettingsMessage}</p>}
         </section>

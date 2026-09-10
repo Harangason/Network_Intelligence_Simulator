@@ -3,6 +3,7 @@
 import re
 from typing import Any
 
+from backend.knowledge.semantic_vocabulary import engineering_phrase_match
 from .structure_rules import normalize_hardware_name
 
 
@@ -10,7 +11,9 @@ FAMILIES = (
     (("airbag", "crash", "impact", "seatbelt", "gurt"), ("airbag", "rueckhalt")),
     (("brake", "brems", "wheelspeed"), ("bremsregelung",)),
     (("damper", "daempfer"), ("daempferregelung",)),
-    (("suspension", "wheelload", "verticalacceleration"), ("fahrwerk",)),
+    (("suspension", "federweg"), ("daempferregelung", "fahrwerk")),
+    (("wheelload", "verticalacceleration"), ("fahrwerk",)),
+    (("oiltemperature", "oeltemperatur", "coolanttemperature", "oillevel", "coolantlevel", "intakeairtemperature"), ("motorsteuerung", "thermomanagement")),
     (("steering", "wheelangle", "lenk"), ("lenkung",)),
     (("yaw", "pitch", "rollrate", "lateralacceleration", "longitudinalacceleration"), ("stabilitaetsregelung",)),
     (("cabintemperature", "ambienttemperature", "refrigerant", "innenraum", "klima"), ("klima", "klimatisierung")),
@@ -106,7 +109,10 @@ def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> d
         if identity_owner and owner not in processors:
             owners[key] = {"id": key, "name": normalize_hardware_name(str(item.get("name") or key)), "basis": "unassigned"}
             continue
-        if key in processors:
+        if not owner and identity.get('system_owner_source') == 'network-editor':
+            owners[key] = {'id': key, 'name': normalize_hardware_name(str(item.get('name') or key)), 'basis': 'explicit'}
+            continue
+        if key in processors and (owner not in processors or owner == key or processors[owner].get('device_type') == 'Gateway'):
             owner = processor_owner.get(key, key)
             basis = "explicit" if owner == key else "inferred"
         elif physical_owner and basis in {"inferred", "unassigned"}:
@@ -117,12 +123,12 @@ def system_owners(hardware: list[dict[str, Any]], topology: dict[str, Any]) -> d
             candidates = []
             for processor_id, processor in canonical_processors.items():
                 processor_name = _key(str(processor.get("name") or ""))
-                score = len(processor_name) + 2000 if len(processor_name) > 3 and name.startswith(processor_name) else 0
+                score = len(processor_name) + 2000 if len(processor_name) > 3 and engineering_phrase_match(str(item.get("name") or ""), str(processor.get("name") or "")) else 0
                 for index, (sources, targets) in enumerate(FAMILIES):
-                    specificity = max((len(token) for token in sources if token in name), default=0)
+                    specificity = max((len(token) for token in sources if engineering_phrase_match(str(item.get("name") or ""), token)), default=0)
                     if specificity:
                         for target_index, target in enumerate(targets):
-                            if target in processor_name:
+                            if engineering_phrase_match(str(processor.get("name") or ""), target):
                                 score = max(score, (1200 if target == processor_name else 800) + specificity * 20 - target_index * 80)
                 if score:
                     candidates.append((score, processor_id))

@@ -222,6 +222,11 @@ def _topology_with_engineering_links(topology: dict, sync_result: dict) -> dict:
     owners = system_owners(hardware, topology)
     for node in nodes:
         hardware_id = str(node.get("engineeringId") or node["id"])
+        identity = canonical_hardware.get(hardware_id, {}).get('identity') or {}
+        if identity.get('cluster_id'):
+            node.update(clusterId=identity['cluster_id'], clusterName=identity.get('cluster_name'))
+        if identity.get('system_owner_source') == 'network-editor':
+            node.update(systemOwnerId=identity.get('system_owner_id'), systemOwnerSource='network-editor')
         owner = owners.get(str(node.get("engineeringId") or node["id"]))
         if (
             owner
@@ -614,6 +619,7 @@ def _sync_topology_with_invalidation(topology: dict, project_id: str):
 def _prepare_manual_topology_save(topology: dict, project_id: str, *, actor: str):
     """Persist the user's physical channels with the canvas in one request unit."""
     from .physical_ports import materialize_physical_ports
+    previous_topology = WorkflowStatusService(project_id).get().get('topology')
     result = _sync_topology_with_invalidation(topology, project_id)
     logical_bindings = {str(port["topology_port_id"]): port for node in result.get("nodes", [])
         for port in node.get("interfaces", []) if port.get("object_type") != "HardwareNetworkInterface"}
@@ -623,7 +629,7 @@ def _prepare_manual_topology_save(topology: dict, project_id: str, *, actor: str
     try:
         physical, changes = materialize_physical_ports(linked,
             all_pages(list_objects, "HardwareNode"), all_pages(list_objects, "HardwareNetworkInterface"),
-            state["parameters"].get("networks") or [], prune_unconnected=False,
+            state["parameters"].get("networks") or [], prune_unconnected=False, previous_topology=previous_topology,
             routes=all_pages(list_routes), messages=all_pages(list_objects, "Message"))
     except ValueError as error:
         raise EngineeringValidationError(str(error)) from error
@@ -662,7 +668,9 @@ def _prepare_manual_topology_save(topology: dict, project_id: str, *, actor: str
             for port in node.get("interfaces", []):
                 previous = logical_bindings.get(str(port["topology_port_id"]))
                 if previous:
-                    port.update({key: previous[key] for key in ("engineering_id", "engineering_name", "object_type") if key in previous})
+                    physical_port = next((p for n in physical['nodes'] for p in n.get('ports', []) if p['id'] == port['topology_port_id']), {})
+                    keys = ("engineering_id", "object_type") if physical_port.get('nameSource') == 'network' else ("engineering_id", "engineering_name", "object_type")
+                    port.update({key: previous[key] for key in keys if key in previous})
         physical = _topology_with_engineering_links(physical, result)
     return physical, result
 
@@ -854,7 +862,10 @@ def update_workflow_topology_route():
             "skipped": [],
         }
         return jsonify(state)
+    from .topology_removal import detached_topology, retire_removed_connections
+    topology = detached_topology(current_state['topology'], topology)
     topology, sync_result = _prepare_manual_topology_save(topology, project_id, actor=actor)
+    retire_removed_connections(current_state['topology'], topology, actor=actor)
     workflow.save_topology(topology, actor=actor)
     routing_sync = _synchronize_network_routes_with_workflow(
         project_id,
@@ -865,6 +876,231 @@ def update_workflow_topology_route():
     state = workflow.get()
     state["routing_sync"] = routing_sync
     return jsonify(state)
+
+
+@engineering_api.route("/workflow/bus-technology/preview", methods=["POST"])
+def preview_bus_technology_route():
+    from .bus_migration import load_bus_change
+    payload = _routing_payload()
+    plan = load_bus_change(WorkflowStatusService(_project_id()).get(), str(payload.get('network_id') or ''), payload.get('bus'))
+    return jsonify(plan['preview'])
+
+
+@engineering_api.route("/workflow/bus-technology", methods=["PUT"])
+def update_bus_technology_route():
+    from .bus_migration import load_bus_change
+    from .routing.network_sync import enrich_route_from_linked_topology, BUS_PROTOCOLS
+    payload = _routing_payload()
+    project_id, actor = _project_id(), 'network-editor-bus-change'
+    workflow = WorkflowStatusService(project_id)
+    current = workflow.get()
+    check_edit_token(payload.get('expected_token'), current['topology'])
+    plan = load_bus_change(current, str(payload.get('network_id') or ''), payload.get('bus'))
+    if payload.get('plan_token') != plan['preview']['token']:
+        raise WorkflowConflictError('Das Modell wurde seit der Vorschau geändert. Bitte den Bustyp erneut auswählen.')
+    topology = plan['topology']
+    patch = payload.get('edge') or {}
+    edge = next((e for e in topology['edges'] if e['id'] == patch.get('id')), None)
+    if edge is None or edge.get('physicalNetworkId') != payload['network_id']:
+        raise EngineeringValidationError('Die bearbeitete Verbindung gehört nicht zum gewählten Bus.')
+    original_edge = next(e for e in current['topology']['edges'] if e['id'] == edge['id'])
+    for field in ('name', 'sourceInterfaceName', 'targetInterfaceName', 'relationType', 'description', 'direction'):
+        if field in patch:
+            if field in {'sourceInterfaceName', 'targetInterfaceName'} and patch[field] == original_edge.get(field):
+                continue
+            edge[field] = patch[field]
+    for kind, identifier, change in plan['changes']:
+        update_object(kind, identifier, {**change, 'modified_by': actor})
+    for node in topology['nodes']:
+        for port in node.get('ports', []):
+            for side in ('source', 'target'):
+                if node['id'] == edge[side] and port['id'] == edge[side + 'Port']:
+                    port['name'] = edge.get(side + 'InterfaceName') or port['name']
+                    for link in topology['edges']:
+                        for endpoint in ('source', 'target'):
+                            if link[endpoint] == node['id'] and link[endpoint + 'Port'] == port['id']:
+                                link[endpoint + 'InterfaceName'] = port['name']
+                    if port.get('hardwareInterfaceId'):
+                        update_object('HardwareNetworkInterface', port['hardwareInterfaceId'], {'name': port['name']})
+    workflow.save_parameters({**current['parameters'], 'networks': plan['networks']}, actor=actor)
+    topology, _ = _prepare_manual_topology_save(topology, project_id, actor=actor)
+    workflow.mark_changed('engineering_model', 'Bustyp und kanonische Transportbindungen geändert.', actor=actor)
+    affected = {n['id'] for n in plan['preview']['networks']}
+    for route in plan['routes']:
+        enriched = enrich_route_from_linked_topology(route, topology)
+        for endpoint in [enriched['source'], *enriched['destinations']]:
+            if endpoint.get('network_id') in affected:
+                endpoint['protocol'] = BUS_PROTOCOLS[payload['bus']]
+        update_route(str(route['id']), {'source': enriched['source'], 'destinations': enriched['destinations'],
+                     'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'Physischer Bustyp geändert.'})
+        for link in topology['edges']:
+            metadata = (link.get('routingMetadata') or {}).get(str(route['id']))
+            if metadata:
+                metadata.update(protocol=enriched['source'].get('protocol'), approvalState='PENDING')
+    workflow.save_topology(topology, actor=actor)
+    validator = RoutingValidator(project_id)
+    for route in plan['routes']:
+        identifier = str(route['id'])
+        saved = get_route(identifier)
+        save_validation(identifier, validator.validate(saved, exclude_route_id=identifier), actor=actor)
+    workflow.refresh_source_status('routing', actor=actor, reason='Geänderte Busrouten sind erneut zu prüfen und freizugeben.')
+    state = workflow.get()
+    state['bus_change'] = plan['preview']
+    return jsonify(state)
+
+
+@engineering_api.route('/workflow/bus-name', methods=['PUT'])
+def update_bus_name_route():
+    payload = _routing_payload()
+    try:
+        return jsonify(WorkflowStatusService(_project_id()).rename_network(
+            str(payload.get('network_id') or ''), payload.get('name'),
+            expected_token=payload.get('expected_token'), expected_parameters_token=payload.get('expected_parameters_token')))
+    except ValueError as error:
+        raise EngineeringValidationError(str(error)) from error
+
+
+@engineering_api.route('/workflow/ethernet-names', methods=['PUT'])
+def normalize_ethernet_names_route():
+    payload = _routing_payload()
+    try:
+        return jsonify(WorkflowStatusService(_project_id()).normalize_ethernet_names(
+            expected_token=payload.get('expected_token'), expected_parameters_token=payload.get('expected_parameters_token')))
+    except ValueError as error:
+        raise EngineeringValidationError(str(error)) from error
+
+
+@engineering_api.route("/workflow/network-view", methods=["GET"])
+def workflow_network_view_route():
+    return jsonify(WorkflowStatusService(_project_id()).network_view())
+
+
+@engineering_api.route('/workflow/frame-device', methods=['POST'])
+def create_frame_device_route():
+    from .frame_device import plan_frame_device
+    from .network_scene import build_network_scene
+
+    payload = _routing_payload()
+    workflow = WorkflowStatusService(_project_id())
+    state = workflow.get()
+    if not payload.get('expected_token'):
+        raise EngineeringValidationError('Die aktuelle Modellversion fehlt. Bitte die Ansicht neu laden.')
+    check_edit_token(payload['expected_token'], state['topology'])
+    plan = plan_frame_device(state, payload, all_pages(list_objects, 'HardwareNode'))
+    actor = 'network-editor-frame'
+    hardware = create_object('HardwareNode', {**plan['hardware'], 'created_by': actor})
+    plan['node'].update(engineeringId=str(hardware['id']), name=hardware['name'])
+    topology = build_network_scene(plan['topology'],
+        (state['context'].get('wizard_request') or {}).get('prompt', ''), positions=plan['positions'])
+    workflow.mark_changed('engineering_model', 'Neues Gerät im Systemrahmen: Gerätedetails und Kommunikation ergänzen.',
+                          status='IN_PROGRESS', actor=actor)
+    workflow.save_topology(topology, actor=actor, layout_positions=plan['positions'])
+    result = workflow.get()
+    result['created_device'] = next(n for n in result['topology']['nodes'] if n['id'] == plan['node']['id'])
+    return jsonify(result), 201
+
+
+@engineering_api.route('/workflow/network-assignment/preview', methods=['POST'])
+def preview_network_assignment_route():
+    from .network_assignment import load_assignment, assignment_request
+    state = WorkflowStatusService(_project_id()).get()
+    return jsonify(load_assignment(state, assignment_request(_routing_payload()))['preview'])
+
+
+@engineering_api.route('/workflow/spatial-zoning/preview', methods=['POST'])
+def preview_spatial_zoning_route():
+    from .zoning_service import SpatialZoningService
+    service = SpatialZoningService(_project_id())
+    return jsonify(service.preview(service.plan(_routing_payload().get('driving_side'))))
+
+
+@engineering_api.route('/workflow/spatial-zoning', methods=['PUT'])
+def apply_spatial_zoning_route():
+    from .zoning_service import SpatialZoningService
+    payload = _routing_payload()
+    return jsonify(SpatialZoningService(_project_id()).apply(payload.get('plan_token'), payload.get('driving_side'),
+        approve_valid=payload.get('approve_valid') is True))
+
+
+@engineering_api.route('/workflow/network-assignment', methods=['PUT'])
+def apply_network_assignment_route():
+    from .network_assignment import load_assignment, assignment_request, confirmed_context
+    project_id, actor = _project_id(), 'network-editor-assignment'
+    workflow = WorkflowStatusService(project_id)
+    payload = _routing_payload()
+    state = workflow.get()
+    check_edit_token(payload.get('expected_token'), state['topology'])
+    plan = load_assignment(state, assignment_request(payload))
+    if payload.get('plan_token') != plan['preview']['token']:
+        raise WorkflowConflictError('Die Zuordnung wurde seit der Vorschau geändert. Bitte die Vorschau erneut prüfen.')
+    resolved = {}
+    def resolve(value):
+        if isinstance(value, dict):
+            return {resolved.get(k, k): resolve(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [resolve(v) for v in value]
+        return resolved.get(value, value) if isinstance(value, str) else value
+    for item in plan['creations']:
+        created = create_object(item['object_type'], {**resolve(item['data']), 'created_by': actor})
+        resolved[item['local_ref']] = str(created['id'])
+    for (kind, identifier), values in plan['changes'].items():
+        update_object(kind, identifier, {**resolve(values), 'modified_by': actor})
+    for planned in plan['routes']:
+        if planned.get('_assignment_new'):
+            created = create_route({**resolve(planned), 'origin': 'NETWORK_EDITOR', 'approval_state': 'PENDING',
+                                    'review_state': 'UNREVIEWED', 'created_by': actor})
+            resolved[planned['id']] = str(created['id'])
+    topology = resolve(plan['topology'])
+    positions = topology['scene']['manualPositions']
+    context = confirmed_context(state, topology, plan)
+    with get_connection() as connection:
+        connection.execute('UPDATE engineering_workflow_projects SET context = %s::jsonb WHERE project_id = %s',
+                           (json.dumps(context, default=str), project_id))
+    workflow.save_parameters({**state['parameters'], 'networks': plan['networks']}, actor=actor)
+    # Reuse canonical relation synchronization, keeping explicit membership fields.
+    result = _sync_topology_with_invalidation(topology, project_id)
+    topology = _topology_with_engineering_links(topology, result)
+    for planned in plan['routes']:
+        route = resolve(planned)
+        if not planned.get('_assignment_new'):
+            update_route(str(route['id']), {**{k: route[k] for k in ('name', 'source', 'destinations', 'payload', 'route')},
+                         'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'Bestätigte System- und Buszuordnung geändert.'})
+        # Withdraw obsolete approved graph edges until this revision is approved.
+        with get_connection() as connection:
+            connection.execute("DELETE FROM engineering_relations WHERE project_id = %s AND "
+                "((relation_type = 'ROUTES_TO' AND attributes ->> 'route_id' = %s) OR "
+                "(relation_type = 'USES_ROUTE' AND target_type = 'RoutingEntry' AND target_id = %s))",
+                (project_id, str(route['id']), str(route['id'])))
+    workflow.mark_changed('engineering_model', 'Systemzuordnung, Transportverträge und Busanschlüsse geändert.', actor=actor)
+    workflow.save_topology(topology, actor=actor, layout_positions=positions)
+    validator = RoutingValidator(project_id)
+    validations = []
+    for route in plan['routes']:
+        identifier = resolve(str(route['id']))
+        validation = validator.validate(get_route(identifier), exclude_route_id=identifier)
+        if not validation.get('valid'):
+            details = '; '.join(error['message'] for error in validation.get('errors', [])[:3])
+            raise EngineeringValidationError(f"Zuordnung nicht gespeichert: {route['name']}: {details}")
+        save_validation(identifier, validation, actor=actor)
+        validations.append({'id': identifier, 'valid': validation.get('valid'), 'errors': validation.get('errors', [])})
+    workflow.refresh_source_status('routing', actor=actor, reason='Geänderte Zuordnung: betroffene Routen erneut freigeben.')
+    result = workflow.get()
+    result['assignment'] = {**plan['preview'], 'validations': validations}
+    return jsonify(result)
+
+
+@engineering_api.route("/workflow/network-view", methods=["PUT"])
+def update_workflow_network_view_route():
+    payload = _routing_payload()
+    positions = payload.get('positions')
+    if positions is not None and not isinstance(positions, dict):
+        raise EngineeringValidationError('positions muss ein Objekt sein.')
+    try:
+        return jsonify(WorkflowStatusService(_project_id()).prepare_network_view(
+            expected_token=payload.get('expected_token'), positions=positions, reset=payload.get('reset') is True,
+            bus_routes=payload.get('bus_routes'), reset_wires=payload.get('reset_wires') is True))
+    except (TypeError, ValueError) as error:
+        raise EngineeringValidationError(str(error)) from error
 
 
 @engineering_api.route("/workflow/topology-layout", methods=["GET"])
@@ -1242,6 +1478,23 @@ def capacity_optimize_route():
         "resource_allocation": plan.get('resource_allocation'),
         "decision_rationale": plan.get('decision_rationale'),
     })
+
+
+@engineering_api.route("/capacity/dimension", methods=["POST"])
+def communication_dimension_route():
+    from .capacity.sizing_service import CommunicationSizingService
+    payload = request.get_json(silent=True) or {}
+    return jsonify(CommunicationSizingService(_project_id()).preview(payload.get("policy")))
+
+
+@engineering_api.route("/capacity/dimension/apply", methods=["POST"])
+def communication_dimension_apply_route():
+    from .capacity.sizing_service import CommunicationSizingService
+    payload = _routing_payload()
+    result = CommunicationSizingService(_project_id()).apply(payload.get("source_token"), payload.get("policy"),
+        actor=str(payload.get("actor") or "capacity-workbench"), approve_valid=payload.get("approve_valid") is True)
+    result["capacity"] = CapacityTimingService(_project_id()).calculate()
+    return jsonify(result)
 
 
 @engineering_api.route("/capacity/networks", methods=["GET"])

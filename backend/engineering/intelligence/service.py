@@ -25,6 +25,7 @@ from .network_planning import (
     plan_network_distribution,
 )
 from .review_learning import enrich_with_review_history
+from ..capacity.dimensioning import dimension_communications
 from .repository import (
     create_optimization_proposal,
     list_optimization_proposals,
@@ -430,6 +431,21 @@ class IntelligenceService:
             *self._convert_findings(data["preflight"].get("findings") or []),
             *self._convert_findings(LogicalNodeAddressAllocator(self.project_id).findings()),
         ]
+        zoning = (data['state'].get('parameters') or {}).get('spatial_zoning') or {}
+        spatial = {'enabled': bool(zoning.get('enabled'))}
+        if spatial['enabled']:
+            from ..spatial_zoning import spatial_assessment
+            assessment = spatial_assessment(data['state'], objects['HardwareNode'])
+            spatial.update(assessment)
+            unknown = [d for d in assessment['decisions'] if d['zone_id'] == 'UNKNOWN' and d['functional_owner_id']]
+            conflicts = assessment['conflicts']
+            if unknown:
+                issues.append(_issue('WARNING', 'Spatial Architecture', 'INSTALLATION_LOCATION_UNRESOLVED',
+                    f'{len(unknown)} lokale Geräte haben noch keinen eindeutigen Einbauort.',
+                    cause='Es fehlt ein eindeutiger Einbauort im Bezugsrahmen. Funktionale Zugehörigkeit belegt keine räumliche Nähe.',
+                    affected=[n['hardware_id'] for n in unknown],
+                    recommendation='Einbauorte und benannte Raumcluster im Hardware-Modell festlegen; unbekannte Orte bleiben offen.'))
+            issues.extend(self._convert_findings(conflicts))
         issues = self._apply_issue_reviews(issues, self._issue_reviews())
         issues.sort(key=lambda item: {"ERROR": 0, "WARNING": 1, "INFO": 2}.get(item["severity"], 3))
         rag = self._rag_insights(issues)
@@ -443,11 +459,23 @@ class IntelligenceService:
             resource_policy=planning_policy(data['state']),
         )
         recommendations = [*distribution_recommendations(distribution), *RecommendationEngine().generate(issues, rag)]
+        dimensioning = dimension_communications((data["capacity"].get("results") or {}).get("transmissions", []),
+            data["state"].get("parameters") or {}, (data["state"].get("context") or {}).get("communication_sizing_history") or [])
+        for network in dimensioning["networks"]:
+            if not any(change for change in dimensioning["changes"] if network["network_id"] in change["network_ids"]) and network["status"] != "UNRESOLVED":
+                continue
+            recommendations.insert(0, {"category": "COMMUNICATION_DIMENSIONING", "priority": 90, "confidence": 1.0,
+                "candidate_id": "sizing-" + network["network_id"], "implementation_effort": "LOW", "status": "CANDIDATE",
+                "problem": f"Kommunikationsdimensionierung: {network['network_name']}",
+                "recommendation": network["explanation"], "affected_objects": [network["network_id"]],
+                "requires_fresh_review": True, "evidence": network, "action": "OPEN_COMMUNICATION_SIZING"})
         review_learning = enrich_with_review_history(recommendations, data.get("review_history") or [])
         results = {
             "assessment_mode": "VERIFIED" if verified else "DIAGNOSTIC",
             "missing_evidence": missing_evidence,
             "network_distribution": distribution,
+            "communication_dimensioning": dimensioning,
+            "spatial_architecture": spatial,
             "review_learning": review_learning,
             "interpretation": {"method": "deterministic", "ai_used": False, "learning": "Versionierte Befunde und Review-Feedback; kein Modelltraining."},
             "system_health": health,

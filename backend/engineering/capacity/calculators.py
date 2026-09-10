@@ -57,8 +57,8 @@ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]
 
     if normalized == "LIN":
         # Break, sync, identifier, payload, checksum plus UART framing.
-        frame_bits = 34 + payload * 10
-        return FrameEstimate(normalized, payload, frame_bits, frame_bits / bitrate, "LIN_FRAME_ESTIMATE")
+        frame_bits = 34 + (payload + 1) * 10
+        return FrameEstimate(normalized, payload, frame_bits, frame_bits / bitrate, "LIN_NOMINAL_WITH_CHECKSUM", calculation_version="2.0")
 
     if normalized == "FLEXRAY":
         frame_bits = 80 + payload * 8
@@ -78,6 +78,24 @@ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]
 def utilization_percent(transmission_time_s: float, cycle_ms: float, multiplicity: int = 1) -> float:
     cycle_s = max(float(cycle_ms), 0.001) / 1000.0
     return max(0.0, transmission_time_s * max(1, multiplicity) / cycle_s * 100.0)
+
+
+def can_frame_time_bound_ms(protocol: str, payload_bytes: int, parameters: dict[str, Any]) -> float | None:
+    """Conservative error-free wire-time envelope, not a mean stuffing estimate.
+
+    Reserve 160 non-payload bits and 50% stuffing allowance at the slower phase
+    rate. This intentionally overbounds standard/FD overhead, CRC, intermission,
+    fixed/dynamic stuffing and FD DLC padding. No retry budget is implied.
+    """
+    normalized = str(protocol).upper().replace("-", "_")
+    if normalized not in {"CAN", "CAN_CLASSIC", "CAN_FD", "CANFD"}:
+        return None
+    payload = max(0, int(payload_bytes))
+    if normalized in {"CAN_FD", "CANFD"}:
+        payload = next((size for size in [*range(9), 12, 16, 20, 24, 32, 48, 64] if size >= payload), payload)
+    bitrate = _positive(parameters.get("arbitration_bitrate"), _positive(parameters.get("bitrate"), 500000))
+    bitrate = min(bitrate, _positive(parameters.get("data_bitrate"), bitrate))
+    return ceil((160 + 8 * payload) * 1.5) / bitrate * 1000
 
 
 def queueing_delay_ms(transmission_time_s: float, utilization: float) -> float:

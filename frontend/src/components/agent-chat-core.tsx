@@ -2,6 +2,8 @@
 import type { AgentInput } from "@/lib/agent/agent-response";
 import { readAssistantContext } from "@/lib/agent/assistant-context";
 import type { AssistantGraphState } from "@/lib/assistant-graph";
+import type { ChatAttachment } from "@/lib/agent/chat-attachments";
+import { AgentChatComposer } from "./agent-chat-composer";
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -17,7 +19,6 @@ import {
   finishEngineeringAgentWizardSession,
   persistEngineeringAgentTask,
   readPendingEngineeringAgentTask,
-  takePendingEngineeringAgentTask,
   updatePendingEngineeringAgentTask,
   type EngineeringAgentTask,
 } from "@/lib/agent-task-events";
@@ -49,6 +50,7 @@ import {
 import { approveRoutes, listRoutes } from "@/lib/routing-api";
 import { routingApprovalProgress } from "@/lib/routing-approval";
 import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, TechnologyDomain } from "@/lib/types";
+import { DEFAULT_BUS_PARTICIPANT_LIMITS, busBranchCapacity } from "@/lib/bus-settings";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import {
   normalizeEngineeringWizardSettings,
@@ -105,11 +107,13 @@ export function AgentChatCore({
   compact = false,
   projectId,
   routingApprovalComplete = false,
+  draftRequest,
   onStateChange,
 }: {
   compact?: boolean;
   projectId?: string;
   routingApprovalComplete?: boolean;
+  draftRequest?: { id: number; text: string } | null;
   onStateChange?: (state: AssistantGraphState) => void;
 }) {
   const activeProjectId = projectId?.trim() || readActiveProjectId();
@@ -121,12 +125,15 @@ export function AgentChatCore({
     }),
     [activeProjectId],
   );
-  const { messages, sendMessage, setMessages, status, error, regenerate } = useChat<EngineeringAgentUIMessage>({
+  const { messages, sendMessage, setMessages, status, error, regenerate, clearError } = useChat<EngineeringAgentUIMessage>({
     id: `engineering-agent-${activeProjectId}`,
     transport,
   });
   const [input, setInput] = useState("");
   const [historyReady, setHistoryReady] = useState(false);
+  const [pendingTask, setPendingTask] = useState<EngineeringAgentTask | null>(null);
+  const [taskNotice, setTaskNotice] = useState('');
+  const consumedDraftRef = useRef<number | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const followBottomRef = useRef(true);
   const [newAnswer, setNewAnswer] = useState(false);
@@ -136,15 +143,13 @@ export function AgentChatCore({
   const taskRunStartingRef = useRef(false);
   const activeAutomaticTaskRef = useRef<EngineeringAgentTask | null>(null);
   const previousStatusRef = useRef(status);
-  const initialPendingProjectRef = useRef("");
-  const continuationTimerRef = useRef<number | null>(null);
   const persistedHistoryRevisionRef = useRef("");
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!historyReady || !input.trim() || status !== "ready") return;
-    const text = input.trim();
-    if (isInlineConfirmation(text)) {
+  function submit(text: string, attachments: ChatAttachment[]) {
+    if (!historyReady || !text.trim() || (status !== "ready" && status !== "error")) return;
+    clearError();
+    followBottomRef.current = true;
+    if (!attachments.length && isInlineConfirmation(text) && status === 'ready') {
       if (confirmationRequest) {
         allowRequestedAction(text);
       } else {
@@ -153,7 +158,7 @@ export function AgentChatCore({
       setInput("");
       return;
     }
-    sendMessage({ text });
+    void sendMessage({ parts: [{ type: 'text', text }, ...attachments.map(data => ({ type: 'data-attachment' as const, data }))] });
     setInput("");
   }
 
@@ -185,17 +190,21 @@ export function AgentChatCore({
     if (task.gate === "routing-approval" && !routingApprovalComplete) return;
 
     taskRunStartingRef.current = true;
+    setTaskNotice('');
     let runnableTask = task;
     try {
       if (task.workflowTarget) {
         const workflow = await getWorkflowSummary();
-        if (workflow.context.agent_wizard_status) return;
+        if (workflow.context.agent_wizard_status) { setTaskNotice('Dieser Auftrag gehört zum Engineering-Wizard. Bitte dort fortsetzen.'); return; }
         const progress = engineeringAgentWorkflowProgress(task, workflow.statuses, workflow.versions);
         if (progress.complete) {
           clearPendingEngineeringAgentTask(activeProjectId);
+          setPendingTask(null);
+          setTaskNotice('Der vorbereitete Auftrag ist bereits abgeschlossen.');
           return;
         }
         if (progress.blockedStep) {
+          setTaskNotice(`Zuerst den Fehler im Workflow-Schritt ${progress.blockedStep} prüfen.`);
           updatePendingEngineeringAgentTask({
             ...task,
             gate: undefined,
@@ -204,7 +213,6 @@ export function AgentChatCore({
           });
           return;
         }
-        if (task.paused && task.lastWorkflowSignature === progress.signature) return;
         runnableTask = updatePendingEngineeringAgentTask({
           ...task,
           gate: undefined,
@@ -218,6 +226,7 @@ export function AgentChatCore({
         window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
       }
 
+      setPendingTask(null);
       await sendMessage(
         { text: runnableTask.text },
         runnableTask.workflowTarget
@@ -226,7 +235,8 @@ export function AgentChatCore({
       );
     } catch (error) {
       if (activeAutomaticTaskRef.current === runnableTask) activeAutomaticTaskRef.current = null;
-      throw error;
+      setPendingTask(task);
+      setTaskNotice(error instanceof Error ? error.message : 'Der Auftrag konnte nicht gestartet werden.');
     } finally {
       taskRunStartingRef.current = false;
     }
@@ -235,7 +245,8 @@ export function AgentChatCore({
   useEffect(() => {
     let active = true;
     setHistoryReady(false);
-    initialPendingProjectRef.current = "";
+    setPendingTask(readPendingEngineeringAgentTask(activeProjectId));
+    setTaskNotice('');
     activeAutomaticTaskRef.current = null;
     void readEngineeringAgentHistory<EngineeringAgentUIMessage>(activeProjectId).then((storedMessages) => {
       if (!active) return;
@@ -306,36 +317,37 @@ export function AgentChatCore({
   }, [stableMessages]);
 
   useEffect(() => {
-    const ask = (event: Event) => {
-      const question = String((event as CustomEvent<string>).detail ?? "").trim();
-      if (historyReady && question && status === "ready") void sendMessage({ text: question });
-    };
-    window.addEventListener("engineering-agent:ask", ask);
-    return () => window.removeEventListener("engineering-agent:ask", ask);
-  }, [historyReady, sendMessage, status]);
+    // The widget captures this before lazy-mounting the chat. Opening a question
+    // prepares an editable draft; it never submits or replaces an existing one.
+    if (!draftRequest || consumedDraftRef.current === draftRequest.id) return;
+    consumedDraftRef.current = draftRequest.id;
+    setInput(current => current.trim() ? `${current}\n\n${draftRequest.text}` : draftRequest.text);
+    inputRef.current?.focus();
+  }, [draftRequest]);
 
   useEffect(() => {
     const handleTask = (event: Event) => {
-      void runTask((event as CustomEvent<EngineeringAgentTask>).detail);
+      const task = (event as CustomEvent<EngineeringAgentTask>).detail;
+      if (task?.text?.trim() && (!task.projectId || task.projectId === activeProjectId)) {
+        setPendingTask(task);
+        setTaskNotice('');
+      }
     };
     window.addEventListener(ENGINEERING_AGENT_TASK_EVENT, handleTask);
     return () => window.removeEventListener(ENGINEERING_AGENT_TASK_EVENT, handleTask);
-  }, [runTask]);
-
-  useEffect(() => {
-    if (!historyReady || status !== "ready" || initialPendingProjectRef.current === activeProjectId) return;
-    initialPendingProjectRef.current = activeProjectId;
-    const pending = takePendingEngineeringAgentTask();
-    if (pending) void runTask(pending);
-  }, [activeProjectId, historyReady, runTask, status]);
+  }, [activeProjectId]);
 
   useEffect(() => {
     const previousStatus = previousStatusRef.current;
     previousStatusRef.current = status;
     const automaticTask = activeAutomaticTaskRef.current;
-    const runFinished = status === "ready" && (previousStatus === "submitted" || previousStatus === "streaming");
+    const runFinished = (status === "ready" || status === "error") && (previousStatus === "submitted" || previousStatus === "streaming");
     if (!historyReady || !runFinished || !automaticTask?.workflowTarget) return;
     activeAutomaticTaskRef.current = null;
+    if (status === 'error') {
+      setPendingTask(readPendingEngineeringAgentTask(activeProjectId));
+      return;
+    }
 
     let active = true;
     const continueWorkflow = async () => {
@@ -346,31 +358,32 @@ export function AgentChatCore({
       const progress = engineeringAgentWorkflowProgress(pending, workflow.statuses, workflow.versions);
       if (progress.complete) {
         clearPendingEngineeringAgentTask(activeProjectId);
+        setPendingTask(null);
         return;
       }
       if (progress.blockedStep) {
-        updatePendingEngineeringAgentTask({
+        setPendingTask(updatePendingEngineeringAgentTask({
           ...pending,
           paused: true,
           lastWorkflowSignature: progress.signature,
-        });
+        }));
         return;
       }
 
-      updatePendingEngineeringAgentTask({
+      setPendingTask(updatePendingEngineeringAgentTask({
         ...pending,
         paused: true,
         lastWorkflowSignature: progress.signature,
         noProgressRuns: (pending.noProgressRuns ?? 0) + 1,
-      });
+      }));
     };
-    void continueWorkflow();
+    void continueWorkflow().catch(() => {
+      if (!active) return;
+      setPendingTask(readPendingEngineeringAgentTask(activeProjectId));
+      setTaskNotice('Der Workflow-Status konnte nicht gelesen werden. Der Auftrag wartet weiterhin auf deinen Start.');
+    });
     return () => {
       active = false;
-      if (continuationTimerRef.current !== null) {
-        window.clearTimeout(continuationTimerRef.current);
-        continuationTimerRef.current = null;
-      }
     };
   }, [activeProjectId, historyReady, runTask, status]);
 
@@ -380,13 +393,6 @@ export function AgentChatCore({
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
   }, [input]);
-
-  function handleInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      event.currentTarget.form?.requestSubmit();
-    }
-  }
 
   function allowRequestedAction(confirmationText = "Bestätigt") {
     if (!historyReady || !confirmationRequest || status !== "ready") return;
@@ -421,7 +427,7 @@ export function AgentChatCore({
   }
 
   return (
-    <>
+    <div className="eng-agent-chat">
       <div className="eng-agent-thread" aria-label="Gesprächsverlauf" ref={threadRef} onScroll={() => {
         const thread = threadRef.current;
         if (!thread) return;
@@ -439,10 +445,27 @@ export function AgentChatCore({
           <div className="empty-result" style={{ minHeight: compact ? 90 : 140 }}>
             <span className="empty-icon">◇</span>
             <strong>Woran möchtest du arbeiten?</strong>
-            <p>Beschreibe dein Engineering-Ziel oder wähle einen Einstieg.</p>
+            <p>Wähle einen Einstieg oder stelle deine eigene Frage. Erst mit „Senden“ beginnt der Assistent.</p>
             <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { setInput(label); inputRef.current?.focus(); }}>{label}</button>)}</div>
           </div>
         )}
+
+        {historyReady && stableMessages.length > 0 && <details className="eng-agent-examples">
+          <summary>Frage vorbereiten</summary>
+          <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { setInput(current => current.trim() ? `${current}\n${label}` : label); inputRef.current?.focus(); }}>{label}</button>)}</div>
+        </details>}
+
+        {pendingTask && <section className="eng-agent-pending-task" aria-label="Vorbereiteter Auftrag">
+          <strong>Vorbereiteter Auftrag</strong>
+          <p>Dieser gespeicherte Auftrag wartet auf deinen Start.</p>
+          <details><summary>Auftrag ansehen</summary><p>{pendingTask.text}</p></details>
+          {pendingTask.gate === 'routing-approval' && !routingApprovalComplete && <p>Die Routing-Freigaben stehen noch aus.</p>}
+          <div className="eng-agent-composer-actions">
+            <button className="button primary" type="button" disabled={!historyReady || busy || status === 'error' || (pendingTask.gate === 'routing-approval' && !routingApprovalComplete)} onClick={() => { void runTask(pendingTask); }}>Auftrag starten</button>
+            <button className="button secondary" type="button" disabled={busy} onClick={() => { clearPendingEngineeringAgentTask(activeProjectId); setPendingTask(null); setTaskNotice(''); }}>Verwerfen</button>
+          </div>
+        </section>}
+        {taskNotice && <p className="notice" role="status">{taskNotice}</p>}
 
         {stableMessages.length > visibleCount && <button type="button" onClick={() => setVisibleCount(count => count + 20)}>Ältere Nachrichten laden</button>}
         {stableMessages.slice(-visibleCount).map((message) => (
@@ -488,10 +511,6 @@ export function AgentChatCore({
             </div>
           </div>
         )}
-      </div>
-
-      {newAnswer && <button type="button" className="engineering-new-answer" onClick={() => { const thread = threadRef.current; if (thread) thread.scrollTop = thread.scrollHeight; followBottomRef.current = true; setNewAnswer(false); }}>Neue Antwort anzeigen ↓</button>}
-
       {error && (
         <div className="notice error">
           {agentErrorText(error.message)}{" "}
@@ -525,22 +544,11 @@ export function AgentChatCore({
         </div>
       )}
 
-      <form className="eng-agent-form" onSubmit={submit}>
-        <textarea
-          aria-label="Nachricht an den Engineering-Assistenten"
-          disabled={!historyReady || busy}
-          onKeyDown={handleInputKeyDown}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="Frage den Engineering-Assistenten …"
-          ref={inputRef}
-          rows={1}
-          value={input}
-        />
-        <button className="button primary" disabled={!historyReady || busy || !input.trim()} type="submit">
-          Senden
-        </button>
-      </form>
-    </>
+      </div>
+      {newAnswer && <button type="button" className="engineering-new-answer" onClick={() => { const thread = threadRef.current; if (thread) thread.scrollTop = thread.scrollHeight; followBottomRef.current = true; setNewAnswer(false); }}>Neue Antwort anzeigen ↓</button>}
+      <AgentChatComposer input={input} setInput={setInput} inputRef={inputRef} ready={historyReady}
+        busy={busy} projectId={activeProjectId} onSubmit={submit} />
+    </div>
   );
 }
 
@@ -653,9 +661,9 @@ const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
   {
     id: "gateway_ecu_segments",
     label: "Variante 4 · Gateway-Segmente",
-    detail: "Ein Gateway-Segment bündelt bis zu 6 Controller; Sensoren und Aktoren bleiben an der fachlichen Steuerung.",
-    diagram: "Sensor/Aktor -> Controller 1 --\\\nSensor/Aktor -> Controller 2 --- Gateway\n... bis Controller 6 ----/",
-    rules: "Segmentierte Gateway-Backbone-Architektur: Sensoren und Aktoren werden fachlich an Controller geführt; pro Gateway-Leitung werden bis zu 6 Controller als Bussegment gebündelt. Das Gateway kennt die Controller-Segmente, legt aber keine Sensor-/Aktor-Direktanbindungen an.",
+    detail: "Gemeinsame Gateway-Busse gemäß den Teilnehmergrenzen je Bustyp; Sensoren und Aktoren bleiben an der fachlichen Steuerung.",
+    diagram: "Sensor/Aktor -> Controller 1 --\\\nSensor/Aktor -> Controller 2 --- Gateway\n... weitere Controller ----/",
+    rules: "Segmentierte Gateway-Backbone-Architektur: Sensoren und Aktoren werden fachlich an Controller geführt; pro Gateway-Leitung werden Controller entsprechend der einstellbaren Bus-Teilnehmergrenze als Bussegment gebündelt (Gateway mitgezählt). Das Gateway kennt die Controller-Segmente, legt aber keine Sensor-/Aktor-Direktanbindungen an.",
   },
   {
     id: "hybrid_ai",
@@ -1859,6 +1867,7 @@ export function EngineeringAgentWizard({
         `- Kommunikationssystem-Sollwerte: ${JSON.stringify(communicationSystemCounts)}\n` +
         `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
+        `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
         `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
@@ -1913,6 +1922,7 @@ export function EngineeringAgentWizard({
           model_type: mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry,
           scope_ids: scope,
           process_ids: process,
+          bus_participant_limits: normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits,
         },
         agent_wizard_status: {
           ...nextContext,
@@ -2361,6 +2371,7 @@ export function EngineeringAgentWizard({
       }));
   const displayedPlannedNetworkConnections = submittedContext?.planned_network_connections ?? plannedNetworkConnectionCount({
     architectureId: submittedContext?.network_architecture?.id ?? selectedArchitecture?.id,
+    participantLimits: normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits,
     clusterAssignments: submittedContext?.system_cluster_assignments ?? equipmentClusterAssignments,
     equipmentCounts: hardwareDetails,
   });
@@ -3337,6 +3348,7 @@ function communicationSystemInputRows(args: {
 
 function plannedNetworkConnectionCount(args: {
   architectureId?: NetworkArchitectureId;
+  participantLimits?: Record<string, number>;
   clusterAssignments: EquipmentClusterAssignment[];
   equipmentCounts: EngineeringHardwareCounts;
 }) {
@@ -3346,7 +3358,7 @@ function plannedNetworkConnectionCount(args: {
     .reduce((sum, assignment) => sum + Math.max(0, Number(assignment.devices) || 0), 0);
   if (args.architectureId === "hybrid_ai") return Math.max(selectedClusterDevices, participantConnections);
   if (args.architectureId === "gateway_ecu_segments") {
-    const ecuSegments = Math.ceil(Math.max(0, args.equipmentCounts.ecus) / 6);
+    const ecuSegments = args.clusterAssignments.filter(cluster => cluster.selected).reduce((sum, cluster) => sum + Math.ceil((cluster.tree?.length ?? cluster.counts.ecus ?? 0) / busBranchCapacity(args.participantLimits ?? DEFAULT_BUS_PARTICIPANT_LIMITS, cluster.network_id)), 0);
     return args.equipmentCounts.sensors + args.equipmentCounts.actuators + ecuSegments;
   }
   if (args.architectureId === "sensor_ecu_actuator") return args.equipmentCounts.sensors + args.equipmentCounts.actuators;
@@ -3887,6 +3899,9 @@ function MessagePart({
   }
   if (part.type === "data-engineering") {
     return <EngineeringAgentEventCard event={part.data} projectId={projectId} onAnswer={onAnswer} onRetry={onRetry} />;
+  }
+  if (part.type === 'data-attachment') {
+    return <details className="eng-agent-attachment-source"><summary>Dokument: {part.data.name}{part.data.truncated ? ' · Auszug' : ''}</summary><pre>{part.data.text}</pre></details>;
   }
 
   if (part.type === "tool-listEngineeringObjects" || part.type === "tool-listEngineeringRelations") {

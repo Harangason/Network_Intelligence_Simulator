@@ -13,8 +13,6 @@ import { AssistantGraphBubble } from "@/components/assistant";
 import { AgentChatCore } from "@/components/agent-chat-core";
 import {
   ENGINEERING_AGENT_OPEN_EVENT,
-  engineeringAgentWorkflowProgress,
-  queueEngineeringWorkflowContinuation,
 } from "@/lib/agent-task-events";
 import { listRoutes } from "@/lib/routing-api";
 import {
@@ -23,7 +21,6 @@ import {
 } from "@/lib/routing-approval";
 import type { RoutingEntry } from "@/lib/types";
 import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
-import { getWorkflowSummary } from "@/lib/workflow-api";
 import { WORKFLOW_CHANGED_EVENT } from "@/components/workflow-header";
 import { ASSISTANT_CONTEXT_EVENT, readAssistantContext } from "@/lib/agent/assistant-context";
 import type { AssistantGraphState } from "@/lib/assistant-graph";
@@ -67,6 +64,7 @@ export function GlobalAgentWidget() {
   const [settingsReady, setSettingsReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const [draftRequest, setDraftRequest] = useState<{ id: number; text: string; projectId: string } | null>(null);
   const [agentState, setAgentState] = useState<AssistantGraphState>('idle');
   useEffect(() => { if (open) setHasOpened(true); }, [open]);
   const [approvalProgress, setApprovalProgress] = useState<RoutingApprovalProgress<RoutingEntry> | null>(null);
@@ -174,19 +172,8 @@ export function GlobalAgentWidget() {
         const next = routingApprovalProgress(await listRoutes());
         if (!active) return;
         setApprovalProgress(next);
-        if (!next.complete) return;
-        const workflow = await getWorkflowSummary();
-        if (!active) return;
-        // The wizard owns its run and explicit review gates, including after reopening.
-        if (workflow.context.agent_wizard_status) return;
-        const progress = engineeringAgentWorkflowProgress(
-          { workflowTarget: "data_science_intelligence" },
-          workflow.statuses,
-          workflow.versions,
-        );
-        if (!progress.complete && !progress.blockedStep) {
-          queueEngineeringWorkflowContinuation(activeProject);
-        }
+        // Opening, focus and status polling are read-only. A workflow status
+        // is never authorization to synthesize or dispatch an agent request.
       } catch {
         // A transient routing API failure must not discard the last known gate state.
       } finally {
@@ -209,13 +196,18 @@ export function GlobalAgentWidget() {
 
   useEffect(() => {
     const openAgent = () => setOpen(true);
+    const prepareQuestion = (event: Event) => {
+      const text = String((event as CustomEvent<string>).detail ?? "").trim();
+      if (text) setDraftRequest({ id: Date.now(), text, projectId: activeProject });
+      setOpen(true);
+    };
     window.addEventListener(ENGINEERING_AGENT_OPEN_EVENT, openAgent);
-    window.addEventListener("engineering-agent:ask", openAgent);
+    window.addEventListener("engineering-agent:ask", prepareQuestion);
     return () => {
       window.removeEventListener(ENGINEERING_AGENT_OPEN_EVENT, openAgent);
-      window.removeEventListener("engineering-agent:ask", openAgent);
+      window.removeEventListener("engineering-agent:ask", prepareQuestion);
     };
-  }, []);
+  }, [activeProject]);
 
   return (
     <aside
@@ -273,6 +265,7 @@ export function GlobalAgentWidget() {
                   compact
                   key={activeProject}
                   projectId={activeProject}
+                  draftRequest={draftRequest?.projectId === activeProject ? draftRequest : null}
                   routingApprovalComplete={approvalProgress?.complete === true}
                   onStateChange={setAgentState}
                 />

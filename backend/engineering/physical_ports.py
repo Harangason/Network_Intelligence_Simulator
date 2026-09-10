@@ -8,7 +8,7 @@ from ..communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from .models import INTERFACE_TYPES
 from .physical_segments import physical_port_networks
 from .routing.validation import PROTOCOL_CAPACITY
-from .naming import new_bus_name
+from .naming import new_bus_name, ethernet_context, is_ethernet
 
 
 def technology_id(value):
@@ -96,7 +96,39 @@ def topology_port_findings(topology, hardware, interfaces):
     return findings
 
 
-def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), prune_unconnected=True):
+def _free_port_rebindings(previous, current):
+    """Retain channel identity on explicit attachment or disconnection of a connector."""
+    old = {str(p['id']): (str(n.get('engineeringId') or ''), p)
+           for n in (previous or {}).get('nodes') or [] for p in n.get('ports') or []}
+    connected = {str(e.get(side + 'Port') or '') for e in (previous or {}).get('edges') or [] for side in ('source', 'target')}
+    now_connected = {str(e.get(side + 'Port') or '') for e in current.get('edges') or [] for side in ('source', 'target')}
+    allowed = set()
+    for node in current.get('nodes') or []:
+        for port in node.get('ports') or []:
+            identifier = str(port['id'])
+            owner, before = old.get(identifier, ('', {}))
+            interface = str(before.get('hardwareInterfaceId') or '')
+            if not interface:
+                continue
+            if owner != str(node.get('engineeringId') or '') or interface != port.get('hardwareInterfaceId') or technology_id(before.get('bus')) != technology_id(port.get('bus')):
+                continue
+            if identifier in connected and identifier not in now_connected:
+                if not any(p.get('hardwareInterfaceId') == interface and p['id'] in now_connected
+                           for n in current.get('nodes') or [] for p in n.get('ports') or []):
+                    allowed.add((identifier, interface))
+                continue
+            if identifier in connected or identifier not in now_connected:
+                continue
+            # Another alias or participant means this is an existing network, not a spare connector.
+            if any(key != identifier and (other.get('hardwareInterfaceId') == interface or
+                   (before.get('physicalNetworkId') and other.get('physicalNetworkId') == before['physicalNetworkId']))
+                   for key, (_, other) in old.items()):
+                continue
+            allowed.add((identifier, interface))
+    return allowed
+
+
+def materialize_physical_ports(topology, hardware, interfaces, networks, *, routes=(), messages=(), prune_unconnected=True, previous_topology=None):
     """Return a topology and explicit ordered changes; never mutate canonical state.
 
     Each (device, technology, physical network) gets one actual channel. Existing
@@ -104,6 +136,7 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
     hardware resources remain visible in the same proposal as the topology.
     """
     updated = deepcopy(topology)
+    rebindings = _free_port_rebindings(previous_topology, topology)
     hw = {str(row['id']): row for row in hardware}
     canonical = {str(row['id']): deepcopy(row) for row in interfaces}
     declared = {str(row['id']): {**row, 'name': row.get('name') or str(row['id'])} for row in networks}
@@ -122,6 +155,13 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
         owner = (hw[hardware_id].get('identity') or {}).get('system_owner_id')
         if owner:
             node['systemOwnerId'] = str(owner)
+        identity = hw[hardware_id].get('identity') or {}
+        if identity.get('installation_zone'):
+            node['installationZone'] = identity['installation_zone']
+        if identity.get('cluster_id'):
+            node.update(clusterId=identity['cluster_id'], clusterName=identity.get('cluster_name'))
+        if identity.get('system_owner_source') == 'network-editor':
+            node.update(systemOwnerId=identity.get('system_owner_id'), systemOwnerSource='network-editor')
         for port in node.get('ports') or []:
             port_id, bus = str(port['id']), str(port.get('bus') or '')
             technology = _interface_technology(bus)
@@ -135,7 +175,10 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 protocol = next((value for value in PROTOCOL_CAPACITY if technology_id(value) == technology_id(technology)), None)
                 if protocol is None:
                     raise ValueError(f'Netzprotokoll für {technology} ist nicht verfügbar.')
-                data = {'id': network_id, 'name': new_bus_name(network_id, declared.values()), 'technology': protocol}
+                context = ethernet_context({'id': network_id}, updated, hardware)
+                data = {'id': network_id, 'name': new_bus_name(network_id, declared.values(), technology=protocol, context=context), 'technology': protocol}
+                if is_ethernet(protocol):
+                    data.update(name_source='generated', name_context=context)
                 declared[network_id] = data
                 network_changes.append({'object_type': 'Network', 'local_ref': 'physical-network-' + sha256(network_id.encode()).hexdigest()[:16], 'data': data})
             key = (hardware_id, technology_id(technology), network_id)
@@ -143,7 +186,9 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 candidates = sorted((row for row in canonical.values() if str(row.get('hardware_node_id')) == hardware_id
                     and technology_id(row.get('technology')) == key[1]
                     and str(row['id']) not in assignments.values()
-                    and (not row.get('network_ref') or str(row['network_ref']) == network_id)), key=lambda row: (
+                    and (not row.get('network_ref') or str(row['network_ref']) == network_id
+                         or (port_id, str(row['id'])) in rebindings)), key=lambda row: (
+                        (port_id, str(row['id'])) not in rebindings,
                         str(row.get('network_ref') or '') != network_id,
                         str(row['id']) != str(port.get('hardwareInterfaceId') or ''),
                         bool(row.get('network_ref')), str(row['id'])))
@@ -159,8 +204,9 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 if (hardware_id, connector) in used_connectors:
                     connector = f'physical-port-{digest}'
                 data = {'network_ref': network_id, 'channel_index': index, 'physical_port_ref': connector}
-                if existing and existing.get('source') == 'ai_generated':
-                    data['name'] = declared[network_id]['name']
+                if existing and is_ethernet(technology) and port.get('nameSource') != 'user' and (existing.get('capabilities') or {}).get('name_source') != 'user' and existing.get('name') in (network_id, f'{bus}-Port'):
+                    data.update(name=declared[network_id]['name'], capabilities={**(existing.get('capabilities') or {}),
+                        'name_source': 'network', 'name_network_id': network_id})
                 if existing:
                     identifier = str(existing['id'])
                     delta = {name: value for name, value in data.items() if existing.get(name) != value}
@@ -171,23 +217,35 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 else:
                     identifier = '$physical-channel-' + digest
                     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(key[1])
-                    data.update({'name': declared[network_id]['name'], 'hardware_node_id': hardware_id,
-                        'technology': technology, 'capabilities': {**(profile.get('capabilities') or {}), 'source': 'reviewed-physical-topology'}})
+                    inherited_name = is_ethernet(technology) and port.get('nameSource') != 'user' and port.get('name') in (None, '', network_id, declared[network_id]['name'], f'{bus}-Port')
+                    data.update({'name': declared[network_id]['name'] if inherited_name else port.get('name') or declared[network_id]['name'], 'hardware_node_id': hardware_id,
+                        'technology': technology, 'capabilities': {**(profile.get('capabilities') or {}), 'source': 'reviewed-physical-topology',
+                            **({'name_source': 'network', 'name_network_id': network_id} if inherited_name else {})}})
                     channel_changes.append({'object_type': 'HardwareNetworkInterface', 'local_ref': identifier[1:], 'data': data})
                     canonical[identifier] = {**data, 'id': identifier}
                 used_channels.add((*channel_scope, index))
                 used_connectors.add((hardware_id, connector))
                 assignments[key] = identifier
             port.update({'hardwareInterfaceId': assignments[key], 'engineeringId': assignments[key],
-                         'physicalNetworkName': declared[network_id]['name'], 'name': declared[network_id]['name']})
+                         'physicalNetworkName': declared[network_id]['name'], 'name': canonical[assignments[key]].get('name') or port.get('name') or declared[network_id]['name']})
+            name_source = (canonical[assignments[key]].get('capabilities') or {}).get('name_source')
+            if name_source in ('network', 'user'):
+                port['nameSource'] = name_source
+            if declared[network_id].get('name_source') in ('user', 'generated'):
+                port['physicalNetworkNameSource'] = declared[network_id]['name_source']
             port.pop('requestedTechnology', None)
     port_map = {str(port['id']): port for node in updated.get('nodes') or [] for port in node.get('ports') or []}
     for edge in updated.get('edges') or []:
         left, right = (port_map.get(str(edge.get(side + 'Port') or ''), {}) for side in ('source', 'target'))
         if not left or not right or left['physicalNetworkId'] != right['physicalNetworkId']:
             raise ValueError(f'Kante {edge.get("id")} verbindet widersprüchliche physische Netze.')
+        for side, endpoint in (('source', left), ('target', right)):
+            if endpoint.get('nameSource') == 'network':
+                edge[side + 'InterfaceName'] = endpoint['name']
         edge['physicalNetworkId'] = left['physicalNetworkId']
         edge['physicalNetworkName'] = declared[left['physicalNetworkId']]['name']
+        if declared[left['physicalNetworkId']].get('name_source') in ('user', 'generated'):
+            edge['physicalNetworkNameSource'] = declared[left['physicalNetworkId']]['name_source']
     findings = topology_port_findings(updated, hardware, list(canonical.values()))
     if findings:
         raise ValueError('; '.join(item['message'] for item in findings[:5]))

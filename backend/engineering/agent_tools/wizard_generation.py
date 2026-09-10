@@ -1,6 +1,8 @@
 """Create a reviewable model from the same deterministic catalogs as the wizard."""
 from __future__ import annotations
 
+from backend.knowledge.semantic_vocabulary import engineering_phrase_match
+
 import json
 import hashlib
 from difflib import SequenceMatcher
@@ -18,7 +20,10 @@ from ..workflow.service import WorkflowStatusService
 from ..project_context import current_project_id
 from ..physical_ports import materialize_physical_ports
 from ..naming import concise_name
+from ..bus_settings import limits_from_prompt, branch_capacity, with_project_limits
 from ..message_bindings import message_hardware_interface_ids
+from ..spatial_zoning import installation_zone, driving_side_from_prompt, LOCAL_BUSES, VERSION as ZONING_VERSION
+from ..spatial_architecture import architecture_from, location_decision, zone_label, with_spatial_architecture
 from ..routing.generation import RoutingGenerationService
 from ..routing.validation import PROTOCOL_CAPACITY
 from ..capacity.service import CapacityTimingService
@@ -170,6 +175,7 @@ def generate_parameters(arguments: dict) -> dict:
             for technology_id in technology_ids
         },
         'defaults_source': 'technology-registry',
+        'spatial_architecture': architecture_from(existing, prompt),
     }
 
     saved = workflow.save_parameters(
@@ -178,17 +184,43 @@ def generate_parameters(arguments: dict) -> dict:
     artifact_check = saved['artifact_checks']['parameters']
     if not artifact_check['complete']:
         raise ValueError(f'Parameter-Defaults bleiben unvollständig: {artifact_check["required"]}')
+    if not parameters.get('spatial_zoning'):
+        from ..zoning_service import SpatialZoningService
+        zoning = SpatialZoningService(current_project_id())
+        zone_plan = zoning.plan(driving_side_from_prompt(prompt))
+        zoning.apply(zone_plan['token'], driving_side_from_prompt(prompt),
+                     actor=str(arguments.get('_actor') or 'engineering-agent'), approve_valid=True)
+        saved = workflow.get()
+        parameters = saved['parameters']
+    # Parameter generation follows physical routing. Dimension the complete bus
+    # traffic here, before capacity/network splitting, using the same service as
+    # the workbench. Explicit user/import timing remains locked.
+    from ..capacity.sizing_service import CommunicationSizingService
+    from ..capacity.dimensioning import policy_for
+    sizing = None
+    if policy_for(parameters)["enabled"]:
+        sizing_service = CommunicationSizingService(current_project_id())
+        sizing = sizing_service.preview()
+        if sizing["changes"]:
+            sizing_service.apply(sizing["source_token"], actor=str(arguments.get('_actor') or 'engineering-agent'), approve_valid=True)
+            saved = workflow.get()
     return {
         'status': saved['statuses']['parameters'],
         'parameters': saved['parameters'],
         'artifact_check': artifact_check,
         'technology_ids': technology_ids,
         'source': 'technology-registry',
+        'communication_dimensioning': sizing,
     }
 
 
 def generate(arguments: dict) -> dict:
-    fingerprint = hashlib.sha256(('technology-binding-v11-physical-communication-plan\n' + arguments['prompt']).encode('utf-8')).hexdigest()
+    state = WorkflowStatusService(current_project_id()).get(summary=True)
+    arguments = {**arguments, 'prompt': with_spatial_architecture(arguments['prompt'], state.get('parameters'))}
+    if not re.search(r"^- Bus-Teilnehmergrenzen:", arguments["prompt"], re.M):
+        context = state.get("context") or {}
+        arguments = {**arguments, "prompt": with_project_limits(arguments["prompt"], context)}
+    fingerprint = hashlib.sha256(('technology-binding-v14-spatial-architecture\n' + arguments['prompt']).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
@@ -201,8 +233,9 @@ def generate(arguments: dict) -> dict:
     # Commit the approved physical partition at model creation, before any
     # message binding or route is created. Later topology must not invent a
     # competing set of network IDs for the same canonical hardware ports.
+    architecture = architecture_from(prompt=arguments['prompt'])
     segment_memberships = _confirmed_segment_memberships(arguments['prompt'])
-    local_memberships = _confirmed_local_io_memberships(arguments['prompt'])
+    local_memberships = _confirmed_local_io_memberships(arguments['prompt'], {str(c['hardware_name']).casefold(): _topology_bus(c['interface_type']) for c in spec['chains']})
     for chain in spec['chains']:
         name = str(chain['hardware_name']).casefold()
         hardware = {'name': chain['hardware_name'], 'device_type': chain['device_type']}
@@ -214,6 +247,7 @@ def generate(arguments: dict) -> dict:
             network = _segmented_physical_network(bus, segment_memberships, hardware)
         if network:
             chain['transport_network_ref'] = network[0]
+            chain['transport_network_name'] = network[1]
     graph_match = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])', arguments['prompt'], re.M)
     if graph_match:
         controller_names = {str(c.get('ecu', '')).casefold() for cluster in json.loads(graph_match.group(1))
@@ -229,6 +263,11 @@ def generate(arguments: dict) -> dict:
     existing = {kind: model.objects(kind) for kind in kinds}
 
     def ensure(kind, name, data, parent=None):
+        if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):
+            row = named_networks.get(data.get('network_ref'))
+            if row:
+                name = row['name']
+                data = {**data, 'capabilities': {**(data.get('capabilities') or {}), 'name_source': 'network', 'name_network_id': row['id']}}
         name = concise_name(kind, name)
         signature = (kind, name.casefold(), data.get(parent) if parent else None)
         if signature in refs:
@@ -261,12 +300,25 @@ def generate(arguments: dict) -> dict:
         if previous and previous != protocol:
             raise ValueError(f'Netzwerk {network_ref} wurde mit widersprüchlichen Technologien bestätigt.')
         declared_networks[network_ref] = protocol
-    for network_ref, protocol in sorted(declared_networks.items()):
-        changes.append({
-            'object_type': 'Network',
-            'local_ref': f'network-{len(changes)}',
-            'data': {'id': network_ref, 'name': network_ref, 'technology': protocol},
-        })
+    from ..naming import ethernet_names, is_ethernet
+    network_rows = [{'id': ref, 'name': next((c['transport_network_name'] for c in spec['chains']
+        if c.get('transport_network_ref') == ref and c.get('transport_network_name')), ref),
+        'technology': protocol, **({'name_source': 'generated'} if is_ethernet(protocol) else {})}
+        for ref, protocol in sorted(declared_networks.items())]
+    naming_topology = {'nodes': [{'id': c['hardware_name'].casefold(), 'engineeringId': c['hardware_name'].casefold(),
+        'name': c['hardware_name'], 'kind': 'gateway' if c['device_type'] == 'Gateway' else 'ecu' if c['device_type'] not in {'SensorController', 'ActuatorController'} else 'sensor',
+        'systemOwnerId': local_memberships.get(c['hardware_name'].casefold(), [None])[0],
+        'ports': [{'physicalNetworkId': c.get('transport_network_ref')}] } for c in spec['chains']]}
+    reserved_networks = [{**n, 'name_source': 'user'} for n in model.networks() if n['id'] not in declared_networks]
+    named_all = ethernet_names([*reserved_networks, *network_rows], topology=naming_topology)
+    named_networks = {row['id']: named_all[row['id']] for row in network_rows}
+    for row in named_networks.values():
+        changes.append({'object_type': 'Network', 'local_ref': f'network-{len(changes)}', 'data': row})
+    for chain in spec['chains']:
+        row = named_networks.get(chain.get('transport_network_ref'))
+        if row and is_ethernet(row['technology']):
+            chain['transport_network_name'] = row['name']
+
 
     for chain in spec['chains']:
         technology_contract = _technology_contract(chain['interface_type'])
@@ -275,6 +327,9 @@ def generate(arguments: dict) -> dict:
             device_class=chain.get('device_class'))
         hw = ensure('HardwareNode', chain['hardware_name'], {
             'device_type': chain['device_type'], 'device_class': profile.device_class,
+            'identity': {'installation_zone': installation_zone(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture),
+                         'installation_zone_source': ZONING_VERSION, 'installation_reference_frame': architecture['reference_frame'],
+                         'spatial_decision': location_decision(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture)},
             'description': chain['hardware_description']})
         hardware_refs[str(chain['hardware_name']).casefold()] = hw
         fn = None
@@ -367,7 +422,9 @@ def generate(arguments: dict) -> dict:
                     continue
                 unbound = next((port for port in ports if not port.get('network_ref')), None)
                 if unbound is not None:
-                    unbound.update(network_ref=network_ref, name=network_ref)
+                    unbound.update(network_ref=network_ref, name=named_networks[network_ref]['name'] if is_ethernet(technology) else network_ref)
+                    if is_ethernet(technology):
+                        unbound.setdefault('capabilities', {}).update(name_source='network', name_network_id=network_ref)
                 else:
                     ensure('HardwareNetworkInterface', network_ref, {
                         'hardware_node_id': gateway_ref, 'technology': technology,
@@ -465,7 +522,7 @@ def generate(arguments: dict) -> dict:
     # physical routing derived later. Never replace an explicit existing edit.
     hardware_changes = {"$" + change["local_ref"]: change for change in changes if change["object_type"] == "HardwareNode"}
     existing_hardware = {str(item["id"]): item for item in existing["HardwareNode"]}
-    for endpoint, (owner, _network, _label, _index) in _confirmed_local_io_memberships(arguments["prompt"]).items():
+    for endpoint, (owner, *_membership) in _confirmed_local_io_memberships(arguments["prompt"]).items():
         endpoint_ref, owner_ref = hardware_refs.get(endpoint), hardware_refs.get(owner)
         if not endpoint_ref or not owner_ref:
             raise ValueError(f"Bestätigte Systemzuordnung fehlt im Modell: {endpoint} → {owner}")
@@ -741,13 +798,10 @@ def _semantic_slug(value: object) -> str:
     return re.sub(r'(^-|-$)', '', re.sub(r'[^a-z0-9]+', '-', text))
 
 
-_GATEWAY_ECU_SEGMENT_SIZE = 6
-
-
 def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str, int]]]:
     """Map confirmed graph participants to their approved gateway segment.
 
-    Variant 4 explicitly limits one gateway line to six controllers. Only the
+    Variant 4 uses the configured participant limit per physical bus. Only the
     controllers belong to that backbone; low-level endpoints are mapped to
     separate local I/O segments by ``_confirmed_local_io_memberships``.
     """
@@ -758,13 +812,16 @@ def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str
     if not raw:
         return {}
     graph = json.loads(raw.group(1))
+    limits = limits_from_prompt(prompt)
     memberships: dict[str, list[tuple[str, str, int]]] = {}
     for cluster in graph:
         controllers = [item for item in cluster.get('controllers') or [] if isinstance(item, dict)]
         label = str(cluster.get('label') or cluster.get('cluster_id') or 'Netzsegment').strip()
         base_id = str(cluster.get('bus_name') or _semantic_slug(label) or 'network').strip()
+        technology = cluster.get('technology_id') or cluster.get('technology') or cluster.get('network_id') or 'CAN_FD'
+        capacity = branch_capacity(limits, technology)
         for index, controller in enumerate(controllers):
-            ordinal = index // _GATEWAY_ECU_SEGMENT_SIZE + 1
+            ordinal = index // capacity + 1
             segment_id = f'{base_id}-S{ordinal:02d}'
             membership = (segment_id, label, ordinal)
             for member in [controller.get('ecu')]:
@@ -774,12 +831,13 @@ def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str
     return memberships
 
 
-def _confirmed_local_io_memberships(prompt: str) -> dict[str, tuple[str, str, str, int]]:
+def _confirmed_local_io_memberships(prompt: str, technologies: dict | None = None) -> dict[str, tuple]:
     """Return endpoint -> (owner, base id, label, stable index)."""
     raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
     if not raw:
         return {}
-    memberships: dict[str, tuple[str, str, str, int]] = {}
+    memberships: dict[str, tuple] = {}
+    architecture = architecture_from(prompt=prompt)
     for cluster in json.loads(raw.group(1)):
         label = str(cluster.get('label') or cluster.get('cluster_id') or 'Netzsegment').strip()
         base_id = str(cluster.get('bus_name') or _semantic_slug(label) or 'network').strip()
@@ -788,12 +846,21 @@ def _confirmed_local_io_memberships(prompt: str) -> dict[str, tuple[str, str, st
                 continue
             owner = str(controller.get('ecu') or '').strip()
             endpoints = [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]
-            for index, endpoint in enumerate(endpoints):
+            technology_indices = {}
+            for index, endpoint in enumerate(sorted(endpoints, key=lambda value: [
+                    (0, int(part)) if part.isdigit() else (1, part) for part in re.split(r'(\d+)', str(value).casefold())])):
+                technology = (technologies or {}).get(str(endpoint).casefold())
+                side = driving_side_from_prompt(prompt)
+                zone = installation_zone(endpoint, driving_side=side, architecture=architecture)
+                counter_key = (technology, zone if technology in LOCAL_BUSES else 'UNKNOWN')
+                if technology is not None:
+                    index = technology_indices.get(counter_key, 0)
+                    technology_indices[counter_key] = index + 1
                 key = str(endpoint or '').strip().casefold()
                 if key and owner:
                     if key in memberships and memberships[key][0] != owner.casefold():
                         raise ValueError(f'Endpunkt {endpoint} ist mehreren System-Ownern zugeordnet.')
-                    memberships[key] = (owner.casefold(), base_id, label, index)
+                    memberships[key] = (owner.casefold(), base_id, label, index, limits_from_prompt(prompt), zone, owner, zone_label(zone, architecture))
     return memberships
 
 
@@ -808,10 +875,10 @@ def _local_io_physical_network(
         membership = memberships.get(endpoint_name)
         if not membership:
             continue
-        owner, base_id, _label, index = membership
+        owner, base_id, _label, index, *settings = membership
         if owner not in names:
             continue
-        group_size = 4 if bus == 'lin' else 16 if bus == 'automotive_ethernet' else 8
+        group_size = branch_capacity(settings[0] if settings else limits_from_prompt(''), bus)
         ordinal = index // group_size + 1
         technology = bus.replace('_', '-')
         display = 'CAN' if bus == 'can_fd' else 'Ethernet' if bus == 'automotive_ethernet' else bus.upper()
@@ -819,7 +886,13 @@ def _local_io_physical_network(
             str(candidate.get('name') or '') for candidate in items
             if str(candidate.get('name') or '').strip().casefold() == owner
         )
+        if len(settings) > 2:
+            owner_name = settings[2]
         network_id = f'{base_id}-IO-{_semantic_slug(owner_name)}-{technology}-S{ordinal:02d}'
+        zone = settings[1] if len(settings) > 1 else 'UNKNOWN'
+        if zone != 'UNKNOWN' and bus in LOCAL_BUSES:
+            network_id = f'{base_id}-IO-{_semantic_slug(owner_name)}-{technology}-{zone}-S{ordinal:02d}'
+            return network_id, f'{owner_name} {bus.replace("_", " ").upper()} {settings[3] if len(settings) > 3 else zone_label(zone)} {ordinal:02d}'
         return network_id, f'{owner_name} {display} I/O Segment {ordinal}'
     return None
 
@@ -854,7 +927,7 @@ def _semantic_physical_network(bus: str, *items: dict) -> tuple[str, str] | None
         name = _semantic_text(item.get('name'))
         is_controller = str(item.get('device_type') or '') not in {'SensorController', 'ActuatorController', 'Gateway'}
         for family_index, (key, label, terms) in enumerate(_SEMANTIC_NETWORK_FAMILIES):
-            specificity = max((len(_semantic_text(term)) for term in terms if _semantic_text(term) in name), default=0)
+            specificity = max((len(_semantic_text(term)) for term in terms if engineering_phrase_match(str(item.get("name") or ""), term)), default=0)
             if specificity:
                 candidates.append((10_000 if is_controller else 0, specificity, -family_index, -item_index, key, label))
     if not candidates:
@@ -872,8 +945,8 @@ def generate_network_topology(arguments: dict) -> dict:
     edges are derived only from approved, valid routes; duplicate route
     segments share one edge and retain all contributing route IDs.
     """
-    prompt = arguments['prompt']
     workflow_state = WorkflowStatusService(current_project_id()).get()
+    prompt = with_spatial_architecture(arguments['prompt'], workflow_state.get('parameters'))
     existing_topology = workflow_state.get('topology') or {}
     existing_nodes = {str(item.get('engineeringId') or ''): item for item in existing_topology.get('nodes') or []}
     existing_node_ids = {str(item.get('id') or ''): str(item.get('engineeringId') or '') for item in existing_nodes.values()}
@@ -899,7 +972,7 @@ def generate_network_topology(arguments: dict) -> dict:
     for values in interfaces_by_node.values():
         values.sort(key=lambda item: (str(item.get('technology', '')), str(item.get('name', '')), str(item['id'])))
     segment_memberships = _confirmed_segment_memberships(prompt)
-    local_io_memberships = _confirmed_local_io_memberships(prompt)
+    local_io_memberships = _confirmed_local_io_memberships(prompt, {str(h['name']).casefold(): _topology_bus(interfaces_by_node.get(str(h['id']), [{}])[0].get('technology')) for h in hardware if interfaces_by_node.get(str(h['id']))})
 
     kind_by_type = {
         'Gateway': 'gateway',
@@ -1120,6 +1193,13 @@ def generate_network_topology(arguments: dict) -> dict:
     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}
     topology, physical_changes = materialize_physical_ports(topology, hardware, interfaces, model.networks(),
         routes=routes, messages=model.objects('Message'), prune_unconnected=False)
+    from ..network_scene import build_network_scene
+    positions = (existing_topology.get('scene') or {}).get('manualPositions')
+    if not existing_topology.get('scene'):
+        # Existing, explicitly positioned nodes survive a model refresh as well.
+        positions = {node['id']: {key: node[key] for key in ('x', 'y', 'width', 'height') if key in node}
+                     for node in existing_topology.get('nodes', []) if 'x' in node and 'y' in node}
+    topology = build_network_scene(topology, prompt, positions=positions)
     policy = planning_policy(workflow_state)
     resource_receipt = resource_decision(workflow_state.get('topology') or {}, topology,
         planning_inventory(workflow_state, prompt), policy)
@@ -1129,7 +1209,7 @@ def generate_network_topology(arguments: dict) -> dict:
         'routes': [(item['id'], item.get('revision'), item.get('approval_state')) for item in routes],
         'resource_decision': resource_receipt,
     }, sort_keys=True).encode('utf-8')).hexdigest()
-    fingerprint = hashlib.sha256(('wizard-network-v7-physical-channels\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
+    fingerprint = hashlib.sha256(('wizard-network-v8-persisted-scene\n' + prompt + '\n' + state_signature).encode('utf-8')).hexdigest()
     for row in proposal_store.list_proposals(limit=100):
         contract = row.get('engineering_contract') or {}
         if (row['proposal_type'] == 'WIZARD_NETWORK_TOPOLOGY'

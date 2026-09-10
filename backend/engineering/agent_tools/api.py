@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from backend.agent_core.context.limits import MAX_REQUIREMENT_LENGTH
 from concurrent.futures import ThreadPoolExecutor
 import hmac
 import json
@@ -63,6 +64,24 @@ def renew_conversation_lease(authority: ToolAuthority, run_id: str) -> None:
 
 def _project() -> str:
     return normalize_context_project_id(request.headers.get("X-Project-ID") or request.args.get("project") or "default")
+
+
+@agent_api.post('/attachments/preview')
+def attachment_preview():
+    from .documents import extract_document, MAX_FILE_BYTES
+    # Bound multipart parsing as well as the extracted file. This endpoint does
+    # not access the model, conversation, database or inference service.
+    request.max_content_length = MAX_FILE_BYTES + 64 * 1024
+    upload = request.files.get('file')
+    if upload is None or not upload.filename:
+        return jsonify({'error': 'Bitte eine Datei auswählen.'}), 400
+    try:
+        result = extract_document(upload.filename, upload.stream.read(MAX_FILE_BYTES + 1))
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    response = jsonify(result)
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @agent_api.get("/review-session")
@@ -272,7 +291,7 @@ def chat():
         (workflow.get('context') or {}).get('agent_wizard_status'),
     )
     raw_context = payload.get("context") or {}
-    if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > 30000:
+    if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > MAX_REQUIREMENT_LENGTH:
         return jsonify({"error":"Ungültiger Kontext oder zu lange Anforderung."}),400
     if raw_context.get("active_project_id") and normalize_context_project_id(raw_context["active_project_id"]) != project_id:
         return jsonify({"error":"Projekt in Header und Kontext stimmt nicht überein."}),409

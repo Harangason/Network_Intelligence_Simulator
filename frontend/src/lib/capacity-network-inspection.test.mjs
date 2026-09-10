@@ -44,11 +44,11 @@ test("incomplete value domains never assert a smaller encoding", () => {
   }
 });
 
-test("incomplete numeric encoding remains open while value-domain bit need stays visible", () => {
+test("incomplete numeric encoding stays open without asserting a wire width", () => {
   for (const values of [{ factor: null }, { offset_value: null }, { min_value: 0, max_value: 0 }]) {
     const result = inspectSignal({ ...signal, length_bits: 64, ...values }, message);
     assert.equal(result.status, "OPEN");
-    assert.ok(result.requiredBits !== null);
+    if (values.factor === null || values.offset_value === null) assert.equal(result.requiredBits, null);
     assert.ok(!codes(result).includes("OVERSIZED"));
   }
 });
@@ -77,17 +77,17 @@ test("legacy uint8 min/max signals need semantic classification before optimizat
   assert.ok(codes(result).includes("SEMANTIC_MISSING"));
 });
 
-test("legacy status signals use a conservative state domain instead of open numeric optimization", () => {
+test("legacy status signals remain open until an explicit domain is defined", () => {
   const { semantic, ...legacy } = signal;
   const result = inspectSignal({ ...legacy, name: "ProcessStatus" }, message);
   const text = result.checks.map((check) => check.text).join(" ");
 
   assert.equal(result.semanticType, "STATE");
-  assert.equal(result.requiredBits, 4);
-  assert.equal(result.status, "PASS");
+  assert.equal(result.requiredBits, null);
+  assert.equal(result.status, "OPEN");
   assert.ok(!codes(result).includes("SEMANTIC_MISSING"));
   assert.doesNotMatch(text, /Wertebereich|Skalierung|Datentyp/);
-  assert.match(text, /Reservehinweis/);
+  assert.match(text, /enum_values|allowed_values/);
 });
 
 test("zero scale, reversed bounds and unrepresentable endpoints are errors", () => {
