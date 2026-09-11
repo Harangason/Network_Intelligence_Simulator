@@ -8,7 +8,7 @@ Musters `H:/OneDrive/Download/project-3d/` ergänzen.
 Die bestehende Umschaltung Hardware / Functions / Combined enthält nun zusätzlich
 2D / 3D, Suche, alphabetische Trefferlisten, Typ- und Bustypfilter, einen
 Detailbereich mit navigierbarem Zuordnungspfad, Vollbild und echtes Einpassen.
-Zweige können per Doppelklick oder Detailaktion eingeklappt werden. Anfang,
+Zweige können per einfachem Knotenklick oder Detailaktion eingeklappt werden. Anfang,
 Schritt, Aufbau abspielen/Pause und Alle ausklappen erschließen die Hierarchie.
 Die Suche erreicht auch zuvor eingeklappte Knoten und zeigt deren Strukturpfad.
 
@@ -44,8 +44,8 @@ manuelle Positionen des Netzwerk-Editors. Maßgeblich bleibt
 
 Three.js und OrbitControls werden erst beim Wechsel auf 3D geladen.
 Instanzierte Knotengeometrie und zusammengefasste Linien vermeiden einen
-separaten Draw Call pro Gerät. Ohne Kamerabewegung/Auto-Rotation wird nur bei
-Änderungen gerendert; außerhalb des sichtbaren Bereichs und bei verborgenem
+separaten Draw Call pro Gerät. Ohne Kamerabewegung, Auto-Rotation oder aktiven
+Datenfluss wird nur bei Änderungen gerendert; außerhalb des sichtbaren Bereichs und bei verborgenem
 Browser-Tab pausiert die Darstellung. Beim Schließen werden Controls, Observer,
 Geometrien, Materialien und WebGL-Kontext freigegeben. Bei WebGL-Fehlern ist
 eine direkte Rückkehr in die 2D-Ansicht verfügbar.
@@ -54,7 +54,7 @@ Die Kamera verwendet die dokumentierten
 
 ## Verifikation
 
-Aktiver Produktionsbuild: `8beeb19bd7c3`, 10.09.2026, 20:32:46 MESZ.
+Ursprünglich geprüfter Produktionsbuild: `8beeb19bd7c3`, 10.09.2026, 20:32:46 MESZ.
 Produktionsbuild inklusive TypeScript erfolgreich.
 
 14 gezielte Frontendtests bestanden: Hardwaregraph, bestehende Topologie und
@@ -82,3 +82,80 @@ Verbindungen, deterministische Geometrie und tatsächliche Fit-Grenzen ab.
 Ergebnis: `backend/runtime/hardware-explorer-browser-result.json`.
 Sichtprüfung: `backend/runtime/hardware-explorer-2d.png` und
 `backend/runtime/hardware-explorer-3d.png`.
+
+## Erweiterung vom 11.09.2026: Kommunikation und Knotennavigation
+
+Nutzerauftrag: Linien an der zugewandten Knotenseite anschließen, mehrere Knoten
+mit „und“ suchen, gerichtete Beziehungen animieren, Zweige per einfachem Klick
+öffnen/schließen, Eigenschaften im Graphen sowie optional Beleuchtung anzeigen.
+
+- 2D und 3D verbinden die einander zugewandten Kreis-/Kugeloberflächen direkt.
+  Die bisherige Kurve zurück zur Graphmitte entfällt. Es gibt keine Pfeilspitzen.
+- `Motorsteuerung und Infotainment` sucht beide Namen gemeinsam und erhält ihre
+  Strukturpfade. Anführungszeichen schützen Namen, die selbst „und“ enthalten.
+  Die Suche bleibt eine Teilnamensuche; nicht gefundene Teilanfragen werden angezeigt.
+- Der einfache Klick wählt aus und öffnet/schließt vorhandene Unterknoten, auch
+  aus der auf eine Ebene begrenzten Anfangsansicht. In Hardware/Combined werden
+  Sensoren und Aktoren nur anhand ihrer ausdrücklich gespeicherten `systemOwnerId`
+  unter der zugehörigen ECU geführt, und nur innerhalb desselben gespeicherten
+  Systemrahmens. In Combined liegen Funktionen unter ihrer kanonisch zugeordneten
+  Hardware. Diese Projektion verändert keine Raumcluster, Einbauorte oder Busse.
+- Die auswählbare Eigenschaftskarte zeigt Typ, Zuordnung, Anschlüsse/Techniken,
+  Lifecycle/Version, Beschreibung sowie ein- und ausgehende Kommunikationswege.
+  Eine Beziehung ohne bekannte Richtung wird separat als „Richtung offen“ gezählt.
+- Die 3D-Beleuchtung ist abschaltbar. Kugeln verwenden bei aktivem Licht
+  [MeshStandardMaterial](https://threejs.org/docs/pages/MeshStandardMaterial.html)
+  mit [HemisphereLight](https://threejs.org/docs/pages/HemisphereLight.html) und
+  zwei gerichteten Lichtquellen; ansonsten bleibt die flache Farbdarstellung.
+
+### Herkunft und Bedeutung der Kommunikationslinien
+
+Die Richtung stammt aus Nachrichtentransporten der Routing-Tabelle und aus
+kanonischen `COMMUNICATES_WITH`-Beziehungen mit expliziter Richtung. Reine
+physische Busverbindungen erzeugen keinen erfundenen Nachrichtenaustausch.
+Hardware-, Interface- und Funktionszuordnungen werden ausschließlich über IDs
+aufgelöst. In Functions wird ein Routing-Endpunkt nur bei passender expliziter
+Interface-/Funktions-/Hardwarezuordnung angezeigt. Relations- und Interfaceabfragen
+laden alle Seiten, nicht nur die ersten 100 Datensätze.
+
+Mehrere Routen zwischen demselben Sender und Empfänger teilen sich eine Linie;
+die Details nennen die einzelnen Routen und ihren Status. Gegenrichtungen bleiben
+separate Beziehungen. Abgelehnte/ersetzte Routen und leere Routing-Platzhalter
+werden nicht als Kommunikation dargestellt. Veraltete oder ungeprüfte Wege
+bleiben als Absicht sichtbar, ohne aktive Datenpunkte; Linien mit mindestens
+einem gültigen Weg sind türkis. Fehlende Richtungsangaben erzeugen keine Animation.
+
+Bewegte Punkte laufen vom gespeicherten Sender zum Empfänger. Sie visualisieren
+die modellierte Richtung, keinen aufgezeichneten oder gerade simulierten Verkehr;
+ihre Geschwindigkeit ist keine Messung der Zykluszeit. Der Schalter „Datenfluss“
+pausiert die Animation. Die Betriebssystempräferenz für reduzierte Bewegung wird
+berücksichtigt. „Kommunikation“ blendet diese Linien unabhängig von physischen
+Busverbindungen ein/aus. Bei Auswahl werden deren Kommunikationspartner betont.
+
+### Nachweis
+
+Produktionsbuild `fe5facfe6e12`, gebaut am 11.09.2026 um 05:58:08 UTC und lokal
+auf Port 13500 gestartet. TypeScript und Produktionsbuild erfolgreich.
+
+11 Graph-Tests bestanden, einschließlich zugewandter Endpunkte in allen
+Quadranten/3D, stabiler Identitäten, räumlicher Mitgliedschaften, UND-Suche,
+Suchtreffern hinter eingeklappten Zweigen, gezieltem Öffnen einer Ebene sowie
+Senderichtung, unbekannter Richtung, veralteten Wegen und Funktionszuordnung.
+
+Beide Chrome-Prüfungen bestanden:
+
+- `frontend/scripts/verify-hardware-explorer.mjs`: bestehende Bedienung, Fit,
+  Verschieben/Zoom, Aufbau, 2D/3D-Umschaltung, Kameradrehung, Vollbild,
+  Wiederaufbau nach Kontextverlust und schmales Fenster.
+- `frontend/scripts/verify-hardware-relationships.mjs`: Mehrfachsuche und
+  Kommunikation am realen Projekt, darunter `RT-FBF09272`, Motorsteuerung →
+  Infotainment. Sichtbar bewegte Datenpunkte bei stillstehender Kamera, statisches
+  Bild nach Abschalten, tatsächlich veränderte Kugelbeleuchtung, Canvas-Klick zum
+  Aufklappen, erneuter Klick zum Einklappen, ECU-Unterknoten, Overlay und reduzierte
+  Bewegung. Topologie und Modellversionen vor/nach der Prüfung identisch;
+  keine JavaScript-Laufzeitfehler.
+
+Ergebnisse und visuelle Prüfung:
+`backend/runtime/hardware-relationships-browser-result.json`,
+`backend/runtime/hardware-relationships-2d.png` und
+`backend/runtime/hardware-relationships-3d-lit.png`.

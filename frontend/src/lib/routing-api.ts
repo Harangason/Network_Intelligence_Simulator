@@ -38,6 +38,10 @@ export async function listRoutes(): Promise<RoutingEntry[]> {
   }
 }
 
+export async function getRoutingMessageScopes() {
+  return request<{ items: Record<string, import('./routing-payload-scope').MessageScope> }>('/message-scopes');
+}
+
 export function getRoutingSchema(): Promise<RoutingSchema> {
   return request<RoutingSchema>("/schema");
 }

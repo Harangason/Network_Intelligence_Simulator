@@ -228,6 +228,13 @@ class RoutingGenerationService:
         message = self._message_context(message_id)
         source_interfaces = self._interface_candidates(str(source["id"]))
         destination_interfaces = self._interface_candidates(str(destination["id"]))
+        if message:
+            from .payload_scope import message_scope, scope_allows
+            scope = message_scope(message)
+            options = destination_interfaces or [{}]
+            if not any(scope_allows(scope, {"node_id": str(destination["id"]), "interface_id": str(item.get("id") or "")},
+                {str(item.get("id") or ""): item}) for item in options):
+                raise EngineeringValidationError(f"{message.get('name')}: lokale Sensor-/Aktordaten sind für diesen Empfänger nicht vorgesehen. Einen Funktionsausgang wählen.")
         source_hardware_interfaces = self._hardware_interface_candidates(str(source["id"]))
         destination_hardware_interfaces = self._hardware_interface_candidates(str(destination["id"]))
         if destination.get("device_type") == "Gateway":
@@ -386,6 +393,9 @@ class RoutingGenerationService:
             "confidence": candidate["score"],
         }
         validation = RoutingValidator().validate(route)
+        scope_error = next((issue for issue in validation.get("errors", []) if issue.get("code") == "LOCAL_IO_RECIPIENT_MISMATCH"), None)
+        if scope_error:
+            raise EngineeringValidationError(scope_error["message"])
         return {**route, "validation": validation, "candidate": candidate}
 
     def generate_routes(self, data: dict[str, Any]) -> dict[str, Any]:

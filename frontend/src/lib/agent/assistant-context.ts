@@ -1,12 +1,15 @@
+import { readActiveProjectId } from '../user-settings.ts';
 export const ASSISTANT_CONTEXT_EVENT = "engineering:assistant-context";
 export type AssistantSelection = { id: string; object_type: string; name: string };
 let selection: AssistantSelection | null = null;
+let selectionProject = '';
 export function setAssistantSelection(value: AssistantSelection | null) {
   selection = value;
+  selectionProject = readActiveProjectId();
   window.dispatchEvent(new Event(ASSISTANT_CONTEXT_EVENT));
 }
 export function readAssistantContext() {
-  return { active_view: window.location.pathname, selected_object_refs: selection ? [selection] : [] };
+  return { active_view: window.location.pathname, selected_object_refs: selection && selectionProject === readActiveProjectId() ? [selection] : [] };
 }
 export function engineeringContextHref(ref: Record<string, string>, projectId: string) {
   const routes: Record<string, string> = { Routing: "/studio/routing", Route: "/studio/routing", Simulation: "/studio/simulation", Trace: "/studio/trace-analysis", Workspace: "/studio/agent", Capacity: '/studio/capacity' };

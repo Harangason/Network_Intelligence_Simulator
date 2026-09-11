@@ -122,6 +122,8 @@ def _insert_route(
     revision: int,
     supersedes_id: str | None = None,
 ) -> dict[str, Any]:
+    from ..communication_intent import capture_route_intent
+    data = capture_route_intent(data)
     data = _enrich_endpoint_addresses(connection, data)
     columns = [
         "project_id",
@@ -206,7 +208,10 @@ def update_route(route_id: str, data: dict[str, Any]) -> dict[str, Any]:
     check_revision(data.get("expected_revision"), current["revision"])
     if "approval_state" in data:
         raise EngineeringValidationError("Freigaben sind nur über den Approval-Endpunkt zulässig.")
+    from ..communication_intent import capture_route_intent
     normalized = normalize_route(data, current)
+    if any(field in data for field in ('source', 'destinations', 'route')):
+        normalized = capture_route_intent(normalized, current)
     actor = normalized.get("modified_by")
     governance_locked = current["approval_state"] == "APPROVED" or current["status"] in (
         "APPROVED",

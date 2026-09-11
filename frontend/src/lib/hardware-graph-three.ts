@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { kindColors, type GraphNode, type GraphLink } from './hardware-graph.ts';
+import { kindColors, graphLinkEndpoints, graphNodeRadius, hasCommunicationFlow, communicationColor, type GraphNode, type GraphLink } from './hardware-graph.ts';
 import { busProfiles } from './topology.ts';
 
-export type ThreeGraphData = { nodes: GraphNode[]; links: GraphLink[]; selected: string; labels: boolean; focusIds: Set<string> };
+export type ThreeGraphData = { nodes: GraphNode[]; links: GraphLink[]; selected: string; labels: boolean; focusIds: Set<string>; lighting: boolean; animate: boolean };
 export type ThreeGraphHandle = ReturnType<typeof createThreeGraph>;
 
 /** The renderer owns only disposable view resources; project objects are never modified. */
-export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: string) => void; expand: (id: string) => void; link: (id: string) => void; error: () => void; rotation: (active: boolean) => void }) {
+export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: string) => void; link: (id: string) => void; error: () => void; rotation: (active: boolean) => void }) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   const canvas = renderer.domElement;
@@ -17,6 +17,10 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
   host.appendChild(canvas);
   const labelLayer = document.createElement('div'); labelLayer.className = 'hardware-three-labels'; host.appendChild(labelLayer);
   const scene = new THREE.Scene();
+  const lights = new THREE.Group();
+  const key = new THREE.DirectionalLight('#fff4df', 2.4); key.position.set(600, 1200, 1800);
+  const fill = new THREE.DirectionalLight('#83bcff', 1.2); fill.position.set(-1600, 200, -800);
+  lights.add(new THREE.HemisphereLight('#c7e5ff', '#1c283d', 1.5), key, fill); scene.add(lights);
   const camera = new THREE.PerspectiveCamera(45, 1, 1, 20000);
   camera.position.set(1600, 1100, 1900);
   const controls = new OrbitControls(camera, canvas);
@@ -25,7 +29,10 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
   const raycaster = new THREE.Raycaster();
   let group = new THREE.Group(); scene.add(group);
   let instances: THREE.InstancedMesh | undefined;
-  let data: ThreeGraphData = { nodes: [], links: [], selected: '', labels: true, focusIds: new Set() };
+  let data: ThreeGraphData = { nodes: [], links: [], selected: '', labels: true, focusIds: new Set(), lighting: false, animate: true };
+  let flows: { source: THREE.Vector3; target: THREE.Vector3; phase: number }[] = [];
+  let flowGeometry: THREE.BufferGeometry | undefined;
+  let flowTime = 0;
   let frame = 0, disposed = false, visible = true, autoRotate = false, lastTime = 0;
   let width = Math.max(1, host.clientWidth), height = Math.max(1, host.clientHeight), first = true;
   camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height);
@@ -34,6 +41,7 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
   const releaseGroup = () => {
     group.traverse(object => {
       const drawable = object as THREE.Mesh;
+      if ((object as THREE.InstancedMesh).isInstancedMesh) (object as THREE.InstancedMesh).dispose();
       drawable.geometry?.dispose();
       if (Array.isArray(drawable.material)) drawable.material.forEach(m => m.dispose()); else drawable.material?.dispose();
     });
@@ -43,7 +51,17 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
     frame = 0;
     if (disposed || !visible || document.hidden) return;
     controls.autoRotate = autoRotate;
-    controls.update(lastTime ? Math.min((time - lastTime) / 1000, .1) : 0); lastTime = time;
+    const delta = lastTime ? Math.min((time - lastTime) / 1000, .1) : 0;
+    controls.update(delta); lastTime = time;
+    if (data.animate && flowGeometry) {
+      flowTime += delta;
+      const positions = flowGeometry.getAttribute('position');
+      flows.forEach((flow, i) => {
+        world.lerpVectors(flow.source, flow.target, (flowTime / 3.2 + flow.phase) % 1);
+        positions.setXYZ(i, world.x, world.y, world.z);
+      });
+      positions.needsUpdate = true;
+    }
     renderer.render(scene, camera);
     // Labels remain screen-sized. Cull off-screen/overlapping labels before touching the DOM.
     const candidates = data.labels ? data.nodes.map(node => {
@@ -60,15 +78,15 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
         label = document.createElement('button'); label.type = 'button'; label.textContent = p.node.name; label.title = p.node.name;
         label.dataset.graphNodeId = p.node.id;
         label.addEventListener('click', () => callbacks.select(p.node.id));
-        label.addEventListener('dblclick', () => callbacks.expand(p.node.id));
         labelLayer.appendChild(label); labelButtons.set(p.node.id, label);
       }
       label.hidden = false; label.style.transform = `translate(${p.x + 10}px, ${p.y - 10}px)`;
       label.className = p.node.id === data.selected ? 'selected' : '';
+      if (p.node.children.length) label.setAttribute('aria-expanded', String(data.nodes.some(n => p.node.children.includes(n.id))));
       label.style.borderColor = kindColors[p.node.kind];
     }
     for (const [id, label] of labelButtons) label.hidden = !shown.has(id);
-    if (autoRotate) schedule();
+    if (autoRotate || data.animate && flows.length) schedule();
   }
   function schedule() { if (!frame && !disposed && visible && !document.hidden) frame = requestAnimationFrame(render); }
   function fit() {
@@ -92,12 +110,14 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
     controls.target.fromArray(node.space); camera.position.copy(controls.target).add(offset); controls.update(); schedule();
   }
   function update(next: ThreeGraphData) {
-    data = next; releaseGroup();
+    data = next; releaseGroup(); flows = []; flowGeometry = undefined;
+    lights.visible = data.lighting;
     for (const button of labelButtons.values()) button.remove(); labelButtons.clear();
     const matrix = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), scale = new THREE.Vector3();
-    instances = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial(), data.nodes.length);
+    instances = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 20, 14), data.lighting
+      ? new THREE.MeshStandardMaterial({ roughness: .35, metalness: .12 }) : new THREE.MeshBasicMaterial(), data.nodes.length);
     data.nodes.forEach((node, index) => {
-      const radius = node.kind === 'root' ? 18 : node.kind === 'group' ? 11 : 8;
+      const radius = graphNodeRadius(node, true);
       matrix.compose(new THREE.Vector3(...node.space), quaternion, scale.setScalar(radius * (node.id === data.selected ? 1.6 : 1)));
       instances!.setMatrixAt(index, matrix);
       const color = new THREE.Color(node.id === data.selected ? '#ffffff' : kindColors[node.kind]);
@@ -106,18 +126,34 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
     });
     group.add(instances);
     const byId = new Map(data.nodes.map(n => [n.id, n]));
-    const positions: number[] = [], colors: number[] = [];
+    const positions: number[] = [], colors: number[] = [], flowColors: number[] = [];
     for (const link of data.links) {
       const source = byId.get(link.source), target = byId.get(link.target); if (!source || !target) continue;
-      positions.push(...source.space, ...target.space);
-      const color = new THREE.Color(link.bus ? busProfiles[link.bus].color : link.kind === 'mapping' ? '#bc9bff' : '#496373');
+      const ends = graphLinkEndpoints(source, target, true, data.selected);
+      positions.push(...ends.source, ...ends.target);
+      const color = new THREE.Color(link.kind === 'communication' ? communicationColor(link) : link.bus ? busProfiles[link.bus].color : link.kind === 'mapping' ? '#bc9bff' : '#496373');
       if (data.selected && link.source !== data.selected && link.target !== data.selected) color.multiplyScalar(.5);
       colors.push(color.r, color.g, color.b, color.r, color.g, color.b);
+      if (data.animate && hasCommunicationFlow(link)) {
+        for (let i = 0; i < 3; i++) {
+          flows.push({ source: new THREE.Vector3(...ends.source), target: new THREE.Vector3(...ends.target), phase: i / 3 });
+          flowColors.push(color.r, color.g, color.b);
+        }
+      }
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     group.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .7 })));
+    if (flows.length) {
+      flowGeometry = new THREE.BufferGeometry();
+      flowGeometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(flows.length * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      flowGeometry.setAttribute('color', new THREE.Float32BufferAttribute(flowColors, 3));
+      const particles = new THREE.Points(flowGeometry, new THREE.PointsMaterial({ vertexColors: true, size: 4, sizeAttenuation: false, transparent: true, opacity: .95, depthWrite: false }));
+      particles.frustumCulled = false; group.add(particles);
+    }
     canvas.dataset.nodeCount = String(data.nodes.length); canvas.dataset.linkCount = String(data.links.length);
+    canvas.dataset.communicationCount = String(data.links.filter(l => l.kind === 'communication').length);
+    canvas.dataset.flowCount = String(flows.length); canvas.dataset.lighting = String(data.lighting);
     if (first && data.nodes.length) { first = false; fit(); } else schedule();
   }
   function selectAt(event: PointerEvent) {

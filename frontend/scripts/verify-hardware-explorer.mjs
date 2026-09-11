@@ -46,7 +46,7 @@ try {
   await search.fill('zzznichtvorhanden'); assert.equal(await view.locator('.hardware-explorer-node').count(), 0);
   await view.getByRole('button', { name: 'Alle ausklappen', exact: true }).click();
   await view.getByRole('button', { name: 'Bremsregelung · Gruppe', exact: true }).click();
-  await view.getByRole('button', { name: 'Zweig einklappen', exact: true }).click();
+  await view.getByRole('button', { name: 'Zweig ausklappen', exact: true }).waitFor();
   assert.equal(await view.locator(`.hardware-explorer-node[data-graph-node-id="${owner.id}"]`).count(), 0);
   await search.fill('FrontLeftBrakePressure');
   assert.ok(await view.locator('.hardware-explorer-results button').count() > 0);
@@ -59,7 +59,8 @@ try {
   await view.getByRole('button', { name: '3D', exact: true }).click();
   const canvas = view.locator('.hardware-three-host canvas'); await canvas.waitFor();
   await page.waitForFunction(count => document.querySelector('.hardware-three-host canvas')?.dataset.nodeCount === String(count), expected.nodes.length);
-  assert.equal(await canvas.getAttribute('data-link-count'), String(expected.links.length));
+  assert.equal(Number(await canvas.getAttribute('data-link-count')), expected.links.length + Number(await canvas.getAttribute('data-communication-count')));
+  await view.getByRole('button', { name: 'Datenfluss', exact: true }).click();
   const rotation = view.getByRole('button', { name: 'Auto-Rotation', exact: true });
   await canvas.scrollIntoViewIfNeeded();
   await rotation.click(); const image1 = await canvas.screenshot(); await page.waitForTimeout(800); const image2 = await canvas.screenshot();
@@ -100,5 +101,5 @@ try {
   await fs.writeFile('../backend/runtime/hardware-explorer-browser-result.json', JSON.stringify({ project, hardwareNodes: before.topology.nodes.length, graphNodes: expected.nodes.length, physicalLinks: before.topology.edges.length, combinedNodes: combined, fitPanZoomSearch: true, replay: true, webglAndOrbit: true, selectionAcrossViews: true, canonicalDataUnchanged: true, writes, errors }, null, 2));
   console.log('Hardware explorer browser smoke and consistency checks passed.');
 } catch (error) { console.error(error); await page.screenshot({ path: '../backend/runtime/hardware-explorer-failure.png' }).catch(() => {}); process.exitCode = 1; }
-finally { await Promise.race([browser.close(), new Promise(resolve => setTimeout(resolve, 5000))]); }
+finally { const cdp = await browser.newBrowserCDPSession(); await Promise.race([cdp.send('Browser.close').catch(() => {}), new Promise(resolve => setTimeout(resolve, 2000))]); }
 process.exit(process.exitCode ?? 0);

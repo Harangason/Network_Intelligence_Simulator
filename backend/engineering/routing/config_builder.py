@@ -73,6 +73,13 @@ class CommunicationConfigBuilder:
         parameters = parameters or {}
         approved = [route for route in routes if route.get("approval_state") == "APPROVED"
             and route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
+        if approved:
+            from .payload_scope import load_payload_context, payload_scope_issues
+            messages, signals, logical_interfaces = load_payload_context()
+            for route in approved:
+                issues = payload_scope_issues(route, messages, signals, logical_interfaces)
+                if issues:
+                    raise EngineeringValidationError(issues[0]["message"])
         plans = [(route, destination, physical_route_segments(route, destination, topology))
             for route in approved for destination in route.get("destinations") or []]
         node_ids = sorted({str(segment[side]["node_id"]) for _, _, segments in plans

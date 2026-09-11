@@ -20,7 +20,9 @@ import {
   type RoutingApprovalProgress,
 } from "@/lib/routing-approval";
 import type { RoutingEntry } from "@/lib/types";
-import { readUserSettings, SETTINGS_EVENT, type UserSettings } from "@/lib/user-settings";
+import { readUserSettings, readActiveProjectId, SETTINGS_EVENT } from "@/lib/user-settings";
+import { getWorkflowSummary } from '@/lib/workflow-api';
+import { normalizeEngineeringWizardSettings } from '@/lib/engineering-wizard-settings';
 import { WORKFLOW_CHANGED_EVENT } from "@/components/workflow-header";
 import { ASSISTANT_CONTEXT_EVENT, readAssistantContext } from "@/lib/agent/assistant-context";
 import type { AssistantGraphState } from "@/lib/assistant-graph";
@@ -61,6 +63,7 @@ export function GlobalAgentWidget() {
     return () => window.removeEventListener(ASSISTANT_CONTEXT_EVENT, update);
   }, []);
   const [activeProject, setActiveProject] = useState("default");
+  const [projectLabel, setProjectLabel] = useState<{ id: string; name: string } | null>(null);
   const [settingsReady, setSettingsReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
@@ -147,15 +150,29 @@ export function GlobalAgentWidget() {
     setActiveProject(initial.activeProject);
     setOpen(!isLandingPage && initial.openAgentOnStart);
     setSettingsReady(true);
-    const update = (event: Event) => {
-      const next = (event as CustomEvent<UserSettings>).detail;
-      setActiveProject(next.activeProject);
-    };
+    const update = () => setActiveProject(readActiveProjectId());
     window.addEventListener(SETTINGS_EVENT, update);
+    window.addEventListener('popstate', update);
     return () => {
       window.removeEventListener(SETTINGS_EVENT, update);
+      window.removeEventListener('popstate', update);
     };
-  }, [isLandingPage]);
+  }, [isLandingPage, pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      const expected = readActiveProjectId();
+      if (expected !== activeProject) { setActiveProject(expected); return; }
+      void getWorkflowSummary().then(workflow => {
+        if (!cancelled && readActiveProjectId() === expected && workflow.project_id === expected)
+          setProjectLabel({ id: expected, name: normalizeEngineeringWizardSettings(workflow.context?.engineering_wizard_settings).project_name || expected });
+      }).catch(() => { if (!cancelled) setProjectLabel(null); });
+    };
+    if (settingsReady) refresh();
+    window.addEventListener(WORKFLOW_CHANGED_EVENT, refresh);
+    return () => { cancelled = true; window.removeEventListener(WORKFLOW_CHANGED_EVENT, refresh); };
+  }, [activeProject, settingsReady]);
 
   useEffect(() => {
     if (isLandingPage || !settingsReady || !open) {
@@ -246,7 +263,7 @@ export function GlobalAgentWidget() {
             <div className="agent-widget-header">
               <div>
                 <strong>Engineering Assistant</strong>
-                <p className="agent-widget-context">{activeProject} · {pathname.split('/').filter(Boolean).at(-1) || 'Projekt'}{selectedName ? ` · ${selectedName}` : ''}</p>
+                <p className="agent-widget-context" title={activeProject}>{projectLabel?.id === activeProject ? projectLabel.name : activeProject} · {pathname.split('/').filter(Boolean).at(-1) || 'Projekt'}{selectedName ? ` · ${selectedName}` : ''}</p>
               </div>
               <button
                 aria-label="Engineering-Assistent schließen"

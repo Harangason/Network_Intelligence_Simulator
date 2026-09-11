@@ -13,8 +13,21 @@ User basis: LIN reference/brake audit of 2026-09-10 and its implementation appro
 8. Spatial grouping follows SPATIAL_ARCHITECTURE_CONTRACT.md. Split local links by physical zone; preserve unknown positions explicitly. An electrically valid bus does not establish functional or spatial suitability.
 9. Reference traces retain file identity/hash, channel, diagnostic/operational context and observation duration. Measured history suggests candidates, never silently supplies safety requirements. The supplied Audi OBD CAN traces contain no LIN evidence.
 10. DBC/ARXML/LDF outputs must use the validated canonical encoding. LIN scalar export needs unsigned raw encoding or an explicit, checked adaptation. LDF also needs the master schedule. A generated file or independent decoder roundtrip proves syntax/encoding, not functional suitability.
+11. Reconnecting a physical route preserves functional communication, publishers, recipients, messages, signals and explicit timing/encodings. The repair agent starts on user action and previews the previous and proposed physical paths, including every affected current route. It offers **adopt the new routing** and, where the audited history supports it, **restore the previous routing**. Opening the agent never applies a strategy. The user's explicit choice updates physical/message bindings and the routing table atomically. A previous System/gateway connection moved inside a cluster or a different spatial/system scope requires a concrete explanation of that change. Missing paths stay unresolved; an ordinary ECU is not an implicit gateway. Apply against the current project revision, validate the result and invalidate prior routing release and downstream assessments. Never invent recipients or renumber explicit frame IDs to make a repair pass.
+12. A proposed Ethernet forwarding task on an ECU must identify and explicitly confirm the exact directed pair of canonical ports and networks. It does not reclassify the whole device as a gateway or permit unrelated channels. Revoking the confirmation, moving a port to another network or removing a saved wire invalidates the affected signal paths. Restoring a previous System connection may require a new gateway channel when its original channel no longer exists; disclose and persist that additional hardware planning requirement. The choice confirms the intended communication design, not hardware implementation, capacity or functional timing acceptance.
 
 ## Executable transmission contract
+
+Architecture repair additionally follows the user's clarification of 11.09.2026:
+use the **current hardware architecture** to implement the **established communication
+between functions**. Preserve function and logical interface identities independently
+of ports, wires and buses. Resolve partners through their current canonical
+function-to-hardware assignments; a forwarding ECU is not a replacement consumer.
+Capture established partners before network-editor changes. Moving one function must
+not move unrelated messages sharing its former channel. Basic sensor/actuator I/O
+without a separate Function object remains explicit device I/O. Missing or ambiguous
+function assignments and co-located functions requiring local transport remain open
+design items. Restore old hardware paths only through the distinct restoration choice.
 
 Stored at Message.configuration.communication_contract.transmission.
 

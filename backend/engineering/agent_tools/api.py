@@ -66,6 +66,29 @@ def _project() -> str:
     return normalize_context_project_id(request.headers.get("X-Project-ID") or request.args.get("project") or "default")
 
 
+@agent_api.get('/capabilities')
+def assistant_capabilities():
+    authority = ToolAuthority(_project())
+    result = execute(authority, 'inspect_assistant_capabilities', Permission.READ_MODEL,
+        {'capability_id': request.args.get('id')}, TOOLS['inspect_assistant_capabilities'].handler)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 400
+
+
+def agent_failure_message(error):
+    import httpx
+    errors = [error]
+    while errors:
+        item = errors.pop()
+        errors.extend(getattr(item, 'exceptions', []))
+        if isinstance(item, httpx.ConnectError):
+            return 'Der konfigurierte lokale KI-Dienst ist nicht erreichbar. Ollama starten und erneut versuchen. Fähigkeiten und Wizards bleiben verfügbar.'
+        if isinstance(item, (httpx.TimeoutException, asyncio.TimeoutError)):
+            return 'Der KI-Lauf hat sein Zeitlimit erreicht. Bitte den Modelldienst prüfen oder den Auftrag eingrenzen.'
+        if isinstance(item, RuntimeError) and str(item).startswith('Lokaler KI-Dienst: HTTP'):
+            return 'Der lokale KI-Dienst hat die Anfrage abgelehnt. Bitte prüfen, ob das konfigurierte Modell geladen und verfügbar ist.'
+    return 'Der Agentenlauf konnte nicht fortgesetzt werden. Projekt- und Modelldienste prüfen.'
+
+
 @agent_api.post('/attachments/preview')
 def attachment_preview():
     from .documents import extract_document, MAX_FILE_BYTES
@@ -384,7 +407,7 @@ def chat():
         except Exception as error:
             import logging
             logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)
-            message = "Der Agentenlauf konnte nicht fortgesetzt werden. Projekt- und Modelldienste prüfen."
+            message = agent_failure_message(error)
             if isinstance(error, asyncio.TimeoutError):
                 message = "Das Zeitlimit des Hintergrundlaufs wurde erreicht. Der letzte Projektstand bleibt erhalten."
             if tracker:

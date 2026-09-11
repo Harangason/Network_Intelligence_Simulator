@@ -23,6 +23,24 @@ def detached_topology(previous, current):
     return result
 
 
+def removed_endpoint_references(previous, current):
+    """IDs whose old channel/bus membership no longer has a connected drawing port."""
+    connected_before = {e.get(side + 'Port') for e in previous.get('edges') or [] for side in ('source', 'target')}
+    connected_after = {e.get(side + 'Port') for e in current.get('edges') or [] for side in ('source', 'target')}
+    ports_after = [p for n in current.get('nodes') or [] for p in n.get('ports') or []]
+    channels_after = {p.get('hardwareInterfaceId') for p in ports_after}
+    active_memberships = {(p.get('hardwareInterfaceId'), p.get('physicalNetworkId'))
+                          for p in ports_after if p.get('id') in connected_after}
+    removed = set()
+    for node in previous.get('nodes') or []:
+        for port in node.get('ports') or []:
+            channel = port.get('hardwareInterfaceId')
+            if channel not in channels_after or (port.get('id') in connected_before
+                    and (channel, port.get('physicalNetworkId')) not in active_memberships):
+                removed.update(value for value in (channel, port.get('id')) if value)
+    return removed
+
+
 def retire_removed_connections(previous, current, *, actor='network-editor'):
     """Called inside the topology save transaction, after endpoint reconciliation."""
     from .relations import delete_relation
@@ -72,11 +90,17 @@ def retire_removed_connections(previous, current, *, actor='network-editor'):
                 route_ids.add(str(UUID(str(raw))))
             except (ValueError, TypeError):
                 continue
-    if route_ids:
+    endpoint_ids = sorted(removed_endpoint_references(previous, current))
+
+    if route_ids or endpoint_ids:
         with get_connection() as connection:
             rows = connection.execute(
-                "SELECT * FROM engineering_routing_entries WHERE project_id=%s AND id=ANY(%s::uuid[]) FOR UPDATE",
-                (current_project_id(), sorted(route_ids))).fetchall()
+                "SELECT * FROM engineering_routing_entries WHERE project_id=%s AND (id=ANY(%s::uuid[]) "
+                "OR source->>'port_id'=ANY(%s::text[]) "
+                "OR source->>'physical_port_ref'=ANY(%s::text[]) "
+                "OR EXISTS (SELECT 1 FROM jsonb_array_elements(destinations) endpoint "
+                "WHERE endpoint->>'port_id'=ANY(%s::text[]) OR endpoint->>'physical_port_ref'=ANY(%s::text[]))) FOR UPDATE",
+                (current_project_id(), sorted(route_ids), endpoint_ids, endpoint_ids, endpoint_ids, endpoint_ids)).fetchall()
             for row in rows:
                 if row.get('status') in {'REJECTED', 'SUPERSEDED'}:
                     continue
@@ -87,7 +111,7 @@ def retire_removed_connections(previous, current, *, actor='network-editor'):
                                   warnings=[*warnings, {'code':'PHYSICAL_PATH_REMOVED', 'message':reason}])
                 after = connection.execute(
                     "UPDATE engineering_routing_entries SET status='OUTDATED', approval_state='PENDING', "
-                    "review_state='IN_REVIEW', validation=%s, modified_by=%s, modified_at=now() "
+                    "review_state='IN_REVIEW', approved_at=NULL, approved_by=NULL, validation=%s, modified_by=%s, modified_at=now() "
                     "WHERE project_id=%s AND id=%s RETURNING *",
                     (Jsonb(validation), actor, current_project_id(), row['id'])).fetchone()
                 _audit(connection, str(row['id']), 'NETWORK_PATH_REMOVED', actor=actor, before=row, after=after, reason=reason)

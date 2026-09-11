@@ -103,6 +103,25 @@ class EngineeringAgent:
         if context.current_workload and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
+        from ..orchestration.capability_intent import capability_question
+        capability = capability_question(prompt)
+        if capability is not None:
+            result = await call('inspect_assistant_capabilities', {'capability_id': None if capability == '@project' else capability or None})
+            if result.success:
+                items = result.data['capabilities']
+                if capability == '@project':
+                    event('RESULT', status='ANSWERED', text=f"Ich arbeite im Projekt {result.data['project_name']}. Alle Werkzeuge und Aktionen sind an dieses Projekt gebunden.",
+                          metadata={'project_id': result.data['project_id']})
+                    return {'run_id': run_id, 'status': 'ANSWERED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                introduction = (items[0]['description'] + '\n\nAblauf: ' + ' → '.join(items[0]['steps']) if capability else
+                    'Ich kenne die folgenden Wizards und Fachagenten. Wähle eine Kachel, um den Ablauf zu öffnen. '
+                    'Modelländerungen erfolgen erst im jeweiligen Arbeitsablauf.')
+                for offset in range(0, len(items), 12):
+                    event('RESULT', status='ANSWERED', text=introduction if offset == 0 else 'Weitere Fähigkeiten',
+                          actions=[item['action'] for item in items[offset:offset + 12]],
+                          metadata={'project_id': result.data['project_id'], 'project_name': result.data['project_name']})
+                return {'run_id': run_id, 'status': 'ANSWERED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            return {'run_id': run_id, 'status': 'BLOCKED', 'events': events, 'context': context.model_dump(), 'trace': traces}
         project = await call("inspect_project")
         if not project.success:
             return {"status":"BLOCKED","events":events,"context":context.model_dump(),"trace":traces}
@@ -648,6 +667,11 @@ class EngineeringAgent:
             text = "Der Funktionsvorschlag ist zur Prüfung bereit." if status=="READY_FOR_REVIEW" else "Der Vorschlag benötigt weitere Angaben oder Korrekturen."
         else:
             messages = [*(history or [])[-12:], {"role":"user","content":prompt}]
+            directory = await call('inspect_assistant_capabilities')
+            if directory.success and isinstance(directory.data.get('capabilities'), list):
+                import json
+                messages.insert(len(messages) - 1, {'role': 'system', 'content': 'Verifizierter Fähigkeitenkatalog. Nutze prepare_assistant_action für passende Bedienabläufe und inspect_communication_repair für die aktuelle Architektur. '
+                    + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps')} for item in directory.data['capabilities']], ensure_ascii=False)})
             tools = await self.client.tools()
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)
@@ -703,7 +727,7 @@ class EngineeringAgent:
                             if result.data.get("agent_response"):
                                 response = result.data["agent_response"]
                                 event(response["type"],**{k:v for k,v in response.items() if k!="type"})
-                                return {"run_id":run_id,"status":"BLOCKED","events":events,"context":context.model_dump(),"trace":traces}
+                                return {"run_id":run_id,"status":"BLOCKED" if response.get('question') else response.get('status', 'ANSWERED'),"events":events,"context":context.model_dump(),"trace":traces}
                     event(
                         "PROGRESS",
                         status="IN_PROGRESS",

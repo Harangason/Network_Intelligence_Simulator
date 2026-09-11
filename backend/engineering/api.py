@@ -797,6 +797,19 @@ def workflow_parameters_route():
     return jsonify({"project_id": state["project_id"], "parameters": state["parameters"]})
 
 
+@engineering_api.route('/workflow/communication-repair/preview', methods=['POST'])
+def preview_communication_repair():
+    from .communication_repair import load_plan, public_plan, complete_plan
+    planner, _ = load_plan()
+    return jsonify(public_plan(complete_plan(planner)))
+
+
+@engineering_api.route('/workflow/communication-repair/apply', methods=['POST'])
+def apply_communication_repair():
+    from .communication_repair import apply_repair
+    return jsonify(apply_repair(_routing_payload()))
+
+
 @engineering_api.route("/workflow/parameters", methods=["PATCH"])
 def update_workflow_parameters_route():
     payload = _routing_payload()
@@ -1646,6 +1659,13 @@ def list_routing_entries_route():
 @engineering_api.route("/routing", methods=["POST"])
 def create_routing_entry_route():
     return jsonify(create_route(_routing_payload())), 201
+
+
+@engineering_api.route("/routing/message-scopes", methods=["GET"])
+def routing_message_scopes_route():
+    from .pagination import all_pages
+    from .routing.payload_scope import message_scope
+    return jsonify({"items": {str(item["id"]): message_scope(item) for item in all_pages(list_objects, "Message")}})
 
 
 @engineering_api.route("/routing/schema", methods=["GET"])

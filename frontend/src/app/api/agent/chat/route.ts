@@ -4,6 +4,7 @@ import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { parseAgentResponse, type AgentInput } from "@/lib/agent/agent-response";
 import { backendEndpoints } from "@/lib/backend-endpoints";
 import { chatDocumentContext, validateChatAttachment } from "@/lib/agent/chat-attachments";
+import { expandBrowserProjectId } from '@/lib/user-settings';
 
 export const maxDuration = 300;
 const { engineering: backend } = backendEndpoints(process.env);
@@ -25,6 +26,8 @@ export async function POST(request: Request) {
   const prompt = lastUser?.parts.filter(part => part.type === "text").map(part => part.text).join("\n").trim();
   if (!prompt && !payload.input) return Response.json({ error: "Eine Anforderung wird erwartet." }, { status: 400 });
   const projectId = request.headers.get("X-Project-ID") ?? "default";
+  if (payload.context?.active_project_id && expandBrowserProjectId(payload.context.active_project_id) !== expandBrowserProjectId(projectId))
+    return Response.json({ error: 'Das Projekt wurde gewechselt. Bitte den Assistenten im aktuellen Projekt öffnen.' }, { status: 409 });
   const previousContext = [...messages].reverse().flatMap(message => [...message.parts].reverse())
     .find(part => part.type === "data-engineering" && part.data.type === "CONTEXT");
   const history = messages.filter(message => message.id !== lastUser?.id).slice(-12).map(message => ({

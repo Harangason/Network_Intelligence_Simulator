@@ -4,7 +4,17 @@ import re
 
 
 def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
-    names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools"}
+    # A terminology question does not identify a canonical object. Give the
+    # model the definition tool rather than inviting invented object UUIDs.
+    concepts = (re.search(r'\b(?:wozu|unterschied zwischen|was ist (?:ein|eine)|was sind|was bedeutet|what is (?:a|an)|difference between)\b', prompt, re.I)
+                and re.search(r'hardware|funktion|function|signal|nachricht|message|interface|anschluss', prompt, re.I)
+                and not re.search(r'projekt|aktuellen?|konkreten?|ausgewählt|selected|[0-9a-f]{8}-', prompt, re.I))
+    if concepts:
+        return [tool for tool in tools if tool['name'] in {'describe_engineering_concepts', 'inspect_assistant_capabilities', 'prepare_assistant_action'}]
+    names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools",
+             "inspect_assistant_capabilities", "prepare_assistant_action"}
+    if re.search(r'repar|neue.*(?:weg|route|architektur)|funktionspartner', prompt, re.I):
+        names.add('inspect_communication_repair')
     spatial = bool(re.search(r'raum|spatial|zonal|einbauort|rotor|drohn|cluster|architecture|architektur|roboter|robot', prompt, re.I))
     if spatial:
         names.add('inspect_spatial_architecture')
@@ -22,11 +32,11 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     for pattern, candidates in groups:
         if re.search(pattern,prompt,re.I):
             names.update(candidates)
-    if len(names)==5:
+    if len(names)==7:
         names.update({"inspect_findings","evaluate_architecture","find_graph_gaps"})
     reasoning_names = {"analyze_trace_root_cause", "explain_simulation_failure", "investigate_deadline_miss", "analyze_fault_effects",
                        "find_first_divergence", "compare_simulation_runs", "continue_reasoning", "inspect_reasoning", "get_trace_window"}
     if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
         names.update(reasoning_names)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: (tool['name'] != 'inspect_spatial_architecture', tool["name"] not in reasoning_names))[:24]
+    return sorted(selected, key=lambda tool: (tool['name'] not in {'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'}, tool["name"] not in reasoning_names))[:24]

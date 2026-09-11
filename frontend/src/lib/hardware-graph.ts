@@ -1,4 +1,4 @@
-import type { EngFunction } from './types';
+import type { EngFunction, EngInterface, EngineeringRelation, RoutingEntry } from './types';
 import type { BusType, NetworkTopology, TopologyNode, TopologyEdge } from './topology';
 
 export type DiagramMode = 'hardware' | 'functions' | 'combined';
@@ -8,15 +8,21 @@ export type GraphNode = {
   hardware?: TopologyNode; functionRef?: EngFunction; groupRole?: 'cluster' | 'frame'; buses?: BusType[];
   x: number; y: number; z: number; space: [number, number, number];
 };
-export type GraphLink = { id: string; source: string; target: string; kind: 'hierarchy' | 'physical' | 'mapping'; bus?: BusType; edge?: TopologyEdge };
+export type CommunicationRef = { id: string; name: string; status: string; active: boolean; protocol?: string; cycleMs?: number | null };
+export type GraphLink = { id: string; source: string; target: string; kind: 'hierarchy' | 'physical' | 'mapping' | 'communication'; bus?: BusType; edge?: TopologyEdge; communications?: CommunicationRef[]; directed?: boolean };
+export type CommunicationData = { routes: RoutingEntry[]; interfaces: EngInterface[]; relations: EngineeringRelation[] };
 export type HardwareGraph = { nodes: GraphNode[]; links: GraphLink[]; byId: Map<string, GraphNode>; maxDepth: number };
+/** Illustrate modeled direction, independently of approval and selection.
+ * Color/status still distinguish unverified physical paths from valid routes. */
+export const hasCommunicationFlow = (link: GraphLink) => link.kind === 'communication' && link.directed === true && Boolean(link.communications?.length);
+export const communicationColor = (link: GraphLink) => link.communications?.some(c => c.active) ? '#67dcec' : '#e5a65d';
 export const kindLabels: Record<GraphKind, string> = { root: 'Topologie', group: 'Gruppe', gateway: 'Gateway', ecu: 'ECU', sensor: 'Sensor', actuator: 'Aktor', function: 'Funktion', unmapped: 'Funktion ohne Hardware' };
 export const kindColors: Record<GraphKind, string> = { root: '#a9ef52', group: '#6d9fb4', gateway: '#a9ef52', ecu: '#87cfff', sensor: '#ffd45b', actuator: '#f28b91', function: '#bc9bff', unmapped: '#ffad66' };
 export const compareNames = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'de', { numeric: true, sensitivity: 'base' });
 
 /** A read-only projection. Saved membership and exact IDs define the hierarchy;
  * names, bus labels and drawing coordinates never establish ownership or location. */
-export function buildHardwareGraph(topology: NetworkTopology, functions: EngFunction[], mode: DiagramMode): HardwareGraph {
+export function buildHardwareGraph(topology: NetworkTopology, functions: EngFunction[], mode: DiagramMode, communication?: CommunicationData): HardwareGraph {
   const byId = new Map<string, GraphNode>();
   const add = (id: string, name: string, kind: GraphKind, parentId?: string, extra: Partial<GraphNode> = {}) => {
     if (!byId.has(id)) byId.set(id, { id, name, kind, parentId, children: [], depth: 0, x: 0, y: 0, z: 0, space: [0, 0, 0], ...extra });
@@ -45,14 +51,66 @@ export function buildHardwareGraph(topology: NetworkTopology, functions: EngFunc
   const links: GraphLink[] = [];
   if (mode !== 'functions') {
     for (const node of topology.nodes) add(node.id, node.name, node.kind, parentFor(node), { hardware: node });
+    // Fold owned peripherals behind their controller only inside the same saved
+    // system frame. Ownership never moves a device across spatial memberships.
+    for (const node of topology.nodes) {
+      const owner = node.systemOwnerId ? hardwareById.get(node.systemOwnerId) : undefined;
+      if (!owner || !['sensor', 'actuator'].includes(node.kind) || owner.kind !== 'ecu') continue;
+      const child = byId.get(node.id)!, controller = byId.get(owner.id)!;
+      if (child.parentId === controller.parentId && child.parentId?.startsWith('view:frame:')) child.parentId = owner.id;
+    }
     for (const edge of topology.edges) {
       if (byId.has(edge.source) && byId.has(edge.target)) links.push({ id: `edge:${edge.id}`, source: edge.source, target: edge.target, kind: 'physical', bus: edge.bus, edge });
     }
   }
   if (mode !== 'hardware') for (const fn of functions) {
     const hardware = fn.hardware_node_id ? hardwareById.get(fn.hardware_node_id) : undefined;
-    const id = add(`function:${fn.id}`, fn.name, hardware ? 'function' : 'unmapped', parentFor(hardware), { functionRef: fn, buses: hardware?.ports.map(p => p.bus) });
+    const id = add(`function:${fn.id}`, fn.name, hardware ? 'function' : 'unmapped', hardware && mode === 'combined' ? hardware.id : parentFor(hardware), { functionRef: fn, buses: hardware?.ports.map(p => p.bus) });
     if (hardware && mode === 'combined') links.push({ id: `mapping:${fn.id}`, source: id, target: hardware.id, kind: 'mapping' });
+  }
+  if (communication) {
+    const interfaces = new Map(communication.interfaces.map(i => [i.id, i]));
+    const functionById = new Map(functions.map(f => [f.id, f]));
+    const endpoint = (nodeId: string, interfaceId?: string | null) => {
+      if (mode !== 'functions') return hardwareById.get(nodeId)?.id;
+      const fn = interfaces.get(interfaceId ?? '')?.function_id;
+      return fn && functionById.get(fn)?.hardware_node_id === nodeId ? `function:${fn}` : undefined;
+    };
+    const relationsEndpoint = (type: string, id: string) => {
+      if (type === 'HardwareNode') return mode !== 'functions' ? hardwareById.get(id)?.id : undefined;
+      const fn = type === 'Function' ? functionById.get(id) : type === 'Interface' ? functionById.get(interfaces.get(id)?.function_id ?? '') : undefined;
+      return fn ? mode === 'functions' || mode === 'combined' ? `function:${fn.id}` : hardwareById.get(fn.hardware_node_id ?? '')?.id : undefined;
+    };
+    const connections = new Map<string, GraphLink>();
+    const append = (source: string | undefined, target: string | undefined, ref: CommunicationRef, directed: boolean) => {
+      if (!source || !target || source === target || !byId.has(source) || !byId.has(target)) return;
+      const key = JSON.stringify([source, target, directed]);
+      const edge = connections.get(key) ?? { id: `communication:${key}`, source, target, kind: 'communication', directed, communications: [] };
+      if (!edge.communications!.some(c => c.id === ref.id)) edge.communications!.push(ref);
+      connections.set(key, edge);
+    };
+    for (const route of communication.routes) {
+      if (['REJECTED', 'SUPERSEDED', 'DEPRECATED'].includes(route.status)) continue;
+      const payload = route.payload;
+      if (!payload.message_id && !payload.message_ids?.length && !payload.signal_ids?.length && !payload.interface_definition_id && !payload.interface_definition_ids?.length && !payload.topic && !payload.data_object) continue;
+      for (const target of route.destinations) append(endpoint(route.source.node_id, route.source.interface_id), endpoint(target.node_id, target.interface_id), {
+        id: route.id, name: `${route.route_code} · ${route.name}`, protocol: route.source.protocol ?? undefined,
+        status: route.status === 'OUTDATED' ? 'Weg veraltet' : route.approval_state === 'APPROVED' ? 'Freigegeben' : 'Geplant',
+        active: route.status !== 'OUTDATED' && route.validation?.valid === true, cycleMs: route.timing.cycle_time_ms,
+      }, true);
+    }
+    // An undirected COMMUNICATES_WITH relation never invents a sender direction.
+    for (const relation of communication.relations) {
+      if (relation.relation_type !== 'COMMUNICATES_WITH') continue;
+      let source = relationsEndpoint(relation.source_type, relation.source_id), target = relationsEndpoint(relation.target_type, relation.target_id);
+      const direction = relation.attributes.direction;
+      if (direction === 'TARGET_TO_SOURCE') [source, target] = [target, source];
+      const directed = ['SOURCE_TO_TARGET', 'TARGET_TO_SOURCE', 'BIDIRECTIONAL'].includes(String(direction));
+      const ref = { id: relation.id, name: String(relation.attributes.name ?? 'Kommunikationsbeziehung'), status: 'Modelliert', active: directed };
+      append(source, target, ref, directed);
+      if (direction === 'BIDIRECTIONAL') append(target, source, ref, true);
+    }
+    links.push(...connections.values());
   }
   for (const node of byId.values()) if (node.parentId) {
     byId.get(node.parentId)?.children.push(node.id);
@@ -110,17 +168,31 @@ export function nodePath(graph: HardwareGraph, id: string): GraphNode[] {
   return path;
 }
 
-export function visibleHardwareGraph(graph: HardwareGraph, options: { query: string; kind: string; bus: string; depth: number; collapsed: Set<string>; physical: boolean }) {
-  const query = options.query.trim().toLocaleLowerCase('de');
+export function searchTerms(query: string): string[] {
+  // A quoted phrase may itself contain "und"; each unquoted UND adds a node search.
+  const parts = query.match(/"[^"]*"|'[^']*'|\S+/g) ?? [];
+  const terms: string[] = []; let phrase: string[] = [];
+  for (const part of parts) {
+    if (/^und$/i.test(part)) { if (phrase.length) terms.push(phrase.join(' ')); phrase = []; }
+    else phrase.push(part.replace(/^(?:"(.*)"|'(.*)')$/, (_, a, b) => a ?? b));
+  }
+  if (phrase.length) terms.push(phrase.join(' '));
+  return [...new Set(terms.map(t => t.trim().toLocaleLowerCase('de')).filter(Boolean))];
+}
+
+export function visibleHardwareGraph(graph: HardwareGraph, options: { query: string; kind: string; bus: string; depth: number; collapsed: Set<string>; physical: boolean; communication?: boolean; expanded?: Set<string>; searchCollapsed?: Set<string> }) {
+  const terms = searchTerms(options.query);
   const matches = graph.nodes.filter(node => {
     const matchesBus = !options.bus || node.buses?.some(b => b === options.bus) || node.hardware?.ports.some(p => p.bus === options.bus) || graph.links.some(l => l.bus === options.bus && (l.source === node.id || l.target === node.id));
-    return (!query || node.name.toLocaleLowerCase('de').includes(query)) && (!options.kind || node.kind === options.kind) && matchesBus;
+    return (!terms.length || terms.some(term => node.name.toLocaleLowerCase('de').includes(term))) && (!options.kind || node.kind === options.kind) && matchesBus;
   }).sort(compareNames);
   const context = new Set(matches.flatMap(n => nodePath(graph, n.id).map(p => p.id)));
-  const searching = Boolean(query || options.kind || options.bus);
-  const nodes = graph.nodes.filter(n => context.has(n.id) && (searching || n.depth <= options.depth && !nodePath(graph, n.id).slice(0, -1).some(p => options.collapsed.has(p.id))));
+  const searching = Boolean(terms.length || options.kind || options.bus);
+  const nodes = graph.nodes.filter(n => context.has(n.id) && (searching
+    ? !nodePath(graph, n.id).slice(0, -1).some(p => options.searchCollapsed?.has(p.id))
+    : nodePath(graph, n.id).every(p => p.depth <= options.depth || options.expanded?.has(p.parentId ?? '')) && !nodePath(graph, n.id).slice(0, -1).some(p => options.collapsed.has(p.id))));
   const ids = new Set(nodes.map(n => n.id));
-  return { nodes, links: graph.links.filter(l => ids.has(l.source) && ids.has(l.target) && (options.physical || l.kind !== 'physical') && (!options.bus || l.kind !== 'physical' || l.bus === options.bus)), matches, matchIds: new Set(matches.map(n => n.id)) };
+  return { nodes, links: graph.links.filter(l => ids.has(l.source) && ids.has(l.target) && (options.physical || l.kind !== 'physical') && (options.communication !== false || l.kind !== 'communication') && (!options.bus || l.kind !== 'physical' || l.bus === options.bus)), matches, matchIds: new Set(matches.map(n => n.id)), missingTerms: terms.filter(term => !matches.some(n => n.name.toLocaleLowerCase('de').includes(term))) };
 }
 
 export type ViewTransform = { x: number; y: number; scale: number };
@@ -132,7 +204,19 @@ export function fitGraph2D(nodes: Pick<GraphNode, 'x' | 'y'>[], width: number, h
   return { x: width / 2 - (minX + maxX) * scale / 2, y: height / 2 - (minY + maxY) * scale / 2, scale };
 }
 
-export function graphLinkPath(source: GraphNode, target: GraphNode, kind: GraphLink['kind']) {
-  if (kind !== 'hierarchy') return `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
-  return `M ${source.x} ${source.y} C ${source.x * .55} ${source.y * .55} ${target.x * .55} ${target.y * .55} ${target.x} ${target.y}`;
+export function graphNodeRadius(node: GraphNode, three = false) {
+  return node.kind === 'root' ? three ? 18 : 16 : node.kind === 'group' ? three ? 11 : 10 : three ? 8 : 7;
+}
+
+export function graphLinkEndpoints(source: GraphNode, target: GraphNode, three = false, selected = '') {
+  const a = three ? source.space : [source.x, source.y, 0], b = three ? target.space : [target.x, target.y, 0];
+  const delta = b.map((v, i) => v - a[i]), length = Math.hypot(...delta);
+  const radius = (node: GraphNode) => Math.min(length / 2, graphNodeRadius(node, three) * (three && node.id === selected ? 1.6 : 1));
+  return { source: a.map((v, i) => v + delta[i] / (length || 1) * radius(source)) as [number, number, number],
+    target: b.map((v, i) => v - delta[i] / (length || 1) * radius(target)) as [number, number, number] };
+}
+
+export function graphLinkPath(source: GraphNode, target: GraphNode, _kind: GraphLink['kind']) {
+  const ends = graphLinkEndpoints(source, target);
+  return `M ${ends.source[0]} ${ends.source[1]} L ${ends.target[0]} ${ends.target[1]}`;
 }

@@ -7361,12 +7361,31 @@ a {
   height: clamp(560px, 67vh, 900px);
   min-width: 0;
   overflow: hidden;
+  overscroll-behavior: none;
 }
+.hardware-communication-list { margin-bottom: 16px; }
+.hardware-communication-list summary { cursor: pointer; color: var(--text); }
+.hardware-communication-list .hardware-explorer-neighbors { max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+.hardware-explorer .hardware-node-overlay { overscroll-behavior: contain; }
 .hardware-explorer-svg { display: block; touch-action: none; outline: none; }
 .hardware-explorer-svg:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
 .hardware-explorer-edge { fill: none; stroke-width: 1.3; stroke-opacity: .7; cursor: pointer; vector-effect: non-scaling-stroke; }
 .hardware-explorer-edge.hierarchy { stroke-opacity: .45; }
 .hardware-explorer-edge.mapping { stroke-dasharray: 5 4; }
+.hardware-explorer-edge.communication { stroke-width: 1.8; stroke-opacity: .85; }
+.hardware-communication-flow { fill: none; stroke: #e0fcff; stroke-width: 3; stroke-dasharray: 1 24; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; animation: hardware-data-flow 3.2s linear infinite; }
+@keyframes hardware-data-flow { to { stroke-dashoffset: -100; } }
+@media (prefers-reduced-motion: reduce) { .hardware-communication-flow { animation: none; } }
+.hardware-node-overlay { position: absolute; top: 16px; left: 16px; z-index: 4; width: min(300px, calc(100% - 32px)); max-height: 45%; overflow: auto; padding: 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: #0d151ff2; box-shadow: 0 8px 30px #0005; color: var(--text); }
+.hardware-node-overlay header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hardware-node-overlay small { color: var(--accent); font-size: 11px; }
+.hardware-node-overlay h3 { margin: 8px 0 12px; font-size: 15px; overflow-wrap: anywhere; }
+.hardware-node-overlay button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; cursor: pointer; }
+.hardware-node-overlay dl { display: grid; gap: 9px; margin: 0; font-size: 12px; }
+.hardware-node-overlay dl > div { display: grid; grid-template-columns: 86px 1fr; gap: 8px; }
+.hardware-node-overlay dt { color: var(--muted); }
+.hardware-node-overlay dd { margin: 0; overflow-wrap: anywhere; }
+.hardware-node-overlay p { font-size: 12px; line-height: 1.5; margin-bottom: 0; }
 .hardware-explorer-edge:hover, .hardware-explorer-edge.selected { stroke-width: 3; stroke-opacity: 1; }
 .hardware-explorer-node { cursor: pointer; outline: none; }
 .hardware-explorer-node circle { fill: var(--surface); stroke: currentColor; stroke-width: 2; }
@@ -11012,6 +11031,14 @@ a {
   flex-direction: column;
   overflow: hidden;
 }
+.routing-path-preview { margin: 12px 18px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); max-height: 180px; overflow: auto; flex: 0 0 auto; }
+.routing-path-preview h4 { margin: 8px 0; }
+.routing-path-preview ol { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 8px 0; }
+.routing-path-preview li { display: flex; flex-direction: column; gap: 4px; border-left: 2px solid var(--accent); padding: 4px 10px; }
+.routing-path-preview small, .routing-interface-picker small, .routing-payload-help { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.routing-interface-picker { display: grid; gap: 6px; min-width: 0; }
+.routing-interface-picker label { margin: 0; }
+.routing-wizard-targets-step .routing-endpoint-fields > div:has(.routing-interface-picker) { grid-column: 1 / -1; }
 
 .routing-wizard-dialog > header,
 .routing-wizard-dialog > footer {
@@ -14915,3 +14942,47 @@ a {
 .net-bus-name-dialog .net-bus-name-error { margin:0 18px; }
 
 .net-bus-name-hint { margin:0 18px; color:var(--muted); font-size:12px; }
+
+/* Current communication diagnostics, shared by canonical tables and structure tree. */
+.eng-communication-warning { display: inline-flex; align-items: center; gap: 5px; padding: 5px 7px; border: 1px solid #7c642d; border-radius: 6px; background: #302719; color: #ffd568; cursor: pointer; font: inherit; }
+.eng-communication-warning svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.eng-communication-warning:focus-visible { outline: 2px solid #ffd568; outline-offset: 3px; }
+.eng-communication-warning-dialog { width: min(640px, calc(100vw - 32px)); max-height: 80vh; overflow: auto; margin: auto; padding: 24px; border: 1px solid #7c642d; border-radius: 12px; color: #e5edf5; background: #101720; text-align: left; white-space: normal; font-size: 14px; font-weight: 400; }
+.eng-communication-warning-dialog::backdrop { background: #000a; }
+.eng-communication-warning-dialog header { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.eng-communication-warning-dialog h3 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+.eng-communication-warning-dialog p { margin: 10px 0; line-height: 1.5; }
+.eng-communication-warning-dialog ul { padding-left: 20px; }
+.eng-communication-warning-dialog li { padding: 12px 0; border-top: 1px solid #354050; overflow-wrap: anywhere; }
+.eng-communication-warning-dialog small { color: #ffd568; font-size: 12px; }
+.eng-table th:last-child { min-width: 95px; }
+
+.structure-object-actions { display: flex; align-items: center; gap: 8px; }
+
+.eng-resource-row { display: flex; align-items: center; gap: 16px; margin: 18px 0 22px; }
+.eng-resource-row .eng-resource-flow { flex: 1; min-width: 0; margin: 0; }
+.eng-repair-agent-button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+.eng-repair-agent-button svg { width: 20px; height: 20px; fill: none; stroke: var(--accent); stroke-width: 1.7; }
+.eng-repair-agent-dialog { margin: auto; width: min(850px, calc(100vw - 32px)); max-height: 85vh; overflow: auto; padding: 24px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); font-size: 14px; }
+.eng-repair-agent-dialog::backdrop { background: #000a; }
+.eng-repair-agent-dialog header, .eng-repair-agent-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.eng-repair-agent-dialog h3, .eng-repair-agent-dialog h4 { margin: 0 0 12px; }
+.eng-repair-agent-dialog p { line-height: 1.5; }
+.eng-repair-group { padding: 20px 0; border-top: 1px solid var(--border); }
+.eng-repair-option { margin: 14px 0; padding: 16px; border: 1px solid #7c642d; border-radius: 8px; overflow-wrap: anywhere; }
+.eng-repair-option strong { display: block; margin-bottom: 12px; }
+.eng-repair-success { margin: 18px 0; padding: 16px; background: #a1ed3910; border: 1px solid #618f37; border-radius: 8px; }
+@media (max-width: 700px) { .eng-resource-row { flex-wrap: wrap; } .eng-resource-row .eng-resource-flow { flex-basis: 100%; } }
+.eng-repair-comparison { overflow: auto; max-height: 42vh; margin: 14px 0; }
+.eng-repair-comparison thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.eng-repair-comparison table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; table-layout: fixed; }
+.eng-repair-comparison th, .eng-repair-comparison td { padding: 10px; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.eng-repair-comparison th small { display: block; margin-top: 6px; font-weight: normal; color: var(--muted); }
+.eng-repair-comparison td small { display: block; margin-top: 4px; color: var(--muted); }
+.eng-repair-architecture { border-block: 1px solid var(--border); padding: 16px 0; margin: 18px 0; }
+.eng-repair-comparison th:first-child { width: 24%; }
+.assistant-capability-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 8px; margin: 12px 0; }
+.assistant-capability-cards button { padding: 12px; border: 1px solid var(--line, #304050); border-radius: 9px; background: var(--surface, #101821); color: inherit; text-align: left; cursor: pointer; }
+.assistant-capability-cards button:hover, .assistant-capability-cards button:focus-visible { border-color: var(--accent, #a4ed45); }
+.assistant-capability-cards strong, .assistant-capability-cards span { display: block; }
+.assistant-capability-cards span { margin-top: 6px; font-size: 11px; line-height: 1.45; opacity: .78; }

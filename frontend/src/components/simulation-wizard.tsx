@@ -1149,7 +1149,7 @@ export function SimulationWizard({
                 topology={topology}
               />
             ) : (
-              <HardwareTopologyView functions={modelFunctions} topology={topology} />
+              <HardwareTopologyView functions={modelFunctions} topology={topology} routes={routingEntries} hardwareDetails={modelHardware} routingError={routingLoadError} />
             )}
             {routingSyncMessage && <p className="net-routing-sync">{routingSyncMessage}</p>}
             <section className="net-route-suggestions" aria-label="Geänderte Routing-Parameter">

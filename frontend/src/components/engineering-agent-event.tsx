@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { EngineeringAgentEvent, EngineeringProposal } from "@/lib/agent/engineering-agent";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
 import { WorkloadProgress } from "./workload-progress";
+import { AssistantCapabilityCards } from './assistant-capability-cards';
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
@@ -245,5 +246,6 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
     {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Im Workspace öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
     <ContextLinks refs={(event.actions ?? []).filter(action => action.type === 'NAVIGATE' && typeof action.object_type === 'string').map(action => ({object_type:String(action.object_type),id:String(action.object_id ?? ''),name:String(action.label ?? 'Objekt öffnen')}))} projectId={projectId} />
     {event.metadata?.details != null && <LazyDetails title="Technische Details">{() => <Value value={event.metadata?.details} />}</LazyDetails>}
+    <AssistantCapabilityCards actions={event.actions ?? []} projectId={projectId} />
   </section>;
 }

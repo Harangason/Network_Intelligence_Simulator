@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from enum import Enum
 from typing import Any
 from backend.agent_core.api.tool_contract import Permission as P, ToolResult, ToolStatus
 from ..repository import get_object, ENTITY_SPECS, NotFoundError
@@ -22,6 +23,8 @@ from ..addressing import AddressResolutionService, LogicalNodeAddressAllocator
 from backend.intelligence.ml import MLInferenceService
 from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
 from .catalog import TOOLS, register, ID, TEXT, PROMPT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
+
+CanonicalObjectType = Enum('CanonicalObjectType', {name: name for name in ENTITY_SPECS}, type=str)
 
 
 def _inspect_project(_arguments):
@@ -255,9 +258,9 @@ def register_tools():
         return
     register("inspect_project", "Aktiven Workflow und Projektstand lesen.", P.READ_MODEL, _inspect_project)
     register("inspect_spatial_architecture", "Raumcluster, Einbauorte, Quellen, offene Zuordnungen und lokale Buskonflikte branchenübergreifend prüfen; query grenzt Gerätedetails ein.", P.READ_MODEL, _spatial_architecture, query=(str, ''))
-    register("inspect_object", "Kanonisches Objekt im aktiven Projekt lesen.", P.READ_MODEL, lambda a: get_object(a["object_type"], a["object_id"]), object_type=TEXT, object_id=ID)
+    register("inspect_object", "Kanonisches Objekt lesen. object_id muss eine vorhandene UUID aus search_model sein, niemals ein Name. Für allgemeine Begriffsfragen keinen Objektabruf verwenden.", P.READ_MODEL, lambda a: get_object(a["object_type"], a["object_id"]), object_type=(CanonicalObjectType, ...), object_id=(str, Field(pattern=r'^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')))
     for name, kind in {"inspect_function":"Function", "inspect_hardware":"HardwareNode", "inspect_function_interface":"Interface", "inspect_hardware_interface":"HardwareNetworkInterface", "inspect_signal":"Signal", "inspect_message":"Message"}.items():
-        register(name, f"{kind} im aktiven Projekt lesen.", P.READ_MODEL, lambda a, k=kind: get_object(k,a["object_id"]), object_id=ID)
+        register(name, f"Vorhandenes {kind} im aktiven Projekt lesen. UUID zuerst mit search_model ermitteln; keine Namen als IDs verwenden.", P.READ_MODEL, lambda a, k=kind: get_object(k,a["object_id"]), object_id=(str, Field(pattern=r'^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')))
     register("inspect_network", "Kanonisches Netzwerk lesen.", P.READ_MODEL, _network, network_id=ID)
     register("inspect_route", "Kanonische Route lesen.", P.READ_MODEL, lambda a: get_route(a["route_id"]), route_id=ID)
     register("inspect_findings", "Projektfindings aus vorhandenen Analysediensten lesen.", P.READ_MODEL, lambda a: IntelligenceService(current_project_id()).assess(persist=False))
@@ -282,7 +285,7 @@ def register_tools():
              source_address=(str | int, ...), destination_address=(str | int, ...), namespace=(str, "PROJECT"))
     register("search_model", "Objekte über Typen hinweg nach Namen suchen.", P.READ_MODEL, lambda a: {"items": [
         {**item,"object_type":kind} for kind in ([a["object_type"]] if a.get("object_type") else ENTITY_SPECS)
-        for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(str|None,None), limit=LIMIT)
+        for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(CanonicalObjectType|None,None), limit=LIMIT)
     register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str,"automotive"))
     for name in ["generate_functions", "generate_function_structure", "decompose_function"]:
         register(name, "Funktionen aus der Anforderung als gemeinsamen Proposal erzeugen.", P.GENERATE_PROPOSAL,
@@ -391,4 +394,19 @@ register_tools()
 
 from ..reasoning.tools import register_reasoning_tools
 register_reasoning_tools()
+from . import capabilities
+register('describe_engineering_concepts', 'Allgemeine Modellbegriffe erklären: Hardware, Funktionen, Anschlüsse, Interfaces, Nachrichten und Signale. Dafür sind keine Objekt-IDs erforderlich.', P.READ_MODEL,
+         lambda _: {'concepts': capabilities.CONCEPTS, 'scope': 'model-contract'})
+register('inspect_assistant_capabilities', 'Verfügbare Agenten, alle Wizards, Fähigkeiten und ausführbare Aktionen im aktuellen Projekt erklären.', P.READ_MODEL,
+         capabilities.catalog, capability_id=(str | None, None))
+register('prepare_assistant_action', 'Passenden Wizard oder Fachagenten als ausführbare Kachel anbieten. Öffnen führt keine Modelländerung aus.', P.READ_MODEL,
+         capabilities.prepare_action, capability_id=ID)
+register('inspect_communication_repair', 'Aktuelle Hardwarearchitektur, etablierte Funktionspartner, alte und neue Signalwege sowie betroffene Routing-Einträge vergleichen. Nur Vorschau; Strategie wird im Reparatur-Agenten gewählt.', P.READ_MODEL,
+         capabilities.repair_preview)
+register('analyze_structure_transfer', 'Quellstruktur mit expliziten Ziel-ECUs vergleichen und prüfbare Transfer-Vorschläge erzeugen.', P.GENERATE_PROPOSAL,
+         capabilities.structure_preview, source_hardware_id=ID, target_hardware_ids=(list[str], Field(min_length=1, max_length=100)))
+register('evaluate_structure_dependencies', 'Ausgewählte Hardware, Funktionen, Interfaces, Nachrichten und Signale semantisch zuordnen. Prüfung im Structure Wizard.', P.GENERATE_PROPOSAL,
+         capabilities.structure_evaluate, selection=OBJECT)
+register('inspect_system_duplicates', 'Mögliche System-Dubletten mit Strukturevidenz vergleichen. Keine Zusammenführung.', P.READ_MODEL, capabilities.duplicates_preview)
+register('generate_fault_proposals', 'Modellbezogene Fehlerszenarien vorbereiten. Erst im Simulations-Wizard prüfen und aktivieren.', P.GENERATE_PROPOSAL, capabilities.fault_proposals)
 register("get_interface_load", "Physische Schnittstellenlast durch den vorhandenen Kapazitätsrechner bestimmen.", P.READ_MODEL, _interface_load, interface_id=ID)

@@ -88,8 +88,10 @@ def is_gateway_fanout_interface(interface: dict[str, Any]) -> bool:
 class RoutingValidator:
     """Validates references, path semantics, timing, payload and estimated load."""
 
-    def __init__(self, project_id: str | None = None):
+    def __init__(self, project_id: str | None = None, *, physical_planner=None):
         self.project_id = project_id or current_project_id()
+        # A caller validating one atomic batch can reuse its post-mutation snapshot.
+        self.physical_planner = physical_planner
 
     def _physical_path_mapping(
         self,
@@ -265,6 +267,33 @@ class RoutingValidator:
         interface_ids.extend(str(item.get("interface_id") or "") for item in destinations if isinstance(item, dict))
         interface_ids = [item for item in interface_ids if item]
         interfaces = self._rows("engineering_interfaces", interface_ids)
+        intent = path.get('functional_intent') or {}
+        if intent:
+            anchors = [intent.get('source') or {}, *(intent.get('destinations') or [])]
+            actual = [source, *destinations]
+            function_ids = [str(a['function_id']) for a in anchors if a.get('function_id')]
+            functions = self._rows('engineering_functions', function_ids)
+            if len(anchors) != len(actual):
+                error('FUNCTION_PARTNERS_CHANGED', 'Die Route enthält nicht mehr alle gespeicherten Partnerfunktionen.')
+            for anchor, endpoint in zip(anchors, actual):
+                function_id = str(anchor.get('function_id') or '')
+                if not function_id:
+                    if anchor.get('partner_type') == 'hardware_io':
+                        if str(anchor.get('hardware_node_id')) != str(endpoint.get('node_id')):
+                            error('IO_PARTNER_CHANGED', 'Der physische Weg ersetzt den bisherigen Geräte-I/O-Partner.')
+                        continue
+                    warn('FUNCTION_PARTNER_UNRESOLVED', 'Eine bisherige Partnerfunktion ist noch nicht eindeutig belegt.')
+                    continue
+                function = functions.get(function_id)
+                interface = interfaces.get(str(endpoint.get('interface_id')))
+                if not function:
+                    error('FUNCTION_PARTNER_MISSING', 'Eine gespeicherte Partnerfunktion fehlt im kanonischen Modell.')
+                elif str(function.get('hardware_node_id')) != str(endpoint.get('node_id')):
+                    error('FUNCTION_HARDWARE_MISMATCH', 'Die Route folgt nicht der aktuellen Hardwarezuordnung ihrer Partnerfunktion.')
+                if interface and str(interface.get('function_id')) != function_id:
+                    error('FUNCTION_PARTNERS_CHANGED', 'Ein Routing-Endpunkt ersetzt die bisherige Partnerfunktion durch eine andere Funktion.')
+                if endpoint.get('function_id') and str(endpoint['function_id']) != function_id:
+                    error('FUNCTION_PARTNERS_CHANGED', 'Die Funktion des Endpunkts widerspricht der gespeicherten Kommunikation.')
         source_interface_id = str(source.get("interface_id") or "")
         if source_interface_id:
             source_interface = interfaces.get(source_interface_id)
@@ -313,6 +342,19 @@ class RoutingValidator:
                 error("DESTINATION_HARDWARE_INTERFACE_NOT_FOUND", f"Hardware Interface {port_id} existiert nicht.")
             elif str(port.get("hardware_node_id") or "") != str(destination.get("node_id") or ""):
                 error("DESTINATION_HARDWARE_INTERFACE_MISMATCH", "Ein physisches Destination Interface gehört nicht zum gewählten Node.")
+
+        # Validate the selected channel, not another reachable channel on the device.
+        for role, endpoint in [("SOURCE", source), *[("DESTINATION", item) for item in destinations]]:
+            port = hardware_interfaces.get(str(endpoint.get("port_id") or ""))
+            if port is None:
+                continue  # Missing IDs/legacy aliases are handled separately above.
+            network = str(port.get("network_ref") or "")
+            if not network:
+                error(f"{role}_HARDWARE_INTERFACE_UNASSIGNED",
+                      f"Anschluss {port.get('name')} ist keinem physischen Bus zugeordnet.")
+            elif network != str(endpoint.get("network_id") or ""):
+                error(f"{role}_HARDWARE_NETWORK_MISMATCH",
+                      f"Der Bus der Route stimmt nicht mit der aktuellen Buszuordnung von Anschluss {port.get('name')} überein.")
 
         # A valid hardware port does not excuse a stale logical interface after
         # a bus change. Check each endpoint's own protocol (gateway paths may differ).
@@ -369,6 +411,11 @@ class RoutingValidator:
 
         signal_ids = [str(item) for item in payload.get("signal_ids", []) if item]
         signals = self._rows("engineering_signals", signal_ids)
+        from .payload_scope import payload_scope_issues
+        signal_message_ids = list({str(item.get("message_id")) for item in signals.values() if item.get("message_id")} - set(messages))
+        scope_messages = {**messages, **(self._rows("engineering_messages", signal_message_ids) if signal_message_ids else {})}
+        for issue in payload_scope_issues(route, scope_messages, signals, interfaces):
+            error(issue["code"], issue["message"])
         for signal_id in signal_ids:
             signal = signals.get(signal_id)
             if signal is None:
@@ -430,11 +477,43 @@ class RoutingValidator:
 
         gateways = [str(item.get("node_id") if isinstance(item, dict) else item) for item in path.get("gateways", [])]
         gateway_rows = self._rows("engineering_hardware_nodes", [item for item in gateways if item])
+        physical_paths = path.get('physical_paths') or []
+        forwarding_evidence = set()
+        if physical_paths:
+            from ..communication_repair import load_plan
+            from .forwarding import forwarding_permitted
+            planner = getattr(self, 'physical_planner', None)
+            if planner is None:
+                planner, _ = load_plan()
+            expected_source = str((planner.resolve(source.get('port_id')) or {}).get('id'))
+            expected_targets = {str((planner.resolve(e.get('port_id')) or {}).get('id')) for e in destinations}
+            reached = set()
+            for physical in physical_paths:
+                ports = physical.get('ports') or []
+                if not ports or ports[0] != expected_source or ports[-1] not in expected_targets:
+                    error('PHYSICAL_PATH_ENDPOINT_MISMATCH', 'Der gespeicherte Signalweg gehört nicht zu Quelle und Empfängern dieser Route.')
+                    continue
+                reached.add(ports[-1])
+                if len(ports) != len(set(ports)):
+                    error('PHYSICAL_PATH_LOOP', 'Der gespeicherte physische Signalweg enthält eine Schleife.')
+                for a, b in zip(ports, ports[1:]):
+                    matching = [(n, e) for n, e in planner.graph.get(a, []) if n == b]
+                    if not matching:
+                        error('PHYSICAL_PATH_REMOVED', 'Eine Verbindung oder bestätigte Weiterleitung des gespeicherten Signalwegs fehlt.')
+                        continue
+                    left, right = planner.active[a], planner.active[b]
+                    if left['network_ref'] != right['network_ref']:
+                        hw = planner.hardware[str(left['hardware_node_id'])]
+                        if forwarding_permitted(hw, left, right): forwarding_evidence.add(str(hw['id']))
+                if not planner.path_is_current(physical):
+                    error('PHYSICAL_EDGE_MISMATCH', 'Die Kantenliste stimmt nicht mit dem gespeicherten physischen Signalweg überein.')
+            if reached != expected_targets:
+                error('PHYSICAL_RECIPIENT_PATH_MISSING', 'Für mindestens einen bisherigen Empfänger fehlt der neue Signalweg.')
         for gateway_id in gateways:
             gateway = gateway_rows.get(gateway_id)
             if gateway is None:
                 error("GATEWAY_NOT_FOUND", f"Gateway {gateway_id} existiert nicht.")
-            elif gateway.get("device_type") != "Gateway":
+            elif gateway.get("device_type") != "Gateway" and gateway_id not in forwarding_evidence:
                 error("INVALID_GATEWAY", f"{gateway.get('name')} ist nicht als Gateway klassifiziert.")
 
         if policy.get("routing_type") == "MULTICAST" and len(destinations) < 2:

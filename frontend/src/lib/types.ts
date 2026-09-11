@@ -614,6 +614,7 @@ export type EngineeringImportResult = {
 
 export type RoutingEndpoint = {
   node_id: string;
+  physical_port_ref?: string | null;
   port_id?: string | null;
   interface_id?: string | null;
   network_id?: string | null;

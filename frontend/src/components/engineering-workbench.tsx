@@ -1,4 +1,8 @@
 "use client";
+import { CommunicationRepairAgent } from "@/components/communication-repair-agent";
+import { CommunicationWarningIndicator } from "@/components/communication-warning";
+import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/lib/communication-warnings";
+import { listRoutes } from "@/lib/routing-api";
 import { physicalBindingStatus } from "@/lib/interface-status";
 
 import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -135,22 +139,13 @@ const RESOURCE_HIERARCHY: Partial<
   },
 };
 
-const RESOURCE_REFERENCES: Record<EngineeringResource, EngineeringResource[]> = {
-  "hardware-nodes": ["hardware-interfaces", "functions", "interfaces", "messages"],
-  "hardware-interfaces": ["hardware-nodes", "messages", "functions", "interfaces"],
-  functions: ["hardware-nodes", "interfaces", "messages"],
-  interfaces: ["functions", "hardware-nodes", "messages"],
-  messages: ["interfaces", "hardware-interfaces", "signals"],
-  signals: ["messages", "interfaces", "functions", "hardware-nodes"],
-};
-
 const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
-  "hardware-nodes": ["Name", "Gerätetyp", "Diagnoseadresse", "Class", "Typisierung", "Domäne"],
-  "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status"],
-  functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung"],
-  interfaces: ["Name", "Funktion (optional)", "Technologie", "Hardware"],
-  messages: ["Name", "Kommunikationsschnittstelle", "Physischer Bus", "Message-ID", "Richtung", "Zyklus", "DLC"],
-  signals: ["System", "Quellgerät", "Funktion (optional)", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit"],
+  "hardware-nodes": ["Name", "Gerätetyp", "Diagnoseadresse", "Class", "Typisierung", "Domäne", "Beschreibung", "Warnung"],
+  "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status", "Beschreibung", "Warnung"],
+  functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung", "Warnung"],
+  interfaces: ["Name", "Funktion (optional)", "Technologie", "Hardware", "Beschreibung", "Warnung"],
+  messages: ["Name", "Kommunikationsschnittstelle", "Physischer Bus", "Message-ID", "Richtung", "Zyklus", "DLC", "Beschreibung", "Warnung"],
+  signals: ["System", "Quellgerät", "Funktion (optional)", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit", "Beschreibung", "Warnung"],
 };
 
 function referenceName(names: Record<string, string>, id: string | null) {
@@ -336,7 +331,7 @@ function hardwareCapabilities(item: EngineeringObject) {
   return profile && typeof profile === "object" && !Array.isArray(profile) ? profile as Record<string, unknown> : {};
 }
 
-function resourceTableValues(
+function resourceBaseTableValues(
   resource: EngineeringResource,
   item: EngineeringObject,
   names: Record<string, string>,
@@ -412,6 +407,13 @@ function resourceTableValues(
         "unit" in item ? item.unit ?? "—" : "—",
       ];
   }
+}
+
+function resourceTableValues(resource: EngineeringResource, item: EngineeringObject, names: Record<string, string>, objectsById: Map<string, EngineeringObject>, warnings: CommunicationWarnings): string[] {
+  const values = resourceBaseTableValues(resource, item, names, objectsById);
+  if (resource !== "functions") values.push(item.description ?? "—");
+  values.push(communicationWarningText(warnings.get(item.id) ?? []));
+  return values;
 }
 
 const RELATION_TYPES = [
@@ -698,6 +700,7 @@ function busDefaultsFor(technology: string, objectType: string) {
 export function EngineeringWorkbench() {
   const [resource, setResource] = useState<EngineeringResource>("hardware-nodes");
   const [schema, setSchema] = useState<EngineeringSchema | null>(null);
+  const [warnings, setWarnings] = useState<CommunicationWarnings>(new Map());
   const [items, setItems] = useState<EngineeringObject[]>([]);
   const [referenceObjects, setReferenceObjects] = useState<EngineeringObject[]>([]);
   const [referenceNames, setReferenceNames] = useState<Record<string, string>>({});
@@ -743,6 +746,8 @@ export function EngineeringWorkbench() {
         : undefined;
     if (nextResource) setResource(nextResource);
     if (params.get("create") === "1" && nextResource) setShowCreate(true);
+    if (params.get('assistant') === 'project') setShowAgentWizard(true);
+    if (['structure', 'dependencies', 'tree'].includes(params.get('assistant') ?? '')) setShowStructureTree(true);
     const objectId = params.get("object");
     if (objectId) setDeepLinkTarget({ id: objectId, edit: params.get("edit") === "1" });
   }, []);
@@ -752,14 +757,15 @@ export function EngineeringWorkbench() {
     setLoading(true);
     setError("");
     Promise.all([
-      listAllEngineeringObjects(resource),
-      Promise.all(RESOURCE_REFERENCES[resource].map((reference) => listAllEngineeringObjects(reference))),
+      Promise.all(RESOURCES.map(reference => listAllEngineeringObjects(reference))),
       getWorkflow(),
+      listRoutes(),
     ])
-      .then(([nextItems, referenceGroups, workflow]) => {
+      .then(([groups, workflow, routes]) => {
         if (cancelled) return;
-        const nextReferences = referenceGroups.flat();
-        setItems(nextItems);
+        const nextReferences = groups.filter((_, index) => RESOURCES[index] !== resource).flat();
+        setWarnings(communicationWarnings(groups.flat(), routes, (Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : []), workflow.topology));
+        setItems(groups[RESOURCES.indexOf(resource)]);
         setReferenceObjects(nextReferences);
         setReferenceNames(
           Object.fromEntries([...nextReferences.map((reference) => [reference.id, reference.name]),
@@ -847,7 +853,7 @@ export function EngineeringWorkbench() {
   const visibleItems = useMemo(
     () => {
       const filtered = baseVisibleItems.filter((item) => {
-        const values = resourceTableValues(resource, item, referenceNames, engineeringObjectsById);
+        const values = resourceTableValues(resource, item, referenceNames, engineeringObjectsById, warnings);
         return columnFilters.every((filter, index) => {
           const query = (filter ?? "").trim().toLocaleLowerCase("de-DE");
           return !query || (values[index] ?? "").toLocaleLowerCase("de-DE").includes(query);
@@ -855,13 +861,13 @@ export function EngineeringWorkbench() {
       });
       if (!tableSort) return filtered;
       return [...filtered].sort((left, right) => {
-        const leftValues = resourceTableValues(resource, left, referenceNames, engineeringObjectsById);
-        const rightValues = resourceTableValues(resource, right, referenceNames, engineeringObjectsById);
+        const leftValues = resourceTableValues(resource, left, referenceNames, engineeringObjectsById, warnings);
+        const rightValues = resourceTableValues(resource, right, referenceNames, engineeringObjectsById, warnings);
         const order = compareEngineeringTableValues(leftValues[tableSort.column] ?? "", rightValues[tableSort.column] ?? "");
         return tableSort.direction === "asc" ? order : -order;
       });
     },
-    [baseVisibleItems, columnFilters, engineeringObjectsById, referenceNames, resource, tableSort],
+    [baseVisibleItems, columnFilters, engineeringObjectsById, referenceNames, resource, tableSort, warnings],
   );
   const totalPages = Math.max(1, Math.ceil(visibleItems.length / ENGINEERING_PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -961,13 +967,9 @@ export function EngineeringWorkbench() {
             <p className="eyebrow">Kanonisches Modell</p>
             <h2 className={showStructureTree ? undefined : `eng-object-label ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{showStructureTree ? "Structure Tree" : RESOURCE_LABELS[resource]}</h2>
           </div>
-          <div className="panel-heading-actions">
-            <button className="button secondary" onClick={() => setShowAgentWizard(true)} type="button">
-              Agent-Auftrag
-            </button>
-          </div>
         </div>
 
+        <div className="eng-resource-row">
         <div className="eng-resource-tabs eng-resource-flow" role="tablist" aria-label="Objekttypen">
           {RESOURCES.map((res) => (
             <Fragment key={res}>
@@ -1004,9 +1006,11 @@ export function EngineeringWorkbench() {
             Structure Tree
           </button>
         </div>
+        <CommunicationRepairAgent onChanged={refresh} />
+        </div>
 
         {showStructureTree ? (
-          <StructureTreeWorkbench onChanged={refresh} />
+          <StructureTreeWorkbench onChanged={refresh} reloadKey={refreshKey} />
         ) : <>
         {(resource === "interfaces" || resource === "hardware-interfaces") && <p className="field-hint">{resource === "hardware-interfaces"
           ? "Physische Anschlüsse verbinden ein Gerät über einen konkreten Kanal mit einem Netzwerk. Eine Nachricht verwendet einen solchen Anschluss."
@@ -1163,9 +1167,9 @@ export function EngineeringWorkbench() {
                       className={`eng-object-surface ${engineeringObjectTypeClass(item.object_type)} ${item.id === selectedId ? "selected" : ""}`}
                       onClick={() => setSelectedId(item.id)}
                     >
-                      {resourceTableValues(resource, item, referenceNames, engineeringObjectsById).map((value, index) => (
+                      {resourceTableValues(resource, item, referenceNames, engineeringObjectsById, warnings).map((value, index) => (
                         <td className={index === 0 ? undefined : "muted"} key={`${item.id}:${index}`}>
-                          {value}
+                          {index === tableHeaders.length - 1 ? <CommunicationWarningIndicator name={item.name} issues={warnings.get(item.id) ?? []} /> : value}
                         </td>
                       ))}
                     </tr>

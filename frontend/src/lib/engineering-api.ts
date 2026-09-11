@@ -277,6 +277,15 @@ export async function listEngineeringRelations(filters: {
   return items;
 }
 
+export async function listAllEngineeringRelations(relationType: string): Promise<EngineeringRelation[]> {
+  const project = readActiveProjectId(), items: EngineeringRelation[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await request<{ items: EngineeringRelation[] }>(`/relations?relation_type=${encodeURIComponent(relationType)}&limit=500&offset=${offset}`, { headers: { 'X-Project-ID': project } });
+    items.push(...page.items);
+    if (page.items.length < 500) return items;
+  }
+}
+
 export function createEngineeringRelation(payload: {
   source_type: string;
   source_id: string;

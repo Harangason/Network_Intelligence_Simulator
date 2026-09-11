@@ -1,4 +1,6 @@
 "use client";
+import { CommunicationWarningIndicator } from "@/components/communication-warning";
+import { communicationWarnings, type CommunicationWarnings } from "@/lib/communication-warnings";
 import { interfaceTraffic, missingCommandSignals } from "@/lib/interface-status";
 import { listRoutes } from "@/lib/routing-api";
 import { getWorkflow } from "@/lib/workflow-api";
@@ -158,10 +160,11 @@ function isHardwareNode(item: EngineeringObject): item is HardwareNode {
   return item.object_type === "HardwareNode" && "device_type" in item;
 }
 
-export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void }) {
+export function StructureTreeWorkbench({ onChanged, reloadKey = 0 }: { onChanged: () => void; reloadKey?: number }) {
   const [objects, setObjects] = useState<Record<EngineeringObjectType, EngineeringObject[]>>({
     ...emptyObjects(),
   });
+  const [warnings, setWarnings] = useState<CommunicationWarnings>(new Map());
   const [routes, setRoutes] = useState<RoutingEntry[]>([]);
   const [busNames, setBusNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -178,7 +181,9 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
   const draggedIdRef = useRef<string | null>(null);
   const [renaming, setRenaming] = useState<{ type: EngineeringObjectType; id: string; value: string; version: number } | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('assistant') === 'dependencies') setWizardOpen(true); }, []);
   const [transferOpen, setTransferOpen] = useState(false);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('assistant') === 'structure') setTransferOpen(true); }, []);
   const [systemDuplicates, setSystemDuplicates] = useState<SystemDuplicateCandidate[]>([]);
   const [mergeCandidate, setMergeCandidate] = useState<SystemDuplicateCandidate | null>(null);
   const activeHardware = useMemo(
@@ -194,17 +199,19 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     setLoading(true);
     setError("");
     try {
-      const [groups, duplicates, routing, workflow] = await Promise.all([
+      const [groups, duplicates, routing, workflow, ports] = await Promise.all([
         Promise.all(LEVELS.map((level) => listAllEngineeringObjects(level.resource))),
         listSystemDuplicateCandidates(),
         listRoutes(),
         getWorkflow(),
+        listAllEngineeringObjects("hardware-interfaces"),
       ]);
       const next = {
         ...emptyObjects(),
         ...Object.fromEntries(LEVELS.map((level, index) => [level.type, groups[index]])),
       } as Record<EngineeringObjectType, EngineeringObject[]>;
       setObjects(next);
+      setWarnings(communicationWarnings([...groups.flat(), ...ports], routing, (Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : []), workflow.topology));
       setRoutes(routing);
       setBusNames(Object.fromEntries((Array.isArray(workflow.parameters.networks) ? workflow.parameters.networks : []).map((network: { id: string; name: string }) => [network.id, network.name])));
       setSystemDuplicates(duplicates);
@@ -215,7 +222,7 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, reloadKey]);
 
   useEffect(() => {
     if (!activeHardware.length) return;
@@ -550,7 +557,10 @@ export function StructureTreeWorkbench({ onChanged }: { onChanged: () => void })
             </>
           )}
           {renaming?.id !== item.id && (
-            <button className="button secondary tiny structure-rename" onClick={() => setRenaming({ type: item.object_type, id: item.id, value: displayName, version: item.version })} type="button">Name ändern</button>
+            <div className="structure-object-actions">
+              {Boolean(warnings.get(item.id)?.length) && <CommunicationWarningIndicator name={item.name} issues={warnings.get(item.id)!} />}
+              <button className="button secondary tiny structure-rename" onClick={() => setRenaming({ type: item.object_type, id: item.id, value: displayName, version: item.version })} type="button">Name ändern</button>
+            </div>
           )}
         </div>
         {missingCommandSignals(item, objects.Signal) && <p className="routing-issue warning" role="status">Befehl unvollständig: Signale, Bitbelegung und Wertebereiche fehlen. Transport angelegt; Aktorfunktion nicht spezifiziert.</p>}

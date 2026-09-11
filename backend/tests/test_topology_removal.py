@@ -70,7 +70,8 @@ def test_delete_port_bus_reload_reconnect_and_rollback(monkeypatch):
 
 
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'),reason='Separate SQL database required')
-def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload():
+@pytest.mark.parametrize('reference', ['edge', 'source', 'destination'])
+def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload(reference):
     from backend.tests.test_engineering_api import _client
     from backend.tests.test_routing import route_payload
     from backend.engineering.routing.repository import create_route, get_route
@@ -79,11 +80,21 @@ def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload():
     from backend.engineering.topology_removal import retire_removed_connections
     client = _client()
     activate_project(client.environ_base['HTTP_X_PROJECT_ID'])
-    row = create_route(route_payload())
+    payload = route_payload()
+    channel = '00000000-0000-0000-0000-000000000051'
+    if reference == 'source': payload['source']['port_id'] = channel
+    if reference == 'destination': payload['destinations'][0]['port_id'] = channel
+    row = create_route(payload)
     unrelated = create_route(route_payload(name='Unaffected route'))
     with get_connection() as connection:
         connection.execute("UPDATE engineering_routing_entries SET approval_state='APPROVED' WHERE id=%s", (row['id'],))
-    retire_removed_connections({'nodes':[], 'edges':[{'id':'removed','routingEntryIds':[str(row['id'])]}]}, {'nodes':[], 'edges':[]})
+    before = {'nodes': [], 'edges': [{'id': 'removed'}]}
+    if reference == 'edge':
+        before['edges'][0]['routingEntryIds'] = [str(row['id'])]
+    else:
+        # No route ID attached to the deleted edge: find the canonical endpoint reference.
+        before['nodes'] = [{'ports': [{'id': 'canvas-port', 'hardwareInterfaceId': channel, 'physicalNetworkId': 'bus'}]}]
+    retire_removed_connections(before, {'nodes': [], 'edges': []})
     current = get_route(str(row['id']))
     assert current['status']=='OUTDATED'
     assert current['approval_state']=='PENDING'
@@ -91,3 +102,18 @@ def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload():
     assert any(w['code']=='PHYSICAL_PATH_REMOVED' for w in current['validation']['warnings'])
     assert current['payload']==row['payload']
     assert get_route(str(unrelated['id']))==unrelated
+
+
+def test_disconnect_membership_preserves_other_connected_drawing_aliases():
+    from backend.engineering.topology_removal import removed_endpoint_references
+    ports = [{'id': identifier, 'hardwareInterfaceId': 'canonical', 'physicalNetworkId': 'bus'} for identifier in ['a', 'alias']]
+    before = {'nodes': [{'ports': ports}], 'edges': [{'id': 'one', 'sourcePort': 'a', 'targetPort': 'alias'}]}
+    after = deepcopy(before)
+    after['edges'] = [{'id': 'other', 'sourcePort': 'alias', 'targetPort': 'elsewhere'}]
+    assert removed_endpoint_references(before, after) == set()
+    after['edges'] = []
+    assert removed_endpoint_references(before, after) == {'canonical', 'a', 'alias'}
+    after = deepcopy(before)
+    after['nodes'][0]['ports'][0]['physicalNetworkId'] = 'new-bus'
+    after['nodes'][0]['ports'][1]['physicalNetworkId'] = 'new-bus'
+    assert removed_endpoint_references(before, after) == {'canonical', 'a', 'alias'}

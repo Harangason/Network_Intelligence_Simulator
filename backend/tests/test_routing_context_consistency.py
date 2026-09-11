@@ -1,8 +1,38 @@
 from copy import deepcopy
 
+import pytest
+
 from backend.engineering.routing.endpoint_consistency import align_receive_interfaces
 from backend.knowledge.semantic_vocabulary import engineering_tokens, engineering_phrase_match, EngineeringSemanticVocabulary
 from backend.tests.test_routing import FakeValidator, route_payload, SOURCE, TARGET, SOURCE_INTERFACE, TARGET_INTERFACE, SOURCE_PORT, TARGET_PORT
+
+
+@pytest.mark.parametrize('role', ['source', 'destination'])
+@pytest.mark.parametrize('network,code', [(None, 'HARDWARE_INTERFACE_UNASSIGNED'), ('different-bus', 'HARDWARE_NETWORK_MISMATCH'), ('bus', None)])
+def test_selected_channel_must_match_current_bus_even_if_another_channel_is_reachable(role, network, code):
+    class Validator(FakeValidator):
+        def _physical_path_mapping(self, *args):
+            return True, []  # Another channel on the same device is reachable.
+
+        def _rows(self, table, ids):
+            rows = super()._rows(table, ids)
+            if table == 'engineering_hardware_interfaces':
+                broken = SOURCE_PORT if role == 'source' else TARGET_PORT
+                for identifier, row in rows.items():
+                    row['network_ref'] = network if identifier == broken else 'bus'
+            return rows
+
+    route = route_payload()
+    route['source'].update(port_id=SOURCE_PORT, network_id='bus')
+    route['destinations'][0].update(port_id=TARGET_PORT, network_id='bus')
+    original = deepcopy(route)
+    result = Validator().validate(route)
+    if code:
+        assert role.upper() + '_' + code in {issue['code'] for issue in result['errors']}
+        assert result['valid'] is False
+    else:
+        assert result['valid'] is True
+    assert route == original
 
 
 def test_physical_lin_port_does_not_mask_stale_logical_can_interface():

@@ -291,6 +291,7 @@ class CapacityTimingService:
         # Every canonical message is a separate transmission. A route containing
         # multiple messages is not one larger frame at their fastest period.
         expanded_routes = []
+        scope_findings = []
         for route in routes:
             payload = route.get("payload") or {}
             identifiers = list(dict.fromkeys([*payload.get("message_ids", []), *([payload["message_id"]] if payload.get("message_id") else [])]))
@@ -302,6 +303,12 @@ class CapacityTimingService:
             else:
                 expanded_routes.append(route)
         for route in expanded_routes:
+            from ..routing.payload_scope import payload_scope_issues
+            scope_issues = payload_scope_issues(route, messages, signals, interfaces)
+            if scope_issues:
+                scope_findings.extend({**issue, "object_type": "RoutingEntry", "object_id": str(route["id"]),
+                    "step": "routing", "excluded_from_load": True} for issue in scope_issues)
+                continue
             source = route.get("source") or {}
             route_path = route.get("route") or {}
             timing = route.get("timing") or {}
@@ -626,7 +633,7 @@ class CapacityTimingService:
                 }
             )
 
-        findings: list[dict[str, Any]] = []
+        findings: list[dict[str, Any]] = list(scope_findings)
         unresolved_routes = {item["route_id"] for item in route_metrics
             if item["route_segment_count"] > 1 and not item["physical_path_resolved"]}
         for route_id in sorted(unresolved_routes):

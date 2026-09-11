@@ -121,7 +121,7 @@ export function AgentChatCore({
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
       headers: () => ({ "X-Project-ID": activeProjectId }),
-      body: () => ({ context: readAssistantContext() }),
+      body: () => ({ context: { ...readAssistantContext(), active_project_id: readActiveProjectId() } }),
     }),
     [activeProjectId],
   );
@@ -146,6 +146,7 @@ export function AgentChatCore({
   const persistedHistoryRevisionRef = useRef("");
 
   function submit(text: string, attachments: ChatAttachment[]) {
+    if (readActiveProjectId() !== activeProjectId) { setTaskNotice('Das Projekt wurde gewechselt. Bitte den Assistenten im aktuellen Projekt öffnen.'); return; }
     if (!historyReady || !text.trim() || (status !== "ready" && status !== "error")) return;
     clearError();
     followBottomRef.current = true;
@@ -428,6 +429,8 @@ export function AgentChatCore({
 
   return (
     <div className="eng-agent-chat">
+      <button className="button secondary tiny" type="button" disabled={!historyReady || busy}
+        onClick={() => submit('Zeige mir deine Fähigkeiten.', [])}>Fähigkeiten und Wizards</button>
       <div className="eng-agent-thread" aria-label="Gesprächsverlauf" ref={threadRef} onScroll={() => {
         const thread = threadRef.current;
         if (!thread) return;

@@ -39,6 +39,8 @@ def create_server(authority: ToolAuthority) -> MCPServer:
                 return TOOLS["inspect_project"].handler({})
             if section == "model":
                 return access.model()
+            if section == 'capabilities':
+                return TOOLS['inspect_assistant_capabilities'].handler({})
             if section in access.SECTIONS:
                 return {"items": access.objects(access.SECTIONS[section])}
             if section == "routing":
@@ -49,7 +51,7 @@ def create_server(authority: ToolAuthority) -> MCPServer:
         result = execute(authority, f"resource:{section}", Permission.READ_MODEL, {}, read)
         return result.model_dump_json()
 
-    for section in ["project", "model", *access.SECTIONS, "networks", "routing", "findings"]:
+    for section in ["project", "model", *access.SECTIONS, "networks", "routing", "findings", "capabilities"]:
         uri = "simulator://project/{project_id}" + ("" if section == "project" else f"/{section}")
         def make_resource(key):
             def read(project_id: str) -> str:
