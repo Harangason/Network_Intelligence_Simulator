@@ -23,12 +23,12 @@ CAPABILITIES = [
           ['generate_functions', 'map_function_to_hardware'], ['Identität', 'Hardware zuordnen', 'Funktionsparameter', 'Prüfen und speichern'], resource='functions', launch='create'),
     entry('hardware', 'Hardware anlegen', 'ECU, Gateway, Sensor oder Aktor mit Geräteklasse erfassen.', '/studio/engineering',
           ['classify_device', 'get_device_capabilities'], ['Identität und Gerätetyp', 'Zuordnung', 'Technische Details', 'Prüfen und speichern'], resource='hardware-nodes', launch='create'),
-    entry('port', 'Physischen Anschluss anlegen', 'Hardware, Technologie, Kanal und physisches Netz verbinden.', '/studio/engineering',
-          ['generate_hardware_interfaces', 'assign_network_to_interface'], ['Identität', 'Hardware und Netz', 'Kanal und Technologie', 'Prüfen und speichern'], resource='hardware-interfaces', launch='create'),
+    entry('port', 'Physischen Anschluss anlegen', 'Hardwarefähigkeit, Controller und Kanalgrenzen prüfen. Im Chat plant „Verbinde Funktion A mit Funktion B“ den vollständigen Anschlussauftrag; nach der Strategieentscheidung werden Port, Netz, Routing und Prüfungen ausgeführt.', '/studio/engineering',
+          ['inspect_port_decision', 'prepare_engineering_connection', 'create_physical_port', 'connect_port_to_network', 'continue_engineering_goal'], ['Modell und Hardwaregrenzen', 'Anschlussentscheidung', 'Abhängige Änderungen ausführen', 'Kapazität, Timing und Preflight'], resource='hardware-interfaces', launch='create'),
     entry('interface', 'Kommunikationsschnittstelle anlegen', 'Logische Schnittstelle einer Funktion oder eines Geräts anlegen.', '/studio/engineering',
           ['generate_function_interfaces'], ['Identität', 'Funktion oder Gerät', 'Kommunikationsparameter', 'Prüfen und speichern'], resource='interfaces', launch='create'),
     entry('repair', 'Reparatur-Agent', 'Kennt die aktuelle Hardwarearchitektur und erhält die bisherigen Funktionspartner. Vergleicht alte und neue Signalwege einschließlich der Routing-Tabelle. Neue Führung übernehmen oder alte Führung wiederherstellen wird ausdrücklich entschieden; fehlende Wege und ein Wechsel zwischen Systemnetz und Cluster bleiben sichtbar.', '/studio/engineering',
-          ['inspect_communication_repair'], ['Aktuelle Architektur und Funktionspartner lesen', 'Alte und neue Wege vergleichen', 'Strategie wählen', 'Atomar übernehmen und erneut prüfen'], launch='repair'),
+          ['inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'], ['Aktuelle Architektur und Funktionspartner lesen', 'Fachagent bewertet alte und neue Wege', 'Strategie wählen', 'Atomar übernehmen und erneut prüfen'], launch='repair'),
     entry('project', 'Engineering-Wizard', 'Aus Anforderungen und Dokumenten das Projekt stufenweise bis zur Auswertung entwickeln.', '/studio/engineering',
           ['generate_wizard_model', 'generate_wizard_communication_contract', 'generate_wizard_routing', 'generate_wizard_network', 'generate_wizard_parameters'], ['Anforderung und Domäne', 'Geräte, Funktionen und räumliche Zuordnung', 'Kommunikation und Routing', 'Parameter, Kapazität und Preflight', 'Simulation und Auswertung'], launch='project'),
     entry('routing', 'Routing planen', 'Producer und Consumer über die aktuelle physische Architektur verbinden.', '/studio/routing',
@@ -102,13 +102,21 @@ def repair_preview(_):
 
 def structure_preview(arguments):
     from ..structure_transfer import analyze_ecu_transfer
-    return analyze_ecu_transfer({'source_hardware_id': arguments['source_hardware_id'],
+    from .specialist import review_or_report
+    result = analyze_ecu_transfer({'source_hardware_id': arguments['source_hardware_id'],
                                  'target_hardware_ids': arguments['target_hardware_ids']})
+    result['agent_review'] = review_or_report('ECU-Strukturtransfer: Quellstruktur und jedes Ziel auf fachliche Eignung prüfen',
+        [{'id': target['proposal_id'], **target} for target in result['targets']])
+    return result
 
 
 def structure_evaluate(arguments):
     from ..structure import evaluate_structure
-    return {'analysis': evaluate_structure({'selections': arguments['selection']})}
+    from .specialist import review_or_report
+    result = evaluate_structure({'selections': arguments['selection']})
+    result['agent_review'] = review_or_report('Abhängigkeiten: kanonische Hierarchie und Bedeutung jeder vorgeschlagenen Zuordnung prüfen',
+        [{'id': item['child_type'] + ':' + item['child_id'], **item} for item in result['suggestions']])
+    return {'analysis': result}
 
 
 def duplicates_preview(_):
@@ -118,4 +126,4 @@ def duplicates_preview(_):
 
 def fault_proposals(_):
     from ..simulation import propose_faults
-    return {'items': propose_faults(), 'review': 'simulation-fault-proposals'}
+    return {'items': propose_faults(model_review=True), 'review': 'simulation-fault-proposals'}

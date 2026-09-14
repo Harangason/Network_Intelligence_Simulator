@@ -2,6 +2,12 @@
 import re
 
 
+def connection_request(prompt):
+    text = re.split(r'\s+(?:und|and)\s+(?:simuliere\w*|simulate|analysiere\w*|analyze)\b', prompt, maxsplit=1, flags=re.I)[0]
+    match = re.fullmatch(r'\s*(?:bitte\s+)?(?:verbinde|connect)\s+(?:die\s+Funktion\s+)?(.+?)\s+(?:mit|with)\s+(?:der\s+Funktion\s+)?(.+?)\s*[.!]?\s*', text, re.I)
+    return tuple(value.strip(' .!"') for value in match.groups()) if match else None
+
+
 def capability_question(prompt: str) -> str | None:
     if len(prompt) > 1200:
         return None

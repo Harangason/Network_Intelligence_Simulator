@@ -23,6 +23,9 @@ import { NetworkAssignmentDialog } from './network-assignment-dialog';
 import { NetworkFrameDeviceDialog } from './network-frame-device-dialog';
 import { NetworkBusNameDialog } from './network-bus-name-dialog';
 import { NetworkBusTransferDialog } from './network-bus-transfer-dialog';
+import { NetworkEditorSearch } from './network-editor-search';
+import { queueEngineeringAgentTask } from '@/lib/agent-task-events';
+import { networkSearchEntries, type NetworkSearchEntry } from '@/lib/network-editor-search';
 import type { NetworkAssignmentRequest, FrameDeviceRequest } from '@/lib/workflow-api';
 import type { HardwareNode, RoutingEntry } from "@/lib/types";
 import {
@@ -2152,6 +2155,7 @@ export function NetworkEditor({
   const [selectedBus, setSelectedBus] = useState<string | null>(null);
   const [selectedPort, setSelectedPort] = useState<{nodeId:string; portId:string} | null>(null);
   const [selectedBranch, setSelectedBranch] = useState<{busId:string; portId:string} | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [menu, setMenu] = useState<MenuState | null>(null);
   const portSavePending = useRef(false);
   const [portSaving, setPortSaving] = useState(false);
@@ -2947,6 +2951,7 @@ export function NetworkEditor({
     [evaClusters, evaDomainClusters],
   );
   const nodesById = useMemo(() => new Map(effectiveTopology.nodes.map((node) => [node.id, node])), [effectiveTopology.nodes]);
+  const searchEntries = useMemo(() => networkSearchEntries(effectiveTopology), [effectiveTopology]);
   const systemFrameByNodeId = useMemo(() => {
     const frames = new Map<string, string>();
     evaGroups.forEach((group) => {
@@ -3118,15 +3123,15 @@ export function NetworkEditor({
     : evaStable
       ? {
           className: "stable",
-          label: "KI-Layout · EVA",
+          label: "EVA-Anordnung",
           semantics: "auto-eva-layout",
-          title: "KI-gestuetzte EVA-Anordnung mit Verbindungsgruppen",
+          title: "Automatische Anordnung anhand bestehender Verbindungsgruppen",
         }
       : {
           className: "pending",
-          label: "KI-Layout · EVA",
+          label: "EVA-Anordnung",
           semantics: "layout-updating",
-          title: "KI-gestuetzte EVA-Anordnung wird aktualisiert",
+          title: "Automatische Anordnung wird aktualisiert",
         };
 
   function changeZoom(value: number) {
@@ -3195,6 +3200,35 @@ export function NetworkEditor({
     );
     setZoom(Math.round(nextZoom * 10) / 10);
     requestAnimationFrame(() => surface.scrollTo({ left: 0, top: 0 }));
+  }
+
+  function focusSearchResult(result: NetworkSearchEntry) {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const node = result.kind === 'node' ? nodesById.get(result.id) : undefined;
+    const bus = result.kind === 'bus' ? scene?.buses.find(bus => bus.id === result.id) : undefined;
+    const edge = result.kind === 'edge' ? effectiveTopology.edges.find(edge => edge.id === result.id) : undefined;
+    const from = edge && nodesById.get(edge.source), to = edge && nodesById.get(edge.target);
+    // The bus label is a useful anchor even when its full trunk spans many screens.
+    const point = node ? { x: node.x + nodeWidth(node) / 2, y: node.y + nodeHeight(node) / 2 }
+      : bus ? bus.label : from && to ? { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } : null;
+    if (!point) return;
+    setSelectedNode(node?.id ?? null); setSelectedBus(bus?.id ?? null); setSelectedEdge(edge?.id ?? null);
+    setSelectedPort(null); setSelectedBranch(null); setMenu(null); setAddMenu(null); setContextOverlay(null);
+    setLasso(false); setAssignmentSelection([]);
+    let rect = surface.getBoundingClientRect();
+    if (Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0) < 140) {
+      surface.previousElementSibling?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      rect = surface.getBoundingClientRect();
+    }
+    // In normal mode only part of the tall canvas may be on screen. Center there.
+    const visibleTop = Math.max(0, -rect.top);
+    const visibleBottom = Math.min(surface.clientHeight, window.innerHeight - rect.top);
+    surface.scrollTo({
+      left: Math.max(0, point.x * zoom - surface.clientWidth / 2),
+      top: Math.max(0, point.y * zoom - (visibleTop + visibleBottom) / 2),
+      behavior: 'instant',
+    });
   }
 
   function toggleFullscreen() {
@@ -3360,6 +3394,7 @@ export function NetworkEditor({
             );
           })}
         </div>
+        <NetworkEditorSearch entries={searchEntries} query={searchQuery} onQueryChange={setSearchQuery} onSelect={focusSearchResult} />
         <div className="net-toolbar-actions">
           {scene && onLayoutChange && <button type="button" className="net-add" disabled={layoutSaving || deleting || portSaving || relationshipSaving || Boolean(drag)}
             title="Buslinien und verbundene Anschlusspositionen automatisch führen. Gerätepositionen beibehalten."
@@ -3390,6 +3425,9 @@ export function NetworkEditor({
             <i aria-hidden="true" />
             {layoutStatus.label}
           </span>
+          <button className="net-add" type="button" onClick={() => queueEngineeringAgentTask(
+            'Prüfe die räumliche Architektur und Gruppierung des aktuellen Projekts anhand der kanonischen Einbauorte, Funktionszuordnungen und tatsächlichen Kommunikationswege. Erstelle bei belegtem Verbesserungsbedarf einen editierbaren Architekturvorschlag. Bestehende Funktionspartner und bestätigte Raumidentitäten erhalten; fehlende Angaben gezielt klären. Eine reine Änderung der Darstellung nicht als Architekturänderung ausgeben.'
+          )}>KI-Architekturprüfung</button>
           {onBusRename && scene && <button className="net-add" type="button"
             disabled={(!selectedBus && !selectedBranch && !selectedRelationship?.physicalNetworkId) || deleting || layoutSaving || portSaving || relationshipSaving}
             onClick={() => {const id = selectedBranch?.busId ?? selectedBus ?? selectedRelationship?.physicalNetworkId; if (id) openBusName(id);}}>Bus umbenennen</button>}

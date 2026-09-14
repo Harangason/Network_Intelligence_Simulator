@@ -57,6 +57,19 @@ def test_approved_simulation_config_rechecks_scope_before_export(monkeypatch):
         config_builder.CommunicationConfigBuilder().build([route])
 
 
+def test_wizard_replanning_preserves_explicit_shared_device_scope():
+    from backend.tests.test_wizard_communication import fixture
+    from backend.engineering.wizard_communication import communication_plan
+    prompt, graph = fixture()
+    first = communication_plan(prompt, graph)
+    first['sensor']['communication_contract']['scope'] = 'DEVICE_IO'
+    for key, config in first.items():
+        graph['Message'][key]['configuration'] = config
+    second = communication_plan(prompt, graph)
+    assert second == first
+    assert not message_scope({'configuration': second['sensor']})['restricted']
+
+
 def test_capacity_counts_local_frame_only_on_local_bus_and_output_on_system_bus(monkeypatch):
     from backend.engineering.capacity import service as capacity
     from backend.engineering.workflow.models import default_statuses, default_versions

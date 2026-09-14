@@ -132,6 +132,40 @@ def _proposal_status_payload(result) -> dict:
     return payload
 
 
+@agent_api.route('/execution-goals/<workload_id>/hardware-facts', methods=['GET', 'POST'])
+def goal_hardware_facts(workload_id):
+    from ..goal_execution import hardware_facts
+    authority = ToolAuthority(_project(), 'local-human')
+    if request.method == 'GET':
+        result = execute(authority, 'inspect_goal_hardware_facts', Permission.READ_MODEL, {}, lambda _: hardware_facts.inspect(workload_id))
+    else:
+        if not _human_intent():
+            return jsonify({'error': 'Hardwaredaten müssen im Assistenten bewusst bestätigt werden.'}), 403
+        data = request.get_json(silent=True) or {}
+        def confirm_facts(_):
+            state = conversation.read()
+            if state.get('active_workload') != workload_id or state.get('run_id') and state.get('lease_until', '') > datetime.now(timezone.utc).isoformat():
+                raise ConcurrentUpdateError('Dieser Anschlussauftrag ist nicht mehr der aktuelle wartende Auftrag.')
+            result = hardware_facts.record(workload_id, data, actor=authority.actor)
+            for question in state['questions'].values():
+                if question['status'] == 'OPEN': question['status'] = 'OUTDATED'
+            state['current_question'] = None
+            conversation.write(state)
+            return result
+        result = execute(authority, 'confirm_goal_hardware_facts', Permission.READ_MODEL, {}, confirm_facts)
+    response = jsonify(result.model_dump(mode='json')); response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 409
+
+
+@agent_api.get('/execution-goals/<workload_id>/response')
+def goal_response(workload_id):
+    from ..goal_execution.service import presentation, get_goal
+    result = execute(ToolAuthority(_project()), 'read_goal_response', Permission.READ_MODEL, {},
+        lambda _: {'agent_response': presentation(get_goal(workload_id))})
+    response = jsonify(result.model_dump(mode='json')); response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 404
+
+
 @agent_api.get("/proposals/<proposal_id>")
 def proposal_get(proposal_id):
     authority = ToolAuthority(_project(),"review-ui")
@@ -358,6 +392,11 @@ def chat():
             if tracker:
                 tracker.event(event)
         queue.put(event)
+    def goal_progress(event):
+        # The canonical batch holds the project lock. Stream progress directly;
+        # writing a second transaction here would deadlock that same project.
+        cancellation.check()
+        queue.put(validate_response(event))
     async def run():
         cancellation.bind()
         if tracker:
@@ -366,7 +405,7 @@ def chat():
                 raise asyncio.CancelledError()
         reasoner = LocalEngineeringReasoner()
         try:
-            async with EngineeringMCPClient(create_server(ToolAuthority(project_id))) as client:
+            async with EngineeringMCPClient(create_server(ToolAuthority(project_id, progress_callback=goal_progress))) as client:
                 result = await EngineeringAgent(client,reasoner=reasoner).run(started.data['prompt'],context,emit=emit,history=history)
                 emit({"type":"CONTEXT","context":result["context"],"status":result["status"]})
                 return result

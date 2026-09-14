@@ -331,7 +331,7 @@ class WorkflowStatusService:
                          WHERE f.id = i.function_id AND f.project_id = i.project_id)))) AS interfaces,
                 (SELECT COUNT(*) FROM engineering_messages m
                  WHERE m.project_id = %s AND (m.interface_id IS NULL OR m.direction IS NULL
-                     OR m.hardware_interface_id IS NULL OR m.cycle_ms IS NULL OR m.dlc IS NULL
+                     OR m.hardware_interface_id IS NULL OR m.dlc IS NULL
                      OR NOT EXISTS (SELECT 1 FROM engineering_interfaces i
                          WHERE i.id = m.interface_id AND i.project_id = m.project_id)
                      OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi
@@ -346,6 +346,13 @@ class WorkflowStatusService:
             (self.project_id, self.project_id, self.project_id, self.project_id),
         ).fetchone()
         incomplete = {key: int(value or 0) for key, value in broken.items()}
+        from ..capacity.transmission import profile
+        from ..capacity.dimensioning import transmission_contract
+        transmission_rows = connection.execute(
+            'SELECT cycle_ms, configuration FROM engineering_messages WHERE project_id = %s', (self.project_id,),
+        ).fetchall()
+        incomplete['transmission'] = sum(bool(profile(transmission_contract(row), row.get('cycle_ms'))['errors'])
+            for row in transmission_rows)
         consistency_row = connection.execute(
             """
             SELECT

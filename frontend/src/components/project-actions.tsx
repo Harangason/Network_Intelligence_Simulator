@@ -12,6 +12,7 @@ import {
   ENGINEERING_AGENT_WIZARD_SESSION_KEY,
   requestEngineeringAgentWizard,
 } from "@/lib/agent-task-events";
+import { ProjectRefreshButton } from './project-refresh-button';
 import { notifyWorkflowChanged } from "./workflow-header";
 
 type ProjectActionsProps = {
@@ -30,16 +31,6 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   function setActiveProject(nextProjectId: string) {
     writeUserSettings({ ...readUserSettings(), activeProject: normalizeProjectId(nextProjectId) });
     notifyWorkflowChanged();
-  }
-
-  async function copyProjectLink() {
-    const url = new URL(withProjectParam("/studio", readUserSettings().activeProject), window.location.origin).href;
-    try {
-      await navigator.clipboard.writeText(url);
-      setMessage("Projektlink kopiert – in einem weiteren Browser öffnen.");
-    } catch {
-      setMessage(`Projektlink: ${url}`);
-    }
   }
 
   function createProjectId() {
@@ -161,7 +152,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
         <button className="topbar-command danger" disabled={Boolean(busy)} onClick={() => setClearDialogOpen(true)} type="button">Clear</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleSave()} type="button">Speichern</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleOpen()} type="button">Öffnen</button>
-        <button className="topbar-command" onClick={() => void copyProjectLink()} type="button">Projektlink</button>
+        <ProjectRefreshButton disabled={Boolean(busy)} />
       </div>
 
       {clearDialogOpen && (

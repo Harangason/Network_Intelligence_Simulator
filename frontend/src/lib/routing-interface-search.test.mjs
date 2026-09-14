@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { endpointInterfaceChoices } from './routing-interface-search.ts';
+import { endpointInterfaceChoices, physicalNodeBuses, suggestedEndpointInterface, endpointPhysicalBinding } from './routing-interface-search.ts';
 import { payloadScopeConflicts } from './routing-payload-scope.ts';
 
 const iface = (id, node, network, type = 'CAN_FD') => ({ id, name: id, hardware_node_id: node, interface_type: type,
@@ -28,4 +28,17 @@ test('local I/O is kept inside its canonical recipient boundary; explicit device
   assert.equal(payloadScopeConflicts([{ id: 'thermometer', routingScope: { restricted: false } }], ['adas'], {}, []).length, 0);
   assert.equal(payloadScopeConflicts([{ id: 'status', routingScope: { restricted: false, scope: 'FUNCTION_OUTPUT' } }], ['adas'], {}, []).length, 0);
   assert.equal(payloadScopeConflicts([{ id: 'not-loaded' }], ['adas'], {}, []).length, 1);
+});
+
+test('gateway hardware ports establish the adjacent bus even without a logical gateway interface', () => {
+  const ports = [{ id: 'gateway-port', hardware_node_id: 'gateway', network_ref: 'system', technology: 'Ethernet' }];
+  const buses = physicalNodeBuses(ports, new Map([['system', 'ETH_System_01']]));
+  const target = iface('ADAS', 'adas', 'system', 'Ethernet');
+  target.physicalBindings.push({ id: 'cluster', name: 'Cluster', portId: 'cluster-port', protocol: 'Ethernet' });
+  const items = [iface('Local', 'adas', 'local', 'CAN_FD'), target];
+  assert.equal(suggestedEndpointInterface(items, 'adas', 'gateway', 'CAN_FD', buses), target);
+  assert.equal(endpointPhysicalBinding(target, 'gateway', buses, 'cluster', 'cluster-port').id, 'system');
+  assert.equal(endpointInterfaceChoices(items, 'adas', 'gateway', '', '', {}).filter(c => c.common.length).length, 0);
+  buses.gateway.push({ id: 'cluster', portId: 'gateway-cluster', name: 'Cluster', protocol: 'Ethernet' });
+  assert.equal(endpointPhysicalBinding(target, 'gateway', buses), undefined, 'Multiple possible channels require a choice');
 });

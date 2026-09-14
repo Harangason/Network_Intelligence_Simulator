@@ -1,7 +1,7 @@
 /** Deduplicate polling by all visible cards without sharing state across projects. */
 import type { InteractiveQuestion } from './agent-response';
 type ConversationSnapshot = { success: boolean; data: {
-  questions: Record<string, InteractiveQuestion & { selected_options?: string[] }>;
+  questions: Record<string, InteractiveQuestion & { selected_options?: string[]; decision_key?: string }>;
   selected_context: { active_view: string; selected_object_refs: Record<string, string>[] };
   decisions: Record<string, { status: string; rationale: string; review_on_change: boolean }>;
 } };

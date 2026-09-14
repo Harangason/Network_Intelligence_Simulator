@@ -22,6 +22,8 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
     app.register_blueprint(agent_api, url_prefix=f"{api_prefix}/engineering/agent")
 
     if not testing:
+        from ..engineering.goal_execution.background import start as start_goal_followups
+        start_goal_followups()
         try:
             from ..engineering.agent_tools.run_status import recover_interrupted_wizard_runs
             recovered = recover_interrupted_wizard_runs()

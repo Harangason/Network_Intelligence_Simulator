@@ -68,3 +68,5 @@ EIP can reuse the complete `agent_core` package and provide different repositori
 The active chat now uses `EngineeringAgent` and `EngineeringMCPClient` in this package. The previous TypeScript agent contains transport types only. See [active MCP architecture and acceptance](14_MCP_IMPLEMENTATION.md).
 
 Die Chat-Oberfläche, strukturierten Antworten, interaktiven Entscheidungen und der dauerhafte Gesprächszustand sind in [15_CHAT_RESPONSE_CONTRACT.md](15_CHAT_RESPONSE_CONTRACT.md) beschrieben. Der Python-Agent bleibt der einzige Orchestrator; die UI führt keine Fachgeneratoren aus.
+
+Der modellbewusste Anschlussauftrag mit begrenzter Strategie-Freigabe, atomarer Ausführung, Port-/Controllerprüfung und vollständiger Abnahmematrix ist in [16_MODEL_AWARE_EXECUTION.md](16_MODEL_AWARE_EXECUTION.md) dokumentiert. Die dort benannten Grenzen sind keine bereits implementierten allgemeinen Goal-Adapter.

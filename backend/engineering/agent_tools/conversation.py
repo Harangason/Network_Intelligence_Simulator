@@ -32,7 +32,7 @@ def inspect():
     state = read()
     revision = model_revision()
     for question in state['questions'].values():
-        if question['status'] == 'OPEN' and question.get('model_revision') != revision:
+        if question['status'] == 'OPEN' and question.get('model_revision') != revision and not str(question.get('decision_key', '')).startswith('goal:'):
             question['status'] = 'OUTDATED'
         elif question['status'] == 'OPEN' and question.get('expires_at', '') < datetime.now(timezone.utc).isoformat():
             question['status'] = 'EXPIRED'
@@ -53,6 +53,13 @@ def begin(prompt, context, raw_input=None):
     if state.get('run_id') and state.get('lease_until', '') > now.isoformat():
         raise ConcurrentUpdateError('In diesem Gespräch läuft bereits ein Auftrag. Bitte dessen Antwort abwarten.')
     selected = {'active_view': context.active_view, 'selected_object_refs': context.selected_object_refs}
+    # A plain affirmative answers only one explicit, pending goal option.
+    # General chat prose, model tool arguments and UI history cannot grant this authority.
+    if raw_input is None and str(prompt).strip().casefold().rstrip('.!') in {'ja', 'yes', 'umsetzen', 'ausführen'}:
+        question = state['questions'].get(state.get('current_question'), {})
+        candidates = [o for o in question.get('options', []) if o['id'] != 'DEFER' and not o.get('disabled')]
+        if str(question.get('decision_key', '')).startswith('goal:') and question.get('status') == 'OPEN' and question.get('selection_mode') == 'SINGLE' and len(candidates) == 1:
+            raw_input = {'type': 'QUESTION_ANSWER', 'question_id': question['id'], 'selected_options': [candidates[0]['id']]}
     if raw_input is not None and AgentInput.model_validate(raw_input).type == 'FINDING_ACTION':
         finding_id = AgentInput.model_validate(raw_input).finding_id
         finding = state.get('findings', {}).get(finding_id)
@@ -66,7 +73,7 @@ def begin(prompt, context, raw_input=None):
     elif raw_input is not None and AgentInput.model_validate(raw_input).type == 'RESUME':
         if not state.get('current_requirement') or state['current_question']:
             raise ValueError('Bitte zuerst die offene Frage beantworten oder eine Anforderung eingeben.')
-        if state['selected_context'] != selected:
+        if state['selected_context'] != selected and not str(state.get('active_workload', '')).startswith('goal-'):
             raise ConcurrentUpdateError('Der Kontext hat sich geändert. Bitte die Anforderung erneut stellen.')
         prompt = state['current_requirement']
     elif raw_input is not None:
@@ -74,7 +81,7 @@ def begin(prompt, context, raw_input=None):
         question = state['questions'].get(answer.question_id)
         if not question or question['status'] != 'OPEN' or state['current_question'] != answer.question_id:
             raise ConcurrentUpdateError('Diese Frage ist nicht mehr offen. Bitte den aktuellen Gesprächsstand laden.')
-        if state['selected_context'] != selected:
+        if state['selected_context'] != selected and not str(question.get('decision_key', '')).startswith('goal:'):
             raise ConcurrentUpdateError('Der Auswahlkontext hat sich geändert. Bitte die Anforderung im neuen Kontext stellen.')
         options = {o['id']: o for o in question['options']}
         ids = answer.selected_options
@@ -92,6 +99,11 @@ def begin(prompt, context, raw_input=None):
         key = question.get('decision_key', answer.question_id)
         state['answered_questions'][key] = {'question_id': answer.question_id, 'selected_options': ids,
             'labels': [options[i]['label'] for i in ids], 'status': question['status']}
+        if str(key).startswith('goal:'):
+            from ..goal_execution.service import answer as answer_goal
+            _, workload_id, decision_id = key.split(':', 2)
+            answer_goal(workload_id, decision_id, ids, actor='conversation-user')
+            state['active_workload'] = workload_id
         state['current_question'] = None
         prompt = state.get('current_requirement', '')
     else:
@@ -102,6 +114,15 @@ def begin(prompt, context, raw_input=None):
         state['current_question'] = None
         state['current_requirement'] = prompt
         state['active_proposal'] = None
+        if str(state.get('active_workload', '')).startswith('goal-'):
+            import re
+            if re.fullmatch(r'\s*(?:weiter|fortsetzen|erneut prüfen|resume|continue)\s*[.!]?\s*', prompt, re.I):
+                raw_input = {'type': 'RESUME'}
+                prompt = state.get('goal_requirement') or context.current_requirement or prompt
+                state['current_requirement'] = prompt
+            else:
+                state['active_workload'] = None
+                context = context.model_copy(update={'current_workload': None})
     state['selected_context'] = selected
     if ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
             and 'per Wizard-Uebernehmen bestaetigt' in prompt):
@@ -152,6 +173,8 @@ def record_event(run_id, event):
     workload_id = (event.get('workload') or {}).get('workload_id')
     if isinstance(workload_id, str) and workload_id.strip():
         state['active_workload'] = workload_id
+        if workload_id.startswith('goal-'):
+            state['goal_requirement'] = state['current_requirement']
     if event['type'] == 'FINDING':
         state.setdefault('findings', {})[event['id']] = event
         state['findings'] = dict(list(state['findings'].items())[-100:])

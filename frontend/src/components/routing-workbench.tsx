@@ -44,6 +44,13 @@ import { withPhysicalBindings, selectPhysicalBinding, interfaceNetworkId, physic
 import { RoutingScrollArea } from "./routing-scroll-area";
 import { CommunicationRepairAgent } from "./communication-repair-agent";
 import { RoutingInterfacePicker, RoutingPathPreview } from "./routing-interface-picker";
+import { RoutingPayloadPlanner } from "./routing-payload-planner";
+import { RoutingPayloadDraft } from "./routing-payload-draft";
+import { RoutingSystemFrame, useRoutingSystemFrameView } from './routing-system-frame';
+import { RoutingRecipientPicker } from "./routing-recipient-picker";
+import { recipientRecommendations } from "@/lib/routing-recipient-recommendations";
+import { PAYLOAD_NEEDS, readPayloadRequirements, proposePayload, type PayloadDraft } from "@/lib/routing-payload-needs";
+import { endpointInterfaceChoices, suggestedEndpointInterface, endpointPhysicalBinding, physicalNodeBuses, type NodeBuses } from '@/lib/routing-interface-search';
 import { payloadScopeConflicts, type ScopedMessage as EngMessage } from '@/lib/routing-payload-scope';
 
 const VIEWS = ["Table", "Matrix", "TX / RX", "Graph", "AI Proposals", "Validation", "Conflicts"] as const;
@@ -87,6 +94,7 @@ export function RoutingWorkbench({
   const [schema, setSchema] = useState<RoutingSchema | null>(null);
   const [hardware, setHardware] = useState<HardwareNode[]>([]);
   const [interfaces, setInterfaces] = useState<EngInterface[]>([]);
+  const [nodeBuses, setNodeBuses] = useState<NodeBuses>({});
   const [networkNames, setNetworkNames] = useState<Map<string, string>>(new Map());
   const [messages, setMessages] = useState<EngMessage[]>([]);
   const [signals, setSignals] = useState<EngSignal[]>([]);
@@ -115,6 +123,7 @@ export function RoutingWorkbench({
         getRoutingMessageScopes(),
       ]);
     setRoutes(routeItems);
+    setNodeBuses(physicalNodeBuses(physicalItems.filter((item): item is HardwareNetworkInterface => "technology" in item), new Map(networkItems.map(n => [n.id, n.name || n.id]))));
     setNetworkNames(new Map(networkItems.map((network) => [network.id, network.name || network.id])));
     setProposals(proposalItems);
     setSchema(routingSchema);
@@ -349,6 +358,7 @@ export function RoutingWorkbench({
 
       {editor && schema && (
         <RoutingEditorDialog
+          nodeBuses={nodeBuses}
           hardware={hardware}
           interfaces={interfaces}
           messages={messages}
@@ -382,6 +392,7 @@ export function RoutingWorkbench({
       )}
       {wizardRoute && schema && (
         <RoutingRepairWizard
+          nodeBuses={nodeBuses}
           hardware={hardware}
           interfaces={interfaces}
           messages={messages}
@@ -1922,13 +1933,14 @@ function BulkSelectField({ enabled, label, onToggle, children }: { enabled: bool
   );
 }
 
-function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces, messages, signals, seed, onClose, onSave, onGenerate, onDuplicate, onDelete }: {
+function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces, nodeBuses, messages, signals, seed, onClose, onSave, onGenerate, onDuplicate, onDelete }: {
   mode: "manual" | "ai";
   route?: RoutingEntry;
   routes: RoutingEntry[];
   schema: RoutingSchema;
   hardware: HardwareNode[];
   interfaces: EngInterface[];
+  nodeBuses: NodeBuses;
   messages: EngMessage[];
   signals: EngSignal[];
   seed?: RoutingEditorSeed;
@@ -1938,6 +1950,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
   onDuplicate?: () => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
+  const systemFrames = useRoutingSystemFrameView();
   const seededSourceInterface = seed?.sourceInterfaceId ? interfaces.find((item) => item.id === seed.sourceInterfaceId) : undefined;
   const seededDestinationInterface = seed?.destinationInterfaceId ? interfaces.find((item) => item.id === seed.destinationInterfaceId) : undefined;
   const initialSourceId = route?.source.node_id ?? seed?.sourceNodeId ?? seededSourceInterface?.hardware_node_id ?? hardware[0]?.id ?? "";
@@ -1999,7 +2012,11 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
   const sourceInterfaceIds = new Set(sourceInterfaces.map((item) => item.id));
   const senderMessages = messages.filter((item) => messageIds.includes(item.id) || sourceInterfaceIds.has(item.interface_id ?? "") && !payloadScopeConflicts([item], destinationIds, destinationInterfaces, interfaces).length);
   const selectedMessages = messageIds.map((id) => messages.find((item) => item.id === id)).filter((item): item is EngMessage => Boolean(item));
-  const scopeMessages = messages.filter(item => messageIds.includes(item.id) || signals.some(signal => signalIds.includes(signal.id) && signal.message_id === item.id));
+  const scopeMessages = useMemo(() => {
+    const selected = new Set(messageIds), selectedSignals = new Set(signalIds);
+    for (const signal of signals) if (signal.message_id && selectedSignals.has(signal.id)) selected.add(signal.message_id);
+    return messages.filter(message => selected.has(message.id));
+  }, [messages, signals, messageIds, signalIds]);
   const scopeConflicts = payloadScopeConflicts(scopeMessages, destinationIds, destinationInterfaces, interfaces);
   const selectableSignals = messageIds.length ? signals.filter((item) => item.message_id && messageIds.includes(item.message_id)) : signals;
   const gateways = hardware.filter((node) => node.device_type === "Gateway" && node.id !== sourceId && !destinationIds.includes(node.id));
@@ -2104,7 +2121,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
       return;
     }
     const nextProtocol = interfaceProtocol(item.interface_type);
-    const binding = selectPhysicalBinding(item, sourceNetworkId, sourcePortId);
+    const binding = endpointPhysicalBinding(item, gatewayIds[0] || destinationIds[0], nodeBuses, sourceNetworkId, sourcePortId);
     setSourceNetworkId(binding?.id ?? "");
     setSourcePortId(binding?.portId ?? "");
     applyEditorProtocol(nextProtocol);
@@ -2115,11 +2132,11 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
       setDestinationIds((current) => current.filter((item) => item !== id));
       return;
     }
-    const candidate = compatibleInterfaceForNode(interfaces, id, protocol);
+    const candidate = suggestedEndpointInterface(interfaces, id, gatewayIds.at(-1) || sourceId, protocol, nodeBuses);
     setDestinationIds((current) => [...current, id]);
     setDestinationInterfaces((current) => ({ ...current, [id]: current[id] || candidate?.id || "" }));
     const selected = interfaces.find((item) => item.id === destinationInterfaces[id]) ?? candidate;
-    const binding = selectPhysicalBinding(selected ?? undefined, destinationNetworks[id], destinationPorts[id]);
+    const binding = endpointPhysicalBinding(selected ?? undefined, gatewayIds.at(-1) || sourceId, nodeBuses, destinationNetworks[id], destinationPorts[id]);
     setDestinationNetworks((current) => ({ ...current, [id]: binding?.id ?? "" }));
     setDestinationPorts((current) => ({ ...current, [id]: binding?.portId ?? "" }));
     setDestinationProtocols((current) => ({ ...current, [id]: current[id] || (candidate ? interfaceProtocol(candidate.interface_type) : protocol) }));
@@ -2176,6 +2193,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
         protocol,
       },
       payload: {
+        data_requirements: route?.payload.data_requirements,
         interface_definition_id: optionalText(interfaceDefinitionId),
         interface_definition_ids: [...new Set(selectedMessages.map((item) => item.interface_id).filter((id): id is string => Boolean(id)))],
         message_id: payloadMessageId,
@@ -2218,7 +2236,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
         </header>
         {formError && <div className="notice error routing-form-error">{formError}</div>}
         {scopeConflicts.length > 0 && <div className="notice error routing-form-error" role="alert">Lokale Sensor-/Aktordaten im Payload: {scopeConflicts.map(item => item.name).join(", ")}. Diese gehören zu anderen Empfängern; einen benötigten Funktionsausgang wählen.</div>}
-        <RoutingPathPreview sourceId={sourceId} destinationIds={destinationIds} gatewayIds={gatewayIds} sourceNetwork={sourceNetworkId} destinationNetworks={destinationNetworks} hardware={hardware} interfaces={interfaces} />
+        <RoutingPathPreview sourceId={sourceId} destinationIds={destinationIds} gatewayIds={gatewayIds} sourceNetwork={sourceNetworkId} destinationNetworks={destinationNetworks} hardware={hardware} nodeBuses={nodeBuses} />
         <div className="routing-editor-grid">
           <fieldset className="full-width routing-field-grid">
             <legend>01 Allgemein</legend>
@@ -2229,7 +2247,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
           <fieldset className="routing-field-grid">
             <legend>02 Quelle</legend>
             <label>Source Node<select onChange={(event) => applySourceNode(event.target.value)} value={sourceId}>{sortedHardware.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.device_type}</option>)}</select></label>
-            <RoutingInterfacePicker label="Source Interface" nodeId={sourceId} neighborId={gatewayIds[0] || destinationIds[0]} interfaces={interfaces} protocol={protocol} value={sourceInterfaceId} onPick={applyEditorSourceInterface} />
+            <RoutingInterfacePicker nodeBuses={nodeBuses} label="Source Interface" nodeId={sourceId} neighborId={gatewayIds[0] || destinationIds[0]} interfaces={interfaces} protocol={protocol} value={sourceInterfaceId} onPick={applyEditorSourceInterface} />
             <NetworkBindingSelect item={selectedSourceInterface} value={sourcePortId} label={sourceNetworkDisplay} onPick={(port, network) => { setSourcePortId(port); setSourceNetworkId(network); }} />
             <details className="routing-technical-fields full-width"><summary>Technische IDs</summary><label>Source Port ID<input onChange={(event) => setSourcePortId(event.target.value)} value={sourcePortId} /></label><label>Source Network ID<input onChange={(event) => setSourceNetworkId(event.target.value)} value={sourceNetworkId} /></label></details>
             <label>Protocol<select onChange={(event) => applyEditorProtocol(event.target.value)} value={protocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -2257,7 +2275,7 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
               const expectedProtocol = destinationProtocols[nodeId] || protocol;
               const incompatibleInterface = selectedDestinationInterface && interfaceProtocol(selectedDestinationInterface.interface_type) !== expectedProtocol;
               const hasCompatibleInterface = endpointInterfaces.some((item) => interfaceProtocol(item.interface_type) === expectedProtocol);
-              return <section className="routing-endpoint-fields" key={nodeId}><strong>{destinationNode?.name ?? nodeId}</strong><div><RoutingInterfacePicker label={`Interface ${hardware.find(n => n.id === nodeId)?.name ?? nodeId}`} nodeId={nodeId} neighborId={gatewayIds.at(-1) || sourceId} interfaces={interfaces} protocol={expectedProtocol} value={selectedInterfaceId} onPick={(interfaceId) => { const item = interfaces.find((candidate) => candidate.id === interfaceId); setDestinationInterfaces((current) => ({ ...current, [nodeId]: interfaceId })); if (!item) { setDestinationNetworks((current) => ({ ...current, [nodeId]: "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: "" })); return; } const binding = selectPhysicalBinding(item, destinationNetworks[nodeId], destinationPorts[nodeId]); setDestinationNetworks((current) => ({ ...current, [nodeId]: binding?.id ?? "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: binding?.portId ?? "" })); setDestinationProtocols((current) => ({ ...current, [nodeId]: interfaceProtocol(item.interface_type) })); }} />{incompatibleInterface ? <small className="routing-interface-warning">Gewähltes Interface ist {interfaceProtocol(selectedDestinationInterface.interface_type)}, die Route nutzt {expectedProtocol}.</small> : null}{!selectedInterfaceId && !hasCompatibleInterface ? <small className="routing-interface-warning">Kein {expectedProtocol}-Interface an diesem Ziel vorhanden.</small> : null}</div><NetworkBindingSelect item={selectedDestinationInterface} value={destinationPorts[nodeId] ?? ""} label={destinationNetworkDisplay} onPick={(port, network) => { setDestinationPorts((current) => ({ ...current, [nodeId]: port })); setDestinationNetworks((current) => ({ ...current, [nodeId]: network })); }} /><details className="routing-technical-fields"><summary>IDs</summary><label>Port ID<input onChange={(event) => setDestinationPorts((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationPorts[nodeId] ?? ""} /></label><label>Network ID<input onChange={(event) => setDestinationNetworks((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationNetworks[nodeId] ?? ""} /></label></details><label>Protocol<select onChange={(event) => applyDestinationProtocol(nodeId, event.target.value)} value={expectedProtocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></section>;
+              return <section className="routing-endpoint-fields" key={nodeId}><strong>{destinationNode?.name ?? nodeId}</strong><div><RoutingInterfacePicker nodeBuses={nodeBuses} label={`Interface ${hardware.find(n => n.id === nodeId)?.name ?? nodeId}`} nodeId={nodeId} neighborId={gatewayIds.at(-1) || sourceId} interfaces={interfaces} protocol={expectedProtocol} value={selectedInterfaceId} onPick={(interfaceId) => { const item = interfaces.find((candidate) => candidate.id === interfaceId); setDestinationInterfaces((current) => ({ ...current, [nodeId]: interfaceId })); if (!item) { setDestinationNetworks((current) => ({ ...current, [nodeId]: "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: "" })); return; } const binding = endpointPhysicalBinding(item, gatewayIds.at(-1) || sourceId, nodeBuses, destinationNetworks[nodeId], destinationPorts[nodeId]); setDestinationNetworks((current) => ({ ...current, [nodeId]: binding?.id ?? "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: binding?.portId ?? "" })); setDestinationProtocols((current) => ({ ...current, [nodeId]: interfaceProtocol(item.interface_type) })); }} />{incompatibleInterface ? <small className="routing-interface-warning">Gewähltes Interface ist {interfaceProtocol(selectedDestinationInterface.interface_type)}, die Route nutzt {expectedProtocol}.</small> : null}{!selectedInterfaceId && !hasCompatibleInterface ? <small className="routing-interface-warning">Kein {expectedProtocol}-Interface an diesem Ziel vorhanden.</small> : null}</div><NetworkBindingSelect item={selectedDestinationInterface} value={destinationPorts[nodeId] ?? ""} label={destinationNetworkDisplay} onPick={(port, network) => { setDestinationPorts((current) => ({ ...current, [nodeId]: port })); setDestinationNetworks((current) => ({ ...current, [nodeId]: network })); }} /><details className="routing-technical-fields"><summary>IDs</summary><label>Port ID<input onChange={(event) => setDestinationPorts((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationPorts[nodeId] ?? ""} /></label><label>Network ID<input onChange={(event) => setDestinationNetworks((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationNetworks[nodeId] ?? ""} /></label></details><label>Protocol<select onChange={(event) => applyDestinationProtocol(nodeId, event.target.value)} value={expectedProtocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label><RoutingSystemFrame nodeId={nodeId} state={systemFrames} /></section>;
             })}</div>
           </fieldset>
 
@@ -2295,22 +2313,36 @@ function RoutingEditorDialog({ mode, route, routes, schema, hardware, interfaces
 
 const ROUTING_WIZARD_STEPS = ["Allgemein", "Quelle", "Payload", "Ziele", "Pfad & Policy", "Timing", "Prüfen"] as const;
 
-function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, messages, signals, onClose, onSave, onDelete }: {
+function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, nodeBuses, messages, signals, onClose, onSave, onDelete }: {
   route: RoutingEntry;
   routes: RoutingEntry[];
   schema: RoutingSchema;
   hardware: HardwareNode[];
   interfaces: EngInterface[];
+  nodeBuses: NodeBuses;
   messages: EngMessage[];
   signals: EngSignal[];
   onClose: () => void;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
+  const systemFrames = useRoutingSystemFrameView();
   const initialSourceId = route.source.node_id ?? "";
   const initialDestinationIds = route.destinations.map((item) => item.node_id).filter((id) => id !== initialSourceId);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const saveInFlight = useRef(false);
+  const wizardBody = useRef<HTMLDivElement>(null);
+  const wizardSteps = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+  useEffect(() => {
+    if (wizardBody.current) wizardBody.current.scrollTop = 0;
+    wizardSteps.current?.querySelector(".active")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [step]);
   const [formError, setFormError] = useState("");
   const [name, setName] = useState(route.name);
   const [description, setDescription] = useState(route.description ?? "");
@@ -2318,6 +2350,8 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   const [sourcePortId, setSourcePortId] = useState(route.source.port_id ?? "");
   const [sourceInterfaceId, setSourceInterfaceId] = useState(route.source.interface_id ?? "");
   const [sourceNetworkId, setSourceNetworkId] = useState(route.source.network_id ?? "");
+  const [payloadRequirements, setPayloadRequirements] = useState(() => readPayloadRequirements(route.payload.data_requirements));
+  const [payloadDraft, setPayloadDraft] = useState<PayloadDraft | null>(null);
   const [payloadMode, setPayloadMode] = useState<RoutingPayloadMode>(routingPayloadMode(route));
   const [messageIds, setMessageIds] = useState<string[]>(routingMessageIds(route));
   const [signalIds, setSignalIds] = useState<string[]>(route.payload.signal_ids ?? []);
@@ -2375,6 +2409,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   const conditionResult = parseRoutingConditions(conditionsText);
   const invalidTiming = [cycle, timeout, latency, jitter].some((value) => value.trim() && (optionalNumber(value) == null || !Number.isFinite(optionalNumber(value)) || Number(value) <= 0));
   const missing = [
+    payloadDraft ? "Payload-Entwurf übernehmen oder verwerfen" : "",
     scopeConflicts.length ? "Lokale Sensor-/Aktordaten: Funktionsausgang auswählen" : "",
     !name.trim() ? "Name" : "",
     !sourceId ? "Producer" : "",
@@ -2405,11 +2440,14 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   }
 
   function topInterfaceSuggestions(options: EngInterface[]) {
-    return options
-      .map((item) => {
+    const optionIds = new Set(options.map(item => item.id));
+    return endpointInterfaceChoices(interfaces, sourceId, gatewayIds[0] || destinationIds[0], protocol, "", nodeBuses)
+      .filter(({ item }) => optionIds.has(item.id))
+      .map(({ item, common }) => {
         const assessment = assessInterfaceBinding(item, sourceId, protocol, sourceNetworkId);
-        return { id: item.id, label: interfaceLabel(item), confidence: assessment.compatible ? 1 : 0,
-          assessment: assessment.compatible ? "Technisch passend" : "Zuordnung prüfen", compatible: assessment.compatible, reason: assessment.reason };
+        return { id: item.id, label: interfaceLabel(item), confidence: (common.length ? 10 : 0) + (assessment.compatible ? 1 : 0),
+          assessment: common.length ? "Am ersten Pfadabschnitt" : "Zuordnung prüfen", compatible: assessment.compatible && common.length > 0,
+          reason: [common.length ? `Gemeinsamer Bus: ${common.map(b => b.name).join(', ')}` : 'Kein gemeinsamer Bus zum nächsten Pfadknoten', assessment.reason].join(' · ') };
       })
       .sort((left, right) => right.confidence - left.confidence)
       .slice(0, 3);
@@ -2422,29 +2460,14 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     return messageInterface ?? compatibleInterfaceForNode(interfaces, nodeId, protocol);
   }
 
-  function messageSuggestion(item: EngMessage) {
-    const iface = interfaces.find((candidate) => candidate.id === item.interface_id);
-    const sender = messageSenderNode(item);
-    const source = hardware.find((candidate) => candidate.id === sourceId);
-    const reasons: string[] = [];
-    let confidence = 18;
-    if (sender?.id === sourceId) { confidence += 50; reasons.push("Sender entspricht dem Producer"); }
-    else if (sender && destinationIds.includes(sender.id)) { confidence += 5; reasons.push("Nachricht liegt in Gegenrichtung"); }
-    else { confidence -= 4; reasons.push("Sender liegt außerhalb des gewählten Pfads"); }
-    if (item.interface_id && item.interface_id === sourceInterfaceId) { confidence += 15; reasons.push("Source Interface stimmt überein"); }
-    if (iface && interfaceProtocol(iface.interface_type) === protocol) { confidence += 12; reasons.push("Protokoll kompatibel"); }
-    if (item.routingScope?.scope === "FUNCTION_OUTPUT") { confidence += 12; reasons.push("Ausgang der Funktion für externe Kommunikation"); }
-    if (item.routingScope?.restricted) reasons.push("Lokale Sensor-/Aktorkommunikation für zugeordnete Empfänger");
-    if (sender?.id === sourceId && item.direction === "tx") { confidence += 3; reasons.push("Senderichtung TX"); }
-    if (route.payload.message_id === item.id) { confidence += 2; reasons.push("bereits zugeordnet"); }
-    return { id: item.id, label: item.name, confidence: Math.max(5, Math.min(99, confidence)), reason: reasons.join(" · ") };
-  }
-
-  const sortedMessages = [...messages].sort((left, right) => (
-    messageSuggestion(right).confidence - messageSuggestion(left).confidence
-    || left.name.localeCompare(right.name, "de")
-  ));
-  const senderMessages = sortedMessages.filter((item) => messageSenderNode(item)?.id === sourceId && !payloadScopeConflicts([item], destinationIds, destinationInterfaces, interfaces).length);
+  const allSenderMessages = useMemo(() => {
+    const sourceInterfaces = new Set(interfaces.filter(item => item.hardware_node_id === sourceId).map(item => item.id));
+    return messages.filter(item => item.interface_id && sourceInterfaces.has(item.interface_id) && item.direction !== 'rx');
+  }, [messages, interfaces, sourceId]);
+  const senderMessages = useMemo(() => allSenderMessages.filter(item => !payloadScopeConflicts([item], destinationIds, destinationInterfaces, interfaces).length)
+    .sort((left, right) => left.name.localeCompare(right.name, 'de')), [allSenderMessages, destinationIds, destinationInterfaces, interfaces]);
+  const recipientSuggestions = useMemo(() => recipientRecommendations(sourceId, scopeMessages.length ? allSenderMessages.filter(message => scopeMessages.some(selected => selected.id === message.id)) : allSenderMessages, routes, interfaces, signals), [sourceId, scopeMessages, allSenderMessages, routes, interfaces, signals]);
+  const payloadContextKey = JSON.stringify([sourceId, sourceInterfaceId, [...destinationIds].sort().map(id => [id, destinationInterfaces[id] ?? ''])]);
 
   const sourceAutofillRef = useRef(false);
   useEffect(() => {
@@ -2468,11 +2491,6 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     }));
   }, [sourceId]);
 
-  function topMessageSuggestions() {
-    return senderMessages
-      .map(messageSuggestion)
-      .slice(0, 3);
-  }
 
   function applySourceInterface(id: string) {
     const iface = interfaces.find((item) => item.id === id);
@@ -2484,7 +2502,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     }
     const nextProtocol = interfaceProtocol(iface.interface_type);
     setProtocol(nextProtocol);
-    const binding = selectPhysicalBinding(iface, sourceNetworkId, sourcePortId);
+    const binding = endpointPhysicalBinding(iface, gatewayIds[0] || destinationIds[0], nodeBuses, sourceNetworkId, sourcePortId);
     setSourceNetworkId(binding?.id ?? "");
     setSourcePortId(binding?.portId ?? "");
     reconcileDestinationInterfaces(nextProtocol);
@@ -2530,29 +2548,23 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     if (candidate) applyWizardProtocol(nextProtocol);
   }
 
-  function applyMessage(id: string) {
-    if (!id) return;
-    setPayloadMode("message");
-    setMessageIds((current) => current.includes(id) ? current : [...current, id]);
-    const msg = messages.find((item) => item.id === id);
-    setInterfaceDefinitionId((current) => current || msg?.interface_id || "");
-    if (msg?.cycle_ms && !cycle) setCycle(String(msg.cycle_ms));
-    if (msg?.dlc && (!route.payload.signal_ids.length || !signalIds.length)) {
-      setSignalIds(current => [...new Set([...current, ...signals.filter((item) => item.message_id === id).map(item => item.id)])]);
-    }
+  function applyPayloadProposal(id: string, neededSignals: string[]) {
+    const message = senderMessages.find(item => item.id === id);
+    if (!message) return;
+    setPayloadMode('message');
+    setMessageIds(current => current.includes(id) ? current : [...current, id]);
+    setSignalIds(current => [...new Set([...current.filter(sid => signals.find(signal => signal.id === sid)?.message_id !== id), ...neededSignals])]);
+    setInterfaceDefinitionId(current => current || message.interface_id || '');
+    if (message.cycle_ms && !cycle) setCycle(String(message.cycle_ms));
   }
 
-  function toggleMessage(id: string) {
-    if (messageIds.includes(id)) {
-      setMessageIds((current) => current.filter((item) => item !== id));
-      setSignalIds((current) => current.filter((signalId) => signals.find((item) => item.id === signalId)?.message_id !== id));
-      return;
-    }
-    applyMessage(id);
+  function removePayloadMessage(id: string) {
+    setMessageIds(current => current.filter(mid => mid !== id));
+    setSignalIds(current => current.filter(sid => signals.find(signal => signal.id === sid)?.message_id !== id));
   }
 
   function preferredInterfaceForNode(nodeId: string) {
-    return compatibleInterfaceForNode(interfaces, nodeId, protocol);
+    return suggestedEndpointInterface(interfaces, nodeId, nodeId === sourceId ? gatewayIds[0] || destinationIds[0] : gatewayIds.at(-1) || sourceId, protocol, nodeBuses);
   }
 
   function toggleDestination(id: string) {
@@ -2564,7 +2576,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     setDestinationIds((current) => [...current, id]);
     setDestinationInterfaces((current) => ({ ...current, [id]: current[id] || candidate?.id || "" }));
     const selected = interfaces.find((item) => item.id === destinationInterfaces[id]) ?? candidate;
-    const binding = selectPhysicalBinding(selected ?? undefined, destinationNetworks[id], destinationPorts[id]);
+    const binding = endpointPhysicalBinding(selected ?? undefined, gatewayIds.at(-1) || sourceId, nodeBuses, destinationNetworks[id], destinationPorts[id]);
     setDestinationNetworks((current) => ({ ...current, [id]: binding?.id ?? "" }));
     setDestinationPorts((current) => ({ ...current, [id]: binding?.portId ?? "" }));
     setDestinationProtocols((current) => ({ ...current, [id]: current[id] || (candidate ? interfaceProtocol(candidate.interface_type) : protocol) }));
@@ -2579,20 +2591,38 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   }
 
   function applyBestDestinationInterfaces() {
-    reconcileDestinationInterfaces(protocol);
+    destinationIds.forEach(nodeId => {
+      const candidate = preferredInterfaceForNode(nodeId);
+      if (!candidate) return;
+      const neighbor = gatewayIds.at(-1) || sourceId;
+      const choice = endpointInterfaceChoices(interfaces, nodeId, neighbor, protocol, "", nodeBuses).find(c => c.item.id === candidate.id);
+      const binding = choice?.common.length === 1 ? choice.common[0] : selectPhysicalBinding(candidate, destinationNetworks[nodeId], destinationPorts[nodeId]);
+      setDestinationInterfaces(current => ({ ...current, [nodeId]: candidate.id }));
+      setDestinationProtocols(current => ({ ...current, [nodeId]: interfaceProtocol(candidate.interface_type) }));
+      setDestinationNetworks(current => ({ ...current, [nodeId]: binding?.id ?? '' }));
+      setDestinationPorts(current => ({ ...current, [nodeId]: binding?.portId ?? '' }));
+    });
   }
 
   function applyBestPayload() {
-    const candidate = topMessageSuggestions()[0];
-    if (candidate) applyMessage(candidate.id);
+    setPayloadDraft(proposePayload(senderMessages, signals, payloadDraft?.requirements ?? payloadRequirements, sourceInterfaceId, messageIds, payloadContextKey));
+    setPayloadMode('message'); setStep(2);
+    if (wizardBody.current) wizardBody.current.scrollTop = 0;
   }
+  function chooseDifferentPayload() { setPayloadMode('message'); setStep(2); }
 
-  function chooseDifferentPayload() {
-    const currentId = messageIds[0] ?? "";
-    const currentIndex = senderMessages.findIndex((item) => item.id === currentId);
-    const next = senderMessages.find((item, index) => item.id !== currentId && index > currentIndex)
-      ?? senderMessages.find((item) => item.id !== currentId);
-    if (next) applyMessage(next.id);
+  function adoptPayloadDraft() {
+    if (!payloadDraft || payloadDraft.contextKey !== payloadContextKey) return;
+    const allowed = new Set(senderMessages.map(message => message.id));
+    if (!payloadDraft.messageIds.length || payloadDraft.messageIds.some(id => !allowed.has(id))) return;
+    const parents = new Set(payloadDraft.messageIds);
+    setMessageIds([...payloadDraft.messageIds]);
+    setSignalIds(payloadDraft.signalIds.filter(id => signals.some(signal => signal.id === id && signal.message_id && parents.has(signal.message_id))));
+    setPayloadRequirements(payloadDraft.requirements);
+    const first = senderMessages.find(message => message.id === payloadDraft.messageIds[0]);
+    if (first?.interface_id) setInterfaceDefinitionId(first.interface_id);
+    if (!cycle && first?.cycle_ms) setCycle(String(first.cycle_ms));
+    setPayloadDraft(null);
   }
 
   function applyBusDefaults() {
@@ -2605,15 +2635,17 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
     if (!jitter) setJitter(defaults[3]);
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function saveReviewedRoute() {
+    if (step !== ROUTING_WIZARD_STEPS.length - 1 || saveInFlight.current) return;
     const parsedConditions = parseRoutingConditions(conditionsText);
     if (scopeConflicts.length) { setFormError("Lokale Sensor-/Aktordaten sind nicht für diese Empfänger bestimmt. Benötigten Funktionsausgang auswählen."); return; }
     if (parsedConditions.error || invalidTiming) {
       setFormError(parsedConditions.error || "Timing-Werte müssen leer oder größer als 0 sein.");
       return;
     }
+    if (missing.length) { setFormError("Bitte die offenen Punkte in der Prüfung ergänzen."); return; }
     setFormError("");
+    saveInFlight.current = true;
     setSaving(true);
     const sourceNode = hardware.find((item) => item.id === sourceId);
     const selectedGateways = gatewayIds.map((id) => hardware.find((item) => item.id === id)).filter((item): item is HardwareNode => Boolean(item));
@@ -2642,6 +2674,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
       description: optionalText(description),
       source: { node_id: sourceId, port_id: optionalText(sourcePortId), interface_id: optionalText(sourceInterfaceId), network_id: optionalText(sourceNetworkId) ?? networkId(sourceInterface), protocol },
       payload: {
+        data_requirements: payloadRequirements,
         interface_definition_id: optionalText(interfaceDefinitionId),
         interface_definition_ids: [...new Set(selectedMessages.map((item) => item.interface_id).filter((id): id is string => Boolean(id)))],
         message_id: payloadMessageId,
@@ -2656,7 +2689,7 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
       routing_policy: { routing_type: destinationIds.length > 1 && routingType === "UNICAST" ? "MULTICAST" : routingType, redundancy, fallback_route_id: optionalText(fallbackRouteId), conditions: parsedConditions.conditions },
       actor: "routing-wizard",
     };
-    try { await onSave(payload); } finally { setSaving(false); }
+    try { await onSave(payload); } finally { saveInFlight.current = false; setSaving(false); }
   }
 
   function nodeName(id: string) { return hardware.find((item) => item.id === id)?.name ?? id; }
@@ -2665,17 +2698,18 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
   }
 
   return (
-    <div className="routing-dialog-backdrop" role="presentation">
-      <form aria-modal="true" className="routing-dialog routing-wizard-dialog" onSubmit={submit} role="dialog">
+    <div className="routing-dialog-backdrop routing-wizard-backdrop" role="presentation">
+      <form aria-modal="true" className="routing-dialog routing-wizard-dialog" onSubmit={event => event.preventDefault()} role="dialog">
         <header><div><p className="eyebrow">Routing Wizard</p><h2>{route.route_code}</h2><span className="routing-wizard-path">{routePathText()}</span></div><button aria-label="Dialog schließen" onClick={onClose} type="button">×</button></header>
+        <div className="routing-wizard-steps" ref={wizardSteps}>{ROUTING_WIZARD_STEPS.map((label, index) => <button aria-current={step === index ? "step" : undefined} className={step === index ? "active" : ""} disabled={saving} key={label} onClick={() => setStep(index)} type="button"><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
+        <div className="routing-wizard-body" ref={wizardBody}>
         {formError && <div className="notice error routing-form-error">{formError}</div>}
         {scopeConflicts.length > 0 && <div className="notice error routing-form-error" role="alert">Lokale Sensor-/Aktordaten im Payload: {scopeConflicts.map(item => item.name).join(", ")}. Diese gehören zu anderen Empfängern; einen benötigten Funktionsausgang wählen.</div>}
-        <RoutingPathPreview sourceId={sourceId} destinationIds={destinationIds} gatewayIds={gatewayIds} sourceNetwork={sourceNetworkId} destinationNetworks={destinationNetworks} hardware={hardware} interfaces={interfaces} />
-        <div className="routing-wizard-steps">{ROUTING_WIZARD_STEPS.map((label, index) => <button className={step === index ? "active" : ""} key={label} onClick={() => setStep(index)} type="button"><span>{String(index + 1).padStart(2, "0")}</span>{label}</button>)}</div>
+        <RoutingPathPreview sourceId={sourceId} destinationIds={destinationIds} gatewayIds={gatewayIds} sourceNetwork={sourceNetworkId} destinationNetworks={destinationNetworks} hardware={hardware} nodeBuses={nodeBuses} />
 
         {step === 0 && <div className="routing-wizard-grid"><label>Name<input onChange={(event) => setName(event.target.value)} required value={name} /></label><label className="full-width">Beschreibung<textarea onChange={(event) => setDescription(event.target.value)} value={description} /></label><dl className="routing-object-summary routing-governance-summary full-width"><dt>Route Code</dt><dd>{route.route_code}</dd><dt>Revision</dt><dd>{route.revision}</dd><dt>Status</dt><dd>{route.status}</dd><dt>Origin</dt><dd>{route.origin}</dd><dt>Review</dt><dd>{route.review_state}</dd><dt>Approval</dt><dd>{route.approval_state}</dd><dt>Confidence</dt><dd>{route.confidence ?? "—"}</dd><dt>Source ID</dt><dd>{route.source_id ?? "—"}</dd><dt>Source Version</dt><dd>{route.source_version ?? "—"}</dd></dl></div>}
 
-        {step === 1 && <div className="routing-wizard-grid"><label>Producer<select onChange={(event) => applySourceNode(event.target.value)} value={sourceId}>{sortedHardware.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.device_type}</option>)}</select></label><RoutingInterfacePicker label="Source Interface" nodeId={sourceId} neighborId={gatewayIds[0] || destinationIds[0]} interfaces={interfaces} protocol={protocol} value={sourceInterfaceId} onPick={applySourceInterface} /><AiSuggestionList onPick={applySourceInterface} suggestions={topInterfaceSuggestions(sourceInterfaces)} value={sourceInterfaceId} /><NetworkBindingSelect item={sourceInterface} value={sourcePortId} label={sourceNetworkDisplay} onPick={(port, network) => { setSourcePortId(port); setSourceNetworkId(network); }} /><details className="routing-technical-fields full-width"><summary>Technische IDs</summary><label>Source Port ID<input onChange={(event) => setSourcePortId(event.target.value)} value={sourcePortId} /></label><label>Source Network ID<input onChange={(event) => setSourceNetworkId(event.target.value)} value={sourceNetworkId} /></label></details><label>Protocol<select onChange={(event) => applyWizardProtocol(event.target.value)} value={protocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></div>}
+        {step === 1 && <div className="routing-wizard-grid"><label>Producer<select onChange={(event) => applySourceNode(event.target.value)} value={sourceId}>{sortedHardware.map((node) => <option key={node.id} value={node.id}>{node.name} · {node.device_type}</option>)}</select></label><RoutingInterfacePicker nodeBuses={nodeBuses} label="Source Interface" nodeId={sourceId} neighborId={gatewayIds[0] || destinationIds[0]} interfaces={interfaces} protocol={protocol} value={sourceInterfaceId} onPick={applySourceInterface} /><AiSuggestionList onPick={applySourceInterface} suggestions={topInterfaceSuggestions(sourceInterfaces)} value={sourceInterfaceId} /><NetworkBindingSelect item={sourceInterface} value={sourcePortId} label={sourceNetworkDisplay} onPick={(port, network) => { setSourcePortId(port); setSourceNetworkId(network); }} /><details className="routing-technical-fields full-width"><summary>Technische IDs</summary><label>Source Port ID<input onChange={(event) => setSourcePortId(event.target.value)} value={sourcePortId} /></label><label>Source Network ID<input onChange={(event) => setSourceNetworkId(event.target.value)} value={sourceNetworkId} /></label></details><label>Protocol<select onChange={(event) => applyWizardProtocol(event.target.value)} value={protocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></div>}
 
         {step === 2 && (
           <div className="routing-wizard-grid">
@@ -2684,51 +2718,36 @@ function RoutingRepairWizard({ route, routes, schema, hardware, interfaces, mess
               <button className={payloadMode === "topic" ? "active" : ""} onClick={() => setPayloadMode("topic")} type="button">Topic</button>
               <button className={payloadMode === "data_object" ? "active" : ""} onClick={() => setPayloadMode("data_object")} type="button">Data Object</button>
             </div>
-            {payloadMode === "message" && (
-              <>
-                <div className="routing-check-list routing-message-check-list full-width">
-                  <span>Messages · {messageIds.length} gewählt</span>
-                  {senderMessages.length
-                    ? senderMessages.map((item) => (
-                        <label key={item.id}>
-                          <input checked={messageIds.includes(item.id)} onChange={() => toggleMessage(item.id)} type="checkbox" />
-                          {item.name}
-                        </label>
-                      ))
-                    : <small>Keine passende Nachricht für diese Empfänger vorhanden. Benötigten Funktionsausgang im Engineering-Modell festlegen.</small>}
-                </div>
-                {scopeConflicts.length > 0 && <div className="notice error full-width" role="alert">Lokale Daten sind nicht für die gewählten Empfänger bestimmt: {scopeConflicts.map(item => <button type="button" key={item.id} onClick={() => toggleMessage(item.id)}>{item.name} aus Payload entfernen</button>)}</div>}
-                <p className="full-width routing-payload-help">Zwischen Funktionen nur benötigte Ausgänge übertragen, etwa Betriebszustand oder Fehler. Lokale Messungen und Stellbefehle bleiben bei ihren zugeordneten Empfängern. Direkt genutzte Sensoren bleiben möglich. Die Buslast umfasst die ganze gewählte Nachricht; eine kleinere Signalmenge benötigt eine eigene Nachricht mit expliziter Kodierung.</p>
-                <AiSuggestionList onPick={applyMessage} suggestions={topMessageSuggestions()} value={messageIds[0] ?? ""} />
-                <div className="routing-check-list full-width">
-                  <span>Signals</span>
-                  {selectableSignals.length
-                    ? selectableSignals.map((signal) => (
-                        <label key={signal.id}>
-                          <input checked={signalIds.includes(signal.id)} onChange={() => toggleSignal(signal.id)} type="checkbox" />
-                          {signal.display_name || signal.name}
-                          <small>{signal.start_bit ?? "?"} / {signal.length_bits ?? "?"} Bit</small>
-                        </label>
-                      ))
-                    : <small>Keine Signals verfügbar.</small>}
-                </div>
-              </>
-            )}
+            {payloadMode === "message" && <>
+              {payloadDraft ? <RoutingPayloadDraft draft={payloadDraft} onChange={setPayloadDraft} onApply={adoptPayloadDraft} onDiscard={() => setPayloadDraft(null)} onRegenerate={applyBestPayload} messages={senderMessages} signals={signals} stale={payloadDraft.contextKey !== payloadContextKey} engineeringUrl={withProjectParam('/studio/engineering?resource=messages&create=1', readActiveProjectId())} /> : <RoutingPayloadPlanner onPropose={applyBestPayload} source={nodeName(sourceId)} targets={destinationIds.map(nodeName).join(', ')} messages={senderMessages} signals={signals}
+                requirements={payloadRequirements} onRequirements={setPayloadRequirements} messageIds={messageIds} signalIds={signalIds}
+                onUse={applyPayloadProposal} onRemove={removePayloadMessage} onSignal={toggleSignal}
+                engineeringUrl={`/studio/engineering?project=${encodeURIComponent(readActiveProjectId())}&resource=messages&create=1`} />}
+              {scopeConflicts.length > 0 && <div className="notice error full-width" role="alert">Lokale Daten gehören zu anderen Empfängern: {scopeConflicts.map(item => <button type="button" key={item.id} onClick={() => removePayloadMessage(item.id)}>{item.name} aus Payload entfernen</button>)}</div>}
+            </>}
             {payloadMode === "topic" && <label className="full-width">Topic<input onChange={(event) => setTopic(event.target.value)} placeholder="z. B. vehicle/thermal/status" value={topic} /></label>}
             {payloadMode === "data_object" && <label className="full-width">Data Object<input onChange={(event) => setDataObject(event.target.value)} placeholder="z. B. VehicleThermalStatus" value={dataObject} /></label>}
-            <label className="full-width">Payload Interface ID<input onChange={(event) => setInterfaceDefinitionId(event.target.value)} placeholder={payloadMode === "message" ? "Wird aus den gewählten Messages übernommen" : "Optional"} value={interfaceDefinitionId} /></label>
+            <details className="routing-technical-fields full-width"><summary>Technische Zuordnung</summary><label className="full-width">Payload Interface ID<input onChange={(event) => setInterfaceDefinitionId(event.target.value)} placeholder={payloadMode === "message" ? "Wird aus den gewählten Messages übernommen" : "Optional"} value={interfaceDefinitionId} /></label></details>
           </div>
         )}
 
-        {step === 3 && <div className="routing-wizard-grid routing-wizard-targets-step"><label className="routing-list-search full-width"><span>Ziele suchen</span><input aria-label="Consumer fuzzy suchen" onChange={(event) => setDestinationQuery(event.target.value)} placeholder="z.B. motor, abgas und nicht lin" type="search" value={destinationQuery} /></label><div className="routing-check-list full-width"><span>Consumer · {destinationOptions.length}/{Math.max(0, hardware.length - 1)}</span>{destinationOptions.map((node) => <label key={node.id}><input checked={destinationIds.includes(node.id)} onChange={() => toggleDestination(node.id)} type="checkbox" />{node.name}<small>{node.device_type}</small></label>)}</div><div className="routing-endpoint-list full-width">{destinationIds.map((nodeId) => { const expectedProtocol = destinationProtocols[nodeId] || protocol; const options = sortedNodeInterfaces(interfaces, nodeId, expectedProtocol); const selectedInterfaceId = destinationInterfaces[nodeId] ?? ""; const selectedInterface = options.find((item) => item.id === selectedInterfaceId); const incompatibleInterface = selectedInterface && interfaceProtocol(selectedInterface.interface_type) !== expectedProtocol; const hasCompatibleInterface = options.some((item) => interfaceProtocol(item.interface_type) === expectedProtocol); const destinationNetworkDisplay = friendlyNetworkLabel(destinationNetworks[nodeId] || networkId(selectedInterface), networkAliases, nodeName(nodeId), expectedProtocol); return <section className="routing-endpoint-fields" key={nodeId}><strong>{nodeName(nodeId)}</strong><div><RoutingInterfacePicker label={`Interface ${hardware.find(n => n.id === nodeId)?.name ?? nodeId}`} nodeId={nodeId} neighborId={gatewayIds.at(-1) || sourceId} interfaces={interfaces} protocol={expectedProtocol} value={selectedInterfaceId} onPick={(interfaceId) => { const item = interfaces.find((candidate) => candidate.id === interfaceId); setDestinationInterfaces((current) => ({ ...current, [nodeId]: interfaceId })); if (!item) { setDestinationNetworks((current) => ({ ...current, [nodeId]: "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: "" })); return; } const binding = selectPhysicalBinding(item, destinationNetworks[nodeId], destinationPorts[nodeId]); setDestinationNetworks((current) => ({ ...current, [nodeId]: binding?.id ?? "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: binding?.portId ?? "" })); setDestinationProtocols((current) => ({ ...current, [nodeId]: interfaceProtocol(item.interface_type) })); }} />{incompatibleInterface ? <small className="routing-interface-warning">Gewähltes Interface ist {interfaceProtocol(selectedInterface.interface_type)}, die Route nutzt {expectedProtocol}.</small> : null}{!selectedInterfaceId && !hasCompatibleInterface ? <small className="routing-interface-warning">Kein {expectedProtocol}-Interface an diesem Ziel vorhanden.</small> : null}</div><NetworkBindingSelect item={selectedInterface} value={destinationPorts[nodeId] ?? ""} label={destinationNetworkDisplay} onPick={(port, network) => { setDestinationPorts((current) => ({ ...current, [nodeId]: port })); setDestinationNetworks((current) => ({ ...current, [nodeId]: network })); }} /><details className="routing-technical-fields"><summary>IDs</summary><label>Port ID<input onChange={(event) => setDestinationPorts((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationPorts[nodeId] ?? ""} /></label><label>Network ID<input onChange={(event) => setDestinationNetworks((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationNetworks[nodeId] ?? ""} /></label></details><label>Protocol<select onChange={(event) => applyDestinationProtocol(nodeId, event.target.value)} value={expectedProtocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label></section>; })}</div></div>}
+        {step === 3 && <div className="routing-wizard-grid routing-wizard-targets-step"><label className="routing-list-search full-width"><span>Ziele suchen</span><input aria-label="Consumer fuzzy suchen" onChange={(event) => setDestinationQuery(event.target.value)} placeholder="z.B. motor, abgas und nicht lin" type="search" value={destinationQuery} /></label><RoutingRecipientPicker options={destinationOptions} allNodes={sortedHardware} selectedIds={destinationIds} recommendations={recipientSuggestions} onToggle={toggleDestination} /><div className="routing-endpoint-list full-width">{destinationIds.map((nodeId) => { const expectedProtocol = destinationProtocols[nodeId] || protocol; const options = sortedNodeInterfaces(interfaces, nodeId, expectedProtocol); const selectedInterfaceId = destinationInterfaces[nodeId] ?? ""; const selectedInterface = options.find((item) => item.id === selectedInterfaceId); const incompatibleInterface = selectedInterface && interfaceProtocol(selectedInterface.interface_type) !== expectedProtocol; const hasCompatibleInterface = options.some((item) => interfaceProtocol(item.interface_type) === expectedProtocol); const destinationNetworkDisplay = friendlyNetworkLabel(destinationNetworks[nodeId] || networkId(selectedInterface), networkAliases, nodeName(nodeId), expectedProtocol); return <section className="routing-endpoint-fields" key={nodeId}><strong>{nodeName(nodeId)}</strong><div><RoutingInterfacePicker nodeBuses={nodeBuses} label={`Interface ${hardware.find(n => n.id === nodeId)?.name ?? nodeId}`} nodeId={nodeId} neighborId={gatewayIds.at(-1) || sourceId} interfaces={interfaces} protocol={expectedProtocol} value={selectedInterfaceId} onPick={(interfaceId) => { const item = interfaces.find((candidate) => candidate.id === interfaceId); setDestinationInterfaces((current) => ({ ...current, [nodeId]: interfaceId })); if (!item) { setDestinationNetworks((current) => ({ ...current, [nodeId]: "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: "" })); return; } const binding = endpointPhysicalBinding(item, gatewayIds.at(-1) || sourceId, nodeBuses, destinationNetworks[nodeId], destinationPorts[nodeId]); setDestinationNetworks((current) => ({ ...current, [nodeId]: binding?.id ?? "" })); setDestinationPorts((current) => ({ ...current, [nodeId]: binding?.portId ?? "" })); setDestinationProtocols((current) => ({ ...current, [nodeId]: interfaceProtocol(item.interface_type) })); }} />{incompatibleInterface ? <small className="routing-interface-warning">Gewähltes Interface ist {interfaceProtocol(selectedInterface.interface_type)}, die Route nutzt {expectedProtocol}.</small> : null}{!selectedInterfaceId && !hasCompatibleInterface ? <small className="routing-interface-warning">Kein {expectedProtocol}-Interface an diesem Ziel vorhanden.</small> : null}</div><NetworkBindingSelect item={selectedInterface} value={destinationPorts[nodeId] ?? ""} label={destinationNetworkDisplay} onPick={(port, network) => { setDestinationPorts((current) => ({ ...current, [nodeId]: port })); setDestinationNetworks((current) => ({ ...current, [nodeId]: network })); }} /><details className="routing-technical-fields"><summary>IDs</summary><label>Port ID<input onChange={(event) => setDestinationPorts((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationPorts[nodeId] ?? ""} /></label><label>Network ID<input onChange={(event) => setDestinationNetworks((current) => ({ ...current, [nodeId]: event.target.value }))} value={destinationNetworks[nodeId] ?? ""} /></label></details><label>Protocol<select onChange={(event) => applyDestinationProtocol(nodeId, event.target.value)} value={expectedProtocol}>{schema.protocols.map((item) => <option key={item}>{item}</option>)}</select></label><RoutingSystemFrame nodeId={nodeId} state={systemFrames} /></section>; })}</div></div>}
 
         {step === 4 && <div className="routing-wizard-grid"><div className="routing-check-list full-width"><span>Gateways</span>{gateways.length ? gateways.map((gateway) => <label key={gateway.id}><input checked={gatewayIds.includes(gateway.id)} onChange={() => toggleGateway(gateway.id)} type="checkbox" />{gateway.name}<small>{gateway.device_type}</small></label>) : <small>Direkter Pfad</small>}</div><label>Routing Type<select onChange={(event) => setRoutingType(event.target.value)} value={routingType}>{schema.routing_types.map((item) => <option key={item}>{item}</option>)}</select></label><label>Priority<select onChange={(event) => setPriority(event.target.value as typeof priority)} value={priority}>{schema.priorities.map((item) => <option key={item}>{item}</option>)}</select></label><label>Redundancy<select onChange={(event) => setRedundancy(event.target.value)} value={redundancy}>{schema.redundancy_modes.map((item) => <option key={item}>{item}</option>)}</select></label><label>Fallback Route<select onChange={(event) => setFallbackRouteId(event.target.value)} value={fallbackRouteId}><option value="">Keine</option>{fallbackRouteId && !fallbackRoutes.some((item) => item.id === fallbackRouteId) && <option value={fallbackRouteId}>Unbekannt · {fallbackRouteId}</option>}{fallbackRoutes.map((item) => <option key={item.id} value={item.id}>{item.route_code} · {item.name}</option>)}</select></label><label className="full-width">Transformations<input onChange={(event) => setTransformations(event.target.value)} placeholder="CAN_SIGNAL_TO_SOMEIP_FIELD" value={transformations} /></label><label className="full-width">Conditions (JSON)<textarea onChange={(event) => setConditionsText(event.target.value)} spellCheck={false} value={conditionsText} /></label></div>}
 
         {step === 5 && <div className="routing-wizard-grid"><label>Cycle Time (ms)<input min="0.001" onChange={(event) => setCycle(event.target.value)} step="any" type="number" value={cycle} /></label><label>Timeout (ms)<input min="0.001" onChange={(event) => setTimeoutValue(event.target.value)} step="any" type="number" value={timeout} /></label><label>Maximum Latency (ms)<input min="0.001" onChange={(event) => setLatency(event.target.value)} step="any" type="number" value={latency} /></label><label>Jitter (ms)<input min="0.001" onChange={(event) => setJitter(event.target.value)} step="any" type="number" value={jitter} /></label><button className="button secondary" onClick={applyBusDefaults} type="button">Leere Timing-Felder per Bus füllen</button></div>}
 
-        {step === 6 && <div className="routing-wizard-review"><div className={missing.length ? "routing-wizard-verdict invalid" : "routing-wizard-verdict valid"}><strong>{missing.length ? "Noch nicht valide" : "Bereit zur Validierung"}</strong><span>{missing.length ? `${missing.length} Punkt(e) fehlen.` : "Die Route hat alle Wizard-Pflichtangaben."}</span></div>{missing.length > 0 && <div className="routing-wizard-checks">{missing.map((item) => <span key={item}>{item}</span>)}</div>}<RoutingRepairPanel applyBestDestinationInterfaces={applyBestDestinationInterfaces} applyBestPayload={applyBestPayload} applyBestSourceInterface={applyBestSourceInterface} canDelete={canDeleteRoute(route)} chooseDifferentPayload={chooseDifferentPayload} hasIssue={hasIssue} issues={validationIssues} onDelete={onDelete} setStep={setStep} />{route.validation?.errors?.length ? <div className="routing-wizard-findings"><strong>Aktuelle Findings</strong>{route.validation.errors.map((issue) => <small className="routing-issue error" key={issue.code}>{issue.message}</small>)}</div> : null}<RoutingWizardSummary conditionsText={conditionsText} dataObject={dataObject} description={description} destinationIds={destinationIds} destinationInterfaces={destinationInterfaces} destinationNetworks={destinationNetworks} destinationPorts={destinationPorts} destinationProtocols={destinationProtocols} fallbackRouteId={fallbackRouteId} gatewayIds={gatewayIds} hardware={hardware} interfaceDefinitionId={interfaceDefinitionId} interfaces={interfaces} message={selectedMessage} name={name} networkAliases={networkAliases} payloadMode={payloadMode} priority={priority} protocol={protocol} redundancy={redundancy} route={route} routingType={routingType} sourceId={sourceId} sourceInterfaceId={sourceInterfaceId} sourceNetworkId={sourceNetworkId} sourcePortId={sourcePortId} signals={signals.filter((item) => signalIds.includes(item.id))} timing={{ cycle, timeout, latency, jitter }} topic={topic} transformations={transformations} /></div>}
+        {step === 6 && <div className="routing-wizard-review"><div className={missing.length ? "routing-wizard-verdict invalid" : "routing-wizard-verdict valid"}><strong>{missing.length ? "Noch nicht valide" : "Bereit zur Validierung"}</strong><span>{missing.length ? `${missing.length} Punkt(e) fehlen.` : "Die Route hat alle Wizard-Pflichtangaben."}</span></div>{missing.length > 0 && <div className="routing-wizard-checks">{missing.map((item) => <span key={item}>{item}</span>)}</div>}<section className="routing-payload-review"><strong>Datenbedarf</strong><p>{payloadRequirements.text || "Noch nicht näher beschrieben"}{payloadRequirements.categories.length ? ` · ${payloadRequirements.categories.map(k => PAYLOAD_NEEDS[k]).join(", ")}` : ""}</p><button className="button secondary tiny" type="button" onClick={applyBestPayload}>Datenbedarf klären / Payload vorschlagen</button></section><RoutingRepairPanel applyBestDestinationInterfaces={applyBestDestinationInterfaces} applyBestPayload={applyBestPayload} applyBestSourceInterface={applyBestSourceInterface} canDelete={canDeleteRoute(route)} chooseDifferentPayload={chooseDifferentPayload} hasIssue={hasIssue} issues={validationIssues} onDelete={onDelete} setStep={setStep} />{route.validation?.errors?.length ? <div className="routing-wizard-findings"><strong>Aktuelle Findings</strong>{route.validation.errors.map((issue) => <small className="routing-issue error" key={issue.code}>{issue.message}</small>)}</div> : null}<RoutingWizardSummary conditionsText={conditionsText} dataObject={dataObject} description={description} destinationIds={destinationIds} destinationInterfaces={destinationInterfaces} destinationNetworks={destinationNetworks} destinationPorts={destinationPorts} destinationProtocols={destinationProtocols} fallbackRouteId={fallbackRouteId} gatewayIds={gatewayIds} hardware={hardware} interfaceDefinitionId={interfaceDefinitionId} interfaces={interfaces} message={selectedMessage} name={name} networkAliases={networkAliases} payloadMode={payloadMode} priority={priority} protocol={protocol} redundancy={redundancy} route={route} routingType={routingType} sourceId={sourceId} sourceInterfaceId={sourceInterfaceId} sourceNetworkId={sourceNetworkId} sourcePortId={sourcePortId} signals={signals.filter((item) => signalIds.includes(item.id))} timing={{ cycle, timeout, latency, jitter }} topic={topic} transformations={transformations} /></div>}
 
-        <footer><button className="button secondary" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))} type="button">Zurück</button>{step < ROUTING_WIZARD_STEPS.length - 1 ? <button className="button primary" onClick={() => setStep((current) => Math.min(ROUTING_WIZARD_STEPS.length - 1, current + 1))} type="button">Weiter</button> : <button className="button primary" disabled={saving || missing.length > 0} type="submit">{saving ? "Speichert ..." : "Speichern & validieren"}</button>}</footer>
+        </div>
+        <footer>
+          <button className="button secondary" disabled={saving || step === 0} onClick={() => setStep(current => Math.max(0, current - 1))} type="button">Zurück</button>
+          <div>
+            {step === ROUTING_WIZARD_STEPS.length - 1 && <button key="save-reviewed-route" className="button primary" disabled={saving || missing.length > 0} onClick={() => void saveReviewedRoute()} type="button">{saving ? "Speichert ..." : "Speichern & validieren"}</button>}
+            {/* Keep Weiter at its own position: a second navigation click must never hit Save. */}
+            <button key="next-step" className="button primary" disabled={saving || step === ROUTING_WIZARD_STEPS.length - 1} onClick={() => setStep(current => Math.min(ROUTING_WIZARD_STEPS.length - 1, current + 1))} type="button">Weiter</button>
+          </div>
+        </footer>
       </form>
     </div>
   );
@@ -2778,7 +2797,7 @@ function RoutingRepairPanel({ issues, hasIssue, applyBestSourceInterface, applyB
     hasIssue("PAYLOAD_UNSPECIFIED") ? {
       key: "payload",
       title: "Payload fehlt",
-      text: "Die Route braucht eine Message, ein Signal oder ein Topic. Der Wizard schlägt eine Message passend zu Sender, Namen und Bus vor.",
+      text: "Die Route braucht eine Message, ein Signal oder ein Topic. In Schritt 03 klärst du den Datenbedarf und übernimmst einen Vorschlag mit den vorhandenen Signalinhalten.",
       actions: <>
         <button className="button primary tiny" onClick={applyBestPayload} type="button">Payload vorschlagen</button>
         <button className="button secondary tiny" onClick={() => setStep(2)} type="button">Payload auswählen</button>

@@ -410,3 +410,11 @@ register('evaluate_structure_dependencies', 'Ausgewählte Hardware, Funktionen, 
 register('inspect_system_duplicates', 'Mögliche System-Dubletten mit Strukturevidenz vergleichen. Keine Zusammenführung.', P.READ_MODEL, capabilities.duplicates_preview)
 register('generate_fault_proposals', 'Modellbezogene Fehlerszenarien vorbereiten. Erst im Simulations-Wizard prüfen und aktivieren.', P.GENERATE_PROPOSAL, capabilities.fault_proposals)
 register("get_interface_load", "Physische Schnittstellenlast durch den vorhandenen Kapazitätsrechner bestimmen.", P.READ_MODEL, _interface_load, interface_id=ID)
+from ..goal_execution import tools as goal_execution_tools
+from . import repair_execution
+register('prepare_communication_repair', 'Fachagent bewertet technisch ermittelte neue und historische Wege. Speichert einen projektgebundenen Reparaturauftrag zur Strategieentscheidung.',
+         P.GENERATE_PROPOSAL, repair_execution.prepare)
+register('continue_communication_repair', 'Gespeicherte menschliche Reparaturentscheidung atomar auf Nachrichten, Anschlüsse und Routen anwenden und technisch validieren. Ohne gespeicherte Entscheidung keine Änderung.',
+         P.EXECUTE_AUTHORIZED_GOAL, repair_execution.resume, workload_id=ID)
+register('review_communication_repair', 'Gespeicherten Reparaturplan durch den lokalen Fachagenten bewerten; Modellrevision vor Veröffentlichung erneut prüfen.',
+         P.GENERATE_PROPOSAL, repair_execution.review_saved, workload_id=ID)

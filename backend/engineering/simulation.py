@@ -433,7 +433,7 @@ def list_fault_proposals() -> list[dict[str, Any]]:
         ).fetchall()
 
 
-def propose_faults() -> list[dict[str, Any]]:
+def propose_faults(*, model_review=False) -> list[dict[str, Any]]:
     signals = all_pages(list_objects, "Signal")
     messages = all_pages(list_objects, "Message")
     routes = all_pages(list_routes)
@@ -494,6 +494,24 @@ def propose_faults() -> list[dict[str, Any]]:
             "expected_effect": {"peak_load_increase": True, "queue_delay_increase": True},
             "confidence": 0.76,
         })
+    model = 'deterministic-engineering-agent-v1'
+    if model_review and candidates:
+        from .agent_tools.specialist import review_candidates
+        review = review_candidates('Fehlerszenarien: Eignung und beobachtbare Wirkung auf die modellierte Kommunikation prüfen',
+            [{'id': str(index), **candidate} for index, candidate in enumerate(candidates)])
+        decisions = {item['id']: item for item in review['decisions']}
+        selected = []
+        for index, candidate in enumerate(candidates):
+            decision = decisions[str(index)]
+            if not decision['recommended']:
+                continue
+            candidate['rationale'] = decision['reason']
+            candidate['evidence'].append({'kind': 'specialist_review', 'model': review['model'], 'trace_id': review['trace_id'], 'gaps': review['gaps']})
+            selected.append(candidate)
+        if not selected:
+            raise EngineeringValidationError('Der Fachagent empfiehlt keines der geprüften Fehlerszenarien: ' + '; '.join(item['reason'] for item in review['decisions']))
+        candidates = selected
+        model = review['model']
     created = []
     with get_connection() as connection:
         for candidate in candidates:
@@ -506,7 +524,7 @@ def propose_faults() -> list[dict[str, Any]]:
                     current_project_id(), candidate["title"], candidate["scope"], candidate["type"],
                     Jsonb(candidate["target"]), Jsonb(candidate["configuration"]), candidate["rationale"],
                     Jsonb(candidate["evidence"]), Jsonb(candidate["expected_effect"]), candidate["confidence"],
-                    "deterministic-engineering-agent-v1",
+                    model,
                 ),
             ).fetchone())
     return created

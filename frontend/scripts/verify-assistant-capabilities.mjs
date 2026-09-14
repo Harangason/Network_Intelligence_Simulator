@@ -55,7 +55,8 @@ try {
     await dialog.waitFor({timeout:25000});
   }
   assert.equal(previews,1);
-  assert.deepEqual(mutations.filter(url=>!url.includes('/workflow/context')),[]);
+  // A model review writes only durable job/audit metadata, not model resources.
+  assert.deepEqual(mutations.filter(url=>!url.includes('/workflow/context') && !url.endsWith('/communication-repair/review')),[]);
   // The widget uses exactly the same saved project name as the workflow header.
   await page.goto(host+'/studio/engineering?project='+live);
   await page.getByRole('button',{name:'AI Assistant öffnen',exact:true}).click();

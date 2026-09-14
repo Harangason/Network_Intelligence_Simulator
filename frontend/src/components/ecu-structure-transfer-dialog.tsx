@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { SpecialistReview } from './specialist-review';
 import {
   analyzeEcuStructureTransfer,
   applyEcuStructureTransfer,
@@ -203,6 +204,7 @@ export function EcuStructureTransferDialog({
 
         {analysis && current && !done && (
           <div className="ecu-transfer-review">
+            <SpecialistReview review={analysis.agent_review} />
             <div className="ecu-transfer-progress"><span style={{ width: `${((reviewIndex + 1) / analysis.targets.length) * 100}%` }} /></div>
             <div className="ecu-transfer-target-title">
               <div><p className="eyebrow">Ziel-ECU</p><h4>{current.target_hardware.name}</h4><span>Referenz: {current.source_hardware.name}</span></div>

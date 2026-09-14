@@ -1110,7 +1110,7 @@ class PreflightService:
         self.project_id = project_id
         self.workflow = WorkflowStatusService(project_id)
 
-    def run(self) -> dict[str, Any]:
+    def run(self, *, routing_findings: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         state = self.workflow.get()
         capacity = self.workflow.latest_analysis("capacity_timing")
         findings: list[dict[str, Any]] = []
@@ -1148,6 +1148,11 @@ class PreflightService:
                 item["recommendation"] = recommendation
             findings.append(item)
             category_checks[category].append(item)
+
+        for finding in routing_findings or []:
+            add('routing', finding['severity'], finding['code'], finding['message'],
+                finding.get('recommendation'), **{key: finding[key] for key in
+                    ('object_type', 'object_id', 'object_name', 'route_code') if key in finding})
 
         required = WORKFLOW_STEPS[:5]
         for step in required:

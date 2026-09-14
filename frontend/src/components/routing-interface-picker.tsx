@@ -3,15 +3,16 @@
 import { useId, useState } from 'react';
 import type { RoutingInterface } from '@/lib/routing-network-context';
 import { interfaceBindingLabel } from '@/lib/routing-network-context';
-import { endpointInterfaceChoices } from '@/lib/routing-interface-search';
+import { endpointInterfaceChoices, type NodeBuses } from '@/lib/routing-interface-search';
 import type { HardwareNode } from '@/lib/types';
 
-export function RoutingInterfacePicker({ label, nodeId, neighborId = '', interfaces, protocol, value, onPick }: {
+export function RoutingInterfacePicker({ label, nodeId, neighborId = '', interfaces, nodeBuses, protocol, value, onPick }: {
+  nodeBuses: NodeBuses;
   label: string; nodeId: string; neighborId?: string; interfaces: RoutingInterface[]; protocol: string; value: string; onPick: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const id = useId();
-  const choices = endpointInterfaceChoices(interfaces, nodeId, neighborId, protocol, query);
+  const choices = endpointInterfaceChoices(interfaces, nodeId, neighborId, protocol, query, nodeBuses);
   const selected = interfaces.find(i => i.id === value && i.hardware_node_id === nodeId);
   const optionLabel = (item: RoutingInterface) => `${item.name} · ${item.interface_type} · ${interfaceBindingLabel(item)}`;
   return <div className="routing-interface-picker">
@@ -29,11 +30,11 @@ export function RoutingInterfacePicker({ label, nodeId, neighborId = '', interfa
   </div>;
 }
 
-export function RoutingPathPreview({ sourceId, destinationIds, gatewayIds, sourceNetwork, destinationNetworks, hardware, interfaces }: {
-  sourceId: string; destinationIds: string[]; gatewayIds: string[]; sourceNetwork: string; destinationNetworks: Record<string, string>; hardware: HardwareNode[]; interfaces: RoutingInterface[];
+export function RoutingPathPreview({ sourceId, destinationIds, gatewayIds, sourceNetwork, destinationNetworks, hardware, nodeBuses }: {
+  sourceId: string; destinationIds: string[]; gatewayIds: string[]; sourceNetwork: string; destinationNetworks: Record<string, string>; hardware: HardwareNode[]; nodeBuses: NodeBuses;
 }) {
   const name = (id: string) => hardware.find(n => n.id === id)?.name ?? id;
-  const buses = (nodeId: string) => interfaces.filter(i => i.hardware_node_id === nodeId).flatMap(i => i.physicalBindings ?? []);
+  const buses = (nodeId: string) => nodeBuses[nodeId] ?? [];
   return <section className="routing-path-preview full-width" aria-label="Kommunikationsstrecke">
     <strong>Geplante Strecke · {gatewayIds.length ? 'Sender → Gateway → Empfänger' : 'Sender → Empfänger'}</strong>
     {!destinationIds.length && <p>Zuerst Sender und Empfänger wählen.</p>}

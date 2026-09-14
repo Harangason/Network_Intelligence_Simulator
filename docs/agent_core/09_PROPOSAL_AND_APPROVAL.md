@@ -29,4 +29,8 @@ The Agent Core may generate, validate, repair and prepare proposals. It cannot a
 
 ## Active MCP review path (2026-09-06)
 
+### Begrenzte Anschlussfreigabe (Nutzerauftrag vom 11.09.2026)
+
+Für den neuen modellbewussten Anschlussauftrag gilt die ausdrücklich beauftragte Ausnahme: Eine gespeicherte menschliche Strategieentscheidung autorisiert die abhängigen Port-, Interface-, Transport-, Routing- und Prüfschritte innerhalb genau dieses Plans. Das Modell erhält keine allgemeine Freigabefunktion. Revision, Plan und betroffene Objekte werden serverseitig geprüft; neue Hardwarefähigkeit, Controllererweiterung, Umstecken oder fremde Routen benötigen einen neuen Plan. Importierte Aufträge besitzen keine ausführbare Freigabe. Siehe [Umsetzung und Abnahme](16_MODEL_AWARE_EXECUTION.md). Die folgenden bisherigen Vorschlagsabläufe bleiben für andere Aufgaben bestehen.
+
 The Engineering Chat uses the common `EngineeringProposal` contract: `PROPOSED → VALIDATED → APPROVED → APPLIED`. Review and apply are separate local UI actions protected by CSRF and an explicit intent header. No MCP tool grants human approval. Legacy approval endpoints reject proposals governed by this contract. Existing workbench review flows remain available for legacy proposals only. See [MCP implementation](14_MCP_IMPLEMENTATION.md).

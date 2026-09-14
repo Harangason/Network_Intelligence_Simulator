@@ -26,6 +26,8 @@ def scope_allows(scope, destination, interfaces=None):
     if not scope["restricted"]:
         return True
     interface = (interfaces or {}).get(str(destination.get("interface_id") or ""), {})
+    if interface.get("hardware_node_id") and str(interface["hardware_node_id"]) != str(destination.get("node_id") or ""):
+        interface = {}
     identities = {str(destination.get("node_id") or ""), str(destination.get("interface_id") or ""),
                   str(interface.get("function_id") or "")}
     return bool(identities.intersection(scope["consumer_refs"]))

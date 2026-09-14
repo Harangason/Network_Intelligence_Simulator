@@ -81,6 +81,8 @@ def communication_plan(prompt, graph):
         transport.update(producer_ref=producer, consumer_refs=sorted(targets))
         config['communication_contract'] = {'version': VERSION, 'role': role, 'basis': basis,
             'producer_ref': producer, 'consumer_refs': sorted(targets)}
+        if previous.get('scope'):
+            config['communication_contract']['scope'] = previous['scope']
         result[identifier] = config
     return result
 

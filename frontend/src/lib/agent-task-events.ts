@@ -1,4 +1,5 @@
 import type { WorkflowStatus, WorkflowStepId } from "@/lib/workflow-api";
+import { readActiveProjectId } from './user-settings.ts';
 
 export const ENGINEERING_AGENT_TASK_EVENT = "engineering-agent:run-task";
 export const ENGINEERING_AGENT_OPEN_EVENT = "engineering-agent:open";
@@ -147,8 +148,9 @@ export function persistEngineeringAgentTask(
 }
 
 export function queueEngineeringAgentTask(text: string) {
-  const task = persistEngineeringAgentTask(text);
+  const task = persistEngineeringAgentTask(text, 'external', undefined, readActiveProjectId());
   if (!task || typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ENGINEERING_AGENT_OPEN_EVENT));
   window.dispatchEvent(new CustomEvent<EngineeringAgentTask>(ENGINEERING_AGENT_TASK_EVENT, { detail: task }));
 }
 

@@ -24,3 +24,14 @@ capacity/schedule evidence from functional timing acceptance.
 For generated Ethernet network names, follow `docs/NETWORK_NAMING_CONTRACT.md`.
 Persist readable `ETH_<Systemrahmen-or-context>_<NN>` names in the canonical
 model and inherited interface names, not only in rendering helpers.
+
+## NIS links in chat
+
+When providing a local NIS link, always also provide a clickable VPN/LAN link
+in the chat, especially after starting, restarting, rebuilding or deploying NIS.
+Use `http://192.168.178.10:13500` as the VPN/LAN base address unless a changed
+server address has been verified. Preserve the same path and query parameters,
+especially `project`, so both links open the same project and view.
+Use the current project ID from the task or verified application state; do not
+substitute the default project or invent an ID. A server restart does not itself
+change the project ID. This is a chat reporting rule, not a request for monitoring.

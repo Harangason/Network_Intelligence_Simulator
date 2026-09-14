@@ -32,6 +32,7 @@ export function AssistantCapabilityCards({ actions, projectId }: { actions: Acti
       if (item.resource) query.set('resource', item.resource);
       if (item.launch === 'create') query.set('create', '1');
       else if (item.launch) query.set('assistant', item.launch);
+      if (item.id === 'repair' && typeof action.repair_workload === 'string' && /^repair-[a-f0-9]{32}$/.test(action.repair_workload)) query.set('repair_workload', action.repair_workload);
       if (item.id === 'parameters') query.set('mode', 'parameter');
       if (item.id === 'spatial') query.set('mode', 'network');
       window.location.assign(withProjectParam(`${item.path}?${query}`, projectId));

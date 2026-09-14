@@ -16,7 +16,10 @@ def create_server(authority: ToolAuthority) -> MCPServer:
     server = MCPServer("simulator-engineering-mcp", version="1.0.0", instructions=(
         "Projektgebundener Zugriff auf den Simulator. Tool-Erfolg bedeutet nicht Workload-Abschluss. "
         "Generierung erzeugt Vorschläge. Freigabe erfolgt ausschließlich durch die menschliche Review-Oberfläche. "
-        "Der Agent meldet READY_FOR_REVIEW vor Apply und COMPLETED erst nach bestätigten kanonischen IDs."))
+        "Der Agent meldet READY_FOR_REVIEW vor Apply und COMPLETED erst nach bestätigten kanonischen IDs. "
+        "Ausnahme: Ein serverseitig vom Nutzer freigegebener Engineering-Gesamtplan wird durch continue_engineering_goal "
+        "innerhalb seines gespeicherten Umfangs vollständig ausgeführt. Das Modell darf keine Freigabe erzeugen. "
+        "Für Kommunikationsaufträge prepare_engineering_connection verwenden; Navigation ersetzt keine Umsetzung."))
     for definition in TOOLS.values():
         def make_tool(item):
             def call(request):

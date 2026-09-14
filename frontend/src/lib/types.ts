@@ -478,6 +478,7 @@ export type StructureSuggestion = {
 };
 
 export type StructureEvaluation = {
+  agent_review?: import('@/components/specialist-review').SpecialistReviewResult;
   proposal_id: string;
   model: string;
   model_version: string;
@@ -570,6 +571,7 @@ export type EcuTransferReview = {
 };
 
 export type EcuTransferAnalysis = {
+  agent_review?: import('@/components/specialist-review').SpecialistReviewResult;
   model: string;
   model_version: string;
   source_hardware: { id: string; name: string };
@@ -649,6 +651,7 @@ export type RoutingEntry = {
   description?: string | null;
   source: RoutingEndpoint;
   payload: {
+    data_requirements?: { text: string; categories: string[] };
     interface_definition_id?: string | null;
     interface_definition_ids?: string[];
     message_id?: string | null;

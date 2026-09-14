@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 25
+SCHEMA_VERSION = 26
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -920,6 +920,26 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     )
     """,
     "CREATE INDEX IF NOT EXISTS idx_address_audit_project ON engineering_address_audit(project_id, event_id DESC)",
+    """
+    CREATE TABLE IF NOT EXISTS engineering_communication_resources (
+        project_id TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('CommunicationCapability','CommunicationController','PhysicalPort','NetworkConnection')),
+        resource_id TEXT NOT NULL,
+        body JSONB NOT NULL,
+        version INTEGER NOT NULL DEFAULT 1,
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY(project_id, kind, resource_id)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS engineering_execution_goals (
+        project_id TEXT NOT NULL,
+        workload_id TEXT NOT NULL,
+        body JSONB NOT NULL,
+        modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY(project_id, workload_id)
+    )
+    """,
 )
 
 

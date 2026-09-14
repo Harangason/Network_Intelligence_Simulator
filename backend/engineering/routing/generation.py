@@ -433,6 +433,20 @@ class RoutingGenerationService:
             target_ids=[source_value, *map(str, destinations), str(data.get("message_id") or ""), *map(str, data.get("signal_ids") or [])],
             protocol=generated[0]["source"].get("protocol") if generated else None,
         )
+        model_review = None
+        if data.get('model_review'):
+            from ..agent_tools.specialist import review_candidates
+            model_review = review_candidates('Routing: angeforderte Funktionspartner, Payload-Scope und technische Wegführung prüfen. ' + prompt,
+                [{'id': str(index), **item} for index, item in enumerate(generated)])
+            evidence.append({'kind': 'specialist_review', **model_review})
+            for decision in model_review['decisions']:
+                item = generated[int(decision['id'])]
+                item['description'] = (item.get('description') or '') + '\nFachagent: ' + decision['reason']
+                if not decision['recommended']:
+                    # Keep every requested recipient in the editable draft; never
+                    # silently drop a destination to turn the proposal green.
+                    item['validation']['valid'] = False
+                    item['validation'].setdefault('errors', []).append({'code': 'AGENT_REVIEW_REQUIRED', 'message': decision['reason']})
         proposal = create_proposal(
             {
                 "prompt": prompt,
@@ -442,7 +456,7 @@ class RoutingGenerationService:
                 "evidence": evidence,
                 "confidence": min(item["confidence"] for item in generated),
                 "validation_results": [item["validation"] for item in generated],
-                "model": data.get("model") or "routing-generation-service",
+                "model": model_review['model'] if model_review else data.get("model") or "routing-generation-service",
                 "model_version": data.get("model_version") or "1.0",
                 "actor": data.get("actor") or "engineering-agent",
             }

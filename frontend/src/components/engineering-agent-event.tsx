@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { EngineeringAgentEvent, EngineeringProposal } from "@/lib/agent/engineering-agent";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
 import { WorkloadProgress } from "./workload-progress";
+import { GoalHardwareFacts } from './goal-hardware-facts';
+import { useGoalResponse } from '@/lib/agent/use-goal-response';
 import { AssistantCapabilityCards } from './assistant-capability-cards';
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
@@ -154,7 +156,7 @@ function EngineeringQuestion({ question, projectId, onAnswer }: { question: Inte
           const context = readAssistantContext();
           const expected = result.data.selected_context;
           const refs = (items: Record<string, string>[]) => items.map(item => [item.id, item.object_type]).sort();
-          const outdated = current.status === 'OPEN' && expected && (expected.active_view !== context.active_view || JSON.stringify(refs(expected.selected_object_refs)) !== JSON.stringify(refs(context.selected_object_refs)));
+          const outdated = current.status === 'OPEN' && !current.decision_key?.startsWith('goal:') && expected && (expected.active_view !== context.active_view || JSON.stringify(refs(expected.selected_object_refs)) !== JSON.stringify(refs(context.selected_object_refs)));
           setCurrentStatus(outdated ? 'OUTDATED' : current.status);
           if (current.selected_options) setSelected(current.selected_options); setLoaded(true);
         }
@@ -228,6 +230,7 @@ function FindingDecision({ event, projectId, onAnswer }: { event: EngineeringAge
 }
 
 export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; wizardReview?: boolean }) {
+  event = useGoalResponse(event, projectId);
   if (event.type === 'CONTEXT' || event.type === 'HEARTBEAT') return null;
   if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} />;
   if (event.question) return <section data-response-type={event.type}>{event.title && <h4>{event.title}</h4>}{event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}<EngineeringQuestion question={event.question} projectId={projectId} onAnswer={onAnswer} /></section>;
@@ -236,13 +239,17 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
   return <section className={`engineering-response is-${event.type.toLowerCase()}`} data-response-type={event.type}>
     {event.title && <h4>{event.title}</h4>}
     <p role={event.type === 'ERROR' ? 'alert' : event.type === 'PROGRESS' ? 'status' : undefined}>{summary}</p>
+    {event.metadata?.hardware_facts_required === true && typeof event.workload?.workload_id === 'string' && <GoalHardwareFacts projectId={projectId} workloadId={event.workload.workload_id} onContinue={onAnswer ? () => onAnswer({type: 'RESUME'}) : undefined} />}
     {text.length > 700 && <LazyDetails title="Vollständige Antwort">{() => <p>{text}</p>}</LazyDetails>}
     {event.type === 'FINDING' && <><small>{event.severity || 'Hinweis'}</small><FindingDecision event={event} projectId={projectId} onAnswer={onAnswer} /></>}
     {!!event.progress?.length && <ol className="engineering-progress">{event.progress.map((step, i) => <li key={i} data-status={step.status}>{step.status === 'done' ? '✓' : step.status === 'active' ? '◉' : '○'} {step.label}</li>)}</ol>}
-    {event.type === 'PROGRESS' && Boolean(event.workload?.workload_id) && <LazyDetails title="Arbeitsauftrag im Detail">{() => <WorkloadProgress reviewViaAgent projectId={projectId} workloadId={String(event.workload!.workload_id)} initial={event.workload} />}</LazyDetails>}
+    {event.type === 'PROGRESS' && Boolean(event.workload?.workload_id) && <LazyDetails title="Arbeitsauftrag im Detail">{() => String(event.workload!.workload_id).startsWith('goal-')
+      ? <Value value={{ Auftrag: event.workload, Schritte: event.progress }} />
+      : <WorkloadProgress reviewViaAgent projectId={projectId} workloadId={String(event.workload!.workload_id)} initial={event.workload} />}</LazyDetails>}
     {event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}
     <ContextLinks refs={event.context_refs ?? []} projectId={projectId} />
     {event.type === 'ERROR' && <button type="button" disabled={!onRetry} onClick={onRetry}>Erneut versuchen</button>}
+    {event.status === 'BACKGROUND_PAUSED' && <button type="button" disabled={!onAnswer} onClick={() => onAnswer?.({type: 'RESUME'})}>Auftrag fortsetzen</button>}
     {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Im Workspace öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
     <ContextLinks refs={(event.actions ?? []).filter(action => action.type === 'NAVIGATE' && typeof action.object_type === 'string').map(action => ({object_type:String(action.object_type),id:String(action.object_id ?? ''),name:String(action.label ?? 'Objekt öffnen')}))} projectId={projectId} />
     {event.metadata?.details != null && <LazyDetails title="Technische Details">{() => <Value value={event.metadata?.details} />}</LazyDetails>}

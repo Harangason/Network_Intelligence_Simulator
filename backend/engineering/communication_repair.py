@@ -447,7 +447,9 @@ def complete_plan(planner):
     proposed = RepairPlanner(planner.state, planner.objects, planner.routes, planner.history, propose_forwarding=True, detection_graph=planner.graph)
     alternatives = {g['id']: g for g in proposed.build()['groups']}
     from .communication_restore import restoration_option
+    from .communication_contract_repair import add_contract_options
     for group in plan['groups']:
+        add_contract_options(planner, group)
         if not group['options'] and alternatives.get(group['id'], {}).get('options'):
             group['options'] = alternatives[group['id']]['options']
             group['reason'] = 'Die neue Verkabelung erreicht die bisherigen Empfänger mit einer zusätzlich zu bestätigenden Weiterleitung.'
@@ -466,7 +468,7 @@ def public_plan(plan):
 
 def apply_repair(payload):
     from .repository import update_object, get_object, create_object
-    from .routing.repository import update_route, get_route, save_validation
+    from .routing.repository import update_route, get_route, save_validation, create_route
     from .routing.validation import RoutingValidator
     from .workflow.service import WorkflowStatusService
     from .project_context import current_project_id
@@ -532,6 +534,14 @@ def apply_repair(payload):
             [m.get('hardware_interface_id'), *(b.get('hardware_interface_id') for b in extra_bindings(m))])
         if sorted(port.get('message_refs') or []) != refs:
             update_object('HardwareNetworkInterface', str(identifier), {'message_refs': refs, 'expected_version': port['version'], 'modified_by': actor})
+    for _, option in selected:
+        for creation in option.get('create_routes', []):
+            created = create_route({**creation['data'], 'created_by': actor})
+            change = {'id': str(created['id']), 'source': creation['data']['source'],
+                'destinations': creation['data']['destinations'], 'route': creation['data']['route'],
+                'expected_revision': created['revision'], 'edge_ids': creation['edge_ids']}
+            option['route_changes'].append(change)
+            route_changes.append(change)
     for change in route_changes:
         reason = 'Vom Nutzer gewählte Kommunikationsführung; fachliche Kommunikation und Payload unverändert.'
         update_route(change['id'], {**{k: change[k] for k in ('source', 'destinations', 'route', 'expected_revision')}, 'modified_by': actor, 'reason': reason})

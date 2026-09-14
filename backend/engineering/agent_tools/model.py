@@ -44,6 +44,7 @@ def routes() -> list[dict[str, Any]]:
 
 
 def model() -> dict[str, Any]:
+    from ..goal_execution.store import resources
     state = WorkflowStatusService(current_project_id()).get()
     return {
         "project_id": current_project_id(),
@@ -52,6 +53,7 @@ def model() -> dict[str, Any]:
         "topology": json_safe(state.get("topology") or {}),
         "parameters": json_safe(state.get("parameters") or {}),
         "behaviors": _behaviors(),
+        "communication_resources": resources(),
     }
 
 

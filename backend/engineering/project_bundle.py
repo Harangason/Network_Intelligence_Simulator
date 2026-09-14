@@ -16,7 +16,7 @@ from .project_context import normalize_context_project_id
 from .workflow.models import default_statuses, default_versions
 from .workflow.service import WorkflowStatusService
 
-BUNDLE_VERSION = 3
+BUNDLE_VERSION = 4
 PROJECT_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 SOURCE_TABLES = (
@@ -36,9 +36,11 @@ SOURCE_TABLES = (
     "engineering_address_policies",
     "engineering_technology_address_bindings",
     "engineering_address_audit",
+    "engineering_communication_resources",
 )
 
 PROJECT_TABLES = (
+    "engineering_execution_goals",
     "engineering_analysis_snapshots",
     "engineering_simulation_snapshots",
     "engineering_workflow_events",
@@ -58,6 +60,7 @@ PROJECT_TABLES = (
 )
 
 PROJECT_TABLES_WITH_PROJECT_ID = {
+    "engineering_execution_goals",
     "engineering_analysis_snapshots",
     "engineering_simulation_snapshots",
     "engineering_workflow_events",
@@ -73,6 +76,8 @@ PROJECT_TABLES_WITH_PROJECT_ID = {
 }
 
 WORKSPACE_RESET_TABLES = (
+    "engineering_execution_goals",
+    "engineering_communication_resources",
     "engineering_routing_audit",
     "engineering_address_audit",
     "engineering_technology_address_bindings",
@@ -471,6 +476,10 @@ class ProjectBundleService:
                 if table in handled_tables:
                     continue
                 rows = project_data.get(table) or []
+                if table == 'engineering_execution_goals':
+                    # Imported JSON is not a human authorization, even in the same project.
+                    rows = [{**row, 'body': {**row.get('body', {}), 'authorization': None, 'followup_authorization': None,
+                        'pending_decision': None, 'status': 'PLAN_STALE'}} for row in rows]
                 inserted, existing = self._insert_rows(
                     connection,
                     table,

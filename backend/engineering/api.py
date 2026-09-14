@@ -115,6 +115,27 @@ from .assignment_learning import EquipmentAssignmentLearningService
 engineering_api = Blueprint("engineering_api", __name__)
 logger = logging.getLogger(__name__)
 
+
+@engineering_api.route('/communication-resources', methods=['GET'])
+def inspect_communication_resources_route():
+    from .goal_execution.graph import ModelGraphService
+    graph = ModelGraphService.load()
+    return jsonify({'model_revision': graph.revision, 'resources': graph.resources,
+        'ports': [p for owner in graph.hardware for p in graph.find_ports(owner)]})
+
+
+@engineering_api.route('/communication-resources/<kind>', methods=['PUT'])
+def record_communication_hardware_fact_route(kind):
+    from .goal_execution.resources import record_hardware_fact
+    payload = request.get_json(silent=True) or {}
+    return jsonify(record_hardware_fact(kind, payload.get('resource') or {}, payload.get('expected_revision')))
+
+
+@engineering_api.route('/execution-goals/<workload_id>', methods=['GET'])
+def inspect_execution_goal_route(workload_id):
+    from .goal_execution.store import get_goal
+    return jsonify(get_goal(workload_id))
+
 # URL-Segment (Plural, kebab-case) -> kanonischer Objekttyp
 RESOURCES: dict[str, str] = {
     "hardware-nodes": "HardwareNode",
@@ -582,7 +603,7 @@ def simulation_fault_proposals_route():
 
 @engineering_api.route("/simulation/fault-proposals", methods=["POST"])
 def create_simulation_fault_proposals_route():
-    items = propose_faults()
+    items = propose_faults(model_review=True)
     return jsonify({"items": items, "count": len(items)}), 201
 
 
@@ -799,15 +820,36 @@ def workflow_parameters_route():
 
 @engineering_api.route('/workflow/communication-repair/preview', methods=['POST'])
 def preview_communication_repair():
-    from .communication_repair import load_plan, public_plan, complete_plan
-    planner, _ = load_plan()
-    return jsonify(public_plan(complete_plan(planner)))
+    from .agent_tools.repair_execution import prepare, inspect
+    workload_id = _routing_payload().get('workload_id')
+    return jsonify(inspect(workload_id) if workload_id else prepare({'defer_review': True}))
+
+
+@engineering_api.route('/workflow/communication-repair/review', methods=['POST'])
+def review_communication_repair():
+    from .agent_tools.repair_execution import review_saved
+    return jsonify(review_saved({'workload_id': _routing_payload().get('workload_id')}))
 
 
 @engineering_api.route('/workflow/communication-repair/apply', methods=['POST'])
 def apply_communication_repair():
-    from .communication_repair import apply_repair
-    return jsonify(apply_repair(_routing_payload()))
+    from .agent_tools import repair_execution
+    from .agent_tools.audit import record
+    from uuid import uuid4
+    payload = _routing_payload()
+    workload_id = payload.get('workload_id')
+    if not payload.get('choices'):
+        from .communication_repair import apply_repair
+        return jsonify(apply_repair({'token': payload.get('token'), 'choices': {}}))
+    if not workload_id:
+        from .communication_repair import load_plan, public_plan, complete_plan
+        planner, _ = load_plan()
+        workload_id = repair_execution.store_plan(public_plan(complete_plan(planner)))['workload_id']
+    repair_execution.authorize(workload_id, payload.get('token'), payload.get('choices'))
+    result = repair_execution.resume({'workload_id': workload_id})
+    record(str(uuid4()), 'human-repair-choice', 'TOOL_CALL', 'continue_communication_repair', 'SUCCESS',
+           {'workload_id': workload_id, 'applied': result['applied']})
+    return jsonify(result)
 
 
 @engineering_api.route("/workflow/parameters", methods=["PATCH"])
@@ -1581,6 +1623,12 @@ def run_preflight_route():
     return jsonify(PreflightService(_project_id()).run())
 
 
+@engineering_api.route("/workflow/refresh-project", methods=["POST"])
+def refresh_project_route():
+    from .project_refresh import refresh_project
+    return jsonify(refresh_project())
+
+
 @engineering_api.route("/knowledge/search", methods=["POST"])
 def knowledge_search_route():
     payload = _routing_payload()
@@ -1704,7 +1752,7 @@ def validate_routing_table_route():
 
 @engineering_api.route("/routing/generate", methods=["POST"])
 def generate_routing_route():
-    return jsonify(RoutingGenerationService().generate_routes(_routing_payload())), 201
+    return jsonify(RoutingGenerationService().generate_routes({**_routing_payload(), 'model_review': True})), 201
 
 
 @engineering_api.route("/routing/paths", methods=["GET"])
@@ -2067,7 +2115,8 @@ def evaluate_structure_route():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
-    return jsonify(evaluate_structure(payload)), 201
+    from .agent_tools.capabilities import structure_evaluate
+    return jsonify(structure_evaluate({'selection': payload.get('selections')})['analysis']), 201
 
 
 @engineering_api.route("/structure/apply", methods=["POST"])
@@ -2096,7 +2145,8 @@ def analyze_ecu_transfer_route():
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
-    return jsonify(analyze_ecu_transfer(payload)), 201
+    from .agent_tools.capabilities import structure_preview
+    return jsonify(structure_preview(payload)), 201
 
 
 @engineering_api.route("/structure/system-duplicates", methods=["GET"])

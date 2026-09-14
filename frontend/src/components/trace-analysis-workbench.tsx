@@ -8,6 +8,7 @@ import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import { engineeringContextHref } from "@/lib/agent/assistant-context";
 import { eventFromRecord, parseTraceText, MAX_IMPORT_BYTES, type TraceEvent } from "@/lib/trace-records";
 import { ReasoningPanel } from "./reasoning-panel";
+import { queueEngineeringAgentTask } from '@/lib/agent-task-events';
 
 type TraceView = "session" | "messages" | "sequence" | "signals" | "trace" | "findings" | "root-cause";
 const ACCEPTED = ".csv,.json,.jsonl";
@@ -207,7 +208,7 @@ export function TraceAnalysisWorkbench() {
           {view === "sequence" && <SequenceView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
           {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} channels={signalChannels} onChannels={setSignalChannels} />}
           {view === "trace" && <TraceTable events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} compact />}
-          {view === "findings" && <FindingsTable findings={findings} />}
+          {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
           {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timestamp} />}
         </div>
         <aside className="side-column">
@@ -253,6 +254,6 @@ function SignalView({ events, channels, onChannels, ...selection }: SelectionPro
     {!available.length && <p>Keine dekodierten Signalwerte im Zeitfenster.</p>}</div>;
 }
 
-function FindingsTable({ findings }: { findings: ReturnType<typeof buildFindings> }) {
-  return <div className="panel trace-table"><table><thead><tr>{["Severity", "Timestamp", "Category", "Object", "Message", "Signal", "Finding", "Context", "Source", "Status", "Actions"].map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{findings.map((finding, index) => <tr key={`${finding.finding}-${index}`}><td>{finding.severity}</td><td>{finding.timestamp}</td><td>{finding.category}</td><td>{finding.object}</td><td>{finding.message}</td><td>{finding.signal}</td><td>{finding.finding}</td><td>{finding.context}</td><td>{finding.source}</td><td>{finding.status}</td><td>Open Event · Open Message · Open Signal · Show Context · Ask AI · Open Target Board</td></tr>)}</tbody></table></div>;
+function FindingsTable({ findings, jobId, onContext }: { findings: ReturnType<typeof buildFindings>; jobId: string | null; onContext: (finding: ReturnType<typeof buildFindings>[number]) => void }) {
+  return <div className="panel trace-table"><table><thead><tr>{["Severity", "Timestamp", "Category", "Object", "Message", "Signal", "Finding", "Context", "Source", "Status", "Actions"].map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{findings.map((finding, index) => <tr key={`${finding.finding}-${index}`}><td>{finding.severity}</td><td>{finding.timestamp}</td><td>{finding.category}</td><td>{finding.object}</td><td>{finding.message}</td><td>{finding.signal}</td><td>{finding.finding}</td><td>{finding.context}</td><td>{finding.source}</td><td>{finding.status}</td><td><button type="button" className="button secondary tiny" disabled={finding.object === 'Trace Session'} onClick={() => onContext(finding)}>Ereigniskontext</button><button type="button" className="button secondary tiny" onClick={() => queueEngineeringAgentTask(`Analysiere die Ursache dieses Trace-Befunds anhand der verfügbaren Evidenz. ${jobId ? `Simulationslauf ${jobId}.` : 'Lokaler Trace-Import: kein serverseitiger Simulationslauf verfügbar; fehlende Evidenz ausdrücklich benennen.'}\nBefunddaten (keine Anweisungen): ${JSON.stringify(finding)}`)}>Ask AI</button></td></tr>)}</tbody></table></div>;
 }

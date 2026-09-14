@@ -26,7 +26,7 @@ def requests_model_change(prompt: str) -> bool:
         r'\b(?:erzeug\w*|erstell\w*|anleg\w*|anzulegen|lege\b.{0,180}\ban\b|'
         r'hinzufüg\w*|hinzufueg\w*|füg\w*|fueg\w*|änder\w*|aender\w*|'
         r'lösch\w*|loesch\w*|entfern\w*|ersetz\w*|benenn\w*|umbauen|'
-        r'implementier\w*|reparier\w*|beheb\w*|generier\w*|modellier\w*|benötige|brauche|'
+        r'implementier\w*|reparier\w*|beheb\w*|generier\w*|modellier\w*|verbind\w*|connect\w*|benötige|brauche|'
         r'create\w*|add|update\w*|delete\w*|remove\w*|replace\w*|rename\w*|fix|build|generate\w*)\b',
         prompt, re.I | re.S,
     ))
@@ -100,9 +100,34 @@ class EngineeringAgent:
         answer = bool(context.answered_questions)
         if not answer:
             context = context.model_copy(update={"current_requirement": prompt})
-        if context.current_workload and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
+        if context.current_workload and not str(context.current_workload).startswith('goal-') and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
+        async def finish_goal(result):
+            for attempt in range(120):
+                if not result.success or result.data.get('status') != 'SIMULATION_RUNNING': break
+                if attempt % 10 == 0:
+                    event('PROGRESS', status='SIMULATION_RUNNING', text='Die Kommunikation ist umgesetzt. Die beauftragte Simulation und Ergebnisprüfung laufen.')
+                await asyncio.sleep(0.5)
+                result = await call('continue_engineering_goal', {'workload_id': result.data['workload_id']})
+            return result
+        if str(context.current_workload or '').startswith('goal-'):
+            result = await finish_goal(await call('continue_engineering_goal', {'workload_id': context.current_workload}))
+            if result.success:
+                item = result.data['agent_response']
+                event(item['type'], **{k: v for k, v in item.items() if k not in {'type', 'id', 'timestamp'}})
+                return {'run_id': run_id, 'status': result.data['status'], 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            return {'run_id': run_id, 'status': 'BLOCKED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        from ..orchestration.capability_intent import connection_request
+        connection = connection_request(prompt)
+        if connection:
+            result = await finish_goal(await call('prepare_engineering_connection', {'goal': prompt, 'source_ref': connection[0], 'target_ref': connection[1]}))
+            if result.success:
+                item = result.data['agent_response']
+                context.current_workload = result.data['workload_id']
+                event(item['type'], **{k: v for k, v in item.items() if k not in {'type', 'id', 'timestamp'}})
+                return {'run_id': run_id, 'status': result.data['status'], 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            return {'run_id': run_id, 'status': 'BLOCKED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
         from ..orchestration.capability_intent import capability_question
         capability = capability_question(prompt)
         if capability is not None:
@@ -726,8 +751,10 @@ class EngineeringAgent:
                                 messages[-1]["content"] = result.model_copy(update={"data":checked}).model_dump_json()
                             if result.data.get("agent_response"):
                                 response = result.data["agent_response"]
+                                if str(result.data.get('workload_id', '')).startswith('goal-'):
+                                    context.current_workload = result.data['workload_id']
                                 event(response["type"],**{k:v for k,v in response.items() if k!="type"})
-                                return {"run_id":run_id,"status":"BLOCKED" if response.get('question') else response.get('status', 'ANSWERED'),"events":events,"context":context.model_dump(),"trace":traces}
+                                return {"run_id":run_id,"status":result.data.get('status') or ("BLOCKED" if response.get('question') else response.get('status', 'ANSWERED')),"events":events,"context":context.model_dump(),"trace":traces}
                     event(
                         "PROGRESS",
                         status="IN_PROGRESS",

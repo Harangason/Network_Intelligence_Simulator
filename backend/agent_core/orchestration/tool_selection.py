@@ -13,8 +13,13 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         return [tool for tool in tools if tool['name'] in {'describe_engineering_concepts', 'inspect_assistant_capabilities', 'prepare_assistant_action'}]
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools",
              "inspect_assistant_capabilities", "prepare_assistant_action"}
+    if re.search(r'verbind|connect|anschluss|controller|port|gesamtplan', prompt, re.I):
+        names.update({'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal',
+            'inspect_model_situation', 'inspect_port_decision', 'inspect_controller_capacity'})
     if re.search(r'repar|neue.*(?:weg|route|architektur)|funktionspartner', prompt, re.I):
-        names.add('inspect_communication_repair')
+        names.update({'inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'})
+    if re.search(r'dublett|duplicat|struktur.*transfer|structure.*transfer', prompt, re.I):
+        names.update({'inspect_system_duplicates', 'analyze_structure_transfer', 'inspect_model_situation'})
     spatial = bool(re.search(r'raum|spatial|zonal|einbauort|rotor|drohn|cluster|architecture|architektur|roboter|robot', prompt, re.I))
     if spatial:
         names.add('inspect_spatial_architecture')
@@ -39,4 +44,4 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
         names.update(reasoning_names)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: (tool['name'] not in {'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'}, tool["name"] not in reasoning_names))[:24]
+    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'}, tool["name"] not in reasoning_names))[:24]

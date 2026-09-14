@@ -15,7 +15,7 @@ from .model import json_safe
 from .audit import record
 
 DEFAULT_PERMISSIONS = frozenset({Permission.READ_MODEL, Permission.GENERATE_PROPOSAL,
-    Permission.VALIDATE, Permission.RUN_SIMULATION, Permission.ANALYZE_TRACE})
+    Permission.VALIDATE, Permission.RUN_SIMULATION, Permission.ANALYZE_TRACE, Permission.EXECUTE_AUTHORIZED_GOAL})
 
 
 @dataclass(frozen=True)
@@ -29,6 +29,7 @@ class ToolAuthority:
     project_id: str
     actor: str = "engineering-agent"
     permissions: frozenset[Permission] = DEFAULT_PERMISSIONS
+    progress_callback: Callable[[dict], None] | None = None
 
     def __post_init__(self):
         if not self.project_id.strip():
@@ -41,6 +42,8 @@ def execute(authority: ToolAuthority, name: str, permission: Permission, argumen
     trace_id = str(uuid4())
     token = activate_project(authority.project_id)
     unit = RequestUnit(authority.project_id)
+    from ..goal_execution.progress import sink
+    progress_token = sink.set(authority.progress_callback)
     try:
         if permission not in authority.permissions:
             raise PermissionError(f"Berechtigung fehlt: {permission.value}")
@@ -92,5 +95,6 @@ def execute(authority: ToolAuthority, name: str, permission: Permission, argumen
             logging.getLogger(__name__).exception("Tool audit failed (%s)", trace_id)
         return result
     finally:
+        sink.reset(progress_token)
         unit.close()
         reset_project(token)
