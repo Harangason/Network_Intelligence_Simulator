@@ -1,3 +1,5 @@
+param([string]$ReleaseReceipt)
+
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -168,7 +170,27 @@ try {
     $env:NUMERIC_ACCELERATOR = "cpu"
     Write-Host "Keine Docker-CUDA-Runtime verfügbar; CPU-Fallback bleibt aktiv."
   }
-  & $Compose @ComposeArguments up -d --build
+  if ($ReleaseReceipt) {
+    $ReleasePython = Join-Path $Root "backend\.venv\Scripts\python.exe"
+    if (-not (Test-ReadablePath $ReleasePython)) {
+      $ReleasePython = (Get-Command python -ErrorAction SilentlyContinue).Source
+    }
+    if (-not $ReleasePython) { throw "Python fuer die Release-Pruefung wurde nicht gefunden." }
+    $DeployArguments = @((Join-Path $Root "scripts\deploy-verified-release.py"), $ReleaseReceipt)
+    foreach ($ComposePath in @($ComposeFile, $(if ($GpuRuntimeAvailable) { $GpuComposeFile }))) {
+      if ($ComposePath -and (Test-ReadablePath $ComposePath)) { $DeployArguments += @("--compose", $ComposePath) }
+    }
+    & $ReleasePython @DeployArguments
+  } else {
+    # A restart reuses the exact installed artifact. Source edits enter production
+    # only through a successful disposable release gate and its image receipt.
+    $InstalledImage = (& $Docker inspect NetworkIS --format "{{.Image}}" 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $InstalledImage -or $InstalledImage -notmatch '^sha256:[a-f0-9]{64}$') {
+      throw "Kein installiertes NetworkIS-Image gefunden. Zuerst scripts/run-release-gate.py ausfuehren, danach start-networkis.ps1 -ReleaseReceipt <receipt.json>."
+    }
+    $env:NETWORKIS_RELEASE_IMAGE = $InstalledImage
+    & $Compose @ComposeArguments up -d --no-build
+  }
   if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
   }
@@ -179,6 +201,7 @@ try {
 Write-Host ""
 Write-Host "NetworkIS laeuft unter:"
 Write-Host "  http://127.0.0.1:$FrontendPort"
+Write-Host "  http://192.168.178.10:$FrontendPort"
 Write-Host ""
 Write-Host "Logs:"
 Write-Host "  docker logs -f NetworkIS"

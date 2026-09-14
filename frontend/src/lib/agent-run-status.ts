@@ -13,6 +13,8 @@ export type AgentRunStatus = AgentBuildProgress & {
   updated_at: string;
   recoverable?: boolean;
   server_pid?: number;
+  request_revision?: string;
+  model_review_required?: boolean;
 };
 
 export function readAgentRunStatus(value: unknown, runId: string): AgentRunStatus | null {
@@ -50,6 +52,7 @@ export function agentRunHasDurableOutcome(run: AgentRunStatus | null) {
 
 export function resolveAgentRunStep(run: AgentRunStatus | null, statuses: Partial<Record<AgentBuildProgress['step'], string>>) {
   if (!run || !['RUNNING', 'BLOCKED'].includes(run.state)) return run;
+  if (run.model_review_required) return { ...run, step: 'engineering_model' as const };
   const done = (step: AgentBuildProgress['step']) => ['COMPLETE', 'APPROVED', 'WARNING'].includes(statuses[step] ?? '');
   if (!done(run.step)) return run;
   const next = RUN_STEPS.slice(RUN_STEPS.indexOf(run.step) + 1).find(step => !done(step));

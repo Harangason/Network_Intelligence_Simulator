@@ -1,10 +1,11 @@
 """Canonical SQL integration. Refuses to run against a product database."""
 import os
 from uuid import uuid4
-from urllib.parse import urlsplit
 import pytest
 
-pytestmark = pytest.mark.skipif(urlsplit(os.environ.get('ENGINEERING_TEST_DATABASE_URL', '')).path != '/nis_bus_naming_tests', reason='isolated verification database required')
+# conftest validates the explicit DSN before importing this module. Disposable
+# test databases have unique names, so do not silently skip their integration.
+pytestmark = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='isolated verification database required')
 
 @pytest.fixture
 def project():
@@ -299,6 +300,10 @@ def test_real_mcp_protocol_executes_authorized_plan_and_streams_progress(project
             finished = await client.call('continue_engineering_goal', {'workload_id': wid})
             assert finished.success, finished
             assert finished.data['status'] == 'COMPLETE', finished.data
+            outputs = finished.data['agent_response']['outputs']
+            assert {item['output_type'] for item in outputs} == {'VISUALIZATION', 'VALIDATION'}
+            assert all(item['project_ref'] == project for item in outputs)
+            assert {'ParkAssist', 'DriverAssistance', 'Chassis_CAN'} <= {node['label'] for node in outputs[0]['visualization']['nodes']}
             assert len(progress) == 23
             repeated = await client.call('continue_engineering_goal', {'workload_id': wid})
             assert repeated.data['status'] == 'COMPLETE'

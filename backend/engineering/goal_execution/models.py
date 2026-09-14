@@ -183,6 +183,9 @@ class EngineeringExecutionStep(Contract):
 
 
 class EngineeringExecutionPlan(Contract):
+    schema_version: Literal[1] = 1
+    capability_versions: dict[str, str] = Field(default_factory=lambda: {'connection': '1', 'output.compose': '1'})
+    output_plan: list[str] = Field(default_factory=lambda: ['VISUALIZATION', 'VALIDATION'])
     plan_id: str = Field(default_factory=lambda: str(uuid4()))
     goal: str
     model_revision: str
@@ -199,8 +202,10 @@ class EngineeringExecutionPlan(Contract):
 
 
 class GoalCompletionEvaluator:
-    def evaluate(self, desired, evidence, *, blockers=(), decisions=(), failed=False):
+    def evaluate(self, desired, evidence, *, blockers=(), decisions=(), failed=False, required_outputs=(), outputs=()):
         criteria = desired.completion_criteria or COMPLETION_CONTRACTS[desired.goal_type]
         missing = [key for key in criteria if evidence.get(key) is not True]
+        present = {item.get('output_type') for item in outputs if item.get('status') == 'CURRENT'}
+        missing.extend('output:' + kind for kind in required_outputs if kind not in present)
         return {'status': 'FAILED' if failed else 'BLOCKED' if blockers or decisions else 'INCOMPLETE' if missing else 'COMPLETE',
                 'missing_conditions': missing, 'blocking_findings': list(blockers), 'remaining_decisions': list(decisions)}

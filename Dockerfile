@@ -1,6 +1,6 @@
-FROM node:22-bookworm-slim AS node-runtime
+FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS node-runtime
 
-FROM python:3.13-slim
+FROM python:3.13-slim@sha256:9d2e5553305c7c7b0097999bb17187c69b921ccd6bc9d40e4bb5ebe652c00285
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -17,9 +17,11 @@ WORKDIR /app
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-COPY backend/requirements.txt /app/backend/requirements.txt
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir -r /app/backend/requirements.txt
+COPY backend/requirements.txt backend/requirements.lock /app/backend/
+COPY scripts/verify-runtime-lock.py /app/scripts/verify-runtime-lock.py
+RUN python -m pip install --no-cache-dir -r /app/backend/requirements.txt -c /app/backend/requirements.lock \
+    && python -m pip check \
+    && python /app/scripts/verify-runtime-lock.py
 
 COPY frontend/package.json frontend/package-lock.json /app/frontend/
 RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci --include=dev

@@ -72,11 +72,16 @@ def gateway_config(monkeypatch):
     return config
 
 
-def test_capacity_uses_the_same_protocol_bitrate_and_physical_ports_per_segment(gateway_config, monkeypatch):
+@pytest.mark.parametrize('canonical_dlc', [None, 2, 8])
+def test_capacity_uses_the_same_protocol_bitrate_and_physical_ports_per_segment(gateway_config, monkeypatch, canonical_dlc):
     from backend.engineering.capacity import service as capacity
     from backend.engineering.workflow.models import default_versions, default_statuses
     config = gateway_config
     model = config["engineering_model"]
+    if canonical_dlc is not None:
+        model['messages'][0]['dlc'] = canonical_dlc
+    from backend.engineering.capacity.runtime_plan import apply_runtime_plan
+    apply_runtime_plan(config, model['messages'])
     object_keys = {"HardwareNode": "nodes", "Interface": "interfaces", "HardwareNetworkInterface": "hardware_interfaces",
         "Signal": "signals", "Message": "messages"}
     monkeypatch.setattr(capacity, "list_objects", lambda kind, **_: deepcopy(model.get(object_keys.get(kind), [])))
@@ -93,6 +98,9 @@ def test_capacity_uses_the_same_protocol_bitrate_and_physical_ports_per_segment(
     for metric in results["routes"]:
         event = next(item for item in events if item["network"] == metric["network_id"])
         assert metric["physical_path_resolved"]
+        assert metric['payload_bytes'] == event['payload_bytes'] == (canonical_dlc if canonical_dlc is not None else 2)
+        if metric['protocol'] == 'LIN':
+            assert metric['frame_bits'] == event['frame_bits'] == 34 + (event['payload_bytes'] + 1) * 10
         assert metric["segment_transmission_latency_ms"] == pytest.approx(event["transmission_latency_ms"])
         expected = event["transmission_latency_ms"] / config["communications"][0]["cycle_ms"] * 100
         assert metric["average_load_percent"] == pytest.approx(expected, abs=.0001)
@@ -138,7 +146,11 @@ def test_message_owned_signals_are_transported_without_redundant_signal_ids(gate
 @pytest.mark.parametrize("amplitude", [0, .1])
 def test_runtime_uses_configured_jitter_amplitude_in_milliseconds(gateway_config, amplitude):
     config = gateway_config
-    config["parameters"]["jitter_ms"] = amplitude
+    # The allowed reception-jitter budget does not inject a disturbance.
+    config["parameters"]["jitter_ms"] = 50
+    _, baseline = generate_universal_events(config, normalize_hardware_config(config), start_utc=1_700_000_000)
+    assert baseline and all(event['injected_jitter_ms'] == 0 for event in baseline)
+    config["parameters"]["source_jitter_ms"] = amplitude
     _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=1_700_000_000)
     assert all(abs(event["injected_jitter_ms"]) <= amplitude for event in events)
     if amplitude:

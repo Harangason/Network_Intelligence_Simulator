@@ -1,5 +1,107 @@
 {
   "$defs": {
+    "AgentOutputEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "output_id": {
+          "title": "Output Id",
+          "type": "string"
+        },
+        "output_type": {
+          "enum": [
+            "CHAT",
+            "QUESTION",
+            "MODEL_CHANGE",
+            "FINDING",
+            "PROPOSAL",
+            "TABLE",
+            "GRAPH",
+            "DIAGRAM",
+            "CHART",
+            "TRACE_VIEW",
+            "FILE",
+            "REPORT",
+            "CODE",
+            "SIMULATION",
+            "MCP_RESPONSE",
+            "CALCULATION",
+            "VALIDATION",
+            "VISUALIZATION"
+          ],
+          "title": "Output Type",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "project_ref": {
+          "title": "Project Ref",
+          "type": "string"
+        },
+        "run_ref": {
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "content": {
+          "default": "",
+          "title": "Content",
+          "type": "string"
+        },
+        "affected_objects": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500,
+          "title": "Affected Objects",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 500,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "visualization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VisualizationRequest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "validation": {
+          "additionalProperties": true,
+          "title": "Validation",
+          "type": "object"
+        },
+        "provenance": {
+          "additionalProperties": true,
+          "title": "Provenance",
+          "type": "object"
+        }
+      },
+      "required": [
+        "output_id",
+        "output_type",
+        "status",
+        "project_ref",
+        "run_ref"
+      ],
+      "title": "AgentOutputEnvelope",
+      "type": "object"
+    },
     "InteractiveOption": {
       "additionalProperties": false,
       "properties": {
@@ -137,10 +239,145 @@
       ],
       "title": "InteractiveQuestion",
       "type": "object"
+    },
+    "VisualizationEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "title": "Target",
+          "type": "string"
+        },
+        "label": {
+          "default": "",
+          "title": "Label",
+          "type": "string"
+        },
+        "evidence_ref": {
+          "title": "Evidence Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "evidence_ref"
+      ],
+      "title": "VisualizationEdge",
+      "type": "object"
+    },
+    "VisualizationNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "object_type": {
+          "title": "Object Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "object_type"
+      ],
+      "title": "VisualizationNode",
+      "type": "object"
+    },
+    "VisualizationRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "visualization_type": {
+          "enum": [
+            "NETWORK_DIAGRAM",
+            "TABLE"
+          ],
+          "title": "Visualization Type",
+          "type": "string"
+        },
+        "purpose": {
+          "title": "Purpose",
+          "type": "string"
+        },
+        "source_revision": {
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/VisualizationNode"
+          },
+          "maxItems": 200,
+          "title": "Nodes",
+          "type": "array"
+        },
+        "relationships": {
+          "items": {
+            "$ref": "#/$defs/VisualizationEdge"
+          },
+          "maxItems": 400,
+          "title": "Relationships",
+          "type": "array"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "maxItems": 200,
+          "title": "Rows",
+          "type": "array"
+        },
+        "total_objects": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Total Objects",
+          "type": "integer"
+        },
+        "truncated": {
+          "default": false,
+          "title": "Truncated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "visualization_type",
+        "purpose",
+        "source_revision"
+      ],
+      "title": "VisualizationRequest",
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
+    "outputs": {
+      "items": {
+        "$ref": "#/$defs/AgentOutputEnvelope"
+      },
+      "maxItems": 20,
+      "title": "Outputs",
+      "type": "array"
+    },
     "id": {
       "title": "Id",
       "type": "string"

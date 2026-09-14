@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { CHAT_DOCUMENT_ACCEPT, MAX_CHAT_ATTACHMENTS, MAX_CHAT_FILE_BYTES, validateChatAttachment, type ChatAttachment } from '@/lib/agent/chat-attachments';
+import { CHAT_DOCUMENT_ACCEPT, MAX_CHAT_ATTACHMENTS, MAX_CHAT_FILE_BYTES, MAX_CHAT_TRACE_BYTES, MAX_CHAT_DOCUMENT_CHARS, isTraceFile, validateChatAttachment, type ChatAttachment } from '@/lib/agent/chat-attachments';
 
 export function AgentChatComposer({ input, setInput, inputRef, ready, busy, projectId, onSubmit }: {
   input: string; setInput: (value: string) => void; inputRef: RefObject<HTMLTextAreaElement | null>;
@@ -25,15 +25,18 @@ export function AgentChatComposer({ input, setInput, inputRef, ready, busy, proj
     try {
       for (const file of files) {
         try {
-          if (file.size > MAX_CHAT_FILE_BYTES) throw new Error('Höchstens 5 MB pro Datei.');
+          const trace = isTraceFile(file.name);
+          if (file.size > (trace ? MAX_CHAT_TRACE_BYTES : MAX_CHAT_FILE_BYTES)) throw new Error(trace ? 'Höchstens 500 MiB pro Trace.' : 'Höchstens 5 MiB pro Dokument.');
           const body = new FormData(); body.append('file', file);
-          const response = await fetch('/api/engineering/agent/attachments/preview', {
-            method: 'POST', headers: { 'X-Project-ID': projectId }, body,
-            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]),
+          const response = await fetch(trace ? `/api/trace-import?filename=${encodeURIComponent(file.name)}` : '/api/engineering/agent/attachments/preview', {
+            method: 'POST', headers: { 'X-Project-ID': projectId, ...(trace ? { 'Content-Type': 'application/octet-stream' } : {}) }, body: trace ? file : body,
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(trace ? 600_000 : 30_000)]),
           });
           const result = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(result.error || 'Das Dokument konnte nicht gelesen werden.');
-          const attachment = validateChatAttachment(result);
+          const traceText = trace ? `Trace-Vorschau, keine vollständige Dateianalyse. ${result.imported_events} Ereignisse eingelesen.\n${JSON.stringify(result.warnings)}\n${JSON.stringify(result.events)}` : '';
+          const attachment = validateChatAttachment(trace ? { name: file.name, size: file.size, format: result.format,
+            text: traceText.slice(0, MAX_CHAT_DOCUMENT_CHARS), truncated: true } : result);
           setAttachments(current => [...current, attachment]);
         } catch (error) {
           if (controller.signal.aborted) return;
@@ -72,9 +75,9 @@ export function AgentChatComposer({ input, setInput, inputRef, ready, busy, proj
     <div className="eng-agent-composer-actions">
       <input ref={fileRef} type="file" accept={CHAT_DOCUMENT_ACCEPT} multiple hidden aria-label="Dokumente auswählen"
         onChange={event => { void readFiles(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
-      <button className="button secondary" type="button" disabled={reading || attachments.length >= MAX_CHAT_ATTACHMENTS} onClick={() => fileRef.current?.click()}>+ Dokument</button>
+      <button className="button secondary" type="button" disabled={reading || attachments.length >= MAX_CHAT_ATTACHMENTS} onClick={() => fileRef.current?.click()}>+ Datei</button>
       <button className="button primary" type="submit" disabled={!ready || busy || reading || (!input.trim() && !attachments.length)}>{busy ? 'Antwort läuft …' : 'Senden'}</button>
     </div>
-    <small>PDF, Word, Text, DBC, ARXML · bis 4 Dateien à 5 MB · Umschalt+Enter: neue Zeile</small>
+    <small>PDF, Word, Text, DBC, ARXML · bis 4 Dateien · Traces bis 500 MiB, Dokumente bis 5 MiB · Umschalt+Enter: neue Zeile</small>
   </form>;
 }

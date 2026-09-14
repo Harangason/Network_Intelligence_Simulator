@@ -11,8 +11,11 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
                 and not re.search(r'projekt|aktuellen?|konkreten?|ausgewählt|selected|[0-9a-f]{8}-', prompt, re.I))
     if concepts:
         return [tool for tool in tools if tool['name'] in {'describe_engineering_concepts', 'inspect_assistant_capabilities', 'prepare_assistant_action'}]
-    names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools",
+    names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools", "type_engineering_input",
              "inspect_assistant_capabilities", "prepare_assistant_action"}
+    from .project_intake import is_project_request
+    if is_project_request(prompt):
+        names.add('prepare_project_request')
     if re.search(r'verbind|connect|anschluss|controller|port|gesamtplan', prompt, re.I):
         names.update({'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal',
             'inspect_model_situation', 'inspect_port_decision', 'inspect_controller_capacity'})
@@ -37,7 +40,7 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     for pattern, candidates in groups:
         if re.search(pattern,prompt,re.I):
             names.update(candidates)
-    if len(names)==7:
+    if len(names)==8:
         names.update({"inspect_findings","evaluate_architecture","find_graph_gaps"})
     reasoning_names = {"analyze_trace_root_cause", "explain_simulation_failure", "investigate_deadline_miss", "analyze_fault_effects",
                        "find_first_divergence", "compare_simulation_runs", "continue_reasoning", "inspect_reasoning", "get_trace_window"}

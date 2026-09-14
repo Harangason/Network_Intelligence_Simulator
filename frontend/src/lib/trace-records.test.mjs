@@ -38,6 +38,7 @@ test('missing timestamps and malformed CSV never become invented times', () => {
 test('JSON, JSONL and imports remain bounded', () => {
   assert.equal(parseTraceText(JSON.stringify({ events: [{ time_s: 1 }] }))[0].timestamp, 1);
   assert.equal(parseTraceText(Array.from({ length: 3000 }, (_, time_s) => JSON.stringify({ time_s })).join('\n')).length, 2000);
-  assert.throws(() => parseTraceText(' '.repeat(MAX_IMPORT_BYTES + 1)), /5 MiB/);
+  assert.equal(MAX_IMPORT_BYTES, 500 * 1024 * 1024);
+  assert.throws(() => parseTraceText(' '.repeat(MAX_IMPORT_BYTES + 1)), /500 MiB/);
   assert.equal(eventFromRecord({ time_s: 0, signals: Array.from({ length: 100 }, (_, value) => ({ value })) }, 0).signals.length, 64);
 });

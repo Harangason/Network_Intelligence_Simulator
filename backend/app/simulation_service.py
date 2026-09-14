@@ -27,6 +27,7 @@ except ImportError:  # pragma: no cover - exercised by the standalone launcher
         MODEL_TYPES,
     )
 from communication_simulator import CommunicationSimulator  # noqa: E402
+from simulation_cancellation import check_cancellation  # noqa: E402
 from standalone_cli import (  # noqa: E402
     DOMAIN_LABELS,
     SUPPORTED_STANDALONE_FORMATS,
@@ -304,6 +305,7 @@ class SimulationService:
         *,
         validate_only: bool = False,
     ) -> dict[str, Any]:
+        check_cancellation(force=True)
         config = self.prepare_config(payload, output_dir)
         project_id = str(payload.get("project_id") or config.get("project_id") or "default")
         if payload.get("workflow_managed") or project_id != "default":
@@ -315,15 +317,18 @@ class SimulationService:
                 config.get("scenario") if isinstance(config.get("scenario"), dict) else {},
                 config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {},
             )
+        check_cancellation(force=True)
         result = self.simulator.run(config, validate_only=validate_only)
+        check_cancellation(force=True)
         if not validate_only:
             if result.get("status") == "validation_failed" or (result.get("hardware_validation") or {}).get("valid") is False:
                 findings = (result.get("hardware_validation") or {}).get("findings") or []
                 details = "; ".join(str(item.get("message")) for item in findings if item.get("severity") == "error")
                 raise ValueError("Hardware-Validierung fehlgeschlagen: " + (details or "kein ausführbarer Simulationslauf"))
             result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
+            check_cancellation(force=True)
             if payload.get("workflow_managed") or project_id != "default":
                 from ..engineering.simulation import artifact_job_id, persist_trace_metadata
 
-                persist_trace_metadata(project_id, artifact_job_id(output_dir), result, config)
+                persist_trace_metadata(project_id, str(payload.get('simulation_job_id') or artifact_job_id(output_dir)), result, config)
         return result

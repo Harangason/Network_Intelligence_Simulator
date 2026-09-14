@@ -14,6 +14,7 @@ from bus_technologies import catalog_summary, normalize_technology_id, technolog
 from hardware_profile import hardware_profile_summary, normalize_hardware_config, validate_hardware_profile
 from model_based_simulation import build_model_trace
 from universal_trace import generate_universal_events, trace_summary, write_csv, write_jsonl
+from simulation_cancellation import check_cancellation
 from ethernet_transport import write_project_captures
 
 
@@ -242,6 +243,7 @@ def _model_trace_manifest_reference(model_trace: dict[str, Any], path: Path) -> 
 
 
 def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
+    check_cancellation(force=True)
     if not isinstance(config, dict):
         raise TypeError("Simulation configuration must be a JSON object.")
     profile = normalize_hardware_config(config)
@@ -262,6 +264,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
     if not validate_only and validation["valid"]:
         trace_start = datetime.now(timezone.utc).timestamp()
         routes, events = generate_universal_events(config, profile, start_utc=trace_start)
+        check_cancellation(force=True)
         # A baseline is an independently scheduled normal run. Copying a faulty
         # event cannot undo its payload, delivery history, queueing or timing.
         golden_config = deepcopy(config)
@@ -275,6 +278,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
         _, golden_events = generate_universal_events(golden_config, normalize_hardware_config(golden_config), start_utc=trace_start)
         golden_by_id = {event["event_id"]: event for event in golden_events}
         for event in events:
+            check_cancellation()
             baseline = golden_by_id.get(event["event_id"])
             if baseline is None:
                 continue
@@ -289,7 +293,9 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
             written.append(write_jsonl(out_dir / "traces" / "universal_trace.jsonl", events))
         if "universal-csv" in formats:
             written.append(write_csv(out_dir / "traces" / "universal_trace.csv", events))
+        check_cancellation(force=True)
         model_trace = build_model_trace(events, config)
+        check_cancellation(force=True)
         model_trace_path = out_dir / "traces" / "model_trace.json"
         model_trace_path.parent.mkdir(parents=True, exist_ok=True)
         model_trace_path.write_text(
@@ -307,6 +313,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
                 written.append(write_jsonl(out_dir / "traces" / "fault_trace.jsonl", events))
         model_trace_reference = _model_trace_manifest_reference(model_trace, model_trace_path)
 
+        check_cancellation(force=True)
         packet_paths, native_ethernet = write_project_captures(out_dir / "native", events, formats)
         written.extend(packet_paths)
         if native_ethernet.get("unsupported_events"):
@@ -324,6 +331,7 @@ def _run_simulation(config: dict[str, Any], *, validate_only: bool = False) -> d
             except Exception as exc:  # Native writers must not suppress the universal result.
                 warnings.append(f"Native writer adapter failed: {exc}")
 
+    check_cancellation(force=True)
     manifest = {
         "schema": "communication-simulator.generation-manifest.v1",
         "name": str(config.get("name") or out_dir.name),

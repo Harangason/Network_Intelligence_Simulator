@@ -25,6 +25,13 @@ For generated Ethernet network names, follow `docs/NETWORK_NAMING_CONTRACT.md`.
 Persist readable `ETH_<Systemrahmen-or-context>_<NN>` names in the canonical
 model and inherited interface names, not only in rendering helpers.
 
+For wizard, agent execution, proposal, or workflow changes, read
+`docs/WIZARD_EXECUTION_CONTRACT.md` and `docs/WIZARD_RELEASE_GATE.md`.
+Run SQL tests through `scripts/run-isolated-tests.py`; never target the product
+database. A wizard release must pass `scripts/run-release-gate.py` and deploy
+the exact tested image via its PASS receipt. Report the actual tested scope;
+visible progress cards or mocked write responses do not prove nine-stage E2E.
+
 ## NIS links in chat
 
 When providing a local NIS link, always also provide a clickable VPN/LAN link

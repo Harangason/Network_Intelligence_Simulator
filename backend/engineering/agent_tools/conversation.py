@@ -13,13 +13,32 @@ from .model import model_revision
 from copy import deepcopy
 
 
+def _state_defaults(project_id, state):
+    return {'conversation_id': project_id, 'current_question': None, 'answered_questions': {},
+        'questions': {}, 'active_proposal': None, 'active_workload': None, 'pending_approvals': [],
+        'selected_context': {}, 'decisions': {}, **state}
+
+
+def snapshot(project_id):
+    """Read the last committed UI state without creating or reconciling a run.
+
+    Mutating commands still use inspect() and validate model revisions under
+    their project transaction. Polling must not acquire that transaction's
+    advisory/row locks or hash the complete model while a worker is running.
+    """
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT state - 'ui_history' AS state FROM engineering_agent_conversations WHERE project_id=%s",
+            (project_id,),
+        ).fetchone()
+    return _state_defaults(project_id, row['state'] if row else {})
+
+
 def read():
     with get_connection() as conn:
         conn.execute('INSERT INTO engineering_agent_conversations(project_id) VALUES (%s) ON CONFLICT DO NOTHING', (current_project_id(),))
         state = conn.execute('SELECT state FROM engineering_agent_conversations WHERE project_id=%s FOR UPDATE', (current_project_id(),)).fetchone()['state']
-    return {'conversation_id': current_project_id(), 'current_question': None, 'answered_questions': {},
-        'questions': {}, 'active_proposal': None, 'active_workload': None, 'pending_approvals': [],
-        'selected_context': {}, 'decisions': {}, **state}
+    return _state_defaults(current_project_id(), state)
 
 
 def write(state):
@@ -39,6 +58,11 @@ def inspect():
     for decision in state['decisions'].values():
         if decision.get('review_on_change') and decision.get('model_revision') != revision:
             decision['status'] = 'NEEDS_REVIEW'
+    current_question = state['questions'].get(state.get('current_question'))
+    if current_question and current_question.get('status') != 'OPEN':
+        # Preserve the historical question but do not block resume on a prompt
+        # that the client correctly no longer offers for answering.
+        state['current_question'] = None
     if state['pending_approvals']:
         with get_connection() as conn:
             rows = conn.execute('SELECT proposal_id, engineering_contract FROM engineering_ai_proposals WHERE project_id=%s AND proposal_id::text = ANY(%s)',
@@ -47,9 +71,51 @@ def inspect():
     return write(state)
 
 
-def begin(prompt, context, raw_input=None):
+def begin(prompt, context, raw_input=None, wizard_command=None):
     state = inspect()
     now = datetime.now(timezone.utc)
+    command = descriptor = wizard = None
+    if wizard_command is not None:
+        from .wizard_commands import WizardCommand, resolve_request, receipt, command_fingerprint
+        from ..workflow.service import WorkflowStatusService
+        command = WizardCommand.model_validate(wizard_command)
+        if raw_input is not None:
+            input_type = AgentInput.model_validate(raw_input).type
+            if command.action != 'CONTINUE' or input_type not in {'RESUME', 'QUESTION_ANSWER', 'SKIP_QUESTION'}:
+                raise ValueError('Dieses Wizardkommando unterstützt nur Fortsetzung oder eine gespeicherte Antwort.')
+        operation_fingerprint = command_fingerprint(command, prompt, raw_input)
+        workflow = WorkflowStatusService(current_project_id())
+        saved = workflow.get(summary=True)
+        operations = state.get('wizard_operations') or {}
+        previous_operation = operations.get(command.operation_id)
+        if previous_operation:
+            if previous_operation.get('run_id') != command.run_id or previous_operation.get('command_fingerprint') != operation_fingerprint:
+                raise ConcurrentUpdateError('Diese Operations-ID gehört zu einem anderen Auftrag.')
+            return {'duplicate': True, 'run_id': state.get('run_id'), 'prompt': state.get('current_requirement', ''),
+                    'context': context.model_dump(), 'wizard_receipt': {**previous_operation, 'duplicate': True}}
+        descriptor, wizard = resolve_request(command, prompt, saved.get('context') or {}, current_project_id())
+        if (command.action == 'CONTINUE' and (saved.get('context', {}).get('wizard_request') or {}).get('version') != 2
+                and saved.get('artifact_checks', {}).get('engineering_model', {}).get('complete')):
+            wizard['model_request_revision'] = descriptor['revision']
+        prompt = descriptor['prompt']
+        if command.action == 'START' and saved.get('context', {}).get('wizard_request', {}).get('revision') == descriptor['revision']:
+            state['wizard_operations'] = dict(list({**operations, command.operation_id: {
+                **receipt(command, descriptor, duplicate=True), 'command_fingerprint': operation_fingerprint}}.items())[-100:])
+            write(state)
+            return {'duplicate': True, 'run_id': state.get('run_id'), 'prompt': prompt,
+                    'context': context.model_dump(), 'wizard_receipt': receipt(command, descriptor, duplicate=True)}
+        if command.action == 'CONTINUE' and raw_input is None:
+            if state.get('current_question'):
+                raise ValueError('Bitte zuerst die gespeicherte offene Frage beantworten.')
+            # Restore durable decisions and proposal ownership, without using a
+            # prose continuation as a new user requirement.
+            raw_input = {'type': 'RESUME'}
+            state['current_requirement'] = prompt
+            state['selected_context'] = {'active_view': context.active_view, 'selected_object_refs': context.selected_object_refs}
+        context = context.model_copy(update={'wizard_request': {**descriptor,
+            'model_review_required': wizard.get('model_request_revision') != descriptor['revision'],
+            'model_refinement_required': wizard.get('model_refinement_revision') == descriptor['revision']}, 'current_workload': None})
+        state['active_workload'] = None
     if state.get('run_id') and state.get('lease_until', '') > now.isoformat():
         raise ConcurrentUpdateError('In diesem Gespräch läuft bereits ein Auftrag. Bitte dessen Antwort abwarten.')
     selected = {'active_view': context.active_view, 'selected_object_refs': context.selected_object_refs}
@@ -73,7 +139,7 @@ def begin(prompt, context, raw_input=None):
     elif raw_input is not None and AgentInput.model_validate(raw_input).type == 'RESUME':
         if not state.get('current_requirement') or state['current_question']:
             raise ValueError('Bitte zuerst die offene Frage beantworten oder eine Anforderung eingeben.')
-        if state['selected_context'] != selected and not str(state.get('active_workload', '')).startswith('goal-'):
+        if state['selected_context'] != selected and not command and not str(state.get('active_workload', '')).startswith('goal-'):
             raise ConcurrentUpdateError('Der Kontext hat sich geändert. Bitte die Anforderung erneut stellen.')
         prompt = state['current_requirement']
     elif raw_input is not None:
@@ -81,7 +147,7 @@ def begin(prompt, context, raw_input=None):
         question = state['questions'].get(answer.question_id)
         if not question or question['status'] != 'OPEN' or state['current_question'] != answer.question_id:
             raise ConcurrentUpdateError('Diese Frage ist nicht mehr offen. Bitte den aktuellen Gesprächsstand laden.')
-        if state['selected_context'] != selected and not str(question.get('decision_key', '')).startswith('goal:'):
+        if state['selected_context'] != selected and not command and not str(question.get('decision_key', '')).startswith('goal:'):
             raise ConcurrentUpdateError('Der Auswahlkontext hat sich geändert. Bitte die Anforderung im neuen Kontext stellen.')
         options = {o['id']: o for o in question['options']}
         ids = answer.selected_options
@@ -97,8 +163,28 @@ def begin(prompt, context, raw_input=None):
             question['status'] = 'ANSWERED'
         question['selected_options'] = ids
         key = question.get('decision_key', answer.question_id)
+        if str(key).startswith('wizard-model-confirm:'):
+            binding = question.get('wizard_model_confirmation') or {}
+            if (not command or command.action != 'CONTINUE' or command.automatic
+                    or binding.get('run_id') != descriptor['run_id']
+                    or binding.get('request_revision') != descriptor['revision']
+                    or binding.get('model_revision') != model_revision()
+                    or not saved.get('artifact_checks', {}).get('engineering_model', {}).get('complete')):
+                raise ConcurrentUpdateError('Diese Modellbestätigung ist veraltet oder benötigt eine ausdrückliche Antwort im aktuellen Auftrag.')
+            if ids == ['confirm_current_model']:
+                wizard['model_request_revision'] = descriptor['revision']
+                wizard['model_confirmed_revision'] = binding['model_revision']
+                wizard.pop('model_refinement_revision', None)
+            elif ids == ['refine_requirement']:
+                wizard['model_refinement_revision'] = descriptor['revision']
+            else:
+                raise ValueError('Die Modellbestätigung benötigt eine eindeutige Entscheidung.')
+            context = context.model_copy(update={'wizard_request': {**context.wizard_request,
+                'model_review_required': wizard.get('model_request_revision') != descriptor['revision'],
+                'model_refinement_required': wizard.get('model_refinement_revision') == descriptor['revision']}})
         state['answered_questions'][key] = {'question_id': answer.question_id, 'selected_options': ids,
-            'labels': [options[i]['label'] for i in ids], 'status': question['status']}
+            'labels': [options[i]['label'] for i in ids], 'status': question['status'],
+            **({'wizard_model_confirmation': binding} if str(key).startswith('wizard-model-confirm:') else {})}
         if str(key).startswith('goal:'):
             from ..goal_execution.service import answer as answer_goal
             _, workload_id, decision_id = key.split(':', 2)
@@ -110,7 +196,8 @@ def begin(prompt, context, raw_input=None):
         for question in state['questions'].values():
             if question['status'] == 'OPEN':
                 question['status'] = 'OUTDATED'
-        state['answered_questions'] = {}
+        if not command or command.action != 'AMEND':
+            state['answered_questions'] = {}
         state['current_question'] = None
         state['current_requirement'] = prompt
         state['active_proposal'] = None
@@ -124,12 +211,38 @@ def begin(prompt, context, raw_input=None):
                 state['active_workload'] = None
                 context = context.model_copy(update={'current_workload': None})
     state['selected_context'] = selected
-    if ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
+    if command:
+        if command.action == 'AMEND':
+            from . import proposal_service
+            remaining = []
+            for proposal_id in state.get('pending_approvals', []):
+                proposal = proposal_service.get(proposal_id)
+                if proposal.get('proposal_type') not in {'WIZARD_ENGINEERING_MODEL', 'WIZARD_ROUTING', 'WIZARD_NETWORK_TOPOLOGY', 'CAPACITY_NETWORK_REPAIR'}:
+                    remaining.append(proposal_id)
+                    continue
+                if proposal.get('status') not in {'APPLIED', 'REJECTED'}:
+                    proposal_service.review(proposal_id, revision=proposal['revision'], decision='reject',
+                        actor='wizard-request-amendment', trace_id=str(uuid4()))
+            state['pending_approvals'] = remaining
+            state['active_proposal'] = None
+        wizard = {**wizard, 'status': 'RUNNING',
+            'resume_count': int(wizard.get('resume_count') or 0) + int(command.action == 'CONTINUE'),
+            'automatic_resume_count': int(wizard.get('automatic_resume_count') or 0) + int(command.automatic)}
+        updates = {'wizard_request': descriptor, 'agent_wizard_status': wizard}
+        if command.action == 'START' and isinstance(wizard.get('engineering_wizard_settings'), dict):
+            updates['engineering_wizard_settings'] = wizard.pop('engineering_wizard_settings')
+        workflow.set_context(updates, summary=True)
+        state['current_requirement'] = prompt = descriptor['prompt']
+        state['wizard_request'] = {key: descriptor[key] for key in ('run_id', 'revision', 'target')}
+        state['wizard_operations'] = dict(list({**(state.get('wizard_operations') or {}),
+            command.operation_id: {**receipt(command, descriptor), 'command_fingerprint': operation_fingerprint}}.items())[-100:])
+    elif ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
             and 'per Wizard-Uebernehmen bestaetigt' in prompt):
         import re
         import hashlib
         from ..workflow.service import WorkflowStatusService
-        canonical_prompt = re.sub(r'\nFortsetzung des bestätigten Wizard-Auftrags:[^\r\n]*', '', prompt).strip()
+        from .wizard_commands import canonical_wizard_prompt
+        canonical_prompt = canonical_wizard_prompt(prompt)
         request_contract = {'version': 1, 'prompt': canonical_prompt,
             'sha256': hashlib.sha256(canonical_prompt.encode('utf-8')).hexdigest()}
         workflow = WorkflowStatusService(current_project_id())
@@ -137,14 +250,25 @@ def begin(prompt, context, raw_input=None):
         if saved.get('context', {}).get('wizard_request') != request_contract:
             workflow.set_context({'wizard_request': request_contract}, summary=True)
     state['run_id'] = str(uuid4())
+    from backend.agent_core.context.input_adapter import adapt_input
+    envelope = adapt_input(prompt, context, run_id=state['run_id'], raw_input=raw_input,
+        operation_id=command.operation_id if command else None,
+        revision=descriptor['revision'] if descriptor else None)
+    state['input_envelope'] = envelope.model_dump(mode='json')
     state['lease_until'] = (now + timedelta(seconds=300)).isoformat()
     write(state)
-    restored = context.model_copy(update={'current_requirement': prompt,
+    if command:
+        from .run_status import WizardExecutionTracker
+        WizardExecutionTracker(current_project_id(), command.run_id, owner_turn_id=state['run_id']).started()
+    restored = context.model_copy(update={'current_requirement': prompt, 'input_envelope': envelope,
         'current_workload': state.get('active_workload') if raw_input else context.current_workload,
         'answered_questions': state['answered_questions'], 'active_proposal': state.get('active_proposal') if raw_input else None,
         'unresolved_findings': [{**finding, 'decision':state['decisions'].get(finding_id, {'status':'OPEN'})}
             for finding_id, finding in list(state.get('findings', {}).items())[-100:]]})
-    return {'run_id': state['run_id'], 'prompt': prompt, 'context': restored.model_dump()}
+    result = {'run_id': state['run_id'], 'prompt': prompt, 'context': restored.model_dump()}
+    if command:
+        result['wizard_receipt'] = receipt(command, descriptor)
+    return result
 
 
 def record_event(run_id, event):
@@ -163,6 +287,14 @@ def record_event(run_id, event):
         question = InteractiveQuestion.model_validate(event['question']).model_dump()
         question.update(model_revision=model_revision(), decision_key=event.get('metadata', {}).get('decision_key', question['id']),
             expires_at=(datetime.now(timezone.utc) + timedelta(days=1)).isoformat())
+        if str(question['decision_key']).startswith('wizard-model-confirm:'):
+            binding = event.get('metadata', {}).get('wizard_model_confirmation') or {}
+            request = state.get('wizard_request') or {}
+            if (binding.get('model_revision') != question['model_revision']
+                    or binding.get('request_revision') != request.get('revision')
+                    or binding.get('run_id') != request.get('run_id')):
+                raise ConcurrentUpdateError('Der Modellstand hat sich vor der Bestätigungsfrage geändert.')
+            question['wizard_model_confirmation'] = binding
         state['questions'][question['id']] = question
         state['current_question'] = question['id']
         # Bound snapshots while preserving the currently open question.

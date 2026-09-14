@@ -14,7 +14,7 @@ from ..pagination import all_pages
 from ..simulation_coverage import simulation_coverage
 from ..routing.repository import list_routes
 from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
-from ..routing.transport_segments import physical_route_segments
+from ..routing.transport_segments import physical_route_segments, PhysicalRouteResolver
 from ..models import EngineeringValidationError
 from ..signal_audit import build_generation_signal_audit
 from ..workflow.models import WORKFLOW_LABELS, WORKFLOW_STEPS
@@ -95,7 +95,7 @@ def parameters_for_protocol(
 
 def _payload_bytes(route: dict[str, Any], messages: dict[str, dict[str, Any]], default: int) -> int:
     payload = route.get("payload") or {}
-    direct = payload.get("payload_bytes") or payload.get("length_bytes") or payload.get("dlc")
+    direct = next((payload[key] for key in ("payload_bytes", "length_bytes", "dlc") if payload.get(key) is not None), None)
     if direct is not None:
         return max(0, int(_number(direct, default)))
     message_ids = list(dict.fromkeys([
@@ -177,12 +177,12 @@ def _requirement_value(
     return min(values) if values else None
 
 
-def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], network_ids: list[str]) -> list[dict[str, Any]]:
+def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], network_ids: list[str], *, resolver: PhysicalRouteResolver | None = None) -> list[dict[str, Any]]:
     """Use physical ports when available; label provisional logical estimates."""
     segments = []
     for destination in route.get("destinations") or []:
         try:
-            segments.extend(physical_route_segments(route, destination, topology))
+            segments.extend(resolver.resolve(route, destination) if resolver is not None else physical_route_segments(route, destination, topology))
         except EngineeringValidationError:
             # Capacity is also used while constructing an unfinished topology.
             # Snapshot creation remains strict and rejects this provisional path.
@@ -287,6 +287,7 @@ class CapacityTimingService:
             1.0,
         )
         topology_networks = _topology_route_network_ids(state.get("topology") or {})
+        route_resolver = PhysicalRouteResolver(state.get("topology") or {})
 
         # Every canonical message is a separate transmission. A route containing
         # multiple messages is not one larger frame at their fastest period.
@@ -297,9 +298,15 @@ class CapacityTimingService:
             identifiers = list(dict.fromkeys([*payload.get("message_ids", []), *([payload["message_id"]] if payload.get("message_id") else [])]))
             if identifiers:
                 for identifier in identifiers:
+                    message_payload = messages.get(str(identifier), {}).get("dlc")
+                    if message_payload is None:
+                        # A single-message route may carry the explicit legacy
+                        # frame length. Never replace it with the global default
+                        # or apply an aggregate route length to every message.
+                        message_payload = _payload_bytes(route, {}, default_payload) if len(identifiers) == 1 else default_payload
                     expanded_routes.append({**route, "payload": {**payload, "message_id": identifier, "message_ids": [identifier],
                         "signal_ids": [key for key in payload.get("signal_ids", []) if str(signals.get(str(key), {}).get("message_id")) == str(identifier)],
-                        "payload_bytes": messages.get(str(identifier), {}).get("dlc", default_payload)}})
+                        "payload_bytes": message_payload}})
             else:
                 expanded_routes.append(route)
         for route in expanded_routes:
@@ -323,7 +330,7 @@ class CapacityTimingService:
             segment_network_ids = topology_networks.get(str(route.get("id") or "")) or _route_segment_network_ids(
                 source, route_path, destinations, network_id
             )
-            segment_specs = _capacity_route_segments(route, state.get("topology") or {}, segment_network_ids)
+            segment_specs = _capacity_route_segments(route, state.get("topology") or {}, segment_network_ids, resolver=route_resolver)
             segment_network_ids = [segment["network_id"] for segment in segment_specs]
             segment_count = len(segment_specs)
             payload_bytes = _payload_bytes(route, messages, default_payload)
@@ -668,6 +675,15 @@ class CapacityTimingService:
             )
         for network in network_metrics:
             schedule = network.get("communication_schedule") or {}
+            sizing_policy = policy_for(parameters)
+            slot_load = schedule.get('slot_load_percent')
+            if slot_load is not None and slot_load > sizing_policy['maximum_slot_load_percent']:
+                findings.append({'severity': 'ERROR' if sizing_policy.get('reserve_requirement') == 'HARD' else 'WARNING',
+                    'code': 'LIN_SCHEDULE_RESERVE_UNMET', 'object_type': 'Network', 'object_id': network['network_id'],
+                    'message': f"{network['network_name']}: {slot_load:g} % der LIN-Slots reserviert; "
+                               f"Reserveziel {sizing_policy['maximum_slot_load_percent']:g} %. "
+                               'Bei 100 % bleibt kein freier Slot. Dies ist getrennt von Nominallast und Funktionsfreigabe zu bewerten.',
+                    'recommendation': 'Verbleibende Schedule-Reserve ausdrücklich prüfen; bestätigte Zyklen und Kodierungen bleiben unverändert.'})
             if schedule.get("status") not in {"FEASIBLE_UNDER_ASSUMPTIONS", "EMPTY"}:
                 findings.append({"severity": "ERROR" if schedule.get("status") in {"OVERLOAD", "MODEL_INCONSISTENT", "CONSTRAINT_VIOLATION"} else "WARNING",
                     "code": "COMMUNICATION_" + str(schedule.get("status")), "object_type": "Network", "object_id": network["network_id"],
@@ -1224,8 +1240,10 @@ class PreflightService:
             if not item.get("message_id"):
                 add("engineering_model", "ERROR", "SIGNAL_PARENT_MISSING", f"Signal {item.get('name')} besitzt keine Message.")
 
-        routes = [route for route in all_pages(list_routes) if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
-        coverage = simulation_coverage(messages, signals, routes, (state.get("parameters") or {}).get("simulation_scope"))
+        declared_routes = all_pages(list_routes)
+        routes = [route for route in declared_routes if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
+        coverage = simulation_coverage(messages, signals, routes, (state.get("parameters") or {}).get("simulation_scope"),
+                                       declared_transports=declared_routes)
         if not coverage["complete"]:
             add("routing", "ERROR", "SIMULATION_SCOPE_UNCOVERED",
                 f"{len(coverage['missing_message_ids'])} Nachrichten und {len(coverage['missing_signal_ids'])} Signale "

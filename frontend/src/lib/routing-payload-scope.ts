@@ -1,6 +1,9 @@
 import type { EngInterface, EngMessage } from './types';
 
-export type MessageScope = { scope: string; restricted: boolean; consumer_refs: string[]; reason: string };
+export type MessageScope = {
+  scope: string; restricted: boolean; consumer_refs: string[]; reason: string;
+  routing_enabled?: boolean; forwarding_enabled?: boolean; blocked_signal_ids?: string[]; local?: boolean;
+};
 export type ScopedMessage = EngMessage & { routingScope?: MessageScope };
 
 export function messageAllowsDestination(message: ScopedMessage, nodeId: string, interfaceId: string, interfaces: EngInterface[]) {

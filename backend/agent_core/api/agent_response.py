@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 from uuid import uuid4
 import logging
+from .input_output import AgentOutputEnvelope
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 ChatMessageType = Literal['TEXT', 'QUESTION', 'MULTI_SELECT', 'SINGLE_SELECT', 'RECOMMENDATION',
@@ -60,6 +61,7 @@ class AgentInput(BaseModel):
 
 class AgentResponse(BaseModel):
     model_config = ConfigDict(extra='forbid')
+    outputs: list[AgentOutputEnvelope] = Field(default_factory=list, max_length=20)
     id: str = Field(default_factory=lambda: str(uuid4()))
     type: ChatMessageType
     text: str = Field(default='', max_length=30000)

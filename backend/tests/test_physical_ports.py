@@ -104,6 +104,32 @@ def test_capacity_split_allocates_separate_gateway_channels_and_removes_obsolete
     assert not topology_port_findings(repaired, hardware, effective(interfaces, changes))
 
 
+@pytest.mark.parametrize('technology,bus', [('LIN', 'lin'), ('CAN_FD', 'can_fd'), ('Ethernet', 'ethernet')])
+def test_split_channels_have_unique_names_under_their_hardware_without_renaming_existing_ports(technology, bus):
+    topology, hardware, interfaces = sample()
+    for row in interfaces:
+        row.update(technology=technology, network_ref='original', name='Reviewed connector',
+                   target_load_limit=40, warning_load_limit=60, hard_load_limit=90)
+    for node in topology['nodes']:
+        for port in node['ports']:
+            port.update(bus=bus, name='Reviewed connector', nameSource='user')
+    for edge in topology['edges']:
+        edge['bus'] = bus
+    before = deepcopy(interfaces)
+    repaired, changes = materialize_physical_ports(topology, hardware, interfaces,
+        [{'id': 'original', 'technology': technology}])
+    canonical = effective(interfaces, changes)
+    signatures = [(row['hardware_node_id'], row['name'].casefold()) for row in canonical]
+    assert len(signatures) == len(set(signatures)), 'New independent channels must not copy their original connector name.'
+    assert all(next(row for row in canonical if row['id'] == original['id']) == original for original in before)
+    assert all((row['target_load_limit'], row['warning_load_limit'], row['hard_load_limit']) == (40, 60, 90) for row in canonical)
+    assert not topology_port_findings(repaired, hardware, canonical)
+    again, repeated = materialize_physical_ports(repaired, hardware, canonical,
+        [{'id': 'original', 'technology': technology}, *[row['data'] for row in changes if row['object_type'] == 'Network']])
+    assert repeated == []
+    assert again == repaired
+
+
 def test_malformed_topology_is_reported_instead_of_crashing_status_reads():
     assert {row['code'] for row in topology_port_findings({'nodes': [None], 'edges': ['broken']}, [], [])} == {
         'INVALID_TOPOLOGY_NODE', 'INVALID_TOPOLOGY_EDGE'}

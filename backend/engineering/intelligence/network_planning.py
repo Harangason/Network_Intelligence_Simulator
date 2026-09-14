@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from ..capacity.lin_schedule import lin_schedule_check
+from ..capacity.dimensioning import bus_schedule, policy_for, stream_key, unique_streams
 from copy import deepcopy
 import json
 from math import ceil, isfinite
@@ -142,11 +143,105 @@ def _load(rows: list[dict[str, Any]]) -> float:
     return max((sum(_number(row.get(key)) for row in rows) for key in LOAD_KEYS), default=0.0)
 
 
+def _route_ids(rows: list[dict[str, Any]]) -> list[str]:
+    return sorted({str(identifier) for row in rows for identifier in (row.get('route_ids') or [row['route_id']])})
+
+
+def _schedule_check(rows: list[dict[str, Any]], parameters: dict[str, Any]) -> dict:
+    protocols = {canonical_protocol(row.get('protocol')) for row in rows}
+    if len(protocols) > 1:
+        return {'status': 'FAIL', 'communication_schedule': {
+            'status': 'MODEL_INCONSISTENT', 'responses': {},
+            'reasons': ['Ein physischer Bus enthält widersprüchliche Protokolle; keine Teilmenge gilt als Gesamtnachweis.']}}
+    lin = [row for row in rows if canonical_protocol(row.get('protocol')) == 'LIN']
+    if lin and all('bitrate' in row for row in lin):
+        # Use exactly the capacity service's complete physical master schedule.
+        checked = bus_schedule(unique_streams(lin), policy_for(parameters))
+        if ((parameters.get('communication_sizing') or {}).get('reserve_requirement') == 'HARD'
+                and checked.get('slot_load_percent', 0) > policy_for(parameters)['maximum_slot_load_percent']):
+            checked = {**checked, 'status': 'CONSTRAINT_VIOLATION', 'reasons': [
+                *(checked.get('reasons') or []), 'Die ausdrücklich harte LIN-Slotreserve wird unterschritten.']}
+        return {'status': 'PASS' if checked['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS' else 'FAIL',
+                'communication_schedule': checked}
+    if protocols and protocols <= {'CAN', 'CAN_CLASSIC', 'CAN_FD'}:
+        if all(_number(row.get('bitrate')) > 0 and _number(row.get('frame_time_bound_ms')) > 0
+               and _number(row.get('segment_transmission_latency_ms')) > 0 for row in rows):
+            checked = bus_schedule(unique_streams(rows), policy_for(parameters))
+        else:
+            checked = {'status': 'PROFILE_INCOMPLETE', 'reasons': [
+                'Physische CAN-Bitrate oder konservative Rahmendauer fehlt.'], 'responses': {}}
+        status = ('PASS' if checked['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS' else
+                  'FAIL' if checked['status'] in {'OVERLOAD', 'MODEL_INCONSISTENT', 'CONSTRAINT_VIOLATION'}
+                  else 'UNVERIFIED')
+        return {'status': status, 'communication_schedule': checked}
+    legacy = lin_schedule_check(rows)
+    # A batch estimate or a protocol without a schedule model is not a complete
+    # timing proof. Keep a failed LIN estimate binding, expose missing evidence.
+    return {**legacy, 'communication_schedule': {'status': 'UNVERIFIED', 'responses': {},
+        'reasons': ['Vollständiger physischer LIN-Plan fehlt.' if lin else
+                    'Für dieses Protokoll ist eine gesonderte Port-/Technologieanalyse erforderlich.']}}
+
+
+def _timing_status(check: dict) -> str:
+    if (check.get('communication_schedule') or {}).get('status') == 'FEASIBLE_UNDER_ASSUMPTIONS':
+        return 'VERIFIED_UNDER_ASSUMPTIONS'
+    return 'FAILED' if check.get('status') == 'FAIL' else 'UNVERIFIED'
+
+
+def _reserve_warnings(rows: list[dict[str, Any]], target: float, parameters: dict[str, Any], error_load: float) -> list[dict]:
+    """An unchanged indivisible transmission may miss a soft planning reserve.
+
+    This does not waive payload, physical capacity, schedule or timing checks.
+    The existing error threshold and explicitly hard reserve policies remain binding.
+    """
+    if not rows or any(canonical_protocol(row.get('protocol')) != 'LIN' for row in rows):
+        return []
+    row = rows[0]
+    checked = _schedule_check(rows, parameters)
+    if checked.get('status') != 'PASS' or not checked.get('communication_schedule'):
+        return []
+    schedule = checked['communication_schedule']
+    if schedule.get('nominal_load_percent', 100) >= 100:
+        return []
+    sizing = parameters.get('communication_sizing') or {}
+    if sizing.get('reserve_requirement') == 'HARD':
+        return []
+    warnings = []
+    if len(rows) == 1 and target < _load(rows) < error_load:
+        warnings.append({'severity': 'WARNING', 'code': 'CAPACITY_TARGET_RESERVE_UNMET',
+        'message': f"{row.get('message_name') or row.get('name')}: vollständige Nachricht auf eigenem LIN-Netz; "
+                   f"{_load(rows):.4f} % Stressbedarf überschreitet das unveränderte Reservenziel {target:g} %. "
+                   'Die Reserve bleibt unterschritten; weitere gleichartige Netze verkleinern diese Nachricht nicht.',
+        'message_id': row.get('message_id'), 'route_ids': _route_ids(rows),
+        'target_load_percent': target, 'projected_load_percent': _load(rows),
+        'nominal_load_percent': schedule['nominal_load_percent']})
+    slot_limit = policy_for(parameters)['maximum_slot_load_percent']
+    if schedule.get('slot_load_percent', 0) > slot_limit:
+        warnings.append({'severity': 'WARNING', 'code': 'LIN_SCHEDULE_RESERVE_UNMET',
+            'message': f"{row.get('message_name') or row.get('name')}: {schedule['slot_load_percent']:g} % der LIN-Slots reserviert "
+                       f"bei unverändertem Reserveziel {slot_limit:g} %. Bei 100 % bleibt kein freier Slot; "
+                       'der Plan gilt nur unter den ausgewiesenen Annahmen und bestätigt keine Fahrzeugfunktion.',
+            'slot_load_percent': schedule['slot_load_percent'], 'maximum_slot_load_percent': slot_limit,
+            'message_id': row.get('message_id'), 'route_ids': _route_ids(rows)})
+    return warnings
+
+
+def _within_hardware_load_limits(rows: list[dict[str, Any]], physical_interfaces: list[dict]) -> bool:
+    by_id = {str(row['id']): row for row in physical_interfaces}
+    # Every participant is on this shared bus, so its channel limit applies to
+    # the complete segment demand rather than only its own published message.
+    limits = [float(port['hard_load_limit']) for row in rows for channel_id in row.get('_physical_channel_ids', [])
+              if (port := by_id.get(channel_id))
+              and port.get('hard_load_limit') is not None]
+    return not limits or _load(rows) < min(limits)
+
+
 def plan_network_distribution(
     capacity: dict[str, Any], hardware: list[dict[str, Any]], topology: dict[str, Any], *,
     parameters: dict[str, Any] | None = None, allowed_protocols: list[str] | None = None,
     available_protocol_counts: dict[str, int] | None = None,
     resource_policy: dict[str, Any] | None = None,
+    physical_interfaces: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     policy = resource_policy or {'mode': 'FIXED_INVENTORY', 'hard_limits': {}}
     auto_size = policy.get('mode') == 'AUTO_SIZE'
@@ -156,7 +251,7 @@ def plan_network_distribution(
     plan: dict[str, Any] = {
         "status": "NO_CAPACITY_DATA", "target_load_percent": target,
         "source_snapshot_id": str(capacity.get("id") or ""),
-        "networks": [], "clusters": [], "inventory_constraints": [], "unresolved": [],
+        "networks": [], "clusters": [], "inventory_constraints": [], "unresolved": [], "schedule_assessments": [],
         "automatic_changes": False, "requires_human_approval": True,
         "resource_policy": policy,
         "calculation": "Cluster-preserving first-fit decreasing; max(sum average, sum peak, sum burst)",
@@ -172,10 +267,17 @@ def plan_network_distribution(
         plan["unresolved"] = ["Die Ziel-Buslast muss groesser als 0 und hoechstens 100 Prozent sein."]
         return plan
     parameters = parameters or {}
+    physical_interfaces = physical_interfaces or []
     owners = system_owners(hardware, topology)
     plan["clusters"] = [{"device_id": key, **owner} for key, owner in sorted(owners.items())]
     metrics_by_network: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in results["routes"]:
+    channel_ids = defaultdict(set)
+    for row in results['routes']:
+        for side in ('physical_source', 'physical_target'):
+            if identifier := (row.get(side) or {}).get('hardware_interface_id'):
+                channel_ids[stream_key(row)].add(str(identifier))
+    for row in unique_streams(results["routes"]):
+        row['_physical_channel_ids'] = sorted(channel_ids[stream_key(row)])
         metrics_by_network[str(row.get("network_id") or "unknown")].append(row)
     physical_networks = physical_network_inventory(topology)
     for network_id, rows in metrics_by_network.items():
@@ -228,7 +330,26 @@ def plan_network_distribution(
     ordered_networks = sorted(metrics_by_network.items(), key=lambda item: (-_load(item[1]), item[0]))
     for network_id, rows in ordered_networks:
         before = _load(rows)
-        if before <= target and lin_schedule_check(rows)["status"] != "FAIL":
+        current_check = _schedule_check(rows, parameters)
+        mixed_protocols = len({canonical_protocol(row.get('protocol')) for row in rows}) > 1
+        plan['schedule_assessments'].append({'network_id': network_id, 'protocol': rows[0].get('protocol'),
+            'timing_status': _timing_status(current_check),
+            'communication_schedule': current_check['communication_schedule']})
+        if mixed_protocols:
+            reason = f'{network_id}: widersprüchliche physische Protokolle vor einer Netzaufteilung auflösen.'
+            plan['unresolved'].append(reason)
+            plan['networks'].append({'network_id': network_id, 'protocol': 'MIXED',
+                'current_load_percent': round(before, 4), 'current_segments': 1,
+                'lin_schedule': current_check, 'timing_status': 'FAILED',
+                'target_status': 'EXCEEDED' if before > target else 'PASS',
+                'warnings': [{'severity': 'ERROR', 'code': 'PHYSICAL_PROTOCOL_CONFLICT', 'message': reason}],
+                'proposed_segments': 0, 'additional_segments': 0, 'projected_max_load_percent': round(before, 4),
+                'available_additional_segments': 0, 'resource_action': 'REVIEW_PHYSICAL_MODEL',
+                'new_resources_required': 0, 'decision': 'UNRESOLVED_CAPACITY_CONSTRAINT',
+                'selected_protocol': 'MIXED', 'technology_candidates': [], 'segments': []})
+            continue
+        if (before <= target and current_check["status"] != "FAIL"
+                and _within_hardware_load_limits(rows, physical_interfaces)):
             continue
         protocol = canonical_protocol(rows[0].get("protocol") or "UNKNOWN")
         grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -241,7 +362,9 @@ def plan_network_distribution(
             owner = next((item for item in owners.values() if item["id"] == cluster_id), {"name": cluster_id, "basis": "unassigned"})
             bins: list[list[dict[str, Any]]] = []
             for row in sorted(members, key=lambda item: (-_load([item]), str(item["route_id"]))):
-                destination = next((bucket for bucket in bins if _load([*bucket, row]) <= target and lin_schedule_check([*bucket, row])["status"] != "FAIL"), None)
+                destination = next((bucket for bucket in bins if _load([*bucket, row]) <= target
+                    and _within_hardware_load_limits([*bucket, row], physical_interfaces)
+                    and _schedule_check([*bucket, row], parameters)["status"] != "FAIL"), None)
                 if destination is None:
                     destination = []
                     bins.append(destination)
@@ -251,14 +374,14 @@ def plan_network_distribution(
                 segment = {
                     "name": f"{owner['name']}-{protocol.replace('_', '-')}-{index + 1}",
                     "cluster_id": cluster_id, "cluster_name": owner["name"], "ownership_basis": owner["basis"],
-                    "protocol": protocol, "route_ids": [str(row["route_id"]) for row in bucket],
+                    "protocol": protocol, "route_ids": _route_ids(bucket),
                     "cluster_ids": [cluster_id],
                     "cluster_names": [owner["name"]],
                     "device_ids": sorted({str(row.get("producer") or "") for row in bucket}),
                     "load_components": {key: sum(_number(row.get(key)) for row in bucket) for key in LOAD_KEYS},
                     "projected_load_percent": round(load, 4),
                     "load_check": "PASS" if load <= target else "EXCEEDED",
-                    "lin_schedule": lin_schedule_check(bucket),
+                    "lin_schedule": _schedule_check(bucket, parameters),
                     "alternatives": [],
                 }
                 if load > target:
@@ -280,7 +403,8 @@ def plan_network_distribution(
         for segment in sorted(segments, key=lambda item: (-item["projected_load_percent"], item["cluster_id"])):
             destination = next((item for item in packed if max(
                 item["load_components"][key] + segment["load_components"][key] for key in LOAD_KEYS
-            ) <= target and lin_schedule_check([row for row in rows if str(row["route_id"]) in {*item["route_ids"], *segment["route_ids"]}])["status"] != "FAIL"), None)
+            ) <= target and _within_hardware_load_limits([row for row in rows if str(row['route_id']) in {*item['route_ids'], *segment['route_ids']}], physical_interfaces)
+                and _schedule_check([row for row in rows if str(row["route_id"]) in {*item["route_ids"], *segment["route_ids"]}], parameters)["status"] != "FAIL"), None)
             if destination is None:
                 packed.append(segment)
                 continue
@@ -289,7 +413,7 @@ def plan_network_distribution(
             destination["load_components"] = {key: destination["load_components"][key] + segment["load_components"][key] for key in LOAD_KEYS}
             destination["projected_load_percent"] = round(max(destination["load_components"].values()), 4)
             destination["cluster_name"] = ", ".join(destination["cluster_names"])
-            destination["lin_schedule"] = lin_schedule_check([row for row in rows if str(row["route_id"]) in destination["route_ids"]])
+            destination["lin_schedule"] = _schedule_check([row for row in rows if str(row["route_id"]) in destination["route_ids"]], parameters)
             if segment["ownership_basis"] != "explicit":
                 destination["ownership_basis"] = segment["ownership_basis"]
         segments = packed
@@ -303,11 +427,36 @@ def plan_network_distribution(
         }
         technology_candidates = _technology_candidates(rows, protocol, target, parameters, available_inventory)
         selected_technology = next((item for item in technology_candidates if item["fits_target"]), None)
-        fits_same_protocol = max(item['projected_load_percent'] for item in segments) <= target and all(item["lin_schedule"]["status"] != "FAIL" for item in segments)
+        hardware_limits_met = all(_within_hardware_load_limits(
+            [row for row in rows if str(row['route_id']) in item['route_ids']], physical_interfaces) for item in segments)
+        fits_same_protocol = hardware_limits_met and max(item['projected_load_percent'] for item in segments) <= target and all(item["lin_schedule"]["status"] != "FAIL" for item in segments)
+        error_load = _number((results.get('thresholds') or {}).get('overload'),
+                             _number(parameters.get('overload_threshold'), 90))
+        reserve_warnings = []
+        timing_warnings = []
+        for segment in segments:
+            members = [row for row in rows if str(row['route_id']) in segment['route_ids']]
+            segment['warnings'] = _reserve_warnings(members, target, parameters, error_load)
+            reserve_warnings.extend(segment['warnings'])
+            segment['timing_status'] = _timing_status(segment['lin_schedule'])
+            if segment['timing_status'] == 'UNVERIFIED':
+                warning = {'severity': 'WARNING', 'code': 'COMMUNICATION_TIMING_UNVERIFIED',
+                    'message': f"{segment['name']}: Lastaufteilung ohne bestätigten Zeitnachweis. "
+                        + ' '.join(segment['lin_schedule']['communication_schedule'].get('reasons') or []),
+                    'route_ids': segment['route_ids']}
+                segment['warnings'].append(warning)
+                timing_warnings.append(warning)
+        fits_with_reserve_warning = hardware_limits_met and bool(reserve_warnings) and all(
+            item['lin_schedule']['status'] != 'FAIL'
+            and (item['projected_load_percent'] <= target or any(w['code'] == 'CAPACITY_TARGET_RESERVE_UNMET' for w in item['warnings']))
+            for item in segments)
         can_expand = auto_size and (protocol not in hard_limits or
             used_protocols.get(protocol, 0) + allocated[protocol] + additional <= hard_limits[protocol])
         resource_action = 'USE_EXISTING_SEGMENTS'
-        if fits_same_protocol and (additional <= same_protocol_free or can_expand):
+        if fits_with_reserve_warning and additional == 0:
+            decision = 'KEEP_CURRENT_WITH_RESERVE_WARNING'
+            resource_action = 'KEEP_CURRENT_TOPOLOGY'
+        elif (fits_same_protocol or fits_with_reserve_warning) and (additional <= same_protocol_free or can_expand):
             decision = "SPLIT_CURRENT_TECHNOLOGY"
             resource_action = 'PLAN_ADDITIONAL_SEGMENTS' if additional > same_protocol_free else 'USE_EXISTING_SEGMENTS'
             allocated[protocol] += additional
@@ -330,7 +479,11 @@ def plan_network_distribution(
         plan["networks"].append({
             "network_id": network_id, "protocol": protocol,
             "current_load_percent": round(before, 4), "current_segments": 1,
-            "lin_schedule": lin_schedule_check(rows),
+            "lin_schedule": current_check,
+            "timing_status": ('VERIFIED_UNDER_ASSUMPTIONS' if all(item['timing_status'] == 'VERIFIED_UNDER_ASSUMPTIONS' for item in segments)
+                              else 'FAILED' if any(item['timing_status'] == 'FAILED' for item in segments) else 'UNVERIFIED'),
+            "target_status": 'EXCEEDED' if any(item['projected_load_percent'] > target for item in segments) else 'PASS',
+            "warnings": [*reserve_warnings, *timing_warnings],
             "proposed_segments": len(segments), "additional_segments": additional,
             "projected_max_load_percent": max(item["projected_load_percent"] for item in segments),
             "available_additional_segments": same_protocol_free,
@@ -442,6 +595,12 @@ def distribution_recommendations(plan: dict[str, Any]) -> list[dict[str, Any]]:
         "problem": f"{network['network_id']}: {network['current_load_percent']:.2f}% Buslast",
         "affected_objects": sorted({node for segment in network["segments"] for node in segment["device_ids"]}),
         "recommendation": (
+            ' '.join(item['message'] for item in network['warnings'])
+            if network.get('resource_action') == 'REVIEW_PHYSICAL_MODEL' else
+            'Bestehendes physisch zulässiges Netz behalten. Die unveränderte Reserveunterschreitung ausdrücklich prüfen; '
+            'weitere Segmente verändern die einzelne Nachricht nicht. '
+            + ' '.join(warning['message'] for warning in network.get('warnings') or [])
+            if network.get('decision') == 'KEEP_CURRENT_WITH_RESERVE_WARNING' else
             f"Auf {network['selected_protocol']} wechseln; {next((item['required_segments'] for item in network['technology_candidates'] if item['protocol'] == network['selected_protocol']), 1)} "
             "verfügbare Segmente tragen Payload und Last. Teilnehmer- und Gateway-Interfaces vor Übernahme migrieren und Timing/Safety neu prüfen."
             if network.get("decision") == "MIGRATE_TECHNOLOGY" else

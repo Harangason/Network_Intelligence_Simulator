@@ -67,7 +67,7 @@ def _timing_requirements(route: dict[str, Any], parameters: dict[str, Any]) -> d
 class CommunicationConfigBuilder:
     def build(self, routes: list[dict[str, Any]], *, topology: dict[str, Any] | None = None,
               parameters: dict[str, Any] | None = None) -> dict[str, Any]:
-        from .transport_segments import physical_route_segments
+        from .transport_segments import PhysicalRouteResolver
         from ..capacity.service import parameters_for_protocol
 
         parameters = parameters or {}
@@ -80,7 +80,8 @@ class CommunicationConfigBuilder:
                 issues = payload_scope_issues(route, messages, signals, logical_interfaces)
                 if issues:
                     raise EngineeringValidationError(issues[0]["message"])
-        plans = [(route, destination, physical_route_segments(route, destination, topology))
+        resolver = PhysicalRouteResolver(topology)
+        plans = [(route, destination, resolver.resolve(route, destination))
             for route in approved for destination in route.get("destinations") or []]
         node_ids = sorted({str(segment[side]["node_id"]) for _, _, segments in plans
             for segment in segments for side in ("source", "target")})

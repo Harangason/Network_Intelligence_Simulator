@@ -24,6 +24,21 @@ def _interface_technology(bus):
     raise ValueError(f'Für {bus} ist kein kanonischer Hardwarekanal definiert.')
 
 
+def _new_channel_name(preferred, hardware_id, technology, channel_index, canonical):
+    """A split connector is a new object, not a second copy of its old name."""
+    used = {str(row.get('name') or '').strip().casefold() for row in canonical.values()
+            if str(row.get('hardware_node_id')) == hardware_id}
+    name = str(preferred).strip()
+    if name.casefold() not in used:
+        return name
+    base = f'{name} · {technology} Kanal {channel_index}'
+    name, suffix = base, 2
+    while name.casefold() in used:
+        name = f'{base} ({suffix})'
+        suffix += 1
+    return name
+
+
 def topology_port_findings(topology, hardware, interfaces):
     """Validate persisted IDs or the effective proposal graph with $local_refs."""
     hw = {str(row['id']): row for row in hardware}
@@ -176,7 +191,11 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 if protocol is None:
                     raise ValueError(f'Netzprotokoll für {technology} ist nicht verfügbar.')
                 context = ethernet_context({'id': network_id}, updated, hardware)
-                data = {'id': network_id, 'name': new_bus_name(network_id, declared.values(), technology=protocol, context=context), 'technology': protocol}
+                # Generated Ethernet channels inherit the canonical network
+                # name. Reserve existing connector labels as well so this
+                # inheritance cannot introduce a duplicate child object.
+                name_reservations = [*declared.values(), *canonical.values()] if is_ethernet(protocol) else declared.values()
+                data = {'id': network_id, 'name': new_bus_name(network_id, name_reservations, technology=protocol, context=context), 'technology': protocol}
                 if is_ethernet(protocol):
                     data.update(name_source='generated', name_context=context)
                 declared[network_id] = data
@@ -217,8 +236,17 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
                 else:
                     identifier = '$physical-channel-' + digest
                     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(key[1])
+                    original = canonical.get(str(port.get('hardwareInterfaceId') or ''))
+                    if (original and str(original.get('hardware_node_id')) == hardware_id
+                            and technology_id(original.get('technology')) == key[1]):
+                        data.update({field: original[field] for field in ('target_load_limit', 'warning_load_limit', 'hard_load_limit')
+                                     if original.get(field) is not None})
                     inherited_name = is_ethernet(technology) and port.get('nameSource') != 'user' and port.get('name') in (None, '', network_id, declared[network_id]['name'], f'{bus}-Port')
-                    data.update({'name': declared[network_id]['name'] if inherited_name else port.get('name') or declared[network_id]['name'], 'hardware_node_id': hardware_id,
+                    preferred_name = declared[network_id]['name'] if inherited_name else port.get('name') or declared[network_id]['name']
+                    name = _new_channel_name(preferred_name, hardware_id, technology, index, canonical)
+                    if inherited_name and name != preferred_name:
+                        raise ValueError(f'Netzname {preferred_name} kollidiert mit einem vorhandenen Anschluss von {hw[hardware_id].get("name", hardware_id)}. Bitte den bestehenden Anschluss eindeutig benennen.')
+                    data.update({'name': name, 'hardware_node_id': hardware_id,
                         'technology': technology, 'capabilities': {**(profile.get('capabilities') or {}), 'source': 'reviewed-physical-topology',
                             **({'name_source': 'network', 'name_network_id': network_id} if inherited_name else {})}})
                     channel_changes.append({'object_type': 'HardwareNetworkInterface', 'local_ref': identifier[1:], 'data': data})

@@ -42,8 +42,8 @@ def request_json(path: str, payload: dict | None = None):
         raise ValueError(detail) from error
 
 
-def job(job_id: str):
-    return request_json("/simulations/"+quote(job_id,safe=""))
+def job(job_id: str, *, metadata: bool = False):
+    return request_json("/simulations/"+quote(job_id,safe="")+("?view=metadata" if metadata else ""))
 
 
 def start(snapshot_id: str):

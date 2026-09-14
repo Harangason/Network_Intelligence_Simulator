@@ -19,6 +19,7 @@ from .config import RUNTIME_ROOT, TRACE_ROOT
 from .runtime_config import runtime_settings
 from .simulation_service import SimulationService
 from .trace_storage import TraceStorage
+from simulation_cancellation import cancellation_requested, cancellation_scope, request_cancellation
 
 
 logger = logging.getLogger(__name__)
@@ -53,10 +54,12 @@ def _compact_result_for_registry(result: Any) -> Any:
 
 
 def _compact_job_for_registry(job: dict[str, Any]) -> dict[str, Any]:
-    compact = copy.deepcopy(job)
-    if "result" in compact:
-        compact["result"] = _compact_result_for_registry(compact.get("result"))
-    return compact
+    # Discard heavy traces before copying while holding the registry lock.
+    # List and persistence callers still receive an independent metadata tree.
+    compact = {key: value for key, value in job.items() if key != "result"}
+    if "result" in job:
+        compact["result"] = _compact_result_for_registry(job.get("result"))
+    return copy.deepcopy(compact)
 
 
 def _fallback_registry_path() -> Path:
@@ -74,7 +77,8 @@ def _run_simulation_process(
     """Run one isolated simulation in a spawned worker process."""
     output_dir = Path(output_directory).resolve() if output_directory else (TRACE_ROOT / job_id).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    return SimulationService().run(payload, output_dir, validate_only=validate_only)
+    with cancellation_scope(output_dir):
+        return SimulationService().run(payload, output_dir, validate_only=validate_only)
 
 
 class JobService:
@@ -141,9 +145,13 @@ class JobService:
                     continue
                 job = copy.deepcopy(item)
                 if job.get("status") in {"queued", "running"}:
+                    canceled = bool(job.get('cancellation_requested')) or cancellation_requested(
+                        job.get('output_dir') or TRACE_ROOT / str(job['id']))
                     job.update(
-                        status="failed",
-                        error="Simulation wurde durch einen Dienstneustart unterbrochen.",
+                        status="canceled" if canceled else "failed",
+                        error=None if canceled else "Simulation wurde durch einen Dienstneustart unterbrochen.",
+                        cancellation_requested=canceled,
+                        recovery_pending=bool(job.get('workflow_snapshot_id')),
                         updated_at=_now(),
                     )
                 self._jobs[str(job["id"])] = job
@@ -229,26 +237,119 @@ class JobService:
         with self._lock:
             self._jobs[job_id] = job
             self._persist_locked()
+        return self._schedule(job_id, payload, validate_only)
+
+    def recover_interrupted(self) -> int:
+        """Resume only previously claimed, current workflow snapshots.
+
+        Keep the job identity and frozen configuration. Partial output remains
+        in its old directory; the next attempt writes an independent directory.
+        A completed snapshot reconciles a lost final registry write without
+        executing the simulation twice.
+        """
+        from ..engineering.workflow.service import WorkflowStatusService
+        with self._lock:
+            candidates = [copy.deepcopy(job) for job in self._jobs.values()
+                          if job.get('recovery_pending') or
+                          (job.get('cancellation_requested') and job.get('workflow_snapshot_id'))]
+        recovered = 0
+        for candidate in candidates:
+            job_id = candidate['id']
+            try:
+                # A crash can occur after the durable marker but before the
+                # registry/snapshot write. Never escape that canceled attempt
+                # by giving its recovery a fresh directory without the marker.
+                with self._lock:
+                    job = self._jobs.get(job_id)
+                    if not job:
+                        continue
+                    canceled = bool(job.get('cancellation_requested')) or cancellation_requested(
+                        job.get('output_dir') or TRACE_ROOT / job_id)
+                    if canceled:
+                        job.update(status='canceled', cancellation_requested=True,
+                                   recovery_pending=False, error=None, updated_at=_now())
+                        self._persist_locked()
+                if canceled:
+                    self._update_workflow_snapshot(candidate, 'CANCELED', job_id)
+                    continue
+                snapshot = WorkflowStatusService(candidate['project_id']).get_simulation_snapshot(
+                    str(candidate['workflow_snapshot_id']), require_current=True)
+                with self._lock:
+                    job = self._jobs.get(job_id)
+                    if not job or not job.get('recovery_pending') or job.get('cancellation_requested'):
+                        continue
+                    if (not snapshot or snapshot.get('is_outdated')
+                            or snapshot.get('job_id') not in {None, job_id}
+                            or snapshot.get('status') not in {'RUNNING', 'COMPLETED'}
+                            or (snapshot.get('status') == 'COMPLETED' and not isinstance(snapshot.get('result'), dict))
+                            or (snapshot.get('status') == 'RUNNING' and not isinstance(snapshot.get('configuration'), dict))):
+                        job.update(recovery_pending=False, status='canceled' if snapshot and snapshot.get('status') == 'CANCELED' else 'failed',
+                                   error='Unterbrochene Simulation benötigt einen aktuellen, freigegebenen Snapshot.', updated_at=_now())
+                        self._persist_locked()
+                        continue
+                    if snapshot['status'] == 'COMPLETED':
+                        job.update(recovery_pending=False, status='completed', result=snapshot.get('result'), error=None, updated_at=_now())
+                        self._persist_locked()
+                        recovered += 1
+                        continue
+                    old_output = str(job['output_dir'])
+                    attempt = int(job.get('recovery_count') or 0) + 1
+                    base_output = job.get('original_output_dir') or old_output
+                    job.update(status='queued', error=None, result=None, recovery_pending=False,
+                               recovery_count=attempt, original_output_dir=base_output,
+                               interrupted_outputs=[*(job.get('interrupted_outputs') or []), old_output],
+                               output_dir=str(Path(base_output) / f'recovery-{attempt}'), updated_at=_now())
+                    self._persist_locked()
+                payload = {'project_id': candidate['project_id'], 'workflow_snapshot_id': candidate['workflow_snapshot_id'],
+                           'workflow_managed': True, 'config': snapshot['configuration']}
+                self._schedule(job_id, payload, bool(candidate.get('validate_only')))
+                recovered += 1
+            except Exception:
+                logger.exception('Interrupted simulation %s could not be recovered', job_id)
+        return recovered
+
+    def _schedule(self, job_id: str, payload: dict[str, Any], validate_only: bool) -> dict[str, Any]:
+        # Attempt directories are not logical identities. Always set this at the
+        # trusted submission boundary, including normal jobs and every recovery.
+        payload = {**copy.deepcopy(payload), 'simulation_job_id': job_id}
+        job = self.get(job_id) or {}
+        output_dir = Path(job['output_dir'])
         if self.synchronous:
             self._execute(job_id, copy.deepcopy(payload), validate_only)
             return self.get(job_id) or copy.deepcopy(job)
-        if self.execution_mode == "process":
-            self._update(job_id, status="running", worker_mode="process")
-            self._update_workflow_snapshot(payload, "RUNNING", job_id)
-            future = self._get_executor().submit(
-                _run_simulation_process,
-                job_id,
-                copy.deepcopy(payload),
-                validate_only,
-                str(output_dir),
-            )
-        else:
-            future = self._get_executor().submit(
-                self._execute,
-                job_id,
-                copy.deepcopy(payload),
-                validate_only,
-            )
+        try:
+            if self.execution_mode == "process":
+                self._update(job_id, status="running", worker_mode="process")
+                self._update_workflow_snapshot(payload, "RUNNING", job_id)
+                future = self._get_executor().submit(
+                    _run_simulation_process,
+                    job_id,
+                    copy.deepcopy(payload),
+                    validate_only,
+                    str(output_dir),
+                )
+            else:
+                future = self._get_executor().submit(
+                    self._execute,
+                    job_id,
+                    copy.deepcopy(payload),
+                    validate_only,
+                )
+        except Exception as error:
+            # Only a failed submission is retryable here. After submit returns,
+            # a worker may already be executing even if later bookkeeping fails.
+            with self._lock:
+                current = self._jobs.get(job_id)
+                if current and not current.get('cancellation_requested') and current.get('status') != 'canceled':
+                    current.update(status='failed', error=str(error),
+                                   recovery_pending=bool(current.get('recovery_count')), updated_at=_now())
+                    self._persist_locked()
+                    failed_initial = not current.get('recovery_pending')
+                else:
+                    failed_initial = False
+            if failed_initial:
+                self._update_workflow_snapshot(payload, 'FAILED', job_id)
+            raise
         with self._lock:
             self._futures[job_id] = future
         if self.execution_mode == "process":
@@ -303,11 +404,12 @@ class JobService:
             job = self.get(job_id) or {}
             output_dir = Path(job.get("output_dir") or TRACE_ROOT / job_id).resolve()
             output_dir.mkdir(parents=True, exist_ok=True)
-            result = self.simulations.run(
-                payload,
-                output_dir,
-                validate_only=validate_only,
-            )
+            with cancellation_scope(output_dir):
+                result = self.simulations.run(
+                    payload,
+                    output_dir,
+                    validate_only=validate_only,
+                )
             if self._is_cancellation_requested(job_id) or self._status(job_id) == "canceled":
                 return
             self._record_routing_results(payload, validate_only, job_id, result)
@@ -331,11 +433,19 @@ class JobService:
         if not routing_entry_ids or validate_only:
             return
         try:
+            from ..engineering.project_context import activate_project, reset_project
             from ..engineering.routing.repository import record_simulation_results
 
-            record_simulation_results(
-                [str(route_id) for route_id in routing_entry_ids], job_id, result
-            )
+            # Executor threads and process completion callbacks do not inherit
+            # the submitting request's ContextVar. Bind the trusted job owner
+            # for this write, then restore the caller's context on every path.
+            token = activate_project(payload.get("project_id") or "default")
+            try:
+                record_simulation_results(
+                    [str(route_id) for route_id in routing_entry_ids], job_id, result
+                )
+            finally:
+                reset_project(token)
         except Exception:
             # A completed simulation remains valid even if optional engineering
             # observations cannot be persisted temporarily.
@@ -363,8 +473,13 @@ class JobService:
 
     def _update(self, job_id: str, **values: Any) -> None:
         with self._lock:
-            self._jobs[job_id].update(values)
-            self._jobs[job_id]["updated_at"] = _now()
+            job = self._jobs[job_id]
+            if (job.get('status') == 'canceled' or job.get('cancellation_requested')) and values.get('status') in {
+                'queued', 'running', 'completed', 'failed'
+            }:
+                return
+            job.update(values)
+            job["updated_at"] = _now()
             self._persist_locked()
 
     def _is_cancellation_requested(self, job_id: str) -> bool:
@@ -378,6 +493,7 @@ class JobService:
 
     def cancel(self, job_id: str, project_id: str | None = None) -> dict[str, Any] | None:
         canceled = False
+        future: Future[Any] | None = None
         workflow_payload: dict[str, Any] | None = None
         with self._lock:
             job = self._jobs.get(job_id)
@@ -385,18 +501,23 @@ class JobService:
                 return None
             if job["status"] in {"completed", "failed", "canceled"}:
                 return copy.deepcopy(job)
+            # Future.cancel only stops queued work. The attempt-local marker
+            # also reaches an already running thread or spawned process.
+            request_cancellation(job.get('output_dir') or TRACE_ROOT / job_id)
             job["cancellation_requested"] = True
             job["status"] = "canceled"
             job["canceled_at"] = _now()
             job["error"] = None
             job["updated_at"] = _now()
             future = self._futures.get(job_id)
-            if future is not None:
-                future.cancel()
             self._persist_locked()
             response = copy.deepcopy(job)
             workflow_payload = response
             canceled = True
+        # Future.cancel invokes done callbacks synchronously. Those callbacks
+        # inspect/update this registry and therefore must run outside its lock.
+        if canceled and future is not None:
+            future.cancel()
         if canceled and workflow_payload is not None:
             self._update_workflow_snapshot(workflow_payload, "CANCELED", job_id)
         return response
@@ -456,4 +577,7 @@ class JobService:
             self.executor.shutdown(wait=False, cancel_futures=True)
 
 
-JOBS = JobService()
+# Spawn imports this module before executing the submitted worker function.
+# Only the application process owns the shared registry; importing a worker
+# must not rewrite its parent's queued/running jobs as interrupted.
+JOBS = JobService(persist=None if multiprocessing.current_process().name == 'MainProcess' else False)

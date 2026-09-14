@@ -169,7 +169,15 @@ def prepare_workflow_simulation_config(config: dict[str, Any], project_id: str) 
     frozen = {**config, "topology": state["topology"], "parameters": parameters}
     for key in ("networks", "hardware", "communications", "routing_entry_ids"):
         frozen[key] = transport[key]
-    return _json_safe(enrich_simulation_config(frozen, project_id, model=model))
+    frozen = enrich_simulation_config(frozen, project_id, model=model)
+    _apply_observation_duration(frozen)
+    return _json_safe(frozen)
+
+
+def _apply_observation_duration(config: dict[str, Any]) -> None:
+    """Freeze a requirements-based window after scope and physical planning."""
+    from .simulation_observation import plan_observation_window
+    config.update(plan_observation_window(config))
 
 
 def enrich_simulation_config(config: dict[str, Any], project_id: str, *, model: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -286,7 +294,8 @@ def _apply_simulation_scope(config: dict[str, Any]) -> None:
     model = config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {}
     messages = [item for item in model.get("messages") or [] if isinstance(item, dict)]
     signals = [item for item in model.get("signals") or [] if isinstance(item, dict)]
-    coverage = simulation_coverage(messages, signals, config.get("communications") or [], scope)
+    coverage = simulation_coverage(messages, signals, config.get("communications") or [], scope,
+                                   declared_transports=model.get("routes") or [])
     config["scope_coverage"] = coverage
     if coverage["errors"]:
         raise EngineeringValidationError(" ".join(coverage["errors"]))

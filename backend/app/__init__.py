@@ -17,6 +17,8 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
         JSON_SORT_KEYS=False,
     )
     app.register_blueprint(api, url_prefix=api_prefix)
+    from .trace_import import trace_import_api
+    app.register_blueprint(trace_import_api, url_prefix=api_prefix)
     app.register_blueprint(engineering_api, url_prefix=f"{api_prefix}/engineering")
     from ..engineering.agent_tools.api import agent_api
     app.register_blueprint(agent_api, url_prefix=f"{api_prefix}/engineering/agent")
@@ -37,6 +39,13 @@ def create_app(testing: bool = False, api_prefix: str = "/api") -> Flask:
             logging.getLogger(__name__).exception(
                 "Unterbrochene Wizard-Läufe konnten beim Backend-Start nicht abgeglichen werden."
             )
+        try:
+            from .job_service import JOBS
+            recovered_jobs = JOBS.recover_interrupted()
+            if recovered_jobs:
+                logging.getLogger(__name__).warning('%s unterbrochene Simulationsjobs abgeglichen.', recovered_jobs)
+        except Exception:
+            logging.getLogger(__name__).exception('Simulationsjobs konnten beim Backend-Start nicht abgeglichen werden.')
 
     @app.after_request
     def add_cors_headers(response):

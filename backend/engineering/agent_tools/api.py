@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from backend.agent_core.context.agent_context import AgentContext
 from backend.agent_core.core.engineering_agent import EngineeringAgent
 from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
+from backend.agent_core.api.tool_contract import Permission, ToolResult, ToolStatus
 from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner
 from backend.simulator_engineering_mcp.server import create_server
 from ..db import ConcurrentUpdateError
@@ -159,9 +159,10 @@ def goal_hardware_facts(workload_id):
 
 @agent_api.get('/execution-goals/<workload_id>/response')
 def goal_response(workload_id):
-    from ..goal_execution.service import presentation, get_goal
+    from ..goal_execution.service import get_goal
+    from ..goal_execution.tools import result as goal_result
     result = execute(ToolAuthority(_project()), 'read_goal_response', Permission.READ_MODEL, {},
-        lambda _: {'agent_response': presentation(get_goal(workload_id))})
+        lambda _: goal_result(get_goal(workload_id)))
     response = jsonify(result.model_dump(mode='json')); response.headers['Cache-Control'] = 'no-store'
     return response, 200 if result.success else 404
 
@@ -297,7 +298,8 @@ def proposal_revise(proposal_id):
 
 @agent_api.post('/runs/<wizard_run_id>/cancel')
 def cancel_wizard(wizard_run_id):
-    if (request.get_json(silent=True) or {}).get('confirmed') is not True:
+    data = request.get_json(silent=True) or {}
+    if data.get('confirmed') is not True:
         return jsonify({'error': 'Bitte den Abbruch ausdrücklich bestätigen.'}), 400
     project_id = _project()
     def cancel(_):
@@ -306,6 +308,9 @@ def cancel_wizard(wizard_run_id):
         context = workflow.get('context') or {}
         execution = context.get('agent_execution') or {}
         wizard = context.get('agent_wizard_status') or {}
+        saved_request = context.get('wizard_request') or {}
+        if saved_request.get('version') == 2 and data.get('request_revision') != saved_request.get('revision'):
+            raise ConcurrentUpdateError('Die Auftragsrevision hat sich geändert. Bitte den aktuellen Auftrag vor dem Abbruch laden.')
         if wizard_run_id != (execution.get('run_id') or wizard.get('run_id')):
             raise ValueError('Dieser Auftrag ist nicht mehr der aktuelle Projektauftrag.')
         state = conversation.read()
@@ -331,29 +336,66 @@ def cancel_wizard(wizard_run_id):
     return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
 
 
+@agent_api.post('/runs/<wizard_run_id>/finish')
+def finish_wizard(wizard_run_id):
+    data = request.get_json(silent=True) or {}
+    project_id = _project()
+    def finish(_):
+        service = WorkflowStatusService(project_id)
+        workflow = service.get(summary=True)
+        context = workflow.get('context') or {}
+        wizard = context.get('agent_wizard_status') or {}
+        saved = context.get('wizard_request') or {}
+        if wizard.get('run_id') != wizard_run_id:
+            raise ConcurrentUpdateError('Dieser Wizardauftrag ist nicht mehr aktuell.')
+        if saved.get('version') == 2 and data.get('request_revision') != saved.get('revision'):
+            raise ConcurrentUpdateError('Die Auftragsrevision hat sich geändert. Bitte aktuellen Stand laden.')
+        state = conversation.inspect()
+        if state.get('run_id') or context.get('agent_execution', {}).get('state') == 'RUNNING':
+            raise ConcurrentUpdateError('Der Auftrag läuft noch.')
+        question = (state.get('questions') or {}).get(state.get('current_question'))
+        if question and question.get('status') == 'OPEN':
+            raise ConcurrentUpdateError('Der Auftrag enthält noch eine offene Rückfrage.')
+        if state.get('pending_approvals'):
+            raise ConcurrentUpdateError('Der Auftrag enthält noch nicht übernommene Vorschläge.')
+        if saved.get('version') == 2 and wizard.get('model_request_revision') != saved.get('revision'):
+            raise ConcurrentUpdateError('Das Modell ist für die aktuelle Auftragsrevision noch nicht bestätigt.')
+        if context.get('agent_execution', {}).get('state') in {'BLOCKED', 'FAILED', 'CANCELED', 'REVIEW_REQUIRED'}:
+            raise ConcurrentUpdateError('Der Auftrag ist angehalten und kann noch nicht abgeschlossen werden.')
+        selected = wizard.get('scope_ids') or []
+        if not selected or any(workflow['statuses'].get(step) not in {'COMPLETE', 'APPROVED', 'WARNING'} for step in selected):
+            raise ValueError('Die beauftragten Workflow-Schritte sind noch nicht vollständig abgeschlossen.')
+        return service.set_context({'agent_wizard_status': None}, summary=True)
+    result = execute(ToolAuthority(project_id, 'conversation-ui'), 'finish_wizard', Permission.READ_MODEL, {}, finish)
+    return jsonify(result.data if result.success else result.model_dump(mode='json')), 200 if result.success else 409
+
+
 @agent_api.post("/chat")
 def chat():
     payload = request.get_json(silent=True)
-    if not isinstance(payload,dict) or (not payload.get('input') and (not isinstance(payload.get("prompt"),str) or not payload["prompt"].strip())):
+    if not isinstance(payload,dict) or (not payload.get('input') and not payload.get('wizard_command') and (not isinstance(payload.get("prompt"),str) or not payload["prompt"].strip())):
         return jsonify({"error":"Eine Anforderung als prompt ist erforderlich."}),400
     payload.setdefault('prompt', '')
+    from backend.agent_core.api.input_output import SUPPORTED_INPUTS
+    if payload.get('input_type', 'TEXT') not in SUPPORTED_INPUTS:
+        return jsonify({'error': 'Für diesen Eingabetyp ist noch kein ausführbarer Adapter verfügbar.',
+                        'status': 'NOT_SUPPORTED', 'supported_input_types': list(SUPPORTED_INPUTS)}), 422
     history = payload.get("history") or []
     if not isinstance(history, list) or len(history) > 12 or any(not isinstance(item, dict) or item.get("role") not in {"user", "assistant"} or not isinstance(item.get("content"), str) or len(item["content"]) > 8000 for item in history):
         return jsonify({"error":"Ungültiger Gesprächskontext."}),400
     history = [{"role":item["role"], "content":item["content"]} for item in history]
     project_id = _project()
     workflow = WorkflowStatusService(project_id).get(summary=True)
-    payload['prompt'] = restore_wizard_continuation_prompt(
-        payload['prompt'],
-        (workflow.get('context') or {}).get('agent_wizard_status'),
-    )
+    if payload.get('wizard_command') is None:
+        payload['prompt'] = restore_wizard_continuation_prompt(
+            payload['prompt'], (workflow.get('context') or {}).get('agent_wizard_status'))
     raw_context = payload.get("context") or {}
     if not isinstance(raw_context, dict) or not isinstance(payload['prompt'], str) or len(payload["prompt"]) > MAX_REQUIREMENT_LENGTH:
         return jsonify({"error":"Ungültiger Kontext oder zu lange Anforderung."}),400
     if raw_context.get("active_project_id") and normalize_context_project_id(raw_context["active_project_id"]) != project_id:
         return jsonify({"error":"Projekt in Header und Kontext stimmt nicht überein."}),409
     try:
-        context = AgentContext.model_validate({**raw_context,"active_project_id":project_id,
+        context = AgentContext.model_validate({**raw_context,"active_project_id":project_id, 'wizard_request': None, 'input_envelope': None,
             "permissions":[p.value for p in DEFAULT_PERMISSIONS]})
     except ValidationError as error:
         return jsonify({"error":str(error)}),400
@@ -361,16 +403,25 @@ def chat():
         return jsonify({"error":"Alle Agentenplätze sind belegt. Bitte gleich erneut versuchen."}),429
     authority = ToolAuthority(project_id, 'conversation-ui')
     started = execute(authority, 'begin_conversation_turn', Permission.READ_MODEL, {},
-        lambda _: conversation.begin(payload['prompt'], context, payload.get('input')))
+        lambda _: conversation.begin(payload['prompt'], context, payload.get('input'), payload.get('wizard_command')))
     if not started.success:
         _slots.release()
         return jsonify(started.model_dump(mode='json')), 409 if started.status.value == 'CONFLICT' else 400
+    if started.data.get('duplicate'):
+        _slots.release()
+        event = {'type': 'CONTEXT', 'context': started.data['context'], 'status': 'ACCEPTED',
+                 'wizard_receipt': started.data['wizard_receipt']}
+        return Response(json.dumps(event, ensure_ascii=False) + '\n', mimetype='application/x-ndjson',
+                        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
     run_id = started.data['run_id']
     context = AgentContext.model_validate(started.data['context'])
     queue: Queue = Queue()
+    if started.data.get('wizard_receipt'):
+        queue.put({'type': 'CONTEXT', 'context': started.data['context'], 'status': 'ACCEPTED',
+                   'wizard_receipt': started.data['wizard_receipt']})
     wizard_run_id = extract_wizard_run_id(started.data['prompt'])
-    tracker = WizardExecutionTracker(project_id, wizard_run_id) if wizard_run_id else None
-    if tracker:
+    tracker = WizardExecutionTracker(project_id, wizard_run_id, owner_turn_id=run_id) if wizard_run_id else None
+    if tracker and not started.data.get('wizard_receipt'):
         try:
             tracker.started()
         except Exception:
@@ -432,6 +483,8 @@ def chat():
         heartbeat_thread.start()
         try:
             result = asyncio.run(asyncio.wait_for(run(), timeout=max(300, min(int(os.environ.get('ENGINEERING_AGENT_RUN_TIMEOUT_SECONDS', '1800')), 7200))))
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=1)
             if tracker:
                 tracker.finished(result)
         except asyncio.CancelledError:
@@ -481,10 +534,18 @@ def chat():
 
 @agent_api.get('/conversation')
 def conversation_get():
-    result = execute(ToolAuthority(_project(), 'conversation-ui'), 'inspect_conversation', Permission.READ_MODEL, {}, lambda _: conversation.inspect())
-    if result.success:
-        result.data.pop('ui_history', None)
-    return jsonify(result.model_dump(mode='json')), 200 if result.success else 503
+    # execute() intentionally serializes and audits mutations. A status GET
+    # must instead read the committed conversation without taking those locks.
+    try:
+        result = ToolResult(data=conversation.snapshot(_project()))
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception('Conversation snapshot could not be read')
+        result = ToolResult(success=False, status=ToolStatus.INTERNAL_ERROR,
+            findings=[{'severity': 'ERROR', 'message': 'Der Gesprächsstand konnte nicht geladen werden.'}])
+    response = jsonify(result.model_dump(mode='json'))
+    response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 503
 
 
 @agent_api.get('/responses/<response_id>')

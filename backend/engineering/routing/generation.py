@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from contextlib import contextmanager
 from typing import Any
 
 from ..db import get_connection
@@ -11,7 +12,7 @@ from ..project_context import current_project_id
 from ..message_bindings import message_hardware_interface_ids, explicit_transmit_interface_ids
 from .repository import create_proposal
 from .retrieval import HybridRoutingRetriever
-from .validation import RoutingValidator, is_gateway_fanout_interface
+from .validation import RoutingValidator, is_gateway_fanout_interface, INTERFACE_PROTOCOLS
 from .timing import generated_timing
 
 INTERFACE_TO_PROTOCOL = {
@@ -35,6 +36,18 @@ INTERFACE_TO_PROTOCOL = {
 }
 
 
+@contextmanager
+def routing_candidate_batch(service):
+    """Share immutable candidate reads within one proposal, never across calls."""
+    previous = getattr(service, '_candidate_context', None)
+    service._candidate_context = {'project_id': current_project_id()}
+    try:
+        yield service
+    finally:
+        service._candidate_context = previous
+        service._candidate_planner = None
+
+
 class RoutingGenerationService:
     """Finds, ranks and stores route candidates as proposals only."""
 
@@ -52,8 +65,13 @@ class RoutingGenerationService:
     def _interface_candidates(self, node_id: str) -> list[dict[str, Any]]:
         with get_connection() as connection:
             return connection.execute(
-                "SELECT * FROM engineering_interfaces WHERE hardware_node_id = %s "
-                "AND project_id = %s ORDER BY created_at",
+                "SELECT i.*, ARRAY(SELECT DISTINCT m.hardware_interface_id::text FROM engineering_messages m "
+                "WHERE m.interface_id=i.id AND m.project_id=i.project_id AND m.hardware_interface_id IS NOT NULL) || "
+                "ARRAY(SELECT DISTINCT binding->>'hardware_interface_id' FROM engineering_messages m "
+                "CROSS JOIN LATERAL jsonb_array_elements(COALESCE(m.configuration->'physical_transmit_bindings', '[]'::jsonb)) binding "
+                "WHERE m.interface_id=i.id AND m.project_id=i.project_id) "
+                "AS physical_interface_ids FROM engineering_interfaces i WHERE i.hardware_node_id = %s "
+                "AND i.project_id = %s ORDER BY i.created_at",
                 (node_id, current_project_id()),
             ).fetchall()
 
@@ -76,6 +94,43 @@ class RoutingGenerationService:
                 "WHERE m.id = %s AND m.project_id = %s LIMIT 1",
                 (message_id, current_project_id()),
             ).fetchone()
+
+    @staticmethod
+    def _logical_endpoint(interfaces, physical, *, preferred_id=None, bound_id=None, name="Empfänger"):
+        """Resolve a logical partner against the final physical receiving channel.
+
+        Message bindings are authoritative at the source. At the destination an
+        explicit relation may identify the function; source technology never does.
+        Equal transport support alone cannot choose between different functions.
+        """
+        by_id = {str(item['id']): item for item in interfaces}
+        if bound_id:
+            return by_id.get(str(bound_id))  # A missing binding stays visibly missing.
+        protocol = INTERFACE_TO_PROTOCOL.get(str((physical or {}).get('technology') or ''))
+        compatible = [item for item in interfaces if not protocol or protocol in
+                      INTERFACE_PROTOCOLS.get(str(item.get('interface_type')), set())]
+        preferred = by_id.get(str(preferred_id))
+        if preferred in compatible:
+            return preferred
+        if physical:
+            bound = [item for item in compatible if str(physical['id']) in
+                     set(map(str, [*(item.get('physical_interface_ids') or []),
+                                   *((item.get('configuration') or {}).get('physical_interface_ids') or [])]))]
+            if bound:
+                compatible = bound
+        controller_endpoints = [item for item in compatible
+                                if (item.get('configuration') or {}).get('endpoint_role') == 'SYSTEM_CONTROLLER']
+        if len(controller_endpoints) == 1:
+            return controller_endpoints[0]
+        if len(compatible) == 1:
+            return compatible[0]
+        if len(compatible) > 1:
+            # Different channels of the same logical function remain equivalent
+            # only when their identity has already been explicitly supplied.
+            labels = ', '.join(str(item.get('name') or item['id']) for item in compatible)
+            raise EngineeringValidationError(f'{name}: logische Schnittstelle ist mehrdeutig ({labels}). '
+                                             'Empfangende Funktion/Schnittstelle explizit auswählen.')
+        return None
 
     def _hardware_graph(self) -> tuple[dict[str, set[str]], dict[tuple[str, str], dict[str, Any]]]:
         adjacency: dict[str, set[str]] = defaultdict(set)
@@ -133,7 +188,12 @@ class RoutingGenerationService:
         target = self._node(target_node_id)
         source_id = str(source["id"])
         target_id = str(target["id"])
-        adjacency, edge_data = self._hardware_graph()
+        context = getattr(self, '_candidate_context', None)
+        if context is None or context.get('project_id') != current_project_id():
+            context = {'project_id': current_project_id()}
+        if 'hardware_graph' not in context:
+            context['hardware_graph'] = self._hardware_graph()
+        adjacency, edge_data = context['hardware_graph']
         queue = deque([[source_id]])
         # A dense shared bus has exponentially many simple walks. Keep only a
         # bounded number of shortest arrivals at each node, including when the
@@ -156,19 +216,27 @@ class RoutingGenerationService:
         # A direct candidate remains useful for incomplete imported graphs; validation marks missing interfaces.
         if not paths:
             paths = [[source_id, target_id]]
-        node_ids = sorted({node_id for path in paths for node_id in path})
-        with get_connection() as connection:
-            nodes = {
-                str(row["id"]): row
-                for row in connection.execute(
-                    "SELECT id, name, device_type FROM engineering_hardware_nodes "
-                    "WHERE id = ANY(%s::uuid[]) AND project_id = %s",
-                    (node_ids, current_project_id()),
-                ).fetchall()
-            }
+        if 'hardware_nodes' not in context:
+            with get_connection() as connection:
+                context['hardware_nodes'] = {
+                    str(row["id"]): row
+                    for row in connection.execute(
+                        "SELECT id, name, device_type, identity FROM engineering_hardware_nodes "
+                        "WHERE project_id = %s",
+                        (current_project_id(),),
+                    ).fetchall()
+                }
+        nodes = context['hardware_nodes']
         candidates = []
         for path in paths:
             connections = [edge_data.get((left, right), {}) for left, right in zip(path, path[1:])]
+            # A node-level graph cannot prove a change between an ECU's ports.
+            # Such transitions need the exact directed physical path below.
+            if any(nodes.get(node_id, {}).get('device_type') != 'Gateway'
+                   and (not connections[index].get('target_network_id')
+                        or connections[index].get('target_network_id') != connections[index + 1].get('source_network_id'))
+                   for index, node_id in enumerate(path[1:-1])):
+                continue
             gateways = [
                 {"node_id": node_id, "name": nodes[node_id]["name"]}
                 for node_id in path[1:-1]
@@ -188,6 +256,14 @@ class RoutingGenerationService:
                     "hop_count": len(path) - 1,
                 }
             )
+        from .forwarding_candidates import confirmed_ecu_candidates
+        candidates.extend(confirmed_ecu_candidates(source_id, target_id, nodes, limit, context=context))
+        self._candidate_planner = context.get('forwarding_planner')
+        if not candidates:
+            # Keep an unresolved proposal reviewable, without inventing a relay.
+            candidates.append({'nodes': [{'node_id': source_id, 'name': source['name']},
+                                          {'node_id': target_id, 'name': target['name']}],
+                               'connections': [], 'gateways': [], 'protocol': 'CUSTOM', 'hop_count': 1})
         return self.rank_candidate_paths(candidates)
 
     def rank_candidate_paths(self, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -223,9 +299,13 @@ class RoutingGenerationService:
     ) -> dict[str, Any]:
         source = self._node(source_node_id)
         destination = self._node(destination_node_id)
-        candidate = self.find_candidate_paths(str(source["id"]), str(destination["id"]))[0]
-        connections = candidate.get("connections") or []
+        self._candidate_planner = None
+        candidates = self.find_candidate_paths(str(source["id"]), str(destination["id"]))
         message = self._message_context(message_id)
+        allowed_source_ids = message_hardware_interface_ids(message)
+        candidate = next((item for item in candidates if not item.get('physical_paths') or not allowed_source_ids
+                          or item['physical_paths'][0]['ports'][0] in allowed_source_ids), candidates[0])
+        connections = candidate.get("connections") or []
         source_interfaces = self._interface_candidates(str(source["id"]))
         destination_interfaces = self._interface_candidates(str(destination["id"]))
         if message:
@@ -246,43 +326,11 @@ class RoutingGenerationService:
                 destination_interfaces = stable_gateway_interfaces
 
         source_interface_id = connections[0].get("source_interface_id") if connections else None
-        source_interface = next(
-            (item for item in source_interfaces if str(item["id"]) == str(source_interface_id)),
-            None,
-        )
-        if (
-            source_interface is None
-            and message
-            and str(message.get("hardware_node_id") or "") == str(source["id"])
-        ):
-            source_interface = next(
-                (
-                    item
-                    for item in source_interfaces
-                    if str(item["id"]) == str(message.get("interface_id") or "")
-                ),
-                None,
-            )
-        if source_interface is None and source_interfaces:
-            source_interface = source_interfaces[0]
-
+        bound_source_id = str((message or {}).get('interface_id') or '')
+        source_interface = next((item for item in source_interfaces
+            if str(item['id']) == str(bound_source_id or source_interface_id)), None)
         destination_interface_id = connections[-1].get("target_interface_id") if connections else None
-        destination_interface = next(
-            (item for item in destination_interfaces if str(item["id"]) == str(destination_interface_id)),
-            None,
-        )
         source_interface_type = str((source_interface or {}).get("interface_type") or "")
-        if destination_interface is None and source_interface_type:
-            destination_interface = next(
-                (
-                    item
-                    for item in destination_interfaces
-                    if str(item.get("interface_type") or "") == source_interface_type
-                ),
-                None,
-            )
-        if destination_interface is None and destination_interfaces:
-            destination_interface = destination_interfaces[0]
 
         message_hardware_interface_id = str((message or {}).get("hardware_interface_id") or "")
         allowed_source_ids = message_hardware_interface_ids(message)
@@ -338,8 +386,21 @@ class RoutingGenerationService:
             destination_network = connections[-1].get('target_network_id')
             if destination_network:
                 destination_hardware_interface = next((item for item in destination_hardware_interfaces if item.get('network_ref') == destination_network), None)
+        if not shared_hardware_pair and candidate.get('physical_paths'):
+            physical_ports = candidate['physical_paths'][0]['ports']
+            source_hardware_interface = next((item for item in source_hardware_interfaces
+                if str(item['id']) == physical_ports[0] and (not allowed_source_ids or str(item['id']) in allowed_source_ids)), None)
+            destination_hardware_interface = next((item for item in destination_hardware_interfaces
+                if str(item['id']) == physical_ports[-1]), None)
         if shared_hardware_pair:
-            candidate = {**candidate, 'nodes': [{'node_id': str(source['id']), 'name': source['name']}, {'node_id': str(destination['id']), 'name': destination['name']}], 'gateways': [], 'hop_count': 1}
+            candidate = {**candidate, 'nodes': [{'node_id': str(source['id']), 'name': source['name']}, {'node_id': str(destination['id']), 'name': destination['name']}], 'gateways': [], 'hop_count': 1, 'physical_paths': []}
+            connections = [{'source_network_id': shared_hardware_pair[0]['network_ref'],
+                            'target_network_id': shared_hardware_pair[1]['network_ref'],
+                            'source_interface_type': shared_hardware_pair[0]['technology']}]
+        source_interface = self._logical_endpoint(source_interfaces, source_hardware_interface,
+            preferred_id=source_interface_id, bound_id=bound_source_id, name=source['name'])
+        destination_interface = self._logical_endpoint(destination_interfaces, destination_hardware_interface,
+            preferred_id=destination_interface_id, name=destination['name'])
         transport_type = str((source_hardware_interface or {}).get("technology") or source_interface_type)
         protocol = INTERFACE_TO_PROTOCOL.get(transport_type, str(candidate.get("protocol") or "CUSTOM"))
         source_interface_id = str(source_interface["id"]) if source_interface else None
@@ -379,6 +440,15 @@ class RoutingGenerationService:
             "route": {
                 "hops": candidate["nodes"],
                 "gateways": candidate["gateways"],
+                **({'physical_paths': candidate['physical_paths']} if candidate.get('physical_paths') else {}),
+                "transport_segments": [
+                    {'source_node_id': candidate['nodes'][index]['node_id'],
+                     'target_node_id': candidate['nodes'][index + 1]['node_id'],
+                     'network_id': connection['source_network_id'],
+                     'protocol': INTERFACE_TO_PROTOCOL.get(str(connection.get('source_interface_type') or ''), protocol)}
+                    for index, connection in enumerate(connections)
+                    if connection.get('source_network_id') and index + 1 < len(candidate['nodes'])
+                ],
                 "transformations": [],
                 "priority": "NORMAL",
             },
@@ -392,8 +462,9 @@ class RoutingGenerationService:
             "origin": "AI_GENERATED",
             "confidence": candidate["score"],
         }
-        validation = RoutingValidator().validate(route)
-        scope_error = next((issue for issue in validation.get("errors", []) if issue.get("code") == "LOCAL_IO_RECIPIENT_MISMATCH"), None)
+        validation = RoutingValidator(physical_planner=self._candidate_planner).validate(route)
+        scope_error = next((issue for issue in validation.get("errors", []) if issue.get("code") in {
+            "LOCAL_IO_RECIPIENT_MISMATCH", "MESSAGE_ROUTING_DISABLED", "SIGNAL_ROUTING_DISABLED"}), None)
         if scope_error:
             raise EngineeringValidationError(scope_error["message"])
         return {**route, "validation": validation, "candidate": candidate}
@@ -406,17 +477,18 @@ class RoutingGenerationService:
         if not source_value or not destinations:
             raise EngineeringValidationError("source_node_id und destination_node_ids sind erforderlich.")
         routing_type = "MULTICAST" if len(destinations) > 1 else str(data.get("routing_type") or "UNICAST")
-        generated = [
-            self.generate_route(
-                source_node_id=source_value,
-                destination_node_id=str(destination),
-                message_id=data.get("message_id"),
-                signal_ids=data.get("signal_ids") or [],
-                routing_type="UNICAST" if len(destinations) > 1 else routing_type,
-                timing=data.get("timing"),
-            )
-            for destination in destinations
-        ]
+        with routing_candidate_batch(self):
+            generated = [
+                self.generate_route(
+                    source_node_id=source_value,
+                    destination_node_id=str(destination),
+                    message_id=data.get("message_id"),
+                    signal_ids=data.get("signal_ids") or [],
+                    routing_type="UNICAST" if len(destinations) > 1 else routing_type,
+                    timing=data.get("timing"),
+                )
+                for destination in destinations
+            ]
         prompt = str(data.get("prompt") or "Erzeuge technisch geeignete Kommunikationsrouten.")
         evidence = [
             {

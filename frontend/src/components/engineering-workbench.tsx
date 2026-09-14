@@ -4,6 +4,8 @@ import { CommunicationWarningIndicator } from "@/components/communication-warnin
 import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/lib/communication-warnings";
 import { listRoutes } from "@/lib/routing-api";
 import { physicalBindingStatus } from "@/lib/interface-status";
+import { routingEnabled, withRoutingPermission } from "@/lib/routing-permission";
+import { RoutingPermissionFields } from "@/components/routing-permission-fields";
 
 import { FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -144,8 +146,8 @@ const RESOURCE_TABLE_HEADERS: Record<EngineeringResource, string[]> = {
   "hardware-interfaces": ["Hardware", "Name", "Technologie", "Kanal", "Netzwerk", "Messages", "Last", "Status", "Beschreibung", "Warnung"],
   functions: ["Name", "Hardware-Knoten", "Domäne", "Beschreibung", "Warnung"],
   interfaces: ["Name", "Funktion (optional)", "Technologie", "Hardware", "Beschreibung", "Warnung"],
-  messages: ["Name", "Kommunikationsschnittstelle", "Physischer Bus", "Message-ID", "Richtung", "Zyklus", "DLC", "Beschreibung", "Warnung"],
-  signals: ["System", "Quellgerät", "Funktion (optional)", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit", "Beschreibung", "Warnung"],
+  messages: ["Name", "Kommunikationsschnittstelle", "Physischer Bus", "Message-ID", "Richtung", "Zyklus", "DLC", "Geroutet", "Beschreibung", "Warnung"],
+  signals: ["System", "Quellgerät", "Funktion (optional)", "Name", "Nachricht", "Start-Bit", "Länge", "Byte-Reihenfolge", "Datentyp", "Einheit", "Geroutet", "Beschreibung", "Warnung"],
 };
 
 function referenceName(names: Record<string, string>, id: string | null) {
@@ -392,6 +394,7 @@ function resourceBaseTableValues(
         "direction" in item ? item.direction ?? "—" : "—",
         "cycle_ms" in item && item.cycle_ms !== null ? `${item.cycle_ms} ms` : "—",
         "dlc" in item && item.dlc !== null ? String(item.dlc) : "—",
+        routingEnabled(item) ? "On" : "Off · lokal",
       ];
     case "signals":
       return [
@@ -405,6 +408,7 @@ function resourceBaseTableValues(
         "byte_order" in item ? item.byte_order ?? "—" : "—",
         "data_type" in item ? item.data_type ?? "—" : "—",
         "unit" in item ? item.unit ?? "—" : "—",
+        !routingEnabled(item) ? "Off · lokal" : "message_id" in item && item.message_id && !routingEnabled(objectsById.get(item.message_id)) ? "On · Nachricht Off" : "On",
       ];
   }
 }
@@ -1738,6 +1742,12 @@ function ProposalObjectWizard({
 
         {step === 2 && (
           <div className="proposal-wizard-grid three">
+            {["Message", "Signal"].includes(objectType) && <RoutingPermissionFields
+              enabled={routingEnabled(draft)}
+              onChange={(enabled) => updateField("configuration", withRoutingPermission(draft.configuration, enabled))}
+              signal={objectType === "Signal"}
+              parentDisabled={objectType === "Signal" && !routingEnabled(objectById(references, draft.message_id))}
+            />}
             {objectType === "Message" && (
               <>
                 <WizardField label="Message-ID" value={fieldValue(draft.message_id_hex)} onChange={(value) => updateField("message_id_hex", value)} placeholder="0x1A0" />
@@ -1850,6 +1860,7 @@ function ProposalWizardSummary({
 
   return (
     <div className="proposal-wizard-summary">
+      {["Message", "Signal"].includes(objectType) && <section><h4>Systemübergreifende Weiterleitung</h4><p>Geroutet: {routingEnabled(values) ? "On" : "Off · lokal"}</p></section>}
       {sections.map((section) => (
         <section key={section.title}>
           <h4>{section.title}</h4>
@@ -1967,6 +1978,7 @@ function CreateForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
   const [reviewValues, setReviewValues] = useState<Record<string, unknown>>({});
+  const [routingAllowed, setRoutingAllowed] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [deviceType, setDeviceType] = useState(
@@ -2113,7 +2125,7 @@ function CreateForm({
       payload.direction = form.get("direction") || null;
       payload.cycle_ms = optionalFormNumber(form, "cycle_ms");
       payload.dlc = optionalFormNumber(form, "dlc");
-      payload.configuration = requirementPayload(form, "requirement_");
+      payload.configuration = withRoutingPermission(requirementPayload(form, "requirement_"), routingAllowed);
     }
     if (resource === "signals") {
       payload.message_id = parentId;
@@ -2128,6 +2140,7 @@ function CreateForm({
       payload.min_value = optionalFormNumber(form, "min_value");
       payload.max_value = optionalFormNumber(form, "max_value");
       payload.communication = requirementPayload(form, "requirement_");
+      payload.configuration = withRoutingPermission({}, routingAllowed);
       const semanticType = String(form.get("edit_semantic_type") || "UNKNOWN");
       const { enumValues, reservedValues } = parseSignalEnumValueRows(form);
       payload.semantic = { semantic_type: semanticType, quantity: normalizedName };
@@ -2382,6 +2395,7 @@ function CreateForm({
           <div className="field"><label htmlFor="dlc">DLC</label><input id="dlc" min="0" name="dlc" type="number" /></div>
         </div>
         <RequirementFields prefix="requirement_" />
+        <RoutingPermissionFields enabled={routingAllowed} onChange={setRoutingAllowed} />
         </>
       )}
 
@@ -2411,6 +2425,7 @@ function CreateForm({
           <div className="field"><label htmlFor="max_value">Maximum</label><input id="max_value" name="max_value" step="any" type="number" /></div>
         </div>
         <RequirementFields prefix="requirement_" />
+        <RoutingPermissionFields enabled={routingAllowed} onChange={setRoutingAllowed} signal parentDisabled={!routingEnabled(parents.find((candidate) => candidate.id === parentId))} />
         </>
       )}
       </div>
@@ -3386,6 +3401,7 @@ function EditObjectForm({
 
   // Keep the draft and its revision together while other views refresh.
   const [item] = useState(sourceItem);
+  const [routingAllowed, setRoutingAllowed] = useState(() => routingEnabled(sourceItem));
 
   function optionalNumber(form: FormData, name: string) {
     const value = form.get(name);
@@ -3440,12 +3456,13 @@ function EditObjectForm({
       payload.direction = form.get("edit_direction") || null;
       payload.cycle_ms = optionalNumber(form, "edit_cycle_ms");
       payload.dlc = optionalNumber(form, "edit_dlc");
-      payload.configuration = {
+      payload.configuration = withRoutingPermission({
         ...("configuration" in item ? item.configuration : {}),
         ...requirementPayload(form, "edit_requirement_"),
-      };
+      }, routingAllowed);
     }
     if (resource === "signals") {
+      payload.configuration = withRoutingPermission("configuration" in item ? item.configuration : {}, routingAllowed);
       payload.display_name = form.get("edit_display_name") || null;
       payload.start_bit = optionalNumber(form, "edit_start_bit");
       payload.length_bits = optionalNumber(form, "edit_length_bits");
@@ -3632,6 +3649,7 @@ function EditObjectForm({
           </div>
         </div>
         <RequirementFields defaults={item.configuration} prefix="edit_requirement_" />
+        <RoutingPermissionFields enabled={routingAllowed} onChange={setRoutingAllowed} />
         </>
       )}
 
@@ -3659,6 +3677,7 @@ function EditObjectForm({
         </fieldset>
         <SignalValueDomainFields item={item} />
         <RequirementFields defaults={item.communication} prefix="edit_requirement_" />
+        <RoutingPermissionFields enabled={routingAllowed} onChange={setRoutingAllowed} signal parentDisabled={!routingEnabled(referenceObjects.find((candidate) => candidate.id === item.message_id))} />
         </>
       )}
 

@@ -1,4 +1,4 @@
-import { isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
+import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
 import type { EquipmentAssignmentLearningSuggestion } from "../engineering-api.ts";
 import {
   compareTopologyClusterKeys,
@@ -67,6 +67,7 @@ export function equipmentTermMeaning(name: string): EquipmentTermMeaning {
 export type EquipmentEcuBranch = {
   name: string;
   interfaceType: string;
+  functions?: Array<{ name: string; signals: string[] }>;
   sensors: EquipmentDeviceLeaf[];
   actuators: EquipmentDeviceLeaf[];
 };
@@ -75,8 +76,20 @@ export type EquipmentHmiRoute = {
   source: string;
   target: string;
   signals: string[];
+  excluded_signals?: string[];
   path: string[];
 };
+
+export function hmiSignalKey(route: EquipmentHmiRoute, signal: string) {
+  return JSON.stringify([route.source, route.target, signal]);
+}
+
+export function selectHmiSignals(routes: EquipmentHmiRoute[], selections: Record<string, boolean> = {}): EquipmentHmiRoute[] {
+  return routes.map(route => ({ ...route,
+    signals: route.signals.filter(signal => selections[hmiSignalKey(route, signal)] === true),
+    excluded_signals: route.signals.filter(signal => selections[hmiSignalKey(route, signal)] !== true),
+  }));
+}
 
 export type EquipmentCluster = {
   id: string;
@@ -423,7 +436,10 @@ function controllerBranches(
       const leaf = deviceLeaf(
         endpoint,
         learned?.confidence ?? 1,
-        learned?.reason ?? "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden.",
+        configuredOwner ? endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
+          ? "Vom Nutzer ausdrücklich diesem Controller zugeordnet."
+          : "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden."
+          : learned?.reason ?? "Aus bestätigter Controller-Zuordnung übernommen.",
       );
       if (endpoint.device_type === "SensorController") branch.sensors.push(leaf);
       else branch.actuators.push(leaf);
@@ -474,35 +490,59 @@ function graphClusterFor(chain: ExtractedEngineeringChain, industry: string) {
 }
 
 function displayRoutesForClusters(clusters: EquipmentCluster[], allDevices: ExtractedEngineeringChain[]) {
-  const hmis = allDevices.filter((chain) => isEngineeringControllerDevice(chain.device_type)
-    && /kombiinstrument|headup|display|infotainment|passengerinformation|fahrgastinformation|hmi/i.test(chain.hardware_name));
+  const hmis = uniqueDevices(allDevices).filter((chain) => isEngineeringControllerDevice(chain.device_type)
+    && /kombiinstrument|headup|display|anzeige|infotainment|passengerinformation|fahrgastinformation|hmi/i.test(chain.hardware_name));
   if (!hmis.length) return;
   for (const cluster of clusters) {
-    if (!/powertrain|traction|antrieb/.test(`${cluster.id} ${cluster.label}`.toLowerCase())) continue;
     const sources = cluster.devices.filter((chain) => isEngineeringControllerDevice(chain.device_type));
     cluster.hmiRoutes = sources.flatMap((source) => hmis.filter(target => target.hardware_name !== source.hardware_name).map((target) => ({
       source: source.hardware_name,
       target: target.hardware_name,
-      signals: cluster.devices
+      signals: [...new Set(allDevices
         .filter((chain) => chain.hardware_name === source.hardware_name)
-        .map((chain) => chain.signal_display_name || chain.signal_name)
-        .filter(Boolean),
+        .map((chain) => chain.signal_name || chain.signal_display_name)
+        .filter(Boolean))],
       path: [source.hardware_name, cluster.recommendedNetworkLabel, "Gateway", target.hardware_name],
     })));
   }
 }
 
-export function equipmentClusterBusWarnings(cluster: EquipmentCluster, networkId: string, networkLabel = "") {
+export type EquipmentClusterIssue = {
+  code: "lin-cycle" | "lin-cluster" | "owner";
+  message: string;
+  action: string;
+  affected: Array<{ name: string; detail: string }>;
+};
+
+export function reviewedEquipmentCluster(cluster: EquipmentCluster, assignment: EquipmentClusterAssignment, chains: ExtractedEngineeringChain[]): EquipmentCluster {
+  const controllers = assignment.tree ?? cluster.controllers;
+  const unassigned = assignment.unassigned ?? cluster.unassigned;
+  const names = new Set([...controllers.flatMap(branch => [branch.name, ...branch.sensors.map(leaf => leaf.name), ...branch.actuators.map(leaf => leaf.name)]), ...unassigned.map(leaf => leaf.name)]);
+  return { ...cluster, controllers, unassigned, devices: chains.filter(chain => names.has(chain.hardware_name)) };
+}
+
+export function equipmentClusterBusIssues(cluster: EquipmentCluster, networkId: string, networkLabel = ""): EquipmentClusterIssue[] {
   const network = compactKey(`${networkId} ${networkLabel}`);
-  const warnings: string[] = [];
-  if (network.includes("lin") && cluster.devices.some((chain) => chain.cycle_ms <= 20)) {
-    warnings.push("LIN ist für mindestens einen Teilnehmer mit Zykluszeit ≤ 20 ms nicht die belastbare Standardwahl.");
+  const issues: EquipmentClusterIssue[] = [];
+  const fast = cluster.devices.filter(chain => Number.isFinite(chain.cycle_ms) && chain.cycle_ms > 0 && chain.cycle_ms <= 20);
+  if (network.includes("lin") && fast.length) {
+    issues.push({ code: "lin-cycle", message: `LIN-Prüfregel: ${new Set(fast.map(chain => chain.hardware_name)).size} Teilnehmer mit Zykluszeit ≤ 20 ms.`,
+      action: "Bustechnik dieses Clusters prüfen oder die betroffenen Teilnehmer einem geeigneten Buszweig zuordnen. Die Zykluszeit nicht nur zur Beseitigung der Warnung erhöhen; Kapazität und funktionales Timing separat nachweisen.",
+      affected: fast.map(chain => ({ name: chain.hardware_name, detail: `${chain.signal_display_name || chain.signal_name || chain.message_name}: ${chain.cycle_ms} ms · Schnittstelle ${chain.interface_type}` })) });
   }
   if (network.includes("lin") && /safety|bremse|antrieb|traction|fahrwerk|signalling/.test(cluster.label.toLowerCase())) {
-    warnings.push("Safety- oder regelungskritischer Systemzweig darf nicht ohne begründete Ausnahme auf LIN liegen.");
+    issues.push({ code: "lin-cluster", message: `Bustechnik des gesamten Clusters „${cluster.label}“: LIN erfordert eine begründete Ausnahme.`,
+      action: "Die Prüfregel stammt aus der Clusterbezeichnung, nicht aus einem nachgewiesenen Fehler eines einzelnen Geräts. Bustechnik und Funktionsanforderungen dieses Systemzweigs prüfen.", affected: [] });
   }
-  if (cluster.unassigned.length) warnings.push(`${cluster.unassigned.length} Sensoren/Aktoren besitzen noch keine eindeutige Controller-Zuordnung.`);
-  return warnings;
+  if (cluster.unassigned.length) issues.push({ code: "owner", message: `${cluster.unassigned.length} Sensoren/Aktoren ohne eindeutige Controller-Zuordnung.`,
+    action: "Diese Teilnehmer im Bereich ohne Controller-Zuordnung zuordnen.",
+    affected: cluster.unassigned.map(leaf => ({ name: leaf.name, detail: leaf.reason })) });
+  return issues;
+}
+
+export function equipmentClusterBusWarnings(cluster: EquipmentCluster, networkId: string, networkLabel = "") {
+  return equipmentClusterBusIssues(cluster, networkId, networkLabel).map(issue =>
+    `${issue.message} ${issue.action}${issue.affected.length ? ` Betroffen: ${issue.affected.map(item => `${item.name} (${item.detail})`).join("; ")}` : ""}`);
 }
 
 export function buildEquipmentClusters(
@@ -511,6 +551,7 @@ export function buildEquipmentClusters(
   industry?: string,
   learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
 ): EquipmentCluster[] {
+  chains = addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || "");
   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
   const graphMode = Boolean(industry);
   const buckets = new Map<string, { label: string; clusterKey: string; recommendation: string; preferredNetworks: string[]; devices: ExtractedEngineeringChain[] }>();
@@ -532,7 +573,7 @@ export function buildEquipmentClusters(
           ?? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
           ?? (controllerGraphs.length === 1 ? controllerGraphs[0].graph : undefined)
         : undefined;
-      const graph = graphMode ? inheritedGraph ?? graphClusterFor(chain, profile) : null;
+      const graph = graphMode ? inheritedGraph ?? controllerGraphs.find(candidate => candidate.name === chain.hardware_name)?.graph ?? graphClusterFor(chain, profile) : null;
       const rule = ruleFor(chain);
       const explicit = explicitSystemName(chain);
       const fallback = explicit ? null : fallbackClusterFor(chain);
@@ -555,6 +596,13 @@ export function buildEquipmentClusters(
       const preferences = graphMode ? profilePreferences(profile, id, sortedDevices) : bucket.preferredNetworks;
       const network = recommendedNetwork(networkOptions, preferences);
       const ownership = controllerBranches(sortedDevices, profile, learnedAssignments);
+      for (const branch of ownership.branches as EquipmentEcuBranch[]) {
+        const functions = new Map<string, string[]>();
+        for (const chain of chains.filter(item => item.hardware_name === branch.name && item.configuration?.functional_output_template)) {
+          functions.set(chain.function_name, [...new Set([...(functions.get(chain.function_name) ?? []), chain.signal_name])]);
+        }
+        branch.functions = [...functions].map(([name, signals]) => ({ name, signals }));
+      }
       return {
         id,
         label: bucket.label,
@@ -602,6 +650,7 @@ export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignm
         source: route.source,
         target: route.target,
         signals: route.signals,
+        ...(route.excluded_signals ? { excluded_signals: route.excluded_signals } : {}),
         path: route.path,
       })),
       warnings: assignment.validation?.warnings ?? [],

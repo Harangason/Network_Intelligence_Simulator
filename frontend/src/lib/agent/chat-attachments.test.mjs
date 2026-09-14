@@ -15,3 +15,10 @@ test('rejects malformed or oversized sources rather than sending names alone', (
   assert.throws(() => chatDocumentContext(Array(5).fill({ type: 'data-attachment', data: source })));
   assert.equal(chatDocumentContext([{ type: 'text' }]), '');
 });
+
+test('accepts 500 MiB traces while retaining bounded text and document limits', () => {
+  const trace = { ...source, name: 'capture.pcapng', format: 'PCAPNG', size: 500 * 1024 * 1024, truncated: true };
+  assert.deepEqual(validateChatAttachment(trace), trace);
+  assert.throws(() => validateChatAttachment({ ...trace, size: trace.size + 1 }));
+  assert.throws(() => validateChatAttachment({ ...trace, text: 'x'.repeat(16001) }));
+});

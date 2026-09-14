@@ -456,6 +456,25 @@ def complete_plan(planner):
         restore, reason = restoration_option(planner, group)
         group['restore_unavailable'] = reason
         if restore: group['options'].append(restore)
+        # A physical repair never grants forwarding that has been switched off
+        # since the original route was approved, including hidden frame fields.
+        from .routing.payload_scope import payload_scope_issues
+        scope_interfaces = {str(item['id']): item for item in planner.objects['Interface']}
+        originals = {str(route['id']): route for route in planner.routes}
+        allowed_options, scope_errors = [], []
+        for option in group['options']:
+            candidates = [{**originals.get(str(change['id']), {}), **change} for change in option['route_changes']]
+            candidates.extend(creation['data'] for creation in option.get('create_routes', []))
+            issues = [issue for route in candidates for issue in payload_scope_issues(
+                route, planner.messages, planner.signals, scope_interfaces)]
+            if issues:
+                scope_errors.extend(issue['message'] for issue in issues)
+            else:
+                allowed_options.append(option)
+        group['options'] = allowed_options
+        if scope_errors and not allowed_options:
+            group['reason'] = ' '.join(dict.fromkeys(scope_errors))
+            group['status'] = 'BLOCKED'
         group['options'].sort(key=lambda o: (o.get('action') == 'restore', sum(len(c['data']['identity'].get('communication_forwarding', [])) for c in o.get('hardware_changes', [])), sum(len(p['ports']) for c in o['route_changes'] for p in c['route'].get('physical_paths', []))))
         if group['options']: group['status'] = 'QUESTION'
     return plan

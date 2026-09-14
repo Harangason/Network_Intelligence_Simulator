@@ -25,15 +25,16 @@ export default function Home() {
   return (
     <main className="landing">
       <MarketingNav />
+      <div className="landing-motion-control"><label><input id="landing-motion-pause" type="checkbox" /> Animationen pausieren</label></div>
 
       <section className="landing-hero" aria-labelledby="hero-title">
         <div className="hero-noise" aria-hidden="true" />
         <div className="hero-orbit" aria-hidden="true">
           <div className="orbit-ring orbit-ring-one" />
           <div className="orbit-ring orbit-ring-two" />
-          <span className="orbit-node node-one" />
-          <span className="orbit-node node-two" />
-          <span className="orbit-node node-three" />
+          <div className="orbit-carrier orbit-carrier-one"><span className="orbit-node node-one" /></div>
+          <div className="orbit-carrier orbit-carrier-two"><span className="orbit-node node-two" /></div>
+          <div className="orbit-carrier orbit-carrier-three"><span className="orbit-node node-three" /></div>
           <div className="orbit-core"><LogoMark /></div>
         </div>
         <div className="landing-hero-content">

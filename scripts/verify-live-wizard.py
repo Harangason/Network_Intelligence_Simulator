@@ -8,10 +8,12 @@ import argparse
 from http.cookiejar import CookieJar
 import json
 import hashlib
+import os
 import re
 from pathlib import Path
 import time
 from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 
@@ -24,6 +26,12 @@ def main():
     parser.add_argument('--technology', choices=['can_fd', 'ethernet'], default='can_fd')
     parser.add_argument('--complete-scope', action='store_true', help='Confirm consumers for both ECU status messages, so ALL is executable.')
     args = parser.parse_args()
+    endpoint = urlsplit(args.base_url)
+    if (os.environ.get('NIS_E2E_ISOLATED') != '1' or endpoint.hostname not in {'127.0.0.1', 'localhost'}
+            or endpoint.port in {None, 13500, 15050}):
+        raise SystemExit('Use run-release-gate.py. HTTP acceptance refuses the product stack.')
+    expected_steps = {'engineering_model', 'routing', 'network_editor', 'parameters', 'capacity_timing',
+                      'validation', 'simulation', 'results_analysis', 'data_science_intelligence'}
     project = 'astra-e2e-' + uuid4().hex[:12]
     print(json.dumps({'phase': 'start', 'project': project}), flush=True)
     run_id = str(uuid4())
@@ -72,18 +80,55 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
             '- Kommunikationssystem-Sollwerte: ' + json.dumps([{'id': 'can_fd', 'count': args.initial_can_fd_segments}])
             + '\n- Hardware-Sollwerte:')
     resource_decisions = []
+    wizard_context = {'scope_ids': sorted(expected_steps), 'project_name': 'Isolated HTTP acceptance',
+                      'mode': 'full', 'process_ids': ['defaults', 'review_gate', 'approve_after_allow']}
     if args.prompt_file:
         prompt = args.prompt_file.read_text(encoding='utf-8')
         prompt = re.sub(r'^- Lauf-ID:.*$', '- Lauf-ID: ' + run_id, prompt, flags=re.M)
+        metadata = args.prompt_file.with_suffix('.json')
+        if metadata.exists():
+            wizard_context.update(json.loads(metadata.read_text(encoding='utf-8')).get('wizard_context') or {})
+    wizard_context.update(project_id=project, run_id=run_id)
+    request_revision = None
     for attempt in range(8):
         message = prompt + ('\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.' if attempt else '')
-        events = request('/api/engineering/agent/chat', {'prompt': message}, stream=True)
+        command = {'action': 'CONTINUE' if attempt else 'START', 'run_id': run_id,
+                   'operation_id': str(uuid4()), 'target': 'data_science_intelligence'}
+        if not attempt:
+            command['wizard_context'] = wizard_context
+        if request_revision is not None:
+            command['request_revision'] = request_revision
+        events = request('/api/engineering/agent/chat', {'prompt': message, 'wizard_command': command}, stream=True)
+        receipts = [event.get('wizard_receipt') for event in events if event.get('wizard_receipt')]
+        if receipts:
+            request_revision = receipts[-1]['request_revision']
         proposals = [event['proposal'] for event in events if event.get('type') == 'APPROVAL' and event.get('proposal')]
         if not proposals:
-            workflow = request('/api/engineering/workflow?view=summary')
-            if all(value in {'COMPLETE', 'APPROVED', 'WARNING'} for value in workflow['statuses'].values()):
-                break
-            raise AssertionError({'statuses': workflow['statuses'], 'events': events[-5:]})
+            deadline = time.monotonic() + 600
+            while True:
+                workflow = request('/api/engineering/workflow?view=summary')
+                assert set(workflow['statuses']) == expected_steps, workflow['statuses']
+                if all(value in {'COMPLETE', 'APPROVED', 'WARNING'} for value in workflow['statuses'].values()):
+                    break
+                execution = workflow.get('context', {}).get('agent_execution') or {}
+                if execution.get('state') == 'REVIEW_REQUIRED':
+                    conversation = request('/api/engineering/agent/conversation')['data']
+                    candidate = conversation.get('active_proposal')
+                    if candidate:
+                        proposal = request('/api/engineering/agent/proposals/' + candidate)['data']
+                        if proposal['status'] not in {'APPLIED', 'REJECTED'}:
+                            proposals = [proposal]
+                            break
+                if execution.get('state') == 'READY_TO_CONTINUE':
+                    break
+                assert execution.get('state') not in {'BLOCKED', 'FAILED', 'INCOMPLETE'}, {
+                    'statuses': workflow['statuses'], 'execution': execution, 'events': events[-5:]}
+                assert time.monotonic() < deadline, {'reason': 'Background workflow timed out', 'execution': execution}
+                time.sleep(.5)
+            if not proposals:
+                if all(value in {'COMPLETE', 'APPROVED', 'WARNING'} for value in workflow['statuses'].values()):
+                    break
+                continue
         for proposal in proposals:
             assert proposal['status'] == 'VALIDATED', proposal.get('validation_result')
             if proposal['proposal_type'] in {'WIZARD_NETWORK_TOPOLOGY', 'CAPACITY_NETWORK_REPAIR'}:
@@ -126,7 +171,10 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
     trace = request('/api/simulations/' + completed['id'] + '/trace-window?limit=5')
     assert trace['count'] > 0 and any(event.get('signals') for event in trace['events']), {
         'count': trace['count'], 'signal_events': sum(bool(event.get('signals')) for event in trace['events'])}
-    repeated = request('/api/engineering/agent/chat', {'prompt': prompt + '\nFortsetzung des bestätigten Wizard-Auftrags: Ziel: data_science_intelligence.'}, stream=True)
+    repeated = request('/api/engineering/agent/chat', {'prompt': '', 'wizard_command': {
+        'action': 'CONTINUE', 'run_id': run_id, 'operation_id': str(uuid4()),
+        **({'request_revision': request_revision} if request_revision is not None else {}),
+    }}, stream=True)
     assert any(event.get('type') == 'RESULT' and event.get('status') == 'COMPLETED' for event in repeated), repeated[-3:]
     assert len(request('/api/simulations')['jobs']) == len(jobs), 'Retry created a duplicate simulation.'
     network_view = request('/api/engineering/workflow/network-view')
@@ -153,6 +201,7 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
     scene_summary = {'version': scene['version'], 'nodes': len(topology['nodes']), 'buses': len(scene['buses']),
         'frames': len(scene['frames']), 'branches': len(actual), 'model_signature_verified': True}
     report = {'project': project, 'run_id': run_id, 'job_id': completed['id'], 'statuses': workflow['statuses'],
+              'request_sha256': hashlib.sha256(prompt.encode()).hexdigest(),
               'network_scene': scene_summary,
               'assessment': assessment,
               'resource_decisions': resource_decisions,

@@ -19,6 +19,36 @@ User basis: LIN reference/brake audit of 2026-09-10 and its implementation appro
 
 ## Executable transmission contract
 
+In the default `ALL` simulation transport scope, an entire Message may be
+explicitly excluded only when `configuration.routing.enabled` is exactly `false`,
+its confirmed `communication_contract.scope` is `FUNCTION_OUTPUT`, and no current
+authored transport references it or any of its signals. Local measurement, feedback or
+command roles and the local actuator-command generator always require transport;
+`LOCAL_IO`, `DEVICE_IO`, unknown scope and missing routing flags are not exemptions.
+An enabled Message with one or even all signals disabled still requires its
+physical transport or an explicitly encoded replacement; signal switches cannot
+repack or remove a frame. Invalid, pending or `OUTDATED` routes and signal-only
+references prevent this exemption without themselves supplying executable coverage.
+Explicitly `REJECTED`, `SUPERSEDED` or `DEPRECATED` historical routes no longer
+express current transport intent and do not prevent the exemption; they still
+remain in history and provide no executable coverage. An explicitly selected simulation scope
+is never reduced by this rule. Preserve total model inventory and report excluded
+message/signal IDs, the canonical display name and the reason
+`EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED` in `scope_coverage.transport_exclusions`.
+This is a declared absence of external transport, never observed functional
+behavior or timing acceptance. Preflight and snapshot creation use the same rule
+and the canonical project inventory; supplied configuration claims cannot override it.
+
+HMI display choices in the engineering wizard are explicit per source signal and
+display destination. New choices start disabled. The submitted system cluster
+graph stores enabled values in `hmi_routes.signals` and disabled values in
+`hmi_routes.excluded_signals`. Disabled display forwarding must not be restored
+by default monitoring recipients or stale routing consumers. Local calculations,
+device ownership and other functional/diagnostic recipients remain intact.
+Resolve choices against canonical signals and their messages. Mixed enabled and
+disabled signals in one physical message require an explicit separate payload;
+never shrink the original DLC or silently forward the excluded values.
+
 Architecture repair additionally follows the user's clarification of 11.09.2026:
 use the **current hardware architecture** to implement the **established communication
 between functions**. Preserve function and logical interface identities independently

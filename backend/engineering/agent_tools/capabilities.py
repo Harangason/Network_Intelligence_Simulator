@@ -14,6 +14,26 @@ def entry(id, label, description, path, tools, steps, *, resource=None, launch=N
                 tools=tools, steps=steps, resource=resource, launch=launch)
 
 
+def prepare_project_request(arguments):
+    from backend.agent_core.orchestration.project_intake import project_intake_text
+    requirement = arguments['requirement'].strip()
+    if not requirement:
+        raise ValueError('Eine Projektanforderung ist erforderlich.')
+    directory = catalog({'capability_id': 'project'})
+    item = directory['capabilities'][0]
+    if not item['available']:
+        raise ValueError('Der Engineering-Wizard ist momentan nicht verfügbar.')
+    action = {**item['action'], 'label': 'Projektentwurf ausarbeiten',
+              'description': 'Vorgabe übernehmen, ergänzen und prüfen', 'requirement': requirement}
+    notes = arguments.get('planning_notes', '').strip()
+    text = project_intake_text(requirement)
+    if notes:
+        text += '\n\nKI-Planungsvorschlag zur Prüfung:\n' + notes
+    return {'agent_response': {'type': 'RESULT', 'status': 'INCOMPLETE',
+                              'text': text, 'actions': [action],
+                              'metadata': {'planning_mode': 'model_assisted' if notes else 'guided_intake'}}}
+
+
 CAPABILITIES = [
     entry('signal', 'Signal anlegen', 'Signal mit Bedeutung, Einheit, Wertebereich und expliziter Kodierung anlegen.', '/studio/engineering',
           ['generate_signals', 'validate_signal'], ['Identität', 'Nachricht zuordnen', 'Kodierung und Zeitverhalten', 'Prüfen und speichern'], resource='signals', launch='create'),
@@ -69,6 +89,10 @@ CONCEPTS = {
 
 def catalog(arguments):
     from .catalog import TOOLS
+    from .runtime import DEFAULT_PERMISSIONS
+    from backend.agent_core.registry.skill_registry import SkillRegistry
+    from backend.agent_core.api.input_output import INPUT_TYPES, SUPPORTED_INPUTS
+    permissions = arguments.get('_permissions', DEFAULT_PERMISSIONS)
     requested = arguments.get('capability_id')
     items = [deepcopy(item) for item in CAPABILITIES if not requested or item['id'] == requested]
     if not items:
@@ -76,11 +100,12 @@ def catalog(arguments):
     state = WorkflowStatusService(current_project_id()).get(summary=True)
     settings = (state.get('context') or {}).get('engineering_wizard_settings') or {}
     for item in items:
-        item['available'] = all(name in TOOLS for name in item['tools'])
+        item['available'] = all(name in TOOLS and TOOLS[name].permission in permissions for name in item['tools'])
         item['action'] = {'type': 'CAPABILITY', 'capability_id': item['id'], 'label': item['label'],
                           'description': item['description'], 'project_id': current_project_id()}
     return {'project_id': current_project_id(), 'project_name': settings.get('project_name') or current_project_id(),
-            'capabilities': items}
+            'capabilities': items, 'skill_contracts': SkillRegistry(items, TOOLS).contracts(permissions),
+            'input_adapters': [{'input_type': kind, 'available': kind in SUPPORTED_INPUTS} for kind in INPUT_TYPES]}
 
 
 def prepare_action(arguments):

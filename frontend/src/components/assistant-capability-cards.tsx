@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { readActiveProjectId, withProjectParam } from '@/lib/user-settings';
+import { projectIntakeKey } from '@/lib/agent/project-intake';
 
 type Action = Record<string, unknown>;
 const paths = new Set(['/studio', '/studio/engineering', '/studio/routing', '/studio/capacity',
@@ -35,6 +36,12 @@ export function AssistantCapabilityCards({ actions, projectId }: { actions: Acti
       if (item.id === 'repair' && typeof action.repair_workload === 'string' && /^repair-[a-f0-9]{32}$/.test(action.repair_workload)) query.set('repair_workload', action.repair_workload);
       if (item.id === 'parameters') query.set('mode', 'parameter');
       if (item.id === 'spatial') query.set('mode', 'network');
+      if (item.id === 'project' && typeof action.requirement === 'string' && action.requirement.trim()) {
+        if (action.requirement.length > 16000) throw new Error('Die Projektanforderung ist zu lang.');
+        window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({
+          projectId, requirement: action.requirement,
+        }));
+      }
       window.location.assign(withProjectParam(`${item.path}?${query}`, projectId));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Ablauf konnte nicht geöffnet werden.'); }
     finally { setBusy(false); }

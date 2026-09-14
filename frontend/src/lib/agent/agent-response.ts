@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { outputEnvelopeSchema } from './input-output.ts';
 
 export const chatMessageTypes = ["TEXT", "QUESTION", "MULTI_SELECT", "SINGLE_SELECT", "RECOMMENDATION", "FINDING", "PROGRESS", "RESULT", "APPROVAL", "ERROR"] as const;
 export const interactiveOptionSchema = z.object({
@@ -20,6 +21,7 @@ export const interactiveQuestionSchema = z.object({
     ctx.addIssue({ code: "custom", message: "Ungültige Auswahloptionen" });
 });
 export const agentResponseSchema = z.object({
+  outputs: z.array(outputEnvelopeSchema).max(20).default([]),
   id: z.string().min(1), type: z.enum(chatMessageTypes), text: z.string().max(30000).default(""), title: z.string().max(300).default(""),
   context_refs: z.array(z.record(z.string(), z.string())).max(100).default([]), question: interactiveQuestionSchema.optional(),
   options: z.array(interactiveOptionSchema).default([]), actions: z.array(z.record(z.string(), z.unknown())).max(12).default([]),

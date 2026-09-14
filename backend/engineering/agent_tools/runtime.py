@@ -51,7 +51,8 @@ def execute(authority: ToolAuthority, name: str, permission: Permission, argumen
         forbidden = {"project_id", "active_project_id", "permissions", "actor", "approved_by"} & arguments.keys()
         if forbidden:
             raise PermissionError("Projekt und Berechtigungen werden vom Server festgelegt.")
-        value = handler({**arguments, "_trace_id": trace_id, "_actor": authority.actor})
+        value = handler({**arguments, "_trace_id": trace_id, "_actor": authority.actor,
+                         "_permissions": [p.value for p in authority.permissions]})
         if isinstance(value, PostCommitAction):
             record(trace_id,authority.actor,"DISPATCH_PENDING",name,"SUCCESS",{"argument_keys":sorted(arguments)})
             unit.finish(True)

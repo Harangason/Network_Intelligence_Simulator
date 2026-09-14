@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from 'node:fs';
 
 test('standard status replaces a generated legacy duplicate and class two has status', () => {
   const base = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
@@ -48,6 +49,83 @@ test("confirmed graph may exceed targets declared as minimum scope for system co
 });
 
 import { applyConfirmedClusterGraph, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+
+test('role-first user declarations retain named participants instead of filling their slots from the catalogue', () => {
+  const task = 'Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Statuswerte werden an Anzeige und System übermittelt. Prüfe und arbeite bis Data Science & Intelligence.';
+  const spec = extractEngineeringSpecification(task, { gateways: 1, ecus: 2, sensors: 1, actuators: 1 }, 'automotive', true);
+  assert.deepEqual(spec.chains.map(chain => [chain.hardware_name, chain.device_type]).sort(), [
+    ['System', 'Gateway'], ['Motorsteuerung', 'ECU'], ['Anzeige', 'ECU'],
+    ['MotorTemperature', 'SensorController'], ['MotorValve', 'ActuatorController'],
+  ].sort());
+  for (const name of ['MotorTemperature', 'MotorValve']) {
+    const endpoint = spec.chains.find(chain => chain.hardware_name === name);
+    assert.equal(endpoint.configuration.functional_owner, 'Motorsteuerung');
+    assert.equal(endpoint.configuration.functional_owner_source, 'explicit_user_statement');
+    assert.equal(endpoint.configuration.bit_length, endpoint.length_bits);
+  }
+});
+
+test('typed lists support quoted identifiers across industries without consuming following prose as devices', () => {
+  const spec = extractEngineeringSpecification('Erzeuge ein Profinet Netzwerk mit der PLC "Room Control", den Sensoren "Room Temp" und humidity, dem Aktor valve. Sensoren werden ausgewertet. Aktoren mit Rückmeldung.', {}, 'building_automation');
+  assert.deepEqual(spec.chains.map(chain => [chain.hardware_name, chain.device_type]).sort(), [
+    ['Room Control', 'PLC'], ['Room Temp', 'SensorController'], ['humidity', 'SensorController'], ['valve', 'ActuatorController'],
+  ].sort());
+});
+
+test('the original large wizard specification retains one gateway instead of promoting its tasks to hardware', () => {
+  const original = readFileSync(new URL('../../../e2e/fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
+  const spec = extractEngineeringSpecification(original, {}, 'automotive', true);
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name), ['System']);
+  assert.ok(!spec.chains.some(chain => ['Queueing', 'Timing', 'Load', 'muss', 'Delay', 'Drop'].includes(chain.hardware_name)));
+});
+
+test('the confirmed original graph restores coverage signal identities and command encodings after catalogue redistribution', () => {
+  const prompt = readFileSync(new URL('../../../e2e/fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
+  const spec = extractEngineeringSpecification(prompt);
+  const owners = ['Allradsteuerung', 'Hinterachslenkung', 'Soundsystem'];
+  const roles = [
+    ['PrimaryFeedback', 'Rueckmeldung', 10, 0.1, 100, '%'],
+    ['OperatingState', 'Betriebszustand', 4, 1, 15, 'code'],
+    ['PrimaryCommand', 'Stellbefehl', 10, 0.1, 100, '%'],
+    ['EnableCommand', 'Freigabebefehl', 1, 1, 1, 'code'],
+    ['SafetyCommand', 'Sicherheitsbefehl', 3, 1, 3, 'code'],
+  ];
+  const missing = new Set(owners.flatMap(owner => roles.map(([role]) => `${owner}${role}`)));
+  for (const owner of ['Parkassistenz', 'Reifendruckkontrolle', 'Ultraschallverarbeitung']) missing.add(`${owner}HealthFeedback`);
+  // Simulate a changed catalogue/count allocation without changing the reviewed graph.
+  spec.chains = spec.chains.filter(chain => !missing.has(chain.hardware_name));
+  const restored = reconcileConfirmedGraphDevices(spec, prompt);
+  for (const owner of owners) for (const [role, signal, bits, factor, maximum, unit] of roles) {
+    const chain = restored.find(item => item.hardware_name === `${owner}${role}`);
+    assert.ok(chain, `${owner}${role}`);
+    assert.equal(chain.signal_name, `${owner}${signal}`);
+    assert.equal(chain.configuration.functional_owner, owner);
+    assert.equal(chain.configuration.coverage_role, role);
+    assert.equal(chain.configuration.parameter_quality, 'DOMAIN_TEMPLATE');
+    assert.deepEqual([chain.length_bits, chain.factor, chain.min_value, chain.max_value, chain.unit, chain.byte_order],
+      [bits, factor, 0, maximum, unit, 'little_endian']);
+    assert.equal(chain.interface_type, owner === 'Soundsystem' ? 'LIN' : 'CAN_FD');
+    if (role.endsWith('Command')) {
+      assert.deepEqual(chain.configuration.actuator_command_template.data, { minimum: 0, maximum, resolution: factor });
+      assert.equal(chain.configuration.actuator_command_template.length_bits, bits);
+      assert.equal(chain.configuration.actuator_command_template.source, 'wizard-generic-actuator-v1');
+    }
+    if (role === 'EnableCommand') assert.deepEqual(chain.data.enum_values, { FALSE: 0, TRUE: 1 });
+    if (role === 'OperatingState') assert.deepEqual(chain.data.enum_values, { OK: 0, WARNING: 1, ERROR: 2, NOT_AVAILABLE: 3 });
+  }
+  for (const owner of ['Parkassistenz', 'Reifendruckkontrolle', 'Ultraschallverarbeitung']) {
+    const chain = restored.find(item => item.hardware_name === `${owner}HealthFeedback`);
+    assert.equal(chain.signal_name, `${owner}Zustandsdiagnose`);
+    assert.equal(chain.configuration.functional_owner, owner);
+  }
+});
+
+test('bare gateway capabilities do not declare hardware while explicit names remain supported', () => {
+  const capabilities = '- Gateway Queueing\n- Gateway Timing\n- Gateway Load Monitoring\nGateway muss Fehler melden.\n- Gateway Delay\n- Gateway Drop';
+  assert.equal(extractEngineeringSpecification(capabilities).chains.length, 0);
+  const named = extractEngineeringSpecification('Erzeuge ein Netzwerk.\nGateway namens System\nGateway namens Timing\nGateway: Queueing\nGateway "Load"');
+  assert.deepEqual(named.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name).sort(), ['Load', 'Queueing', 'System', 'Timing']);
+});
 
 test("domain evidence detects rail content independently from a conflicting wizard header", () => {
   const evidence = engineeringDomainEvidence(`Industrie: Automotive\nAxleTemperatureSensor\nBogiesensorik\nPantographControl\nWaysideCommunication`);
@@ -631,4 +709,19 @@ test("companion domains do not inherit percentage, boolean or state metadata", (
   assert.deepEqual(counter.data.enum_values, {});
   assert.equal(counter.data.maximum, 15);
   assert.equal(counter.configuration.bit_length, 4);
+});
+
+
+test("hosted output templates preserve hosts, explicit signals and separate editable messages", async () => {
+  const { addAutomotiveFunctionOutputs } = await import("./engineering-specification.ts");
+  const spec = extractEngineeringSpecification("Automotive Fahrzeug mit 50 ECUs und 1 Gateway");
+  const enriched = addAutomotiveFunctionOutputs(spec.chains, spec.domain);
+  assert.equal(new Set(enriched.map(c => c.hardware_name)).size, new Set(spec.chains.map(c => c.hardware_name)).size);
+  assert.deepEqual(enriched.slice(0, spec.chains.length), spec.chains);
+  const outputs = enriched.filter(c => c.configuration?.functional_output_template);
+  assert.ok(outputs.length >= 15);
+  assert.equal(new Set(outputs.map(c => c.message_name)).size, outputs.length);
+  assert.equal(new Set(enriched.map(c => c.message_id_hex)).size, new Set(spec.chains.map(c => c.message_id_hex)).size + outputs.length);
+  assert.deepEqual(addAutomotiveFunctionOutputs(enriched, spec.domain), enriched);
+  assert.deepEqual(addAutomotiveFunctionOutputs(spec.chains, "rail"), spec.chains);
 });

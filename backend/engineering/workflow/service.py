@@ -188,11 +188,18 @@ class WorkflowStatusService:
 
     def get(self, *, summary: bool = False) -> dict[str, Any]:
         with get_connection() as connection:
-            self._ensure(connection)
             row = connection.execute(
                 "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
                 (self.project_id,),
             ).fetchone()
+            # Even ON CONFLICT DO NOTHING waits for an in-flight UPDATE of the
+            # existing row. Polling must be able to read its committed version.
+            if row is None:
+                self._ensure(connection)
+                row = connection.execute(
+                    "SELECT * FROM engineering_workflow_projects WHERE project_id = %s",
+                    (self.project_id,),
+                ).fetchone()
             state = self._state(row)
             artifact_checks = self._bootstrap_statuses(connection, state)
             latest = connection.execute(
@@ -249,7 +256,8 @@ class WorkflowStatusService:
 
     def list_simulation_snapshots(self, *, include_details: bool = False) -> list[dict[str, Any]]:
         with get_connection() as connection:
-            self._ensure(connection)
+            # A metadata read must not wait on an unrelated project write.
+            # An unknown project naturally has no persisted snapshots.
             rows = self._list_simulation_snapshot_rows(connection, include_details=include_details)
         return [self._serialize_row(item) for item in rows]
 
@@ -464,16 +472,17 @@ class WorkflowStatusService:
         fanout_routes = int(fanout["routes"] or 0)
         fanout_interfaces = int(fanout["interfaces"] or 0)
         messages = connection.execute(
-            "SELECT id, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+            "SELECT id, name, configuration, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
         ).fetchall()
         signals = connection.execute(
             "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
         ).fetchall()
-        routes = connection.execute(
-            "SELECT id, payload, status FROM engineering_routing_entries WHERE project_id = %s "
-            "AND approval_state = 'APPROVED' AND validation ->> 'valid' = 'true'", (self.project_id,),
+        declared_routes = connection.execute(
+            "SELECT id, payload, status, approval_state, validation ->> 'valid' AS valid FROM engineering_routing_entries WHERE project_id = %s",
+            (self.project_id,),
         ).fetchall()
-        coverage = simulation_coverage(messages, signals, routes, scope)
+        routes = [route for route in declared_routes if route.get("approval_state") == "APPROVED" and route.get("valid") == "true"]
+        coverage = simulation_coverage(messages, signals, routes, scope, declared_transports=declared_routes)
         complete = total > 0 and approved == total and valid == total and coverage["complete"]
         status = "APPROVED" if complete else (
             "ERROR" if invalid or fanout_routes else ("WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY"))
@@ -652,6 +661,11 @@ class WorkflowStatusService:
     def _bootstrap_statuses(self, connection, state: dict[str, Any]) -> dict[str, Any]:
         """Reconcile source statuses with real, project-scoped artifacts."""
         statuses = state["statuses"]
+        observed_state = {
+            **state,
+            "statuses": dict(statuses),
+            "stale_reasons": dict(state["stale_reasons"]),
+        }
         checks: dict[str, Any] = {}
         changed = False
         for step in WORKFLOW_STEPS[:4]:
@@ -671,11 +685,20 @@ class WorkflowStatusService:
                             statuses[dependent] = "OUTDATED"
                             state["stale_reasons"][dependent] = reason
         if changed:
-            connection.execute(
-                "UPDATE engineering_workflow_projects SET statuses = %s::jsonb, "
-                "stale_reasons = %s::jsonb, updated_at = now() WHERE project_id = %s",
-                (_json(statuses), _json(state["stale_reasons"]), self.project_id),
-            )
+            # Reconciliation is opportunistic for reads: never wait behind the
+            # running writer or overwrite a commit made after our initial read.
+            # Compare the full state because updates in one transaction may share
+            # updated_at, and some legacy writers do not advance that timestamp.
+            current = connection.execute(
+                "SELECT * FROM engineering_workflow_projects WHERE project_id = %s FOR UPDATE SKIP LOCKED",
+                (self.project_id,),
+            ).fetchone()
+            if current is not None and self._state(current) == observed_state:
+                connection.execute(
+                    "UPDATE engineering_workflow_projects SET statuses = %s::jsonb, "
+                    "stale_reasons = %s::jsonb, updated_at = now() WHERE project_id = %s",
+                    (_json(statuses), _json(state["stale_reasons"]), self.project_id),
+                )
         return checks
 
     def artifact_status(self, step: str) -> dict[str, Any]:
@@ -808,7 +831,8 @@ class WorkflowStatusService:
             )
         return self.get()
 
-    def set_context(self, context: dict[str, Any], *, summary: bool = False) -> dict[str, Any]:
+    def set_context(self, context: dict[str, Any], *, summary: bool = False,
+                    client_write: bool = False, execution_guard: dict | None = None) -> dict[str, Any]:
         allowed = {
             "communication_sizing_history",
             "communication_sizing_receipt",
@@ -838,7 +862,12 @@ class WorkflowStatusService:
             normalize_step(str(active_step))
         with get_connection() as connection:
             state = self._get_locked(connection)
+            if client_write and (state['context'].get('wizard_request') or {}).get('version') == 2:
+                if {'agent_execution', 'agent_wizard_status', 'wizard_request'} & cleaned.keys():
+                    raise WorkflowConflictError('Der Wizardzustand ist serverseitig verwaltet. Bitte das passende Auftragskommando verwenden.')
             current_execution = state["context"].get("agent_execution") or {}
+            if execution_guard is not None and any(current_execution.get(key) != value for key, value in execution_guard.items()):
+                raise WorkflowConflictError('Der Agentenlauf wurde inzwischen fortgesetzt oder beendet.')
             next_execution = cleaned.get("agent_execution") or {}
             if (
                 isinstance(current_execution, dict)
@@ -1237,11 +1266,10 @@ class WorkflowStatusService:
             query += " AND is_outdated = FALSE"
         query += " ORDER BY created_at DESC LIMIT 1"
         with get_connection() as connection:
-            self._ensure(connection)
             row = connection.execute(query, (self.project_id, analysis_type)).fetchone()
         return self._serialize_row(row) if row else None
 
-    def create_simulation_snapshot(self, configuration: dict[str, Any]) -> dict[str, Any]:
+    def create_simulation_snapshot(self, configuration: dict[str, Any], *, metadata_only: bool = False) -> dict[str, Any]:
         from ...app.build_info import build_info
         from ..simulation_scope import normalize_simulation_scope
         configuration = {**configuration, "release": build_info()}
@@ -1263,13 +1291,17 @@ class WorkflowStatusService:
                 # against the canonical inventory while holding this project's
                 # lock; a supplied coverage claim is never an authorization.
                 messages = connection.execute(
-                    "SELECT id, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+                    "SELECT id, name, configuration, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
                 ).fetchall()
                 signals = connection.execute(
                     "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
                 ).fetchall()
+                declared_routes = connection.execute(
+                    "SELECT id, payload, status FROM engineering_routing_entries WHERE project_id = %s", (self.project_id,),
+                ).fetchall()
                 coverage = simulation_coverage(messages, signals,
-                                               configuration.get("communications") or [], persisted_scope)
+                                               configuration.get("communications") or [], persisted_scope,
+                                               declared_transports=declared_routes)
                 if not coverage["complete"]:
                     raise WorkflowConflictError(
                         f"Simulationsumfang nicht vollständig ausführbar: {len(coverage['missing_message_ids'])} Nachrichten "
@@ -1296,12 +1328,17 @@ class WorkflowStatusService:
                 """,
                 (self.project_id,),
             )
+            # Creation callers that only dispatch the persisted snapshot need its
+            # identity and revision, not the full frozen model or capacity report.
+            # The default remains the complete response for existing clients.
+            returning = ("id, project_id, source_versions, validation_snapshot_id, status, job_id, "
+                         "created_at, updated_at, is_outdated, outdated_reason" if metadata_only else "*")
             row = connection.execute(
-                """
+                f"""
                 INSERT INTO engineering_simulation_snapshots
                     (project_id, source_versions, validation_snapshot_id, configuration, calculated_metrics)
                 VALUES (%s, %s::jsonb, %s, %s::jsonb, %s::jsonb)
-                RETURNING *
+                RETURNING {returning}
                 """,
                 (
                     self.project_id,
@@ -1327,13 +1364,20 @@ class WorkflowStatusService:
             )
         return self._serialize_row(row)
 
-    def get_simulation_snapshot(self, snapshot_id: str) -> dict[str, Any] | None:
+    def get_simulation_snapshot(self, snapshot_id: str, *, require_current: bool = False) -> dict[str, Any] | None:
+        # Recovery must bind the frozen input and current revision in one read.
+        # Missing legacy revision metadata is not authority to execute again.
+        query = "SELECT * FROM engineering_simulation_snapshots WHERE id = %s AND project_id = %s"
+        if require_current:
+            query = """
+                SELECT snapshot.* FROM engineering_simulation_snapshots AS snapshot
+                JOIN engineering_workflow_projects AS project ON project.project_id = snapshot.project_id
+                WHERE snapshot.id = %s AND snapshot.project_id = %s
+                  AND jsonb_typeof(snapshot.source_versions -> 'simulation') = 'number'
+                  AND snapshot.source_versions -> 'simulation' = project.versions -> 'simulation'
+            """
         with get_connection() as connection:
-            self._ensure(connection)
-            row = connection.execute(
-                "SELECT * FROM engineering_simulation_snapshots WHERE id = %s AND project_id = %s",
-                (snapshot_id, self.project_id),
-            ).fetchone()
+            row = connection.execute(query, (snapshot_id, self.project_id)).fetchone()
         return self._serialize_row(row) if row else None
 
     def claim_simulation_snapshot(self, snapshot_id: str) -> dict[str, Any]:
@@ -1359,22 +1403,45 @@ class WorkflowStatusService:
     ) -> None:
         with get_connection() as connection:
             state = self._get_locked(connection)
+            # Read only what this transition needs, under the same project and
+            # snapshot locks used by cancellation/invalidation. A completed
+            # result can be tens of MB; never fetch it back merely to set status.
+            snapshot_columns = "source_versions, job_id"
+            if status == "COMPLETED":
+                snapshot_columns += ", configuration"
             updated = connection.execute(
+                f"SELECT {snapshot_columns} FROM engineering_simulation_snapshots "
+                "WHERE id = %s AND project_id = %s "
+                "AND status <> 'CANCELED' AND is_outdated = FALSE FOR UPDATE",
+                (snapshot_id, self.project_id),
+            ).fetchone()
+            if not updated:
+                return
+            snapshot_versions = updated.get("source_versions") or {}
+            if snapshot_versions.get("simulation") != state["versions"].get("simulation"):
+                return
+            assessment = None
+            if status == "COMPLETED":
+                assessment = assess_simulation(updated.get("configuration") or {}, result)
+                if isinstance(result, dict):
+                    result["assessment"] = assessment
+            # Assessment and the complete raw result are committed together.
+            # COALESCE preserves existing evidence for status-only transitions.
+            serialized_result = _json(result) if result is not None else None
+            persisted = connection.execute(
                 """
                 UPDATE engineering_simulation_snapshots
                 SET status = CASE WHEN is_outdated THEN status ELSE %s END,
                     job_id = COALESCE(%s, job_id),
-                    result = CASE WHEN %s::jsonb IS NULL THEN result ELSE %s::jsonb END,
+                    result = COALESCE(%s::jsonb, result),
                     updated_at = now()
                 WHERE id = %s AND project_id = %s
-                RETURNING *
+                  AND status <> 'CANCELED' AND is_outdated = FALSE
+                RETURNING id
                 """,
-                (status, job_id, _json(result) if result is not None else None, _json(result) if result is not None else None, snapshot_id, self.project_id),
+                (status, job_id, serialized_result, snapshot_id, self.project_id),
             ).fetchone()
-            if not updated or updated["is_outdated"]:
-                return
-            snapshot_versions = updated.get("source_versions") or {}
-            if snapshot_versions.get("simulation") != state["versions"].get("simulation"):
+            if not persisted:
                 return
             next_state = set_step_status(
                 state,
@@ -1383,13 +1450,6 @@ class WorkflowStatusService:
             )
             step = "simulation"
             if status == "COMPLETED":
-                assessment = assess_simulation(updated.get("configuration") or {}, result)
-                if isinstance(result, dict):
-                    result["assessment"] = assessment
-                    connection.execute(
-                        "UPDATE engineering_simulation_snapshots SET result = %s::jsonb WHERE id = %s AND project_id = %s",
-                        (_json(result), snapshot_id, self.project_id),
-                    )
                 next_state = set_step_status(next_state, "simulation", assessment["status"])
                 has_evidence = isinstance(result, dict) and bool(
                     result.get("runtime_metrics")

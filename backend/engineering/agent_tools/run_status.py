@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from ..db import get_connection
 from ..project_context import activate_project, reset_project
-from ..workflow.service import WorkflowStatusService
+from ..workflow.service import WorkflowStatusService, WorkflowConflictError
 from ..workflow.models import WORKFLOW_STEPS
 
 
@@ -81,14 +81,30 @@ def recover_interrupted_wizard_runs(project_id: str | None = None) -> int:
             WHERE context -> 'agent_execution' ->> 'state' = 'RUNNING'
               AND (COALESCE(context -> 'agent_execution' ->> 'server_pid', '') <> %s
                    OR COALESCE(context -> 'agent_execution' ->> 'server_instance_id', '') <> %s)
-            """ + project_filter + " RETURNING project_id",
+            """ + project_filter + " RETURNING project_id, context->'agent_execution'->>'run_id' AS wizard_run_id",
             tuple(parameters),
         ).fetchall()
+        # Recovery transfers both halves of ownership in the same transaction.
+        # A dead conversation lease must not reject the first resumed command.
+        for row in rows:
+            conversation = connection.execute(
+                'SELECT state FROM engineering_agent_conversations WHERE project_id=%s FOR UPDATE',
+                (row['project_id'],),
+            ).fetchone()
+            if conversation and extract_wizard_run_id(conversation['state'].get('current_requirement', '')) == row['wizard_run_id']:
+                connection.execute("""UPDATE engineering_agent_conversations
+                    SET state = state || %s::jsonb, modified_at=now() WHERE project_id=%s""",
+                    (json.dumps({'run_id': None, 'lease_until': _now()}), row['project_id']))
     return len(rows)
 
 
 def execution_step(summary: dict) -> str:
     """A continuation cannot reset an already completed artifact's progress."""
+    context = summary.get('context') or {}
+    request = context.get('wizard_request') or {}
+    wizard = context.get('agent_wizard_status') or {}
+    if request.get('version') == 2 and wizard.get('model_request_revision') != request.get('revision'):
+        return 'engineering_model'
     active = summary.get('active_step') or 'engineering_model'
     statuses = summary.get('statuses') or {}
     done = {'COMPLETE', 'APPROVED', 'WARNING'}
@@ -121,6 +137,13 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
         return
     check = summary['artifact_checks'][artifact]
     complete = check.get('complete', False)
+    if artifact == 'engineering_model' and complete:
+        context = summary.get('context') or {}
+        request = context.get('wizard_request') or {}
+        wizard = context.get('agent_wizard_status') or {}
+        if request.get('version') == 2 and request.get('run_id') == execution.get('run_id'):
+            service.set_context({'agent_wizard_status': {**wizard, 'model_request_revision': request['revision']}}, summary=True)
+            summary = service.get(summary=True)
     if complete:
         message = {
             'WIZARD_ENGINEERING_MODEL':
@@ -151,12 +174,14 @@ def reconcile_model_apply(project_id: str, proposal: dict) -> None:
 
 
 class WizardExecutionTracker:
-    def __init__(self, project_id: str, run_id: str) -> None:
+    def __init__(self, project_id: str, run_id: str, *, owner_turn_id: str | None = None) -> None:
         self.project_id = project_id
         self.run_id = run_id
         self.step = "engineering_model"
         self.completed = 0
         self.total = 0
+        self.owner_turn_id = owner_turn_id
+        self._starting = False
 
     def _workflow(self) -> WorkflowStatusService:
         return WorkflowStatusService(self.project_id)
@@ -176,7 +201,15 @@ class WizardExecutionTracker:
             existing = summary.get('context', {}).get('agent_execution') or {}
             if existing.get('run_id') == self.run_id and existing.get('state') == 'CANCELED' and state != 'CANCELED':
                 return
+            guard = None
+            if not self._starting:
+                if (existing.get('run_id') != self.run_id or existing.get('state') != 'RUNNING'
+                        or (self.owner_turn_id is not None and existing.get('owner_turn_id') != self.owner_turn_id)):
+                    return
+                guard = {key: existing.get(key) for key in ('run_id', 'state', 'owner_turn_id')}
             self.step = execution_step(summary)
+            request = summary.get('context', {}).get('wizard_request') or {}
+            wizard = summary.get('context', {}).get('agent_wizard_status') or {}
             if completed is not None:
                 self.completed = max(0, int(completed))
             if total is not None:
@@ -192,14 +225,25 @@ class WizardExecutionTracker:
                     "updated_at": _now(),
                     "server_pid": os.getpid(),
                     "server_instance_id": SERVER_INSTANCE_ID,
+                    "owner_turn_id": self.owner_turn_id,
+                    "request_revision": request.get('revision'),
+                    "model_review_required": request.get('version') == 2 and wizard.get('model_request_revision') != request.get('revision'),
                     "recoverable": False,
                 },
-            }, summary=True)
+            }, summary=True, execution_guard=guard)
+        except WorkflowConflictError:
+            # A newer finish/cancel/owner won the compare-and-set. A delayed
+            # heartbeat is inert and must not resurrect or cancel that run.
+            return
         finally:
             reset_project(token)
 
     def started(self) -> None:
-        self.update("RUNNING", "Der bestätigte Engineering-Auftrag wurde serverseitig gestartet.")
+        self._starting = True
+        try:
+            self.update("RUNNING", "Der bestätigte Engineering-Auftrag wurde serverseitig gestartet.")
+        finally:
+            self._starting = False
 
     def heartbeat(self) -> None:
         self.update("RUNNING", "Der Engineering-Agent arbeitet im Hintergrund weiter.")

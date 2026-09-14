@@ -10,7 +10,7 @@ def fixture():
              'actuator': {'name': 'Ventil', 'device_type': 'ActuatorController'},
              'diag': {'name': 'Diagnose', 'device_type': 'ECU'},
              'gateway': {'name': 'System', 'device_type': 'Gateway'}}
-    graph = {'HardwareNode': nodes, 'Function': {}, 'HardwareNetworkInterface': {},
+    graph = {'HardwareNode': nodes, 'Function': {}, 'HardwareNetworkInterface': {}, 'Signal': {},
         'Interface': {key: {'hardware_node_id': key} for key in nodes},
         'Message': {key: {'name': key, 'interface_id': key, 'configuration': {}} for key in nodes}}
     graph['Message']['command'] = {'name': 'Befehl', 'interface_id': 'ecu', 'configuration': {
@@ -31,6 +31,83 @@ def test_every_message_has_a_purpose_and_consumer_before_routing():
         graph['Message'][key]['configuration'] = config
     assert contract_findings(graph) == []
     assert communication_plan(prompt, graph) == plan
+
+
+def display_fixture(enabled):
+    prompt, graph = fixture()
+    graph['HardwareNode']['hmi'] = {'name': 'Kombiinstrument', 'device_type': 'ECU'}
+    graph['Signal']['status'] = {'name': 'MotorStatus', 'message_id': 'ecu'}
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['hmi_routes'] = [{'source': 'Motor', 'target': 'Kombiinstrument',
+        'signals': ['MotorStatus'] if enabled else [], 'excluded_signals': [] if enabled else ['MotorStatus']}]
+    return '- Systemcluster-Graph: ' + json.dumps(clusters), graph
+
+
+def test_hmi_switches_change_only_selected_output_consumers_and_preserve_local_io():
+    prompt, graph = display_fixture(True)
+    plan = communication_plan(prompt, graph)
+    assert plan['ecu']['transport_unit']['consumer_refs'] == ['diag', 'hmi']
+    assert plan['command']['transport_unit']['consumer_refs'] == ['actuator']
+    assert plan['sensor']['transport_unit']['consumer_refs'] == ['ecu']
+    assert plan['actuator']['transport_unit']['consumer_refs'] == ['ecu']
+    for key, config in plan.items():
+        graph['Message'][key]['configuration'] = config
+    off, _ = display_fixture(False)
+    off_plan = communication_plan(off, graph)
+    assert off_plan['ecu']['transport_unit']['consumer_refs'] == ['diag']
+    assert graph['Signal']['status']['name'] == 'MotorStatus'
+    assert off_plan['ecu']['hmi_routing_selection'] == [{'target_ref': 'hmi', 'enabled': False}]
+    for key, config in off_plan.items():
+        graph['Message'][key]['configuration'] = config
+    assert communication_plan(off, graph) == off_plan
+
+
+def test_disabled_hmi_is_not_reintroduced_by_the_fallback_monitor():
+    prompt, graph = display_fixture(False)
+    graph['HardwareNode'] = {key: value for key, value in graph['HardwareNode'].items() if key in {'ecu', 'hmi'}}
+    graph['Message'] = {'ecu': graph['Message']['ecu']}
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['controllers'] = [{'ecu': 'Motor'}]
+    plan = communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)
+    assert plan['ecu']['transport_unit']['consumer_refs'] == []
+
+
+def test_partial_frame_and_missing_signal_require_explicit_payload_resolution():
+    prompt, graph = display_fixture(True)
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['hmi_routes'][0]['excluded_signals'] = ['PrivateFeedback']
+    graph['Signal']['private'] = {'name': 'PrivateFeedback', 'message_id': 'ecu'}
+    with pytest.raises(ValueError, match='eigene Nachricht'):
+        communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)
+    graph['Signal'] = {}
+    with pytest.raises(ValueError, match='Signale fehlen'):
+        communication_plan(prompt, graph)
+
+
+@pytest.mark.parametrize('enabled', [False, True])
+def test_routing_generator_obeys_switch_even_with_a_stale_display_consumer(monkeypatch, enabled):
+    from backend.engineering.agent_tools import wizard_generation as generation
+    prompt, graph = display_fixture(enabled)
+    graph['Message'] = {'ecu': {**graph['Message']['ecu'], 'configuration': {
+        'transport_unit': {'consumer_refs': ['diag', 'hmi']}}}}
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['controllers'] = [{'ecu': 'Motor'}]
+    prompt = '- Systemcluster-Graph: ' + json.dumps(clusters)
+    monkeypatch.setattr(generation.model, 'objects', lambda kind: [{**row, 'id': key} for key, row in graph.get(kind, {}).items()])
+    monkeypatch.setattr(generation.model, 'routes', lambda: [])
+    monkeypatch.setattr(generation.proposal_store, 'list_proposals', lambda **_: [])
+    monkeypatch.setattr(generation.proposal_service, 'create', lambda kind, changes, rationale, **_: changes)
+    calls = []
+    class Routes:
+        def _hardware_graph(self):
+            return {}, {}
+        def generate_route(self, *, source_node_id, destination_node_id, message_id):
+            calls.append((source_node_id, destination_node_id, message_id))
+            return {'source': {'protocol': 'CAN_FD'}, 'destinations': [{'protocol': 'CAN_FD'}]}
+    monkeypatch.setattr(generation, 'RoutingGenerationService', Routes)
+    generation.generate_routing({'prompt': prompt})
+    assert ('ecu', 'diag', 'ecu') in calls
+    assert (('ecu', 'hmi', 'ecu') in calls) is enabled
 
 
 def test_user_consumers_are_preserved_and_missing_receiver_blocks_model_review():

@@ -311,6 +311,8 @@ def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_mes
         'Interface': interfaces,
         'HardwareNetworkInterface': hardware_interfaces,
         'Message': messages,
+        'Function': [],
+        'Signal': [],
     }
     graph = [{
         'controllers': [{
@@ -342,8 +344,10 @@ def test_generate_routing_uses_local_actuator_message_but_keeps_hmi_backbone_mes
                 'payload': {'message_id': message_id, 'signal_ids': []},
                 'destinations': [{'node_id': destination_node_id, 'protocol': destination_protocol}],
                 'route': {
-                    'hops': [{'node_id': source_node_id}, {'node_id': destination_node_id}],
-                    'gateways': [],
+                    'hops': [{'node_id': source_node_id},
+                             *([{'node_id': 'gateway', 'name': 'System'}] if destination_node_id == 'hmi' else []),
+                             {'node_id': destination_node_id}],
+                    'gateways': [{'node_id': 'gateway', 'name': 'System'}] if destination_node_id == 'hmi' else [],
                     'transformations': [],
                     'priority': 'NORMAL',
                 },
@@ -499,9 +503,13 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     reconciled = execute(authority, 'test_apply_status', Permission.READ_MODEL, {}, lambda _: restore_review_state())
     assert reconciled.success and reconciled.data['state'] == 'READY_TO_CONTINUE', reconciled
 
-    canonical_hardware = execute(authority, 'test_route_nodes', Permission.READ_MODEL, {}, lambda _: model.objects('HardwareNode')).data
+    canonical_hardware = sorted(execute(authority, 'test_route_nodes', Permission.READ_MODEL, {},
+        lambda _: model.objects('HardwareNode')).data, key=lambda item: item['name'].casefold())
     interfaces = execute(authority, 'test_route_interfaces', Permission.READ_MODEL, {}, lambda _: model.objects('Interface')).data
-    interface_by_node = {str(item.get('hardware_node_id')): item.get('interface_type') for item in interfaces}
+    # SQL created_at values share one transaction timestamp; UUID ordering must
+    # not select a different transport fixture or calculated function per run.
+    interface_by_node = {str(item.get('hardware_node_id')): item.get('interface_type') for item in
+                         sorted(interfaces, key=lambda item: (item.get('configuration') or {}).get('endpoint_role') == 'SYSTEM_CONTROLLER')}
     available_sensor_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'SensorController'}
     available_actuator_types = {interface_by_node[str(item['id'])] for item in canonical_hardware if item['device_type'] == 'ActuatorController'}
     ecu = next(item for item in canonical_hardware if item['device_type'] == 'ECU' and interface_by_node[str(item['id'])] in available_sensor_types & available_actuator_types)
@@ -641,9 +649,12 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     topology_check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['network_editor']
     assert topology_check['complete'], topology_check
     assert topology_check['counts'] == {'nodes': len(canonical_hardware), 'edges': len(topology['edges'])}
-    topology_conversation = conversation.read()
-    topology_conversation.update(active_proposal=network_proposal['proposal_id'], current_requirement=network_prompt)
-    conversation.write(topology_conversation)
+    def restore_topology_conversation():
+        topology_conversation = conversation.read()
+        topology_conversation.update(active_proposal=network_proposal['proposal_id'], current_requirement=network_prompt)
+        conversation.write(topology_conversation)
+    restored = execute(authority, 'test_topology_conversation', Permission.READ_MODEL, {}, lambda _: restore_topology_conversation())
+    assert restored.success, restored
     WorkflowStatusService(authority.project_id).set_context({'agent_execution': {
         'run_id': 'test-wizard-12345678', 'state': 'REVIEW_REQUIRED', 'step': 'network_editor',
         'completed': 1, 'total': 1}})
@@ -660,6 +671,10 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     # gateway translation. Declare that architecture; it is not a local branch.
     shared_networks = execute(authority, 'test_shared_networks', Permission.READ_MODEL, {},
                               lambda _: model.networks()).data
+    # Fresh model/topology creation must not turn a UI/default duration into an
+    # unmarked explicit limit before the registry-default step owns provenance.
+    initial_parameters = WorkflowStatusService(authority.project_id).get()['parameters']
+    assert 'duration_s' not in initial_parameters or (initial_parameters.get('parameter_provenance') or {}).get('duration_s', {}).get('source') == 'TECHNOLOGY_DEFAULT'
     WorkflowStatusService(authority.project_id).save_parameters(
         {'target_bus_load_percent': 60,
          'networks': [{**network, 'spatial_scope': 'backbone'} for network in shared_networks]}, actor='test-human'
@@ -681,6 +696,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert parameter_state['artifact_checks']['parameters']['complete']
     assert parameter_state['parameters']['technology'] in parameter_state['parameters']['technology_defaults']
     assert {'can_fd', 'lin'}.issubset(parameter_state['parameters']['technology_defaults'])
+    assert parameter_state['parameters']['parameter_provenance']['duration_s'] == {'source': 'TECHNOLOGY_DEFAULT', 'value': 1}
     capacity_status = WorkflowStatusService(authority.project_id).get(summary=True)['statuses']['capacity_timing']
     assert capacity_status in {'COMPLETE', 'WARNING'}, capacity_status
     capacity_snapshot = WorkflowStatusService(authority.project_id).latest_analysis('capacity_timing')
@@ -714,7 +730,14 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert 'assess_intelligence' in simulation_tools
     assert 'kein prüfbarer Änderungs- oder Workload-Aufruf' not in simulation_result['text']
     workflow_after_simulation = WorkflowStatusService(authority.project_id).get(summary=True)
-    assert workflow_after_simulation['statuses']['simulation'] == 'COMPLETE'
+    simulation_analysis = WorkflowStatusService(authority.project_id).latest_analysis('results_analysis')
+    frozen_snapshot = WorkflowStatusService(authority.project_id).get_simulation_snapshot(simulation_analysis['results']['simulation_snapshot_id'])
+    assert frozen_snapshot['configuration']['observation_window']['source'] == 'DERIVED_REQUIREMENTS'
+    assert frozen_snapshot['configuration']['parameters']['parameter_provenance']['duration_s']['source'] == 'TECHNOLOGY_DEFAULT'
+    assert workflow_after_simulation['statuses']['simulation'] == 'COMPLETE', json.dumps({
+        'assessment': simulation_analysis['results'].get('assessment'),
+        'findings': simulation_analysis.get('findings'),
+    }, default=str)
     assert workflow_after_simulation['statuses']['results_analysis'] == 'COMPLETE'
     assert workflow_after_simulation['statuses']['data_science_intelligence'] in {'COMPLETE', 'WARNING'}
     assert all(value in {'COMPLETE', 'APPROVED', 'WARNING'}

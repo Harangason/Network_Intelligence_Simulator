@@ -36,3 +36,13 @@ test('server failure is surfaced instead of reporting cancellation', async () =>
     request: async () => Response.json({ error: 'Server nicht erreichbar' }, { status: 503 }),
   }), /Server nicht erreichbar/);
 });
+
+test('cancel carries the reviewed request revision and surfaces stale revision conflicts', async () => {
+  await assert.rejects(requestWizardCancellation('project', 'run', {
+    confirm: () => true, requestRevision: 'older-revision',
+    request: async (_url, options) => {
+      assert.equal(JSON.parse(options.body).request_revision, 'older-revision');
+      return Response.json({ error: 'Auftragsrevision geändert.' }, { status: 409 });
+    },
+  }), /Auftragsrevision geändert/);
+});

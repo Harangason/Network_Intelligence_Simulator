@@ -1,14 +1,17 @@
 export const MAX_CHAT_ATTACHMENTS = 4;
 export const MAX_CHAT_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_CHAT_DOCUMENT_CHARS = 16_000;
-export const CHAT_DOCUMENT_ACCEPT = '.pdf,.docx,.txt,.md,.csv,.json,.xml,.dbc,.arxml,.ldf,.asc,.log,.yaml,.yml';
+export const MAX_CHAT_TRACE_BYTES = 500 * 1024 * 1024;
+export const TRACE_EXTENSIONS = ['pcap', 'pcapng', 'mdf', 'mf4', 'blf', 'asc', 'log', 'trc', 'jsonl', 'csv', 'json'];
+export function isTraceFile(name: string): boolean { return TRACE_EXTENSIONS.includes(name.split('.').pop()?.toLowerCase() ?? ''); }
+export const CHAT_DOCUMENT_ACCEPT = '.pdf,.docx,.txt,.md,.csv,.json,.xml,.dbc,.arxml,.ldf,.asc,.log,.yaml,.yml,.pcap,.pcapng,.mdf,.mf4,.blf,.trc,.jsonl';
 
 export type ChatAttachment = { name: string; size: number; format: string; text: string; truncated: boolean };
 
 export function validateChatAttachment(value: unknown): ChatAttachment {
   const item = value as Partial<ChatAttachment> | null;
   if (!item || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 180 ||
-      !Number.isInteger(item.size) || item.size! <= 0 || item.size! > MAX_CHAT_FILE_BYTES ||
+      !Number.isInteger(item.size) || item.size! <= 0 || item.size! > (isTraceFile(item.name) ? MAX_CHAT_TRACE_BYTES : MAX_CHAT_FILE_BYTES) ||
       typeof item.format !== 'string' || !CHAT_DOCUMENT_ACCEPT.split(',').includes(`.${item.format.toLowerCase()}`) ||
       typeof item.text !== 'string' || !item.text.trim() || item.text.length > MAX_CHAT_DOCUMENT_CHARS ||
       typeof item.truncated !== 'boolean') throw new Error('Ungültiger Dokumentanhang. Bitte die Datei erneut auswählen.');

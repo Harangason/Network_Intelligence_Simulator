@@ -25,6 +25,9 @@ def _context_for_reasoning(context) -> str:
     # large attachment here can double the prompt and crowd out tool calls.
     payload.pop("current_requirement", None)
     payload.pop("document_sources", None)
+    if payload.get('input_envelope'):
+        payload['input_envelope'] = {key: value for key, value in payload['input_envelope'].items()
+                                     if key not in {'content', 'constraints'}}
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 

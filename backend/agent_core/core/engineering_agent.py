@@ -61,9 +61,12 @@ class EngineeringAgent:
 
     async def run(self, prompt: str, context: AgentContext, *, emit: Callable[[dict], None] | None = None, history: list[dict] | None = None) -> dict:
         events, proposals, traces = [], {}, []
-        run_id = str(uuid4())
+        from ..context.input_adapter import adapt_input
+        if context.input_envelope is None:
+            context = context.model_copy(update={'input_envelope': adapt_input(prompt, context, run_id=str(uuid4()))})
+        run_id = context.input_envelope.run_ref
         def event(kind, **data):
-            metadata = {'run_id': run_id, **data.pop('metadata', {})}
+            metadata = {'run_id': run_id, 'input_ref': context.input_envelope.input_id, **data.pop('metadata', {})}
             if 'data' in data:
                 metadata['details'] = data.pop('data')
             if kind in {'QUESTION', 'SINGLE_SELECT', 'MULTI_SELECT'} and not data.get('question'):
@@ -80,6 +83,12 @@ class EngineeringAgent:
                 stages = ['Anforderung verstehen', 'Modell prüfen', 'Vorschlag vorbereiten', 'Validieren']
                 index = {'RECEIVED':0, 'PLANNING':1, 'IN_PROGRESS':2, 'VALIDATING':3, 'READY_FOR_REVIEW':4}.get(data.get('status'), 2)
                 data['progress'] = [{'label':label, 'status':'done' if i < index else 'active' if i == index else 'pending'} for i, label in enumerate(stages)]
+            if kind == 'RESULT' and not data.get('outputs'):
+                from ..api.input_output import AgentOutputEnvelope
+                data['outputs'] = [AgentOutputEnvelope(output_id=str(uuid4()), output_type='CHAT',
+                    status=data.get('status', 'INCOMPLETE'), project_ref=context.active_project_id,
+                    run_ref=run_id, content=data.get('text', ''), evidence_refs=[t['trace_id'] for t in traces][-500:],
+                    provenance={'input_ref': context.input_envelope.input_id, 'capability_version': '1'}).model_dump(mode='json', exclude_none=True)]
             item = validate_response({"type": kind, 'metadata': metadata, **data})
             events.append(item)
             if emit:
@@ -103,6 +112,40 @@ class EngineeringAgent:
         if context.current_workload and not str(context.current_workload).startswith('goal-') and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
+        from ..orchestration.project_intake import is_project_request
+        if not context.wizard_request and not answer and is_project_request(prompt):
+            arguments = {'requirement': prompt}
+            if self.reasoner:
+                try:
+                    tools = [tool for tool in await self.client.tools() if tool['name'] == 'prepare_project_request']
+                    decision = await self.reasoner.next([
+                        {'role': 'system', 'content':
+                            'Der Nutzer beschreibt ein neu zu planendes Projekt, keine Suche nach bestehenden Objekten. '
+                            'Erarbeite einen fachlichen Entwurf und nutze prepare_project_request. '
+                            'planning_notes enthält bekannte Komponenten, vorgeschlagene Funktionsbeziehungen und gezielte '
+                            'Rückfragen zu noch fehlenden Angaben. Behandle Schreibfehler kontextbezogen. '
+                            'Erfinde keine Stückzahlen, Anschlussarten, Versorgung, Zeiten oder bestätigte Hardwareeignung. '
+                            'Es wurde noch nichts angelegt. Die Originalanforderung bleibt unverändert.'},
+                        {'role': 'user', 'content': prompt},
+                    ], context, tools)
+                    for tool_call in decision.get('calls', []):
+                        if tool_call.get('name') != 'prepare_project_request':
+                            continue
+                        notes = (tool_call.get('arguments') or {}).get('planning_notes')
+                        if isinstance(notes, str) and len(notes) <= 6000 and not unsupported_change_claim(notes):
+                            arguments['planning_notes'] = notes
+                            break
+                except Exception:
+                    # The editable intake still works when inference is unavailable.
+                    pass
+            result = await call('prepare_project_request', arguments)
+            if result.success:
+                item = result.data['agent_response']
+                event(item['type'], **{k: v for k, v in item.items() if k not in {'type', 'id', 'timestamp'}})
+                return {'run_id': run_id, 'status': item['status'], 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            return {'run_id': run_id, 'status': 'BLOCKED', 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
         async def finish_goal(result):
             for attempt in range(120):
                 if not result.success or result.data.get('status') != 'SIMULATION_RUNNING': break
@@ -111,7 +154,7 @@ class EngineeringAgent:
                 await asyncio.sleep(0.5)
                 result = await call('continue_engineering_goal', {'workload_id': result.data['workload_id']})
             return result
-        if str(context.current_workload or '').startswith('goal-'):
+        if not context.wizard_request and str(context.current_workload or '').startswith('goal-'):
             result = await finish_goal(await call('continue_engineering_goal', {'workload_id': context.current_workload}))
             if result.success:
                 item = result.data['agent_response']
@@ -119,7 +162,7 @@ class EngineeringAgent:
                 return {'run_id': run_id, 'status': result.data['status'], 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
             return {'run_id': run_id, 'status': 'BLOCKED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
         from ..orchestration.capability_intent import connection_request
-        connection = connection_request(prompt)
+        connection = connection_request(prompt) if not context.wizard_request else None
         if connection:
             result = await finish_goal(await call('prepare_engineering_connection', {'goal': prompt, 'source_ref': connection[0], 'target_ref': connection[1]}))
             if result.success:
@@ -129,7 +172,7 @@ class EngineeringAgent:
                 return {'run_id': run_id, 'status': result.data['status'], 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
             return {'run_id': run_id, 'status': 'BLOCKED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
         from ..orchestration.capability_intent import capability_question
-        capability = capability_question(prompt)
+        capability = capability_question(prompt) if not context.wizard_request else None
         if capability is not None:
             result = await call('inspect_assistant_capabilities', {'capability_id': None if capability == '@project' else capability or None})
             if result.success:
@@ -159,7 +202,7 @@ class EngineeringAgent:
 
         # Explicit trace investigation bypasses generator and approval continuation.
         job_match = re.search(r"\b[a-f0-9]{32}\b", prompt, re.I)
-        if job_match and re.search(r"ursach|reasoning|root.?cause|deadline|fault.*analys|fehler.*erkl", prompt, re.I):
+        if not context.wizard_request and job_match and re.search(r"ursach|reasoning|root.?cause|deadline|fault.*analys|fehler.*erkl", prompt, re.I):
             tool = "investigate_deadline_miss" if re.search(r"deadline", prompt, re.I) else "analyze_trace_root_cause"
             result = await call(tool, {"job_id": job_match.group(), "goal": prompt[:2000]})
             complete = result.success and result.data.get("completion_status") in {"COMPLETE", "NO_ANOMALY_IN_WINDOW"} and result.data.get("validation_status") == "CURRENT"
@@ -181,12 +224,37 @@ class EngineeringAgent:
 
         # Confirmed wizard creation precedes free-text heuristics: words such as
         # "welche" in an attached specification must not turn it into a query.
-        confirmed_wizard = ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
+        confirmed_wizard = bool(context.wizard_request) or ('Strukturierte Vorgaben fuer den Engineering-Agenten:' in prompt
                 and 'per Wizard-Uebernehmen bestaetigt' in prompt
                 and re.search(r'^- Hardware-Sollwerte:\s*\{', prompt, re.M))
-        if confirmed_wizard and not project.data.get('artifact_checks', {}).get('engineering_model', {}).get('complete'):
+        if confirmed_wizard and (context.wizard_request or {}).get('model_refinement_required'):
+            text = 'Bitte die Vorgaben über „Ergänzen“ präzisieren. Der aktuelle Modellstand wurde für diese Auftragsrevision nicht bestätigt.'
+            event('RESULT', status='INCOMPLETE', text=text)
+            return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        if confirmed_wizard and ((context.wizard_request or {}).get('model_review_required')
+                or not project.data.get('artifact_checks', {}).get('engineering_model', {}).get('complete')):
             event('PROGRESS', status='PLANNING', text='Engineering-Modell aus den bestätigten Wizard-Vorgaben vorbereiten.')
             result = await call('generate_wizard_model', {'prompt': prompt})
+            if result.success and result.data.get('status') == 'MODEL_CONFIRMATION_REQUIRED':
+                binding = {key: result.data.get(key) for key in ('run_id', 'request_revision', 'model_revision')}
+                request = context.wizard_request or {}
+                if (not binding['model_revision'] or binding['run_id'] != request.get('run_id')
+                        or binding['request_revision'] != request.get('revision')):
+                    text = 'Die Modellbestätigung gehört nicht zum aktuellen Auftrag. Bitte den aktuellen Stand laden.'
+                    event('RESULT', status='INCOMPLETE', text=text)
+                    return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                text = 'Aus der Ergänzung lässt sich keine Modelländerung ableiten. Den aktuellen gültigen Modellstand bestätigen oder die Vorgaben präzisieren?'
+                event('SINGLE_SELECT', text=text,
+                      question_id=f"wizard-model-confirm:{binding['request_revision']}:{binding['model_revision']}",
+                      metadata={'wizard_model_confirmation': binding},
+                      options=[{'id': 'confirm_current_model', 'label': 'Aktuellen gültigen Stand bestätigen',
+                                'description': 'Diesen geprüften Modellstand für die aktuelle Auftragsrevision verwenden.'},
+                               {'id': 'refine_requirement', 'label': 'Vorgaben präzisieren',
+                                'description': 'Auftrag anhalten und die gewünschte Änderung über „Ergänzen“ beschreiben.'}])
+                return {'run_id': run_id, 'status': 'BLOCKED', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             if result.success:
                 proposal = await validate_proposal(result.data)
                 valid = proposal.get('status') == 'VALIDATED'
@@ -208,7 +276,7 @@ class EngineeringAgent:
         wizard_target = re.search(r'Fortsetzung des bestätigten Wizard-Auftrags:.*?Ziel:\s*([a-z_]+)', prompt, re.I | re.S)
         workflow_order = ['engineering_model', 'routing', 'network_editor', 'parameters', 'capacity_timing',
                           'validation', 'simulation', 'results_analysis', 'data_science_intelligence']
-        target = wizard_target.group(1).casefold() if wizard_target else None
+        target = (context.wizard_request or {}).get('target') or (wizard_target.group(1).casefold() if wizard_target else None)
         target_index = workflow_order.index(target) if target in workflow_order else -1
         routing_complete = project.data.get('artifact_checks', {}).get('routing', {}).get('complete', False)
         topology_complete = project.data.get('artifact_checks', {}).get('network_editor', {}).get('complete', False)
@@ -518,8 +586,9 @@ class EngineeringAgent:
                                      if not item.get('is_outdated') and str(item.get('status') or '').upper()
                                      in {'READY', 'RUNNING'}), None)
             if current_snapshot is None:
-                snapshot_result = await call('create_simulation_snapshot', {'configuration': {
-                    'duration_s': 1.0,
+                from backend.engineering.simulation_observation import wizard_observation_request
+                snapshot_result = await call('create_simulation_snapshot', {'metadata_only': True, 'configuration': {
+                    **wizard_observation_request(prompt),
                     'seed': 42,
                     'max_events': 100_000,
                     'formats': ['universal-jsonl', 'universal-csv'],
@@ -619,6 +688,17 @@ class EngineeringAgent:
                                 'total': len(findings)})
             event('RESULT', status=status, text=text)
             return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
+
+        if context.wizard_request:
+            # A confirmed command never falls through into unrelated free-text
+            # heuristics when an artifact or prerequisite is unavailable.
+            incomplete = [step for step in workflow_order[:target_index + 1]
+                          if workflow_statuses.get(step) not in {'COMPLETE', 'APPROVED', 'WARNING'}]
+            text = 'Der bestätigte Workflow benötigt noch aktuelle Artefakte: ' + ', '.join(incomplete or [str(target)]) + '.'
+            event('FINDING', severity='ERROR', text=text, metadata={'steps': incomplete})
+            event('RESULT', status='INCOMPLETE', text=text)
+            return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': []}
 
         # Explicit structured decisions precede the existing proposal pipeline.

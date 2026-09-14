@@ -4,8 +4,10 @@ export type TraceEvent = {
   payload: string; message: string; signal: string; value: number | null; status: string;
   finding: string; unit: string; refs: Record<string, string>[]; signals: TraceSignal[];
   ipContext: string;
+  original: Record<string, unknown>;
+  timeKnown: boolean;
 };
-export const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+export const MAX_IMPORT_BYTES = 500 * 1024 * 1024;
 
 function recordObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Ein Trace-Ereignis muss ein JSON-Objekt sein.');
@@ -16,7 +18,8 @@ export function eventFromRecord(value: unknown, index: number): TraceEvent {
   const record = recordObject(value);
   const rawTime = record.timestamp_s ?? record.time_s ?? record.timestamp ?? record.t;
   const timestamp = typeof rawTime === 'number' || typeof rawTime === 'string' && rawTime.trim() ? Number(rawTime) : NaN;
-  if (!Number.isFinite(timestamp) || timestamp < 0) throw new Error(`Ereignis ${index + 1}: gültiger Zeitstempel in Sekunden fehlt.`);
+  const timeKnown = record.time_status !== 'unavailable';
+  if (timeKnown && (!Number.isFinite(timestamp) || timestamp < 0)) throw new Error(`Ereignis ${index + 1}: gültiger Zeitstempel in Sekunden fehlt.`);
   let rawSignals = record.signals;
   if (typeof rawSignals === 'string' && rawSignals.trim()) rawSignals = JSON.parse(rawSignals);
   const candidates = Array.isArray(rawSignals) ? rawSignals : record.signal || record.signal_name ? [record] : [];
@@ -56,7 +59,7 @@ export function eventFromRecord(value: unknown, index: number): TraceEvent {
     value: Number.isFinite(numberValue) ? numberValue : null,
     status: String(record.status ?? 'observed'),
     finding: String(record.finding ?? record.warning ?? (Array.isArray(record.faults) ? record.faults.join(', ') : record.faults ?? '')),
-    unit: first?.unit ?? String(record.unit ?? ''), refs, signals, ipContext };
+    unit: first?.unit ?? String(record.unit ?? ''), refs, signals, ipContext, original: record, timeKnown };
 }
 
 /** RFC-style quoted text fields, including commas, escaped quotes and newlines. */
@@ -82,7 +85,7 @@ function csvRows(text: string): string[][] {
 }
 
 export function parseTraceText(text: string): TraceEvent[] {
-  if (new TextEncoder().encode(text).byteLength > MAX_IMPORT_BYTES) throw new Error('Lokaler Trace-Import: maximal 5 MiB.');
+  if (new TextEncoder().encode(text).byteLength > MAX_IMPORT_BYTES) throw new Error('Lokaler Trace-Import: maximal 500 MiB.');
   const trimmed = text.replace(/^\uFEFF/, '').trim();
   if (!trimmed) return [];
   if (trimmed.startsWith('[')) {

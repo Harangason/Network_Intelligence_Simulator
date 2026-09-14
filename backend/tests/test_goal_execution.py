@@ -42,6 +42,33 @@ def test_simulation_observation_does_not_change_architecture_revision():
     assert ModelGraphService(model, resources, relations=[derived]).revision == initial.revision
     assert ModelGraphService(model, resources, relations=[{'relation_type': 'CONNECTED_VIA'}]).revision != initial.revision
 
+
+def test_relation_row_order_cannot_revoke_a_simulation_authorization():
+    from copy import deepcopy
+    from itertools import permutations
+    model, resources = graph_fixture()
+    relations = [
+        {'id': 'relation-b', 'relation_type': 'CONNECTED_VIA', 'source_id': 'adas', 'target_id': 'can',
+         'attributes': {'path': ['source-port', 'target-port']}, 'created_at': '2026-09-14T00:00:00Z'},
+        {'id': 'relation-a', 'relation_type': 'RUNS_ON', 'source_id': 'park', 'target_id': 'adas',
+         'created_at': '2026-09-14T00:00:00Z'},
+        {'id': 'relation-c', 'relation_type': 'CONSUMED_BY', 'source_id': 'status', 'target_id': 'park',
+         'created_at': '2026-09-14T00:00:00Z'},
+    ]
+    initial = ModelGraphService(model, resources, relations=relations).revision
+    observed = {'id': 'observation', 'relation_type': 'SIMULATED_IN', 'source': 'simulation_derived',
+                'source_id': 'route', 'target_type': 'SimulationRun', 'target_id': 'job'}
+    for ordering in permutations(relations):
+        assert ModelGraphService(model, resources, relations=ordering).revision == initial
+        assert ModelGraphService(model, resources, relations=[observed, *ordering]).revision == initial
+    changed = deepcopy(relations)
+    changed[0]['attributes']['path'].reverse()
+    assert ModelGraphService(model, resources, relations=changed).revision != initial
+    changed = deepcopy(relations)
+    changed[1]['target_id'] = 'another-controller'
+    assert ModelGraphService(model, resources, relations=changed).revision != initial
+    assert ModelGraphService(model, resources, relations=relations[:-1]).revision != initial
+
 @pytest.mark.parametrize('missing,code', [('CommunicationCapability', 'COMMUNICATION_CAPABILITY_MISSING'), ('CommunicationController', 'COMMUNICATION_CONTROLLER_MISSING')])
 def test_missing_hardware_fact_is_not_inferred(missing, code):
     model, resources = graph_fixture(); resources.pop(missing)

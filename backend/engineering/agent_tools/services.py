@@ -13,7 +13,7 @@ from ..signal_audit import required_signal_bits, inspect_signal, inspect_message
 from ..capacity.calculators import estimate_frame, utilization_percent
 from ..capacity.service import CapacityTimingService, PreflightService
 from ..message_packing import valid_payload_bytes
-from ..routing.generation import RoutingGenerationService
+from ..routing.generation import RoutingGenerationService, routing_candidate_batch
 from ..routing.validation import RoutingValidator
 from ..routing.repository import get_route
 from ..workflow.service import WorkflowStatusService
@@ -180,8 +180,9 @@ def _route_proposal(a):
     if data:
         routes = [data]
     else:
-        routes = [RoutingGenerationService().generate_route(source_node_id=a["source_node_id"],
-                    destination_node_id=target, message_id=a.get("message_id")) for target in a["destination_node_ids"]]
+        with routing_candidate_batch(RoutingGenerationService()) as service:
+            routes = [service.generate_route(source_node_id=a["source_node_id"],
+                        destination_node_id=target, message_id=a.get("message_id")) for target in a["destination_node_ids"]]
     return proposals.create("ROUTING", [{"object_type": "RoutingEntry", "data": route} for route in routes],
                             a.get("prompt") or "Technisch geeignete Routen vorschlagen.")
 
@@ -243,11 +244,16 @@ def _simulation(a, action):
     workflow = WorkflowStatusService(current_project_id())
     if action == "snapshot":
         from ..simulation import prepare_workflow_simulation_config
-        return workflow.create_simulation_snapshot(prepare_workflow_simulation_config(a.get("configuration") or {}, current_project_id()))
+        return workflow.create_simulation_snapshot(prepare_workflow_simulation_config(a.get("configuration") or {}, current_project_id()),
+                                                   metadata_only=bool(a.get("metadata_only", False)))
     if action == "start":
         from .runtime import PostCommitAction
         return PostCommitAction(lambda:simulation_gateway.start(a["snapshot_id"]),lambda:None)
-    item = simulation_gateway.stop(a["job_id"]) if action == "stop" else simulation_gateway.job(a["job_id"])
+    # Poll only job state. Completed model traces belong to the explicit results
+    # import; returning them on the first completed poll can dwarf the simulation.
+    item = (simulation_gateway.stop(a["job_id"]) if action == "stop"
+            else simulation_gateway.job(a["job_id"], metadata=True) if action == "status"
+            else simulation_gateway.job(a["job_id"]))
     if item is None:
         raise NotFoundError("Simulation im aktiven Projekt nicht gefunden.")
     return item.get("result") or {"status": item["status"]} if action == "results" else item
@@ -344,7 +350,7 @@ def register_tools():
         register(name,"Szenario als freizugebenden Vorschlag erzeugen.",P.GENERATE_PROPOSAL,generation.scenario,scenario=OBJECT,prompt=(str,"Szenario vorschlagen."))
     register("generate_signal_behavior_proposal","Signalverhalten zur Prüfung vorschlagen.",P.GENERATE_PROPOSAL,lambda a:proposals.create("SIGNAL_BEHAVIOR",[{"object_type":"SignalBehavior","data":a["behavior"]}],a["rationale"]),behavior=OBJECT,rationale=TEXT)
     register("validate_simulation_preflight","Verbindliche Vorprüfung vor einem Simulationslauf durchführen.",P.VALIDATE,lambda a:_validation(PreflightService(current_project_id()).run()))
-    register("create_simulation_snapshot","Validierten unveränderlichen Simulationsstand erzeugen.",P.RUN_SIMULATION,lambda a:_simulation(a,"snapshot"),configuration=OPTIONAL_OBJECT)
+    register("create_simulation_snapshot","Validierten unveränderlichen Simulationsstand erzeugen.",P.RUN_SIMULATION,lambda a:_simulation(a,"snapshot"),configuration=OPTIONAL_OBJECT,metadata_only=(bool,False))
     register("start_simulation","Einen validierten Snapshot einmalig starten.",P.RUN_SIMULATION,lambda a:_simulation(a,"start"),snapshot_id=ID)
     for name,action in [("get_simulation_status","status"),("stop_simulation","stop"),("get_simulation_results","results")]:
         register(name,"Projektgebundenen Simulationslauf lesen oder stoppen.",P.RUN_SIMULATION,lambda a,x=action:_simulation(a,x),job_id=ID)
@@ -401,6 +407,9 @@ register('inspect_assistant_capabilities', 'Verfügbare Agenten, alle Wizards, F
          capabilities.catalog, capability_id=(str | None, None))
 register('prepare_assistant_action', 'Passenden Wizard oder Fachagenten als ausführbare Kachel anbieten. Öffnen führt keine Modelländerung aus.', P.READ_MODEL,
          capabilities.prepare_action, capability_id=ID)
+register('prepare_project_request', 'Eine neue Projektanforderung als editierbaren Engineering-Auftrag vorbereiten und fehlende Vorgaben benennen. Keine Modelländerung.', P.READ_MODEL,
+         capabilities.prepare_project_request, requirement=(str, Field(min_length=1, max_length=16000)),
+         planning_notes=(str, Field(default='', max_length=6000)))
 register('inspect_communication_repair', 'Aktuelle Hardwarearchitektur, etablierte Funktionspartner, alte und neue Signalwege sowie betroffene Routing-Einträge vergleichen. Nur Vorschau; Strategie wird im Reparatur-Agenten gewählt.', P.READ_MODEL,
          capabilities.repair_preview)
 register('analyze_structure_transfer', 'Quellstruktur mit expliziten Ziel-ECUs vergleichen und prüfbare Transfer-Vorschläge erzeugen.', P.GENERATE_PROPOSAL,

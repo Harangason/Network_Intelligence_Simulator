@@ -51,6 +51,10 @@ def complete_new_controller_status(changes):
 
 def actuator_command_template(node):
     """Explicit generic simulator roles only; never guess arbitrary device commands."""
+    explicit = (node.get('identity') or {}).get('actuator_command_template')
+    if node.get('device_type') == 'ActuatorController' and isinstance(explicit, dict) and explicit.get('source') == 'wizard-generic-actuator-v1':
+        return {key: value for key, value in explicit.items() if key in
+                ('length_bits', 'data_type', 'unit', 'factor', 'min_value', 'max_value', 'semantic', 'data')}
     name = str(node.get('name') or '')
     if name.endswith(('Schaltausgang', 'SchaltausgangActuator')):
         return {'length_bits': 1, 'data_type': 'boolean', 'unit': 'code', 'factor': 1,

@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { parseAgentResponse } from './agent-response';
 import type { EngineeringAgentEvent } from './engineering-agent';
+import { ENGINEERING_MODEL_CHANGED_EVENT } from '../engineering-events';
 
 /** Read durable results while the authorized server worker continues the job. */
 export function useGoalResponse(event: EngineeringAgentEvent, projectId: string) {
   const workload = String(event.workload?.workload_id ?? '');
   const key = `${projectId}:${workload}`;
-  const enabled = workload.startsWith('goal-') && ['FOLLOWUP_PENDING', 'SIMULATION_RUNNING'].includes(String(event.status || event.workload?.status));
+  const enabled = workload.startsWith('goal-') && (Boolean(event.outputs?.length) || ['FOLLOWUP_PENDING', 'SIMULATION_RUNNING'].includes(String(event.status || event.workload?.status)));
   const [resolved, setResolved] = useState<{key: string; value: EngineeringAgentEvent} | null>(null);
   useEffect(() => {
     if (!enabled) return;
@@ -32,8 +33,11 @@ export function useGoalResponse(event: EngineeringAgentEvent, projectId: string)
       } catch { /* Keep the durable last result and retry; never issue a write. */ }
       if (!complete && !controller.signal.aborted) timer = setTimeout(() => void poll(), 5000);
     };
+    const refresh = () => { clearTimeout(timer); void poll(); };
     void poll();
-    return () => {controller.abort(); clearTimeout(timer);};
+    window.addEventListener('focus', refresh);
+    window.addEventListener(ENGINEERING_MODEL_CHANGED_EVENT, refresh);
+    return () => {controller.abort(); clearTimeout(timer); window.removeEventListener('focus', refresh); window.removeEventListener(ENGINEERING_MODEL_CHANGED_EVENT, refresh);};
   }, [enabled, key, projectId, workload]);
   return enabled && resolved?.key === key ? resolved.value : event;
 }

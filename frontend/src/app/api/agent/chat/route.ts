@@ -5,15 +5,20 @@ import { parseAgentResponse, type AgentInput } from "@/lib/agent/agent-response"
 import { backendEndpoints } from "@/lib/backend-endpoints";
 import { chatDocumentContext, validateChatAttachment } from "@/lib/agent/chat-attachments";
 import { expandBrowserProjectId } from '@/lib/user-settings';
+import { parseWizardCommand, type WizardCommand } from '@/lib/agent/wizard-protocol';
 
 export const maxDuration = 300;
 const { engineering: backend } = backendEndpoints(process.env);
 class AgentServiceError extends Error {}
 
 export async function POST(request: Request) {
-  let payload: { messages?: EngineeringAgentUIMessage[]; context?: Record<string, unknown>; input?: AgentInput };
+  let payload: { messages?: EngineeringAgentUIMessage[]; context?: Record<string, unknown>; input?: AgentInput; wizard_command?: WizardCommand };
   try { payload = await request.json(); }
   catch { return Response.json({ error: "Ein JSON-Objekt wird erwartet." }, { status: 400 }); }
+  if (payload?.wizard_command !== undefined) {
+    try { payload.wizard_command = parseWizardCommand(payload.wizard_command); }
+    catch { return Response.json({ error: 'Ungültiges Wizardkommando. Auftrag und Revision erneut laden.' }, { status: 400 }); }
+  }
   if (!payload || (payload.messages !== undefined && (!Array.isArray(payload.messages) || payload.messages.length > 60 || payload.messages.some(message => !message || typeof message.id !== 'string' || !['user','assistant','system'].includes(message.role) || !Array.isArray(message.parts) || message.parts.some(part => !part || typeof part.type !== 'string')))))
     return Response.json({ error: 'Ungültiger Gesprächsverlauf.' }, { status: 400 });
   const messages = uniqueMessagesById(payload.messages ?? []);
@@ -24,7 +29,7 @@ export async function POST(request: Request) {
     return Response.json({ error: error instanceof Error ? error.message : 'Ungültiger Dokumentanhang.' }, { status: 400 });
   }
   const prompt = lastUser?.parts.filter(part => part.type === "text").map(part => part.text).join("\n").trim();
-  if (!prompt && !payload.input) return Response.json({ error: "Eine Anforderung wird erwartet." }, { status: 400 });
+  if (!prompt && !payload.input && !payload.wizard_command) return Response.json({ error: "Eine Anforderung wird erwartet." }, { status: 400 });
   const projectId = request.headers.get("X-Project-ID") ?? "default";
   if (payload.context?.active_project_id && expandBrowserProjectId(payload.context.active_project_id) !== expandBrowserProjectId(projectId))
     return Response.json({ error: 'Das Projekt wurde gewechselt. Bitte den Assistenten im aktuellen Projekt öffnen.' }, { status: 409 });
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
     execute: async ({ writer }) => {
       const response = await fetch(`${backend}/agent/chat`, {
         method: "POST", headers: { "Content-Type": "application/json", "X-Project-ID": projectId },
-        body: JSON.stringify({ prompt: payload.input ? "" : prompt, input: payload.input, context, history }), cache: "no-store",
+        body: JSON.stringify({ prompt: payload.input && !payload.wizard_command ? "" : prompt, input: payload.input, wizard_command: payload.wizard_command, context, history }), cache: "no-store",
         signal: AbortSignal.any([request.signal, AbortSignal.timeout(290000)]),
       });
       if (!response.ok || !response.body) {

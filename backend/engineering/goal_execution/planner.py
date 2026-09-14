@@ -5,7 +5,7 @@ from .models import (DesiredEngineeringState, EngineeringExecutionPlan, Engineer
 from .ports import inspect_port_decision, finding
 from .graph import digest
 from ..physical_ports import technology_id
-from ..routing.payload_scope import message_scope, scope_allows
+from ..routing.payload_scope import message_scope, scope_allows, payload_scope_issues
 
 STEP_DEFINITIONS = [
     ('revision', 'Modellrevision prüfen', 'inspect_model_situation'),
@@ -68,6 +68,9 @@ def connection_plan(graph, goal, source_ref, target_ref, message_ids=()):
                 'strategies': [], 'pending_decision': None, 'validation_state': {}, 'attempts': 0,
                 'source_ref': source_ref, 'target_ref': target_ref, 'message_ids': list(message_ids)}
     workload['followup_goals'] = followups
+    from .typing import type_reference
+    workload['typed_inputs'] = [type_reference(graph, ref, intent=kind.value).model_dump(mode='json')
+                                for ref in (source_ref, target_ref)]
     try:
         followup_configuration = simulation_configuration(goal, graph.state) if followups else {}
     except ValueError as error:
@@ -86,6 +89,11 @@ def connection_plan(graph, goal, source_ref, target_ref, message_ids=()):
     allowed = []
     for message in graph.messages.values():
         if str(message.get('interface_id')) not in source_interface_ids or message.get('direction') == 'rx': continue
+        options = destination_interfaces or [{}]
+        if all(any(issue['code'] in {'MESSAGE_ROUTING_DISABLED', 'SIGNAL_ROUTING_DISABLED'} for issue in payload_scope_issues({'payload': {'message_ids': [str(message['id'])]}, 'destinations': [
+            {'node_id': dst_id, 'interface_id': str(interface.get('id') or ''), 'function_id': target_ref}]},
+            graph.messages, graph.signals, graph.interfaces)) for interface in options):
+            continue
         scope = message_scope(message)
         if not any(scope_allows(scope, {'node_id': dst_id, 'interface_id': str(i['id'])}, graph.interfaces) for i in destination_interfaces):
             # A required receive interface may be created on the actual target function.

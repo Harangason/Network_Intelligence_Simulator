@@ -6,12 +6,14 @@ import { listSimulations } from "@/lib/api";
 import type { SimulationJob } from "@/lib/types";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import { engineeringContextHref } from "@/lib/agent/assistant-context";
-import { eventFromRecord, parseTraceText, MAX_IMPORT_BYTES, type TraceEvent } from "@/lib/trace-records";
+import { eventFromRecord, MAX_IMPORT_BYTES, type TraceEvent } from "@/lib/trace-records";
 import { ReasoningPanel } from "./reasoning-panel";
 import { queueEngineeringAgentTask } from '@/lib/agent-task-events';
 
+import { automaticProfile, availableColumns, displayTraceValue, TRACE_PROFILES, type TraceProfile } from "@/lib/trace-profiles";
+
 type TraceView = "session" | "messages" | "sequence" | "signals" | "trace" | "findings" | "root-cause";
-const ACCEPTED = ".csv,.json,.jsonl";
+const ACCEPTED = ".csv,.json,.jsonl,.asc,.blf,.log,.trc,.pcap,.pcapng,.mdf,.mf4";
 const VIEW_META: Record<TraceView, { eyebrow: string; title: string; note: string }> = {
   session: {
     eyebrow: "Schritt 1",
@@ -35,7 +37,7 @@ const VIEW_META: Record<TraceView, { eyebrow: string; title: string; note: strin
   },
   trace: {
     eyebrow: "Schritt 5",
-    title: "Trace synchronisieren",
+    title: "Trace untersuchen",
     note: "Eventliste und Zeitkontext für die Ursachenanalyse zusammenführen.",
   },
   findings: {
@@ -55,8 +57,7 @@ function buildFindings(events: TraceEvent[]) {
   const findings = [];
   if (!events.length) findings.push({ severity: "info", timestamp: "-", category: "Session", object: "Trace Session", message: "-", signal: "-", finding: "No Trace Session", context: "Keine Trace-Daten geladen.", source: "-", status: "open" });
   for (const event of events) {
-    if (event.finding) findings.push({ severity: "warning", timestamp: `${event.timestamp}s`, category: "Analyzer Finding", object: event.id, message: event.message, signal: event.signal, finding: event.finding, context: `${event.source} -> ${event.destination}`, source: event.technology, status: "open" });
-    if (!event.signals.length) findings.push({ severity: "info", timestamp: `${event.timestamp}s`, category: "Decode", object: event.message, message: event.message, signal: "-", finding: "Message without decoded Signals", context: "Im Ereignis fehlen dekodierte Signalwerte. Ein passender Decoder oder eine Modellreferenz ist erforderlich.", source: event.technology, status: "open" });
+    if (event.finding) findings.push({ severity: "warning", timestamp: event.timeKnown ? `${event.timestamp}s` : "unbekannt", category: "Analyzer Finding", object: event.id, message: event.message, signal: event.signal, finding: event.finding, context: `${event.source} -> ${event.destination}`, source: event.technology, status: "open" });
   }
   return findings.slice(0, 250);
 }
@@ -72,6 +73,8 @@ export function TraceAnalysisWorkbench() {
   const [query, setQuery] = useState("");
   const [sourceName, setSourceName] = useState("Keine Trace Session");
   const [error, setError] = useState("");
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [sourceFormat, setSourceFormat] = useState("-");
   const [traceJob, setTraceJob] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -114,6 +117,7 @@ export function TraceAnalysisWorkbench() {
       setEvents(loaded);
       setSelectedEvent(range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
       setTraceJob(jobId); setNextCursor(result.next_cursor); setSourceName(`Simulation ${jobId} · Trace-Fenster`);
+      setImportWarnings([]); setSourceFormat("JSONL · Simulation");
       setError("");
       if (openDefaultView) { autoLoadedJobRef.current = `${jobId}:${search.get("focus_s") ?? ''}`; openMessagesView(jobId); }
     } catch (caught) {
@@ -124,34 +128,53 @@ export function TraceAnalysisWorkbench() {
   async function loadFiles() {
     const files = inputRef.current?.files;
     if (!files?.length) return;
-    if (files[0].size > MAX_IMPORT_BYTES) { setError("Lokaler Import: maximal 5 MiB. Simulations-Traces über ihre serverseitigen Fenster öffnen."); return; }
+    if (files[0].size > MAX_IMPORT_BYTES) { setError("Lokaler Import: maximal 500 MiB. Simulations-Traces über ihre serverseitigen Fenster öffnen."); return; }
     const generation = ++loadGeneration.current;
     setLoading(true);
     try {
-      if (!/\.(csv|json|jsonl)$/i.test(files[0].name)) throw new Error('Dieser Trace benötigt zuerst einen passenden Konvertierungsadapter.');
-      const text = await files[0].text();
+      const file = files[0];
+      const response = await fetch(`/api/trace-import?${new URLSearchParams({ filename: file.name })}`, {
+        method: "POST", body: file, headers: { "Content-Type": "application/octet-stream", "X-Project-ID": readActiveProjectId() },
+        signal: AbortSignal.timeout(600000),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? `Trace-Import fehlgeschlagen (${response.status}).`);
       if (generation !== loadGeneration.current) return;
-      setEvents(parseTraceText(text));
+      const imported = (result.events as Record<string, unknown>[]).map(eventFromRecord);
+      setEvents(imported);
+      setImportWarnings(result.warnings ?? []); setSourceFormat(String(result.format).toUpperCase());
+      setTimeStart(0); setTimeEnd(1e15); setQuery("");
       setSelectedEvent(null);
       setTraceJob(null); setNextCursor(null);
       setSourceName(files[0].name);
       openMessagesView();
       setError("");
     } catch (caught) { if (generation === loadGeneration.current) setError(caught instanceof Error ? caught.message : 'Trace-Import fehlgeschlagen.'); }
-    finally { if (generation === loadGeneration.current) setLoading(false); }
+    finally { if (generation === loadGeneration.current) { setLoading(false); if (inputRef.current) inputRef.current.value = ""; } }
   }
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return events.filter((event) => event.timestamp >= timeStart && event.timestamp <= timeEnd
+    return events.filter((event) => (!event.timeKnown || event.timestamp >= timeStart && event.timestamp <= timeEnd)
       && (!needle || JSON.stringify(event).toLowerCase().includes(needle)));
   }, [events, query, timeStart, timeEnd]);
   const findings = useMemo(() => buildFindings(filtered), [filtered]);
+  // Use the complete loaded window, never the filtered subset, as the slider domain.
+  const timeline = useMemo(() => {
+    const times = events.filter(event => event.timeKnown && Number.isFinite(event.timestamp)).map(event => event.timestamp);
+    return times.length ? { min: Math.min(...times), max: Math.max(...times) } : null;
+  }, [events]);
+  const timelineSpan = timeline ? timeline.max - timeline.min : 0;
+  const timelineStart = timeline ? Math.max(timeline.min, Math.min(timeStart, timeline.max)) : 0;
+  const timelineEnd = timeline ? Math.max(timelineStart, Math.min(timeEnd, timeline.max)) : 0;
+  const startPercent = timelineSpan > 0 ? (timelineStart - timeline!.min) / timelineSpan * 100 : 0;
+  const endPercent = timelineSpan > 0 ? (timelineEnd - timeline!.min) / timelineSpan * 100 : 100;
   const channels = new Set(filtered.map((event) => event.technology)).size;
   const messages = new Set(filtered.map((event) => event.message)).size;
   const signals = new Set(filtered.flatMap(event => event.signals.map(signal => signal.id))).size;
-  const start = filtered.length ? Math.min(...filtered.map((event) => event.timestamp)) : 0;
-  const end = filtered.length ? Math.max(...filtered.map((event) => event.timestamp)) : 0;
+  const timed = filtered.filter(event => event.timeKnown);
+  const start = timed.length ? Math.min(...timed.map(event => event.timestamp)) : 0;
+  const end = timed.length ? Math.max(...timed.map(event => event.timestamp)) : 0;
   const viewMeta = VIEW_META[view];
   const viewStatus = view === "session"
     ? events.length ? "SESSION LOADED" : "NO TRACE SESSION"
@@ -189,25 +212,44 @@ export function TraceAnalysisWorkbench() {
               <input ref={inputRef} type="file" accept={ACCEPTED} onChange={loadFiles} className="hidden-file" />
               <button className="button primary" type="button" onClick={() => inputRef.current?.click()}>Load Trace</button>
               <button className="button secondary" type="button" onClick={() => inputRef.current?.click()}>Change Session</button>
-              <button className="button secondary" type="button" onClick={() => { loadGeneration.current += 1; autoLoadedJobRef.current = null; setLoading(false); setEvents([]); setSelectedEvent(null); setSignalChannels([]); setTraceJob(null); setNextCursor(null); setError(""); setSourceName("Keine Trace Session"); setView("session"); router.replace(withProjectParam("/trace-analysis?view=session")); }}>Close Session</button>
+              <button className="button secondary" type="button" onClick={() => { loadGeneration.current += 1; autoLoadedJobRef.current = null; setLoading(false); setEvents([]); setSelectedEvent(null); setSignalChannels([]); setTraceJob(null); setNextCursor(null); setError(""); setSourceName("Keine Trace Session"); setSourceFormat("-"); setImportWarnings([]); setView("session"); router.replace(withProjectParam("/trace-analysis?view=session")); }}>Close Session</button>
             </div> : null}
-            <div className="trace-toolbar">
+            <div className="trace-filter-controls">
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Globale Filter: ID, Quelle, Ziel, Payload, Finding ..." />
-              <label>Von (s)<input type="number" min="0" step="0.001" value={timeStart} onChange={event => setTimeStart(Number(event.target.value))} /></label>
-              <label>Bis (s)<input type="number" min={timeStart} step="0.001" value={timeEnd === 1e15 ? "" : timeEnd} placeholder="Ende" onChange={event => setTimeEnd(event.target.value === "" ? 1e15 : Number(event.target.value))} /></label>
-              {traceJob && <><button disabled={loading} type="button" onClick={() => void loadWindow(traceJob)}>Zeitfenster laden</button><button disabled={loading || nextCursor === null} type="button" onClick={() => void loadWindow(traceJob, nextCursor ?? 0)}>Nächstes Fenster</button></>}
+              <div className="trace-time-row">
+                <label>Von (s)<input type="number" min="0" max={timeEnd === 1e15 ? undefined : timeEnd} step="any" value={timeStart} onChange={event => {
+                  const value = event.target.valueAsNumber;
+                  if (Number.isFinite(value)) setTimeStart(Math.max(0, Math.min(value, timeEnd)));
+                }} /></label>
+                <label>Bis (s)<input type="number" min={timeStart} step="any" value={timeEnd === 1e15 ? "" : timeEnd} placeholder="Ende" onChange={event => {
+                  if (!event.target.value) { setTimeEnd(1e15); return; }
+                  const value = event.target.valueAsNumber;
+                  if (Number.isFinite(value)) setTimeEnd(Math.max(timeStart, value));
+                }} /></label>
+              </div>
+              <div className="trace-time-slider" role="group" aria-label="Zeitraum auf der Timeline" aria-describedby="trace-timeline-note">
+                <div className="trace-time-track"><div className="trace-time-selection" style={{ left: `${startPercent}%`, width: `${endPercent - startPercent}%` }} /></div>
+                <input type="range" aria-label="Zeitraum Anfang" min={timeline?.min ?? 0} max={timeline?.max ?? 1} step={timelineSpan > 0 ? timelineSpan / 10000 : 1} value={timelineStart} disabled={!timelineSpan}
+                  aria-valuetext={`${timelineStart} Sekunden`} onChange={event => { setTimeStart(Math.min(Number(event.target.value), timelineEnd)); setTimeEnd(timelineEnd); }} />
+                <input type="range" aria-label="Zeitraum Ende" min={timeline?.min ?? 0} max={timeline?.max ?? 1} step={timelineSpan > 0 ? timelineSpan / 10000 : 1} value={timelineEnd} disabled={!timelineSpan}
+                  aria-valuetext={`${timelineEnd} Sekunden`} onChange={event => { setTimeEnd(Math.max(Number(event.target.value), timelineStart)); setTimeStart(timelineStart); }} />
+              </div>
+              <div className="trace-time-scale"><span>{timeline ? `${timeline.min.toFixed(6)} s` : '—'}</span><span>{timeline ? `${timeline.max.toFixed(6)} s` : '—'}</span></div>
+              <small id="trace-timeline-note">{timelineSpan > 0 ? `${traceJob ? 'Timeline des geladenen Trace-Fensters' : 'Timeline der geladenen Session'} · beide Griffe auch mit den Pfeiltasten verschiebbar.` : 'Für die Timeline werden mindestens zwei unterschiedliche Zeitpunkte benötigt.'}</small>
+              {traceJob && <div className="trace-actions"><button disabled={loading} type="button" onClick={() => void loadWindow(traceJob)}>Zeitfenster laden</button><button disabled={loading || nextCursor === null} type="button" onClick={() => void loadWindow(traceJob, nextCursor ?? 0)}>Nächstes Fenster</button></div>}
             </div>
             <p>{loading ? "Trace-Fenster wird geladen …" : `${events.length} Ereignisse im Speicher · gemeinsames Zeitfenster für alle Ansichten`}</p>
-            {selectedEvent && <div aria-label="Gemeinsamer Trace-Kontext"><strong>{selectedEvent.timestamp.toFixed(6)} s · {selectedEvent.source} → {selectedEvent.destination}</strong><p>{selectedEvent.message} · {selectedEvent.signal}: {selectedEvent.value ?? '—'} {selectedEvent.unit}</p>{selectedEvent.ipContext && <p aria-label="IP- und Port-Zuordnung">{selectedEvent.ipContext}</p>}{selectedEvent.refs.map(ref => { const href = engineeringContextHref(ref, readActiveProjectId()); return href ? <a key={ref.object_type + ref.id} href={href}>{ref.object_type} öffnen </a> : null; })}</div>}
-            {error && <div className="notice error">{error}</div>}
+            {selectedEvent && <div aria-label="Gemeinsamer Trace-Kontext"><strong>{selectedEvent.timeKnown ? `${selectedEvent.timestamp.toFixed(6)} s` : "Zeit unbekannt"} · {selectedEvent.source} → {selectedEvent.destination}</strong><p>{selectedEvent.message} · {selectedEvent.signal}: {selectedEvent.value ?? '—'} {selectedEvent.unit}</p>{selectedEvent.ipContext && <p aria-label="IP- und Port-Zuordnung">{selectedEvent.ipContext}</p>}{selectedEvent.refs.map(ref => { const href = engineeringContextHref(ref, readActiveProjectId()); return href ? <a key={ref.object_type + ref.id} href={href}>{ref.object_type} öffnen </a> : null; })}</div>}
+            {error && <div className="notice error" role="alert">{error}</div>}
+            {importWarnings.map((warning, index) => <div className="notice" role="status" key={index}>{warning}</div>)}
             <p className="trace-view-note">{viewMeta.note}</p>
             <p className="trace-governance-note">IMPORT {"->"} ANALYSIS PROJECTION. Keine automatischen Core-, Evidence- oder TraceLink-Writes.</p>
           </div>
-          {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Unterstützte Textadapter: {ACCEPTED}. Lokaler Import bis 5 MiB, Anzeige bis 2000 Ereignisse. Binärformate benötigen einen Konvertierungsadapter.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
-          {view === "messages" && <TraceTable events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
+          {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Universeller Trace-Import: {ACCEPTED}. Binärformate werden anhand ihrer Dateisignatur erkannt. Vorschau bis 500 MiB und 2000 Ereignisse. ASC/BLF: CAN und CAN FD; PCAP/PCAPNG: Rohpakete; MDF/MF4: skalare Messkanäle. PCAPNG: eine Schnittstelle pro Datei. Rohbytes benötigen für Signalwerte eine passende Decoder-Datenbank.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
+          {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
           {view === "sequence" && <SequenceView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
           {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} channels={signalChannels} onChannels={setSignalChannels} />}
-          {view === "trace" && <TraceTable events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} compact />}
+          {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} compact />}
           {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
           {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timestamp} />}
         </div>
@@ -216,7 +258,7 @@ export function TraceAnalysisWorkbench() {
             <p className="eyebrow">Session Header</p>
             <h2>Aktueller Stand</h2>
             <dl className="overview-list">
-              {[["Trace Session Name", sourceName], ["Source File", sourceName], ["Format", sourceName.split(".").pop() ?? "-"], ["Start Time", `${start}s`], ["End Time", `${end}s`], ["Duration", `${Math.max(0, end - start).toFixed(3)}s`], ["Channels", channels], ["Detected Messages", messages], ["Detected Signals", signals], ["Findings", findings.length], ["Decode Status", signals ? "partial/decoded" : "missing"]].map(([label, value]) => <div key={String(label)}><dt>{label}</dt><dd>{value}</dd></div>)}
+              {[["Trace Session Name", sourceName], ["Source File", sourceName], ["Format", sourceFormat], ["Start Time", timed.length ? `${start}s` : "unbekannt"], ["End Time", timed.length ? `${end}s` : "unbekannt"], ["Duration", timed.length ? `${Math.max(0, end - start).toFixed(3)}s` : "unbekannt"], ["Channels", channels], ["Detected Messages", messages], ["Detected Signals", signals], ["Findings", findings.length], ["Decode Status", signals ? "partial/decoded" : "missing"]].map(([label, value]) => <div key={String(label)}><dt>{label}</dt><dd>{value}</dd></div>)}
             </dl>
           </div>
           <div className="empty-result trace-context-panel">
@@ -233,11 +275,48 @@ export function TraceAnalysisWorkbench() {
 type SelectionProps = { selected: TraceEvent | null; onSelect: (event: TraceEvent) => void };
 
 function EventTime({ event, selected, onSelect }: SelectionProps & { event: TraceEvent }) {
-  return <button type="button" aria-pressed={selected?.id === event.id} onClick={() => onSelect(event)}>{event.timestamp.toFixed(6)} s</button>;
+  return <button type="button" aria-pressed={selected?.id === event.id} onClick={() => onSelect(event)}>{event.timeKnown ? `${event.timestamp.toFixed(6)} s` : "Zeit unbekannt"}</button>;
 }
 
-function TraceTable({ events, compact = false, ...selection }: SelectionProps & { events: TraceEvent[]; compact?: boolean }) {
-  return <div className="panel trace-table"><table><thead><tr>{["Time", "Source", "Destination", "Technology", "Message", "Signal", "Value", "Payload", "Status"].map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{events.map((event) => <tr key={event.id}><td><EventTime event={event} {...selection} /></td><td>{event.source}</td><td>{event.destination}</td><td>{event.technology}</td><td>{event.message}</td><td>{event.signal}</td><td>{event.value ?? "-"} {event.unit}</td><td>{compact ? event.payload.slice(0, 24) : event.payload}</td><td>{event.status}</td></tr>)}</tbody></table>{!events.length && <p>Keine Botschaften in der aktuellen Auswahl.</p>}</div>;
+function TraceTable({ events, sessionEvents, compact = false, ...selection }: SelectionProps & { events: TraceEvent[]; sessionEvents: TraceEvent[]; compact?: boolean }) {
+  const [profile, setProfile] = useState<TraceProfile | 'auto'>('auto');
+  const [protocolFilter, setProtocolFilter] = useState('all');
+  const [custom, setCustom] = useState<string[] | null>(null);
+  const available = useMemo(() => availableColumns(sessionEvents), [sessionEvents]);
+  const resolved = profile === 'auto' ? automaticProfile(sessionEvents) : profile;
+  const common = available.filter(field => ['source', 'destination', 'message', 'status', 'time_basis'].includes(field.key));
+  const defaults = resolved === 'generic'
+    ? (common.length ? common : available.filter(field => !['timestamp', 'time_status', 'payload', 'payload_hex'].includes(field.key)).slice(0, 8))
+    : TRACE_PROFILES[resolved].columns.filter(field => available.some(item => item.key === field.key));
+  const columns = custom === null ? defaults : available.filter(field => custom.includes(field.key));
+  const shown = events.filter(event => protocolFilter === 'all' || event.technology === protocolFilter);
+  const selected = selection.selected;
+  return <div className="panel trace-table">
+    <div className="trace-toolbar sequence-toolbar">
+      <label>Spaltenprofil<select value={profile} onChange={event => { setProfile(event.target.value as TraceProfile | 'auto'); setCustom(null); }}>
+        <option value="auto">Automatisch · {TRACE_PROFILES[automaticProfile(sessionEvents)].label}</option>
+        {Object.entries(TRACE_PROFILES).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
+      </select></label>
+      <label>Protokollfilter<select value={protocolFilter} onChange={event => setProtocolFilter(event.target.value)}>
+        <option value="all">Alle Inhalte</option>{[...new Set(sessionEvents.map(event => event.technology))].map(key => <option key={key} value={key}>{key}</option>)}
+      </select></label>
+      <button className="button secondary" type="button" onClick={() => { setCustom(null); setProfile('auto'); setProtocolFilter('all'); }}>Ansicht zurücksetzen</button>
+    </div>
+    <details><summary>Spalten auswählen ({available.length} Felder)</summary>
+      {available.map(field => <label key={field.key} style={{ display: 'inline-block', margin: '0.4rem' }}><input type="checkbox" checked={columns.some(item => item.key === field.key)} onChange={() => {
+        const keys = columns.map(item => item.key); setCustom(keys.includes(field.key) ? keys.filter(key => key !== field.key) : [...keys, field.key]);
+      }} />{field.label}</label>)}
+    </details>
+    <p>{sessionEvents.filter(event => !event.timeKnown).length || 0} Ereignisse ohne Zeitstempel · Zeitbasen werden nicht automatisch synchronisiert. Rohdaten ohne Signaldecoder sind kein Fehler.</p>
+    <table><thead><tr><th>Zeit / Auswahl</th><th>Protokoll</th>{columns.map(field => <th key={field.key}>{field.label}</th>)}<th>Rohdaten</th></tr></thead>
+      <tbody>{shown.map(event => <tr key={event.id}><td><EventTime event={event} {...selection} /></td><td>{event.technology}</td>{columns.map(field => <td key={field.key}>{displayTraceValue(field.read(event))}</td>)}<td>{event.payload ? `${event.payload.slice(0, compact ? 24 : 96)}${event.payload.length > (compact ? 24 : 96) ? ' …' : ''}` : '—'}</td></tr>)}</tbody>
+    </table>
+    {!shown.length && <p>Keine Ereignisse in der aktuellen Auswahl.</p>}
+    {selected && <section aria-label="Ereignisdetails"><h3>Ereignisdetails · {selected.message}</h3><p>Originalzeitbasis: {displayTraceValue(selected.original.time_basis)} · Herkunft/Reihenfolge: {displayTraceValue(selected.original.source_record_index)}</p>
+      <h4>Protokollschichten</h4><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(selected.original.protocols ?? {}, null, 2)}</pre>
+      <details><summary>Vollständige Originalfelder und Rohdaten</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(selected.original, null, 2)}</pre></details>
+    </section>}
+  </div>;
 }
 
 function SequenceView({ events, ...selection }: SelectionProps & { events: TraceEvent[] }) {

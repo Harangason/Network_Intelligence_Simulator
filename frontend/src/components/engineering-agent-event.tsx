@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { reconcileQuestionSelection } from '@/lib/agent/question-selection';
 import type { EngineeringAgentEvent, EngineeringProposal } from "@/lib/agent/engineering-agent";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
 import { WorkloadProgress } from "./workload-progress";
 import { GoalHardwareFacts } from './goal-hardware-facts';
 import { useGoalResponse } from '@/lib/agent/use-goal-response';
+import { EngineeringOutputs } from './engineering-outputs';
 import { AssistantCapabilityCards } from './assistant-capability-cards';
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
@@ -104,6 +106,11 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
     <strong>{statusLabels[proposal.status]}</strong>
     <p>{proposal.rationale}</p>
     <p>{proposal.change_count ?? proposal.changes.length} Änderungen</p>
+    {complete && typeof proposal.validation_result.valid_count === 'number' && <p>
+      {proposal.validation_result.requested ?? proposal.changes.length} geprüft · {proposal.validation_result.valid_count} gültig
+      {' · '}{['APPROVED', 'APPLIED'].includes(proposal.status) ? 'freigegeben' : 'noch nicht freigegeben'}
+      {' · '}{proposal.status === 'APPLIED' ? `${proposal.canonical_count ?? proposal.canonical_ids.length} übernommen` : 'noch nicht übernommen'}
+    </p>}
     {!complete && <p role="status">Vollständiger Vorschlag wird aus dem gespeicherten Modell geladen. Freigabe ist bis dahin gesperrt.</p>}
     {complete && <LazyDetails title="Änderungen prüfen">{() => <>
       {review.pages > 1 && <nav aria-label="Änderungen durchblättern">
@@ -117,7 +124,22 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       </article>)}
     </>}</LazyDetails>}
     {complete && !!proposal.assumptions.length && <details><summary>Annahmen ({proposal.assumptions.length})</summary><ul>{proposal.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>}
-    {complete && proposal.validation_result.findings?.map((finding, index) => <p role="alert" key={index}>{finding.message}</p>)}
+    {complete && Boolean(proposal.validation_result.findings?.length) && <section aria-label="Prüfbefunde des Vorschlags">
+      <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
+      <ul>{proposal.validation_result.findings!.map((finding, index) => {
+        const change = typeof finding.index === 'number' ? proposal.changes[finding.index] : undefined;
+        const label = finding.object_name || String(change?.data?.name ?? change?.object_name ?? finding.object_type ?? 'Vorschlag');
+        const endpoints = [finding.source, ...(finding.destinations ?? [])].filter(endpoint => endpoint && typeof endpoint.node_id === 'string');
+        return <li key={`${finding.code ?? 'finding'}-${index}`}>
+          <strong>{label}</strong>
+          <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
+          <ContextLinks refs={endpoints.map(endpoint => ({ object_type: 'HardwareNode', id: String(endpoint!.node_id), name: 'Betroffenes Gerät öffnen' }))} projectId={projectId} />
+          {finding.code && <details><summary>Technischer Befund</summary><code>{finding.code}</code>
+            {finding.source && <Value value={{ Quelle: finding.source, Ziele: finding.destinations }} references={references} />}
+          </details>}
+        </li>;
+      })}</ul>
+    </section>}
     <div className="engineering-proposal-actions">
       {['PROPOSED', 'VALIDATED', 'APPROVED', 'OUTDATED'].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => setEditing(value => !value)}>Bearbeiten</button>}
       {proposal.status === "VALIDATED" && (wizardReview
@@ -141,11 +163,12 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
   </section>;
 }
 
-function EngineeringQuestion({ question, projectId, onAnswer }: { question: InteractiveQuestion; projectId: string; onAnswer?: (answer: AgentInput) => void }) {
+function EngineeringQuestion({ question, projectId, onAnswer, wizardReview }: { question: InteractiveQuestion; projectId: string; onAnswer?: (answer: AgentInput) => void; wizardReview: boolean }) {
   const multiple = question.selection_mode === "MULTI";
   const [selected, setSelected] = useState<string[]>(() => question.recommended_options.length ? question.recommended_options : question.options.filter(o => o.recommended && !o.disabled).map(o => o.id));
   const [currentStatus, setCurrentStatus] = useState<string>(question.status);
   const [loaded, setLoaded] = useState(false);
+  const editedSelectionRef = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
     const refresh = async () => {
@@ -156,9 +179,10 @@ function EngineeringQuestion({ question, projectId, onAnswer }: { question: Inte
           const context = readAssistantContext();
           const expected = result.data.selected_context;
           const refs = (items: Record<string, string>[]) => items.map(item => [item.id, item.object_type]).sort();
-          const outdated = current.status === 'OPEN' && !current.decision_key?.startsWith('goal:') && expected && (expected.active_view !== context.active_view || JSON.stringify(refs(expected.selected_object_refs)) !== JSON.stringify(refs(context.selected_object_refs)));
+          const outdated = !wizardReview && current.status === 'OPEN' && !current.decision_key?.startsWith('goal:') && expected && (expected.active_view !== context.active_view || JSON.stringify(refs(expected.selected_object_refs)) !== JSON.stringify(refs(context.selected_object_refs)));
           setCurrentStatus(outdated ? 'OUTDATED' : current.status);
-          if (current.selected_options) setSelected(current.selected_options); setLoaded(true);
+          setSelected(local => reconcileQuestionSelection(local, current.status, current.selected_options, editedSelectionRef.current));
+          setLoaded(true);
         }
         else { setCurrentStatus('OUTDATED'); setLoaded(true); }
       } catch { if (!controller.signal.aborted) setLoaded(false); }
@@ -166,7 +190,7 @@ function EngineeringQuestion({ question, projectId, onAnswer }: { question: Inte
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [projectId, question.id]);
+  }, [projectId, question.id, wizardReview]);
   const labels: Record<string, string> = { OPEN: 'Entscheidung offen', ANSWERED: 'Beantwortet', SKIPPED: 'Übersprungen', EXPIRED: 'Abgelaufen', OUTDATED: 'Kontext geändert · neu klären' };
   return <section className="engineering-question-card">
     <p className="muted" role="status">{loaded ? labels[currentStatus] : 'Gesprächsstand wird geprüft …'} · {question.engineering_impact === 'CRITICAL' ? 'Architekturrelevant' : question.required ? 'Erforderlich' : 'Optional'}</p>
@@ -177,7 +201,7 @@ function EngineeringQuestion({ question, projectId, onAnswer }: { question: Inte
         <label>
           <input type={multiple ? "checkbox" : "radio"} name={question.id} disabled={option.disabled} checked={selected.includes(option.id)}
             aria-describedby={`${question.id}-${option.id}-description`}
-            onChange={() => setSelected(current => multiple ? current.includes(option.id) ? current.filter(value => value !== option.id) : [...current, option.id] : [option.id])} />
+            onChange={() => { editedSelectionRef.current = true; setSelected(current => multiple ? current.includes(option.id) ? current.filter(value => value !== option.id) : [...current, option.id] : [option.id]); }} />
           <span>{option.label}{option.recommended && <small className="engineering-recommended">Empfohlen</small>}</span>
         </label>
         {option.description && <p id={`${question.id}-${option.id}-description`}>{option.description}</p>}
@@ -233,11 +257,12 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
   event = useGoalResponse(event, projectId);
   if (event.type === 'CONTEXT' || event.type === 'HEARTBEAT') return null;
   if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} />;
-  if (event.question) return <section data-response-type={event.type}>{event.title && <h4>{event.title}</h4>}{event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}<EngineeringQuestion question={event.question} projectId={projectId} onAnswer={onAnswer} /></section>;
+  if (event.question) return <section data-response-type={event.type}>{event.title && <h4>{event.title}</h4>}{event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}<EngineeringQuestion key={event.question.id} question={event.question} projectId={projectId} onAnswer={onAnswer} wizardReview={wizardReview} /></section>;
   const text = event.text ?? '';
   const summary = text.length > 700 ? `${text.slice(0, 700)}…` : text;
   return <section className={`engineering-response is-${event.type.toLowerCase()}`} data-response-type={event.type}>
     {event.title && <h4>{event.title}</h4>}
+    {!!event.outputs?.length && <EngineeringOutputs outputs={event.outputs} projectId={projectId} />}
     <p role={event.type === 'ERROR' ? 'alert' : event.type === 'PROGRESS' ? 'status' : undefined}>{summary}</p>
     {event.metadata?.hardware_facts_required === true && typeof event.workload?.workload_id === 'string' && <GoalHardwareFacts projectId={projectId} workloadId={event.workload.workload_id} onContinue={onAnswer ? () => onAnswer({type: 'RESUME'}) : undefined} />}
     {text.length > 700 && <LazyDetails title="Vollständige Antwort">{() => <p>{text}</p>}</LazyDetails>}
@@ -249,7 +274,7 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
     {event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}
     <ContextLinks refs={event.context_refs ?? []} projectId={projectId} />
     {event.type === 'ERROR' && <button type="button" disabled={!onRetry} onClick={onRetry}>Erneut versuchen</button>}
-    {event.status === 'BACKGROUND_PAUSED' && <button type="button" disabled={!onAnswer} onClick={() => onAnswer?.({type: 'RESUME'})}>Auftrag fortsetzen</button>}
+    {['BACKGROUND_PAUSED', 'OUTPUT_PENDING'].includes(event.status ?? '') && <button type="button" disabled={!onAnswer} onClick={() => onAnswer?.({type: 'RESUME'})}>Auftrag fortsetzen</button>}
     {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Im Workspace öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
     <ContextLinks refs={(event.actions ?? []).filter(action => action.type === 'NAVIGATE' && typeof action.object_type === 'string').map(action => ({object_type:String(action.object_type),id:String(action.object_id ?? ''),name:String(action.label ?? 'Objekt öffnen')}))} projectId={projectId} />
     {event.metadata?.details != null && <LazyDetails title="Technische Details">{() => <Value value={event.metadata?.details} />}</LazyDetails>}

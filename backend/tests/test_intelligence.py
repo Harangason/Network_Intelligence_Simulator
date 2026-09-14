@@ -1,3 +1,7 @@
+from copy import deepcopy
+import json
+from pathlib import Path
+
 from backend.engineering.intelligence.reports import IntelligenceReportService
 from backend.engineering.intelligence.services import (
     AnomalyDetectionService,
@@ -97,6 +101,63 @@ def test_step_nine_is_invalidated_by_earlier_changes():
 
     assert changed["statuses"]["data_science_intelligence"] == "OUTDATED"
     assert changed["stale_reasons"]["data_science_intelligence"] == "Routing changed"
+
+
+def test_step_nine_capacity_plan_preserves_explicit_receiver_hardware_load_limits(monkeypatch):
+    fixture = json.loads((Path(__file__).parent / 'fixtures/capacity_remaining_lin.json').read_text(encoding='utf8'))
+    # One actual four-byte LIN transmission, repeated for two receivers. The
+    # second receiver's binding must survive both collection and multicast dedup.
+    rows = fixture['capacity']['results']['routes'][:2]
+    assert rows[0]['message_id'] == rows[1]['message_id']
+    fixture['capacity']['results']['routes'] = rows
+    objects = {key: [] for key in _objects()}
+    objects['HardwareNode'] = fixture['hardware']
+    data = {
+        'objects': objects, 'hardware_interfaces': fixture['physical_interfaces'],
+        'state': {'versions': default_versions(), 'parameters': fixture['parameters'], 'topology': {}},
+        'routes': [], 'relations': [], 'preflight': {}, 'simulations': [], 'history': [],
+        'capacity': fixture['capacity'],
+    }
+    service = IntelligenceService('diagnostic-hardware-limit-test')
+    monkeypatch.setattr(service.workflow, 'latest_analysis', lambda *args, **kwargs: None)
+    monkeypatch.setattr(service, '_collect', lambda: deepcopy(data))
+    monkeypatch.setattr(service, '_rag_insights', lambda issues: [])
+    baseline = service.assess(persist=False)['results']['network_distribution']['networks'][0]
+    assert baseline['decision'] == 'KEEP_CURRENT_WITH_RESERVE_WARNING'
+
+    second_receiver = rows[1]['physical_target']['hardware_interface_id']
+    for interface in data['hardware_interfaces']:
+        interface['hard_load_limit'] = 40 if interface['id'] == second_receiver else 90
+    constrained = service.assess(persist=False)['results']['network_distribution']['networks'][0]
+    assert constrained['decision'] not in {'SPLIT_CURRENT_TECHNOLOGY', 'KEEP_CURRENT_WITH_RESERVE_WARNING'}
+    assert constrained['current_load_percent'] == baseline['current_load_percent']
+
+
+def test_step_nine_uses_immutable_request_inventory_with_no_or_stale_status_prompt(monkeypatch):
+    fixture = json.loads((Path(__file__).parent / 'fixtures/capacity_remaining_lin.json').read_text(encoding='utf8'))
+    objects = {key: [] for key in _objects()}
+    objects['HardwareNode'] = fixture['hardware']
+    fixture['parameters']['network_resource_policy'] = {'mode': 'FIXED_INVENTORY', 'hard_limits': {'LIN': 2}}
+    request_prompt = '- Kommunikationssystem-Sollwerte: [{"id":"lin","count":2}]'
+    context = {'wizard_request': {'version': 2, 'revision': 3, 'prompt': request_prompt}}
+    data = {
+        'objects': objects, 'hardware_interfaces': fixture['physical_interfaces'],
+        'state': {'versions': default_versions(), 'parameters': fixture['parameters'], 'topology': {}, 'context': context},
+        'routes': [], 'relations': [], 'preflight': {}, 'simulations': [], 'history': [],
+        'capacity': fixture['capacity'],
+    }
+    before = deepcopy(context['wizard_request'])
+    service = IntelligenceService('diagnostic-request-inventory-test')
+    monkeypatch.setattr(service.workflow, 'latest_analysis', lambda *args, **kwargs: None)
+    monkeypatch.setattr(service, '_collect', lambda: deepcopy(data))
+    monkeypatch.setattr(service, '_rag_insights', lambda issues: [])
+    for legacy in ({}, {'agent_prompt': '- Kommunikationssystem-Sollwerte: [{"id":"lin","count":999}]'}):
+        context['agent_wizard_status'] = legacy
+        plan = service.assess(persist=False)['results']['network_distribution']
+        assert plan['protocol_inventory']['LIN'] == {'provisioned': 2, 'used': 2, 'free': 0}
+        assert plan['status'] == 'RESIDUAL_CONSTRAINTS'
+        assert all(n['decision'] not in {'SPLIT_CURRENT_TECHNOLOGY', 'KEEP_CURRENT_WITH_RESERVE_WARNING'} for n in plan['networks'])
+    assert context['wizard_request'] == before
 
 
 def test_data_quality_is_deterministic_and_reports_missing_signal_metadata():

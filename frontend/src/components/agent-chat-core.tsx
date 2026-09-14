@@ -1,5 +1,7 @@
 "use client";
 import type { AgentInput } from "@/lib/agent/agent-response";
+import { readConversation, type ConversationSnapshot } from '@/lib/agent/conversation-client';
+import { wizardContextForRequest, wizardConversationMatches, wizardQuestionFromConversation, wizardReceipt, wizardRequestRevision, wizardTargets, type WizardCommand } from '@/lib/agent/wizard-protocol';
 import { readAssistantContext } from "@/lib/agent/assistant-context";
 import type { AssistantGraphState } from "@/lib/assistant-graph";
 import type { ChatAttachment } from "@/lib/agent/chat-attachments";
@@ -27,13 +29,18 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
   equipmentClusterBusWarnings,
+  equipmentClusterBusIssues,
+  hmiSignalKey,
+  selectHmiSignals,
+  reviewedEquipmentCluster,
   equipmentClusterGraphPrompt,
   equipmentClusterSummary,
   equipmentTermMeaning,
@@ -864,7 +871,6 @@ type AgentPerformanceSample = {
   source: "windows-host" | "container-runtime";
 };
 
-type DetectedAgentQuestion = { key: string; text: string };
 type WizardDiagnosticCategory = "error" | "performance" | "question" | "workflow";
 
 const WORKFLOW_PROGRESS_BY_STATUS: Record<WorkflowStatus, number> = {
@@ -968,46 +974,6 @@ async function readWizardPerformance(projectId: string, runId: string, step: str
   return response.json() as Promise<AgentPerformanceSample>;
 }
 
-function latestWizardQuestion(messages: EngineeringAgentUIMessage[], runId: string): DetectedAgentQuestion | null {
-  if (!runId) return null;
-  let requestIndex = -1;
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    const text = message.role === "user" ? textFromParts(message.parts) : "";
-    if (text.includes("Strukturierte Vorgaben fuer den Engineering-Agenten:") && text.includes(`- Lauf-ID: ${runId}`)) {
-      requestIndex = index;
-      break;
-    }
-  }
-  if (requestIndex < 0) return null;
-  for (let index = messages.length - 1; index > requestIndex; index -= 1) {
-    const message = messages[index];
-    if (message.role !== "assistant") continue;
-    const text = textFromParts(message.parts).trim();
-    if (!text) continue;
-    const blocked = text.match(/Automatische Fortsetzung bei\s+(.+?)\s+gestoppt:\s*(.+)/i);
-    if (blocked) {
-      const reason = blocked[2].replace(/\s+/g, " ").trim().slice(0, 420);
-      if (/timeout|zeitlimit|aborted|nicht erreichbar|fetch failed/i.test(reason)) return null;
-      const question = `${reason} Welche technische Vorgabe soll für ${blocked[1].trim()} verwendet werden?`;
-      return { key: `${message.id}:${question}`, text: question };
-    }
-    const questionEnd = text.lastIndexOf("?");
-    if (questionEnd >= 0) {
-      const lineStart = text.lastIndexOf("\n", questionEnd);
-      const sentenceStart = text.lastIndexOf(". ", questionEnd);
-      const start = Math.max(lineStart, sentenceStart) + 1;
-      const question = text.slice(start, questionEnd + 1).replace(/^[-*\s]+/, "").trim().slice(0, 600);
-      if (question.length >= 4) return { key: `${message.id}:${question}`, text: question };
-    }
-    if (/bitte (?:bestaetige|bestätige|waehle|wähle)|soll ich|moechtest du|möchtest du|human.review/i.test(text)) {
-      const question = text.replace(/\s+/g, " ").trim().slice(0, 600);
-      return { key: `${message.id}:${question}`, text: question };
-    }
-  }
-  return null;
-}
-
 function ClusterUnassignedReview({
   busy,
   clusterId,
@@ -1017,6 +983,7 @@ function ClusterUnassignedReview({
   onAssign,
   onOpenLeaf,
   ownerSelections,
+  warningFor,
 }: {
   busy: boolean;
   clusterId: string;
@@ -1026,6 +993,7 @@ function ClusterUnassignedReview({
   onAssign: (owners: Record<string, string>) => void;
   onOpenLeaf: (name: string, target: string) => void;
   ownerSelections: Record<string, string>;
+  warningFor: (name: string) => string;
 }) {
   const [selections, setSelections] = useState<string[]>([]);
   const [target, setTarget] = useState("");
@@ -1066,7 +1034,7 @@ function ClusterUnassignedReview({
         >Auswahl zuordnen</button>
       </div>
       <ul>{leaves.map((leaf) => (
-        <li className={selections.includes(leaf.name) ? "selected" : ""} key={`${clusterId}:${leaf.deviceType}:${leaf.name}`}>
+        <li id={`cluster-participant-${encodeURIComponent(clusterId)}-${encodeURIComponent(leaf.name)}`} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} className={selections.includes(leaf.name) ? "selected" : ""} key={`${clusterId}:${leaf.deviceType}:${leaf.name}`}>
           <input
             aria-label={`${leaf.name} für Mehrfachzuordnung auswählen`}
             checked={selections.includes(leaf.name)}
@@ -1074,7 +1042,7 @@ function ClusterUnassignedReview({
             onChange={(event) => setSelections((current) => event.target.checked ? [...current, leaf.name] : current.filter((name) => name !== leaf.name))}
             type="checkbox"
           />
-          <span title={`${equipmentTermMeaning(leaf.name).english} / ${equipmentTermMeaning(leaf.name).german}`}>{leaf.name}<small>{leaf.reason}</small><small>EN: {equipmentTermMeaning(leaf.name).english} · DE: {equipmentTermMeaning(leaf.name).german}</small></span>
+          <span title={`${equipmentTermMeaning(leaf.name).english} / ${equipmentTermMeaning(leaf.name).german}`}>{leaf.name}<small>{leaf.reason}</small><small>EN: {equipmentTermMeaning(leaf.name).english} · DE: {equipmentTermMeaning(leaf.name).german}</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span>
           <button
             aria-label={`${leaf.name}: Controller-Zuordnung öffnen`}
             className="agent-unassigned-owner-button"
@@ -1104,6 +1072,7 @@ export function EngineeringAgentWizard({
   const [projectName, setProjectName] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("automotive");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
+  const manualTechnologyScopeRef = useRef('');
   const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("gateway_direct");
   const [architectureAiProposal, setArchitectureAiProposal] = useState("");
   const [scope, setScope] = useState<string[]>(SCOPE_GROUP.options.map((option) => option.id));
@@ -1117,6 +1086,7 @@ export function EngineeringAgentWizard({
   });
   const [notes, setNotes] = useState("");
   const [taskText, setTaskText] = useState("");
+  const [intakeRequirement, setIntakeRequirement] = useState<string | null>(null);
   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
   const [equipmentEdits, setEquipmentEdits] = useState<{ source: string; values: Partial<Record<keyof EngineeringHardwareCounts, string>> }>({ source: "", values: {} });
   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
@@ -1129,6 +1099,7 @@ export function EngineeringAgentWizard({
       owners?: Record<string, string>;
       verdicts?: Record<string, boolean>;
       branchTargets?: Record<string, string>;
+      hmiSignals?: Record<string, boolean>;
     }>;
   }>({ source: "", values: {} });
   const [clusterReviewDialog, setClusterReviewDialog] = useState<null | {
@@ -1154,7 +1125,9 @@ export function EngineeringAgentWizard({
   );
   const equipmentValues = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key,
     equipmentEdits.source === taskSource && equipmentEdits.values[key] !== undefined
-      ? equipmentEdits.values[key] : String(recognizedEquipment.targetCounts[key]),
+      ? equipmentEdits.values[key]
+      : key === 'actuators' && intakeRequirement && /\b(?:aktoren|actuators|ventile|valves)\b/i.test(taskText)
+        && recognizedEquipment.targetCounts.actuators === 0 ? '' : String(recognizedEquipment.targetCounts[key]),
   ])) as Record<keyof EngineeringHardwareCounts, string>;
   const equipmentReady = Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
     && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
@@ -1164,13 +1137,19 @@ export function EngineeringAgentWizard({
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
   );
   const [projectId] = useState(() => readActiveProjectId());
+  const wizardRunRef = useRef('');
+  const requestRevisionRef = useRef<string | undefined>(undefined);
+  const pendingCommandRef = useRef<{ signature: string; command: WizardCommand } | null>(null);
+  const acceptedOperationsRef = useRef(new Set<string>());
+  const workflowEpochRef = useRef(0);
+  const commandInFlightRef = useRef(false);
   const [learnedEquipmentAssignments, setLearnedEquipmentAssignments] = useState<EquipmentAssignmentLearningSuggestion[]>([]);
   const [assignmentLearningCorpusSize, setAssignmentLearningCorpusSize] = useState(0);
   const wizardTransport = useMemo(
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
       headers: () => ({ "X-Project-ID": projectId }),
-      body: () => ({ context: { active_view: window.location.pathname } }),
+      body: () => ({ context: { ...readAssistantContext(), active_project_id: projectId } }),
     }),
     [projectId],
   );
@@ -1183,6 +1162,17 @@ export function EngineeringAgentWizard({
   } = useChat<EngineeringAgentUIMessage>({
     id: `engineering-new-project-${projectId}`,
     transport: wizardTransport,
+    onData: part => {
+      if (part.type !== 'data-engineering') return;
+      const receipt = wizardReceipt(part.data, wizardRunRef.current);
+      const pending = pendingCommandRef.current?.command;
+      if (!receipt || pending?.operation_id !== receipt.operation_id) return;
+      acceptedOperationsRef.current.add(receipt.operation_id);
+      if (pending.action === 'START') window.sessionStorage.removeItem(projectIntakeKey(projectId));
+      workflowEpochRef.current += 1;
+      if (!requestRevisionRef.current || requestRevisionRef.current === pending.request_revision || requestRevisionRef.current === receipt.request_revision)
+        requestRevisionRef.current = receipt.request_revision;
+    },
   });
   const [phase, setPhase] = useState<"questionnaire" | "status">("questionnaire");
   const [wizardPreferencesReady, setWizardPreferencesReady] = useState(false);
@@ -1202,7 +1192,7 @@ export function EngineeringAgentWizard({
   const [performance, setPerformance] = useState<AgentPerformanceSample | null>(null);
   const [statusError, setStatusError] = useState("");
   const [statusRefreshError, setStatusRefreshError] = useState("");
-  const [inlineAnswer, setInlineAnswer] = useState("");
+  const [wizardConversation, setWizardConversation] = useState<ConversationSnapshot['data'] | null>(null);
   const [answeredQuestionKey, setAnsweredQuestionKey] = useState("");
   const questionnaireSteps = useMemo(() => wizardQuestionnaireSteps(mode), [mode]);
   const workflowSignatureRef = useRef("");
@@ -1242,7 +1232,7 @@ export function EngineeringAgentWizard({
 
   useEffect(() => {
     let active = true;
-    void getWorkflowSummary().then((nextWorkflow) => {
+    void getWorkflowSummary(projectId).then((nextWorkflow) => {
       if (!active) return;
       setWorkflow(nextWorkflow);
       const fallbackModelType = typeof nextWorkflow.parameters?.industry === "string"
@@ -1259,9 +1249,24 @@ export function EngineeringAgentWizard({
       const legacyContext = takeLegacyWizardContext(projectId);
       const restored = restoredWizardContext(nextWorkflow.context.agent_wizard_status, projectId)
         ?? legacyContext;
-      if (!restored) return;
+      const intake = parseProjectIntake(window.sessionStorage.getItem(projectIntakeKey(projectId)), projectId);
+      if (!restored) {
+        if (intake) {
+          setTaskText(intake);
+          setIntakeRequirement(intake);
+          // The new requirement must not inherit automotive defaults from another task.
+          const evidence = engineeringDomainEvidence(intake);
+          setSelectedIndustry(evidence.domain === 'generic'
+            ? /\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/i.test(intake) ? 'embedded_systems' : 'custom'
+            : evidence.domain);
+        }
+        return;
+      }
+      if (intake) setStatusError('Ein gespeicherter Auftrag ist bereits vorhanden. Deine neue Projektanforderung bleibt als Entwurf erhalten; der laufende Auftrag wurde nicht ersetzt.');
       setSubmittedContext(restored);
       setRunId(restored.run_id);
+      wizardRunRef.current = restored.run_id;
+      requestRevisionRef.current = wizardRequestRevision(nextWorkflow.context, restored.run_id);
       setScope(restored.scope_ids);
       setProcess(restored.process_ids.length ? restored.process_ids : preferences.process_ids);
       setProjectName(restored.project_name || preferences.project_name);
@@ -1286,6 +1291,13 @@ export function EngineeringAgentWizard({
   }, [projectId]);
 
   useEffect(() => {
+    if (phase !== 'questionnaire' || manualTechnologyScopeRef.current === `${mode}:${selectedDomain?.id}`) return;
+    const requested = technologyChoices.filter(technology => recognizedEquipment.communicationSystems
+      .some(system => technologyMatchesRecognizedSystem(technology, system))).map(technology => technology.id);
+    if (requested.length) {
+      setSelectedTechnologies(requested);
+      return;
+    }
     if (mode === "can") {
       const canIds = technologyChoices.map((technology) => technology.id);
       const preferred = ["can_fd", "can", "can_xl"].filter((id) => canIds.includes(id));
@@ -1293,7 +1305,7 @@ export function EngineeringAgentWizard({
       return;
     }
     setSelectedTechnologies(defaultTechnologyIds(selectedDomain));
-  }, [mode, selectedDomain, technologyChoices]);
+  }, [mode, phase, recognizedEquipment.communicationSystems, selectedDomain, technologyChoices]);
 
   useEffect(() => {
     if (phase !== "status" || !runId) return;
@@ -1303,17 +1315,20 @@ export function EngineeringAgentWizard({
     const refreshStatus = async () => {
       if (refreshing) return;
       refreshing = true;
+      const epoch = workflowEpochRef.current;
       try {
-        const nextWorkflow = await getWorkflowSummary();
-        if (!active) return;
+        const [nextWorkflow, conversation] = await Promise.all([getWorkflowSummary(projectId), readConversation(projectId)]);
+        if (!active || epoch !== workflowEpochRef.current) return;
         setWorkflow(nextWorkflow);
+        requestRevisionRef.current = wizardRequestRevision(nextWorkflow.context, runId) ?? requestRevisionRef.current;
+        setWizardConversation(conversation.data);
         const nextSignature = JSON.stringify({
           versions: nextWorkflow.versions,
           routing: nextWorkflow.artifact_checks?.routing,
         });
         if (nextSignature !== routingSignature) {
-          const nextRoutes = await listRoutes();
-          if (!active) return;
+          const nextRoutes = await listRoutes(projectId);
+          if (!active || epoch !== workflowEpochRef.current) return;
           setRoutingEntries(nextRoutes);
           routingSignature = nextSignature;
         }
@@ -1347,6 +1362,25 @@ export function EngineeringAgentWizard({
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, handleWorkflowChanged);
     };
   }, [phase, projectId, runId]);
+
+  useEffect(() => {
+    if (phase !== 'status' || readActiveProjectId() !== projectId) return;
+    const current = wizardContextForRequest(workflow, projectId, runId, requestRevisionRef.current);
+    const next = restoredWizardContext(current, projectId);
+    if (!next) return;
+    // Only the submitted status view follows the accepted request. Draft task,
+    // questionnaire choices and an unsent supplement stay under user control.
+    const request = workflow?.context.wizard_request as Record<string, unknown> | undefined;
+    if (request?.parent_revision && next.hardware_counts && next.system_cluster_assignments) {
+      next.planned_network_connections = plannedNetworkConnectionCount({
+        architectureId: next.network_architecture?.id,
+        participantLimits: normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits,
+        clusterAssignments: next.system_cluster_assignments,
+        equipmentCounts: next.hardware_counts,
+      });
+    }
+    setSubmittedContext(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+  }, [phase, projectId, runId, workflow]);
 
   useEffect(() => {
     if (phase !== "status" || !runId || !wizardAgentError) return;
@@ -1402,8 +1436,8 @@ export function EngineeringAgentWizard({
   }, [phase, projectId, runId]);
 
   const currentQuestion = useMemo(
-    () => latestWizardQuestion(wizardMessages, runId),
-    [runId, wizardMessages],
+    () => wizardQuestionFromConversation(wizardConversation, runId),
+    [runId, wizardConversation],
   );
   const currentRunMessages = useMemo(() => {
     if (!runId) return [];
@@ -1414,9 +1448,6 @@ export function EngineeringAgentWizard({
   }, [runId, wizardMessages]);
   const execution = resolveAgentRunStep(readAgentRunStatus(workflow?.context?.agent_execution, runId), workflow?.statuses ?? {});
   const rawWizardStatus = workflow?.context?.agent_wizard_status;
-  const resumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
-    ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).resume_count) || 0)
-    : submittedContext?.resume_count ?? 0;
   const automaticResumeCount = rawWizardStatus && typeof rawWizardStatus === "object"
     ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).automatic_resume_count) || 0)
     : submittedContext?.automatic_resume_count ?? 0;
@@ -1463,15 +1494,15 @@ export function EngineeringAgentWizard({
   }, [phase, projectId, runId, workflow]);
 
   useEffect(() => {
-    if (phase !== "status" || !currentQuestion || currentQuestion.key === answeredQuestionKey || !runId) return;
-    if (loggedQuestionRef.current === currentQuestion.key) return;
-    loggedQuestionRef.current = currentQuestion.key;
+    if (phase !== "status" || !currentQuestion || currentQuestion.id === answeredQuestionKey || !runId) return;
+    if (loggedQuestionRef.current === currentQuestion.id) return;
+    loggedQuestionRef.current = currentQuestion.id;
     void writeWizardDiagnostic("question", {
       projectId,
       runId,
       step: workflow?.steps.find((item) => WORKFLOW_PROGRESS_BY_STATUS[item.status] < 100)?.id ?? "agent",
       event: "question-detected",
-      details: currentQuestion.text,
+      details: { question_id: currentQuestion.id, question: currentQuestion.question },
     }).catch(() => undefined);
   }, [answeredQuestionKey, currentQuestion, phase, projectId, runId, workflow]);
 
@@ -1569,7 +1600,7 @@ export function EngineeringAgentWizard({
       domain: previewDomain,
       endpoints,
       candidate_controllers: candidateControllers,
-    }, controller.signal).then((result) => {
+    }, controller.signal, projectId).then((result) => {
       setLearnedEquipmentAssignments(result.suggestions);
       setAssignmentLearningCorpusSize(result.corpus_projects);
     }).catch((error) => {
@@ -1636,7 +1667,7 @@ export function EngineeringAgentWizard({
       selected,
       tree: controllers,
       unassigned,
-      hmi_routes: cluster.hmiRoutes.map((route) => ({
+      hmi_routes: selectHmiSignals(cluster.hmiRoutes, edit?.hmiSignals).map((route) => ({
         ...route,
         path: [route.source, network.label, "Gateway", route.target],
       })),
@@ -1683,6 +1714,11 @@ export function EngineeringAgentWizard({
       const target = assignments.find((candidate) => candidate.cluster_id === targetClusterId);
       if (target && !target.tree?.some((candidate) => candidate.name === controllerName)) (target.tree ??= []).push(branch);
     }
+    }
+    for (const assignment of assignments) {
+      const cluster = equipmentClusters.find(item => item.id === assignment.cluster_id)!;
+      const warnings = equipmentClusterBusWarnings(reviewedEquipmentCluster(cluster, assignment, plannedEquipment.chains), assignment.network_id, assignment.network_label);
+      assignment.validation = { valid: warnings.length === 0, warnings };
     }
     return assignments;
   }, [clusterEditValues, communicationSystemCounts, equipmentClusters, plannedEquipment.chains]);
@@ -1741,6 +1777,7 @@ export function EngineeringAgentWizard({
   function toggle(group: ChoiceGroup, optionId: string) {
     if (group.id === "technologies") {
       setSelectedTechnologies((current) => toggleSelection(current, optionId));
+      manualTechnologyScopeRef.current = `${mode}:${selectedDomain?.id}`;
     }
   }
 
@@ -1751,6 +1788,7 @@ export function EngineeringAgentWizard({
     owners?: Record<string, string>;
     verdicts?: Record<string, boolean>;
     branchTargets?: Record<string, string>;
+    hmiSignals?: Record<string, boolean>;
   }) {
     setEquipmentClusterEdits((current) => {
       const values = current.source === equipmentClusterSource ? current.values : {};
@@ -1769,7 +1807,7 @@ export function EngineeringAgentWizard({
     source: string,
   ) {
     if (!records.length) return;
-    void recordEquipmentAssignmentLearning({ domain: previewDomain, source, records }).catch((error) => {
+    void recordEquipmentAssignmentLearning({ domain: previewDomain, source, records }, projectId).catch((error) => {
       void writeWizardDiagnostic("error", {
         projectId,
         runId,
@@ -1805,8 +1843,73 @@ export function EngineeringAgentWizard({
     );
   }
 
+  async function sendWizardOperation(
+    action: WizardCommand['action'], text: string, input?: AgentInput,
+    start?: { runId: string; context: AgentWizardContext; target: typeof wizardTargets[number] },
+    automatic = false,
+  ) {
+    if (commandInFlightRef.current) return false;
+    if (readActiveProjectId() !== projectId) throw new Error('Das Projekt wurde gewechselt. Diesen Auftrag im zugehörigen Projekt öffnen.');
+    const activeRunId = start?.runId ?? runId;
+    const revision = requestRevisionRef.current ?? wizardRequestRevision(workflow?.context, activeRunId);
+    // A response may be lost after commit. Retrying the same intent retains its
+    // original operation and revision even if a status poll saw the new revision.
+    const signature = JSON.stringify({ action, run: activeRunId, input, text: action !== 'CONTINUE' ? text : undefined, automatic });
+    const command = pendingCommandRef.current?.signature === signature ? pendingCommandRef.current.command : {
+      action, run_id: activeRunId, operation_id: crypto.randomUUID(),
+      ...(action !== 'START' && revision ? { request_revision: revision } : {}),
+      ...(start ? { target: start.target, wizard_context: { ...start.context, engineering_wizard_settings: {
+        project_name: start.context.project_name, model_type: start.context.model_type,
+        scope_ids: start.context.scope_ids, process_ids: start.context.process_ids,
+        bus_participant_limits: normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits,
+      } } } : {}),
+      ...(automatic ? { automatic: true } : {}),
+    } satisfies WizardCommand;
+    pendingCommandRef.current = { signature, command };
+    commandInFlightRef.current = true;
+    workflowEpochRef.current += 1;
+    try {
+      await sendWizardMessage({ text }, { body: { wizard_command: command, ...(input ? { input } : {}) } });
+      if (!acceptedOperationsRef.current.has(command.operation_id)) {
+        // The SDK reports transport errors in state instead of rejecting its
+        // promise. A lost response may still have committed this operation.
+        const saved = await readConversation(projectId, undefined, undefined, { fresh: true });
+        const receipt = wizardReceipt({ type: 'CONTEXT', wizard_receipt: saved.data.wizard_operations?.[command.operation_id] }, activeRunId);
+        if (receipt?.operation_id === command.operation_id) {
+          acceptedOperationsRef.current.add(command.operation_id);
+          workflowEpochRef.current += 1;
+          if (!requestRevisionRef.current || requestRevisionRef.current === command.request_revision || requestRevisionRef.current === receipt.request_revision)
+            requestRevisionRef.current = receipt.request_revision;
+        } else if (command.action !== 'START' && saved.data.wizard_request?.run_id === activeRunId
+          && typeof saved.data.wizard_request.revision === 'string'
+          && saved.data.wizard_request.revision !== command.request_revision) {
+          // Another tab changed the request. With no committed receipt for this
+          // operation, the old revision cannot be retried successfully. Keep
+          // the user's input and let the next deliberate attempt use the new one.
+          if (pendingCommandRef.current?.command.operation_id === command.operation_id) pendingCommandRef.current = null;
+          requestRevisionRef.current = saved.data.wizard_request.revision;
+          workflowEpochRef.current += 1;
+          throw new Error('Der Auftrag wurde inzwischen geändert. Ihre Eingabe bleibt erhalten. Prüfen Sie den aktuellen Stand und versuchen Sie es erneut.');
+        }
+      }
+      if (!acceptedOperationsRef.current.has(command.operation_id)) throw new Error('Der Server hat diese Änderung nicht bestätigt. Ihre Eingabe bleibt erhalten; aktuellen Stand prüfen und erneut versuchen.');
+      if (pendingCommandRef.current?.command.operation_id === command.operation_id) pendingCommandRef.current = null;
+      return true;
+    } finally {
+      commandInFlightRef.current = false;
+      const epoch = workflowEpochRef.current;
+      // The server receipt, not an attempted send, acknowledges the operation.
+      void getWorkflowSummary(projectId, { fresh: true }).then(nextWorkflow => {
+        if (wizardRunRef.current !== activeRunId || epoch !== workflowEpochRef.current) return;
+        setWorkflow(nextWorkflow);
+        requestRevisionRef.current = wizardRequestRevision(nextWorkflow.context, activeRunId) ?? requestRevisionRef.current;
+        window.dispatchEvent(new Event(WORKFLOW_CHANGED_EVENT));
+      }).catch(() => undefined);
+    }
+  }
+
   async function submitQuestionnaire() {
-    if (!projectReady || !taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !architectureReady || !selectedArchitecture || submitting || (domainMismatch && !domainMismatchAccepted)) return;
+    if (effectiveBusy || startBlockers.length || !selectedArchitecture) return;
     setSubmitting(true);
     setStatusError("");
     const selectedTechnologyValues = technologyGroup.options
@@ -1892,11 +1995,18 @@ export function EngineeringAgentWizard({
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
         "Verbindlicher Kommunikationsplan: Jede Nachricht bekommt vor der Modellfreigabe ihren Zweck und ihre Empfaenger. Sensorwerte und Aktorrueckmeldungen gehen an den zugeordneten Controller, Befehle an den Aktor. Geraetestatus geht zur Diagnose, ersatzweise zum Gateway bzw. einem anderen Controller. Die Abgasnachbehandlung berichtet auch an die Motorsteuerung. Diese Defaults werden als Teil des Modellvorschlags geprueft.\n\n" +
-        "Verbindliche Anzeige-Routing-Regel: Setze jede im Systemcluster-Graph enthaltene hmi_routes-Verbindung als Ende-zu-Ende-Route vom Quell-Controller ueber das Cluster-Netz und erforderliche Gateways bis zur Nutzeranzeige um. Die Anzeige ist Empfaengerin der benannten Antriebs- oder Traktionssignale; eine reine Quell-Gateway-Route gilt dafuer nicht als vollstaendig.\n\n" +
+        "Verbindliche Anzeige-Routing-Regel: Nur in hmi_routes.signals eingeschaltete Funktionsausgaenge werden zur jeweiligen Anzeige geroutet. excluded_signals sind ausgeschaltet und duerfen nicht durch automatische Empfaengerdefaults wieder hinzugefuegt werden. Lokale Berechnungen, Sensor-/Aktor-Kommunikation und andere bestaetigte Funktionsempfaenger bleiben erhalten. Bei gemeinsamer Nachricht ist eine abweichende Signalteilmenge nur mit eigenem expliziten Payload zulaessig; keine DLC-Verkleinerung ohne neue Kodierung.\n\n" +
         "Verbindliche Topologie-Regel: Systemrahmen sind kompakte Nachbarschaftsgruppen, keine ueber den ganzen View gezogenen Container. Ordne fachlich verwandte Rahmen nebeneinander an, fuehre Leitungen innerhalb und zwischen benachbarten Rahmen lokal, und gib Korrekturen des Nutzers als abstrakte Cluster-Nachbarschaften an den RAG-Kontext zurueck.\n\n" +
         "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
     setRunId(nextRunId);
+    wizardRunRef.current = nextRunId;
+    requestRevisionRef.current = undefined;
+    workflowEpochRef.current += 1;
+    pendingCommandRef.current = null;
+    acceptedOperationsRef.current.clear();
+    setWizardConversation(null);
+    setReviewProposal(null);
     setSubmittedAt(Date.now());
     setSubmittedContext(nextContext);
     activateEngineeringAgentWizardSession(projectId);
@@ -1917,28 +2027,14 @@ export function EngineeringAgentWizard({
           domain: previewDomain,
           source: "wizard-submission",
           records: acceptedAssignments,
-        });
+        }, projectId);
       }
-      await setWorkflowContext({
-        engineering_wizard_settings: {
-          project_name: projectName.trim(),
-          model_type: mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry,
-          scope_ids: scope,
-          process_ids: process,
-          bus_participant_limits: normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits,
-        },
-        agent_wizard_status: {
-          ...nextContext,
-          status: "RUNNING",
-        },
-      });
-      window.dispatchEvent(new Event(WORKFLOW_CHANGED_EVENT));
       await Promise.all([
         writeWizardDiagnostic("workflow", {
           projectId,
           runId: nextRunId,
           step: "status-overview",
-          event: "context-accepted",
+          event: "context-submitted",
           details: nextContext,
         }),
         writeWizardDiagnostic("question", {
@@ -1946,22 +2042,22 @@ export function EngineeringAgentWizard({
           runId: nextRunId,
           step: "agent-start",
           event: "question-monitor-started",
-          details: "Rückfragen werden im Statusschritt reduziert dargestellt; fehlende Rückfragen bei Blockern werden protokolliert.",
+          details: "Strukturierte Rückfragen werden mit gespeicherter Frage-ID im Statusschritt angezeigt.",
         }),
       ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Statuskontext konnte nicht gespeichert werden.";
-      setStatusError(message);
+      const message = error instanceof Error ? error.message : "Begleitprotokoll konnte nicht gespeichert werden.";
       void writeWizardDiagnostic("error", {
         projectId,
         runId: nextRunId,
         step: "status-overview",
-        event: "context-persistence-failed",
+        event: "submission-diagnostic-failed",
         details: message,
       }).catch(() => undefined);
     }
     try {
-      await sendWizardMessage({ text: prompt });
+      const target = [...wizardTargets].reverse().find(id => scope.includes(id)) ?? 'engineering_model';
+      await sendWizardOperation('START', prompt, undefined, { runId: nextRunId, context: nextContext, target });
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Der Popup-Agent konnte nicht gestartet werden.";
       setStatusError(agentErrorText(rawMessage));
@@ -1978,7 +2074,7 @@ export function EngineeringAgentWizard({
   }
 
   function handlePrimary() {
-    if (atLastStep) {
+    if (atLastStep || (phase === 'questionnaire' && step === questionnaireSteps.length)) {
       void submitQuestionnaire();
       return;
     }
@@ -1992,7 +2088,12 @@ export function EngineeringAgentWizard({
   async function finishWizard() {
     if (agentPending || routingReviewBusy || supplementBusy || routingReviewPending || runPaused) return;
     try {
-      await setWorkflowContext({ agent_wizard_status: null });
+      const response = await fetch(`/api/engineering/agent/runs/${encodeURIComponent(runId)}/finish`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': projectId },
+        body: JSON.stringify({ request_revision: requestRevisionRef.current ?? wizardRequestRevision(workflow?.context, runId) }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? result.findings?.[0]?.message ?? 'Der Auftrag ist noch nicht vollständig abgeschlossen.');
     } catch (error) {
       setStatusError(error instanceof Error ? error.message : "Der Agent-Auftrag konnte nicht abgeschlossen werden.");
       return;
@@ -2013,6 +2114,7 @@ export function EngineeringAgentWizard({
     const activeRunId = runId || submittedContext?.run_id || "without-run-id";
     try {
       const canceledWorkflow = await requestWizardCancellation(projectId, activeRunId, {
+        requestRevision: requestRevisionRef.current ?? wizardRequestRevision(workflow?.context, activeRunId),
         onConfirmed: () => {
           setCancelBusy(true);
           setStatusError("");
@@ -2049,32 +2151,27 @@ export function EngineeringAgentWizard({
     return null;
   }
 
-  async function answerInlineQuestion() {
-    if (!currentQuestion || currentQuestion.key === answeredQuestionKey || !inlineAnswer.trim() || !runId) return;
-    const answer = inlineAnswer.trim();
-    setAnsweredQuestionKey(currentQuestion.key);
-    setInlineAnswer("");
+  async function answerInlineQuestion(answer: AgentInput) {
+    if (!currentQuestion || currentQuestion.id === answeredQuestionKey || agentPending || !runId) return;
+    if (!('question_id' in answer) || answer.question_id !== currentQuestion.id) return;
     await writeWizardDiagnostic("question", {
       projectId,
       runId,
       step: workflow?.steps.find((item) => WORKFLOW_PROGRESS_BY_STATUS[item.status] < 100)?.id ?? "agent",
       event: "question-answered",
-      details: { question: currentQuestion.text, answer },
+      details: { question_id: currentQuestion.id, answer },
     }).catch((error) => {
       setStatusError(error instanceof Error ? error.message : "Antwortprotokoll konnte nicht geschrieben werden.");
     });
     try {
-      await sendWizardMessage({ text: [
-        `Antwort auf die reduzierte Rückfrage im Statusdialog. Lauf-ID: ${runId}`,
-        `Rückfrage: ${currentQuestion.text}`,
-        `Antwort des Nutzers: ${answer}`,
-        "Aktualisiere den Projektkontext und setze den bestätigten Engineering-Auftrag ohne Ansichtswechsel fort.",
-      ].join("\n") });
+      if (!await sendWizardOperation('CONTINUE', answer.type === 'SKIP_QUESTION' ? 'Optionale Rückfrage überspringen.' : 'Auswahl zur Agentenrückfrage übernehmen.', answer)) return;
+      const conversation = await readConversation(projectId, undefined, undefined, { fresh: true });
+      setWizardConversation(conversation.data);
+      if (conversation.data.questions[answer.question_id]?.status !== 'OPEN') setAnsweredQuestionKey(answer.question_id);
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Die Antwort konnte nicht an den Popup-Agenten gesendet werden.";
       setStatusError(agentErrorText(rawMessage));
       setAnsweredQuestionKey("");
-      setInlineAnswer(answer);
       await writeWizardDiagnostic("error", {
         projectId,
         runId,
@@ -2087,43 +2184,22 @@ export function EngineeringAgentWizard({
 
   async function retryPopupRun(automatic = false, reason: "recovery" | "review" = "recovery") {
     if (agentPending || !runId) return;
-    const modelComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
-    const workflowTarget = modelComplete
-      ? !routingReview.complete ? "routing" : [...(submittedContext?.scope_ids ?? [])].reverse().find((id) => SCOPE_GROUP.options.some((option) => option.id === id)) as WorkflowStepId | undefined
-      : undefined;
-    const prompt = reason === "review"
-      ? [
-          `Der geprüfte Wizard-Vorschlag wurde mit einer menschlichen Entscheidung freigegeben und ins Modell übernommen. Lauf-ID: ${runId}.`,
-          `Setze den bestätigten Engineering-Auftrag jetzt am nächsten offenen Schritt fort${workflowTarget ? `; Ziel: ${workflowTarget}` : ""}.`,
-          "Keine weitere Bestätigung für denselben Vorschlag anfordern. Neue oder fachlich geänderte Vorschläge bleiben reviewpflichtig.",
-        ].join("\n")
-      : wizardContinuationPrompt({ automatic, runId, workflowTarget });
     setStatusError("");
     try {
-      const resumedContext = submittedContext ? {
-        ...submittedContext,
-        resume_count: resumeCount + 1,
-        automatic_resume_count: automatic && reason === "recovery" ? automaticResumeCount + 1 : automaticResumeCount,
-      } : null;
-      if (resumedContext) {
-        const nextWorkflow = await setWorkflowContext({
-          agent_wizard_status: {
-            ...resumedContext,
-            status: "RUNNING",
-            resumed_at: new Date().toISOString(),
-          },
-        });
-        setSubmittedContext(resumedContext);
-        setWorkflow(nextWorkflow);
+      const savedWizard = workflow?.context.agent_wizard_status as Record<string, unknown> | undefined;
+      if (savedWizard?.run_id !== runId && submittedContext?.agent_prompt) {
+        const target = [...wizardTargets].reverse().find(id => submittedContext.scope_ids.includes(id)) ?? 'engineering_model';
+        await sendWizardOperation('START', submittedContext.agent_prompt, undefined, { runId, context: submittedContext, target });
+        return;
       }
       await writeWizardDiagnostic("workflow", {
         projectId,
         runId,
         step: "agent-start",
         event: reason === "review" ? "popup-agent-review-continued" : automatic ? "popup-agent-auto-recovered" : "popup-agent-resumed",
-        details: workflowTarget ? `Fortsetzung bis ${workflowTarget}; vorhandenes Modell und Routing bleiben erhalten.` : "Fehlende Engineering-Ketten werden vervollstaendigt.",
+        details: 'Fortsetzung des gespeicherten Auftrags mit seiner aktuellen Revision und seinem bestätigten Ziel.',
       }).catch(() => undefined);
-      await sendWizardMessage({ text: prompt }, workflowTarget ? { body: { workflowTarget } } : undefined);
+      await sendWizardOperation('CONTINUE', reason === 'review' ? 'Nach der Freigabe fortfahren.' : 'Gespeicherten Auftrag fortsetzen.', { type: 'RESUME' }, undefined, automatic && reason === 'recovery');
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Der Popup-Agent konnte nicht erneut gestartet werden.";
       setStatusError(agentErrorText(rawMessage));
@@ -2146,8 +2222,8 @@ export function EngineeringAgentWizard({
     setRoutingReviewBusy(true);
     setStatusError("");
     try {
-      await approveRoutes(routeIds);
-      const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflowSummary(), listRoutes()]);
+      await approveRoutes(routeIds, projectId);
+      const [nextWorkflow, nextRoutes] = await Promise.all([getWorkflowSummary(projectId, { fresh: true }), listRoutes(projectId)]);
       setWorkflow(nextWorkflow);
       setRoutingEntries(nextRoutes);
       await writeWizardDiagnostic("question", {
@@ -2162,14 +2238,7 @@ export function EngineeringAgentWizard({
         .reverse()
         .find((stepId) => SCOPE_GROUP.options.some((option) => option.id === stepId)) as WorkflowStepId | undefined;
       if (workflowTarget && workflowTarget !== "routing") {
-        await sendWizardMessage(
-          { text: [
-            `Routing-Freigabe im Popup erteilt. Lauf-ID: ${runId}`,
-            `${routeIds.length} valide Routing-Einträge wurden durch den Nutzer freigegeben.`,
-            `Setze den bestätigten Engineering-Auftrag jetzt innerhalb des Popups bis zum Ziel ${workflowTarget} fort.`,
-          ].join("\n") },
-          { body: { workflowTarget } },
-        );
+        await sendWizardOperation('CONTINUE', `${routeIds.length} Routing-Einträge freigegeben. Auftrag fortsetzen.`, { type: 'RESUME' });
       }
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "Das Routing-Review konnte nicht abgeschlossen werden.";
@@ -2199,11 +2268,7 @@ export function EngineeringAgentWizard({
         event: "analysis-supplement-submitted",
         details: addition,
       });
-      await sendWizardMessage({ text: [
-        `Ergänzung zum Engineering-Auftrag. Lauf-ID: ${runId}`,
-        `Ergänzung des Nutzers: ${addition}`,
-        "Analysiere diese Ergänzung im bestehenden Projekt. Erzeuge notwendige Änderungen als prüfbare Vorschläge und führe keine menschliche Freigabe selbst aus. Stelle das Ergebnis anschließend wieder reduziert im Popup bereit.",
-      ].join("\n") });
+      if (!await sendWizardOperation('AMEND', addition)) return;
       setSupplementText("");
       setSupplementOpen(false);
     } catch (error) {
@@ -2223,23 +2288,35 @@ export function EngineeringAgentWizard({
 
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
+  const startBlockers = [
+    ...(!projectReady ? [{ step: 'project', text: 'Bitte einen Projektnamen eingeben.' }] : []),
+    ...(!taskReady ? [{ step: 'task', text: 'Bitte die Projektbeschreibung ergänzen.' }] : []),
+    ...(!architectureReady ? [{ step: 'architecture', text: 'Bitte die Architektur auswählen und vervollständigen.' }] : []),
+    ...(!equipmentReady ? [{ step: 'equipment', text: intakeRequirement && equipmentValues.actuators === ''
+      ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
+    ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
+    ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
+    ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
+    ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
+  ];
   const primaryDisabled = effectiveBusy
-    || (atLastStep && (!projectReady || !taskReady || !equipmentReady || !equipmentOwnershipReady || !equipmentClusterValidationReady || !communicationSystemReady || (domainMismatch && !domainMismatchAccepted)))
+    || ((atLastStep || activeStepId === 'status') && startBlockers.length > 0)
     || (activeStepId === "project" && !projectReady)
     || (activeStepId === "task" && !taskReady)
     || (activeStepId === "architecture" && !architectureReady);
-  const visibleQuestion = currentQuestion?.key === answeredQuestionKey ? null : currentQuestion;
+  const visibleQuestion = currentQuestion?.id === answeredQuestionKey ? null : currentQuestion;
   const persistedStatusRows = SCOPE_GROUP.options.map((option, index) => {
     const workflowStepId = option.id as WorkflowStepId;
     const workflowStep = workflow?.steps.find((item) => item.id === workflowStepId);
-    const artifactComplete = ["COMPLETE", "APPROVED", "WARNING"].includes(workflowStep?.status ?? "EMPTY");
+    const revisedModelPending = workflowStepId === 'engineering_model' && execution?.model_review_required === true;
+    const artifactComplete = !revisedModelPending && ["COMPLETE", "APPROVED", "WARNING"].includes(workflowStep?.status ?? "EMPTY");
     const blocked = !artifactComplete && execution?.step === workflowStepId && execution.state === "BLOCKED";
     const staleRunning = !artifactComplete && execution?.step === workflowStepId && execution.state === "RUNNING" && executionStopped;
     const building = !artifactComplete && execution?.step === workflowStepId && (execution.state === "RUNNING" || blocked);
     const awaitingReview = !artifactComplete && agentReviewStep(execution) === workflowStepId;
     const workflowStatus: WorkflowStatus = staleRunning
       ? "ERROR"
-      : workflowStep?.status ?? "EMPTY";
+      : revisedModelPending ? 'IN_PROGRESS' : workflowStep?.status ?? "EMPTY";
     const displayStatus: WorkflowDisplayStatus = blocked ? "BLOCKED" : awaitingReview ? "REVIEW_REQUIRED" : workflowStatus;
     return {
       displayStatus,
@@ -2285,7 +2362,7 @@ export function EngineeringAgentWizard({
   )) || Boolean(submittedContext?.agent_prompt?.trim());
   const routingReview = routingApprovalProgress(routingEntries);
   const modelReviewPending = !agentPending && agentReviewStep(execution) === "engineering_model"
-    && !["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY");
+    && (execution?.model_review_required || !["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY"));
   const routingReviewPending = !agentPending
     && !executionStopped && !routingReview.complete
     && !modelReviewPending && (routingReview.total > 0 || agentReviewStep(execution) === "routing");
@@ -2301,10 +2378,11 @@ export function EngineeringAgentWizard({
     restoredSession: submittedAt === 0,
   });
   useEffect(() => {
-    if (!needsAutomaticRecovery || !runId || automaticRecoveryRef.current === runId) return;
-    automaticRecoveryRef.current = runId;
+    const recoveryKey = `${runId}:${execution?.updated_at ?? 'restored'}`;
+    if (!needsAutomaticRecovery || !runId || automaticRecoveryRef.current === recoveryKey) return;
+    automaticRecoveryRef.current = recoveryKey;
     void retryPopupRun(true);
-  }, [needsAutomaticRecovery, runId]);
+  }, [needsAutomaticRecovery, runId, execution?.updated_at]);
   useEffect(() => {
     const key = execution?.state === "READY_TO_CONTINUE"
       ? `${execution.run_id}:${execution.step}:${execution.updated_at}`
@@ -2326,7 +2404,9 @@ export function EngineeringAgentWizard({
   const proposalCount = (objectType: string) => proposalChanges.filter((change) => change.object_type === objectType).length;
   const proposedRoutingCount = proposalCount("RoutingEntry");
   const displayedRoutingTotal = routingReview.total || proposedRoutingCount;
-  const displayedRoutingValid = approvableRoutingCount || (proposedRoutingCount > 0 && ["VALIDATED", "READY_FOR_REVIEW"].includes(String(reviewProposal?.status)) ? proposedRoutingCount : 0);
+  const displayedRoutingValid = routingReview.total > 0 ? approvableRoutingCount
+    : proposedRoutingCount > 0 ? reviewProposal?.validation_result.valid_count
+      ?? (["VALIDATED", "APPROVED", "APPLIED"].includes(String(reviewProposal?.status)) ? proposedRoutingCount : 0) : 0;
   const submittedEquipment = useMemo(() => submittedContext?.agent_prompt
     ? extractEngineeringSpecification(
         submittedContext.agent_prompt,
@@ -2338,7 +2418,7 @@ export function EngineeringAgentWizard({
   useEffect(() => {
     if (phase !== "status") return;
     let active = true;
-    void listAllEngineeringObjects("hardware-nodes").then((items) => {
+    void listAllEngineeringObjects("hardware-nodes", projectId).then((items) => {
       if (active) setHardwareItems(items);
     }).catch(() => undefined);
     return () => { active = false; };
@@ -2443,7 +2523,7 @@ export function EngineeringAgentWizard({
           <span className={`agent-wizard-live ${displayedStatusError || runPaused ? "error" : ""}`}><i aria-hidden="true" /> {displayedStatusError ? "Diagnosehinweis" : agentPending ? "Agent arbeitet" : runPaused ? "Angehalten" : workflowReviewPending || routingReviewPending ? "Freigabe erforderlich" : "Live"}</span>
         ) : (
           <button className="button primary tiny" disabled={primaryDisabled} onClick={handlePrimary} type="button">
-            {submitting ? "Wird übernommen ..." : atLastStep ? "Übernehmen" : "Weiter"}
+            {submitting ? "Wird übernommen ..." : activeStepId === 'status' ? 'Auftrag starten' : atLastStep ? "Übernehmen" : "Weiter"}
           </button>
         )}
       </div>
@@ -2454,10 +2534,9 @@ export function EngineeringAgentWizard({
             disabled={
               effectiveBusy
               || phase === "status"
-              || item.id === "status"
-              || (index > 0 && !projectReady)
+              || (item.id !== 'status' && index > 0 && !projectReady)
               || (item.id === "equipment" && !taskReady)
-              || (index > architectureStepIndex && !architectureReady)
+              || (item.id !== 'status' && index > architectureStepIndex && !architectureReady)
             }
             key={item.id}
             title={item.label}
@@ -2483,6 +2562,21 @@ export function EngineeringAgentWizard({
               value={projectName}
             />
             <small>Die lesbare Bezeichnung wird im Projektkontext gespeichert. Die technische Projekt-ID bleibt unverändert.</small>
+          </label>
+          <label className="agent-questionnaire-note">
+            <span>Projektbeschreibung</span>
+            <textarea disabled={effectiveBusy} rows={5} value={taskText}
+              maxLength={intakeRequirement !== null ? 16000 : undefined}
+              placeholder="Was soll dieses Projekt leisten?"
+              onChange={(event) => {
+                const requirement = event.target.value;
+                setTaskText(requirement);
+                if (intakeRequirement !== null) {
+                  setIntakeRequirement(requirement);
+                  window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement }));
+                }
+              }} />
+            <small>Diese Beschreibung ist zugleich der Aufgabentext für den Agenten. Änderungen auf beiden Seiten werden gemeinsam übernommen.</small>
           </label>
         </fieldset>
       )}
@@ -2634,7 +2728,15 @@ export function EngineeringAgentWizard({
             <span>Aufgabentext</span>
             <textarea
               disabled={busy}
-              onChange={(event) => setTaskText(event.target.value)}
+              onChange={(event) => {
+                const requirement = event.target.value;
+                setTaskText(requirement);
+                if (intakeRequirement !== null) {
+                  setIntakeRequirement(requirement);
+                  window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement }));
+                }
+              }}
+              maxLength={intakeRequirement !== null ? 16000 : undefined}
               placeholder="Beschreibe das konkrete Ziel, z. B. arbeite bis zur Simulation ..."
               rows={4}
               value={taskText}
@@ -2762,6 +2864,7 @@ export function EngineeringAgentWizard({
             ))}</tbody>
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
+          {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
           {!equipmentOwnershipReady && <p role="alert">Vor der Übergabe müssen alle Teilnehmer aktiver Cluster einem Controller zugeordnet oder der betreffende Cluster abgewählt werden.</p>}
           {equipmentOwnershipReady && !equipmentClusterValidationReady && <p role="alert">Mindestens ein aktiver Cluster besitzt noch eine fachlich unzulässige Buswahl. Öffne den markierten Cluster und wähle ein geeignetes Netz.</p>}
@@ -2799,7 +2902,16 @@ export function EngineeringAgentWizard({
                 const networkId = assignment?.network_id ?? cluster.recommendedNetworkId;
                 const assignedNetwork = communicationSystemCounts.find((item) => item.id === networkId);
                 const busName = assignment?.bus_name ?? suggestedClusterBusName(cluster.label, 1, (assignedNetwork?.count ?? 0) > 1);
-                const warnings = assignment?.validation?.warnings ?? equipmentClusterBusWarnings(cluster, networkId, assignedNetwork?.label);
+                const issues = equipmentClusterBusIssues(assignment ? reviewedEquipmentCluster(cluster, assignment, plannedEquipment.chains) : cluster, networkId, assignedNetwork?.label);
+                const warningFor = (name: string) => issues.flatMap(issue => issue.affected.filter(item => item.name === name).map(item => item.detail)).join("; ");
+                const participantId = (name: string) => `cluster-participant-${encodeURIComponent(cluster.id)}-${encodeURIComponent(name)}`;
+                const showParticipant = (name: string) => {
+                  const element = document.getElementById(participantId(name));
+                  const branch = element?.closest("details");
+                  if (branch) branch.open = true;
+                  element?.scrollIntoView({ block: "center", behavior: "smooth" });
+                  element?.focus({ preventScroll: true });
+                };
                 const controllerTree = assignment?.tree ?? cluster.controllers;
                 const unresolved = assignment?.unassigned ?? cluster.unassigned;
                 const ownerSelections = clusterEditValues[cluster.id]?.owners ?? {};
@@ -2826,15 +2938,23 @@ export function EngineeringAgentWizard({
                         <input aria-label={`${cluster.label}: vorgeschlagener Busname`} disabled={effectiveBusy} onChange={(event) => updateEquipmentCluster(cluster.id, { busName: event.target.value, networkId, selected })} value={busName} />
                       </label>
                     </div>
-                    {warnings.length > 0 ? (
+                    {issues.length > 0 ? (
                       <ul className="agent-cluster-warnings" aria-label={`${cluster.label}: Validierung`}>
-                        {warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                        {issues.map(issue => <li key={issue.code}>
+                          <strong>{issue.message}</strong><p>{issue.action}</p>
+                          {issue.affected.length > 0 && <details><summary>Betroffene Teilnehmer und Werte anzeigen ({new Set(issue.affected.map(item => item.name)).size})</summary>
+                            <ul>{issue.affected.map((item, index) => <li key={`${item.name}-${index}`}>
+                              <button type="button" className="agent-warning-location" onClick={() => showParticipant(item.name)}>{item.name} ↗</button>
+                              <span>{item.detail}</span>
+                            </li>)}</ul>
+                          </details>}
+                        </li>)}
                       </ul>
                     ) : <p className="agent-cluster-valid">Controller-Zuordnung und Bustechnik sind für diesen Vorschlag konsistent.</p>}
                     <div className="agent-cluster-tree" role="tree" aria-label={`${cluster.label}: Controller-Struktur`}>
                       {controllerTree.length ? controllerTree.map((controller) => (
                         <details key={`${cluster.id}:${controller.name}`} open>
-                          <summary><strong>{controller.name}</strong><span>Controller · {controller.interfaceType}</span></summary>
+                          <summary id={participantId(controller.name)}><strong>{controller.name}</strong><span>Controller · {controller.interfaceType}</span>{warningFor(controller.name) && <small className="agent-participant-warning">⚠ {warningFor(controller.name)}</small>}</summary>
                           <div className="agent-assignment-review agent-assignment-review-group">
                             <span><strong>Gruppenzuordnung</strong><small>Controller mit allen Teilnehmern</small></span>
                             <div className="agent-assignment-segmented" role="group" aria-label={`${controller.name}: Gruppenzuordnung bewerten`}>
@@ -2842,9 +2962,10 @@ export function EngineeringAgentWizard({
                               <button aria-pressed={Boolean(branchTargets[controller.name])} className={branchTargets[controller.name] ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "branch", clusterId: cluster.id, name: controller.name, target: branchTargets[controller.name] || "" })} type="button">↗ Neu zuordnen</button>
                             </div>
                           </div>
+                          {!!controller.functions?.length && <section className="agent-controller-functions"><strong>Funktionen · {controller.functions.length}</strong><small>Editierbare Entwurfsvorgaben; Anzeigeziele unten einzeln aktivieren.</small><ul>{controller.functions.map(fn => <li key={fn.name}><span>{fn.name}<small>{fn.signals.join(" · ")}</small></span></li>)}</ul></section>}
                           <div>
-                            <section><strong>Sensoren · {controller.sensors.length}</strong><ul>{controller.sensors.map((leaf) => <li key={leaf.name} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small></span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
-                            <section><strong>Aktoren · {controller.actuators.length}</strong><ul>{controller.actuators.map((leaf) => <li key={leaf.name} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small></span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                            <section><strong>Sensoren · {controller.sensors.length}</strong><ul>{controller.sensors.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                            <section><strong>Aktoren · {controller.actuators.length}</strong><ul>{controller.actuators.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
                           </div>
                         </details>
                       )) : <p>Kein Controller in diesem Systemzweig erkannt.</p>}
@@ -2857,6 +2978,7 @@ export function EngineeringAgentWizard({
                         controllerOptions={ecuOwnerOptions}
                         key={cluster.id}
                         leaves={unresolved}
+                        warningFor={warningFor}
                         onAssign={(batchOwners) => {
                           updateEquipmentCluster(cluster.id, { owners: { ...ownerSelections, ...batchOwners } });
                           persistEquipmentLearning(Object.entries(batchOwners).map(([endpointName, controllerName]) => ({
@@ -2873,10 +2995,15 @@ export function EngineeringAgentWizard({
                     {(assignment?.hmi_routes?.length ?? 0) > 0 && (
                       <section className="agent-cluster-hmi" aria-label={`${cluster.label}: HMI-Routing`}>
                         <strong>Nutzeranzeige über Routing</strong>
+                        <p>Nur benötigte Funktionsausgänge einschalten. Aus bedeutet: keine zusätzliche Übertragung an dieses Anzeigeziel. Berechnungen in der Funktion und die Kommunikation mit anderen Empfängern bleiben erhalten.</p>
                         {assignment?.hmi_routes?.map((route) => (
                           <div key={`${route.source}:${route.target}`}>
                             <span>{route.path.join(" → ")}</span>
-                            <small>{route.signals.join(", ") || "Statussignale"}</small>
+                            {[...route.signals, ...(route.excluded_signals ?? [])].sort((a, b) => a.localeCompare(b, "de")).map(signal => <label className="agent-hmi-switch" key={signal}>
+                              <input type="checkbox" role="switch" aria-label={`${signal} → ${route.target}`} checked={route.signals.includes(signal)} disabled={effectiveBusy} onChange={event => updateEquipmentCluster(cluster.id, { hmiSignals: { ...clusterEditValues[cluster.id]?.hmiSignals, [hmiSignalKey(route, signal)]: event.target.checked } })} />
+                              <span className="agent-hmi-switch-track" aria-hidden="true" />
+                              <span>{signal}</span><small>{route.signals.includes(signal) ? "Ein · anzeigen" : "Aus"}</small>
+                            </label>)}
                           </div>
                         ))}
                       </section>
@@ -2925,6 +3052,18 @@ export function EngineeringAgentWizard({
             ))}
           </div>
         </fieldset>
+      )}
+      {phase === 'questionnaire' && activeStepId === 'status' && !submittedContext && (
+        <section className="agent-wizard-status" aria-label="Auftrag vor dem Start prüfen">
+          <h3>Projektentwurf prüfen</h3>
+          <p>Es wurde noch kein Auftrag gestartet. Prüfe die Beschreibung und ergänze offene Angaben.</p>
+          <h4>{projectName || 'Projektname fehlt'}</h4>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || 'Projektbeschreibung fehlt'}</p>
+          {startBlockers.length ? <ul>{startBlockers.map((blocker) => <li key={blocker.text}>
+            <span>{blocker.text} </span><button type="button" className="button secondary tiny"
+              onClick={() => setStep(questionnaireSteps.findIndex((item) => item.id === blocker.step))}>Angabe ergänzen</button>
+          </li>)}</ul> : <p>Die Pflichtangaben sind vollständig. Mit „Auftrag starten“ übergibst du den Entwurf an den Agenten.</p>}
+        </section>
       )}
       {activeStepId === "status" && submittedContext && (
         <section className="agent-wizard-status" aria-label="Statusübersicht des Engineering-Auftrags">
@@ -3017,24 +3156,8 @@ export function EngineeringAgentWizard({
 
           <section className={`agent-wizard-inline-question ${visibleQuestion ? "required" : ""}`} aria-live="polite">
             {visibleQuestion ? (
-              <>
-                <div>
-                  <span className="eyebrow">Rückfrage erforderlich</span>
-                  <strong>{visibleQuestion.text}</strong>
-                </div>
-                <div className="agent-wizard-inline-answer">
-                  <textarea
-                    aria-label="Antwort auf die Agentenrückfrage"
-                    onChange={(event) => setInlineAnswer(event.target.value)}
-                    placeholder="Kurze technische Antwort"
-                    rows={2}
-                    value={inlineAnswer}
-                  />
-                  <button className="button primary" disabled={!inlineAnswer.trim() || agentPending} onClick={() => void answerInlineQuestion()} type="button">
-                    Antworten
-                  </button>
-                </div>
-              </>
+              <EngineeringAgentEventCard key={visibleQuestion.id} event={{ type: 'QUESTION', question: visibleQuestion }} projectId={projectId}
+                onAnswer={agentPending ? undefined : answer => void answerInlineQuestion(answer)} wizardReview />
             ) : (
               <div>
                 <span className="eyebrow">Rückfragen</span>
@@ -3062,7 +3185,7 @@ export function EngineeringAgentWizard({
             )}
           </section>
 
-          {execution?.state === "REVIEW_REQUIRED" && <WizardModelReview onProposalLoaded={setReviewProposal} projectId={projectId} runId={runId} />}
+          {(execution?.state === "REVIEW_REQUIRED" || execution?.state === "BLOCKED") && <WizardModelReview key={`${runId}:${execution.step}`} onProposalLoaded={setReviewProposal} projectId={projectId} runId={runId} />}
 
           <div
             className="agent-wizard-runtime"
@@ -3844,25 +3967,39 @@ function summarizeToolInput(input: unknown) {
 function WizardModelReview({ onProposalLoaded, projectId, runId }: { onProposalLoaded?: (proposal: EngineeringProposal) => void; projectId: string; runId: string }) {
   const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
   const [error, setError] = useState("");
+  const revisionRef = useRef('');
   useEffect(() => {
     const controller = new AbortController();
     const options = { headers: { "X-Project-ID": projectId }, signal: controller.signal, cache: "no-store" as const };
-    void (async () => {
-      const response = await fetch("/api/engineering/agent/conversation", options);
-      const conversation = await response.json();
-      if (!response.ok || !conversation.success || !conversation.data.current_requirement?.includes(`Lauf-ID: ${runId}`)
-          || !conversation.data.active_proposal) throw new Error("Kein Modellvorschlag für diesen Lauf verfügbar.");
-      const result = await fetch(`/api/engineering/agent/proposals/${encodeURIComponent(conversation.data.active_proposal)}`, options);
-      const value = await result.json();
-      if (!result.ok || !value.success) throw new Error("Modellvorschlag konnte nicht geladen werden.");
-      setProposal(value.data);
-      onProposalLoaded?.(value.data);
-    })().catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
-    return () => controller.abort();
+    let refreshing = false;
+    const refresh = async () => {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const conversation = await readConversation(projectId, controller.signal);
+        if (!wizardConversationMatches(conversation.data, runId)) throw new Error('Der gespeicherte Vorschlag gehört zu einem anderen Auftrag.');
+        if (!conversation.data.active_proposal) { setProposal(null); setError(''); return; }
+        const result = await fetch(`/api/engineering/agent/proposals/${encodeURIComponent(conversation.data.active_proposal)}`, options);
+        const value = await result.json();
+        if (!result.ok || !value.success) throw new Error('Vorschlag konnte nicht geladen werden.');
+        if (controller.signal.aborted) return;
+        const signature = JSON.stringify([value.data.proposal_id, value.data.revision, value.data.status, value.data.validation_result]);
+        if (revisionRef.current !== signature) {
+          revisionRef.current = signature;
+          setProposal(value.data);
+          onProposalLoaded?.(value.data);
+        }
+        setError('');
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Vorschlag konnte nicht geladen werden.');
+      } finally { refreshing = false; }
+    };
+    void refresh();
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 5000);
+    return () => { controller.abort(); window.clearInterval(timer); };
   }, [onProposalLoaded, projectId, runId]);
   if (error) return <p role="alert">{error}</p>;
-  return proposal ? <EngineeringAgentEventCard event={{ type: "APPROVAL", proposal }} projectId={projectId} wizardReview />
-    : <p>Modellvorschlag wird geladen …</p>;
+  return proposal ? <EngineeringAgentEventCard key={`${proposal.proposal_id}:${proposal.revision}`} event={{ type: "APPROVAL", proposal }} projectId={projectId} wizardReview /> : null;
 }
 
 function canonicalWizardDomain(value: string) {

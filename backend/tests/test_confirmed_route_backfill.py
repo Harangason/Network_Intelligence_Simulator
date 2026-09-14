@@ -32,10 +32,15 @@ def test_backfill_preview_apply_and_retry_are_idempotent(db_project):
 
     sensor, _port, _interface, message, _signal = _chain()
     ecu = create_object("HardwareNode", {"name": "Controller", "device_type": "ECU", "device_class": 4})
-    create_object("HardwareNetworkInterface", {"name": "ControllerCAN", "hardware_node_id": str(ecu["id"]), "technology": "CAN_FD"})
+    controller_port = create_object("HardwareNetworkInterface", {"name": "ControllerCAN", "hardware_node_id": str(ecu["id"]), "technology": "CAN_FD"})
     function = create_object("Function", {"name": "Control", "hardware_node_id": str(ecu["id"])})
     create_object("Interface", {"name": "ControlData", "function_id": str(function["id"]), "interface_type": "CAN_FD"})
     update_object("HardwareNode", str(sensor["id"]), {"identity": {"system_owner_id": str(ecu["id"])}})
+    # Ownership and protocol equality alone do not prove a physical connection.
+    disconnected = repair_confirmed_routes(db_project)
+    assert disconnected['new_route_count'] == 0 and disconnected['invalid']
+    for port in (_port, controller_port):
+        update_object('HardwareNetworkInterface', str(port['id']), {'network_ref': 'confirmed-local-can'})
     preview = repair_confirmed_routes(db_project)
     assert preview["new_route_count"] == 1 and not preview["invalid"]
     assert not model.routes()

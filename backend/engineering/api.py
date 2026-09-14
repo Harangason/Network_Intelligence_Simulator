@@ -84,8 +84,8 @@ from .capacity.service import CapacityTimingService, PreflightService
 from .workflow.models import WORKFLOW_STEPS
 from .workflow.service import WorkflowConflictError, WorkflowStatusService, is_topology_layout_only_change, check_edit_token
 from .intelligence import IntelligenceService
-from .intelligence.network_planning import communication_system_inventory, plan_network_distribution
-from .intelligence.resource_policy import planning_policy
+from .intelligence.network_planning import plan_network_distribution
+from .intelligence.resource_policy import planning_inventory, planning_policy
 from .intelligence.reports import IntelligenceReportService
 from .project_bundle import ProjectBundleService, normalize_project_id
 from .project_context import activate_project, current_project_id, normalize_context_project_id, reset_project
@@ -792,6 +792,7 @@ def workflow_context_route():
         WorkflowStatusService(_project_id()).set_context(
             payload,
             summary=request.args.get("view", "").strip().lower() == "summary",
+            client_write=True,
         )
     )
 
@@ -815,7 +816,8 @@ def workflow_changed_route():
 @engineering_api.route("/workflow/parameters", methods=["GET"])
 def workflow_parameters_route():
     state = WorkflowStatusService(_project_id()).get()
-    return jsonify({"project_id": state["project_id"], "parameters": state["parameters"]})
+    return jsonify({"project_id": state["project_id"], "parameters": state["parameters"],
+                    "versions": state["versions"], "edit_token": state["edit_tokens"]["parameters"]})
 
 
 @engineering_api.route('/workflow/communication-repair/preview', methods=['POST'])
@@ -858,6 +860,8 @@ def update_workflow_parameters_route():
     parameters = payload.get("parameters") if isinstance(payload.get("parameters"), dict) else payload
     if not parameters:
         raise EngineeringValidationError("parameters muss ein nicht-leeres Objekt sein.")
+    from .simulation_observation import mark_user_duration
+    parameters = mark_user_duration(parameters)
     project_id = _project_id()
     check_edit_token(payload.get("expected_token"), WorkflowStatusService(project_id).get()["parameters"])
     WorkflowStatusService(project_id).save_parameters(parameters, actor=payload.get("actor"))
@@ -888,7 +892,8 @@ def update_simulation_scope_route():
 @engineering_api.route("/workflow/topology", methods=["GET"])
 def workflow_topology_route():
     state = WorkflowStatusService(_project_id()).get()
-    return jsonify({"project_id": state["project_id"], "topology": state["topology"]})
+    return jsonify({"project_id": state["project_id"], "topology": state["topology"],
+                    "versions": state["versions"], "edit_token": state["edit_tokens"]["topology"]})
 
 
 @engineering_api.route("/workflow/topology", methods=["PUT"])
@@ -1457,16 +1462,15 @@ def capacity_optimize_route():
     result = service.calculate(persist=False)
     state = WorkflowStatusService(_project_id()).get()
     context = state.get("context") or {}
-    prompt = str(((context.get("agent_wizard_status") or {}).get("agent_prompt")) or "")
-    inventory = communication_system_inventory(prompt)
     plan = plan_network_distribution(
         result,
         list_objects("HardwareNode", limit=1000),
         state.get("topology") or {},
         parameters=state.get("parameters") or {},
         allowed_protocols=(context.get("engineering_scope_rules") or {}).get("communication_systems"),
-        available_protocol_counts=inventory,
+        available_protocol_counts=planning_inventory(state),
         resource_policy=planning_policy(state),
+        physical_interfaces=all_pages(list_objects, 'HardwareNetworkInterface'),
     )
     proposals = []
     for network in plan.get("networks") or []:
@@ -1492,6 +1496,11 @@ def capacity_optimize_route():
                 "Payload und Ziel-Buslast sind rechnerisch geeignet."
             )
             kind = "MIGRATE_NETWORK_TECHNOLOGY"
+        elif decision == 'KEEP_CURRENT_WITH_RESERVE_WARNING':
+            summary = (f"{network['network_id']}: bestehendes physisch zulässiges Netz behalten; "
+                       'die unveränderte Reserveunterschreitung bleibt sichtbar. '
+                       + ' '.join(item['message'] for item in network.get('warnings') or []))
+            kind = 'CAPACITY_RESERVE_REVIEW'
         else:
             summary = (
                 f"Für {network['network_id']} wurde keine verfügbare Kombination aus Segmentanzahl, "
@@ -1500,7 +1509,7 @@ def capacity_optimize_route():
             kind = "CAPACITY_CONSTRAINT_REVIEW"
         proposals.append({
             "id": f"OPT-BRANCH-{network['network_id']}",
-            "status": "PROPOSAL" if decision != "UNRESOLVED_CAPACITY_CONSTRAINT" else "REVIEW_REQUIRED",
+            "status": "REVIEW_REQUIRED" if decision in {'UNRESOLVED_CAPACITY_CONSTRAINT', 'KEEP_CURRENT_WITH_RESERVE_WARNING'} else "PROPOSAL",
             "kind": kind,
             "target_type": "Network",
             "target_id": network["network_id"],
@@ -1713,7 +1722,8 @@ def create_routing_entry_route():
 def routing_message_scopes_route():
     from .pagination import all_pages
     from .routing.payload_scope import message_scope
-    return jsonify({"items": {str(item["id"]): message_scope(item) for item in all_pages(list_objects, "Message")}})
+    signals = {str(item["id"]): item for item in all_pages(list_objects, "Signal")}
+    return jsonify({"items": {str(item["id"]): message_scope(item, signals) for item in all_pages(list_objects, "Message")}})
 
 
 @engineering_api.route("/routing/schema", methods=["GET"])

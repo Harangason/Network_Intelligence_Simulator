@@ -1,13 +1,18 @@
 /** Deduplicate polling by all visible cards without sharing state across projects. */
 import type { InteractiveQuestion } from './agent-response';
-type ConversationSnapshot = { success: boolean; data: {
+export type ConversationSnapshot = { success: boolean; data: {
+  current_requirement?: string;
+  current_question?: string | null;
+  active_proposal?: string | null;
+  wizard_request?: Record<string, unknown>;
+  wizard_operations?: Record<string, unknown>;
   questions: Record<string, InteractiveQuestion & { selected_options?: string[]; decision_key?: string }>;
   selected_context: { active_view: string; selected_object_refs: Record<string, string>[] };
   decisions: Record<string, { status: string; rationale: string; review_on_change: boolean }>;
 } };
 const pending = new Map<string, { expires: number; promise: Promise<ConversationSnapshot> }>();
-export async function readConversation(projectId: string, signal?: AbortSignal, questionId?: string): Promise<ConversationSnapshot> {
-  let entry = pending.get(projectId);
+export async function readConversation(projectId: string, signal?: AbortSignal, questionId?: string, options?: { fresh?: boolean }): Promise<ConversationSnapshot> {
+  let entry = options?.fresh ? undefined : pending.get(projectId);
   if (!entry || entry.expires < Date.now()) {
     const promise = fetch('/api/engineering/agent/conversation', {
       headers: { 'X-Project-ID': projectId }, cache: 'no-store', signal: AbortSignal.timeout(8000),

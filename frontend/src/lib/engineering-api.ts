@@ -108,11 +108,12 @@ export function retrieveEquipmentAssignmentLearning(payload: {
   domain: string;
   endpoints: Array<{ name: string; device_type: string; interface_type: string }>;
   candidate_controllers: string[];
-}, signal?: AbortSignal): Promise<{ suggestions: EquipmentAssignmentLearningSuggestion[]; corpus_projects: number }> {
+}, signal?: AbortSignal, projectId = readActiveProjectId()): Promise<{ suggestions: EquipmentAssignmentLearningSuggestion[]; corpus_projects: number }> {
   return quietRequest("/equipment-assignment-learning/retrieve", {
     method: "POST",
     body: JSON.stringify(payload),
     signal,
+    headers: { 'X-Project-ID': projectId },
   });
 }
 
@@ -126,9 +127,10 @@ export function recordEquipmentAssignmentLearning(payload: {
     accepted: boolean;
     source?: string;
   }>;
-}): Promise<{ recorded: number; stored: number }> {
+}, projectId = readActiveProjectId()): Promise<{ recorded: number; stored: number }> {
   return quietRequest("/equipment-assignment-learning/feedback", {
     method: "POST",
+    headers: { 'X-Project-ID': projectId },
     body: JSON.stringify(payload),
   });
 }
@@ -206,8 +208,8 @@ export async function listEngineeringObjects(
 
 export async function listAllEngineeringObjects(
   resource: EngineeringResource,
+  projectId = readActiveProjectId(),
 ): Promise<EngineeringObject[]> {
-  const projectId = readActiveProjectId();
   const items: EngineeringObject[] = [];
   const pageSize = 500;
   for (let offset = 0; ; offset += pageSize) {

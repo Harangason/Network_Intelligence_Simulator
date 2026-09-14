@@ -188,6 +188,65 @@ class RoutingValidator:
             ).fetchall()
         return {str(row["id"]): row for row in rows}
 
+    def _canonical_transport_segments(self, source, destinations, path):
+        """Read each modeled hop's actual bus, including intermediate gateways.
+
+        Stored segment IDs disambiguate parallel buses but are not trusted as
+        technology evidence: both adjacent nodes must own ports on that bus.
+        Legacy/test routes without a project retain their endpoint checks.
+        """
+        if not getattr(self, 'project_id', None):
+            return []
+        node_id = lambda item: str(item.get('node_id') or item.get('id') or '') if isinstance(item, dict) else str(item)
+        hops = [node_id(item) for item in path.get('hops') or []]
+        if len(hops) < 2:
+            return []
+        try:
+            ids = [str(UUID(item)) for item in dict.fromkeys(hops)]
+        except ValueError:
+            return []  # Editor aliases are checked through physical_paths.
+        with get_connection() as connection:
+            ports = connection.execute(
+                'SELECT hardware_node_id, network_ref, technology FROM engineering_hardware_interfaces '
+                'WHERE project_id=%s AND hardware_node_id=ANY(%s::uuid[]) AND network_ref IS NOT NULL',
+                (self.project_id, ids),
+            ).fetchall()
+        by_node = {}
+        for port in ports:
+            network = str(port.get('network_ref') or '')
+            if network:
+                by_node.setdefault(str(port['hardware_node_id']), {}).setdefault(network, set()).add(str(port['technology']))
+        declared = {(str(item.get('source_node_id')), str(item.get('target_node_id'))): str(item.get('network_id') or '')
+                    for item in path.get('transport_segments') or [] if isinstance(item, dict)}
+        destination_networks = {str(item.get('node_id')): str(item.get('network_id') or '') for item in destinations}
+        segments = []
+        for index, (left, right) in enumerate(zip(hops, hops[1:])):
+            shared = set(by_node.get(left, {})) & set(by_node.get(right, {}))
+            preferred = (str(source.get('network_id') or '') if index == 0 else '') or \
+                destination_networks.get(right) or declared.get((left, right))
+            if preferred:
+                shared &= {preferred}
+            if len(shared) != 1:
+                # Path existence is separately validated. Without unique channel
+                # evidence no intermediate payload/technology acceptance is valid.
+                segments.append({'error': 'PHYSICAL_SEGMENT_AMBIGUOUS' if len(shared) > 1 else 'PHYSICAL_SEGMENT_UNRESOLVED',
+                                 'source_node_id': left, 'target_node_id': right})
+                continue
+            network = next(iter(shared))
+            technologies = by_node[left][network] & by_node[right][network]
+            if len(technologies) != 1:
+                segments.append({'error': 'PHYSICAL_SEGMENT_TECHNOLOGY_MISMATCH', 'network_id': network,
+                                 'source_node_id': left, 'target_node_id': right})
+                continue
+            technology = next(iter(technologies))
+            protocol = technology.upper()
+            if protocol not in PROTOCOL_CAPACITY:
+                supported = INTERFACE_PROTOCOLS.get(technology, set())
+                protocol = next(iter(supported)) if len(supported) == 1 else 'CUSTOM'
+            segments.append({'network_id': network, 'protocol': protocol,
+                             'source_node_id': left, 'target_node_id': right})
+        return segments
+
     def _find_duplicates(
         self,
         source_node_id: str,
@@ -222,6 +281,18 @@ class RoutingValidator:
                 (self.project_id, message_ids),
             ).fetchall()
         return {str(row["message_id"]) for row in rows}
+
+    def _non_routed_frame_signals(self, message_ids):
+        if not message_ids or not getattr(self, "project_id", None):
+            return {}
+        with get_connection() as connection:
+            rows = connection.execute(
+                "SELECT id, message_id, name, configuration FROM engineering_signals "
+                "WHERE project_id=%s AND message_id=ANY(%s::uuid[]) "
+                "AND configuration->'routing'->'enabled' = 'false'::jsonb",
+                (self.project_id, message_ids),
+            ).fetchall()
+        return {str(row["id"]): row for row in rows}
 
     def validate(self, route: dict[str, Any], *, exclude_route_id: str | None = None) -> dict[str, Any]:
         errors: list[dict[str, str]] = []
@@ -414,7 +485,8 @@ class RoutingValidator:
         from .payload_scope import payload_scope_issues
         signal_message_ids = list({str(item.get("message_id")) for item in signals.values() if item.get("message_id")} - set(messages))
         scope_messages = {**messages, **(self._rows("engineering_messages", signal_message_ids) if signal_message_ids else {})}
-        for issue in payload_scope_issues(route, scope_messages, signals, interfaces):
+        scope_signals = {**signals, **self._non_routed_frame_signals(list(scope_messages))}
+        for issue in payload_scope_issues(route, scope_messages, scope_signals, interfaces):
             error(issue["code"], issue["message"])
         for signal_id in signal_ids:
             signal = signals.get(signal_id)
@@ -479,6 +551,7 @@ class RoutingValidator:
         gateway_rows = self._rows("engineering_hardware_nodes", [item for item in gateways if item])
         physical_paths = path.get('physical_paths') or []
         forwarding_evidence = set()
+        physical_transport_segments = []
         if physical_paths:
             from ..communication_repair import load_plan
             from .forwarding import forwarding_permitted
@@ -502,6 +575,9 @@ class RoutingValidator:
                         error('PHYSICAL_PATH_REMOVED', 'Eine Verbindung oder bestätigte Weiterleitung des gespeicherten Signalwegs fehlt.')
                         continue
                     left, right = planner.active[a], planner.active[b]
+                    if left['network_ref'] == right['network_ref']:
+                        physical_transport_segments.append({'network_id': left['network_ref'],
+                            'protocol': str(left.get('technology') or '').upper()})
                     if left['network_ref'] != right['network_ref']:
                         hw = planner.hardware[str(left['hardware_node_id'])]
                         if forwarding_permitted(hw, left, right): forwarding_evidence.add(str(hw['id']))
@@ -525,23 +601,32 @@ class RoutingValidator:
         if policy.get("redundancy") not in (None, "NONE") and not policy.get("fallback_route_id"):
             warn("FALLBACK_MISSING", "Redundantes Routing besitzt keine Fallback-Route.")
 
-        payload_bits = 0
-        frame_payload_bytes = 0
-        if signals:
-            payload_bits = sum(int(signal.get("length_bits") or 0) for signal in signals.values())
-            bits_by_message: dict[str, int] = {}
-            for signal in signals.values():
-                key = str(signal.get("message_id") or "unassigned")
-                bits_by_message[key] = bits_by_message.get(key, 0) + int(signal.get("length_bits") or 0)
-            frame_payload_bytes = max((ceil(bits / 8) for bits in bits_by_message.values()), default=0)
-        elif messages:
-            message_payloads = [int(item.get("dlc") or 0) for item in messages.values()]
-            payload_bits = sum(message_payloads) * 8
-            frame_payload_bytes = max(message_payloads, default=0)
-        payload_bytes = ceil(payload_bits / 8) if payload_bits else 0
-        bitrate, max_payload = PROTOCOL_CAPACITY[protocol]
-        if frame_payload_bytes > max_payload:
-            error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {protocol}.")
+        # A selected value still travels in its whole canonical frame. Selecting
+        # fewer signals cannot repack it, remove padding, or reduce bus demand.
+        frame_sizes = {mid: int(item.get('dlc') or 0) for mid, item in scope_messages.items()}
+        from ..signal_audit import occupied_signal_bits
+        for signal in signals.values():
+            mid = str(signal.get('message_id') or 'unassigned')
+            occupied = occupied_signal_bits(signal)
+            extent = ceil((max(occupied) + 1) / 8) if occupied else \
+                ceil((int(signal.get('start_bit') or 0) + int(signal.get('length_bits') or 0)) / 8)
+            if mid in scope_messages and extent > frame_sizes[mid]:
+                error('SIGNAL_EXCEEDS_MESSAGE', f"Signal {signal.get('name')} liegt außerhalb der gespeicherten Nachrichtengröße.")
+            frame_sizes[mid] = max(frame_sizes.get(mid, 0), extent)
+        frame_payload_bytes = max(frame_sizes.values(), default=0)
+        payload_bytes = sum(frame_sizes.values())
+        payload_bits = payload_bytes * 8
+        transport_segments = physical_transport_segments or self._canonical_transport_segments(source, destinations, path)
+        for segment in transport_segments:
+            if segment.get('error'):
+                error(segment['error'], f"Physischer Abschnitt {segment.get('source_node_id')} → {segment.get('target_node_id')} ist nicht eindeutig mit passenden Anschlüssen nachgewiesen.")
+        segment_protocols = {str(segment.get('protocol') or '').upper() for segment in transport_segments if segment.get('protocol')}
+        segment_protocols.update(str(item.get('protocol') or protocol).upper() for item in [source, *destinations])
+        for segment_protocol in sorted(segment_protocols):
+            _, max_payload = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])
+            if frame_payload_bytes > max_payload:
+                error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
+        bitrate, _ = PROTOCOL_CAPACITY[protocol]
 
         hop_count = max(1, len(path.get("hops", [])) - 1)
         gateway_count = len(gateways)
@@ -573,17 +658,25 @@ class RoutingValidator:
                     f"({cycle_ms:g} + {float(jitter or 0):g} ms). Der bestehende Grenzwert bleibt verbindlich; "
                     "Sendeplan oder Anforderung müssen fachlich geprüft werden.")
         route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits else 0.0
-        segment_ids = {
-            str(item.get("network_id") or "").strip()
-            for item in [source, path, *[destination for destination in destinations if isinstance(destination, dict)]]
-            if str(item.get("network_id") or "").strip()
-        }
-        segment_count = len(segment_ids) or 1
-        expected_load = min(100.0, route_load * segment_count)
-        if expected_load > 90:
-            error("BUS_LOAD_CRITICAL", f"Erwartete zusätzliche Buslast {expected_load:.1f} % ist kritisch.")
-        elif expected_load > 75:
-            warn("BUS_LOAD_HIGH", f"Erwartete zusätzliche Buslast {expected_load:.1f} % ist hoch.")
+        segment_loads = {}
+        # Canonical physical technology wins over an endpoint's application
+        # protocol when both describe the same bus.
+        for item in [source, *destinations, *transport_segments]:
+            network = str(item.get('network_id') or '').strip()
+            if not network or item.get('error'):
+                continue
+            segment_protocol = str(item.get('protocol') or protocol).upper()
+            segment_bitrate = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])[0]
+            segment_loads[network] = payload_bits / (cycle_ms / 1000.0) / segment_bitrate * 100
+        segment_count = len(segment_loads) or 1
+        # Preserve the route's aggregate demand indicator, deduplicating a shared
+        # multicast bus. Detailed capacity/schedule evaluation remains separate.
+        expected_load = sum(segment_loads.values()) if segment_loads else route_load
+        peak_segment_load = max(segment_loads.values(), default=route_load)
+        if peak_segment_load > 90:
+            error("BUS_LOAD_CRITICAL", f"Erwartete zusätzliche Buslast {peak_segment_load:.1f} % auf einem Abschnitt ist kritisch.")
+        elif peak_segment_load > 75:
+            warn("BUS_LOAD_HIGH", f"Erwartete zusätzliche Buslast {peak_segment_load:.1f} % auf einem Abschnitt ist hoch.")
 
         if source_node_id and destination_node_ids:
             duplicates = self._find_duplicates(
@@ -602,6 +695,8 @@ class RoutingValidator:
                     "payload_bytes": payload_bytes,
                     "route_load_percent": round(expected_load, 3),
                     "physical_segment_count": segment_count,
+                    "peak_segment_load_percent": round(peak_segment_load, 3),
+                    "network_load_percent": {network: round(load, 3) for network, load in sorted(segment_loads.items())},
                 },
                 {
                     "type": "PHYSICAL_NETWORK",

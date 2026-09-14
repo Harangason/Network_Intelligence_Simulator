@@ -8,11 +8,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def build_manifest(root=ROOT):
-    paths = set(root.joinpath("backend").rglob("*.py")) | set(root.joinpath("frontend/src").rglob("*"))
+    paths = (set(root.joinpath("backend").rglob("*.py"))
+             | set(root.joinpath("frontend/src").rglob("*"))
+             | set(root.joinpath("frontend/scripts").rglob("*"))
+             | set(root.joinpath("config").rglob("*.json")))
     paths.update(root.joinpath("frontend").glob("*config*"))
     paths.update(root / name for name in (
-        "Dockerfile", "generate_realistic_communication_tool.py", "scripts/write-build-info.py",
-        "backend/requirements.txt", "backend/pyproject.toml", "backend/uv.lock",
+        "Dockerfile", ".dockerignore", "generate_realistic_communication_tool.py", "scripts/write-build-info.py",
+        "scripts/verify-runtime-lock.py",
+        "backend/requirements.txt", "backend/requirements.lock", "backend/pyproject.toml", "backend/uv.lock",
         "frontend/package.json", "frontend/package-lock.json",
     ))
     excluded = {".venv", "node_modules", "runtime", "test-output", "tests", "__pycache__", "generated"}

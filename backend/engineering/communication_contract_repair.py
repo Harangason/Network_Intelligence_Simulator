@@ -2,7 +2,7 @@
 from copy import deepcopy
 from .communication_intent import FunctionalArchitecture
 from .communication_repair import protocol, digest
-from .routing.payload_scope import message_scope
+from .routing.payload_scope import message_scope, payload_scope_issues
 
 
 def add_contract_options(planner, group):
@@ -86,6 +86,11 @@ def add_contract_options(planner, group):
                 'route': {'hops': [{'node_id': src['node_id']}, *gateways, {'node_id': dst['node_id']}],
                           'gateways': gateways, 'transformations': [], 'physical_paths': [path]},
                 'timing': timing, 'routing_policy': {'routing_type': 'UNICAST'}, 'origin': 'NETWORK_EDITOR'}
+            scope_issues = payload_scope_issues(route, planner.messages, planner.signals,
+                {str(item['id']): item for item in planner.objects['Interface']})
+            if scope_issues:
+                gaps.extend(issue['message'] for issue in scope_issues)
+                continue
             _, intent, flow = architecture.project(route, [str(message['id'])])
             if flow['issues']:
                 gaps.extend(flow['issues']); continue

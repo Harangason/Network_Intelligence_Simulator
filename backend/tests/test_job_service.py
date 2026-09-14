@@ -29,7 +29,7 @@ def test_vercel_jobs_run_synchronously(monkeypatch) -> None:
     monkeypatch.setattr(service, "_execute", execute)
     job = service.submit({"technology": "can_fd"})
 
-    assert calls == [(job["id"], {"technology": "can_fd"}, False)]
+    assert calls == [(job["id"], {"technology": "can_fd", "simulation_job_id": job["id"]}, False)]
     assert job["status"] == "completed"
 
 
@@ -156,6 +156,51 @@ def test_job_list_returns_compact_results(tmp_path: Path) -> None:
     assert listed[0]["result"]["artifact_count"] == 1
     assert "events" not in listed[0]["result"]
 
+
+
+def test_compact_job_reads_and_persistence_never_copy_discarded_traces(tmp_path: Path) -> None:
+    import copy
+    import json
+
+    copies = []
+
+    class TraceRows(list):
+        def __deepcopy__(self, memo):
+            copies.append(True)
+            return copy.deepcopy(list(self), memo)
+
+    trace = TraceRows([{"signal_id": "signal-a", "value": 42}])
+    service = JobService(registry_path=tmp_path / "registry.json", persist=True)
+    service._jobs["large"] = {
+        "id": "large", "project_id": "project-a", "status": "completed",
+        "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+        "recovery_count": 1, "error": None,
+        "result": {"status": "completed", "summary": {"events": 1},
+                   "artifacts": ["trace.json"], "events": trace},
+    }
+    listed = service.list("project-a")[0]
+    metadata = service.get("large", "project-a", metadata=True)
+    with service._lock:
+        service._persist_locked()
+
+    assert copies == [], "Metadata operations must not traverse the full result under the registry lock."
+    saved = json.loads(service.registry_path.read_text(encoding="utf-8"))["jobs"][0]
+    assert saved == metadata == listed
+    assert saved["result"]["artifact_count"] == 1
+    assert saved["result"]["registry_truncated"] is True
+    assert "events" not in saved["result"]
+    assert saved["recovery_count"] == 1 and saved["error"] is None
+
+    for response in (listed, metadata):
+        response["result"]["artifacts"].append("changed.json")
+        response["result"]["summary"]["events"] = 999
+    full = service.get("large", "project-a")
+    assert copies == [True], "An explicit full read must still return the original trace."
+    assert full["result"]["events"] == list(trace)
+    assert full["result"]["artifacts"] == ["trace.json"]
+    assert full["result"]["summary"] == {"events": 1}
+    full["result"]["events"][0]["value"] = 0
+    assert trace[0]["value"] == 42
 
 def test_jobs_are_isolated_by_project() -> None:
     service = JobService(synchronous=True, persist=False)

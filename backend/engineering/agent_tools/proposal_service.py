@@ -168,7 +168,16 @@ def _validate_changes(changes: list[dict]) -> dict:
             elif kind == "RoutingEntry" and action == "CREATE":
                 result = RoutingValidator().validate(data)
                 if not result.get("valid", result.get("is_valid", False)):
-                    raise ValueError(f"Route ist nicht gültig: {result.get('findings', result)}")
+                    issues = result.get('errors') or result.get('findings') or [
+                        {'code': 'ROUTING_INVALID', 'message': 'Der Routingvorschlag ist nicht gültig.'}]
+                    for issue in issues:
+                        findings.append({'severity': 'ERROR', 'index': index,
+                            'code': str(issue.get('code') or 'ROUTING_INVALID'),
+                            'message': str(issue.get('message') or 'Der Routingvorschlag ist nicht gültig.'),
+                            'object_type': kind, 'object_ref': str(change.get('object_id') or ref),
+                            'object_name': str(data.get('name') or ''),
+                            'source': data.get('source') or {}, 'destinations': data.get('destinations') or []})
+                    continue
             elif kind == "NetworkTopology" and action == "CREATE":
                 topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
                 result = WorkflowStatusService._topology_artifact_check(topology)
@@ -207,7 +216,9 @@ def _validate_changes(changes: list[dict]) -> dict:
     if not findings:
         from .validation import validate_effective_model
         findings.extend(validate_effective_model(changes))
-    return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-len(findings)), "findings": findings}
+    # Several findings on one route still represent one invalid change.
+    invalid_count = len({item['index'] for item in findings}) if findings and all('index' in item for item in findings) else len(findings)
+    return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-invalid_count), "findings": findings}
 
 
 def _validate_topology_inventory(row: dict, changes: list[dict]) -> list[dict]:
@@ -269,6 +280,8 @@ def review(proposal_id: str, *, revision: str, decision: str, actor: str, trace_
     row = legacy.get_proposal(proposal_id)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
+    if contract.get('replacement_proposal_id') and decision != 'reject':
+        raise ConcurrentUpdateError('Dieser Vorschlag wurde durch eine neue Fassung ersetzt. Bitte den aktuellen Vorschlag prüfen.')
     if revision != contract["revision"]:
         raise ConcurrentUpdateError("Der Vorschlag wurde inzwischen geändert.")
     if contract["status"] == "APPLIED":
@@ -305,6 +318,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     row = legacy.get_proposal(proposal_id)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
+    if contract.get('replacement_proposal_id') and contract['status'] != 'APPLIED':
+        raise ConcurrentUpdateError('Dieser Vorschlag wurde ersetzt und kann nicht mehr übernommen werden. Bitte die neue Fassung prüfen.')
     if contract["status"] == "APPLIED":
         return envelope(row)
     if contract["status"] != "APPROVED" or not contract.get("approved_by"):

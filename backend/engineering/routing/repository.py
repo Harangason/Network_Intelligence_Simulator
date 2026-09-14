@@ -663,37 +663,43 @@ def record_simulation_results(
         "hardware_valid": (result.get("hardware_validation") or {}).get("valid"),
         "warnings": result.get("warnings", []),
     }
+    # Validate the complete request before writing. A bad UUID used to roll
+    # back the surrounding transaction after the earlier per-route writes.
+    for route_id in route_ids:
+        validate_uuid(route_id)
+    if not route_ids:
+        return
+    project_id = current_project_id()
+    attributes = {"job_id": job_id, "observation": observation}
     with get_connection() as connection:
-        for route_id in route_ids:
-            validate_uuid(route_id)
-            row = connection.execute(
-                "SELECT id, route_code FROM engineering_routing_entries "
-                "WHERE id = %s AND project_id = %s",
-                (route_id, current_project_id()),
-            ).fetchone()
-            if row is None:
-                continue
-            connection.execute(
-                "INSERT INTO engineering_relations "
-                "(project_id, relation_type, source_type, source_id, target_type, target_id, attributes, source, "
-                "provenance, review_state, approval_state, created_by) "
-                "VALUES (%s, 'SIMULATED_IN', 'RoutingEntry', %s, 'SimulationRun', %s, %s, "
-                "'simulation_derived', %s, 'reviewed', 'approved', 'simulation-service') "
-                "ON CONFLICT (project_id, relation_type, source_type, source_id, target_type, target_id) "
-                "DO UPDATE SET attributes = EXCLUDED.attributes",
-                (
-                    current_project_id(),
-                    route_id,
-                    job_id,
-                    Jsonb({"job_id": job_id, "observation": observation}),
-                    Jsonb({"origin": "communication-simulator"}),
-                ),
-            )
-            _audit(
-                connection,
-                route_id,
-                "ROUTE_USED_IN_SIMULATION",
-                actor="simulation-service",
-                after={"job_id": job_id, "observation": observation},
-                evidence=[observation],
-            )
+        rows = connection.execute(
+            "SELECT requested.id FROM unnest(%s::uuid[]) WITH ORDINALITY AS requested(id, position) "
+            "JOIN engineering_routing_entries route ON route.id = requested.id AND route.project_id = %s "
+            "ORDER BY requested.position",
+            (route_ids, project_id),
+        ).fetchall()
+        matched = [row["id"] for row in rows]
+        if not matched:
+            return
+        # One relation per route/job, but preserve each requested audit event,
+        # including duplicate route IDs and their original request order.
+        distinct = list(dict.fromkeys(matched))
+        connection.execute(
+            "INSERT INTO engineering_relations "
+            "(project_id, relation_type, source_type, source_id, target_type, target_id, attributes, source, "
+            "provenance, review_state, approval_state, created_by) "
+            "SELECT %s, 'SIMULATED_IN', 'RoutingEntry', id, 'SimulationRun', %s, %s, "
+            "'simulation_derived', %s, 'reviewed', 'approved', 'simulation-service' "
+            "FROM unnest(%s::uuid[]) AS requested(id) "
+            "ON CONFLICT (project_id, relation_type, source_type, source_id, target_type, target_id) "
+            "DO UPDATE SET attributes = EXCLUDED.attributes",
+            (project_id, job_id, Jsonb(attributes), Jsonb({"origin": "communication-simulator"}), distinct),
+        )
+        connection.execute(
+            "INSERT INTO engineering_routing_audit "
+            "(project_id, route_id, action, actor, after_state, evidence) "
+            "SELECT %s, id, 'ROUTE_USED_IN_SIMULATION', 'simulation-service', %s, %s "
+            "FROM unnest(%s::uuid[]) WITH ORDINALITY AS requested(id, position) "
+            "ORDER BY requested.position",
+            (project_id, Jsonb(_json_safe(attributes)), Jsonb(_json_safe([observation])), matched),
+        )

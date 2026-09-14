@@ -32,6 +32,10 @@ class ModelGraphService:
         # authorization. Keep them queryable, but outside the source fingerprint.
         source_relations = [r for r in self.relations if not (r.get('relation_type') == 'SIMULATED_IN'
             and r.get('source') == 'simulation_derived' and r.get('target_type') == 'SimulationRun')]
+        # SQL row order is not architecture: equal created_at values can reorder
+        # after a new observation is inserted. Keep every relation field in the
+        # hash, but canonicalize the unordered collection by identity/content.
+        source_relations.sort(key=lambda relation: (str(relation.get('id') or ''), digest(relation)))
         self.revision = digest({'model': model, 'resources': self.resources, 'relations': source_relations})
 
     @classmethod
@@ -46,12 +50,11 @@ class ModelGraphService:
                    relations=access.json_safe(all_pages(list_relations)))
 
     def find_object(self, ref):
-        if ref in self.objects:
-            return self.objects[ref]
-        matches = [row for row in self.objects.values() if row.get('name', '').casefold() == str(ref).casefold()]
-        if len(matches) != 1:
-            raise ValueError(f'Objekt {ref!r} ist nicht eindeutig: {len(matches)} Treffer. Kanonische ID wählen.')
-        return matches[0]
+        from .typing import type_reference
+        typed = type_reference(self, ref)
+        if typed.clarification_required:
+            raise ValueError(f'Objekt {ref!r} ist nicht eindeutig: {len(typed.candidate_refs)} Treffer. Kanonische ID wählen.')
+        return self.objects[typed.matched_object_ref]
 
     def find_related_objects(self, ref):
         ids = set()

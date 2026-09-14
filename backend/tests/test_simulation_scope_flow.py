@@ -9,6 +9,46 @@ from backend.engineering.simulation import _apply_simulation_scope
 from backend.tests.test_model_ownership import db_project, _chain
 
 
+def test_auto_observation_covers_slow_routes_and_preserves_explicit_duration():
+    from backend.engineering.simulation import _apply_observation_duration
+    config = {"duration_mode": "AUTO_OBSERVATION", "communications": [
+        {"cycle_ms": 10, "jitter_limit_ms": 5, "maximum_latency_ms": 20},
+        {"cycle_ms": 1000, "phase_ms": 50, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
+    _apply_observation_duration(config)
+    assert config["duration_s"] == pytest.approx(1.071)
+    explicit = {**config, "duration_s": 0.5}
+    _apply_observation_duration(explicit)
+    assert explicit["duration_s"] == 0.5
+    manual = {"communications": [{"cycle_ms": 1000}], "duration_s": 1}
+    _apply_observation_duration(manual)
+    assert manual["duration_s"] == 1
+
+
+def test_auto_observation_event_budget_covers_physical_routes():
+    from backend.engineering.simulation import _apply_observation_duration
+    config = {"duration_mode": "AUTO_OBSERVATION", "max_events": 1000, "communications": [
+        *[{"cycle_ms": 10, "jitter_limit_ms": 5, "maximum_latency_ms": 20, "segments": [{}, {}]} for _ in range(150)],
+        {"cycle_ms": 1000, "phase_ms": 50, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
+    _apply_observation_duration(config)
+    assert config["max_events"] == 1000
+    assert config["observation_window"]["minimum_release_event_count"] > config["max_events"]
+    assert "OBSERVATION_EVENT_BUDGET_INSUFFICIENT" in [row["code"] for row in config["observation_window"]["warnings"]]
+
+
+@pytest.mark.parametrize("cycle", [0, -1, float("nan"), float("inf"), 4_000_000])
+def test_auto_observation_rejects_invalid_or_excessive_horizons(cycle):
+    from backend.engineering.simulation import _apply_observation_duration
+    config = {"duration_mode": "AUTO_OBSERVATION", "communications": [
+        {"cycle_ms": cycle, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
+    if cycle == 4_000_000:
+        with pytest.raises(EngineeringValidationError):
+            _apply_observation_duration(config)
+    else:
+        _apply_observation_duration(config)
+        assert config["observation_window"]["status"] == "UNVERIFIED"
+        assert config["observation_window"]["warnings"][0]["code"] == "OBSERVATION_RELEASE_UNKNOWN"
+
+
 def test_scope_normalization_and_mixed_expansion_preserve_full_inventory_counts():
     scope = normalize_simulation_scope({"mode": "SELECTED", "message_ids": ["m1", "m1"], "signal_ids": ["s2"], "reason": "Subsystemtest"}, require_reason=True)
     assert scope["message_ids"] == ["m1"]

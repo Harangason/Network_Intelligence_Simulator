@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import heapq
 from copy import deepcopy
 import json
 import random
@@ -19,6 +18,8 @@ from model_based_simulation import ModelBasedSimulationEngine
 from backend.engineering.capacity.calculators import estimate_frame
 from backend.engineering.capacity.transmission import release_grid
 from ethernet_transport import resolve_flow, wire_bytes, packet_bytes
+from event_scheduler import EventScheduler
+from simulation_cancellation import check_cancellation
 
 
 def _utc(timestamp: float) -> str:
@@ -478,6 +479,7 @@ def _generate_universal_events(
     *,
     start_utc: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    check_cancellation()
     config = {**(config.get("parameters") or {}), **config}
     duration_s = max(0.001, float(config.get("duration_s") or config.get("duration") or 1.0))
     seed = int(config.get("seed", 42))
@@ -502,6 +504,7 @@ def _generate_universal_events(
     address_owners = {}
     forwarding_templates = {}
     for route in routes:
+        check_cancellation()
         segment_index = int(route["metadata"].get("segment_index") or 0)
         segment_count = int(route["metadata"].get("segment_count") or 1)
         end_to_end_id = str(route["metadata"].get("end_to_end_route_id") or route["id"])
@@ -578,6 +581,7 @@ def _generate_universal_events(
             relative_time * 1000, max_events)
         last_payload, last_sent = None, None
         for release_ms in candidates:
+            check_cancellation()
             if len(events) >= max_events:
                 break
             relative_time = release_ms / 1000
@@ -752,33 +756,14 @@ def _generate_universal_events(
         str(item["route_id"]), int(item["sequence"])))
     network_available_at: dict[str, float] = {}
     port_available_at: dict[tuple, float] = {}
-    pending = [(float(event["time_s"]), index, event) for index, event in enumerate(events)]
-    heapq.heapify(pending)
+    pending = EventScheduler(events, network_available_at)
     events = []
-    serial = len(pending)
     physical_frames = {}
-    while pending and len(events) < max_events:
-        due, _, event = heapq.heappop(pending)
-        # At a CAN bus grant, arbitrate over ALL already pending requests,
-        # including requests arriving while the previous frame was on the wire.
-        if event.get("technology") in {"can", "can_fd"}:
-            grant = max(float(event["time_s"]), network_available_at.get(str(event["network"]), 0))
-            if due < grant - 1e-12:
-                serial += 1
-                heapq.heappush(pending, (grant, serial, event))
-                continue
-            eligible = [(index, queued) for index, (_, _, queued) in enumerate(pending)
-                        if queued.get("network") == event.get("network") and float(queued["time_s"]) <= grant + 1e-12]
-            def arbitration_key(queued):
-                identifier = queued.get("arbitration_id")
-                return (int(identifier) if identifier is not None else 0x20000000, str(queued["route_id"]))
-            winner = min(eligible, key=lambda pair: arbitration_key(pair[1]), default=None)
-            if winner and arbitration_key(winner[1]) < arbitration_key(event):
-                index, selected = winner
-                serial += 1
-                pending[index] = (float(event["time_s"]), serial, event)
-                heapq.heapify(pending)
-                event = selected
+    while len(events) < max_events:
+        check_cancellation()
+        event = pending.pop()
+        if event is None:
+            break
         physical_key = None
         if not event.get("ethernet") and event.get("message_ids") and not event.get("duplicate_injected"):
             physical_key = (event["network"], event["sender_hardware"], event["sender_port"],
@@ -803,8 +788,7 @@ def _generate_universal_events(
         for acknowledgement in _restbus_ack_events(event, session_settings):
             acknowledgement["faults"] = model_engine.faults.event_faults(acknowledgement)
             if float(acknowledgement["time_s"]) <= duration_s:
-                serial += 1
-                heapq.heappush(pending, (float(acknowledgement["time_s"]), serial, acknowledgement))
+                pending.enqueue(acknowledgement)
         next_index = int(event.get("segment_index") or 0) + 1
         template = forwarding_templates.get((event.get("end_to_end_route_id"), next_index))
         if template is None or event.get("traffic_type") == "CONTROL":
@@ -835,19 +819,22 @@ def _generate_universal_events(
                 payload_hex = str(forwarded.get("payload_hex") or "")
                 forwarded["payload_hex"] = "FF" + payload_hex[2:] if payload_hex else "FF"
             forwarded["faults"] = list(dict.fromkeys([*event.get("faults", []), *model_engine.faults.event_faults(forwarded)]))
-        serial += 1
-        heapq.heappush(pending, (float(forwarded["time_s"]), serial, forwarded))
+        pending.enqueue(forwarded)
     events.sort(key=lambda item: (float(item["time_s"]), str(item["route_id"]), int(item["sequence"])))
     from transport_dependencies import apply_transport_dependencies
+    check_cancellation()
     apply_transport_dependencies(events, model_engine)
+    check_cancellation()
     return routes, events
 
 
 def _write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
+    check_cancellation()
     path.parent.mkdir(parents=True, exist_ok=True)
     entries, previous, ordered = [], -1.0, True
     with path.open("wb") as handle:
         for index, event in enumerate(events):
+            check_cancellation()
             timestamp = float(event.get("time_s", 0))
             ordered &= timestamp >= previous
             previous = timestamp
@@ -861,6 +848,7 @@ def _write_jsonl(path: Path, events: list[dict[str, Any]]) -> Path:
 
 
 def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
+    check_cancellation()
     path.parent.mkdir(parents=True, exist_ok=True)
     columns = [
         "timestamp_utc", "timestamp_unix", "time_s", "scheduled_time_s",
@@ -888,6 +876,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         writer = csv.DictWriter(handle, fieldnames=columns)
         writer.writeheader()
         for event in events:
+            check_cancellation()
             writer.writerow(
                 {
                     **event,

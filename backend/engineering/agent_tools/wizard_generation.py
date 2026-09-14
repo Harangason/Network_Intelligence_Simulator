@@ -13,6 +13,7 @@ import re
 from copy import deepcopy
 
 from . import model, proposal_service
+from .wizard_commands import effective_wizard_prompt
 from .. import proposals as proposal_store
 from ..device_classification import DeviceClassificationRegistry
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
@@ -24,7 +25,7 @@ from ..bus_settings import limits_from_prompt, branch_capacity, with_project_lim
 from ..message_bindings import message_hardware_interface_ids
 from ..spatial_zoning import installation_zone, driving_side_from_prompt, LOCAL_BUSES, VERSION as ZONING_VERSION
 from ..spatial_architecture import architecture_from, location_decision, zone_label, with_spatial_architecture
-from ..routing.generation import RoutingGenerationService
+from ..routing.generation import RoutingGenerationService, routing_candidate_batch
 from ..routing.validation import PROTOCOL_CAPACITY
 from ..capacity.service import CapacityTimingService
 from ..intelligence.resource_policy import planning_policy, planning_inventory, resource_decision, decision_summary
@@ -47,6 +48,135 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
+MODEL_GENERATOR_VERSION = 'wizard-model-v18-preserve-domain-and-technology'
+ROUTING_GENERATOR_VERSION = 'wizard-routing-v9-explicit-forwarding-scope'
+
+
+def _canonical_wizard_prompt(prompt: str) -> str:
+    # Compatibility for persisted v1 requests: the entire appended continuation
+    # is control text, not a new engineering requirement.
+    return re.split(r'\nFortsetzung des bestätigten Wizard-Auftrags:', str(prompt), maxsplit=1)[0].strip()
+
+
+def _confirmed_actuator_commands(prompt: str) -> dict:
+    # The questionnaire wraps its free-form notes in "Weitere Hinweise".
+    # Accept that wrapper without changing any user-specified encoding.
+    command_raw = re.search(r'^- (?:Weitere Hinweise:\s*-\s*)?Aktor-Befehle:\s*(\{[^\r\n]*\})\s*$', prompt, re.M)
+    return json.loads(command_raw.group(1)) if command_raw else {}
+
+
+def _check_existing_amendment_semantics(prompt: str, specification: dict, existing: dict, state: dict) -> None:
+    """Do not mistake an unsupported edit/deletion for an additive delta.
+
+    Compare the user's previous and current specifications, not generated
+    defaults against an enriched canonical model. Existing encodings, message
+    identifiers and manually reviewed parameter values remain authoritative.
+    """
+    marker = '\n\nBestaetigte Ergaenzung des Nutzers:\n'
+    if marker not in prompt:
+        return
+    previous_prompt = effective_wizard_prompt(prompt.rsplit(marker, 1)[0])
+    current_prompt = effective_wizard_prompt(prompt)
+    previous_prompt = with_spatial_architecture(previous_prompt, state.get('parameters'))
+    if not re.search(r'^- Bus-Teilnehmergrenzen:', previous_prompt, re.M):
+        previous_prompt = with_project_limits(previous_prompt, state.get('context') or {})
+    previous = extract_specification(previous_prompt)
+    existing_names = {row['name'].casefold() for row in existing['HardwareNode']}
+    key = lambda chain: (str(chain['hardware_name']).casefold(), str(chain['signal_name']).casefold())
+    current_chains = {key(chain): chain for chain in specification['chains']}
+    fields = ('device_type', 'function_name', 'interface_type', 'interface_name', 'transport_network_ref', 'message_name',
+              'direction', 'cycle_ms', 'dlc', 'start_bit', 'length_bits', 'byte_order', 'data_type',
+              'factor', 'offset_value', 'unit', 'min_value', 'max_value', 'semantic', 'data')
+    for old in previous['chains']:
+        if str(old['hardware_name']).casefold() not in existing_names:
+            continue
+        new = current_chains.get(key(old))
+        if new is None:
+            raise ValueError(f"Die Ergänzung entfernt oder benennt das bestehende Signal {old['signal_name']} "
+                f"von {old['hardware_name']} um. Dafür ist eine explizit geprüfte Änderung einschließlich Referenzen erforderlich.")
+        for field in fields:
+            if old.get(field) != new.get(field):
+                raise ValueError(f"Bestehendes Signal {old['hardware_name']} / {old['signal_name']}: "
+                    f"{field} wurde von {old.get(field)!r} auf {new.get(field)!r} geändert. "
+                    "Diese Änderung benötigt einen geprüften Update-Vorschlag; sie wird nicht als neue Anlage oder unveränderter Stand übernommen.")
+    old_commands = _confirmed_actuator_commands(previous_prompt)
+    for name, command in _confirmed_actuator_commands(current_prompt).items():
+        if name.casefold() in existing_names and command != old_commands.get(name):
+            raise ValueError(f'Aktor {name}: geänderte Befehlskodierung benötigt eine explizit geprüfte Änderung der bestehenden Nachricht und Signale.')
+    def clusters(text):
+        raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', text, re.M)
+        return json.loads(raw[1]) if raw else []
+    old_clusters = {item.get('bus_name'): item for item in clusters(previous_prompt)}
+    supported = {'cluster_id', 'label', 'network_id', 'network_label', 'bus_name', 'controllers',
+                 'unassigned', 'hmi_routes', 'warnings'}
+    for cluster in clusters(current_prompt):
+        old = old_clusters.get(cluster.get('bus_name'), {})
+        for field, value in cluster.items():
+            if field not in supported and old.get(field) != value:
+                raise ValueError(f"Netzwerk {cluster.get('bus_name')}: Parameter {field} = {value!r} "
+                    "wird durch die Modellanlage nicht geändert. Dafür ist ein explizit geprüfter Netzwerkparameter-Vorschlag erforderlich.")
+        if old and old.get('hmi_routes', []) != cluster.get('hmi_routes', []):
+            raise ValueError(f"Netzwerk {cluster.get('bus_name')}: geänderte HMI-Empfänger oder Signalauswahl benötigen "
+                "einen explizit geprüften Kommunikations- und Routingvorschlag für die bestehenden Nachrichten.")
+
+
+def _proposal_identity(step: str, prompt: str, source: dict, state: dict, generator_version: str) -> dict:
+    """Content-address a request and its complete relevant canonical input.
+
+    Worker heartbeats, UI text, validation timestamps and operation IDs are not
+    engineering inputs. Logical interfaces, functions and signals are inputs,
+    including when only those objects changed since a failed proposal.
+    """
+    canonical_prompt = _canonical_wizard_prompt(prompt)
+    stored = (state.get('context') or {}).get('wizard_request') or {}
+    same_request = _canonical_wizard_prompt(stored.get('prompt') or '') == canonical_prompt
+    run_match = re.search(r'^- Lauf-ID:\s*([^\r\n]+)', canonical_prompt, re.M)
+    request = {'prompt': canonical_prompt,
+               'run_id': stored.get('run_id') if same_request else run_match.group(1).strip() if run_match else None,
+               'revision': stored.get('revision') if same_request else None,
+               'target': stored.get('target') if same_request else None}
+    def digest(value):
+        return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False, default=str, allow_nan=False).encode('utf-8')).hexdigest()
+    # A successor family survives canonical edits and generator upgrades, while
+    # the fingerprint changes and prevents stale validation reuse.
+    operation_key = digest({'project_id': current_project_id(), 'step': step,
+                            'request_family': request['run_id'] or canonical_prompt})
+    ordered_source = {kind: sorted(rows, key=lambda row: str(row.get('id') or row.get('name') or ''))
+                      if isinstance(rows, list) and all(isinstance(row, dict) for row in rows) else rows
+                      for kind, rows in source.items()}
+    fingerprint = digest({'operation_key': operation_key, 'request': request, 'generator_version': generator_version,
+                          'source': ordered_source, 'parameters': state.get('parameters') or {},
+                          'topology': state.get('topology') or {},
+                          'wizard_settings': (state.get('context') or {}).get('engineering_wizard_settings') or {}})
+    return {'prompt_sha256': fingerprint, 'operation_key': operation_key,
+            'generator_version': generator_version, 'request_revision': request['revision'], 'run_id': request['run_id']}
+
+
+def _reusable_proposal(proposal_type, identity, rows):
+    for row in rows:
+        if row['proposal_type'] != proposal_type:
+            continue
+        contract = row.get('engineering_contract') or {}
+        if contract.get('replacement_proposal_id') or contract.get('status') in {'REJECTED', 'SUPERSEDED'}:
+            continue
+        if any(item.get('prompt_sha256') == identity['prompt_sha256'] for item in row.get('evidence') or []):
+            # An unchanged invalid proposal is returned with its findings; retry
+            # does not disguise the error by generating an identical second one.
+            return proposal_service.envelope(row)
+    return None
+
+
+def _supersede_previous(proposal_type, identity, rows, replacement):
+    for row in rows:
+        contract = row.get('engineering_contract') or {}
+        if row['proposal_type'] != proposal_type or contract.get('status') in {'APPLIED', 'REJECTED', 'SUPERSEDED'}:
+            continue
+        if contract.get('replacement_proposal_id') or str(row['proposal_id']) == str(replacement['proposal_id']):
+            continue
+        if any(item.get('operation_key') == identity['operation_key'] for item in row.get('evidence') or []):
+            proposal_service.set_replacement(str(row['proposal_id']), str(replacement['proposal_id']))
+    return replacement
+
 
 def _technology_contract(interface_type: str) -> dict:
     """Resolve wizard vocabulary through the central registry without protocol switches."""
@@ -68,6 +198,54 @@ def _technology_contract(interface_type: str) -> dict:
         'timing_model': type(resolved['timing_model']).__name__,
         'load_calculator': type(resolved['load_calculator']).__name__,
     }
+
+
+def _bind_generated_gateway_status(changes, existing):
+    """Publish a new gateway's own status on its recipient's actual channel.
+
+    A gateway-originated status is native output, not an incoming frame that
+    needs a fictitious intermediate gateway. Preserve its approved recipients,
+    function, complete payload and encoding; existing messages are untouched.
+    """
+    graph = {kind: {str(row['id']): row for row in existing.get(kind, [])}
+             for kind in ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface')}
+    for change in changes:
+        if change['object_type'] in graph:
+            graph[change['object_type']][str(change.get('object_id') or '$' + change['local_ref'])] = change['data']
+    ports = graph['HardwareNetworkInterface']
+    for change in changes:
+        if change['object_type'] != 'Message' or change.get('action', 'CREATE') != 'CREATE':
+            continue
+        message = change['data']
+        config = message.get('configuration') or {}
+        contract = config.get('communication_contract') or {}
+        owner = str(contract.get('producer_ref') or '')
+        targets = set(map(str, contract.get('consumer_refs') or []))
+        if contract.get('role') != 'DEVICE_STATUS' or graph['HardwareNode'].get(owner, {}).get('device_type') != 'Gateway' or not targets:
+            continue
+        candidates = [(key, port) for key, port in ports.items() if str(port.get('hardware_node_id')) == owner
+                      and port.get('network_ref') and all(any(
+                          str(peer.get('hardware_node_id')) == target and peer.get('network_ref') == port['network_ref']
+                          and peer.get('technology') == port['technology'] for peer in ports.values()) for target in targets)]
+        if len(candidates) != 1:
+            continue  # Parallel or different recipient networks need explicit choices.
+        port_ref, port = candidates[0]
+        original = graph['Interface'].get(str(message.get('interface_id')), {})
+        logical = [(key, item) for key, item in graph['Interface'].items()
+                   if item.get('interface_type') == port['technology'] and
+                   (item.get('function_id') == original.get('function_id') if original.get('function_id')
+                    else str(item.get('hardware_node_id')) == owner)]
+        if len(logical) != 1:
+            continue
+        message.update(interface_id=logical[0][0], hardware_interface_id=port_ref)
+        technology = _technology_contract(port['technology'])
+        config['technology_binding'] = technology
+        config['transport_unit']['transport_unit_type'] = technology['transport_unit_type']
+        config['channel_selection'] = {'source': 'confirmed-recipient-network', 'network_id': port['network_ref']}
+        for signal in changes:
+            if signal['object_type'] == 'Signal' and signal['data'].get('message_id') == '$' + change['local_ref']:
+                for binding in signal['data'].get('protocol_bindings') or []:
+                    binding['technology_binding_ref'] = technology['technology_id']
 
 
 def _network_protocol(interface_type: str) -> str:
@@ -140,7 +318,7 @@ def _parameter_defaults(technology_id: str) -> dict:
 
 def generate_parameters(arguments: dict) -> dict:
     """Persist confirmed registry defaults without delegating tool choice to an LLM."""
-    prompt = arguments['prompt']
+    prompt = effective_wizard_prompt(arguments['prompt'])
     workflow = WorkflowStatusService(current_project_id())
     state = workflow.get()
     technology_ids = _wizard_parameter_technology_ids(prompt)
@@ -177,6 +355,11 @@ def generate_parameters(arguments: dict) -> dict:
         'defaults_source': 'technology-registry',
         'spatial_architecture': architecture_from(existing, prompt),
     }
+    if 'duration_s' not in existing and 'duration_s' in primary_defaults:
+        parameters['parameter_provenance'] = {
+            **(existing.get('parameter_provenance') or {}),
+            'duration_s': {'source': 'TECHNOLOGY_DEFAULT', 'value': primary_defaults['duration_s']},
+        }
 
     saved = workflow.save_parameters(
         parameters, actor=str(arguments.get('_actor') or 'engineering-agent')
@@ -215,19 +398,21 @@ def generate_parameters(arguments: dict) -> dict:
 
 
 def generate(arguments: dict) -> dict:
-    state = WorkflowStatusService(current_project_id()).get(summary=True)
-    arguments = {**arguments, 'prompt': with_spatial_architecture(arguments['prompt'], state.get('parameters'))}
+    state = WorkflowStatusService(current_project_id()).get()
+    prompt = _canonical_wizard_prompt(arguments['prompt'])
+    kinds = ('HardwareNode', 'Function', 'HardwareNetworkInterface', 'Interface', 'Message', 'Signal')
+    existing = {kind: model.objects(kind) for kind in kinds}
+    proposal_identity = _proposal_identity('engineering_model', prompt, existing, state, MODEL_GENERATOR_VERSION)
+    proposals = proposal_store.list_proposals(limit=100)
+    reusable = _reusable_proposal('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals)
+    if reusable:
+        return reusable
+    arguments = {**arguments, 'prompt': with_spatial_architecture(effective_wizard_prompt(prompt), state.get('parameters'))}
     if not re.search(r"^- Bus-Teilnehmergrenzen:", arguments["prompt"], re.M):
         context = state.get("context") or {}
         arguments = {**arguments, "prompt": with_project_limits(arguments["prompt"], context)}
-    fingerprint = hashlib.sha256(('technology-binding-v14-spatial-architecture\n' + arguments['prompt']).encode('utf-8')).hexdigest()
-    for row in proposal_store.list_proposals(limit=100):
-        contract = row.get('engineering_contract') or {}
-        if (row['proposal_type'] == 'WIZARD_ENGINEERING_MODEL'
-                and any(item.get('prompt_sha256') == fingerprint for item in row.get('evidence') or [])
-                and (contract.get('validation_result') or {}).get('valid') is True):
-            return proposal_service.envelope(row)
     spec = extract_specification(arguments['prompt'])
+    confirmed_spec = deepcopy(spec) if '\n\nBestaetigte Ergaenzung des Nutzers:\n' in prompt else spec
     # Gateway status uses a real controller backbone, not an unconnected
     # catalogue-default transport. Resolve this before creating messages.
     # Commit the approved physical partition at model creation, before any
@@ -259,8 +444,6 @@ def generate(arguments: dict) -> dict:
                 technology, network = next((pair for pair in backbones if pair[0] == chain['interface_type']), backbones[0])
                 chain.update(interface_type=technology, transport_network_ref=network)
     changes, refs = [], {}
-    kinds = ('HardwareNode', 'Function', 'HardwareNetworkInterface', 'Interface', 'Message', 'Signal')
-    existing = {kind: model.objects(kind) for kind in kinds}
 
     def ensure(kind, name, data, parent=None):
         if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):
@@ -271,6 +454,16 @@ def generate(arguments: dict) -> dict:
         name = concise_name(kind, name)
         signature = (kind, name.casefold(), data.get(parent) if parent else None)
         if signature in refs:
+            # One logical local-I/O interface can terminate several explicitly
+            # generated channels, including receive-only sensor segments.
+            if kind == 'Interface':
+                created = next((item for item in changes if '$' + item.get('local_ref', '') == refs[signature]), None)
+                if created:
+                    configuration = created['data'].setdefault('configuration', {})
+                    configuration['physical_interface_ids'] = list(dict.fromkeys([
+                        *(configuration.get('physical_interface_ids') or []),
+                        *((data.get('configuration') or {}).get('physical_interface_ids') or []),
+                    ]))
             return refs[signature]
         matches = [row for row in existing[kind] if row['name'].casefold() == name.casefold()
                    and (not parent or str(row.get(parent)) == str(data[parent]))]
@@ -290,7 +483,11 @@ def generate(arguments: dict) -> dict:
     declared_networks: dict[str, str] = {}
     hardware_refs: dict[str, str] = {}
     function_refs: dict[str, str | None] = {}
-    chain_by_name = {str(item.get('hardware_name') or '').casefold(): item for item in spec['chains']}
+    # Additional calculated functions share their controller's hardware. They
+    # must not replace its original controller function or local-I/O ownership.
+    chain_by_name = {}
+    for item in spec['chains']:
+        chain_by_name.setdefault(str(item.get('hardware_name') or '').casefold(), item)
     for chain in spec['chains']:
         network_ref = str(chain.get('transport_network_ref') or '').strip()
         if not network_ref:
@@ -309,11 +506,20 @@ def generate(arguments: dict) -> dict:
         'name': c['hardware_name'], 'kind': 'gateway' if c['device_type'] == 'Gateway' else 'ecu' if c['device_type'] not in {'SensorController', 'ActuatorController'} else 'sensor',
         'systemOwnerId': local_memberships.get(c['hardware_name'].casefold(), [None])[0],
         'ports': [{'physicalNetworkId': c.get('transport_network_ref')}] } for c in spec['chains']]}
-    reserved_networks = [{**n, 'name_source': 'user'} for n in model.networks() if n['id'] not in declared_networks]
+    existing_networks = {str(row['id']): row for row in model.networks()}
+    for row in network_rows:
+        current = existing_networks.get(row['id'])
+        if current and _network_protocol(current.get('technology')) != row['technology']:
+            raise ValueError(f"Netzwerk {row['id']}: bestehende Technologie {current.get('technology')} "
+                f"weicht von der bestätigten Ergänzung {row['technology']} ab. "
+                "Der Technologiewechsel benötigt eine explizite Änderung der betroffenen Anschlüsse und Nachrichten.")
+    reserved_networks = [{**n, 'name_source': 'user'} for n in existing_networks.values() if n['id'] not in declared_networks]
     named_all = ethernet_names([*reserved_networks, *network_rows], topology=naming_topology)
-    named_networks = {row['id']: named_all[row['id']] for row in network_rows}
+    named_networks = {row['id']: existing_networks.get(row['id'], named_all[row['id']]) for row in network_rows}
     for row in named_networks.values():
-        changes.append({'object_type': 'Network', 'local_ref': f'network-{len(changes)}', 'data': row})
+        if row['id'] not in existing_networks:
+            changes.append({'object_type': 'Network', 'local_ref': f'network-{len(changes)}', 'data': row})
+    _check_existing_amendment_semantics(prompt, confirmed_spec, existing, state)
     for chain in spec['chains']:
         row = named_networks.get(chain.get('transport_network_ref'))
         if row and is_ethernet(row['technology']):
@@ -327,7 +533,8 @@ def generate(arguments: dict) -> dict:
             device_class=chain.get('device_class'))
         hw = ensure('HardwareNode', chain['hardware_name'], {
             'device_type': chain['device_type'], 'device_class': profile.device_class,
-            'identity': {'installation_zone': installation_zone(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture),
+            'identity': {**({'actuator_command_template': chain['configuration']['actuator_command_template']} if (chain.get('configuration') or {}).get('actuator_command_template') else {}),
+                         'installation_zone': installation_zone(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture),
                          'installation_zone_source': ZONING_VERSION, 'installation_reference_frame': architecture['reference_frame'],
                          'spatial_decision': location_decision(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture)},
             'description': chain['hardware_description']})
@@ -336,7 +543,7 @@ def generate(arguments: dict) -> dict:
         if profile.requires_function_model:
             fn = ensure('Function', concise_name('Function', chain['function_name']), {
                 'hardware_node_id': hw, 'domain': spec['domain'], 'description': chain['function_description']}, 'hardware_node_id')
-        function_refs[str(chain['hardware_name']).casefold()] = fn
+        function_refs.setdefault(str(chain['hardware_name']).casefold(), fn)
         port = ensure('HardwareNetworkInterface', chain['interface_name'], {
             'hardware_node_id': hw, 'technology': chain['interface_type'], 'channel_index': 1,
             'network_ref': chain.get('transport_network_ref'),
@@ -347,6 +554,8 @@ def generate(arguments: dict) -> dict:
             }}, 'hardware_node_id')
         interface = ensure('Interface', concise_name('Interface', chain['interface_name']), {
             **({'function_id': fn} if fn else {'hardware_node_id': hw}),
+            'configuration': {'physical_interface_ids': [port],
+                **({'endpoint_role': 'SYSTEM_CONTROLLER'} if fn and chain is chain_by_name[str(chain['hardware_name']).casefold()] else {})},
             'interface_type': chain['interface_type']}, 'function_id' if fn else 'hardware_node_id')
         message = ensure('Message', concise_name('Message', chain['message_name']), {
             'interface_id': interface, 'hardware_interface_id': port,
@@ -463,6 +672,7 @@ def generate(arguments: dict) -> dict:
                     }, 'hardware_node_id')
                     interface = ensure('Interface', interface_name, {
                         **({'function_id': fn} if fn else {'hardware_node_id': hw}),
+                        'configuration': {'physical_interface_ids': [port]},
                         'interface_type': interface_type,
                     }, 'function_id' if fn else 'hardware_node_id')
                     actuator_chains = [
@@ -515,8 +725,7 @@ def generate(arguments: dict) -> dict:
                             if not any(binding['hardware_interface_id'] == port for binding in bindings):
                                 bindings.append({'hardware_interface_id': port, 'network_id': network_ref})
     from ..device_communication import complete_new_actuator_messages
-    command_raw = re.search(r'^- Aktor-Befehle:\s*(\{[^\r\n]*\})\s*$', arguments['prompt'], re.M)
-    command_definitions = json.loads(command_raw.group(1)) if command_raw else {}
+    command_definitions = _confirmed_actuator_commands(arguments['prompt'])
     complete_new_actuator_messages(changes, existing, command_definitions)
     # Persist the confirmed graph as identity references, independently of the
     # physical routing derived later. Never replace an explicit existing edit.
@@ -529,7 +738,11 @@ def generate(arguments: dict) -> dict:
         new_change = hardware_changes.get(endpoint_ref)
         current = new_change["data"] if new_change else existing_hardware[endpoint_ref]
         identity = current.get("identity") or {}
-        if identity.get("system_owner_id") or identity.get("systemOwnerId"):
+        current_owner = identity.get("system_owner_id") or identity.get("systemOwnerId")
+        if current_owner and str(current_owner) != str(owner_ref):
+            raise ValueError(f"Bestehende Systemzuordnung von {endpoint} unterscheidet sich vom bestätigten Controller {owner}. "
+                "Die Zuordnung und ihre bestehenden Kommunikationspfade benötigen einen explizit geprüften Update-Vorschlag.")
+        if current_owner:
             continue
         identity = {**identity, "system_owner_id": owner_ref, "system_owner_source": "wizard-confirmed",
                     "system_owner_evidence": {"source": "confirmed-systemcluster-graph", "endpoint_name": endpoint, "controller_name": owner}}
@@ -540,13 +753,23 @@ def generate(arguments: dict) -> dict:
                             "local_ref": f"ownership-{len(changes)}", "data": {"identity": identity}})
     from ..wizard_communication import attach_new_message_contracts
     attach_new_message_contracts(arguments['prompt'], changes, existing)
+    _bind_generated_gateway_status(changes, existing)
     # Owners precede their endpoints so nested local references resolve on apply.
     new_hardware = [change for change in changes if change["object_type"] == "HardwareNode" and change.get("action", "CREATE") == "CREATE"]
     new_hardware.sort(key=lambda change: bool((change["data"].get("identity") or {}).get("system_owner_id")))
     changes = new_hardware + [change for change in changes if change not in new_hardware]
     if not changes:
-        raise ValueError('Die abgeleiteten Modellobjekte sind bereits vorhanden; vorhandenen Modellstand prüfen.')
-    return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
+        if not (state.get('artifact_checks', {}).get('engineering_model') or {}).get('complete'):
+            raise ValueError('Aus der Ergänzung wurden keine Modelländerungen abgeleitet. '
+                'Der vorhandene Modellstand ist noch nicht gültig; die konkreten Modellbefunde müssen zuerst behoben werden.')
+        return {'status': 'MODEL_CONFIRMATION_REQUIRED', 'model_revision': model.model_revision(),
+                'request_revision': proposal_identity['request_revision'], 'run_id': proposal_identity['run_id'],
+                'rationale': 'Aus der Ergänzung wurde keine Modelländerung abgeleitet. '
+                    'Bestehenden gültigen Modellstand ausdrücklich bestätigen oder die fachlichen Vorgaben präzisieren.',
+                'findings': [{'code': 'AMENDMENT_WITHOUT_MODEL_DELTA', 'object_ref': current_project_id(),
+                    'message': 'Es wurde keine Modelländerung vorgeschlagen oder übernommen. '
+                        'Die Ergänzung ist noch nicht als Modelländerung bestätigt.'}]}
+    proposal = proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
         f"Engineering-Modell aus bestätigten Wizard-Vorgaben: {len(changes)} vorgeschlagene Änderungen. "
         "Noch keine Änderungen am kanonischen Modell; Freigabe und Übernahme sind erforderlich.",
         assumptions=['Technische Defaults und ergänzte Geräte stammen aus den Wizard-Branchenkatalogen und müssen geprüft werden.',
@@ -554,16 +777,17 @@ def generate(arguments: dict) -> dict:
                      'Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.',
                      'Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).',
                      'Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe.'],
-        evidence=[{'source': 'wizard-specification-generator', 'prompt_sha256': fingerprint, 'target_counts': spec['targetCounts'],
+        evidence=[{'source': 'wizard-specification-generator', **proposal_identity, 'target_counts': spec['targetCounts'],
                    'communication_system_counts': spec['communicationSystemCounts'],
                    'model_type': spec.get('modelType') or spec.get('domain'),
                    'architecture': 'HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement'}])
+    return _supersede_previous('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals, proposal)
 
 
 def generate_communication_contract(arguments: dict) -> dict:
     from ..wizard_communication import communication_plan, KINDS
     graph = {kind: {str(row['id']): row for row in model.objects(kind)} for kind in KINDS}
-    plan = communication_plan(arguments['prompt'], graph)
+    plan = communication_plan(effective_wizard_prompt(arguments['prompt']), graph)
     changes = [{'object_type': 'Message', 'action': 'UPDATE', 'object_id': identifier,
         'data': {'configuration': config, 'expected_version': graph['Message'][identifier]['version']}}
         for identifier, config in plan.items() if config != graph['Message'][identifier].get('configuration')]
@@ -590,29 +814,36 @@ def generate_routing(arguments: dict) -> dict:
     model must not depend on a language model deciding whether to call hundreds
     of route tools.
     """
-    prompt = arguments['prompt']
+    prompt = _canonical_wizard_prompt(arguments['prompt'])
+    state = WorkflowStatusService(current_project_id()).get()
+    nodes = model.objects('HardwareNode')
+    interfaces = model.objects('Interface')
+    functions = model.objects('Function')
+    signals = model.objects('Signal')
     hardware_interfaces = model.objects('HardwareNetworkInterface')
     messages = model.objects('Message')
     existing_routes = model.routes()
-    port_revision = sorted((str(port.get('id')), str(port.get('version')), str(port.get('network_ref')),
-                            str(port.get('technology')), str(port.get('hardware_node_id')))
-                           for port in hardware_interfaces)
-    message_revision = sorted((str(item['id']), str(item.get('version')),
-        json.dumps((item.get('configuration') or {}).get('transport_unit', {}).get('consumer_refs', []))) for item in messages)
-    route_revision = sorted((str(item.get('id')), str(item.get('revision'))) for item in existing_routes)
-    canonical_prompt = re.sub(r'\nFortsetzung des bestätigten Wizard-Auftrags:[^\r\n]*', '', prompt).strip()
-    fingerprint = hashlib.sha256(('wizard-routing-v6-communication-delta\n' + canonical_prompt
-        + json.dumps([port_revision, message_revision, route_revision])).encode('utf-8')).hexdigest()
-    for row in proposal_store.list_proposals(limit=100):
-        if (row['proposal_type'] == 'WIZARD_ROUTING'
-                and any(item.get('prompt_sha256') == fingerprint for item in row.get('evidence') or [])):
-            return proposal_service.envelope(row)
+    identity = _proposal_identity('routing', prompt, {
+        'HardwareNode': nodes, 'Interface': interfaces, 'Function': functions, 'Signal': signals,
+        'HardwareNetworkInterface': hardware_interfaces, 'Message': messages, 'RoutingEntry': existing_routes,
+    }, state, ROUTING_GENERATOR_VERSION)
+    proposals = proposal_store.list_proposals(limit=100)
+    reusable = _reusable_proposal('WIZARD_ROUTING', identity, proposals)
+    if reusable:
+        return reusable
+    prompt = effective_wizard_prompt(prompt)
     raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
     if not raw:
         raise ValueError('Der bestätigte Systemcluster-Graph fehlt; Routing kann nicht reproduzierbar erzeugt werden.')
     graph = json.loads(raw.group(1))
-    nodes = model.objects('HardwareNode')
-    interfaces = model.objects('Interface')
+    from ..wizard_communication import hmi_message_choices
+    hmi_choices = hmi_message_choices(graph, {
+        'HardwareNode': {str(item['id']): item for item in nodes},
+        'Interface': {str(item['id']): item for item in interfaces},
+        'Function': {str(item['id']): item for item in functions},
+        'Message': {str(item['id']): item for item in messages},
+        'Signal': {str(item['id']): item for item in signals},
+    }) if any('excluded_signals' in route for cluster in graph for route in cluster.get('hmi_routes') or []) else {}
     nodes_by_name = {str(item.get('name', '')).casefold(): item for item in nodes}
     interfaces_by_node: dict[str, list[dict]] = {}
     for item in interfaces:
@@ -638,7 +869,8 @@ def generate_routing(arguments: dict) -> dict:
             referenced_names.update(controller.get('sensors') or [])
             referenced_names.update(controller.get('actuators') or [])
         for hmi in cluster.get('hmi_routes') or []:
-            referenced_names.update((hmi.get('source'), hmi.get('target')))
+            if 'excluded_signals' not in hmi or hmi.get('signals'):
+                referenced_names.update((hmi.get('source'), hmi.get('target')))
     missing = sorted(str(name or '<ohne Namen>') for name in referenced_names if not node(name))
     if missing:
         raise ValueError('Bestätigte Routing-Teilnehmer fehlen im kanonischen Modell: ' + ', '.join(missing[:30]))
@@ -689,11 +921,15 @@ def generate_routing(arguments: dict) -> dict:
     # every message/consumer pair in a large project.
     graph_snapshot = route_service._hardware_graph()
     route_service._hardware_graph = lambda: graph_snapshot
-    gateway = next((item for item in nodes if item.get('device_type') == 'Gateway'), None)
     existing_keys = {(str((route.get('source') or {}).get('node_id')), str(destination.get('node_id')),
                       str((route.get('payload') or {}).get('message_id')))
                      for route in existing_routes for destination in route.get('destinations') or []}
     changes, seen = [], set()
+    excluded_forwarding = []
+    from ..routing.payload_scope import payload_scope_issues
+    scope_messages = {str(item['id']): item for item in messages}
+    scope_signals = {str(item['id']): item for item in signals}
+    scope_interfaces = {str(item['id']): item for item in interfaces}
 
     def add_routes(source, destination, *, local_actuator=False):
         if not source or not destination or str(source['id']) == str(destination['id']):
@@ -712,10 +948,21 @@ def generate_routing(arguments: dict) -> dict:
 
     def add_route(source, destination, message_id):
         source_id, destination_id = str(source['id']), str(destination['id'])
+        if hmi_choices.get((message_id, destination_id)) is False:
+            return
         key = (source_id, destination_id, message_id)
         if key in seen:
             return
         seen.add(key)
+        options = interfaces_by_node.get(destination_id) or [{}]
+        exclusions = [payload_scope_issues({'payload': {'message_ids': [message_id]}, 'destinations': [
+            {'node_id': destination_id, 'interface_id': str(interface.get('id') or '')}]},
+            scope_messages, scope_signals, scope_interfaces) for interface in options]
+        if all(any(issue['code'] in {'MESSAGE_ROUTING_DISABLED', 'SIGNAL_ROUTING_DISABLED'} for issue in issues)
+               for issues in exclusions):
+            excluded_forwarding.extend({**issue, 'source_node_id': source_id} for issue in exclusions[0]
+                                       if issue['code'] in {'MESSAGE_ROUTING_DISABLED', 'SIGNAL_ROUTING_DISABLED'})
+            return
         if key in existing_keys:
             return
         route = route_service.generate_route(source_node_id=key[0], destination_node_id=key[1], message_id=message_id)
@@ -729,46 +976,59 @@ def generate_routing(arguments: dict) -> dict:
                 'reason': 'Explizite Gateway-Übersetzung für den HMI-/Domänenübergang.',
             }
             route['route']['transformations'] = [transformation]
-            if gateway:
-                gateway_hop = {'node_id': str(gateway['id']), 'name': gateway['name']}
-                route['route']['gateways'] = [gateway_hop]
-                route['route']['hops'] = [route['route']['hops'][0], gateway_hop, route['route']['hops'][-1]]
+            # Preserve the actual discovered path, including multiple gateways.
+            # A translation label must never insert an unrelated project gateway
+            # or hide a missing physical path from validation.
         changes.append({'object_type': 'RoutingEntry', 'data': route})
 
-    for cluster in graph:
-        for controller in cluster.get('controllers') or []:
-            ecu = node(controller.get('ecu'))
-            for sensor_name in controller.get('sensors') or []:
-                add_routes(node(sensor_name), ecu)
-            for actuator_name in controller.get('actuators') or []:
-                add_routes(ecu, node(actuator_name), local_actuator=True)
-                add_routes(node(actuator_name), ecu)
-        for hmi_route in cluster.get('hmi_routes') or []:
-            add_routes(node(hmi_route.get('source')), node(hmi_route.get('target')))
-    for interface_list in interfaces_by_node.values():
-        for interface in interface_list:
-            for message in messages_by_interface.get(str(interface['id']), []):
-                source = next((item for item in nodes if str(item['id']) == str(interface.get('hardware_node_id') or '')), None)
-                for consumer_id in sorted(consumers(message)):
-                    destination = next((item for item in nodes if str(item['id']) == consumer_id), None)
-                    if source and destination:
-                        add_route(source, destination, str(message['id']))
+    with routing_candidate_batch(route_service):
+        for cluster in graph:
+            for controller in cluster.get('controllers') or []:
+                ecu = node(controller.get('ecu'))
+                for sensor_name in controller.get('sensors') or []:
+                    add_routes(node(sensor_name), ecu)
+                for actuator_name in controller.get('actuators') or []:
+                    add_routes(ecu, node(actuator_name), local_actuator=True)
+                    add_routes(node(actuator_name), ecu)
+            for hmi_route in cluster.get('hmi_routes') or []:
+                if 'excluded_signals' in hmi_route and not hmi_route.get('signals'):
+                    continue
+                add_routes(node(hmi_route.get('source')), node(hmi_route.get('target')))
+        for interface_list in interfaces_by_node.values():
+            for interface in interface_list:
+                for message in messages_by_interface.get(str(interface['id']), []):
+                    source = next((item for item in nodes if str(item['id']) == str(interface.get('hardware_node_id') or '')), None)
+                    for consumer_id in sorted(consumers(message)):
+                        destination = next((item for item in nodes if str(item['id']) == consumer_id), None)
+                        if source and destination:
+                            add_route(source, destination, str(message['id']))
     if not changes:
         if seen:
-            return {'status': 'UNCHANGED', 'existing_route_count': len(seen)}
+            return {'status': 'UNCHANGED', 'existing_route_count': len(seen) - len(excluded_forwarding),
+                    'excluded_forwarding': excluded_forwarding}
         raise ValueError('Aus dem bestätigten Systemcluster-Graph konnten keine prüfbaren Routen abgeleitet werden.')
-    return proposal_service.create(
+    proposal = proposal_service.create(
         'WIZARD_ROUTING', changes,
         f'{len(changes)} Kommunikationsrouten aus den bestätigten Controller-Zuordnungen. '
         'Der kanonische Projektstand bleibt bis zur Freigabe unverändert.',
         assumptions=['Controller-Besitz bestimmt Sensor- und Aktor-Richtung; physische Pfade bleiben Gegenstand der Routing-Prüfung.'],
-        evidence=[{'source': 'confirmed-system-cluster-graph', 'prompt_sha256': fingerprint, 'route_count': len(changes)}],
+        evidence=[{'source': 'confirmed-system-cluster-graph', **identity, 'route_count': len(changes),
+                   'excluded_forwarding': excluded_forwarding}],
     )
+    return _supersede_previous('WIZARD_ROUTING', identity, proposals, proposal)
 
 
 def _topology_bus(value: str | None) -> str:
     key = re.sub(r'[^A-Z0-9]+', '_', str(value or '').upper()).strip('_')
-    return _TOPOLOGY_BUS_BY_PROTOCOL.get(key, 'automotive_ethernet')
+    if key in _TOPOLOGY_BUS_BY_PROTOCOL:
+        return _TOPOLOGY_BUS_BY_PROTOCOL[key]
+    # A missing mapping is not evidence for an automotive Ethernet connection.
+    aliases = {'ARINC': 'arinc429', 'MODBUSTCP': 'modbus_tcp', 'MODBUSRTU': 'modbus_rtu', 'OPCUA': 'opc_ua'}
+    technology = aliases.get(key, DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(value))
+    try:
+        return DEFAULT_TECHNOLOGY_REGISTRY.profile(technology)['id']
+    except KeyError as error:
+        raise ValueError(f'Anschlusstechnik {value!r} ist nicht eindeutig unterstützt. Bitte den physischen Anschluss festlegen; es wird kein Ersatznetz erzeugt.') from error
 
 
 _SEMANTIC_NETWORK_FAMILIES = (
@@ -946,7 +1206,7 @@ def generate_network_topology(arguments: dict) -> dict:
     segments share one edge and retain all contributing route IDs.
     """
     workflow_state = WorkflowStatusService(current_project_id()).get()
-    prompt = with_spatial_architecture(arguments['prompt'], workflow_state.get('parameters'))
+    prompt = with_spatial_architecture(effective_wizard_prompt(arguments['prompt']), workflow_state.get('parameters'))
     existing_topology = workflow_state.get('topology') or {}
     existing_nodes = {str(item.get('engineeringId') or ''): item for item in existing_topology.get('nodes') or []}
     existing_node_ids = {str(item.get('id') or ''): str(item.get('engineeringId') or '') for item in existing_nodes.values()}
@@ -1235,7 +1495,7 @@ def generate_network_topology(arguments: dict) -> dict:
 
 def plan_capacity_remediation(arguments: dict) -> dict:
     """Decide resource sizing from measured load and explicit hard limits."""
-    prompt = arguments['prompt']
+    prompt = effective_wizard_prompt(arguments['prompt'])
     workflow = WorkflowStatusService(current_project_id())
     state = workflow.get()
     capacity = CapacityTimingService(current_project_id()).latest()
@@ -1249,12 +1509,13 @@ def plan_capacity_remediation(arguments: dict) -> dict:
         allowed_protocols=((state.get('context') or {}).get('engineering_scope_rules') or {}).get('communication_systems'),
         available_protocol_counts=planning_inventory(state, prompt),
         resource_policy=planning_policy(state),
+        physical_interfaces=model.objects('HardwareNetworkInterface'),
     )
 
 
 def generate_capacity_network_repair(arguments: dict) -> dict:
     """Turn safe same-technology branch splits into a governed topology proposal."""
-    prompt = arguments['prompt']
+    prompt = effective_wizard_prompt(arguments['prompt'])
     state = WorkflowStatusService(current_project_id()).get()
     plan = plan_capacity_remediation(arguments)
     decisions = [item for item in plan.get('networks') or [] if item.get('decision') == 'SPLIT_CURRENT_TECHNOLOGY']
@@ -1290,6 +1551,7 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
         f"{item['projected_max_load_percent']:.2f}%"
         for item in decisions
     )
+    reserve_text = ' '.join(warning['message'] for item in decisions for warning in item.get('warnings') or [])
     return proposal_service.create(
         'CAPACITY_NETWORK_REPAIR',
         [*physical_changes, {'object_type': 'NetworkTopology', 'data': {
@@ -1299,6 +1561,7 @@ def generate_capacity_network_repair(arguments: dict) -> dict:
         f'Gezielte Reparatur der überlasteten physischen Zweige: {branch_text}. '
         f'{changed_edges} routenbelegte physische Kanten werden neu segmentiert; '
         'unbetroffene Zweige bleiben unverändert. Der Projektstand ändert sich erst nach menschlicher Freigabe. '
+        + (reserve_text + ' Die Übernahme bestätigt den physischen Plan einschließlich dieser offenen Reserven, keine Funktionsfreigabe. ' if reserve_text else '')
         + (decision_summary(resource_receipt) if policy['mode'] == 'AUTO_SIZE' else 'Der feste Ressourcenbestand bleibt verbindlich.'),
         assumptions=[
             ('Die eingegebenen Netzanzahlen sind Ausgangswerte; das Tool dimensioniert zusätzliche Segmente anhand der Ziel-Buslast. Explizite hard_limits bleiben verbindlich.'

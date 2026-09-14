@@ -70,3 +70,11 @@ The active chat now uses `EngineeringAgent` and `EngineeringMCPClient` in this p
 Die Chat-Oberfläche, strukturierten Antworten, interaktiven Entscheidungen und der dauerhafte Gesprächszustand sind in [15_CHAT_RESPONSE_CONTRACT.md](15_CHAT_RESPONSE_CONTRACT.md) beschrieben. Der Python-Agent bleibt der einzige Orchestrator; die UI führt keine Fachgeneratoren aus.
 
 Der modellbewusste Anschlussauftrag mit begrenzter Strategie-Freigabe, atomarer Ausführung, Port-/Controllerprüfung und vollständiger Abnahmematrix ist in [16_MODEL_AWARE_EXECUTION.md](16_MODEL_AWARE_EXECUTION.md) dokumentiert. Die dort benannten Grenzen sind keine bereits implementierten allgemeinen Goal-Adapter.
+
+Die konsolidierte Spezifikation für das Update vom Input bis zur Ausgabe steht in
+[18_UNIVERSAL_INPUT_OUTPUT_UPDATE.md](18_UNIVERSAL_INPUT_OUTPUT_UPDATE.md). Sie ordnet
+die Anforderungen den vorhandenen Diensten zu und beschreibt Ergänzungen und
+Abnahmefälle; sie behauptet keine bereits implementierte oder abgenommene Gesamtpipeline.
+
+Der implementierte Umfang des ersten integrierten Updates und seine Grenzen stehen
+in [19_UNIVERSAL_IO_IMPLEMENTATION.md](19_UNIVERSAL_IO_IMPLEMENTATION.md).

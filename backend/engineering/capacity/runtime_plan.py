@@ -18,7 +18,11 @@ def apply_runtime_plan(config, messages):
             message = by_id[identifier]
             item["message_ids"] = [identifier]
             item["cycle_ms"] = effective_period(message, message.get("cycle_ms") or communication["cycle_ms"])
-            item["payload_bytes"] = int(message.get("dlc") or 0)
+            payload_bytes = message.get("dlc")
+            if payload_bytes is None:
+                default_payload = (config.get("parameters") or {}).get("payload_bytes", 8)
+                payload_bytes = communication.get("payload_bytes", default_payload) if len(identifiers) == 1 else default_payload
+            item["payload_bytes"] = int(payload_bytes)
             item["transmission_contract"] = transmission_contract(message)
             item["signal_ids"] = [str(signal["id"]) for signal in (config.get("engineering_model") or {}).get("signals", []) if str(signal.get("message_id")) == identifier]
             try:

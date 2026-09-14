@@ -352,27 +352,57 @@ export const getWorkflowNetworks = async () => {
   return state.parameters.networks ?? [];
 };
 
-export const getWorkflow = () =>
-  request<WorkflowState>("/workflow", { signal: AbortSignal.timeout(180000) }).then(normalizeWorkflowState);
+type WorkflowResourceRevision = {
+  project_id: string;
+  versions: Record<string, number>;
+  edit_token: string;
+};
+
+export async function getWorkflow(projectId = readActiveProjectId()): Promise<WorkflowState> {
+  // Editors need the canonical resources, but a status response must stay small.
+  // Capture the project once and join only resources from the same source revision.
+  const options = { signal: AbortSignal.timeout(180000), headers: { "X-Project-ID": projectId } };
+  const sourceSteps = ["engineering_model", "routing", "network_editor", "parameters"] as const;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const [parameters, topology, snapshots] = await Promise.all([
+      request<WorkflowResourceRevision & Pick<WorkflowState, "parameters">>("/workflow/parameters", options),
+      request<WorkflowResourceRevision & Pick<WorkflowState, "topology">>("/workflow/topology", options),
+      request<{ simulations: SimulationSnapshot[] }>("/workflow/snapshots", options),
+    ]);
+    // Never reuse an in-flight summary that may predate the detail reads.
+    const state = normalizeWorkflowState(await request<WorkflowState>("/workflow?view=summary", options));
+    if ([state, parameters, topology].some(item => item.project_id !== projectId)) {
+      throw new Error("Der geladene Workflow gehört zu einem anderen Projekt. Bitte erneut laden.");
+    }
+    const consistent = ([ ["parameters", parameters], ["topology", topology] ] as const).every(([key, resource]) =>
+      Boolean(resource.edit_token) && resource.edit_token === state.edit_tokens?.[key]
+      && sourceSteps.every(step => resource.versions?.[step] === state.versions[step]),
+    );
+    if (consistent) return {
+      ...state, parameters: parameters.parameters, topology: topology.topology,
+      simulation_snapshots: snapshots.simulations,
+    };
+  }
+  throw new Error("Das Modell wurde während des Ladens geändert. Bitte den aktuellen Stand erneut laden.");
+}
 
 const workflowSummaryRequests = new Map<string, Promise<WorkflowState>>();
 
-export const getWorkflowSummary = () => {
-  const projectId = readActiveProjectId();
-  let pending = workflowSummaryRequests.get(projectId);
+export const getWorkflowSummary = (projectId = readActiveProjectId(), options?: { fresh?: boolean }) => {
+  let pending = options?.fresh ? undefined : workflowSummaryRequests.get(projectId);
   if (!pending) {
     pending = request<WorkflowState>("/workflow?view=summary", { headers: { "X-Project-ID": projectId } })
       .then(normalizeWorkflowState)
       .finally(() => {
-        workflowSummaryRequests.delete(projectId);
+        if (workflowSummaryRequests.get(projectId) === pending) workflowSummaryRequests.delete(projectId);
       });
     workflowSummaryRequests.set(projectId, pending);
   }
   return pending;
 };
 
-export const setWorkflowContext = (context: Record<string, unknown>) =>
-  request<WorkflowState>("/workflow/context?view=summary", { method: "PATCH", body: JSON.stringify(context) }).then(normalizeWorkflowState);
+export const setWorkflowContext = (context: Record<string, unknown>, projectId = readActiveProjectId()) =>
+  request<WorkflowState>("/workflow/context?view=summary", { method: "PATCH", body: JSON.stringify(context), headers: { 'X-Project-ID': projectId } }).then(normalizeWorkflowState);
 
 export type EngineeringWorkloadSummary = {
   workload_id: string;

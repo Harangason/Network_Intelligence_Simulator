@@ -1,5 +1,29 @@
 import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
 import { conciseGeneratedName } from "../engineering-names.ts";
+import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
+
+export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string): ExtractedEngineeringChain[] {
+  if (domain !== "automotive") return chains;
+  const result = [...chains];
+  const usedIds = new Set(chains.map(chain => Number(chain.message_id_hex)));
+  let nextId = 0x180;
+  for (const [host, functionName, signal, unit, minValue, maxValue, factor] of automotiveFunctionOutputs) {
+    const owner = chains.find(chain => chain.hardware_name === host && !/Sensor|Actuator|Gateway/.test(chain.device_type));
+    if (!owner || result.some(chain => chain.hardware_name === host && chain.signal_name === signal)) continue;
+    while (usedIds.has(nextId)) nextId++;
+    if (nextId > 0x7ff) break;
+    const output = chainFromTemplate({ hardwareName: host, deviceType: owner.device_type as ArchitectureTemplate["deviceType"],
+      signalName: signal, interfaceType: owner.interface_type, cycleMs: 100,
+      unit, minValue, maxValue, factor }, nextId - 0x180, domain);
+    usedIds.add(nextId++);
+    result.push({ ...owner, ...output, hardware_description: owner.hardware_description,
+      interface_name: owner.interface_name, function_name: functionName,
+      function_description: `${functionName}: berechneter Funktionsausgang auf ${host}. Editierbare Entwurfsvorgabe; Eingangsdaten und fachliche Anforderungen prüfen.`,
+      message_name: `${host}_${signal}`, configuration: { ...output.configuration,
+        functional_output_template: true, design_evidence: "illustrative_template_requires_review" } });
+  }
+  return result;
+}
 
 /** Device roles belong to device_type; technical identifiers remain unchanged. */
 export function normalizeHardwareName(value: string): string {
@@ -255,6 +279,7 @@ type ArchitectureTemplate = {
 type HardwareOccurrence = {
   index: number;
   name: string;
+  declaredType?: string;
 };
 
 function generatedSignalBitLength(input: {
@@ -943,6 +968,13 @@ function chainFromTemplate(template: ArchitectureTemplate, index: number, domain
       configuration: {
         ...(template.functionalOwner ? { functional_owner: template.functionalOwner } : {}),
         ...(template.coverageRole ? { coverage_role: template.coverageRole } : {}),
+        ...(template.deviceType === "ActuatorController" && template.coverageRole ? {
+          actuator_command_template: { source: "wizard-generic-actuator-v1", length_bits: lengthBits,
+            data_type: dataType, unit: template.unit, factor: template.factor ?? 1,
+            min_value: template.minValue, max_value: template.maxValue,
+            semantic: { semantic_type: "NUMERIC", meaning: `Generischer Simulations-Sollwert: ${template.coverageRole}` },
+            data: { minimum: template.minValue, maximum: template.maxValue, resolution: template.factor ?? 1 } },
+        } : {}),
       },
     } : {}),
     domain,
@@ -1151,7 +1183,8 @@ function expandArchitectureChains(
   // Numeric copies of identical hardware/signals made ownership ambiguous.
   const targetControllerType = controllerDeviceTypeForModel(domain);
   for (const deviceType of [targetControllerType, "Gateway", "SensorController", "ActuatorController"] as const) {
-    let current = chains.filter((chain) => chain.device_type === deviceType).length;
+    let current = isEngineeringControllerDevice(deviceType)
+      ? chainCounts(chains).ecus : chains.filter((chain) => chain.device_type === deviceType).length;
     let instance = 0;
     while (current < targetFor(deviceType)) {
       const controllers = chains.filter((chain) => isEngineeringControllerDevice(chain.device_type));
@@ -1304,9 +1337,69 @@ function naturalLanguageHardwareNames(line: string) {
   return [...new Map(names.map((name) => [normalized(name), name])).values()];
 }
 
-function impliedHardwareNames(line: string) {
+/** Explicit role-first declarations keep identifiers that have no role suffix. */
+function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
+  const roles = /\b(gateways?|ecus?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
+  const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
+  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
+  const result: Array<{ name: string; declaredType: string }> = [];
+  for (const match of line.matchAll(roles)) {
+    const prefix = line.slice(0, match.index);
+    const remainingName = line.slice(match.index! + match[0].length);
+    // A role word in a capability heading ("Gateway Queueing") or a rule
+    // ("Gateway muss ...") does not declare a participant. Require a local
+    // naming/count/enumeration context instead of consuming its next word.
+    const explicitName = /:\s*$|\b(?:namens|named)\s*$/iu.test(match[0]) || /^["„']/.test(remainingName);
+    const declarationContext = /\b(?:ein(?:e|en|em|er|es)?|\d+|den|dem)\s*$/iu.test(prefix)
+      || /\b(?:mit|aus|with|containing)\s+(?:(?:der|die|das|den|dem|the|an?)\s+)?$/iu.test(prefix);
+    if (!explicitName && !declarationContext) continue;
+    const role = normalized(match[1]);
+    const declaredType = role.startsWith('gateway') ? 'Gateway'
+      : role.startsWith('sensor') ? 'SensorController'
+      : /^(aktor|aktuator|actuator)/.test(role) ? 'ActuatorController'
+      : /^(plc|sps)/.test(role) ? 'PLC' : 'ECU';
+    let remaining = remainingName;
+    while (remaining) {
+      const candidate = remaining.match(name);
+      if (!candidate) break;
+      const label = (candidate[1] ?? candidate[2] ?? candidate[3] ?? candidate[4]).trim();
+      if (!label || prose.test(label) || isCountedHardwareGroup(label)) break;
+      result.push({ name: label, declaredType });
+      remaining = remaining.slice(candidate[0].length);
+      const separator = remaining.match(/^\s*(?:,\s*(?:(?:und|and)\s+)?|(?:und|and|&)\s+)/iu);
+      if (!separator) break;
+      remaining = remaining.slice(separator[0].length);
+    }
+  }
+  return result;
+}
+
+function explicitFunctionalOwner(name: string, controllers: string[], text: string): string | undefined {
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const endpoint = escape(name);
+  const owners = controllers.filter(controller => {
+    const owner = escape(controller);
+    return new RegExp(`\\b${endpoint}\\s+(?:wird|werden)\\s+(?:von(?:\\s+(?:der|dem))?|vom)\\s+${owner}\\s+(?:ausgewertet|überwacht|ueberwacht|gesteuert|geregelt)\\b`, 'iu').test(text)
+      || new RegExp(`\\b${owner}\\s+(?:steuert|regelt|überwacht|ueberwacht|wertet)\\s+${endpoint}\\b`, 'iu').test(text);
+  });
+  return owners.length === 1 ? owners[0] : undefined;
+}
+
+function impliedHardwareNames(line: string, confirmedActuators?: number) {
   const key = normalized(line);
   const names: string[] = [];
+  if (/\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/.test(key)) names.push('RaspberryPi');
+  // Preserve a counted physical quantity instead of filling the count from unrelated templates.
+  const temperatureCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:temperatur(?:mess)?sensor(?:en|s)?|temperature sensors?|sensor(?:en|s)?\\s+(?:die\\s+)?temperatur\\s+messen)\\b`));
+  if (temperatureCount) {
+    for (let i = 1; i <= Math.min(1000, countValue(temperatureCount[1])); i++) names.push(`Temperatursensor${i}`);
+  }
+  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventile?|valves?)\\b`));
+  if (valveCount) {
+    for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
+  } else if (/\b(?:ventile|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
+    for (let i = 1; i <= Math.min(1000, confirmedActuators!); i++) names.push(`Ventilaktor${i}`);
+  }
   if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {
     names.push("Motorstromsensor");
   }
@@ -1318,6 +1411,7 @@ function impliedHardwareNames(line: string) {
 
 function deviceType(name: string) {
   const key = normalized(name);
+  if (key === 'raspberrypi') return 'EmbeddedController';
   if (key.includes("gateway")) return "Gateway";
   if (key.includes("sensor") || key.includes("kamera") || key.includes("camera") || key.includes("radar") || key.includes("lidar")) return "SensorController";
   if (/actuator|aktuator|aktor/.test(key)) return "ActuatorController";
@@ -1332,10 +1426,11 @@ function deviceType(name: string) {
   return "ECU";
 }
 
-function protocolFrom(text: string) {
+function protocolFrom(text: string, fallback = 'CAN') {
   const key = normalized(text);
   if (/\blin\b/.test(key)) return "LIN";
   if (key.includes("can fd") || key.includes("canfd")) return "CAN_FD";
+  if (/\bcan\b/.test(key)) return "CAN";
   if (/\bsome ip\b|\bsomeip\b/.test(key)) return "Ethernet";
   if (key.includes("arinc 429") || key.includes("arinc429")) return "ARINC";
   if (key.includes("mil std 1553") || key.includes("milstd1553")) return "MIL_STD_1553";
@@ -1353,7 +1448,8 @@ function protocolFrom(text: string) {
   if (/\bwifi\b|wi-fi/.test(key)) return "WiFi";
   if (/\bble\b|bluetooth low energy/.test(key)) return "BLE";
   if (/\bdds\b/.test(key)) return "DDS";
-  return "CAN";
+  if (/\b(?:adc|dac|gpio|pwm)\b/.test(key)) return key.match(/\b(?:adc|dac|gpio|pwm)\b/)![0].toUpperCase();
+  return fallback;
 }
 
 function withoutPlanningLimits(text: string) {
@@ -1387,12 +1483,16 @@ export function extractCommunicationSystems(text: string) {
   if (/\bwifi\b|wi-fi/.test(key)) systems.push("WiFi");
   if (/\bble\b|bluetooth low energy/.test(key)) systems.push("BLE");
   if (/\bdds\b/.test(key)) systems.push("DDS");
+  for (const technology of ['adc', 'dac', 'gpio', 'pwm']) {
+    if (new RegExp(`\\b${technology}\\b`).test(key)) systems.push(technology.toUpperCase());
+  }
   return [...new Set(systems)];
 }
 
 function canonicalCommunicationSystem(value: string) {
   const key = normalized(value);
   const compact = key.replace(/\s+/g, "");
+  if (/^(adc|dac|gpio|pwm)$/.test(compact)) return compact.toUpperCase();
   if (/\blin\b/.test(key) || compact === "lin") return "LIN";
   if (/\bcan fd\b|\bcanfd\b/.test(key) || compact === "canfd") return "CAN_FD";
   if (/\bflexray\b/.test(key)) return "FlexRay";
@@ -1424,7 +1524,7 @@ function canonicalCommunicationSystem(value: string) {
   return "";
 }
 
-const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua)";
+const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua|adc|dac|gpio|pwm)";
 
 function looksLikeBitrateSuffix(value: string) {
   return /^\s*(?:k?bit|m?bit|kbps|mbps|baud|bd|ms|byte|bytes|b)\b/i.test(value);
@@ -1605,31 +1705,42 @@ export function extractEngineeringSpecification(
 ): ExtractedEngineeringSpecification {
   text = withoutPlanningLimits(text);
   const lines = specificationBody(text).split(/\r?\n/);
+  const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
-    const names = [headingName, ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line)].filter(Boolean);
-    return [...new Map(names.map((name) => [normalized(normalizeHardwareName(name)), name])).values()].map((name) => ({ index, name }));
+    const names = [headingName, ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line, confirmedCounts.actuators)].filter(Boolean);
+    const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item }))];
+    return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
   });
-  const contexts = new Map<string, { name: string; lines: string[] }>();
+  const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
     const key = normalized(normalizeHardwareName(occurrence.name));
     const existing = contexts.get(key) ?? { name: occurrence.name, lines: [] };
+    if (occurrence.declaredType) existing.declaredType = occurrence.declaredType;
     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, nextIndex)));
     contexts.set(key, existing);
   });
 
   const inferredDomain = domainOverride || domainFrom(text);
-  const modelType = extractProjectModelType(text, inferredDomain);
+  const modelType = domainOverride || extractProjectModelType(text, inferredDomain);
   const domain = domainOverride || modelType || inferredDomain;
-  const interfaceType = protocolFrom(text);
   const communicationSystems = extractCommunicationSystems(text);
+  const unconfiguredPi = /\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/i.test(text) && !communicationSystems.length;
+  const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text, domain === 'automotive' ? 'CAN' : 'Other');
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
   const networkArchitecture = extractNetworkArchitectureMode(text);
+  const declaredControllers = [...contexts.values()].filter(entry =>
+    isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name))).map(entry => normalizeHardwareName(entry.name));
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
     const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const hardwareName = normalizeHardwareName(entry.name);
-    const signal = signalName(hardwareName, context);
+    const declaredType = entry.declaredType ?? deviceType(entry.name);
+    const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
+      ? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
+    const countedTemperature = hardwareName.match(/^Temperatursensor(\d+)$/);
+    const signal = countedTemperature ? `Temperatur${countedTemperature[1]}`
+      : hardwareName === 'RaspberryPi' ? 'RaspberryPiStatus' : signalName(hardwareName, context);
     const defaults = generatedPhysicalDefaults(signal);
     const unit = unitFrom(context) ?? defaults.unit;
     const factor = factorFrom(context, unit);
@@ -1654,10 +1765,13 @@ export function extractEngineeringSpecification(
       unit,
       dataType,
     });
+    const architectureMetadata = signalArchitectureMetadata({ signalName: signal, hardwareName,
+      interfaceType: chainInterfaceType, cycleMs: 10, dataType, lengthBits, startBit: 0,
+      byteOrder: 'little_endian', factor, offset: 0, unit, minValue, maxValue });
     return {
       hardware_name: hardwareName,
       hardware_description: context.slice(0, 1000),
-      device_type: deviceType(entry.name),
+      device_type: declaredType,
       function_name: functionName(hardwareName, entry.lines, entry.name),
       function_description: `Aus Nutzerspezifikation abgeleitete Funktion. ${context}`.slice(0, 1000),
       interface_name: `${hardwareId}_${chainInterfaceType}`,
@@ -1678,21 +1792,9 @@ export function extractEngineeringSpecification(
       unit,
       min_value: minValue,
       max_value: maxValue,
-      ...signalArchitectureMetadata({
-        signalName: signal,
-        hardwareName,
-        interfaceType: chainInterfaceType,
-        cycleMs: 10,
-        dataType,
-        lengthBits,
-        startBit: 0,
-        byteOrder: "little_endian",
-        factor,
-        offset: 0,
-        unit,
-        minValue,
-        maxValue,
-      }),
+      ...architectureMetadata,
+      ...(functionalOwner ? { configuration: { ...architectureMetadata.configuration,
+        functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } } : {}),
       domain,
     };
   });
@@ -1770,6 +1872,27 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
     }
   }
   const catalog = architectureTemplates(spec.domain);
+  const confirmedCoverageTemplate = (device: { name: string; role: ArchitectureTemplate["deviceType"]; owner?: string }) => {
+    if (!device.owner || (device.role !== "SensorController" && device.role !== "ActuatorController")) return undefined;
+    const ownerKey = keyOf(device.owner);
+    const ownerRole = desired.get(ownerKey)?.role;
+    const knownOwner = spec.chains.find((chain) => keyOf(chain.hardware_name) === ownerKey && chain.device_type === ownerRole);
+    const ownerTemplate = catalog.find((item) => keyOf(item.hardwareName) === ownerKey && item.deviceType === ownerRole);
+    const owner = knownOwner ?? (ownerTemplate ? chainFromTemplate(ownerTemplate, 0, spec.domain) : undefined);
+    if (!owner) return undefined;
+    const roles = device.role === "SensorController" ? SENSOR_COVERAGE_ROLES : ACTUATOR_COVERAGE_ROLES;
+    for (const [index, [role]] of roles.entries()) {
+      const prefix = `${normalizeHardwareName(device.owner)}${role}`;
+      if (!keyOf(device.name).startsWith(keyOf(prefix))) continue;
+      const suffix = normalizeHardwareName(device.name).slice(prefix.length).toUpperCase();
+      if (!/^[A-Z]{0,3}$/.test(suffix)) continue;
+      // Restore the same reviewed coverage definition even when a new count-based
+      // catalogue expansion distributed the supplemental endpoints differently.
+      const generation = [...suffix].reduce((value, char) => value * 26 + char.charCodeAt(0) - 64, 0);
+      return supplementalEndpointTemplate(device.role, owner, generation * roles.length + index);
+    }
+    return undefined;
+  };
   const used = new Set<string>();
   const result: ExtractedEngineeringChain[] = [];
   for (const [key, device] of desired) {
@@ -1778,7 +1901,8 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
       result.push(...matches.map((chain) => ({ ...chain, hardware_name: device.name,
         configuration: { ...chain.configuration, ...(device.owner ? { functional_owner: device.owner } : {}) } })));
     } else {
-      const template = catalog.find((item) => keyOf(item.hardwareName) === key && item.deviceType === device.role);
+      const template = catalog.find((item) => keyOf(item.hardwareName) === key && item.deviceType === device.role)
+        ?? confirmedCoverageTemplate(device);
       const chain = chainFromTemplate({ ...(template ?? {
         deviceType: device.role, signalName: `${identifier(device.name)}Value`,
         interfaceType: spec.interfaceType, cycleMs: 100, minValue: 0, maxValue: 255, factor: 1,

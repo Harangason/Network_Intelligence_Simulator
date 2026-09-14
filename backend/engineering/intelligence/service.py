@@ -18,9 +18,8 @@ from ..routing.repository import list_routes
 from ..routing.validation import detect_routing_loop
 from ..workflow.service import WorkflowStatusService
 from ..addressing import LogicalNodeAddressAllocator
-from .resource_policy import planning_policy
+from .resource_policy import planning_inventory, planning_policy
 from .network_planning import (
-    communication_system_inventory,
     distribution_recommendations,
     plan_network_distribution,
 )
@@ -449,14 +448,13 @@ class IntelligenceService:
         issues = self._apply_issue_reviews(issues, self._issue_reviews())
         issues.sort(key=lambda item: {"ERROR": 0, "WARNING": 1, "INFO": 2}.get(item["severity"], 3))
         rag = self._rag_insights(issues)
-        wizard_status = (data["state"].get("context") or {}).get("agent_wizard_status") or {}
-        wizard_prompt = str(wizard_status.get("agent_prompt") or "")
         distribution = plan_network_distribution(
             data["capacity"], objects["HardwareNode"], data["state"].get("topology") or {},
             parameters=data["state"].get("parameters") or {},
             allowed_protocols=((data["state"].get("context") or {}).get("engineering_scope_rules") or {}).get("communication_systems"),
-            available_protocol_counts=communication_system_inventory(wizard_prompt),
+            available_protocol_counts=planning_inventory(data['state']),
             resource_policy=planning_policy(data['state']),
+            physical_interfaces=data.get('hardware_interfaces') or [],
         )
         recommendations = [*distribution_recommendations(distribution), *RecommendationEngine().generate(issues, rag)]
         dimensioning = dimension_communications((data["capacity"].get("results") or {}).get("transmissions", []),

@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 INACTIVE = {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
+RETIRED_TRANSPORTS = {"REJECTED", "SUPERSEDED", "DEPRECATED"}
 
 
 def _ids(values: Any) -> set[str]:
@@ -19,8 +20,51 @@ def active_rows(rows: list[dict]) -> list[dict]:
             and str(row.get("status") or "").upper() not in INACTIVE]
 
 
+def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, str],
+                             transports: list[dict]) -> set[str]:
+    # Invalid or outdated paths still express current transport intent. Only
+    # explicitly discarded historical paths can cease to block this exemption.
+    linked = set()
+    for row in transports:
+        if str(row.get("status") or "").upper() in RETIRED_TRANSPORTS:
+            continue
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else row
+        linked.update(_ids(payload.get("message_ids")))
+        if payload.get("message_id"):
+            linked.add(str(payload["message_id"]))
+        signal_ids = _ids(payload.get("signal_ids"))
+        if payload.get("signal_id"):
+            signal_ids.add(str(payload["signal_id"]))
+        linked.update(signal_messages[key] for key in signal_ids if key in signal_messages)
+    excluded = set()
+    for message in messages:
+        if not message.get("id"):
+            continue
+        config = message.get("configuration")
+        if not isinstance(config, dict):
+            continue
+        contract, routing = config.get("communication_contract"), config.get("routing")
+        transport = config.get("transport_unit", {})
+        if not all(isinstance(value, dict) for value in (contract, routing, transport)):
+            continue
+        provenance = transport.get("provenance", {})
+        if not isinstance(provenance, dict):
+            continue
+        role, generator = contract.get("role"), provenance.get("generator")
+        if any(value is not None and not isinstance(value, str) for value in (role, generator)):
+            continue
+        local_role = role in {"MEASUREMENT", "FEEDBACK", "COMMAND"}
+        local_generator = generator == "wizard-local-actuator-command"
+        if (str(message.get("id")) not in linked
+                and routing.get("enabled") is False
+                and contract.get("scope") == "FUNCTION_OUTPUT" and not local_role and not local_generator):
+            excluded.add(str(message["id"]))
+    return excluded
+
+
 def simulation_coverage(messages: list[dict], signals: list[dict], transports: list[dict],
-                        scope: dict | None = None) -> dict[str, Any]:
+                        scope: dict | None = None, *, declared_transports: list[dict] | None = None) -> dict[str, Any]:
+    all_signal_messages = {str(row["id"]): str(row.get("message_id") or "") for row in signals if row.get("id")}
     messages, signals = active_rows(messages), active_rows(signals)
     message_ids = {str(row["id"]) for row in messages if row.get("id")}
     signal_ids = {str(row["id"]) for row in signals if row.get("id")}
@@ -29,6 +73,7 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
     selected = not scope.get("include_all") and str(scope.get("mode") or "ALL").upper() != "ALL"
     errors: list[str] = []
     required_messages, required_signals = set(message_ids), set(signal_ids)
+    transport_exclusions = []
     if selected:
         requested_messages, requested_signals = _ids(scope.get("message_ids")), _ids(scope.get("signal_ids"))
         if not requested_messages and not requested_signals:
@@ -39,6 +84,24 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
         required_signals = requested_signals & signal_ids
         required_signals.update(key for key, parent in signal_messages.items() if parent in required_messages)
         required_messages.update(signal_messages[key] for key in required_signals if signal_messages[key] in message_ids)
+    else:
+        # Only the complete, explicitly disabled function output has no external
+        # transport obligation. Signal switches never repack a physical frame.
+        excluded = _unused_function_outputs(messages, all_signal_messages, [*transports, *(declared_transports or [])])
+        message_names = {str(message["id"]): str(message.get("name") or message["id"]) for message in messages if message.get("id")}
+        excluded_children = {message_id: set() for message_id in excluded}
+        for key, parent in signal_messages.items():
+            if parent in excluded_children:
+                excluded_children[parent].add(key)
+        for message_id in sorted(excluded):
+            excluded_signals = excluded_children[message_id]
+            required_messages.discard(message_id)
+            required_signals.difference_update(excluded_signals)
+            transport_exclusions.append({"message_id": message_id, "message_name": message_names[message_id],
+                "signal_ids": sorted(excluded_signals),
+                "reason_code": "EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED",
+                "reason": "Der vollständige Funktionsausgang ist ausdrücklich nicht geroutet und besitzt keine aktuelle Transportabsicht. "
+                          "Vom Transportscope ausgenommen; keine funktionale Beobachtung oder Timing-Freigabe nachgewiesen."})
 
     covered_messages, covered_signals = set(), set()
     for row in active_rows(transports):
@@ -62,6 +125,8 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
         "required_messages": len(required_messages), "required_signals": len(required_signals),
         "covered_messages": len(covered_messages), "covered_signals": len(covered_signals),
         "excluded_messages": len(message_ids - required_messages), "excluded_signals": len(signal_ids - required_signals),
+        "excluded_message_ids": sorted(message_ids - required_messages), "excluded_signal_ids": sorted(signal_ids - required_signals),
+        "transport_exclusions": transport_exclusions,
         "message_coverage_percent": round(100 * len(covered_messages) / len(required_messages), 2) if required_messages else 100.0,
         "signal_coverage_percent": round(100 * len(covered_signals) / len(required_signals), 2) if required_signals else 100.0,
         "required_message_ids": sorted(required_messages), "required_signal_ids": sorted(required_signals),
@@ -75,7 +140,8 @@ def assess_simulation(configuration: dict, result: dict | None) -> dict[str, Any
     scenario = configuration.get("scenario") or {}
     scope = scenario.get("simulation_scope") or configuration.get("simulation_scope") or {}
     coverage = configuration.get("scope_coverage") or simulation_coverage(
-        model.get("messages") or [], model.get("signals") or [], configuration.get("communications") or [], scope)
+        model.get("messages") or [], model.get("signals") or [], configuration.get("communications") or [], scope,
+        declared_transports=model.get("routes") or [])
     series = (result.get("model_simulation") or {}).get("signals")
     observed_ids = {str(row.get("signal_id") or row.get("id")) for row in (series or [])
                     if isinstance(row, dict) and (row.get("signal_id") or row.get("id"))}

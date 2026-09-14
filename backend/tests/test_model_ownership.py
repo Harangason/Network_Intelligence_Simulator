@@ -127,7 +127,8 @@ def test_topology_sync_preserves_canonical_owner_when_wiring_changes(monkeypatch
     assert output["nodes"][0]["systemOwnerId"] == "owner"
 
 
-def test_generated_owner_local_references_are_resolved_on_apply(db_project):
+@pytest.mark.parametrize('explicit_command', [False, True])
+def test_generated_owner_local_references_are_resolved_on_apply(db_project, explicit_command):
     from backend.engineering.agent_tools import wizard_generation, proposal_service, model
     prompt = '''- Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd)
@@ -136,8 +137,21 @@ def test_generated_owner_local_references_are_resolved_on_apply(db_project):
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
 Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperatursensor und einem Stellglied.
 '''
+    if explicit_command:
+        # Ownership does not define an actuator's command encoding. A valid
+        # apply fixture must supply that independent, explicit user contract.
+        prompt = ('- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean",'
+                  '"factor":1,"unit":"code","min_value":0,"max_value":1,'
+                  '"semantic":{"semantic_type":"BOOLEAN"},'
+                  '"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}\n' + prompt)
     proposal = wizard_generation.generate({"prompt": prompt})
     proposal = proposal_service.validate(proposal["proposal_id"])
+    if not explicit_command:
+        assert not proposal['validation_result']['valid']
+        assert any(finding.get('code') == 'COMMAND_SIGNALS_MISSING'
+                   for finding in proposal['validation_result']['findings'])
+        assert not model.objects('HardwareNode'), 'An incomplete command proposal must not create canonical devices.'
+        return
     assert proposal["validation_result"]["valid"], proposal["validation_result"]
     approved = proposal_service.review(proposal["proposal_id"], revision=proposal["revision"], decision="approve", actor="test-human", trace_id=str(uuid4()))
     proposal_service.apply(approved["proposal_id"], actor="test-human", trace_id=str(uuid4()))

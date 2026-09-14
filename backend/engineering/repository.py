@@ -89,6 +89,12 @@ class EntitySpec:
     enum_fields: dict[str, tuple[str, ...]] | None = None
 
     def validate(self, data: dict[str, Any]) -> None:
+        if self.object_type in {"Message", "Signal"}:
+            config = data.get("configuration") or {}
+            if isinstance(config, dict) and "routing" in config:
+                routing = config["routing"]
+                if not isinstance(routing, dict) or ("enabled" in routing and type(routing["enabled"]) is not bool):
+                    raise EngineeringValidationError("configuration.routing.enabled muss true oder false sein.")
         for field_name, allowed in (self.enum_fields or {}).items():
             if field_name in data and data[field_name] is not None:
                 validate_choice(data[field_name], allowed, field_name)

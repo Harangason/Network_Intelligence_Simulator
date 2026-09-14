@@ -11,8 +11,22 @@ from ..db import get_connection, _request_unit
 def prepare(goal, source_ref, target_ref, message_ids=()):
     graph = ModelGraphService.load()
     result = connection_plan(graph, goal, source_ref, target_ref, message_ids)
+    from ..agent_tools import conversation
+    envelope = conversation.read().get('input_envelope') or {}
+    result['input_ref'] = envelope.get('input_id')
+    result['input_envelope'] = envelope
+    for item in result.get('typed_inputs', []):
+        item['input_ref'] = envelope.get('input_id', '')
     journal(result, 'MODEL_INSPECTED', revision=graph.revision, hosts=result.get('host_refs'), requirement=goal)
     result = validate_options(result)
+    from backend.agent_core.api.input_output import EngineeringReasoningResult
+    result['reasoning_result'] = EngineeringReasoningResult(goal=goal,
+        observations=['Quell- und Zielobjekt im kanonischen Modell aufgelöst.'],
+        evidence_refs=[graph.revision, result['source_ref'], result['target_ref']],
+        data_gaps=result.get('findings', []), alternatives=[s['label'] for s in result['strategies']],
+        required_decisions=[result['pending_decision']['decision_id']] if result.get('pending_decision') else [],
+        decision_type='ENGINEERING_DECISION' if result.get('pending_decision') else 'DETERMINISTIC',
+        completion_criteria=result['desired_state']['completion_criteria'], status=result['status']).model_dump(mode='json')
     if len(result['strategies']) == 1 and result['strategies'][0]['option']['id'] == 'REUSE' and not result['strategies'][0]['needs_decision']:
         from ..agent_tools import conversation
         from backend.agent_core.orchestration.capability_intent import connection_request
@@ -80,6 +94,8 @@ def authorize(goal, strategy, decision_id, actor):
             'SignalEncodingChange', 'UnrelatedRouteChange', 'DeleteAllRoutes'], model_revision=goal['model_revision'],
         authorized_by=actor, plan_hash=digest(strategy['plan'])).model_dump(mode='json')
     goal['pending_decision'] = None
+    if goal.get('reasoning_result'):
+        goal['reasoning_result'].update(required_decisions=[], status='READY')
     port_decision = strategy.get('port_decision')
     if port_decision:
         port_decision['status'] = 'ANSWERED'
@@ -113,13 +129,13 @@ def answer(workload_id, decision_id, selected, *, actor):
     graph = ModelGraphService.load()
     if decision['kind'] == 'PAYLOAD':
         replacement = validate_options(connection_plan(graph, goal['goal'], goal['source_ref'], goal['target_ref'], selected))
-        replacement.update(workload_id=workload_id, journal=goal['journal'])
+        replacement.update(workload_id=workload_id, journal=goal['journal'], input_ref=goal.get('input_ref'), input_envelope=goal.get('input_envelope'))
         journal(replacement, 'PAYLOAD_SELECTED', message_ids=selected)
         return save_goal(replacement)
     strategy = next(s for s in goal['strategies'] if s['id'] == selected[0])
     if graph.revision != goal['model_revision']:
         replacement = validate_options(connection_plan(graph, goal['goal'], goal['source_ref'], goal['target_ref'], goal['message_ids']))
-        replacement.update(workload_id=workload_id, journal=goal['journal'])
+        replacement.update(workload_id=workload_id, journal=goal['journal'], input_ref=goal.get('input_ref'), input_envelope=goal.get('input_envelope'))
         journal(replacement, 'MODEL_REINSPECTED_AFTER_DECISION', old_revision=goal['model_revision'], revision=graph.revision)
         # A concurrently added matching port narrows the accepted strategy; never duplicate it.
         compatible = [s for s in replacement['strategies'] if s['source_port'] == strategy['source_port']
@@ -144,6 +160,9 @@ def decision_context(goal):
 
 def resume(workload_id):
     goal = get_goal(workload_id)
+    if goal['status'] == 'OUTPUT_PENDING':
+        from .outputs import ensure_outputs
+        return ensure_outputs(goal)
     if goal['status'] == 'BACKGROUND_PAUSED' and goal.get('followup_authorization'):
         goal.update(status='SIMULATION_RUNNING', background={})
         journal(goal, 'FOLLOWUP_RESUMED_BY_USER')
@@ -152,7 +171,7 @@ def resume(workload_id):
         return execute(workload_id)
     if goal['status'] in {'PLAN_STALE', 'READY_FOR_REVIEW', 'PAUSED'}:
         replacement = validate_options(connection_plan(ModelGraphService.load(), goal['goal'], goal['source_ref'], goal['target_ref'], goal['message_ids']))
-        replacement.update(workload_id=workload_id, journal=goal['journal'])
+        replacement.update(workload_id=workload_id, journal=goal['journal'], input_ref=goal.get('input_ref'), input_envelope=goal.get('input_envelope'))
         journal(replacement, 'RESUMED_AND_REPLANNED')
         return save_goal(replacement)
     return goal
@@ -189,7 +208,7 @@ def presentation(goal):
             'preflight_valid': 'Preflight-Befunde des Projekts'}.get(c, c) for c in conditions),
         'PLAN_STALE': 'Das Modell wurde geändert. Der Auftrag bleibt erhalten und muss neu geprüft werden.',
         'PAUSED': 'Auftrag offen gelassen.', 'READY': 'Strategie freigegeben. Die Folgearbeiten werden ausgeführt.'}
-    text = texts.get(goal['status'], detail or 'Der Auftrag ist noch nicht vollständig umgesetzt.')
+    text = goal.get('output_error') if goal['status'] == 'OUTPUT_PENDING' else texts.get(goal['status'], detail or 'Der Auftrag ist noch nicht vollständig umgesetzt.')
     if goal['status'] == 'COMPLETE' and goal.get('followup'):
         text += ' Die beauftragte Simulation ist beendet; die Kommunikation ist im Trace nachgewiesen.'
         if 'ANALYZE_TRACE' in goal.get('followup_goals', []): text += ' Die Trace-Analyse ist gespeichert.'
@@ -203,7 +222,7 @@ def presentation(goal):
                 if isinstance(load, (float, int)): text += f'\nNetzlast {network.get("network_name", network["network_id"])}: {load:.2f} %.'
         text += f'\n{len(goal.get("route_ids", []))} Routing-Einträge geprüft. Frühere abhängige Auswertungen wurden als veraltet markiert.'
     return AgentResponse(type='RESULT', status=goal['status'], text=text,
-        workload=summary, metadata={'hardware_facts_required': goal['status'] == 'BLOCKED' and any(
+        workload=summary, outputs=goal.get('outputs', []), metadata={'hardware_facts_required': goal['status'] == 'BLOCKED' and any(
             f.get('code') in {'COMMUNICATION_CAPABILITY_MISSING', 'COMMUNICATION_CONTROLLER_MISSING', 'NO_VALID_COMMUNICATION_PATH'} for f in goal.get('findings', [])),
             'details': {'completion': goal.get('completion'), 'route_ids': goal.get('route_ids'),
             'findings': goal.get('findings'), 'journal': goal.get('journal'), 'followup': goal.get('followup')}}).model_dump(mode='json', exclude_none=True)

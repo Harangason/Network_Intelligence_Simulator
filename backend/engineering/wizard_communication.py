@@ -9,7 +9,50 @@ import json
 import re
 
 VERSION = 1
-KINDS = ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface', 'Message')
+KINDS = ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface', 'Message', 'Signal')
+
+
+def hmi_message_choices(clusters, graph):
+    """Resolve explicit display switches to whole canonical messages, never guessed payloads."""
+    names = {str(node['name']).casefold(): str(key) for key, node in graph['HardwareNode'].items()}
+    signals = {}
+    for signal in graph.get('Signal', {}).values():
+        signals.setdefault(str(signal.get('message_id')), set()).update(
+            str(signal[field]).casefold() for field in ('name', 'display_name', 'signal_name') if signal.get(field))
+    choices = {}
+    for cluster in clusters:
+        for route in cluster.get('hmi_routes') or []:
+            if 'excluded_signals' not in route:
+                continue  # Older reviewed requests keep their original meaning.
+            enabled = {str(name).casefold() for name in route.get('signals') or []}
+            disabled = {str(name).casefold() for name in route.get('excluded_signals') or []}
+            if enabled & disabled:
+                raise ValueError('HMI-Auswahl enthält widersprüchliche Ein/Aus-Werte.')
+            source, target = names.get(str(route.get('source', '')).casefold()), names.get(str(route.get('target', '')).casefold())
+            if not source or not target:
+                if enabled:
+                    raise ValueError(f'HMI-Auswahl: {route.get("source")} → {route.get("target")} fehlt im Modell.')
+                continue
+            found = set()
+            for key, message in graph['Message'].items():
+                interface = graph['Interface'].get(str(message.get('interface_id')), {})
+                function = graph.get('Function', {}).get(str(interface.get('function_id')), {})
+                producer = str(interface.get('hardware_node_id') or function.get('hardware_node_id') or '')
+                if producer != source:
+                    continue
+                payload = signals.get(str(key), set())
+                selected = enabled & payload
+                found.update(selected)
+                if selected and disabled & payload:
+                    raise ValueError(f'{message["name"]}: Ein- und ausgeschaltete HMI-Werte teilen eine Nachricht. Für die Auswahl ist eine eigene Nachricht mit expliziter Kodierung erforderlich.')
+                choice = bool(selected)
+                pair = (str(key), target)
+                if pair in choices and choices[pair] != choice:
+                    raise ValueError(f'{message["name"]}: widersprüchliche HMI-Auswahl für {route.get("target")}.')
+                choices[pair] = choice
+            if enabled - found:
+                raise ValueError('HMI-Auswahl: eingeschaltete Signale fehlen am Quell-Controller: ' + ', '.join(sorted(enabled - found)))
+    return choices
 
 
 def communication_plan(prompt, graph):
@@ -18,6 +61,7 @@ def communication_plan(prompt, graph):
         return {}
     clusters = json.loads(match.group(1))
     nodes = graph['HardwareNode']
+    hmi_choices = hmi_message_choices(clusters, graph)
     names = {str(n['name']).casefold(): key for key, n in nodes.items()}
     owners, displays = {}, {}
     for cluster in clusters:
@@ -30,7 +74,7 @@ def communication_plan(prompt, graph):
                 if identifier in owners and owners[identifier] != owner:
                     raise ValueError(f'Kommunikationsplanung: {endpoint} besitzt mehrere Controller.')
                 owners[identifier] = owner
-        for route in [*(cluster.get('hmi_routes') or []), *(cluster.get('functional_routes') or [])]:
+        for route in [*(route for route in cluster.get('hmi_routes') or [] if 'excluded_signals' not in route), *(cluster.get('functional_routes') or [])]:
             source, target = names.get(str(route.get('source', '')).casefold()), names.get(str(route.get('target', '')).casefold())
             if source and target and source != target:
                 displays.setdefault(source, set()).add(target)
@@ -70,6 +114,17 @@ def communication_plan(prompt, graph):
             role, basis = 'DEVICE_STATUS', 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller'
         else:
             role, basis = 'UNRESOLVED', 'Kein bestätigter Empfänger'
+        selected_displays = []
+        for (message_id, target), enabled in hmi_choices.items():
+            if message_id != str(identifier):
+                continue
+            if enabled:
+                targets.add(target)
+            else:
+                targets.discard(target)
+            selected_displays.append({'target_ref': target, 'enabled': enabled})
+        if selected_displays:
+            config['hmi_routing_selection'] = selected_displays
         if producer in targets or any(key not in nodes for key in targets):
             raise ValueError(f'Kommunikationsplanung: {message["name"]} benötigt einen gültigen externen Empfänger.')
         if not targets:

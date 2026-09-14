@@ -105,7 +105,9 @@ def execute(workload_id):
         goal['completion'] = GoalCompletionEvaluator().evaluate(DesiredEngineeringState.model_validate(goal['desired_state']), {}, blockers=goal['findings'], failed=goal['status'] == 'FAILED')
         goal.pop('route_ids', None)
         journal(goal, 'CANONICAL_BATCH_ROLLED_BACK', findings=goal['findings'])
-    return save_goal(goal)
+    from .outputs import ensure_outputs
+    saved = save_goal(goal)
+    return ensure_outputs(saved) if auth['authorized_by'] != 'technical-preview' else saved
 
 
 def invalidate_and_refresh(goal, actor):

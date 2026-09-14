@@ -27,8 +27,7 @@ async function request<T>(path = "", init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
-export async function listRoutes(): Promise<RoutingEntry[]> {
-  const projectId = readActiveProjectId();
+export async function listRoutes(projectId = readActiveProjectId()): Promise<RoutingEntry[]> {
   const items: RoutingEntry[] = [];
   const pageSize = 500;
   for (let offset = 0; ; offset += pageSize) {
@@ -65,9 +64,10 @@ export function validateRoute(id: string): Promise<RoutingEntry> {
   });
 }
 
-export function approveRoutes(routeIds: string[]): Promise<{ items: RoutingEntry[]; count: number }> {
+export function approveRoutes(routeIds: string[], projectId = readActiveProjectId()): Promise<{ items: RoutingEntry[]; count: number }> {
   return request("/approve-selected", {
     method: "POST",
+    headers: { 'X-Project-ID': projectId },
     body: JSON.stringify({ route_ids: routeIds, actor: "routing-ui" }),
   });
 }

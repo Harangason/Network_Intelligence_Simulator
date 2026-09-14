@@ -15,6 +15,12 @@ test('routing continuation does not restart the completed model stage', () => {
   assert.equal(resolveAgentRunStep({ ...stale, state: 'CANCELED' }, { engineering_model: 'COMPLETE' }).state, 'CANCELED');
 });
 
+test('an amended request still reviews its changed model even when the old model remains complete', () => {
+  const changed = { ...run, step: 'engineering_model', model_review_required: true, request_revision: 'new-revision' };
+  assert.equal(resolveAgentRunStep(changed, { engineering_model: 'COMPLETE', routing: 'COMPLETE' }).step, 'engineering_model');
+  assert.equal(resolveAgentRunStep({ ...changed, model_review_required: false }, { engineering_model: 'COMPLETE', routing: 'EMPTY' }).step, 'routing');
+});
+
 test("restores progress only for the matching wizard run", () => {
   assert.deepEqual(readAgentRunStatus(run, run.run_id), run);
   assert.equal(readAgentRunStatus(run, "another-run"), null);

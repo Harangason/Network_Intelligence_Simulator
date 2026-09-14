@@ -9,6 +9,9 @@ from . import service
 
 
 def result(goal):
+    from .outputs import ensure_outputs
+    if goal['status'] != 'OUTPUT_PENDING':
+        goal = ensure_outputs(goal)
     return {'workload_id': goal['workload_id'], 'status': goal['status'], 'agent_response': service.presentation(goal)}
 
 
@@ -17,6 +20,16 @@ def execution_result(goal):
         from .followups import advance
         return advance(goal, result)
     return result(goal)
+
+
+def type_input(arguments):
+    from .typing import type_reference
+    graph = ModelGraphService.load()
+    return type_reference(graph, arguments['reference']).model_dump(mode='json')
+
+
+register('type_engineering_input', 'Fachlichen Objekttyp aus kanonischer ID, Name oder Alias ermitteln. Mehrdeutigkeit bleibt offen; erzeugt keine Objekte.',
+    P.READ_MODEL, type_input, reference=TEXT)
 
 
 register('inspect_model_situation', 'Aktuelles kanonisches Modell einschließlich Hardwarefähigkeiten, Controller, Ports, Netze, Routing und Abhängigkeiten lesen.', P.READ_MODEL,

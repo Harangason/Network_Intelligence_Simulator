@@ -91,6 +91,9 @@ export type SimulationCoverage = {
   covered_signals: number;
   excluded_messages: number;
   excluded_signals: number;
+  excluded_message_ids?: string[];
+  excluded_signal_ids?: string[];
+  transport_exclusions?: { message_id: string; message_name: string; signal_ids: string[]; reason_code: string; reason: string }[];
   missing_message_ids: string[];
   missing_signal_ids: string[];
 };
