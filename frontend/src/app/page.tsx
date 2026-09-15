@@ -45,7 +45,7 @@ export default function Home() {
           </p>
           <div className="hero-actions">
             <ProjectAwareLink className="primary-link" href="/projects">Start simulating <Arrow /></ProjectAwareLink>
-            <ProjectAwareLink className="primary-link trace-link" href="/trace-analysis">Start Trace Analyse <Arrow /></ProjectAwareLink>
+            <ProjectAwareLink className="primary-link trace-link" href="/trace-projects">Start Trace Analyse <Arrow /></ProjectAwareLink>
             <ProjectAwareLink className="text-link" href="/platform">Explore the platform <Arrow /></ProjectAwareLink>
           </div>
         </div>

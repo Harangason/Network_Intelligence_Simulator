@@ -199,7 +199,11 @@ def _validate_changes(changes: list[dict]) -> dict:
                     raise ValueError("Netzwerk benötigt id und technology.")
                 from ..routing.validation import PROTOCOL_CAPACITY
                 if data["technology"] not in PROTOCOL_CAPACITY:
-                    raise ValueError("Unbekannte Netzwerktechnologie.")
+                    from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+                    try:
+                        DEFAULT_TECHNOLOGY_REGISTRY.profile(data["technology"])
+                    except KeyError as error:
+                        raise ValueError("Unbekannte Netzwerktechnologie.") from error
                 for field in ("bitrate", "arbitration_bitrate", "data_bitrate"):
                     if field in data and (not isinstance(data[field], (int, float)) or data[field] <= 0):
                         raise ValueError(f"{field} muss positiv sein.")

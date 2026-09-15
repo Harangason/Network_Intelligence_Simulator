@@ -18,7 +18,9 @@ const steps: Record<string, string> = { engineering_model: "Engineering-Modell",
 const statusNames: Record<string, string> = { EMPTY: "Noch nicht begonnen", IN_PROGRESS: "In Arbeit",
   COMPLETE: "Abgeschlossen", APPROVED: "Freigegeben", WARNING: "Mit Hinweisen", ERROR: "Prüfung erforderlich", OUTDATED: "Aktualisierung erforderlich" };
 
-export function ProjectGallery() {
+export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | "trace" }) {
+  const trace = mode === "trace";
+  const destination = trace ? "/trace-analysis" : "/studio/engineering";
   const [projects, setProjects] = useState<Project[]>([]);
   const [next, setNext] = useState<number | null>(null);
   const [total, setTotal] = useState(0);
@@ -57,10 +59,10 @@ export function ProjectGallery() {
       // Keep this identity on retry, including when the accepted save response was lost.
       const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
       const project = pendingProject.current ??= `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
-      await setWorkflowContext({ engineering_wizard_settings: { project_name: "Neues Projekt", model_type: "custom" } }, project);
+      await setWorkflowContext({ engineering_wizard_settings: { project_name: trace ? "Neues Trace-Projekt" : "Neues Projekt", model_type: "custom" } }, project);
       writeUserSettings({ ...readUserSettings(), activeProject: project });
-      requestEngineeringAgentWizard(project, { dispatch: false });
-      window.location.assign(withProjectParam("/studio/engineering", project));
+      if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
+      window.location.assign(withProjectParam(destination, project));
     } catch (caught) {
       setCreateError(caught instanceof Error ? caught.message : "Das Projekt konnte nicht angelegt werden.");
       setCreating(false); createBusy.current = false;
@@ -86,8 +88,8 @@ export function ProjectGallery() {
   return <section className={styles.gallery} aria-labelledby="projects-title">
     <header className={styles.header}>
       <p className="section-label">Dein Workspace</p>
-      <h1 id="projects-title">Deine Projekte<span>.</span></h1>
-      <p>Eine Idee beginnen oder dort weitermachen, wo du aufgehört hast.</p>
+      <h1 id="projects-title">{trace ? "Deine Trace-Projekte" : "Deine Projekte"}<span>.</span></h1>
+      <p>{trace ? "Ein Projekt für die Trace-Analyse öffnen oder ein neues Projekt zum Laden eigener Trace-Dateien anlegen." : "Eine Idee beginnen oder dort weitermachen, wo du aufgehört hast."}</p>
     </header>
     <div className={styles.toolbar}>
       <label>Projekte durchsuchen<input type="search" placeholder="Name, Beschreibung oder Projekt-ID" value={query} onChange={event => setQuery(event.target.value)} /></label>
@@ -99,15 +101,15 @@ export function ProjectGallery() {
     <div className={styles.grid} aria-busy={loading}>
       <button className={`${styles.card} ${styles.newCard}`} onClick={() => void create()} disabled={creating}>
         <span className={styles.plus} aria-hidden="true">+</span>
-        <strong>{creating ? "Projekt wird angelegt …" : "Neues Projekt"}</strong>
-        <span>Mit dem Engineering-Wizard starten</span>
+        <strong>{creating ? "Projekt wird angelegt …" : trace ? "Neues Trace-Projekt" : "Neues Projekt"}</strong>
+        <span>{trace ? "Trace-Dateien laden und analysieren" : "Mit dem Engineering-Wizard starten"}</span>
       </button>
       {filtered.map(project => <article key={project.project_id} className={styles.card}>
-        <Link href={withProjectParam("/studio/engineering", project.project_id)} className={styles.cardLink}>
-        <div className={styles.cardTop}><span>{steps[project.active_step] ?? "Engineering"}</span><Arrow /></div>
+        <Link href={withProjectParam(destination, project.project_id)} className={styles.cardLink}>
+        <div className={styles.cardTop}><span>{trace ? "Trace-Analyse" : steps[project.active_step] ?? "Engineering"}</span><Arrow /></div>
         <h2>{project.name || project.project_id}</h2>
-        <p>{project.description || "Modell, Kommunikation und Simulation in einem Projekt."}</p>
-        <span className={styles.status} data-status={project.statuses[project.active_step]}>{statusNames[project.statuses[project.active_step]] ?? "Projekt öffnen"}</span>
+        <p>{project.description || (trace ? "Eigene Trace-Dateien oder vorhandene Simulationsläufe untersuchen." : "Modell, Kommunikation und Simulation in einem Projekt.")}</p>
+        <span className={styles.status} data-status={project.statuses[project.active_step]}>{trace ? "Trace-Analyse öffnen" : statusNames[project.statuses[project.active_step]] ?? "Projekt öffnen"}</span>
         <div className={styles.cardBottom}><time dateTime={project.updated_at}>Geändert {new Date(project.updated_at).toLocaleDateString("de-DE")}</time><span title={project.project_id}>{project.project_id.replace(/^network-project-/, "")}</span></div>
         </Link>
         <button className={styles.deleteButton} type="button" aria-label={`Projekt ${project.name || project.project_id} löschen`} disabled={deleting !== null} onClick={() => void remove(project)}>

@@ -117,7 +117,7 @@ async function verifySignalContracts(page: Page, project: string, expected: Reco
   expect(contracts, 'Every original signal and its explicit encoding must survive generation.').toEqual(expected);
 }
 
-async function verifyArtifacts(page: Page, project: string, minimumSignals: number) {
+async function verifyArtifacts(page: Page, project: string, minimumSignals: number, internalController?: string) {
   const workflow = await readProject(page, project, '/api/engineering/workflow?view=summary');
   expect(Object.keys(workflow.statuses).sort()).toEqual([...steps].sort());
   for (const step of steps) expect(done.has(workflow.statuses[step]), `${step}: ${workflow.statuses[step]}`).toBeTruthy();
@@ -135,7 +135,21 @@ async function verifyArtifacts(page: Page, project: string, minimumSignals: numb
   expect(assessment.failed_route_count).toBe(0);
   expect(assessment.observed_signal_count).toBeGreaterThanOrEqual(minimumSignals);
   const signals = await allObjects(page, project, 'signals');
-  expect(assessment.observed_signal_count, 'ALL must observe the actual canonical signal scope.').toBe(signals.length);
+  const excluded = assessment.scope_coverage.transport_exclusions ?? [];
+  if (internalController) {
+    const nodes = await allObjects(page, project, 'hardware-nodes');
+    const controller = nodes.find(item => item.name === internalController);
+    const messages = await allObjects(page, project, 'messages');
+    expect(excluded.length).toBeGreaterThan(0);
+    for (const item of excluded) {
+      const message = messages.find(row => row.id === item.message_id);
+      expect(item.reason_code).toBe('EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED');
+      expect(message.configuration.routing.enabled).toBe(false);
+      expect(message.configuration.communication_contract).toMatchObject({ role: 'INTERNAL_STATE', scope: 'FUNCTION_OUTPUT', producer_ref: controller.id, consumer_refs: [] });
+    }
+  } else expect(excluded).toHaveLength(0);
+  const excludedSignals = new Set(excluded.flatMap((item: { signal_ids: string[] }) => item.signal_ids));
+  expect(assessment.observed_signal_count, 'ALL must observe every canonical signal with a transport obligation.').toBe(signals.length - excludedSignals.size);
   for (const key of ['missing_observed_signal_ids', 'missing_observed_route_ids', 'missing_observed_network_ids']) expect(assessment[key]).toEqual([]);
   const trace = await readProject(page, project, `/api/simulations/${jobs[0].id}/trace-window?limit=10`);
   expect(trace.count).toBeGreaterThan(0);
@@ -314,6 +328,48 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   expect(errors).toEqual([]);
   await testInfo.attach('evidence', { body: JSON.stringify({ project, ...continuity, ...artifacts }), contentType: 'application/json' });
 });
+
+for (const technology of ['I2C', 'Modbus RTU']) {
+  test(`Raspberry Pi temperature and valve project completes all nine stages using ${technology} @nonautomotive`, async ({ page }, testInfo) => {
+    const project = 'nis-e2e-embedded-' + randomUUID();
+    const dialog = await openWizard(page, project);
+    await dialog.getByTitle('Projektname', { exact: true }).click();
+    await dialog.locator('#engineering-project-name').fill('Temperaturregelung');
+    await dialog.getByTitle('Aufgabe', { exact: true }).click();
+    await dialog.getByLabel('Aufgabentext', { exact: true }).fill(technology === 'I2C'
+      ? '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi'
+      : `2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi. Embedded Systems. Alle Geräte kommunizieren über ${technology}. Prüfe und arbeite bis Data Science & Intelligence.`);
+    await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"Ventilaktor1":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}},"Ventilaktor2":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
+    await dialog.getByTitle('Netzarchitektur', { exact: true }).click();
+    await dialog.getByRole('radio', { name: /Variante 0/ }).check();
+    await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+    if (technology === 'I2C') {
+      await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+      await dialog.getByLabel('RaspberryPi: Anschluss', { exact: true }).selectOption('I2C');
+      await expect(dialog.getByLabel('Temperatursensor1: Anschluss', { exact: true })).toHaveValue('');
+      await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+      for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
+        await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
+      }
+    }
+    await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
+    const continuity = await completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']);
+    const artifacts = await verifyArtifacts(page, project, 7, 'RaspberryPi');
+    const interfaces = await allObjects(page, project, 'hardware-interfaces');
+    expect(interfaces.length).toBeGreaterThanOrEqual(7);
+    expect(interfaces.every(item => !/automotive|can|lin/i.test(item.technology))).toBe(true);
+    const hardware = await allObjects(page, project, 'hardware-nodes');
+    expect(hardware.every(item => item.domain !== 'automotive')).toBe(true);
+    const finished = page.waitForResponse(response => response.url().includes(`/runs/${continuity.runId}/finish`)
+      && response.request().method() === 'POST');
+    await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();
+    expect((await finished).ok()).toBe(true);
+    await expect(dialog).not.toBeVisible();
+    await openWizard(page, project);
+    expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(1);
+    await testInfo.attach('nonautomotive-evidence', { body: JSON.stringify({ project, technology, ...continuity, ...artifacts }), contentType: 'application/json' });
+  });
+}
 
 test('exact confirmed 50/250/250 request completes through real wizard review @large', async ({ page }, testInfo) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));

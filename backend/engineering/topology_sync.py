@@ -9,7 +9,8 @@ from typing import Any
 from psycopg.types.json import Jsonb
 
 from .db import get_connection, _request_unit
-from .models import EngineeringValidationError
+from .models import EngineeringValidationError, INTERFACE_TYPES
+from ..communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from .project_context import current_project_id
 from .relations import create_relation
 from .repository import NotFoundError, create_object, get_object, update_object
@@ -24,6 +25,7 @@ NODE_KIND_TO_DEVICE_TYPE = {
 }
 
 BUS_TO_INTERFACE_TYPE = {
+    **{DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(value): value for value in INTERFACE_TYPES if value != 'Other'},
     "can": "CAN",
     "can_fd": "CAN_FD",
     "can_xl": "CAN_XL",
@@ -285,7 +287,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 "HardwareNode",
                 {
                     "name": name,
-                    "domain": "automotive",
+                    "domain": str(raw_node.get('domain') or 'custom'),
                     "device_type": device_type,
                     "identity": identity,
                     "provenance": provenance,
@@ -329,7 +331,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                 "Function",
                 {
                     "name": function_name,
-                    "domain": "automotive",
+                    "domain": hardware.get('domain') or 'custom',
                     "hardware_node_id": str(hardware["id"]),
                     "provenance": provenance,
                 },
@@ -524,7 +526,7 @@ def _sync_topology(data: dict[str, Any], topology_id: str) -> dict[str, Any]:
                     "Interface",
                     {
                         **expected_interface,
-                        "domain": "automotive",
+                        "domain": hardware.get('domain') or 'custom',
                         "provenance": provenance,
                     },
                 )

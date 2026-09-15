@@ -48,8 +48,8 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v19-explicit-real-project-inventory'
-ROUTING_GENERATOR_VERSION = 'wizard-routing-v9-explicit-forwarding-scope'
+MODEL_GENERATOR_VERSION = 'wizard-model-v20-local-controller-status'
+ROUTING_GENERATOR_VERSION = 'wizard-routing-v10-preserve-local-technology'
 
 
 def _canonical_wizard_prompt(prompt: str) -> str:
@@ -258,15 +258,15 @@ def _network_protocol(interface_type: str) -> str:
         'SOMEIP': 'SOME_IP',
         'PROFINET': 'PROFINET',
         'ETHERCAT': 'ETHERCAT',
-        'MODBUSTCP': 'MODBUS',
-        'MODBUS_TCP': 'MODBUS',
-        'MODBUSRTU': 'MODBUS',
-        'MODBUS_RTU': 'MODBUS',
+        'MODBUSTCP': 'modbus_tcp',
+        'MODBUS_TCP': 'modbus_tcp',
+        'MODBUSRTU': 'modbus_rtu',
+        'MODBUS_RTU': 'modbus_rtu',
         'OPCUA': 'OPC_UA',
         'ROS2': 'ROS_2',
     }
     protocol = aliases.get(key, key)
-    return protocol if protocol in PROTOCOL_CAPACITY else 'CUSTOM'
+    return protocol if protocol in PROTOCOL_CAPACITY else _topology_bus(interface_type)
 
 
 def extract_specification(prompt: str) -> dict:
@@ -796,7 +796,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         f"Engineering-Modell aus bestätigten Wizard-Vorgaben: {len(changes)} vorgeschlagene Änderungen. "
         "Noch keine Änderungen am kanonischen Modell; Freigabe und Übernahme sind erforderlich.",
         assumptions=['Technische Defaults und ergänzte Geräte stammen aus den Wizard-Branchenkatalogen und müssen geprüft werden.',
-                     'Alle Nachrichten erhalten vor dem Routing Empfänger. Gerätestatus geht an Diagnose, sonst an das zentrale Gateway bzw. einen anderen Controller; diese Simulationsvorgabe ist Bestandteil der Modellfreigabe.',
+                     'Lokale Messwerte und Stellbefehle erhalten ihre bestätigten Empfänger. Im lokalen Regelkreis bleibt Controllerstatus ohne ausdrücklich gewählte Ausgabe intern und wird nicht gesendet. Andere Architekturvarianten verwenden Diagnose, Gateway oder einen anderen Controller als Status-Empfänger; diese Simulationsvorgabe ist Bestandteil der Modellfreigabe.',
                      'Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.',
                      'Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).',
                      'Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe.'],

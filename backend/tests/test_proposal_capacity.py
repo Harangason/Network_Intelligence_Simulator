@@ -1,4 +1,27 @@
 from backend.engineering.agent_tools import proposal_service
+import pytest
+
+
+@pytest.mark.parametrize('technology', ['I2C', 'ModbusRTU', 'ModbusTCP', 'SPI', 'GPIO', 'CAN_FD'])
+def test_named_network_preserves_registered_technology(technology):
+    from backend.engineering.agent_tools.wizard_generation import _network_protocol
+    from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+    protocol = _network_protocol(technology)
+    assert DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol) == DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology)
+    result = proposal_service._validate_changes([{
+        'object_type': 'Network', 'action': 'CREATE', 'local_ref': 'network',
+        'data': {'id': 'local-control', 'technology': protocol},
+    }])
+    assert result['valid'], result
+
+
+def test_unknown_network_technology_is_not_accepted():
+    result = proposal_service._validate_changes([{
+        'object_type': 'Network', 'action': 'CREATE', 'local_ref': 'network',
+        'data': {'id': 'local-control', 'technology': 'UnspecifiedBus'},
+    }])
+    assert not result['valid']
+    assert any('Unbekannte Netzwerktechnologie' in finding['message'] for finding in result['findings'])
 
 
 def test_wizard_scale_proposal_exceeds_the_old_2000_change_ceiling(monkeypatch):

@@ -1,5 +1,13 @@
 from uuid import uuid4
 import pytest
+from backend.engineering.agent_tools import project_draft
+@pytest.mark.parametrize('sensor_text', ['4 Sensoren für Temperaturen', '4 Sensoren für Temperatur', '4 Sensoren die Temperatur messen', '4 temperature sensors'])
+def test_temperature_purpose_and_valve_actuators_are_concrete_devices(sensor_text):
+    draft = project_draft.parse_requirement(f'2 Aktoren für Ventile, {sensor_text}, und ein RaspberryPi')
+    assert len([d for d in draft['devices'] if d['role'] == 'SENSOR']) == 4
+    assert len([d for d in draft['devices'] if d['role'] == 'ACTUATOR']) == 2
+    assert len([d for d in draft['devices'] if d['role'] == 'CONTROLLER']) == 1
+    assert not any(i['code'] == 'DEVICE_KIND_REQUIRED' for i in draft['issues'])
 
 from backend.agent_core.api.tool_contract import Permission
 from backend.engineering.agent_tools import project_draft, proposal_service

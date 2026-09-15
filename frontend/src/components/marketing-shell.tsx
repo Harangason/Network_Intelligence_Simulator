@@ -61,7 +61,6 @@ export function MarketingNav() {
       </div>
       <div className="landing-nav-actions">
         <ProjectRefreshButton disabled={false} />
-        <ProjectAwareLink className="nav-cta" href="/projects">Open studio <Arrow /></ProjectAwareLink>
       </div>
     </nav>
   );

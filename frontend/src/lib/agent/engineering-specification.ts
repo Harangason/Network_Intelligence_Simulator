@@ -1392,13 +1392,13 @@ function explicitFunctionalOwner(name: string, controllers: string[], text: stri
 function impliedHardwareNames(line: string, confirmedActuators?: number) {
   const key = normalized(line);
   const names: string[] = [];
-  if (/\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/.test(key)) names.push('RaspberryPi');
+  if (/\b(?:raspberry|rasberry|rasperry|respary)\s*pi\b|\braspi\b/.test(key)) names.push('RaspberryPi');
   // Preserve a counted physical quantity instead of filling the count from unrelated templates.
-  const temperatureCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:temperatur(?:mess)?sensor(?:en|s)?|temperature sensors?|sensor(?:en|s)?\\s+(?:die\\s+)?temperatur\\s+messen)\\b`));
+  const temperatureCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:temperatur(?:mess)?sensor(?:en|s)?|temperature sensors?|sensor(?:en|s)?\\s+(?:(?:fuer|zur messung von)\\s+temperatur(?:en)?|(?:die\\s+)?temperatur(?:en)?\\s+messen|for\\s+temperatures?))\\b`));
   if (temperatureCount) {
     for (let i = 1; i <= Math.min(1000, countValue(temperatureCount[1])); i++) names.push(`Temperatursensor${i}`);
   }
-  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventil(?:e|en)?|valves?)\\b`));
+  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventilaktor(?:en)?|ventil(?:e|en)?|valves?)\\b`));
   if (valveCount) {
     for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
   } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
@@ -1708,6 +1708,19 @@ export function engineeringGenerationMode(text: string): 'REAL_PROJECT' | 'EXAMP
   return /\b(?:Musterprojekt|Beispielprojekt|example project|sample project|Skalierungsziel)\b/i.test(withoutNegatedExamples) ? 'EXAMPLE_PROJECT' : 'REAL_PROJECT';
 }
 
+function explicitDeviceConnections(text: string): Record<string, string> {
+  const raw = text.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+  if (!raw) return {};
+  let values: Record<string, string>;
+  try { values = JSON.parse(raw); } catch { return {}; }
+  if (!values || Array.isArray(values) || typeof values !== 'object') return {};
+  return Object.fromEntries(Object.entries(values).map(([name, technology]) => {
+    const canonical = canonicalCommunicationSystem(String(technology));
+    if (!canonical) return [normalizeHardwareName(name).toLocaleLowerCase('de'), 'Other'];
+    return [normalizeHardwareName(name).toLocaleLowerCase('de'), canonical];
+  }));
+}
+
 export function extractEngineeringSpecification(
   text: string,
   overrides: Partial<EngineeringHardwareCounts> = {},
@@ -1740,10 +1753,11 @@ export function extractEngineeringSpecification(
   const modelType = domainOverride || extractProjectModelType(text, inferredDomain);
   const domain = domainOverride || modelType || inferredDomain;
   const communicationSystems = extractCommunicationSystems(text);
-  const unconfiguredPi = /\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/i.test(text) && !communicationSystems.length;
-  const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text, (exampleRequested || legacyConfirmed) && domain === 'automotive' ? 'CAN' : 'Other');
+  const unconfiguredPi = /\b(?:raspberry|rasberry|rasperry|respary)[\s-]*pi\b|\braspi\b/i.test(text) && !communicationSystems.length;
+  const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text.replace(/^- Geräteanschlüsse:[^\r\n]*$/gm, ''), (exampleRequested || legacyConfirmed) && domain === 'automotive' ? 'CAN' : 'Other');
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
   const networkArchitecture = extractNetworkArchitectureMode(text);
+  const deviceConnections = explicitDeviceConnections(text);
   const declaredControllers = [...contexts.values()].filter(entry =>
     isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name))).map(entry => normalizeHardwareName(entry.name));
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
@@ -1763,9 +1777,10 @@ export function extractEngineeringSpecification(
     const minValue = range.min ?? (objectDetectionSignal ? 0 : defaults.min);
     const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
     const hardwareId = identifier(hardwareName);
-    const chainInterfaceType = interfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
+    const explicitConnection = deviceConnections[hardwareName.toLocaleLowerCase('de')];
+    const chainInterfaceType = explicitConnection || (interfaceType === "CAN" && /kamera|camera|radar|lidar|umfeld|objekt/i.test(`${hardwareName} ${context}`)
       ? "Ethernet"
-      : interfaceType;
+      : interfaceType);
     const dataType = (minValue ?? 0) < 0 ? "signed" : "unsigned";
     const lengthBits = generatedArchitectureBitLength({
       signalName: signal,
@@ -1807,8 +1822,9 @@ export function extractEngineeringSpecification(
       min_value: minValue,
       max_value: maxValue,
       ...architectureMetadata,
-      ...(functionalOwner ? { configuration: { ...architectureMetadata.configuration,
-        functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } } : {}),
+      configuration: { ...architectureMetadata.configuration,
+        ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
+        ...(functionalOwner ? { functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } : {}) },
       domain,
     };
   });
@@ -2008,8 +2024,8 @@ export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], 
     if (!assignment) return chain;
     return {
       ...chain,
-      interface_type: assignment.technology,
-      interface_name: `${normalizeHardwareName(chain.hardware_name)}_${assignment.technology}`,
+      interface_type: chain.configuration?.connection_source === 'explicit_device_connection' ? chain.interface_type : assignment.technology,
+      interface_name: `${normalizeHardwareName(chain.hardware_name)}_${chain.configuration?.connection_source === 'explicit_device_connection' ? chain.interface_type : assignment.technology}`,
       transport_network_ref: assignment.networkRef,
     };
   });

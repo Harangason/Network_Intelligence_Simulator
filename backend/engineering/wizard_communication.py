@@ -142,7 +142,7 @@ def communication_plan(prompt, graph):
             'producer_ref': producer, 'consumer_refs': sorted(targets)}
         if role == 'INTERNAL_STATE' and not targets:
             config['routing'] = {**config.get('routing', {}), 'enabled': False}
-            config['communication_contract']['scope'] = 'INTERNAL'
+            config['communication_contract']['scope'] = 'FUNCTION_OUTPUT'
         if previous.get('scope'):
             config['communication_contract']['scope'] = previous['scope']
         result[identifier] = config
@@ -173,7 +173,7 @@ def contract_findings(graph):
             continue  # Imported models use their own contracts.
         transport = config.get('transport_unit') or {}
         consumers = transport.get('consumer_refs') or []
-        internal = (contract.get('role') == 'INTERNAL_STATE' and contract.get('scope') == 'INTERNAL'
+        internal = (contract.get('role') == 'INTERNAL_STATE' and contract.get('scope') in {'INTERNAL', 'FUNCTION_OUTPUT'}
                     and (config.get('routing') or {}).get('enabled') is False and not consumers
                     and not contract.get('consumer_refs') and transport.get('producer_ref') in graph['HardwareNode'])
         if (not consumers and not internal or any(str(ref) not in graph['HardwareNode'] for ref in consumers)

@@ -1,4 +1,20 @@
 import assert from "node:assert/strict";
+test('device connection selection applies only to the named device', () => {
+  const task = '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi';
+  const spec = extractEngineeringSpecification(task + '\n- Geräteanschlüsse: {"RaspberryPi":"I2C","Temperatursensor1":"I2C","Ventilaktor1":"GPIO"}', { gateways: 0, ecus: 1, sensors: 4, actuators: 2 }, 'custom', true);
+  assert.equal(spec.chains.find(c => c.hardware_name === 'Temperatursensor1').interface_type, 'I2C');
+  assert.equal(spec.chains.find(c => c.hardware_name === 'Temperatursensor2').interface_type, 'Other');
+  assert.equal(spec.chains.find(c => c.hardware_name === 'Ventilaktor1').interface_type, 'GPIO');
+  assert.equal(spec.chains.find(c => c.hardware_name === 'Ventilaktor2').interface_type, 'Other');
+});
+test('temperature purpose phrases create the actual sensor inventory', () => {
+  for (const sensors of ['4 Sensoren für Temperaturen', '4 Sensoren für Temperatur', '4 Sensoren die Temperatur messen', '4 temperature sensors']) {
+    const spec = extractEngineeringSpecification(`2 Aktoren für Ventile, ${sensors}, und ein RaspberryPi`, { gateways: 0, ecus: 1, sensors: 4, actuators: 2 }, 'custom', true);
+    assert.equal(spec.chains.filter(c => c.device_type === 'SensorController').length, 4, sensors);
+    assert.equal(spec.chains.filter(c => c.device_type === 'ActuatorController').length, 2, sensors);
+    assert.ok(spec.chains.some(c => c.hardware_name === 'RaspberryPi'));
+  }
+});
 import { readFileSync } from 'node:fs';
 
 test('standard status replaces a generated legacy duplicate and class two has status', () => {

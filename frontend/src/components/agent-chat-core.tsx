@@ -644,7 +644,7 @@ const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
   {
     id: "sensor_ecu_actuator",
     label: "Variante 0 · Sensor-Controller-Aktor",
-    detail: "Lokaler Regelkreis ohne Gateway-Pfad: Sensoren liefern an die zuständige Steuerung, die Steuerung bedient Aktoren.",
+    detail: "Lokaler Regelkreis ohne Gateway-Pfad: Sensoren liefern an die zuständige Steuerung, die Steuerung bedient Aktoren. Controllerstatus bleibt intern; ausdrücklich gewählte Ausgaben bleiben erhalten.",
     diagram: "Sensor -> Controller -> Aktor",
     rules: "Lokale Funktionskette: Sensoren und Aktoren werden fachlich an den zuständigen Controller gebunden. Es werden keine Gateway-Verbindungen und keine direkten Sensor-/Aktor-Netzpfade angelegt.",
   },
@@ -1161,6 +1161,18 @@ export function EngineeringAgentWizard({
     else if (isEngineeringControllerDevice(type)) identifiedCounts.ecus += 1;
   }
   const equipmentIdentityReady = EQUIPMENT_CATEGORIES.every(({ key }) => identifiedCounts[key] === equipmentCounts[key]);
+  const connectionInventory = [...new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain])).values()];
+  const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
+  function selectDeviceConnection(name: string, technology: string) {
+    const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+    let connections: Record<string, string> = {};
+    try {
+      const parsed: unknown = marker ? JSON.parse(marker) : {};
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) connections = parsed as Record<string, string>;
+    } catch { /* Incomplete manual input is replaced by this explicit selection. */ }
+    if (technology) connections[name] = technology; else delete connections[name];
+    setTaskText(`${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`);
+  }
   const [newControllerName, setNewControllerName] = useState('');
   const [controllerAdditionError, setControllerAdditionError] = useState('');
   const controllerExtensionRef = useRef<string | null>(null);
@@ -1178,7 +1190,7 @@ export function EngineeringAgentWizard({
     const nextText = `${taskText}\nController namens "${name}".`;
     const nextSource = `${nextText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
     controllerExtensionRef.current = nextSource;
-    setEquipmentEdits({ source: nextSource, values: { ...equipmentValues, ecus: String(Math.max(equipmentCounts.ecus, identifiedCounts.ecus) + 1) } });
+    setEquipmentEdits({ source: nextSource, values: { ...equipmentValues, ecus: String(Math.max(equipmentCounts.ecus, identifiedCounts.ecus + 1)) } });
     setTaskText(nextText);
     setNewControllerName('');
     setControllerAdditionError('');
@@ -1259,8 +1271,10 @@ export function EngineeringAgentWizard({
   const technologyChoices = useMemo(() => {
     const executable = (technology: Technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED");
     if (mode === "can") return allTechnologies.filter((technology) => executable(technology) && isCanTechnology(technology.id, technology.family));
-    return (selectedDomain?.technologies ?? []).filter(executable);
-  }, [allTechnologies, mode, selectedDomain]);
+    const choices = [...(selectedDomain?.technologies ?? []), ...allTechnologies.filter(technology =>
+      recognizedEquipment.communicationSystems.some(system => technologyMatchesRecognizedSystem(technology, system)))];
+    return [...new Map(choices.filter(executable).map(technology => [technology.id, technology])).values()];
+  }, [allTechnologies, mode, selectedDomain, recognizedEquipment.communicationSystems]);
 
   useEffect(() => {
     let active = true;
@@ -1305,7 +1319,7 @@ export function EngineeringAgentWizard({
           // The new requirement must not inherit automotive defaults from another task.
           const evidence = engineeringDomainEvidence(intake);
           setSelectedIndustry(evidence.domain === 'generic'
-            ? /\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/i.test(intake) ? 'embedded_systems' : 'custom'
+            ? /\b(?:raspberry|rasberry|rasperry|respary)[\s-]*pi\b|\braspi\b/i.test(intake) ? 'embedded_systems' : 'custom'
             : evidence.domain);
         }
         return;
@@ -2029,7 +2043,7 @@ export function EngineeringAgentWizard({
         `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
         `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
-        `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments))}\n` +
+        `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
         `- Gelernte Topologie-Nachbarschaften: ${topologyKnowledge.lessonSummary.join("; ") || "noch keine Projektkorrekturen gelernt"}\n` +
@@ -2404,6 +2418,7 @@ export function EngineeringAgentWizard({
       ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
     ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
     ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
+    ...(unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
     ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
     ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
     ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
@@ -2949,7 +2964,8 @@ export function EngineeringAgentWizard({
                 <th scope="row">{label}</th>
                 <td>
                   <div className="agent-count-stack">
-                    <span><small>Erkannt</small><b>{recognizedEquipment.targetCounts[key]}</b></span>
+                    <span><small>Erkannt</small><b>{identifiedCounts[key]}</b></span>
+                    {recognizedEquipment.targetCounts[key] !== identifiedCounts[key] && <span><small>Im Text genannt</small><b>{recognizedEquipment.targetCounts[key]}</b></span>}
                     <label>
                       <small>Verbindlich</small>
                       <input aria-label={`${label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
@@ -2988,12 +3004,23 @@ export function EngineeringAgentWizard({
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
           {!equipmentIdentityReady && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Bitte die Geräte und ihre Aufgabe in der Anforderung konkret benennen.</p>}
-          <section aria-label="Controller ergänzen" className="agent-cluster-review">
+          {identifiedCounts.ecus < equipmentCounts.ecus && <section aria-label="Controller ergänzen" className="agent-cluster-review">
             <label>Controller im Auftrag ergänzen<input aria-label="Name des zusätzlichen Controllers" value={newControllerName} disabled={effectiveBusy} onChange={event => setNewControllerName(event.target.value)} placeholder="z. B. RaspberryPi" /></label>
             <button type="button" disabled={effectiveBusy || !newControllerName.trim()} onClick={addRequestedController}>Controller ergänzen</button>
-            <button type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>
             {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
-          </section>
+          </section>}
+          {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>}
+          {(unresolvedConnections.length > 0 || /^- Geräteanschlüsse:/m.test(taskText)) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
+            <h3>Geräteanschlüsse festlegen</h3>
+            <p>Der Gerätetyp legt seinen Anschluss nicht fest. Wähle je Gerät die vorgesehene Technik. Für einen Entwurf gilt deine Auswahl als Modellannahme, nicht als Nachweis realer Hardware.</p>
+            {connectionInventory.map(chain => <label key={chain.hardware_name}>{chain.hardware_name}
+              <select aria-label={`${chain.hardware_name}: Anschluss`} disabled={effectiveBusy} value={chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(chain.hardware_name, event.target.value)}>
+                <option value="">Bitte auswählen</option>
+                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'GPIO', 'PWM', 'ADC', 'DAC', ...(chain.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
+              </select>
+            </label>)}
+            {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
+          </section>}
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
           {!equipmentOwnershipReady && <p role="alert">Vor der Übergabe müssen alle Teilnehmer aktiver Cluster einem Controller zugeordnet oder der betreffende Cluster abgewählt werden.</p>}
@@ -3319,7 +3346,11 @@ export function EngineeringAgentWizard({
                       : currentRunMessages.length || workflowHasProgress
                         ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
                         : "Der Auftrag wird an den Agenten übergeben."}</small>
-                {canRetryPopupRun && (
+                {runPaused && /Anschlusstechnik.*nicht eindeutig unterstützt/.test(runMessage || '') ? (
+                  <button className="button primary tiny" onClick={() => setSupplementOpen(true)} type="button">
+                    Anschlüsse ergänzen
+                  </button>
+                ) : canRetryPopupRun && (
                   <button className="button primary tiny" onClick={() => void retryPopupRun(false)} type="button">
                     Auftrag fortsetzen
                   </button>
@@ -3367,7 +3398,7 @@ export function EngineeringAgentWizard({
             : activeStepId === "project"
               ? projectReady ? "Projektname bereit" : "Projektname fehlt"
             : activeStepId === "equipment"
-              ? equipmentReady && equipmentIdentityReady && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, erkannte Geräte, Busse und Controller-Zuordnung prüfen"
+              ? equipmentReady && equipmentIdentityReady && !unresolvedConnections.length && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, erkannte Geräte, Anschlüsse, Busse und Controller-Zuordnung prüfen"
             : activeStepId === "architecture"
               ? architectureReady ? "Architektur gewählt" : "Auswahl erforderlich"
               : activeGroup

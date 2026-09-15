@@ -131,6 +131,24 @@ def test_single_controller_keeps_an_explicit_unresolved_review_finding():
     assert contract_findings(graph)
 
 
+def test_confirmed_local_status_excludes_only_controller_output_from_transport():
+    prompt, graph = fixture()
+    for kind in ('HardwareNode', 'Interface', 'Message'):
+        graph[kind] = {key: row for key, row in graph[kind].items() if key not in {'diag', 'gateway'}}
+    prompt = '- Systemcluster-Graph: ' + json.dumps([{'controller_status_scope': 'INTERNAL',
+        'controllers': [{'ecu': 'Motor', 'sensors': ['Temperatur'], 'actuators': ['Ventil']}]}])
+    plan = communication_plan(prompt, graph)
+    assert plan['ecu']['communication_contract']['scope'] == 'FUNCTION_OUTPUT'
+    assert plan['ecu']['routing']['enabled'] is False
+    assert plan['sensor']['transport_unit']['consumer_refs'] == ['ecu']
+    assert plan['actuator']['transport_unit']['consumer_refs'] == ['ecu']
+    assert plan['command']['transport_unit']['consumer_refs'] == ['actuator']
+    for key, config in plan.items():
+        graph['Message'][key]['configuration'] = config
+    assert contract_findings(graph) == []
+    assert communication_plan(prompt, graph) == plan
+
+
 def test_conflicting_ownership_is_not_silently_resolved():
     prompt, graph = fixture()
     clusters = json.loads(prompt.split(': ', 1)[1])

@@ -20,6 +20,9 @@ from .timing import generated_timing
 
 
 BUS_PROTOCOLS = {
+    "i2c": "I2C",
+    "modbus_rtu": "MODBUS_RTU",
+    "modbus_tcp": "MODBUS_TCP",
     "can": "CAN",
     "can_xl": "CAN_XL",
     "can_fd": "CAN_FD",

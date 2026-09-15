@@ -633,7 +633,7 @@ export function equipmentClusterSummary(assignments: EquipmentClusterAssignment[
     .join("; ");
 }
 
-export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignment[]) {
+export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignment[], architectureId?: string) {
   return assignments
     .filter((assignment) => assignment.selected)
     .map((assignment) => ({
@@ -642,6 +642,7 @@ export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignm
       network_id: assignment.network_id,
       network_label: assignment.network_label,
       bus_name: assignment.bus_name,
+      ...(architectureId === 'sensor_ecu_actuator' ? { controller_status_scope: 'INTERNAL' } : {}),
       controllers: (assignment.tree ?? []).map((controller) => ({
         ecu: controller.name,
         sensors: controller.sensors.map((sensor) => sensor.name),

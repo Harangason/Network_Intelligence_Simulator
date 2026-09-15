@@ -109,7 +109,7 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
     counts = {}
     issues = []
     pi = any(not _negated(requirement, match) for match in re.finditer(
-        r'\b(?:raspberry|rasperry|respary)[\s-]*pi\b|\braspi\b', requirement, re.I))
+        r'\b(?:raspberry|rasberry|rasperry|respary)[\s-]*pi\b|\braspi\b', requirement, re.I))
 
     def add(name, role, source, *, known_kind=True):
         key = name.casefold()
@@ -130,12 +130,12 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
         role = {'sensor': 'SENSOR', 'aktor': 'ACTUATOR', 'gateway': 'GATEWAY'}.get(match[1].lower(), 'CONTROLLER')
         add(match[2].strip(), role, match[0])
     for role, pattern, stem, known in [
-        ('SENSOR', r'temperatur(?:mess)?sensor(?:en|s)?|temperature\s+sensors?|sensor(?:en|s)?\s+(?:die\s+)?temperatur\s+messen', 'Temperatursensor', True),
+        ('SENSOR', r'temperatur(?:mess)?sensor(?:en|s)?|temperature\s+sensors?|sensor(?:en|s)?\s+(?:(?:für|fuer|zur messung von)\s+temperatur(?:en)?|(?:die\s+)?temperatur(?:en)?\s+messen|for\s+temperatures?)', 'Temperatursensor', True),
         ('SENSOR', r'drucksensor(?:en|s)?|pressure\s+sensors?', 'Drucksensor', True),
         ('SENSOR', r'feuchtigkeits(?:mess)?sensor(?:en|s)?|humidity\s+sensors?', 'Feuchtigkeitssensor', True),
         ('SENSOR', r'stromsensor(?:en|s)?|current\s+sensors?', 'Stromsensor', True),
         ('SENSOR', r'spannungssensor(?:en|s)?|voltage\s+sensors?', 'Spannungssensor', True),
-        ('ACTUATOR', r'ventil(?:e|en)?|valves?', 'Ventilaktor', True),
+        ('ACTUATOR', r'ventilaktor(?:en)?|ventil(?:e|en)?|valves?|aktor(?:en)?\s+(?:(?:für|fuer)\s+ventile|zum\s+(?:steuern\s+von\s+ventilen|ventil\s+steuern))', 'Ventilaktor', True),
         ('SENSOR', r'sensor(?:en|s)?', 'Sensor', False),
         ('ACTUATOR', r'aktor(?:en)?|actuators?', 'Aktor', False),
     ]:

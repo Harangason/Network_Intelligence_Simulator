@@ -22,6 +22,12 @@ manifest, and starts that image with a disposable database and runtime. It runs:
 
 - A new small request entered into the real six-page browser wizard, with real
   proposal approval, nine workflow stages, reload and application restart.
+- Two non-automotive Raspberry Pi temperature/valve requests through all nine
+  stages, using I2C and Modbus RTU. The unqualified request must first require
+  explicit device connections; selecting one device must not silently assign
+  that connection to the rest. Local controller outputs remain explicit
+  non-routed FUNCTION_OUTPUT messages. ALL-scope evidence may exclude only those
+  exact signal IDs; measurements, feedback and actuator commands remain covered.
 - The captured 50-controller / 250-sensor / 250-actuator request, submitted through
   the normal START API and continued through the real wizard review UI. Its exact
   specification and original project/run provenance live in `frontend/e2e/fixtures`.
@@ -72,6 +78,7 @@ The candidate's receipt and reports supply execution evidence.
 | Failure or contract | Verification level |
 | --- | --- |
 | Real new small request, all nine stages, finish | Browser, real backend/MCP/PostgreSQL |
+| Non-automotive I2C and Modbus RTU control projects | Browser, real review/apply, nine persisted stages and ALL-scope simulation |
 | Exact confirmed large specification and all original signal encodings | API start, browser review/apply, canonical semantic manifest |
 | Reload after model commit, restart after routing commit | Browser with persistent isolated runtime |
 | Crash during a running simulation, same job identity and full traces | Browser plus real isolated container kill/restart |
