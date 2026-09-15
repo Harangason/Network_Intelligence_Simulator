@@ -512,9 +512,14 @@ def test_topology_layout_is_stored_as_project_scoped_node_rows(monkeypatch):
         def fetchall(self):
             return self.value or []
 
+        def fetchone(self):
+            return self.value
+
     class Connection:
         def execute(self, query, parameters=None):
             statement = " ".join(str(query).split())
+            if statement.startswith("SELECT 1 FROM engineering_deleted_projects"):
+                return Result()
             if statement.startswith("INSERT INTO engineering_workflow_projects"):
                 return Result()
             if statement.startswith("DELETE FROM engineering_topology_layouts"):

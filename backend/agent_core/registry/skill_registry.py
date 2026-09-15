@@ -8,10 +8,11 @@ class SkillRegistry:
     tools: dict
 
     def contracts(self, permissions):
-        return [{'skill_id': item['id'], 'version': '1', 'purpose': item['description'],
+        return [{'skill_id': item['id'], 'version': '2', 'purpose': item['description'],
             'accepted_inputs': ['TEXT', 'FILE', 'SELECTION', 'MODEL_OBJECT', 'USER_DECISION'],
             'required_context': ['project_ref', 'model_revision'], 'required_capabilities': item['tools'],
-            'outputs': ['PROPOSAL', 'FINDING', 'VALIDATION'] if item['id'] != 'port' else ['MODEL_CHANGE', 'VALIDATION', 'VISUALIZATION'],
+            'outputs': item.get('execution', {}).get('outputs', ['FINDING']),
+            'execution': item.get('execution', {'mode': 'UNVERIFIED', 'agent_can_apply': False}),
             'validation': ['current_project', 'current_revision', 'domain_validation'],
             'failure_modes': ['NOT_SUPPORTED', 'PERMISSION_DENIED', 'CONFLICT', 'BLOCKED'],
             'available': all(name in self.tools and self.tools[name].permission in permissions for name in item['tools'])}

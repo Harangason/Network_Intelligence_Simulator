@@ -52,7 +52,7 @@ def _assumptions_need_review(assumptions: list[dict[str, Any]]) -> bool:
 def expand_requirement(
     prompt: str,
     *,
-    domain: str = "automotive",
+    domain: str | None = None,
     model: str = "engineering-workload-orchestrator",
 ) -> dict[str, Any]:
     """Expand a requirement into a deterministic proposal payload."""

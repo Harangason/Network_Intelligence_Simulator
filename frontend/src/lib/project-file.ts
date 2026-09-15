@@ -83,6 +83,15 @@ export async function saveProjectBundleToFile(
   bundle: ProjectBundle,
   { forceChoose = false }: { forceChoose?: boolean } = {},
 ): Promise<{ fileName: string; persistent: boolean }> {
+  if (!forceChoose) {
+    const response = await fetch('/api/engineering/projects/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': bundle.project_id },
+      body: JSON.stringify({ project_id: bundle.project_id }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Projekt konnte nicht in SAVED gespeichert werden.');
+    return { fileName: result.path, persistent: true };
+  }
   const browser = window as ProjectFileWindow;
   let handle = forceChoose ? null : await readHandle(bundle.project_id);
   if (handle && !(await ensureWritePermission(handle))) handle = null;

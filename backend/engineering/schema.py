@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-SCHEMA_VERSION = 26
+SCHEMA_VERSION = 27
 MIGRATION_LOCK_ID = 1_947_042_611
 
 
@@ -413,6 +413,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
+    "CREATE TABLE IF NOT EXISTS engineering_deleted_projects (project_id TEXT PRIMARY KEY, deleted_at TIMESTAMPTZ NOT NULL DEFAULT now())",
     """
     CREATE TABLE IF NOT EXISTS engineering_topology_layouts (
         project_id TEXT NOT NULL REFERENCES engineering_workflow_projects(project_id) ON DELETE CASCADE,

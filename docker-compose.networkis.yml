@@ -33,6 +33,9 @@ services:
       FLASK_PORT: 15050
       FRONTEND_PORT: 13500
       NETWORKIS_ALLOW_NON_CANONICAL_ROOT: "1"
+      SIMULATOR_SAVED_ROOT: /trace-output
+      NETWORKIS_TRACE_HOST_PATH: I:/PycharmProjects/My_first_Network_Simulator/SAVED
+      NETWORKIS_TRACE_MOUNT_PATH: /trace-output
       SIMULATOR_BACKEND_API_URL: http://127.0.0.1:15050/api
       NEXT_TELEMETRY_DISABLED: "1"
       AI_PROVIDER: ${AI_PROVIDER:-hybrid-demand}
@@ -62,6 +65,11 @@ services:
       # Windows drive shares can fail with EIO while services remain alive.
       # Existing data must be copied and verified before the first cutover.
       - networkis-runtime-data:/app/backend/runtime
+      - type: bind
+        source: ./SAVED
+        target: /trace-output
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:15050/api/ready', timeout=5).read()"]
       interval: 30s

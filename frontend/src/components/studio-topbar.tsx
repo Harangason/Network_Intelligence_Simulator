@@ -27,8 +27,6 @@ export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: str
   const [activeProjectId, setActiveProjectId] = useState(initialProjectId);
   const [wizardSession, setWizardSession] = useState<EngineeringAgentWizardSession | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [agentLogEnabled, setAgentLogEnabled] = useState(false);
-  const [agentLogBusy, setAgentLogBusy] = useState(false);
   const syncWizardSession = useCallback(() => {
     setWizardSession(readEngineeringAgentWizardSession(readActiveProjectId()));
   }, []);
@@ -54,49 +52,10 @@ export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: str
     };
   }, [syncWizardSession]);
 
-  useEffect(() => {
-    let active = true;
-    fetch("/api/agent/diagnostics?agentLog=status", { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload: { enabled?: boolean } | null) => {
-        if (active) setAgentLogEnabled(payload?.enabled === true);
-      })
-      .catch(() => {
-        if (active) setAgentLogEnabled(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   function returnToWizard() {
     if (!wizardSession) return;
     requestEngineeringAgentWizard(wizardSession.projectId);
     if (pathname !== "/studio/engineering") router.push(withProjectParam("/studio/engineering", wizardSession.projectId));
-  }
-
-  async function toggleAgentLogging() {
-    if (agentLogBusy) return;
-    setAgentLogBusy(true);
-    try {
-      const response = await fetch("/api/agent/diagnostics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "agent-log",
-          enabled: !agentLogEnabled,
-          projectId: readActiveProjectId(),
-          runId: "topbar",
-        }),
-      });
-      if (!response.ok) throw new Error(`Logging konnte nicht geschaltet werden (${response.status}).`);
-      const payload = await response.json() as { enabled?: boolean };
-      setAgentLogEnabled(payload.enabled === true);
-    } catch {
-      setAgentLogEnabled(false);
-    } finally {
-      setAgentLogBusy(false);
-    }
   }
 
   return (
@@ -120,17 +79,6 @@ export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: str
         </div>
         <div className="topbar-actions">
           <ProjectActions />
-          <button
-            aria-pressed={agentLogEnabled}
-            className={`topbar-command topbar-log-toggle ${agentLogEnabled ? "active" : ""}`}
-            disabled={agentLogBusy}
-            onClick={() => void toggleAgentLogging()}
-            title={agentLogEnabled ? "Agent-Event-Logging stoppen" : "Agent-Event-Logging starten"}
-            type="button"
-          >
-            <span className="topbar-log-dot" aria-hidden="true" />
-            {agentLogEnabled ? "Loggen aus" : "Loggen an"}
-          </button>
           <button className="topbar-command" onClick={() => setImportOpen(true)} type="button">
             Importieren
           </button>

@@ -93,6 +93,9 @@ def begin(prompt, context, raw_input=None, wizard_command=None):
                 raise ConcurrentUpdateError('Diese Operations-ID gehört zu einem anderen Auftrag.')
             return {'duplicate': True, 'run_id': state.get('run_id'), 'prompt': state.get('current_requirement', ''),
                     'context': context.model_dump(), 'wizard_receipt': {**previous_operation, 'duplicate': True}}
+        if command.action != 'START' and not (command.wizard_context or {}).get('engineering_draft_ref'):
+            from .structured_project_draft import assert_current
+            assert_current(state, (saved.get('context') or {}).get('agent_wizard_status') or {})
         descriptor, wizard = resolve_request(command, prompt, saved.get('context') or {}, current_project_id())
         if (command.action == 'CONTINUE' and (saved.get('context', {}).get('wizard_request') or {}).get('version') != 2
                 and saved.get('artifact_checks', {}).get('engineering_model', {}).get('complete')):
@@ -228,6 +231,8 @@ def begin(prompt, context, raw_input=None, wizard_command=None):
         wizard = {**wizard, 'status': 'RUNNING',
             'resume_count': int(wizard.get('resume_count') or 0) + int(command.action == 'CONTINUE'),
             'automatic_resume_count': int(wizard.get('automatic_resume_count') or 0) + int(command.automatic)}
+        from .structured_project_draft import capture
+        capture(state, descriptor, wizard)
         updates = {'wizard_request': descriptor, 'agent_wizard_status': wizard}
         if command.action == 'START' and isinstance(wizard.get('engineering_wizard_settings'), dict):
             updates['engineering_wizard_settings'] = wizard.pop('engineering_wizard_settings')
@@ -261,6 +266,8 @@ def begin(prompt, context, raw_input=None, wizard_command=None):
         from .run_status import WizardExecutionTracker
         WizardExecutionTracker(current_project_id(), command.run_id, owner_turn_id=state['run_id']).started()
     restored = context.model_copy(update={'current_requirement': prompt, 'input_envelope': envelope,
+        'project_draft_id': (state.get('engineering_draft') or {}).get('draft_id'),
+        'project_draft_revision': (state.get('engineering_draft') or {}).get('revision'),
         'current_workload': state.get('active_workload') if raw_input else context.current_workload,
         'answered_questions': state['answered_questions'], 'active_proposal': state.get('active_proposal') if raw_input else None,
         'unresolved_findings': [{**finding, 'decision':state['decisions'].get(finding_id, {'status':'OPEN'})}

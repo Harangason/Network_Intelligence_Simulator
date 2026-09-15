@@ -252,7 +252,7 @@ test("specification extraction is stable over 25 project-creation passes", () =>
 
 test("completeness-first expansion retains every controller referenced by generated endpoints", () => {
   const result = extractEngineeringSpecification(
-    "Industrie: Automotive\n- Lichtsteuergerät",
+    "- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Automotive\n- Lichtsteuergerät",
     { sensors: 100, actuators: 100, ecus: 50, gateways: 1 },
     "automotive",
     true,
@@ -409,7 +409,7 @@ test("corrected quantities can exceed the initial template catalog", () => {
 
 test("250 endpoints expand into unique semantic roles instead of numbered clones", () => {
   const result = extractEngineeringSpecification(
-    "Industrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
+    "- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
     { sensors: 250, actuators: 250, ecus: 50, gateways: 1 },
     "automotive",
     true,
@@ -427,6 +427,7 @@ test("250 endpoints expand into unique semantic roles instead of numbered clones
 
 test("system completeness supplements an underspecified ADAS low-level scope", () => {
   const result = extractEngineeringSpecification(`
+- Generierungsmodus: EXAMPLE_PROJECT
 Industrie: Automotive
 - Fahrerassistenzsteuergeraet
 - Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
@@ -462,7 +463,7 @@ test("generated system variants follow the selected industry without ECU suffixe
   ];
 
   for (const [label, domain, expectedName, expectedType] of examples) {
-    const result = extractEngineeringSpecification(`Industrie: ${label}\n- 3 ECUs\n- 1 Gateway`);
+    const result = extractEngineeringSpecification(`- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: ${label}\n- 3 ECUs\n- 1 Gateway`);
     const controllerNames = result.chains.filter((chain) => chain.device_type === expectedType).map((chain) => chain.hardware_name);
 
     assert.equal(result.domain, domain, label);
@@ -472,7 +473,8 @@ test("generated system variants follow the selected industry without ECU suffixe
 });
 
 test("automotive prose headings do not create generic or synonymous duplicate ECUs", () => {
-  const result = extractEngineeringSpecification(`Industrie: Automotive
+  const result = extractEngineeringSpecification(`- Generierungsmodus: EXAMPLE_PROJECT
+Industrie: Automotive
 - 50 Funktions-ECUs
 - 1 zentrales Gateway
 
@@ -503,8 +505,8 @@ test("automotive prose headings do not create generic or synonymous duplicate EC
 });
 
 test("generated sensor names and buses stay industry specific", () => {
-  const industrial = extractEngineeringSpecification("Industrie: Industrial Automation\n- 2 Sensoren\n- 1 ECU");
-  const embedded = extractEngineeringSpecification("Industrie: Embedded Systems\n- 2 Sensoren\n- 1 ECU");
+  const industrial = extractEngineeringSpecification("- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Industrial Automation\n- 2 Sensoren\n- 1 ECU");
+  const embedded = extractEngineeringSpecification("- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Embedded Systems\n- 2 Sensoren\n- 1 ECU");
 
   assert.deepEqual(
     industrial.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.hardware_name),
@@ -589,7 +591,7 @@ test("direct prose creation request extracts front camera engineering chain", ()
   assert.equal(result.chains[0].device_type, "SensorController");
   assert.equal(result.chains[0].domain, "automotive");
   assert.equal(result.chains[0].function_name, "Frontkamera_Umfelderfassung");
-  assert.equal(result.chains[0].interface_type, "Ethernet");
+  assert.equal(result.chains[0].interface_type, "Other");
   assert.equal(result.chains[0].interface_name, "Frontkamera");
   assert.equal(result.chains[0].message_name, "Frontkamera Umfelderfassung");
   assert.equal(result.chains[0].signal_name, "ObjektErkannt");
@@ -679,7 +681,7 @@ test("explicit model types select their native controller classes", () => {
     ["custom", "IndustrialPC"],
   ];
   for (const [modelType, expectedType] of examples) {
-    const result = extractEngineeringSpecification(`- Projekt-Modelltyp: ${modelType}\n- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":0,"actuators":0}`);
+    const result = extractEngineeringSpecification(`- Generierungsmodus: EXAMPLE_PROJECT\n- Projekt-Modelltyp: ${modelType}\n- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":0,"actuators":0}`);
     assert.equal(result.domain, modelType);
     assert.equal(result.chains.length, 1);
     assert.equal(result.chains[0].device_type, expectedType, modelType);
@@ -714,7 +716,7 @@ test("companion domains do not inherit percentage, boolean or state metadata", (
 
 test("hosted output templates preserve hosts, explicit signals and separate editable messages", async () => {
   const { addAutomotiveFunctionOutputs } = await import("./engineering-specification.ts");
-  const spec = extractEngineeringSpecification("Automotive Fahrzeug mit 50 ECUs und 1 Gateway");
+  const spec = extractEngineeringSpecification("Beispielprojekt: Automotive Fahrzeug mit 50 ECUs und 1 Gateway");
   const enriched = addAutomotiveFunctionOutputs(spec.chains, spec.domain);
   assert.equal(new Set(enriched.map(c => c.hardware_name)).size, new Set(spec.chains.map(c => c.hardware_name)).size);
   assert.deepEqual(enriched.slice(0, spec.chains.length), spec.chains);

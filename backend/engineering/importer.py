@@ -17,7 +17,8 @@ import yaml
 
 from .db import get_connection
 from .models import DEVICE_TYPES, INTERFACE_TYPES, EngineeringValidationError
-from .repository import ENTITY_SPECS, create_object
+from .repository import BASE_COLUMNS, ENTITY_SPECS, create_object
+from .project_context import current_project_id
 
 IMPORT_ORIGIN = "engineering-import"
 _locks: dict[str, threading.Lock] = {}
@@ -718,9 +719,25 @@ def _existing(object_type: str, import_id: str, import_key: str) -> dict[str, An
     table = ENTITY_SPECS[object_type].table
     with get_connection() as connection:
         return connection.execute(
-            f"SELECT * FROM {table} WHERE provenance ->> 'origin' = %s AND provenance ->> 'import_id' = %s AND provenance ->> 'import_key' = %s",
-            (IMPORT_ORIGIN, import_id, import_key),
+            f"SELECT * FROM {table} WHERE project_id = %s AND provenance ->> 'origin' = %s AND provenance ->> 'import_id' = %s AND provenance ->> 'import_key' = %s",
+            (current_project_id(), IMPORT_ORIGIN, import_id, import_key),
         ).fetchone()
+
+
+IMPORT_GROUPS = (('hardware_nodes', 'HardwareNode', None, None),
+                 ('functions', 'Function', 'hardware_key', 'hardware_node_id'),
+                 ('interfaces', 'Interface', 'function_key', 'function_id'),
+                 ('messages', 'Message', 'interface_key', 'interface_id'),
+                 ('signals', 'Signal', 'message_key', 'message_id'))
+
+
+def import_payload(kind, item, ids, parent_key, parent_field):
+    """One field mapping for the UI importer and reviewed agent proposals."""
+    fields = set(BASE_COLUMNS) | set(ENTITY_SPECS[kind].own_columns)
+    payload = {key: value for key, value in item.items() if key in fields}
+    if parent_key:
+        payload[parent_field] = ids[item[parent_key]]
+    return payload
 
 
 def commit_import(plan: dict[str, Any]) -> dict[str, Any]:
@@ -746,17 +763,7 @@ def commit_import(plan: dict[str, Any]) -> dict[str, Any]:
             created += 1
             return str(result["id"])
 
-        for item in plan.get("hardware_nodes", []):
-            ids[item["key"]] = persist("HardwareNode", item, {"name": item["name"], "domain": item.get("domain") or "generic", "device_type": item.get("device_type") or "GenericDevice"})
-        for item in plan.get("functions", []):
-            ids[item["key"]] = persist("Function", item, {"name": item["name"], "domain": item.get("domain") or "generic", "hardware_node_id": ids[item["hardware_key"]]})
-        for item in plan.get("interfaces", []):
-            function_id = ids[item["function_key"]]
-            with get_connection() as connection:
-                function = get_object("Function", function_id)
-            ids[item["key"]] = persist("Interface", item, {"name": item["name"], "domain": item.get("domain") or "generic", "function_id": function_id, "hardware_node_id": str(function["hardware_node_id"]), "interface_type": item.get("interface_type") or "Other"})
-        for item in plan.get("messages", []):
-            ids[item["key"]] = persist("Message", item, {"name": item["name"], "domain": item.get("domain") or "generic", "interface_id": ids[item["interface_key"]], "message_id_hex": item.get("message_id_hex"), "direction": item.get("direction"), "cycle_ms": item.get("cycle_ms"), "dlc": item.get("dlc")})
-        for item in plan.get("signals", []):
-            ids[item["key"]] = persist("Signal", item, {"name": item["name"], "domain": item.get("domain") or "generic", "message_id": ids[item["message_key"]], **{key: item.get(key) for key in ("display_name", "start_bit", "length_bits", "byte_order", "data_type", "factor", "offset_value", "unit", "min_value", "max_value")}})
+        for group, kind, parent_key, parent_field in IMPORT_GROUPS:
+            for item in plan.get(group, []):
+                ids[item['key']] = persist(kind, item, import_payload(kind, item, ids, parent_key, parent_field))
         return {"import_id": import_id, "created": created, "reused": reused, "counts": plan.get("counts", {})}

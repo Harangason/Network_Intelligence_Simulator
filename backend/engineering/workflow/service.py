@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from ..db import get_connection
+from ..models import EngineeringValidationError
 from ..scope_rules import normalize_engineering_scope_rules, scope_placeholder_sql, scope_count_mismatches
 from .models import (
     WORKFLOW_LABELS,
@@ -137,6 +138,8 @@ class WorkflowStatusService:
         activate_project(self.project_id)
 
     def _ensure(self, connection) -> None:
+        if connection.execute('SELECT 1 FROM engineering_deleted_projects WHERE project_id=%s', (self.project_id,)).fetchone():
+            raise EngineeringValidationError('Dieses Projekt wurde gelöscht. Bitte ein anderes Projekt öffnen.')
         connection.execute(
             """
             INSERT INTO engineering_workflow_projects

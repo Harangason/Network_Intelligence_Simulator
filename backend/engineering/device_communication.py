@@ -5,7 +5,7 @@ ECU_STATES = {'OFF': 0, 'INIT': 1, 'READY': 2, 'ACTIVE': 3, 'DEGRADED': 4, 'ERRO
 EXECUTION_STATES = {'IDLE': 0, 'ACCEPTED': 1, 'EXECUTING': 2, 'COMPLETED': 3, 'FAILED': 4}
 
 
-def complete_new_controller_status(changes):
+def complete_new_controller_status(changes, *, status_technology=None, status_cycle_ms=None):
     """Give newly proposed controllers the same status contract as the wizard.
 
     Used by the function and camera generators. Existing hardware and its
@@ -28,9 +28,13 @@ def complete_new_controller_status(changes):
                         and c['data'].get('function_id') == function_ref), None)
         base = node['local_ref'] + '-status'
         if logical is None:
+            if not status_technology:
+                raise ValueError('Statusanschluss für ' + data['name'] + ' ist nicht festgelegt.')
             logical = {'object_type': 'Interface', 'local_ref': base + '-logical', 'data': {
-                'name': data['name'] + ' Status', 'function_id': function_ref, 'interface_type': 'CAN_FD'}}
+                'name': data['name'] + ' Status', 'function_id': function_ref, 'interface_type': status_technology}}
             changes.append(logical)
+        if status_cycle_ms is None or not 0 < float(status_cycle_ms) <= 3600000:
+            raise ValueError('Statuszyklus für ' + data['name'] + ' ist nicht festgelegt oder ungültig.')
         technology = logical['data']['interface_type']
         physical = next((c for c in created if c['object_type'] == 'HardwareNetworkInterface'
                          and c['data'].get('hardware_node_id') == node_ref
@@ -42,7 +46,7 @@ def complete_new_controller_status(changes):
             changes.append(physical)
         changes.append({'object_type': 'Message', 'local_ref': base + '-message', 'data': {
             'name': data['name'] + ' Status', 'interface_id': '$' + logical['local_ref'],
-            'hardware_interface_id': '$' + physical['local_ref'], 'direction': 'tx', 'cycle_ms': 100, 'dlc': 1,
+            'hardware_interface_id': '$' + physical['local_ref'], 'direction': 'tx', 'cycle_ms': status_cycle_ms, 'dlc': 1,
             'configuration': {'generation_role': 'DEVICE_STATUS', 'requires_hardware_adaptation': True,
                               'transport_unit': {'producer_ref': node_ref}}}})
     complete_new_actuator_messages(changes, {kind: [] for kind in

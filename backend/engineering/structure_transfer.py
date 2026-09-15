@@ -238,6 +238,16 @@ def _candidate_match(
     rejected: Counter[str],
     used_ids: set[str],
 ) -> tuple[dict[str, Any] | None, float, str, str]:
+    # Candidates are restricted to the mapped parent. Reviewed transfer lineage
+    # is stronger evidence than similar names across different ECU contexts.
+    previous = [item for item in candidates if str(item['id']) not in used_ids
+                and (item.get('provenance') or {}).get('origin') == 'structure-transfer'
+                and str((item.get('provenance') or {}).get('source_object_id')) == str(source['id'])]
+    if len(previous) == 1:
+        candidate = previous[0]
+        key = _learning_key(str(source['object_type']), str(source['name']), str(candidate['name']),
+                            source_context=source_parent_name, target_context=target_parent_name)
+        return candidate, 1.0, 'Bereits aus diesem Quellobjekt übertragen; Elternzuordnung geprüft', key
     ranked: list[tuple[float, dict[str, Any], str, str]] = []
     for candidate in candidates:
         candidate_id = str(candidate["id"])

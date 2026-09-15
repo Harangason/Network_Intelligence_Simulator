@@ -10,9 +10,7 @@ import {
   ENGINEERING_AGENT_PENDING_TASK_KEY,
   ENGINEERING_AGENT_PENDING_WIZARD_KEY,
   ENGINEERING_AGENT_WIZARD_SESSION_KEY,
-  requestEngineeringAgentWizard,
 } from "@/lib/agent-task-events";
-import { ProjectRefreshButton } from './project-refresh-button';
 import { notifyWorkflowChanged } from "./workflow-header";
 
 type ProjectActionsProps = {
@@ -25,7 +23,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
-  const [busy, setBusy] = useState<"new" | "clear" | "save" | "open" | "">("");
+  const [busy, setBusy] = useState<"clear" | "save" | "open" | "">("");
   const [message, setMessage] = useState("");
 
   function setActiveProject(nextProjectId: string) {
@@ -36,12 +34,6 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   function createProjectId() {
     const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
     return `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
-  }
-
-  function notifyAgentAboutNewProject(nextProjectId: string) {
-    window.sessionStorage.removeItem(ENGINEERING_AGENT_PENDING_TASK_KEY);
-    window.sessionStorage.removeItem(ENGINEERING_AGENT_WIZARD_SESSION_KEY);
-    requestEngineeringAgentWizard(nextProjectId, { dispatch: false });
   }
 
   function clearBrowserProjectState(projectIds: string[]) {
@@ -55,22 +47,6 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     window.sessionStorage.removeItem("networkis:pending-agent-new-project");
     for (const id of projectIds) {
       window.localStorage.removeItem(`networkis:engineering-agent-wizard:${id}`);
-    }
-  }
-
-  async function handleNew() {
-    setBusy("new");
-    setMessage("");
-    try {
-      const nextProjectId = createProjectId();
-      setActiveProject(nextProjectId);
-      notifyAgentAboutNewProject(nextProjectId);
-      setMessage(`Neu: leerer Workspace ${nextProjectId}`);
-      window.location.assign(withProjectParam("/studio/engineering", nextProjectId));
-    } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Neuer Workspace konnte nicht angelegt werden.");
-    } finally {
-      setBusy("");
     }
   }
 
@@ -148,11 +124,9 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
     <>
       <div className={className}>
         {showMessage && message && <span className="project-file-message" role="status">{message}</span>}
-        <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleNew()} type="button">Neu</button>
         <button className="topbar-command danger" disabled={Boolean(busy)} onClick={() => setClearDialogOpen(true)} type="button">Clear</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleSave()} type="button">Speichern</button>
         <button className="topbar-command" disabled={Boolean(busy)} onClick={() => void handleOpen()} type="button">Öffnen</button>
-        <ProjectRefreshButton disabled={Boolean(busy)} />
       </div>
 
       {clearDialogOpen && (

@@ -14,6 +14,8 @@ from backend.engineering.project_context import activate_project, reset_project
 from backend.engineering.db import RequestUnit
 from backend.simulator_engineering_mcp.server import create_server
 
+CONFIRMED_CONTROLLER = {"new_hardware": {"name": "VisionController", "device_type": "ECU"}, "status_technology": "CAN_FD", "status_cycle_ms": 100}
+
 
 @pytest.fixture
 def authority():
@@ -49,6 +51,58 @@ def test_project_resources_are_bound(authority):
     asyncio.run(run())
 
 
+def test_mcp_draft_partial_edits_preserve_unspecified_fields(authority):
+    async def run():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            first = await client.call('update_project_draft', {'action': 'CREATE', 'operation_id': uuid4().hex,
+                'requirement': 'Raspberry Pi und drei Sensoren'})
+            assert first.success, first
+            draft = first.data['draft']
+            controller = next(d for d in draft['devices'] if d['role'] == 'CONTROLLER')
+            sensor = next(d for d in draft['devices'] if d['role'] == 'SENSOR')
+            resolved = await client.call('update_project_draft', {'action': 'RESOLVE', 'operation_id': uuid4().hex,
+                'revision': 1, 'devices': [{'device_id': sensor['id'], 'owner_id': controller['id'],
+                                           'purpose': 'Raumtemperatur messen', 'technology': 'ethernet'}]})
+            assert resolved.success, resolved
+            updated = await client.call('update_project_draft', {'action': 'RESOLVE', 'operation_id': uuid4().hex,
+                'revision': 2, 'devices': [{'device_id': sensor['id'], 'name': 'Raumtemperatur'}]})
+            assert updated.success, updated
+            value = next(d for d in updated.data['draft']['devices'] if d['id'] == sensor['id'])
+            assert value['name'] == 'Raumtemperatur' and value['owner_id'] == controller['id']
+            assert value['technology'] == 'ethernet' and value['purpose'] == 'Raumtemperatur messen'
+            assert updated.data['draft']['industry'] == 'embedded_systems'
+            cleared = await client.call('update_project_draft', {'action': 'RESOLVE', 'operation_id': uuid4().hex,
+                'revision': 3, 'industry': None, 'devices': [{'device_id': sensor['id'], 'purpose': None}]})
+            assert cleared.success, cleared
+            assert cleared.data['draft']['industry'] is None
+            assert not next(d for d in cleared.data['draft']['devices'] if d['id'] == sensor['id'])['known_kind']
+    asyncio.run(run())
+
+
+def test_agent_can_plan_deletion_but_only_human_review_allows_apply(authority):
+    from backend.engineering.repository import create_object, list_objects
+    created = execute(authority, 'fixture', Permission.GENERATE_PROPOSAL, {},
+        lambda _: create_object('HardwareNode', {'name': 'TemporärerSensor', 'device_type': 'SensorController'}))
+    assert created.success
+    async def plan():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            planned = await client.call('delete_object_via_impact_analysis', {'object_type': 'HardwareNode',
+                'object_id': str(created.data['id']), 'rationale': 'Nicht benötigten Testteilnehmer entfernen.'})
+            assert planned.success, planned
+            valid = await client.call('validate_proposal', {'proposal_id': planned.data['proposal_id']})
+            assert valid.success and valid.data['validation_result']['valid'], valid
+            denied = await client.call('apply_approved_proposal', {'proposal_id': planned.data['proposal_id']})
+            assert not denied.success
+            return valid.data
+    proposal = asyncio.run(plan())
+    assert execute(authority, 'read', Permission.READ_MODEL, {}, lambda _: len(list_objects('HardwareNode'))).data == 1
+    assert human_review(authority, proposal).success
+    applier = ToolAuthority(authority.project_id, 'review-ui', DEFAULT_PERMISSIONS | {Permission.APPLY_APPROVED_PROPOSAL})
+    applied = call(applier, 'apply_approved_proposal', {'proposal_id': proposal['proposal_id']})
+    assert applied.success, applied
+    assert execute(authority, 'read', Permission.READ_MODEL, {}, lambda _: list_objects('HardwareNode')).data == []
+
+
 def call(authority, name, args):
     definition = TOOLS[name]
     return execute(authority,name,definition.permission,args,definition.handler)
@@ -62,7 +116,7 @@ def human_review(authority, proposal):
 
 
 def test_proposal_requires_review_and_applies_once(authority):
-    made = call(authority,"generate_functions",{"prompt":"360 Grad Kamera mit Objekterkennung"})
+    made = call(authority,"generate_functions",{"prompt":"360 Grad Kamera mit Objekterkennung", **CONFIRMED_CONTROLLER})
     assert made.success, made
     proposal = made.data
     before = call(authority,"search_model",{"query":"Vision","limit":100})
@@ -132,7 +186,7 @@ def test_network_proposal_and_resource(authority):
 
 
 def test_changed_model_invalidates_approved_proposal(authority):
-    made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen."}).data
+    made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     valid=call(authority,"validate_proposal",{"proposal_id":made["proposal_id"]}).data
     assert human_review(authority,valid).data["status"]=="APPROVED"
     from backend.engineering.repository import create_object
@@ -147,7 +201,7 @@ def test_browser_approval_requires_separate_intent(authority):
     from backend.app import create_app
     app=create_app(testing=True)
     client=app.test_client()
-    made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen."}).data
+    made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     valid=call(authority,"validate_proposal",{"proposal_id":made["proposal_id"]}).data
     path=f"/api/engineering/agent/proposals/{made['proposal_id']}"
     headers={"X-Project-ID":authority.project_id}
@@ -171,7 +225,7 @@ def test_browser_approval_requires_separate_intent(authority):
 
 def wizard_review_proposal(authority):
     """Create a small validated proposal with a wizard-only proposal type."""
-    generated = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen."})
+    generated = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER})
     assert generated.success, generated
     created = execute(
         authority,
@@ -282,7 +336,7 @@ def test_wizard_review_rolls_back_approval_when_apply_reconciliation_fails(autho
 
 
 def test_wizard_review_endpoint_rejects_generic_proposals(authority):
-    proposal = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen."}).data
+    proposal = call(authority, "generate_functions", {"prompt": "Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     proposal = call(authority, "validate_proposal", {"proposal_id": proposal["proposal_id"]}).data
     client, headers = wizard_review_client(authority)
     path = f"/api/engineering/agent/proposals/{proposal['proposal_id']}/approve-apply?view=status"
@@ -315,7 +369,7 @@ def test_real_stdio_protocol(authority):
 
 def test_concurrent_apply_has_one_canonical_result(authority):
     from concurrent.futures import ThreadPoolExecutor
-    made = call(authority, "generate_functions", {"prompt": "Erzeuge 2 Kamera Funktionen."}).data
+    made = call(authority, "generate_functions", {"prompt": "Erzeuge 2 Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     valid = call(authority, "validate_proposal", {"proposal_id": made["proposal_id"]}).data
     assert human_review(authority, valid).success
     applier = ToolAuthority(authority.project_id, "review-ui", DEFAULT_PERMISSIONS | {Permission.APPLY_APPROVED_PROPOSAL})

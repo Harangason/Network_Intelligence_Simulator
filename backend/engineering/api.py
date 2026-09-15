@@ -1,9 +1,9 @@
-"""REST-Schnittstellen für das kanonische Engineering-Modell.
+"""REST-Schnittstellen fÃ¼r das kanonische Engineering-Modell.
 
-Dieses Blueprint stellt ausschließlich CRUD- und Versionierungs-Endpunkte für
+Dieses Blueprint stellt ausschlieÃŸlich CRUD- und Versionierungs-Endpunkte fÃ¼r
 Engineering-Objekte (HardwareNode, Function, Interface, Message, Signal),
 deren Relations sowie kontrollierte Knowledge-Abfragen bereit. Simulation und
-Agent bleiben getrennt; Retrieval liest ausschließlich die Source of Truth.
+Agent bleiben getrennt; Retrieval liest ausschlieÃŸlich die Source of Truth.
 """
 
 from __future__ import annotations
@@ -274,7 +274,7 @@ def _pagination_args() -> tuple[int, int]:
         limit = min(max(int(request.args.get("limit", 100)), 1), 500)
         offset = max(int(request.args.get("offset", 0)), 0)
     except (TypeError, ValueError):
-        raise EngineeringValidationError("'limit' und 'offset' müssen ganze Zahlen sein.")
+        raise EngineeringValidationError("'limit' und 'offset' mÃ¼ssen ganze Zahlen sein.")
     return limit, offset
 
 
@@ -356,6 +356,10 @@ def _project_id() -> str:
 def _activate_request_project() -> None:
     g.engineering_project_token = activate_project(_project_id())
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        if request.endpoint != 'engineering_api.delete_project_route':
+            with get_connection() as connection:
+                if connection.execute('SELECT 1 FROM engineering_deleted_projects WHERE project_id=%s', (_project_id(),)).fetchone():
+                    raise EngineeringValidationError('Dieses Projekt wurde gelÃ¶scht. Bitte ein anderes Projekt Ã¶ffnen.')
         g.engineering_unit = RequestUnit(_project_id())
 
 
@@ -368,7 +372,7 @@ def _finish_engineering_transaction(response):
             unit.finish(response.status_code < 400)
         except Exception:
             logger.exception("Engineering transaction could not be committed")
-            return make_response(jsonify({"error": "Änderung konnte nicht vollständig gespeichert werden. Bitte neu laden."}), 503)
+            return make_response(jsonify({"error": "Ã„nderung konnte nicht vollstÃ¤ndig gespeichert werden. Bitte neu laden."}), 503)
     response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -480,7 +484,7 @@ def _propagate_source_changes(response):
             )
         except Exception:
             logger.exception("Workflow-Invalidierung konnte nicht persistiert werden")
-            return make_response(jsonify({"error": "Workflow konnte nicht aktualisiert werden. Die Änderung wurde zurückgerollt."}), 503)
+            return make_response(jsonify({"error": "Workflow konnte nicht aktualisiert werden. Die Ã„nderung wurde zurÃ¼ckgerollt."}), 503)
         try:
             _auto_recalculate_capacity(project_id)
         except Exception:
@@ -510,7 +514,7 @@ def performance_governance():
 
 @engineering_api.route("/schema", methods=["GET"])
 def schema():
-    """Metadaten für Frontend-Formulare: Vokabulare und Ressourcen-Layout."""
+    """Metadaten fÃ¼r Frontend-Formulare: Vokabulare und Ressourcen-Layout."""
     registry = DeviceClassificationRegistry()
     return jsonify(
         {
@@ -631,7 +635,7 @@ def _sync_topology_with_invalidation(topology: dict, project_id: str):
     unit = getattr(g, "engineering_unit", None)
     if unit is not None and unit.model_changed:
         WorkflowStatusService(project_id).mark_changed(
-            "engineering_model", "Netzwerkabgleich hat kanonische Objekte geändert."
+            "engineering_model", "Netzwerkabgleich hat kanonische Objekte geÃ¤ndert."
         )
         unit.model_changed = False
     return result
@@ -788,6 +792,8 @@ def workflow_revision_route():
 @engineering_api.route("/workflow/context", methods=["PATCH"])
 def workflow_context_route():
     payload = _routing_payload()
+    from ..app.saved_storage import project_folder
+    project_folder(_project_id()).mkdir(parents=True, exist_ok=True)
     return jsonify(
         WorkflowStatusService(_project_id()).set_context(
             payload,
@@ -957,12 +963,12 @@ def update_bus_technology_route():
     check_edit_token(payload.get('expected_token'), current['topology'])
     plan = load_bus_change(current, str(payload.get('network_id') or ''), payload.get('bus'))
     if payload.get('plan_token') != plan['preview']['token']:
-        raise WorkflowConflictError('Das Modell wurde seit der Vorschau geändert. Bitte den Bustyp erneut auswählen.')
+        raise WorkflowConflictError('Das Modell wurde seit der Vorschau geÃ¤ndert. Bitte den Bustyp erneut auswÃ¤hlen.')
     topology = plan['topology']
     patch = payload.get('edge') or {}
     edge = next((e for e in topology['edges'] if e['id'] == patch.get('id')), None)
     if edge is None or edge.get('physicalNetworkId') != payload['network_id']:
-        raise EngineeringValidationError('Die bearbeitete Verbindung gehört nicht zum gewählten Bus.')
+        raise EngineeringValidationError('Die bearbeitete Verbindung gehÃ¶rt nicht zum gewÃ¤hlten Bus.')
     original_edge = next(e for e in current['topology']['edges'] if e['id'] == edge['id'])
     for field in ('name', 'sourceInterfaceName', 'targetInterfaceName', 'relationType', 'description', 'direction'):
         if field in patch:
@@ -984,7 +990,7 @@ def update_bus_technology_route():
                         update_object('HardwareNetworkInterface', port['hardwareInterfaceId'], {'name': port['name']})
     workflow.save_parameters({**current['parameters'], 'networks': plan['networks']}, actor=actor)
     topology, _ = _prepare_manual_topology_save(topology, project_id, actor=actor)
-    workflow.mark_changed('engineering_model', 'Bustyp und kanonische Transportbindungen geändert.', actor=actor)
+    workflow.mark_changed('engineering_model', 'Bustyp und kanonische Transportbindungen geÃ¤ndert.', actor=actor)
     affected = {n['id'] for n in plan['preview']['networks']}
     for route in plan['routes']:
         enriched = enrich_route_from_linked_topology(route, topology)
@@ -992,7 +998,7 @@ def update_bus_technology_route():
             if endpoint.get('network_id') in affected:
                 endpoint['protocol'] = BUS_PROTOCOLS[payload['bus']]
         update_route(str(route['id']), {'source': enriched['source'], 'destinations': enriched['destinations'],
-                     'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'Physischer Bustyp geändert.'})
+                     'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'Physischer Bustyp geÃ¤ndert.'})
         for link in topology['edges']:
             metadata = (link.get('routingMetadata') or {}).get(str(route['id']))
             if metadata:
@@ -1003,7 +1009,7 @@ def update_bus_technology_route():
         identifier = str(route['id'])
         saved = get_route(identifier)
         save_validation(identifier, validator.validate(saved, exclude_route_id=identifier), actor=actor)
-    workflow.refresh_source_status('routing', actor=actor, reason='Geänderte Busrouten sind erneut zu prüfen und freizugeben.')
+    workflow.refresh_source_status('routing', actor=actor, reason='GeÃ¤nderte Busrouten sind erneut zu prÃ¼fen und freizugeben.')
     state = workflow.get()
     state['bus_change'] = plan['preview']
     return jsonify(state)
@@ -1052,7 +1058,7 @@ def create_frame_device_route():
     plan['node'].update(engineeringId=str(hardware['id']), name=hardware['name'])
     topology = build_network_scene(plan['topology'],
         (state['context'].get('wizard_request') or {}).get('prompt', ''), positions=plan['positions'])
-    workflow.mark_changed('engineering_model', 'Neues Gerät im Systemrahmen: Gerätedetails und Kommunikation ergänzen.',
+    workflow.mark_changed('engineering_model', 'Neues GerÃ¤t im Systemrahmen: GerÃ¤tedetails und Kommunikation ergÃ¤nzen.',
                           status='IN_PROGRESS', actor=actor)
     workflow.save_topology(topology, actor=actor, layout_positions=plan['positions'])
     result = workflow.get()
@@ -1092,7 +1098,7 @@ def apply_network_assignment_route():
     check_edit_token(payload.get('expected_token'), state['topology'])
     plan = load_assignment(state, assignment_request(payload))
     if payload.get('plan_token') != plan['preview']['token']:
-        raise WorkflowConflictError('Die Zuordnung wurde seit der Vorschau geändert. Bitte die Vorschau erneut prüfen.')
+        raise WorkflowConflictError('Die Zuordnung wurde seit der Vorschau geÃ¤ndert. Bitte die Vorschau erneut prÃ¼fen.')
     resolved = {}
     def resolve(value):
         if isinstance(value, dict):
@@ -1124,14 +1130,14 @@ def apply_network_assignment_route():
         route = resolve(planned)
         if not planned.get('_assignment_new'):
             update_route(str(route['id']), {**{k: route[k] for k in ('name', 'source', 'destinations', 'payload', 'route')},
-                         'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'Bestätigte System- und Buszuordnung geändert.'})
+                         'expected_revision': route['revision'], 'modified_by': actor, 'reason': 'BestÃ¤tigte System- und Buszuordnung geÃ¤ndert.'})
         # Withdraw obsolete approved graph edges until this revision is approved.
         with get_connection() as connection:
             connection.execute("DELETE FROM engineering_relations WHERE project_id = %s AND "
                 "((relation_type = 'ROUTES_TO' AND attributes ->> 'route_id' = %s) OR "
                 "(relation_type = 'USES_ROUTE' AND target_type = 'RoutingEntry' AND target_id = %s))",
                 (project_id, str(route['id']), str(route['id'])))
-    workflow.mark_changed('engineering_model', 'Systemzuordnung, Transportverträge und Busanschlüsse geändert.', actor=actor)
+    workflow.mark_changed('engineering_model', 'Systemzuordnung, TransportvertrÃ¤ge und BusanschlÃ¼sse geÃ¤ndert.', actor=actor)
     workflow.save_topology(topology, actor=actor, layout_positions=positions)
     validator = RoutingValidator(project_id)
     validations = []
@@ -1143,7 +1149,7 @@ def apply_network_assignment_route():
             raise EngineeringValidationError(f"Zuordnung nicht gespeichert: {route['name']}: {details}")
         save_validation(identifier, validation, actor=actor)
         validations.append({'id': identifier, 'valid': validation.get('valid'), 'errors': validation.get('errors', [])})
-    workflow.refresh_source_status('routing', actor=actor, reason='Geänderte Zuordnung: betroffene Routen erneut freigeben.')
+    workflow.refresh_source_status('routing', actor=actor, reason='GeÃ¤nderte Zuordnung: betroffene Routen erneut freigeben.')
     result = workflow.get()
     result['assignment'] = {**plan['preview'], 'validations': validations}
     return jsonify(result)
@@ -1381,11 +1387,23 @@ def ml_explain_for_qwen_route():
 
 @engineering_api.route("/projects", methods=["GET"])
 def list_projects_route():
+    try:
+        offset = max(0, int(request.args.get("offset", 0)))
+    except (TypeError, ValueError):
+        raise EngineeringValidationError("offset muss eine ganze Zahl sein.")
     with get_connection() as connection:
         rows = connection.execute(
-            "SELECT project_id, active_step, statuses, updated_at FROM engineering_workflow_projects ORDER BY updated_at DESC LIMIT 200"
+            """SELECT project_id, active_step, statuses, created_at, updated_at,
+                COALESCE(NULLIF(context->>'project_name', ''),
+                    NULLIF(context->'engineering_wizard_settings'->>'project_name', ''), project_id) AS name,
+                LEFT(COALESCE(NULLIF(context->>'project_description', ''),
+                    context->'agent_wizard_status'->>'task', ''), 300) AS description
+                FROM engineering_workflow_projects
+                ORDER BY updated_at DESC, project_id LIMIT 200 OFFSET %s""", (offset,)
         ).fetchall()
-    return jsonify({"items": rows, "count": len(rows)})
+        total = connection.execute("SELECT COUNT(*) AS count FROM engineering_workflow_projects").fetchone()["count"]
+    return jsonify({"items": rows, "count": len(rows), "total": total,
+                    "next_offset": offset + len(rows) if offset + len(rows) < total else None})
 
 
 @engineering_api.route("/projects/export", methods=["GET"])
@@ -1397,6 +1415,37 @@ def export_project_route():
     if target and normalize_project_id(target) != source:
         service.import_bundle(bundle, target_project_id=target)
     return jsonify(bundle)
+
+
+@engineering_api.route("/projects/save", methods=["POST"])
+def save_project_route():
+    from ..app.saved_storage import save_bundle
+    from ..app.trace_storage import TraceStorage
+    project = normalize_project_id(_project_id())
+    path = save_bundle(ProjectBundleService().export(project))
+    return jsonify({"project_id": project, "path": TraceStorage().display_path(path)})
+
+
+@engineering_api.route("/projects/delete", methods=["POST"])
+def delete_project_route():
+    from ..app.job_service import JOBS
+    from ..app.saved_storage import project_folder
+    import shutil
+    project = normalize_project_id(_project_id())
+    if _routing_payload().get('confirm_project_id') != project:
+        raise EngineeringValidationError('Bitte das konkrete Projekt zum LÃ¶schen bestÃ¤tigen.')
+    jobs = JOBS.list(project)
+    if any(job.get('status') not in {'completed', 'failed', 'canceled'} for job in jobs):
+        raise EngineeringValidationError('FÃ¼r dieses Projekt lÃ¤uft noch eine Simulation. Bitte zuerst beenden.')
+    folder = project_folder(project)
+    result = ProjectBundleService().reset_workspace(project, delete=True)
+    # Commit the logical deletion before removing files. A cleanup failure can
+    # safely retry against the tombstone; a database rollback must never lose files.
+    g.engineering_unit.finish(True)
+    JOBS.forget_project(project)
+    if folder.exists():
+        shutil.rmtree(folder)
+    return jsonify({"project_id": project, "deleted": True, "cleared_tables": result['cleared_tables']})
 
 
 @engineering_api.route("/projects/import", methods=["POST"])
@@ -1477,10 +1526,10 @@ def capacity_optimize_route():
         decision = str(network.get("decision") or "UNRESOLVED_CAPACITY_CONSTRAINT")
         if decision == "SPLIT_CURRENT_TECHNOLOGY":
             summary = (
-                f"Überlasteten Zweig {network['network_id']} anhand seiner Pakete auf "
+                f"Ãœberlasteten Zweig {network['network_id']} anhand seiner Pakete auf "
                 f"{network['proposed_segments']} {network['protocol']}-Segmente verteilen; "
                 f"Prognose maximal {network['projected_max_load_percent']:.2f} %."
-                + (f" Tool plant {network['new_resources_required']} zusätzliche Ressourcen ein."
+                + (f" Tool plant {network['new_resources_required']} zusÃ¤tzliche Ressourcen ein."
                    if network.get('new_resources_required') else ' Vorhandene freie Segmente werden genutzt.')
             )
             kind = "SPLIT_NETWORK_BRANCH"
@@ -1491,19 +1540,19 @@ def capacity_optimize_route():
                 {},
             )
             summary = (
-                f"Für {network['network_id']} reicht der freie {network['protocol']}-Bestand nicht aus. "
+                f"FÃ¼r {network['network_id']} reicht der freie {network['protocol']}-Bestand nicht aus. "
                 f"Auf {network['selected_protocol']} mit {candidate.get('required_segments', 1)} Segment(en) migrieren; "
                 "Payload und Ziel-Buslast sind rechnerisch geeignet."
             )
             kind = "MIGRATE_NETWORK_TECHNOLOGY"
         elif decision == 'KEEP_CURRENT_WITH_RESERVE_WARNING':
-            summary = (f"{network['network_id']}: bestehendes physisch zulässiges Netz behalten; "
-                       'die unveränderte Reserveunterschreitung bleibt sichtbar. '
+            summary = (f"{network['network_id']}: bestehendes physisch zulÃ¤ssiges Netz behalten; "
+                       'die unverÃ¤nderte Reserveunterschreitung bleibt sichtbar. '
                        + ' '.join(item['message'] for item in network.get('warnings') or []))
             kind = 'CAPACITY_RESERVE_REVIEW'
         else:
             summary = (
-                f"Für {network['network_id']} wurde keine verfügbare Kombination aus Segmentanzahl, "
+                f"FÃ¼r {network['network_id']} wurde keine verfÃ¼gbare Kombination aus Segmentanzahl, "
                 "Payload und Technologie innerhalb der Ziel-Buslast gefunden."
             )
             kind = "CAPACITY_CONSTRAINT_REVIEW"
@@ -1527,7 +1576,7 @@ def capacity_optimize_route():
             "target_id": constraint["protocol"],
             "summary": (
                 f"{constraint['protocol']}: {constraint['used']} Segmente belegt, aber nur "
-                f"{constraint['provisioned']} bestätigt. Die Überschreitung um "
+                f"{constraint['provisioned']} bestÃ¤tigt. Die Ãœberschreitung um "
                 f"{constraint['excess']} Segmente muss konsolidiert oder freigegeben werden."
             ),
             "inventory_constraint": constraint,
@@ -2331,7 +2380,7 @@ def hardware_node_logical_address_route(object_id: str):
     impact = allocator.impact_analysis(object_id, payload["logical_node_address"])
     if not bool(payload.get("confirm")):
         return jsonify({
-            "error": "Manuelle Adressänderung muss nach der Impact-Analyse bestätigt werden.",
+            "error": "Manuelle AdressÃ¤nderung muss nach der Impact-Analyse bestÃ¤tigt werden.",
             "impact": impact,
         }), 409
     return jsonify(allocator.assign_address(
@@ -2366,9 +2415,9 @@ def create_resource(resource: str):
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     if payload.get("source") == "ai_generated":
-        return jsonify({"error": "KI-Ergebnisse müssen zuerst als AIProposal gespeichert werden."}), 409
+        return jsonify({"error": "KI-Ergebnisse mÃ¼ssen zuerst als AIProposal gespeichert werden."}), 409
     if payload.get("approval_state") not in (None, "pending"):
-        return jsonify({"error": "Freigaben sind nur über den Approval-Service zulässig."}), 409
+        return jsonify({"error": "Freigaben sind nur Ã¼ber den Approval-Service zulÃ¤ssig."}), 409
     item = create_object(object_type, payload)
     return jsonify(item), 201
 
@@ -2386,7 +2435,7 @@ def update_resource(resource: str, object_id: str):
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     if "approval_state" in payload:
-        return jsonify({"error": "Freigaben sind nur über den Approval-Service zulässig."}), 409
+        return jsonify({"error": "Freigaben sind nur Ã¼ber den Approval-Service zulÃ¤ssig."}), 409
     item = update_object(object_type, object_id, payload)
     return jsonify(item)
 
@@ -2405,7 +2454,7 @@ def resource_versions(resource: str, object_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Relations (Kanten des zukünftigen Knowledge Graphs)
+# Relations (Kanten des zukÃ¼nftigen Knowledge Graphs)
 # ---------------------------------------------------------------------------
 
 
@@ -2428,7 +2477,7 @@ def create_relation_route():
     if not isinstance(payload, dict):
         return jsonify({"error": "Ein JSON-Objekt wird erwartet."}), 400
     if payload.get("source") == "ai_generated":
-        return jsonify({"error": "KI-Relations müssen zuerst als AIProposal gespeichert werden."}), 409
+        return jsonify({"error": "KI-Relations mÃ¼ssen zuerst als AIProposal gespeichert werden."}), 409
     item = create_relation(payload)
     return jsonify(item), 201
 
@@ -2519,7 +2568,7 @@ def approve_all_valid_proposals_route():
     return jsonify({"items": items, "count": len(items)})
 
 
-# Sicherstellen, dass alle registrierten Ressourcen tatsächlich Specs haben
-# (fällt zur Importzeit auf, falls ein neuer Eintrag in RESOURCES vergessen
+# Sicherstellen, dass alle registrierten Ressourcen tatsÃ¤chlich Specs haben
+# (fÃ¤llt zur Importzeit auf, falls ein neuer Eintrag in RESOURCES vergessen
 # wurde, in ENTITY_SPECS nachzuziehen).
 assert set(RESOURCES.values()) <= set(ENTITY_SPECS), "RESOURCES referenziert unbekannten Objekttyp"

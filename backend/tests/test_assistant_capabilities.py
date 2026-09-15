@@ -37,6 +37,22 @@ def test_directory_has_unique_executable_workflows_and_real_tools(directory):
     assert directory['project_name'] == 'NIS Projekt A'
 
 
+def test_capability_contract_does_not_equate_navigation_or_analysis_with_apply(directory):
+    entries = {item['id']: item for item in directory['capabilities']}
+    for item in entries.values():
+        assert item['execution']['navigation_executes'] is False
+        assert item['execution']['completion_condition']
+    assert entries['duplicates']['execution']['mode'] == 'ANALYSIS_ONLY'
+    assert entries['duplicates']['execution']['agent_can_apply'] is False
+    assert entries['structure']['execution']['ui_only_completion'] is False
+    assert entries['faults']['execution']['ui_only_completion'] is False
+    assert entries['faults']['execution']['mode'] == 'REVIEWABLE_PROPOSAL'
+    assert entries['hardware']['execution']['requires_human_model_approval'] is True
+    contracts = {item['skill_id']: item for item in directory['skill_contracts']}
+    assert 'PROPOSAL' not in contracts['spatial']['outputs']
+    assert contracts['structure']['execution'] == entries['structure']['execution']
+
+
 @pytest.mark.parametrize('prompt,expected', [
     ('kennst du den reparatur agenten', 'repair'),
     ('zeige mir deine fähigkeiten', ''),
@@ -100,6 +116,18 @@ def test_repair_and_navigation_tools_survive_large_tool_selection():
     tools = [{'name': name} for name in TOOLS]
     names = {t['name'] for t in select_tools('Reparatur neue Hardwarearchitektur Signal Nachricht CAN Bus Routing Simulation Trace Fehler', tools)}
     assert {'inspect_communication_repair', 'inspect_assistant_capabilities', 'prepare_assistant_action'} <= names
+
+
+@pytest.mark.parametrize('prompt, required', [
+    ('Erstelle einen Sensor', {'describe_model_object_fields', 'create_objects_via_proposal'}),
+    ('Den gespeicherten Projektentwurf planen', {'inspect_project_draft', 'plan_project_model', 'update_project_draft'}),
+    ('Funktion einem anderen Controller zuordnen', {'plan_structure_assignments', 'map_function_to_hardware'}),
+    ('Das gewählte Gerät entfernen', {'delete_object_via_impact_analysis'}),
+])
+def test_new_execution_tools_are_available_to_the_reasoner(prompt, required):
+    selected = select_tools(prompt, [{'name': name} for name in TOOLS])
+    assert required <= {tool['name'] for tool in selected}
+    assert len(selected) <= 24
 
 
 def test_general_terms_do_not_invite_invented_object_ids():

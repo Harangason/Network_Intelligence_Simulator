@@ -27,6 +27,7 @@ import {
 import { getWorkflow, saveWorkflowParameters, setWorkflowContext } from "@/lib/workflow-api";
 import { notifyWorkflowChanged } from "./workflow-header";
 import { BUS_SETTING_LABELS } from "@/lib/bus-settings";
+import { AgentLoggingSettings } from "./agent-logging-settings";
 import { TraceStorageSettingsPanel } from "./trace-storage-settings";
 
 export function SettingsPanel() {
@@ -242,6 +243,8 @@ export function SettingsPanel() {
             Standard wiederherstellen
           </button>
         </section>
+
+        <AgentLoggingSettings />
 
         <section className="panel settings-panel settings-wizard" aria-labelledby="wizard-settings">
           <div className="panel-heading">

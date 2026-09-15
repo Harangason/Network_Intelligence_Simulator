@@ -155,6 +155,14 @@ def resolve_request(command: WizardCommand, prompt: str, context: dict, project_
         requested = [step for step in WORKFLOW_STEPS if step in scopes]
         if not requested or command.target != requested[-1]:
             raise ValueError('Das Workflowziel muss dem bestätigten Auftragsumfang entsprechen.')
+        if wizard.get('engineering_draft_ref'):
+            from .project_draft import workflow_request
+            source = wizard['engineering_draft_ref']
+            prepared = workflow_request({**source, 'run_id': command.run_id,
+                                         'scope_ids': scopes, 'project_name': wizard.get('project_name', '')})
+            if canonical_wizard_prompt(prompt) != canonical_wizard_prompt(prepared['prompt']):
+                raise ConcurrentUpdateError('Die bestätigten Entwurfsangaben stimmen nicht mit dem Workflowauftrag überein.')
+            wizard = {**wizard, **prepared['context']}
         descriptor = request_descriptor(prompt, command.run_id, command.target)
         if saved.get('version') == 2 and saved.get('run_id') == command.run_id and saved.get('revision') != descriptor['revision']:
             raise ConcurrentUpdateError('Der bestätigte Auftrag ist unveränderlich. Änderungen benötigen einen neuen Auftrag.')
@@ -162,6 +170,12 @@ def resolve_request(command: WizardCommand, prompt: str, context: dict, project_
         return descriptor, wizard
     if wizard.get('run_id') != command.run_id:
         raise ConcurrentUpdateError('Dieser Wizardauftrag ist nicht mehr der aktuelle Projektauftrag.')
+    if wizard.get('engineering_draft_ref') and command.action != 'AMEND':
+        from .project_draft import inspect as inspect_draft
+        draft = inspect_draft()
+        source = wizard['engineering_draft_ref']
+        if not draft or draft['draft_id'] != source.get('draft_id') or draft['revision'] != source.get('revision'):
+            raise ConcurrentUpdateError('Der zugrunde liegende Entwurf wurde geändert. Den aktualisierten Entwurf prüfen und einen neuen Auftrag starten.')
     if wizard.get('status') == 'CANCELED':
         raise ConcurrentUpdateError('Ein abgebrochener Auftrag kann nicht fortgesetzt werden.')
     if saved.get('version') != 2 or saved.get('run_id') != command.run_id:
@@ -177,6 +191,9 @@ def resolve_request(command: WizardCommand, prompt: str, context: dict, project_
     if command.target is not None and command.target != descriptor['target']:
         raise ConcurrentUpdateError('Das Workflowziel gehört zum bestätigten Auftrag und kann nicht beim Fortsetzen geändert werden.')
     if command.action == 'AMEND':
+        if wizard.get('engineering_draft_ref') or (wizard.get('structured_draft_ref') and (command.wizard_context or {}).get('engineering_draft_ref')):
+            from .draft_workflow_revision import amend
+            return amend(command, prompt, descriptor, {**wizard, 'engineering_draft_ref': wizard.get('engineering_draft_ref') or wizard['structured_draft_ref']})
         addition = prompt.strip()
         if not addition or len(addition) > 16000:
             raise ValueError('Eine Ergänzung benötigt 1 bis 16000 Zeichen.')

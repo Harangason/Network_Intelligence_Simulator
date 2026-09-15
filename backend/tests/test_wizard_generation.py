@@ -709,7 +709,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     application_api = importlib.import_module('backend.app.api')
     from backend.app import job_service
     from backend.engineering.project_context import current_project_id
-    monkeypatch.setattr(job_service, 'TRACE_ROOT', tmp_path / 'traces')
+    monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path / 'saved'))
     jobs = job_service.JobService(synchronous=True, persist=False)
     monkeypatch.setattr(application_api, 'JOBS', jobs)
     client = create_app(testing=True).test_client()
@@ -742,7 +742,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert workflow_after_simulation['statuses']['data_science_intelligence'] in {'COMPLETE', 'WARNING'}
     assert all(value in {'COMPLETE', 'APPROVED', 'WARNING'}
                for value in workflow_after_simulation['statuses'].values())
-    assert list((tmp_path / 'traces').rglob('universal_trace.jsonl'))
+    assert list((tmp_path / 'saved' / authority.project_id / 'runs').rglob('universal_trace.jsonl'))
     repeated = asyncio.run(network_continuation())
     assert repeated['status'] == 'COMPLETED'
     assert not any(item['tool'] == 'start_simulation' for item in repeated['trace'])

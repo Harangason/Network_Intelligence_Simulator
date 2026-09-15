@@ -23,7 +23,10 @@ def create_server(authority: ToolAuthority) -> MCPServer:
     for definition in TOOLS.values():
         def make_tool(item):
             def call(request):
-                return execute(authority, item.name, item.permission, request.model_dump(), item.handler)
+                # A draft edit is a patch: omitted fields must not become null
+                # and clear earlier decisions, including nested device fields.
+                arguments = request.model_dump(exclude_unset=item.name == 'update_project_draft')
+                return execute(authority, item.name, item.permission, arguments, item.handler)
             call.__name__ = item.name
             call.__annotations__ = {"request": item.input_model, "return": ToolResult}
             return call

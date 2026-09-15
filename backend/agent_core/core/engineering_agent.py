@@ -113,8 +113,14 @@ class EngineeringAgent:
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
         from ..orchestration.project_intake import is_project_request
-        if not context.wizard_request and not answer and is_project_request(prompt):
-            arguments = {'requirement': prompt}
+        draft_amendment = bool(context.project_draft_id) and bool(re.search(
+            r'\b(?:ergänz\w*|zusätzlich|stattdessen|controller namens|raspberry[ -]?pi|'
+            r'\d+\s+(?:ventile?n?|sensoren)|(?:zwei|drei|vier|fünf)\s+(?:ventile?n?|sensoren))\b', prompt, re.I))
+        if re.match(r'\s*(?:zeige|liste|warum|wie|was|welche|show|list|why|how|status|lösch|entfern)\b', prompt, re.I):
+            draft_amendment = False
+        if not context.wizard_request and not answer and (is_project_request(prompt) or draft_amendment):
+            arguments = {'requirement': prompt, 'operation_id': context.input_envelope.input_id,
+                         'revision': context.project_draft_revision}
             if self.reasoner:
                 try:
                     tools = [tool for tool in await self.client.tools() if tool['name'] == 'prepare_project_request']
@@ -141,6 +147,8 @@ class EngineeringAgent:
             result = await call('prepare_project_request', arguments)
             if result.success:
                 item = result.data['agent_response']
+                context.project_draft_id = item.get('metadata', {}).get('project_draft_id')
+                context.project_draft_revision = item.get('metadata', {}).get('draft_revision')
                 event(item['type'], **{k: v for k, v in item.items() if k not in {'type', 'id', 'timestamp'}})
                 return {'run_id': run_id, 'status': item['status'], 'events': events,
                         'context': context.model_dump(), 'trace': traces, 'proposals': []}
@@ -765,6 +773,18 @@ class EngineeringAgent:
                     if status == "COMPLETED" else "Der Auftrag ist noch offen. Die Findings zeigen die fehlenden Voraussetzungen.")
         elif not answer and re.search(r"erzeug|erstell|benötig|benoetig|entwerf|modelli|generate|create", prompt, re.I) and re.search(r"funktion|function", prompt, re.I) and not re.search(r"vollständig|komplett|gesamte|complete|full", prompt, re.I):
             selected = next((ref for ref in context.selected_object_refs if ref.get("object_type")=="HardwareNode"), {})
+            if not selected.get('id'):
+                text = ('Welcher Controller führt die angeforderten Funktionen aus? Wähle die vorhandene Hardware '
+                        'im Modell aus und sende den Auftrag erneut. Für neue Hardware müssen Name, Gerätetyp, '
+                        'Anschlusstechnologie und Statuszyklus ausdrücklich festgelegt werden. '
+                        'Die gewünschte Funktionsanzahl bleibt Bestandteil des Auftrags.')
+                event('FINDING', severity='OPEN', text=text,
+                      actions=[{'type': 'CAPABILITY', 'capability_id': 'hardware', 'label': 'Hardware anlegen',
+                                'project_id': context.active_project_id}],
+                      metadata={'missing_fields': ['hardware_id'], 'requirement': prompt})
+                event('RESULT', status='INCOMPLETE', text=text)
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             result = await call("generate_functions", {"prompt":prompt,"domain":context.project_domain,"hardware_id":selected.get("id")})
             if result.success:
                 await validate_proposal(result.data)
@@ -776,7 +796,7 @@ class EngineeringAgent:
             if directory.success and isinstance(directory.data.get('capabilities'), list):
                 import json
                 messages.insert(len(messages) - 1, {'role': 'system', 'content': 'Verifizierter Fähigkeitenkatalog. Nutze prepare_assistant_action für passende Bedienabläufe und inspect_communication_repair für die aktuelle Architektur. '
-                    + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps')} for item in directory.data['capabilities']], ensure_ascii=False)})
+                    + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps', 'execution') if k in item} for item in directory.data['capabilities']], ensure_ascii=False)})
             tools = await self.client.tools()
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)

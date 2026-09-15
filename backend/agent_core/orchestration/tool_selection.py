@@ -13,9 +13,18 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         return [tool for tool in tools if tool['name'] in {'describe_engineering_concepts', 'inspect_assistant_capabilities', 'prepare_assistant_action'}]
     names = {"inspect_project","search_model","inspect_object","ask_engineering_question","discover_engineering_tools", "type_engineering_input",
              "inspect_assistant_capabilities", "prepare_assistant_action"}
+    focused = set()
     from .project_intake import is_project_request
     if is_project_request(prompt):
         names.add('prepare_project_request')
+    if re.search(r'projekt|project|entwurf|draft', prompt, re.I):
+        focused.update({'inspect_project_draft', 'update_project_draft', 'plan_project_model', 'create_project_from_draft'})
+    if re.search(r'anleg|erstell|erzeug|hinzufüg|create|generate|add', prompt, re.I):
+        focused.update({'describe_model_object_fields', 'create_objects_via_proposal'})
+    if re.search(r'zuordn|verschieb|hierarch|assign|move', prompt, re.I):
+        focused.update({'evaluate_structure_dependencies', 'plan_structure_assignments', 'map_function_to_hardware'})
+    if re.search(r'lösch|loesch|entfern|delete|remove', prompt, re.I):
+        focused.add('delete_object_via_impact_analysis')
     if re.search(r'verbind|connect|anschluss|controller|port|gesamtplan', prompt, re.I):
         names.update({'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal',
             'inspect_model_situation', 'inspect_port_decision', 'inspect_controller_capacity'})
@@ -23,6 +32,7 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         names.update({'inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'})
     if re.search(r'dublett|duplicat|struktur.*transfer|structure.*transfer', prompt, re.I):
         names.update({'inspect_system_duplicates', 'analyze_structure_transfer', 'inspect_model_situation'})
+        focused.add('plan_structure_transfer')
     spatial = bool(re.search(r'raum|spatial|zonal|einbauort|rotor|drohn|cluster|architecture|architektur|roboter|robot', prompt, re.I))
     if spatial:
         names.add('inspect_spatial_architecture')
@@ -46,5 +56,15 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
                        "find_first_divergence", "compare_simulation_runs", "continue_reasoning", "inspect_reasoning", "get_trace_window"}
     if re.search(r"trace|ursach|reasoning|root.?cause|deadline|fault|golden|lauf.*vergleich", prompt, re.I):
         names.update(reasoning_names)
+    names.update(focused)
+    if re.search(r'import|datei.*(?:übernehm|einles)|file.*(?:load|read)', prompt, re.I):
+        focused.update({'preview_model_import', 'plan_model_import', 'plan_project_bundle_restore'})
+        names.update(focused)
+    if re.search(r'export|projekt.*(?:herunterladen|download)', prompt, re.I):
+        focused.add('export_project_bundle')
+        names.update(focused)
+    if re.search(r'fehlerszenario|fehler.*aktiv|fault.*(?:scenario|activ)|fehler.*vorschl', prompt, re.I):
+        focused.update({'generate_fault_proposals', 'plan_fault_activation'})
+        names.update(focused)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'}, tool["name"] not in reasoning_names))[:24]
+    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'} | focused, tool["name"] not in reasoning_names))[:24]

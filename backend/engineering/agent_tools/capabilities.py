@@ -16,22 +16,38 @@ def entry(id, label, description, path, tools, steps, *, resource=None, launch=N
 
 def prepare_project_request(arguments):
     from backend.agent_core.orchestration.project_intake import project_intake_text
+    from . import project_draft
+    from uuid import uuid4
     requirement = arguments['requirement'].strip()
     if not requirement:
         raise ValueError('Eine Projektanforderung ist erforderlich.')
+    current = project_draft.inspect()
+    revision = arguments['revision'] if 'revision' in arguments else (current or {}).get('revision')
+    saved = project_draft.command({
+        'action': 'AMEND' if revision is not None else 'CREATE',
+        'operation_id': arguments.get('operation_id') or str(uuid4()),
+        'revision': revision,
+        'requirement': requirement,
+    })
+    draft = saved['draft']
     directory = catalog({'capability_id': 'project'})
     item = directory['capabilities'][0]
     if not item['available']:
         raise ValueError('Der Engineering-Wizard ist momentan nicht verfügbar.')
-    action = {**item['action'], 'label': 'Projektentwurf ausarbeiten',
-              'description': 'Vorgabe übernehmen, ergänzen und prüfen', 'requirement': requirement}
+    action = {**item['action'], 'label': 'Im Wizard bearbeiten',
+              'description': 'Gespeicherten Entwurf ergänzen und prüfen',
+              'draft_id': draft['draft_id'],
+              'requirement': '\n'.join(source['text'] for source in draft['sources'])}
     notes = arguments.get('planning_notes', '').strip()
     text = project_intake_text(requirement)
     if notes:
         text += '\n\nKI-Planungsvorschlag zur Prüfung:\n' + notes
+    text += '\n\nGespeicherter Entwurf, Revision ' + str(draft['revision']) + '. Offene Angaben:\n'
+    text += '\n'.join('- ' + issue['message'] for issue in draft['issues'][:20]) or 'Keine offenen Inventarangaben.'
     return {'agent_response': {'type': 'RESULT', 'status': 'INCOMPLETE',
                               'text': text, 'actions': [action],
-                              'metadata': {'planning_mode': 'model_assisted' if notes else 'guided_intake'}}}
+                              'metadata': {'planning_mode': 'model_assisted' if notes else 'guided_intake',
+                                           'project_draft_id': draft['draft_id'], 'draft_revision': draft['revision']}}}
 
 
 CAPABILITIES = [
@@ -42,7 +58,7 @@ CAPABILITIES = [
     entry('function', 'Funktion anlegen', 'Funktion und ihre Hardware-Zuordnung modellieren.', '/studio/engineering',
           ['generate_functions', 'map_function_to_hardware'], ['Identität', 'Hardware zuordnen', 'Funktionsparameter', 'Prüfen und speichern'], resource='functions', launch='create'),
     entry('hardware', 'Hardware anlegen', 'ECU, Gateway, Sensor oder Aktor mit Geräteklasse erfassen.', '/studio/engineering',
-          ['classify_device', 'get_device_capabilities'], ['Identität und Gerätetyp', 'Zuordnung', 'Technische Details', 'Prüfen und speichern'], resource='hardware-nodes', launch='create'),
+          ['classify_device', 'get_device_capabilities', 'create_objects_via_proposal'], ['Identität und Gerätetyp', 'Zuordnung', 'Technische Details', 'Prüfen und speichern'], resource='hardware-nodes', launch='create'),
     entry('port', 'Physischen Anschluss anlegen', 'Hardwarefähigkeit, Controller und Kanalgrenzen prüfen. Im Chat plant „Verbinde Funktion A mit Funktion B“ den vollständigen Anschlussauftrag; nach der Strategieentscheidung werden Port, Netz, Routing und Prüfungen ausgeführt.', '/studio/engineering',
           ['inspect_port_decision', 'prepare_engineering_connection', 'create_physical_port', 'connect_port_to_network', 'continue_engineering_goal'], ['Modell und Hardwaregrenzen', 'Anschlussentscheidung', 'Abhängige Änderungen ausführen', 'Kapazität, Timing und Preflight'], resource='hardware-interfaces', launch='create'),
     entry('interface', 'Kommunikationsschnittstelle anlegen', 'Logische Schnittstelle einer Funktion oder eines Geräts anlegen.', '/studio/engineering',
@@ -50,11 +66,11 @@ CAPABILITIES = [
     entry('repair', 'Reparatur-Agent', 'Kennt die aktuelle Hardwarearchitektur und erhält die bisherigen Funktionspartner. Vergleicht alte und neue Signalwege einschließlich der Routing-Tabelle. Neue Führung übernehmen oder alte Führung wiederherstellen wird ausdrücklich entschieden; fehlende Wege und ein Wechsel zwischen Systemnetz und Cluster bleiben sichtbar.', '/studio/engineering',
           ['inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'], ['Aktuelle Architektur und Funktionspartner lesen', 'Fachagent bewertet alte und neue Wege', 'Strategie wählen', 'Atomar übernehmen und erneut prüfen'], launch='repair'),
     entry('project', 'Engineering-Wizard', 'Aus Anforderungen und Dokumenten das Projekt stufenweise bis zur Auswertung entwickeln.', '/studio/engineering',
-          ['generate_wizard_model', 'generate_wizard_communication_contract', 'generate_wizard_routing', 'generate_wizard_network', 'generate_wizard_parameters'], ['Anforderung und Domäne', 'Geräte, Funktionen und räumliche Zuordnung', 'Kommunikation und Routing', 'Parameter, Kapazität und Preflight', 'Simulation und Auswertung'], launch='project'),
+          ['prepare_project_request', 'inspect_project_draft', 'update_project_draft', 'create_project_from_draft', 'plan_project_model', 'prepare_draft_workflow', 'generate_wizard_model', 'generate_wizard_communication_contract', 'generate_wizard_routing', 'generate_wizard_network', 'generate_wizard_parameters', 'preview_model_import', 'plan_model_import', 'export_project_bundle', 'plan_project_bundle_restore'], ['Anforderung und Domäne', 'Geräte, Funktionen und räumliche Zuordnung', 'Kommunikation und Routing', 'Parameter, Kapazität und Preflight', 'Simulation und Auswertung'], launch='project'),
     entry('routing', 'Routing planen', 'Producer und Consumer über die aktuelle physische Architektur verbinden.', '/studio/routing',
           ['find_route_candidates', 'generate_routing', 'validate_route'], ['Kommunikationspartner', 'Physische Wege', 'Validierung', 'Vorschlag prüfen']),
     entry('structure', 'KI-Strukturtransfer', 'Bestehende ECU-Strukturen analysieren und je Ziel-ECU geprüft übertragen.', '/studio/engineering',
-          ['analyze_structure_transfer'], ['Quell-ECU', 'Ziel-ECUs', 'Übereinstimmungen und Unterschiede', 'Je Ziel prüfen und übernehmen'], launch='structure'),
+          ['analyze_structure_transfer', 'plan_structure_transfer'], ['Quell-ECU', 'Ziel-ECUs', 'Übereinstimmungen und Unterschiede', 'Je Ziel prüfen und übernehmen'], launch='structure'),
     entry('spatial', 'Raumarchitektur prüfen', 'Bestätigte Einbauorte, Raumcluster und offene Zuordnungen prüfen.', '/studio',
           ['inspect_spatial_architecture'], ['Bezugsrahmen', 'Zuordnungen und Quellen', 'Konflikte', 'Gezielte Klärung']),
     entry('parameters', 'Parameter auslegen', 'Technologie-, Kommunikations- und Zeitparameter aus dem Modell ableiten.', '/studio',
@@ -70,11 +86,11 @@ CAPABILITIES = [
     entry('intelligence', 'Intelligence bewerten', 'Architektur und Erfahrungen aus vorhandenen Läufen bewerten.', '/studio/intelligence',
           ['evaluate_architecture', 'assess_intelligence'], ['Projekt und Läufe', 'Bewertung', 'Verbesserungsvorschläge', 'Prüfung']),
     entry('dependencies', 'Structure Wizard', 'Abhängigkeiten zwischen Hardware, Funktionen, Interfaces, Nachrichten und Signalen mit semantischer Bewertung zuordnen.', '/studio/engineering',
-          ['evaluate_structure_dependencies'], ['Hardware wählen', 'Funktionen, Interfaces, Nachrichten und Signale', 'Semantische Zuordnung prüfen', 'Abhängigkeiten übernehmen'], launch='dependencies'),
+          ['evaluate_structure_dependencies', 'plan_structure_assignments'], ['Hardware wählen', 'Funktionen, Interfaces, Nachrichten und Signale', 'Semantische Zuordnung prüfen', 'Abhängigkeiten übernehmen'], launch='dependencies'),
     entry('duplicates', 'System-Dubletten prüfen', 'Mögliche doppelte Systeme anhand ihrer Strukturen vergleichen; Zusammenführen wird geprüft.', '/studio/engineering',
           ['inspect_system_duplicates'], ['Systemstrukturen vergleichen', 'Ähnlichkeiten und Unterschiede', 'Kandidat prüfen', 'Zusammenführen entscheiden'], launch='tree'),
     entry('faults', 'KI-Fehlervorschläge', 'Zum aktuellen Modell passende Fehlerszenarien vorbereiten und vor Aktivierung prüfen.', '/studio/simulation',
-          ['generate_fault_proposals'], ['Aktuelles Modell', 'Fehlervorschläge', 'Magnitude und Umfang', 'Prüfen und aktivieren']),
+          ['generate_fault_proposals', 'plan_fault_activation'], ['Aktuelles Modell', 'Fehlervorschläge', 'Magnitude und Umfang', 'Prüfen und aktivieren']),
 ]
 
 CONCEPTS = {
@@ -87,7 +103,32 @@ CONCEPTS = {
 }
 
 
+# Explicit outcomes, not inferred from a button label or tool permission. Some
+# VALIDATE tools persist assessments, while some GENERATE tools only analyze.
+EXECUTION_CONTRACTS = {
+    **{key: ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
+             'Aktuelle menschliche Freigabe und erfolgreicher Apply mit kanonischen IDs.')
+       for key in ('signal', 'message', 'function', 'hardware', 'interface', 'routing', 'dependencies', 'structure', 'faults')},
+    'project': ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
+                'Modellübernahme und aktuelle Artefakte für jeden ausdrücklich beauftragten Workflowschritt.'),
+    'port': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
+             'Gespeicherte Strategieentscheidung, ausgeführte Teilaufträge und aktuelle Abschlussprüfungen.'),
+    'repair': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
+               'Gespeicherte Reparaturentscheidung, atomare Übernahme und erneute technische Prüfung.'),
+    'parameters': ('PERSISTED_ASSESSMENT', ['MODEL_CHANGE', 'VALIDATION'],
+                   'Bestätigte Parameter gespeichert und gegen den aktuellen Modellstand geprüft.'),
+    'intelligence': ('PERSISTED_ASSESSMENT', ['FINDING', 'VALIDATION'],
+                     'Bewertung mit aktuellem Modell- und Laufbezug gespeichert.'),
+    'simulation': ('SIMULATION_JOB', ['PROPOSAL', 'FINDING', 'VALIDATION'],
+                   'Echter Job erfolgreich abgeschlossen; passende Ergebnisse und Trace vorhanden.'),
+    **{key: ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
+             'Analyse geliefert; dies bestätigt keine Übernahme vorgeschlagener Änderungen.')
+       for key in ('spatial', 'capacity', 'validation', 'analysis', 'duplicates')},
+}
+
+
 def catalog(arguments):
+    from backend.agent_core.api.tool_contract import Permission
     from .catalog import TOOLS
     from .runtime import DEFAULT_PERMISSIONS
     from backend.agent_core.registry.skill_registry import SkillRegistry
@@ -101,8 +142,18 @@ def catalog(arguments):
     settings = (state.get('context') or {}).get('engineering_wizard_settings') or {}
     for item in items:
         item['available'] = all(name in TOOLS and TOOLS[name].permission in permissions for name in item['tools'])
+        mode, outputs, completion = EXECUTION_CONTRACTS[item['id']]
+        item['execution'] = {'mode': mode, 'outputs': outputs, 'completion_condition': completion,
+                             'navigation_executes': False,
+                             'agent_can_apply': item['available'] and (
+                                 (mode == 'REVIEWABLE_PROPOSAL' and Permission.APPLY_APPROVED_PROPOSAL in permissions)
+                                 or (mode == 'AUTHORIZED_EXECUTION' and Permission.EXECUTE_AUTHORIZED_GOAL in permissions)
+                                 or mode == 'PERSISTED_ASSESSMENT'),
+                             'requires_human_model_approval': mode in {'REVIEWABLE_PROPOSAL', 'AUTHORIZED_EXECUTION'},
+                             'ui_only_completion': mode == 'UI_REVIEW_REQUIRED'}
         item['action'] = {'type': 'CAPABILITY', 'capability_id': item['id'], 'label': item['label'],
-                          'description': item['description'], 'project_id': current_project_id()}
+                          'description': item['description'], 'project_id': current_project_id(),
+                          'execution_mode': mode, 'navigation_executes': False}
     return {'project_id': current_project_id(), 'project_name': settings.get('project_name') or current_project_id(),
             'capabilities': items, 'skill_contracts': SkillRegistry(items, TOOLS).contracts(permissions),
             'input_adapters': [{'input_type': kind, 'available': kind in SUPPORTED_INPUTS} for kind in INPUT_TYPES]}
@@ -144,6 +195,25 @@ def structure_evaluate(arguments):
     return {'analysis': result}
 
 
+def structure_assignments(arguments):
+    from ..structure import assignment_updates
+    from . import proposal_service
+    changes = []
+    seen = set()
+    allowed = {'child_type', 'child_id', 'parent_type', 'parent_id', 'name'}
+    for assignment in arguments['assignments']:
+        if set(assignment) - allowed:
+            raise ValueError('Strukturzuordnungen enthalten nicht unterstützte Felder.')
+        kind, identifier, updates = assignment_updates(assignment)
+        if (kind, identifier) in seen:
+            raise ValueError('Ein Objekt darf je Vorschlag nur einem Elternobjekt zugeordnet werden.')
+        seen.add((kind, identifier))
+        changes.append({'object_type': kind, 'object_id': identifier, 'action': 'UPDATE', 'data': updates})
+    proposal = proposal_service.create('STRUCTURE_ASSIGNMENTS', changes, arguments['rationale'],
+                                      evidence=[{'source': 'structure.assignment_updates'}])
+    return proposal_service.validate(proposal['proposal_id'])
+
+
 def duplicates_preview(_):
     from ..structure_transfer import analyze_system_duplicates
     return analyze_system_duplicates()
@@ -152,3 +222,22 @@ def duplicates_preview(_):
 def fault_proposals(_):
     from ..simulation import propose_faults
     return {'items': propose_faults(model_review=True), 'review': 'simulation-fault-proposals'}
+
+
+def plan_fault_activation(arguments):
+    from ..simulation import list_fault_proposals
+    from . import generation, proposal_service
+    available = {str(item['proposal_id']): item for item in list_fault_proposals()}
+    selected = arguments['fault_proposal_ids']
+    if len(set(selected)) != len(selected) or any(key not in available for key in selected):
+        raise ValueError('Eindeutige Fehlervorschläge aus dem aktuellen Projekt wählen.')
+    faults = []
+    for key in selected:
+        item = available[key]
+        if item['status'] == 'REJECTED':
+            raise ValueError('Ein abgelehnter Fehlervorschlag kann nicht aktiviert werden.')
+        faults.append({**item['configuration'], 'target': item['target'], 'scope': item['fault_scope'],
+                       'type': item['fault_type'], 'proposal_id': key})
+    proposal = generation.scenario({'scenario': {'name': arguments['name'], 'mode': 'AI_GENERATED_FAULT',
+        'duration_s': arguments['duration_s'], 'faults': faults}, 'prompt': arguments['rationale']})
+    return proposal_service.validate(proposal['proposal_id'])

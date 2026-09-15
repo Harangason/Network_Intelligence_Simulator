@@ -139,7 +139,7 @@ test("learned cross-project ownership overrides the heuristic and keeps the endp
 
 test("the raised endpoint budget closes every automotive controller branch", () => {
   const extracted = extractEngineeringSpecification(
-    "Industrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
+    "- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Automotive\n- 50 ECUs\n- 250 Sensoren\n- 250 Aktoren\n- 1 Gateway",
     { sensors: 250, actuators: 250, ecus: 50, gateways: 1 },
     "automotive",
     true,
@@ -159,7 +159,7 @@ test("the raised endpoint budget closes every automotive controller branch", () 
 
 test("an extra named ECU cannot orphan the last catalog controller and its actuators", () => {
   const extracted = extractEngineeringSpecification(
-    "Industrie: Automotive\n- Lichtsteuergerät",
+    "- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Automotive\n- Lichtsteuergerät",
     { sensors: 100, actuators: 100, ecus: 50, gateways: 1 },
     "automotive",
     true,
@@ -315,6 +315,7 @@ test("ambiguous endpoints remain visible instead of being assigned round-robin",
 
 test("automotive scale clusters stay compact enough to guide network node planning", () => {
   const specification = [
+    "- Generierungsmodus: EXAMPLE_PROJECT",
     "Industrie: Automotive",
     "- 100 Sensoren",
     "- 100 Aktoren",

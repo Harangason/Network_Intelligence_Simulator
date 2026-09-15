@@ -10,6 +10,7 @@ import threading
 from pathlib import Path, PureWindowsPath
 
 from .config import RUNTIME_ROOT, TRACE_ROOT
+from .saved_storage import saved_root, project_folder
 from ..engineering.project_context import normalize_context_project_id
 
 
@@ -26,7 +27,8 @@ _SETTINGS_LOCK = threading.RLock()
 
 class TraceStorage:
     def __init__(self, *, default_root=None, settings_path=None, container=None, host_path=None, mount_path=None):
-        self.default_root = Path(default_root or TRACE_ROOT).resolve()
+        self.project_defaults = default_root is None
+        self.default_root = Path(default_root or saved_root()).resolve()
         self.settings_path = Path(settings_path or RUNTIME_ROOT / "storage" / "trace-storage.json")
         self.container = Path("/.dockerenv").exists() if container is None else container
         self.host_path = host_path if host_path is not None else os.environ.get("NETWORKIS_TRACE_HOST_PATH", "")
@@ -44,7 +46,7 @@ class TraceStorage:
             raise StorageUnavailable("Speicher-Einstellungen sind nicht lesbar. Es wird kein Ersatzpfad verwendet.") from exc
 
     def _roots(self):
-        roots = [self.default_root]
+        roots = [self.default_root, TRACE_ROOT.resolve()]
         if self.container and self.host_path and self.mount_path.is_dir():
             roots.append(self.mount_path)
         return roots
@@ -106,13 +108,13 @@ class TraceStorage:
     def root_for(self, project_id):
         with _SETTINGS_LOCK:
             value = self._read().get(normalize_context_project_id(project_id))
-        return self.resolve(value) if value else self.default_root
+        return self.resolve(value) if value else (project_folder(project_id) / 'runs' if self.project_defaults else self.default_root)
 
     def settings(self, project_id):
         project_id = normalize_context_project_id(project_id)
         root = self.root_for(project_id)
         return {"project_id": project_id, "path": self.display_path(root), "resolved_path": str(root),
-                "default_path": str(self.default_root), "is_default": root == self.default_root,
+                "default_path": self.display_path(project_folder(project_id) / 'runs' if self.project_defaults else self.default_root), "is_default": root == (project_folder(project_id) / 'runs' if self.project_defaults else self.default_root),
                 "container": self.container, "roots": [self.display_path(p) for p in self._roots()],
                 "host_folder_connected": bool(self.container and self.host_path and self.mount_path.is_dir())}
 

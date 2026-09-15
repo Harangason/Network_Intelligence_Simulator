@@ -94,7 +94,18 @@ def latest(proposal_id: str) -> dict:
 
 
 def get(proposal_id: str) -> dict:
-    return envelope(legacy.get_proposal(proposal_id))
+    row = legacy.get_proposal(proposal_id)
+    result = envelope(row)
+    if result['status'] not in {'APPLIED', 'REJECTED'}:
+        from .project_draft import assert_proposal_source
+        try:
+            assert_proposal_source(row)
+        except ConcurrentUpdateError as error:
+            result['status'] = 'OUTDATED'
+            result['validation_result'] = {**result.get('validation_result', {}), 'valid': False,
+                'findings': [*result.get('validation_result', {}).get('findings', []),
+                             {'severity': 'ERROR', 'code': 'DRAFT_REVISION_CHANGED', 'message': str(error)}]}
+    return result
 
 
 def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptions: list[str] | None = None,
@@ -195,8 +206,15 @@ def _validate_changes(changes: list[dict]) -> dict:
                 if any(str(item.get("id")) == str(data["id"]) for item in
                        networks()):
                     raise ValueError("Netzwerk-ID bereits vorhanden.")
+            elif kind == "ProjectBundleRestore" and action == "CREATE":
+                from .project_bundle_restore import source
+                source(data)
             elif kind == "SimulationScenario" and action == "CREATE":
-                validate_scenario(data)
+                snapshot = model()
+                # Technical preview only. No approval is persisted here.
+                validate_scenario({**data, 'faults': [{**fault, 'approved': True}
+                    for fault in data.get('faults') or []]},
+                    {**snapshot, 'nodes': snapshot['hardware'], 'routes': snapshot['routing']})
             elif kind in ARTIFACT_TYPES and action == "CREATE":
                 if not data.get("name"):
                     raise ValueError("Modell benötigt einen Namen.")
@@ -260,6 +278,8 @@ def _validate_topology_inventory(row: dict, changes: list[dict]) -> list[dict]:
 
 def validate(proposal_id: str) -> dict:
     row = legacy.get_proposal(proposal_id)
+    from .project_draft import assert_proposal_source
+    assert_proposal_source(row)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
     if contract["status"] in {"APPLIED", "REJECTED", "APPROVED"}:
@@ -278,6 +298,9 @@ def validate(proposal_id: str) -> dict:
 def review(proposal_id: str, *, revision: str, decision: str, actor: str, trace_id: str) -> dict:
     """Only called by the human review endpoint; never registered as an MCP tool."""
     row = legacy.get_proposal(proposal_id)
+    if decision != 'reject':
+        from .project_draft import assert_proposal_source
+        assert_proposal_source(row)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
     if contract.get('replacement_proposal_id') and decision != 'reject':
@@ -316,6 +339,8 @@ def _resolve(value, refs: dict[str, str]):
 
 def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     row = legacy.get_proposal(proposal_id)
+    from .project_draft import assert_proposal_source
+    assert_proposal_source(row)
     contract = deepcopy(row.get("engineering_contract") or {})
     envelope(row)
     if contract.get('replacement_proposal_id') and contract['status'] != 'APPLIED':
@@ -341,6 +366,25 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         data = _resolve(change.get("data") or {}, refs)
         if kind in ENTITY_SPECS:
             if action == "CREATE":
+                if row['proposal_type'] == 'STRUCTURE_TRANSFER':
+                    # Server-produced transfer evidence, reviewed with the changes,
+                    # preserves lineage without accepting governance in object data.
+                    for evidence in row.get('evidence') or []:
+                        if evidence.get('source') != 'structure_transfer':
+                            continue
+                        for origin in evidence.get('object_origins') or []:
+                            if origin.get('local_ref') == change['local_ref'] and origin.get('object_type') == kind:
+                                data['provenance'] = {'origin': 'structure-transfer', 'proposal_id': proposal_id,
+                                                      'source_object_id': origin['source_object_id']}
+                if row['proposal_type'] == 'MODEL_IMPORT':
+                    for evidence in row.get('evidence') or []:
+                        if evidence.get('source') != 'engineering_import':
+                            continue
+                        for origin in evidence.get('object_origins') or []:
+                            if origin.get('local_ref') == change['local_ref'] and origin.get('object_type') == kind:
+                                data['provenance'] = {'origin': 'engineering-import', 'proposal_id': proposal_id,
+                                    'import_id': evidence['import_id'], 'file_name': evidence['file_name'],
+                                    'import_key': origin['import_key']}
                 item = create_object(kind, {**data, "source": "ai_generated", "created_by": contract["approved_by"], "review_state": "reviewed", "approval_state": "approved"})
             elif action == "UPDATE":
                 item = update_object(kind, change["object_id"], {**data, "expected_version": change["expected_version"], "actor": actor})
@@ -362,8 +406,14 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             WorkflowStatusService(current_project_id()).refresh_source_status('routing', actor=actor,
                 reason='Freigegebene Routen mit den bestätigten physischen Hardwarekanälen geprüft.')
             item = {"id": "workflow-network-topology", "name": data.get("name") or "Netzwerktopologie"}
+        elif kind == "ProjectBundleRestore":
+            from .project_bundle_restore import restore
+            item = restore(data, actor=contract['approved_by'])
         elif kind == "SimulationScenario":
-            item = save_scenario({**data, "created_by": contract["approved_by"]})
+            item = save_scenario({**data, 'source': 'ai_generated',
+                'faults': [{**fault, 'source': 'ai_generated', 'approved': True}
+                           for fault in data.get('faults') or []],
+                "created_by": contract["approved_by"]})
         elif kind == "Network":
             workflow = WorkflowStatusService(current_project_id())
             parameters = deepcopy(workflow.get()["parameters"])

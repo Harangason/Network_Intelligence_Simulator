@@ -4,7 +4,9 @@ from backend.engineering.device_communication import ECU_STATES, communication_f
 
 def test_camera_and_function_generators_share_the_wizard_status_contract(monkeypatch):
     monkeypatch.setattr(generation.proposals, 'create', lambda kind, changes, *args, **kwargs: changes)
-    for changes in [generation.functions({'prompt': 'Erzeuge 1 Funktion zur Temperaturüberwachung.'}),
+    for changes in [generation.functions({'prompt': 'Erzeuge 1 Funktion zur Temperaturüberwachung.',
+                                          'new_hardware': {'name': 'ThermalController', 'device_type': 'EmbeddedController'},
+                                          'status_technology': 'Ethernet', 'status_cycle_ms': 100}),
                     generation.camera_architecture({'coverage': 'surround', 'profile': 'four_wide', 'outputs': ['status']})]:
         graph = {kind: {} for kind in ('HardwareNode', 'Function', 'Interface', 'Message', 'Signal')}
         for change in changes:

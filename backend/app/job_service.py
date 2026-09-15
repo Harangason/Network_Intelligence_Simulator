@@ -217,7 +217,7 @@ class JobService:
 
     @property
     def storage(self) -> TraceStorage:
-        return self._storage or TraceStorage(default_root=TRACE_ROOT)
+        return self._storage or TraceStorage()
 
     def submit(self, payload: dict[str, Any], *, validate_only: bool = False) -> dict[str, Any]:
         job_id = uuid.uuid4().hex
@@ -284,7 +284,7 @@ class JobService:
                             or (snapshot.get('status') == 'COMPLETED' and not isinstance(snapshot.get('result'), dict))
                             or (snapshot.get('status') == 'RUNNING' and not isinstance(snapshot.get('configuration'), dict))):
                         job.update(recovery_pending=False, status='canceled' if snapshot and snapshot.get('status') == 'CANCELED' else 'failed',
-                                   error='Unterbrochene Simulation benötigt einen aktuellen, freigegebenen Snapshot.', updated_at=_now())
+                                   error='Unterbrochene Simulation benÃ¶tigt einen aktuellen, freigegebenen Snapshot.', updated_at=_now())
                         self._persist_locked()
                         continue
                     if snapshot['status'] == 'COMPLETED':
@@ -545,6 +545,15 @@ class JobService:
                     reverse=True,
                 )
             ]
+
+    def forget_project(self, project_id: str) -> None:
+        with self._lock:
+            matching = [key for key, job in self._jobs.items() if job.get('project_id') == project_id]
+            if any(self._jobs[key].get('status') not in {'completed', 'failed', 'canceled'} for key in matching):
+                raise ValueError('FÃ¼r dieses Projekt lÃ¤uft noch eine Simulation.')
+            for key in matching:
+                self._jobs.pop(key, None)
+            self._persist_locked()
 
     def artifact(self, job_id: str, artifact_index: int, project_id: str | None = None) -> Path | None:
         job = self.get(job_id, project_id, metadata=True)

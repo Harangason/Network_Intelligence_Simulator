@@ -132,6 +132,62 @@ def _proposal_status_payload(result) -> dict:
     return payload
 
 
+@agent_api.route('/project-draft', methods=['GET', 'POST'])
+def project_draft():
+    """Shared draft endpoint; browser writes carry an explicit human action."""
+    from . import project_draft as drafts
+    authority = ToolAuthority(_project(), 'local-human')
+    if request.method == 'GET':
+        result = execute(authority, 'inspect_project_draft', Permission.READ_MODEL, {}, drafts.inspect)
+    else:
+        if not _human_intent():
+            return jsonify({'error': 'Bitte die Entwurfsänderung ausdrücklich bestätigen.'}), 403
+        result = execute(authority, 'update_project_draft', Permission.GENERATE_PROPOSAL,
+                         request.get_json(silent=True) or {}, drafts.command)
+    response = jsonify(result.model_dump(mode='json'))
+    response.headers['Cache-Control'] = 'no-store'
+    return response, 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/create-project')
+def create_project_from_draft():
+    from . import project_creation
+    if not _human_intent():
+        return jsonify({'error': 'Die Projektanlage muss ausdrücklich angefordert werden.'}), 403
+    result = execute(ToolAuthority(_project(), 'local-human'), 'create_project_from_draft',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, project_creation.create)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/plan')
+def plan_project_draft():
+    from . import project_draft as drafts
+    from pydantic import BaseModel, ConfigDict, Field
+    class PlanRequest(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        draft_id: str = Field(min_length=1, max_length=80)
+        revision: int = Field(ge=1)
+    if not _human_intent():
+        return jsonify({'error': 'Die Planung muss ausdrücklich angefordert werden.'}), 403
+    def plan(arguments):
+        payload = PlanRequest.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return drafts.plan_model(payload.model_dump())
+    result = execute(ToolAuthority(_project(), 'local-human'), 'plan_project_draft',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, plan)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
+@agent_api.post('/project-draft/workflow-request')
+def prepare_draft_workflow():
+    definition = TOOLS['prepare_draft_workflow']
+    def prepare(arguments):
+        data = definition.input_model.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return definition.handler(data.model_dump(mode='json'))
+    result = execute(ToolAuthority(_project()), definition.name, definition.permission,
+                     request.get_json(silent=True) or {}, prepare)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
 @agent_api.route('/execution-goals/<workload_id>/hardware-facts', methods=['GET', 'POST'])
 def goal_hardware_facts(workload_id):
     from ..goal_execution import hardware_facts

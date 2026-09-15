@@ -14,14 +14,15 @@ def is_project_request(prompt: str) -> bool:
                        r'erstelle|erzeuge|plane|entwickle|create|build|design)\b', text, re.I)
     project = re.search(r'\b(?:projekt|project|anlage|system)\b', text, re.I)
     equipment = re.search(r'sensor|aktor|actuator|ventil|valve|raspberry|respary|controller', text, re.I)
-    return bool(desire and project and equipment)
+    brief = re.match(r'(?:(?:ein|das)\s+)?neues?\s+projekt\s+(?:mit|für|fuer)\b|(?:a\s+)?new\s+project\s+(?:with|for)\b', text, re.I)
+    return bool((desire or brief) and project and equipment)
 
 
 def project_intake_text(requirement: str) -> str:
     """Keep source requirements intact; suggestions are never confirmed specifications."""
     temperature = bool(re.search(r'temperatur|temperature', requirement, re.I))
     valves = bool(re.search(r'ventil|valve', requirement, re.I))
-    pi = bool(re.search(r'raspberry\s*pi|respary\s*pi', requirement, re.I))
+    pi = bool(re.search(r'(?:raspberry|rasperry|respary)[\s-]*pi|\braspi\b', requirement, re.I))
     lines = ['Daraus lässt sich ein Projektentwurf entwickeln. Deine Vorgabe:', requirement]
     if pi and temperature and valves:
         lines += [
@@ -30,19 +31,18 @@ def project_intake_text(requirement: str) -> str:
             '„respary pi“ verstehe ich dabei als Raspberry Pi.',
             'Lokale Messwerte und Stellbefehle bleiben im lokalen System; eine Weiterleitung '
             'an andere Systeme wird nur bei ausdrücklich gewünschter Nutzung eingeplant.',
-            'Für die nächste Ausarbeitung fehlen: Wie viele Ventile sollen gesteuert werden '
-            'und welcher Sensor gehört zu welchem Ventil? Welche Sensortypen und '
-            'Ventilantriebe sind vorhanden? Soll nach Solltemperatur automatisch geregelt '
-            'oder zunächst manuell geschaltet werden?',
+            'Die Regelungsaufgabe muss festlegen, welcher Messwert welches Ventil beeinflusst '
+            'und ob automatisch nach Solltemperatur geregelt oder manuell geschaltet wird.',
             'Anschlüsse, geeignete Ausgangstreiber, Versorgung und Abtast-/Schaltzeiten '
             'bleiben bis zur Klärung offen. Eine direkte elektrische Ansteuerung der '
             'Ventile durch den Pi ist damit nicht bestätigt.',
         ]
     else:
-        lines += ['Ich übernehme diese Angaben als editierbare Anforderung in den Engineering-Wizard. '
-                  'Dort werden Geräte und Funktionen, ihre Zuordnung, Verbindungen und Zeitverhalten geprüft. '
+        lines += ['Diese Angaben werden als editierbarer Projektentwurf gespeichert. '
+                  'Geräte und Funktionen, ihre Zuordnung, Verbindungen und Zeitverhalten werden geprüft. '
                   'Bitte ergänze insbesondere noch ungenannte Stückzahlen, vorhandene Gerätetypen '
                   'und das gewünschte Verhalten der Steuerung. Unbekannte Anschlüsse sind keine bestätigten Verbindungen.']
-    lines += ['Über „Projektentwurf ausarbeiten“ kannst du die Vorgabe ergänzen und den '
-              'Engineering-Auftrag starten. Bisher wurde kein Modell angelegt oder verändert.']
+    lines += ['Du kannst den gespeicherten Entwurf hier ergänzen und einen Modellvorschlag erstellen. '
+              'Die Übernahme ins Modell erfordert die Prüfung und Freigabe des konkreten Vorschlags. '
+              'Bisher wurde kein Modell angelegt oder verändert.']
     return '\n\n'.join(lines)

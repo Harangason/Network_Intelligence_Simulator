@@ -290,10 +290,20 @@ def _record_imported_address_audit(
 
 
 class ProjectBundleService:
-    def reset_workspace(self, project_id: str) -> dict[str, Any]:
+    def reset_workspace(self, project_id: str, *, delete: bool = False) -> dict[str, Any]:
         target = normalize_project_id(project_id)
         with get_connection() as connection:
             with connection.transaction():
+                if delete:
+                    current = connection.execute('SELECT context FROM engineering_workflow_projects WHERE project_id=%s FOR UPDATE', (target,)).fetchone()
+                    execution = ((current or {}).get('context') or {}).get('agent_execution') or {}
+                    conversation = connection.execute('SELECT state FROM engineering_agent_conversations WHERE project_id=%s', (target,)).fetchone()
+                    state = (conversation or {}).get('state') or {}
+                    leased = bool(state.get('run_id') and state.get('lease_until', '') > datetime.now(timezone.utc).isoformat())
+                    if leased or str(execution.get('state') or execution.get('status', '')).upper() in {'RUNNING', 'QUEUED', 'STARTING', 'IN_PROGRESS'}:
+                        raise EngineeringValidationError('Der Agent arbeitet noch an diesem Projekt. Bitte den Auftrag zuerst beenden.')
+                    for table in ('engineering_agent_responses', 'engineering_agent_audit', 'engineering_agent_conversations', 'engineering_topology_layouts'):
+                        connection.execute(sql.SQL('DELETE FROM {} WHERE project_id=%s').format(sql.Identifier(table)), (target,))
                 for table in reversed(PROJECT_TABLES):
                     _delete_project_rows(connection, table, target)
                 for table in WORKSPACE_RESET_TABLES:
@@ -302,10 +312,12 @@ class ProjectBundleService:
                         (target,),
                     )
                 connection.execute("DELETE FROM engineering_workflow_projects WHERE project_id = %s", (target,))
+                if delete:
+                    connection.execute('INSERT INTO engineering_deleted_projects(project_id) VALUES(%s) ON CONFLICT DO NOTHING', (target,))
         return {
             "project_id": target,
             "cleared_tables": [*WORKSPACE_RESET_TABLES, *PROJECT_TABLES],
-            "workflow": WorkflowStatusService(target).get(),
+            "workflow": None if delete else WorkflowStatusService(target).get(),
         }
 
     def export(self, project_id: str, *, target_project_id: str | None = None) -> dict[str, Any]:
@@ -363,6 +375,9 @@ class ProjectBundleService:
         bundle_project_id = normalize_project_id(bundle.get("project_id"))
         source_project_id = normalize_project_id(bundle.get("source_project_id") or bundle_project_id)
         target = normalize_project_id(target_project_id) if target_project_id else bundle_project_id
+        with get_connection() as connection:
+            if connection.execute('SELECT 1 FROM engineering_deleted_projects WHERE project_id=%s', (target,)).fetchone():
+                raise EngineeringValidationError('Dieses Projekt wurde gelöscht. Zum Import eine neue Projekt-ID wählen.')
         workflow = bundle.get("workflow")
         if not isinstance(workflow, dict):
             raise EngineeringValidationError("workflow fehlt im Projektpaket.")

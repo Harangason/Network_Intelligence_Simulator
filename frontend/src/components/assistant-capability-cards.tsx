@@ -36,7 +36,17 @@ export function AssistantCapabilityCards({ actions, projectId }: { actions: Acti
       if (item.id === 'repair' && typeof action.repair_workload === 'string' && /^repair-[a-f0-9]{32}$/.test(action.repair_workload)) query.set('repair_workload', action.repair_workload);
       if (item.id === 'parameters') query.set('mode', 'parameter');
       if (item.id === 'spatial') query.set('mode', 'network');
-      if (item.id === 'project' && typeof action.requirement === 'string' && action.requirement.trim()) {
+      if (item.id === 'project' && typeof action.draft_id === 'string') {
+        const draftResponse = await fetch('/api/engineering/agent/project-draft', {
+          headers: { 'X-Project-ID': projectId }, cache: 'no-store',
+        });
+        const current = await draftResponse.json();
+        if (!draftResponse.ok || !current.success || current.data?.draft_id !== action.draft_id)
+          throw new Error('Dieser Projektentwurf ist nicht mehr aktuell. Bitte den aktuellen Entwurf öffnen.');
+        if (readActiveProjectId() !== projectId) throw new Error('Das Projekt wurde inzwischen gewechselt.');
+        query.set('draft', action.draft_id);
+      }
+      if (item.id === 'project' && !action.draft_id && typeof action.requirement === 'string' && action.requirement.trim()) {
         if (action.requirement.length > 16000) throw new Error('Die Projektanforderung ist zu lang.');
         window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({
           projectId, requirement: action.requirement,

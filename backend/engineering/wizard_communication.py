@@ -63,10 +63,12 @@ def communication_plan(prompt, graph):
     nodes = graph['HardwareNode']
     hmi_choices = hmi_message_choices(clusters, graph)
     names = {str(n['name']).casefold(): key for key, n in nodes.items()}
-    owners, displays = {}, {}
+    owners, displays, internal_status = {}, {}, set()
     for cluster in clusters:
         for controller in cluster.get('controllers') or []:
             owner = names.get(str(controller.get('ecu', '')).casefold())
+            if owner and cluster.get('controller_status_scope') == 'INTERNAL':
+                internal_status.add(owner)
             for endpoint in [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]:
                 identifier = names.get(str(endpoint).casefold())
                 if not identifier or not owner:
@@ -84,7 +86,9 @@ def communication_plan(prompt, graph):
         1 if nodes[key].get('device_type') == 'Gateway' else 2,
         str(nodes[key]['name']).casefold(),
     ))
-    controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController'}
+    controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController',
+                        'EmbeddedController', 'RobotController', 'FlightComputer',
+                        'BatteryManagementSystem', 'EnergyController', 'BuildingController'}
     monitors = [key for key in monitors if nodes[key].get('device_type') in controller_types]
     result = {}
     for identifier, message in graph['Message'].items():
@@ -102,8 +106,8 @@ def communication_plan(prompt, graph):
             targets.add(owners[producer])
             role = 'FEEDBACK' if nodes[producer].get('device_type') == 'ActuatorController' else 'MEASUREMENT'
             basis = 'Bestätigte Gerätezuordnung im Systemcluster'
-        elif nodes[producer].get('device_type') in controller_types:
-            target = next((key for key in monitors if key != producer), None)
+        elif nodes[producer].get('device_type') in controller_types or producer in internal_status:
+            target = None if producer in internal_status else next((key for key in monitors if key != producer), None)
             if target:
                 targets.add(target)
             targets.update(displays.get(producer, set()))
@@ -111,7 +115,7 @@ def communication_plan(prompt, graph):
             # reports to engine control as well as diagnostic/display users.
             if str(nodes[producer]['name']).casefold() == 'abgasnachbehandlung' and 'motorsteuerung' in names:
                 targets.add(names['motorsteuerung'])
-            role, basis = 'DEVICE_STATUS', 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller'
+            role, basis = ('INTERNAL_STATE', 'Betriebszustand bleibt im Controller') if producer in internal_status and not targets else ('DEVICE_STATUS', 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller')
         else:
             role, basis = 'UNRESOLVED', 'Kein bestätigter Empfänger'
         selected_displays = []
@@ -127,7 +131,7 @@ def communication_plan(prompt, graph):
             config['hmi_routing_selection'] = selected_displays
         if producer in targets or any(key not in nodes for key in targets):
             raise ValueError(f'Kommunikationsplanung: {message["name"]} benötigt einen gültigen externen Empfänger.')
-        if not targets:
+        if not targets and role != 'INTERNAL_STATE':
             role, basis = 'UNRESOLVED', 'Status-Empfänger muss vor der Modellfreigabe ergänzt werden.'
         # Preserve the original role when a previously planned message is read.
         previous = config.get('communication_contract') or {}
@@ -136,6 +140,9 @@ def communication_plan(prompt, graph):
         transport.update(producer_ref=producer, consumer_refs=sorted(targets))
         config['communication_contract'] = {'version': VERSION, 'role': role, 'basis': basis,
             'producer_ref': producer, 'consumer_refs': sorted(targets)}
+        if role == 'INTERNAL_STATE' and not targets:
+            config['routing'] = {**config.get('routing', {}), 'enabled': False}
+            config['communication_contract']['scope'] = 'INTERNAL'
         if previous.get('scope'):
             config['communication_contract']['scope'] = previous['scope']
         result[identifier] = config
@@ -166,7 +173,10 @@ def contract_findings(graph):
             continue  # Imported models use their own contracts.
         transport = config.get('transport_unit') or {}
         consumers = transport.get('consumer_refs') or []
-        if (not consumers or any(str(ref) not in graph['HardwareNode'] for ref in consumers)
+        internal = (contract.get('role') == 'INTERNAL_STATE' and contract.get('scope') == 'INTERNAL'
+                    and (config.get('routing') or {}).get('enabled') is False and not consumers
+                    and not contract.get('consumer_refs') and transport.get('producer_ref') in graph['HardwareNode'])
+        if (not consumers and not internal or any(str(ref) not in graph['HardwareNode'] for ref in consumers)
                 or transport.get('producer_ref') in consumers
                 or sorted(consumers) != sorted(contract.get('consumer_refs') or [])):
             findings.append({'kind': 'Message', 'id': key, 'code': 'COMMUNICATION_CONTRACT_INVALID',

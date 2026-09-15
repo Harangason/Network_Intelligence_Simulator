@@ -6,6 +6,7 @@ import { readAssistantContext } from "@/lib/agent/assistant-context";
 import type { AssistantGraphState } from "@/lib/assistant-graph";
 import type { ChatAttachment } from "@/lib/agent/chat-attachments";
 import { AgentChatComposer } from "./agent-chat-composer";
+import { ProjectDraftEditor, type ProjectDraftStatus } from './project-draft-editor';
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -32,7 +33,7 @@ import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
-import { engineeringDomainEvidence, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import { engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
@@ -689,6 +690,8 @@ function architectureOption(id: NetworkArchitectureId | "") {
 }
 
 type AgentWizardContext = {
+  engineering_draft_ref?: { draft_id: string; revision: number };
+  structured_draft_ref?: { draft_id: string; revision: number };
   agent_prompt?: string;
   attachments: Array<{ kind: string; name: string; size: number; source?: "task" | "architecture" }>;
   confirmed_at: string;
@@ -749,7 +752,17 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
   const architectureId = rawArchitecture && NETWORK_ARCHITECTURES.some((option) => option.id === rawArchitecture.id)
     ? rawArchitecture.id as NetworkArchitectureId
     : null;
+  const draftRef = context.engineering_draft_ref && typeof context.engineering_draft_ref === 'object'
+    ? context.engineering_draft_ref as Record<string, unknown> : null;
+  const structuredRef = context.structured_draft_ref && typeof context.structured_draft_ref === 'object'
+    ? context.structured_draft_ref as Record<string, unknown> : null;
   return {
+    structured_draft_ref: structuredRef && typeof structuredRef.draft_id === 'string'
+      && typeof structuredRef.revision === 'number' && Number.isSafeInteger(structuredRef.revision) && structuredRef.revision > 0
+      ? { draft_id: structuredRef.draft_id, revision: structuredRef.revision } : undefined,
+    engineering_draft_ref: draftRef && typeof draftRef.draft_id === 'string' && draftRef.draft_id.trim()
+      && typeof draftRef.revision === 'number' && Number.isSafeInteger(draftRef.revision) && draftRef.revision > 0
+      ? { draft_id: draftRef.draft_id, revision: draftRef.revision } : undefined,
     agent_prompt: typeof context.agent_prompt === "string" ? context.agent_prompt : undefined,
     attachments,
     confirmed_at: String(context.confirmed_at ?? ""),
@@ -1087,6 +1100,9 @@ export function EngineeringAgentWizard({
   const [notes, setNotes] = useState("");
   const [taskText, setTaskText] = useState("");
   const [intakeRequirement, setIntakeRequirement] = useState<string | null>(null);
+  const [linkedDraftId, setLinkedDraftId] = useState('');
+  const [linkedDraftStatus, setLinkedDraftStatus] = useState<ProjectDraftStatus | null>(null);
+  const draftStartRef = useRef(false);
   const [taskFiles, setTaskFiles] = useState<TaskAttachment[]>([]);
   const [equipmentEdits, setEquipmentEdits] = useState<{ source: string; values: Partial<Record<keyof EngineeringHardwareCounts, string>> }>({ source: "", values: {} });
   const [communicationSystemEdits, setCommunicationSystemEdits] = useState<{ source: string; values: Record<string, string> }>({ source: "", values: {} });
@@ -1136,6 +1152,37 @@ export function EngineeringAgentWizard({
     () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain, true),
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
   );
+  const plannedInventory = new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain.device_type]));
+  const identifiedCounts = { sensors: 0, actuators: 0, gateways: 0, ecus: 0 };
+  for (const type of plannedInventory.values()) {
+    if (type === 'SensorController') identifiedCounts.sensors += 1;
+    else if (type === 'ActuatorController') identifiedCounts.actuators += 1;
+    else if (type === 'Gateway') identifiedCounts.gateways += 1;
+    else if (isEngineeringControllerDevice(type)) identifiedCounts.ecus += 1;
+  }
+  const equipmentIdentityReady = EQUIPMENT_CATEGORIES.every(({ key }) => identifiedCounts[key] === equipmentCounts[key]);
+  const [newControllerName, setNewControllerName] = useState('');
+  const [controllerAdditionError, setControllerAdditionError] = useState('');
+  const controllerExtensionRef = useRef<string | null>(null);
+  const extendingController = controllerExtensionRef.current === taskSource;
+  function addRequestedController() {
+    const name = newControllerName.trim();
+    if (!/^[\p{L}\d][\p{L}\d _-]{0,79}$/u.test(name)) {
+      setControllerAdditionError('Bitte einen eindeutigen Controllernamen ohne Sonderzeichen eingeben.');
+      return;
+    }
+    if ([...plannedInventory.keys()].some(existing => existing.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+      setControllerAdditionError('Dieses Gerät ist bereits vorhanden. Bitte in der Zuordnung auswählen.');
+      return;
+    }
+    const nextText = `${taskText}\nController namens "${name}".`;
+    const nextSource = `${nextText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+    controllerExtensionRef.current = nextSource;
+    setEquipmentEdits({ source: nextSource, values: { ...equipmentValues, ecus: String(Math.max(equipmentCounts.ecus, identifiedCounts.ecus) + 1) } });
+    setTaskText(nextText);
+    setNewControllerName('');
+    setControllerAdditionError('');
+  }
   const [projectId] = useState(() => readActiveProjectId());
   const wizardRunRef = useRef('');
   const requestRevisionRef = useRef<string | undefined>(undefined);
@@ -1234,6 +1281,7 @@ export function EngineeringAgentWizard({
     let active = true;
     void getWorkflowSummary(projectId).then((nextWorkflow) => {
       if (!active) return;
+      setLinkedDraftId(new URL(window.location.href).searchParams.get('draft') ?? '');
       setWorkflow(nextWorkflow);
       const fallbackModelType = typeof nextWorkflow.parameters?.industry === "string"
         ? nextWorkflow.parameters.industry
@@ -1563,7 +1611,7 @@ export function EngineeringAgentWizard({
     Object.entries(recognizedEquipment.communicationSystemCounts).map(([key, value]) => `${key}:${value}`).join("|"),
   ].join("\n");
   const communicationSystemRows = useMemo(() => communicationSystemInputRows({
-    edits: communicationSystemEdits.source === communicationSystemSource ? communicationSystemEdits.values : {},
+    edits: communicationSystemEdits.source === communicationSystemSource || extendingController ? communicationSystemEdits.values : {},
     recognizedSystemCounts: recognizedEquipment.communicationSystemCounts,
     recognizedSystems: recognizedEquipment.communicationSystems,
     selectedTechnologyIds: selectedTechnologies,
@@ -1621,7 +1669,13 @@ export function EngineeringAgentWizard({
       .filter((chain) => isEngineeringControllerDevice(chain.device_type))
       .map((chain) => [chain.hardware_name, chain]),
   ).values()].sort((left, right) => left.hardware_name.localeCompare(right.hardware_name, "de")), [plannedEquipment.chains]);
-  const clusterEditValues = equipmentClusterEdits.source === equipmentClusterSource ? equipmentClusterEdits.values : {};
+  const clusterEditValues = equipmentClusterEdits.source === equipmentClusterSource || extendingController ? equipmentClusterEdits.values : {};
+  useEffect(() => {
+    if (!extendingController) return;
+    setCommunicationSystemEdits(current => ({ ...current, source: communicationSystemSource }));
+    setEquipmentClusterEdits(current => ({ ...current, source: equipmentClusterSource }));
+    controllerExtensionRef.current = null;
+  }, [extendingController, communicationSystemSource, equipmentClusterSource]);
   const equipmentClusterAssignments: EquipmentClusterAssignment[] = useMemo(() => {
     const assignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster, index) => {
     const edit = clusterEditValues[cluster.id];
@@ -1962,6 +2016,7 @@ export function EngineeringAgentWizard({
     const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
+        `- Generierungsmodus: ${engineeringGenerationMode(taskSource)}\n` +
         `- Lauf-ID: ${nextRunId}\n` +
         `- Projektname: ${projectName.trim()}\n` +
         `- Abfrage erfolgt: true\n` +
@@ -1984,7 +2039,7 @@ export function EngineeringAgentWizard({
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
         `- Netzarchitektur-Freigabe: gemeinsam mit dem Engineering-Auftrag durch den Nutzer bestätigt am ${confirmedAt}\n` +
         `- Hardware-Sollwerte: ${JSON.stringify(equipmentCounts)}\n` +
-        `- Vollstaendigkeitsprinzip: System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten; diese sind Mindestumfang, keine Obergrenze. Fehlende Low-Level-Klassen, Sensoren, Aktoren und Signale fuer ausgewaehlte Systeme muessen fachlich ergaenzt werden.\n` +
+        `- Vollstaendigkeitsprinzip: Nur benannte und bestätigte Geräte verwenden. Fehlende Geräte, Anschlüsse und funktionale Anforderungen als offene Entscheidungen behandeln; keine Beispielgeräte ergänzen.\n` +
         `${architectureAiProposal.trim() ? `- KI-Architekturvorgabe: ${architectureAiProposal.trim()}\n` : ""}` +
         `- Parameter: ${parameterSummary}\n` +
         `- Workflowumfang: ${selectedScopeValues.length ? selectedScopeValues.join("; ") : "nicht vorgegeben, Ziel aus Nutzeranfrage ableiten"}\n` +
@@ -1994,10 +2049,10 @@ export function EngineeringAgentWizard({
         `${concreteTask}\n\n` +
         "Verbindliche Kanonisierung bei der Projektanlage: Pruefe vor jeder Hardware-Anlage vorhandene Systeme und verwende fachlich gleichwertige Hardware wieder. ADAS, Fahrerassistenz und Driver Assistance sind kontrollierte Synonyme desselben Systems. Eine gemeinsame Endung wie ECU ist kein Dublettenkriterium; fachlich verschiedene Systeme wie Abgasnachbehandlung und Airbag bleiben getrennt. Unterobjekte muessen an der wiederverwendeten kanonischen Hardware-ID angelegt werden.\n\n" +
         "Verbindliche Systemcluster-Regel: Ausgewaehlte Cluster bilden fachliche Systemrahmen. Sensoren, Aktoren, Steuerungen, Interfaces, Nachrichten und Signale desselben Clusters muessen zusammen bewertet, auf das gewaehlte Netz abgebildet und bei Kapazitaetsproblemen als zusammenhaengendes System verteilt werden.\n\n" +
-        "Verbindlicher Kommunikationsplan: Jede Nachricht bekommt vor der Modellfreigabe ihren Zweck und ihre Empfaenger. Sensorwerte und Aktorrueckmeldungen gehen an den zugeordneten Controller, Befehle an den Aktor. Geraetestatus geht zur Diagnose, ersatzweise zum Gateway bzw. einem anderen Controller. Die Abgasnachbehandlung berichtet auch an die Motorsteuerung. Diese Defaults werden als Teil des Modellvorschlags geprueft.\n\n" +
+        "Verbindlicher Kommunikationsplan: Jede Nachricht bekommt vor der Modellfreigabe ihren Zweck und ihre Empfaenger. Sensorwerte und Aktorrueckmeldungen gehen an den zugeordneten Controller, Befehle an den Aktor. Externe Empfaenger und Diagnosewege nur bei bestaetigtem Bedarf vorsehen; lokale Werte bleiben lokal. Ungeklaerte Empfaenger sind offene Entscheidungen.\n\n" +
         "Verbindliche Anzeige-Routing-Regel: Nur in hmi_routes.signals eingeschaltete Funktionsausgaenge werden zur jeweiligen Anzeige geroutet. excluded_signals sind ausgeschaltet und duerfen nicht durch automatische Empfaengerdefaults wieder hinzugefuegt werden. Lokale Berechnungen, Sensor-/Aktor-Kommunikation und andere bestaetigte Funktionsempfaenger bleiben erhalten. Bei gemeinsamer Nachricht ist eine abweichende Signalteilmenge nur mit eigenem expliziten Payload zulaessig; keine DLC-Verkleinerung ohne neue Kodierung.\n\n" +
         "Verbindliche Topologie-Regel: Systemrahmen sind kompakte Nachbarschaftsgruppen, keine ueber den ganzen View gezogenen Container. Ordne fachlich verwandte Rahmen nebeneinander an, fuehre Leitungen innerhalb und zwischen benachbarten Rahmen lokal, und gib Korrekturen des Nutzers als abstrakte Cluster-Nachbarschaften an den RAG-Kontext zurueck.\n\n" +
-        "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Nutze plausible Defaults, wenn Details fehlen, und frage nur bei echten fachlichen Entscheidungen oder Human Review erneut.";
+        "Starte jetzt die Analyse und arbeite selbststaendig bis zum genannten Zielzustand. Verwende nur ausdruecklich gewaehlte Defaults. Fehlende Geraeteidentitaeten, Anschluesse, Empfaenger und Kodierungen bleiben offene Entscheidungen. Frage bei fachlichen Entscheidungen oder Human Review erneut.";
     nextContext.agent_prompt = prompt;
     setRunId(nextRunId);
     wizardRunRef.current = nextRunId;
@@ -2071,6 +2126,36 @@ export function EngineeringAgentWizard({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function submitLinkedDraft() {
+    if (draftStartRef.current || effectiveBusy || !linkedDraftStatus?.ready || !projectName.trim() || !scope.length) return;
+    draftStartRef.current = true;
+    setSubmitting(true); setStatusError('');
+    const nextRunId = crypto.randomUUID();
+    try {
+      const response = await fetch('/api/engineering/agent/project-draft/workflow-request', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': projectId },
+        body: JSON.stringify({ draft_id: linkedDraftId, revision: linkedDraftStatus.revision,
+          run_id: nextRunId, project_name: projectName.trim(), scope_ids: scope }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.findings?.[0]?.message ?? 'Der Entwurf kann noch nicht gestartet werden.');
+      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+      const nextContext = result.data.context as AgentWizardContext;
+      if (nextContext.project_id !== projectId || nextContext.run_id !== nextRunId) throw new Error('Der vorbereitete Auftrag gehört nicht zu diesem Projekt.');
+      const target = wizardTargets.find(value => value === result.data.target);
+      if (!target) throw new Error('Ungültiges Workflowziel.');
+      setRunId(nextRunId); wizardRunRef.current = nextRunId; requestRevisionRef.current = undefined;
+      workflowEpochRef.current += 1; pendingCommandRef.current = null; acceptedOperationsRef.current.clear();
+      setWizardConversation(null); setReviewProposal(null); setSubmittedAt(Date.now()); setSubmittedContext(nextContext);
+      activateEngineeringAgentWizardSession(projectId); setPhase('status'); setStep(questionnaireSteps.length);
+      workflowSignatureRef.current = ''; loggedQuestionRef.current = ''; missingResponseLogRef.current = false;
+      missingQuestionSignatureRef.current = '';
+      await sendWizardOperation('START', result.data.prompt, undefined, { runId: nextRunId, context: nextContext, target });
+    } catch (error) {
+      setStatusError(agentErrorText(error instanceof Error ? error.message : 'Der Workflow konnte nicht gestartet werden.'));
+    } finally { draftStartRef.current = false; setSubmitting(false); }
   }
 
   function handlePrimary() {
@@ -2286,6 +2371,29 @@ export function EngineeringAgentWizard({
     }
   }
 
+  async function adoptLinkedDraftRevision() {
+    if (supplementBusy || agentPending || !runId || !submittedContext || !linkedDraftStatus?.ready) return;
+    setSupplementBusy(true); setStatusError('');
+    try {
+      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+      const response = await fetch('/api/engineering/agent/project-draft/workflow-request', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Project-ID': projectId },
+        body: JSON.stringify({ draft_id: linkedDraftStatus.draftId, revision: linkedDraftStatus.revision,
+          run_id: runId, project_name: submittedContext.project_name, scope_ids: submittedContext.scope_ids }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.findings?.[0]?.message ?? 'Entwurf benötigt weitere Angaben.');
+      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+      const nextContext = result.data.context as AgentWizardContext;
+      const target = wizardTargets.find(value => value === result.data.target);
+      if (nextContext.project_id !== projectId || nextContext.run_id !== runId || !target) throw new Error('Ungültiger aktualisierter Auftrag.');
+      if (!await sendWizardOperation('AMEND', result.data.prompt, undefined, { runId, context: nextContext, target })) return;
+      setSubmittedContext(nextContext); setReviewProposal(null); setSupplementOpen(false);
+    } catch (error) {
+      setStatusError(agentErrorText(error instanceof Error ? error.message : 'Entwurfsrevision konnte nicht übernommen werden.'));
+    } finally { setSupplementBusy(false); }
+  }
+
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
   const startBlockers = [
@@ -2295,6 +2403,7 @@ export function EngineeringAgentWizard({
     ...(!equipmentReady ? [{ step: 'equipment', text: intakeRequirement && equipmentValues.actuators === ''
       ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
     ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
+    ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
     ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
     ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
     ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
@@ -2511,6 +2620,20 @@ export function EngineeringAgentWizard({
     routingReviewPending,
     runPaused,
   });
+
+  if (linkedDraftId && phase === 'questionnaire') return <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
+    <h3>Gespeicherten Projektentwurf ausführen</h3>
+    <p>Chat und Wizard verwenden denselben Entwurf. Speichere die Angaben, bevor du den gewünschten Workflow startest.</p>
+    <label>Projektname<input value={projectName} maxLength={120} disabled={effectiveBusy} onChange={event => setProjectName(event.target.value)} /></label>
+    <ProjectDraftEditor projectId={projectId} draftId={linkedDraftId} onStateChange={setLinkedDraftStatus} />
+    <fieldset disabled={effectiveBusy}><legend>Workflowumfang</legend>
+      {SCOPE_GROUP.options.map(option => <label key={option.id}><input type="checkbox" checked={scope.includes(option.id)}
+        onChange={() => setScope(current => current.includes(option.id) ? current.filter(id => id !== option.id) : [...current, option.id])} />{option.label}</label>)}
+    </fieldset>
+    {statusError && <p role="alert">{statusError}</p>}
+    <button type="button" className="button primary" disabled={effectiveBusy || !linkedDraftStatus?.ready || !projectName.trim() || !scope.length}
+      onClick={() => void submitLinkedDraft()}>{submitting ? 'Wird übernommen …' : 'Auftrag starten'}</button>
+  </section>;
 
   return (
     <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
@@ -2864,6 +2987,13 @@ export function EngineeringAgentWizard({
             ))}</tbody>
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
+          {!equipmentIdentityReady && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Bitte die Geräte und ihre Aufgabe in der Anforderung konkret benennen.</p>}
+          <section aria-label="Controller ergänzen" className="agent-cluster-review">
+            <label>Controller im Auftrag ergänzen<input aria-label="Name des zusätzlichen Controllers" value={newControllerName} disabled={effectiveBusy} onChange={event => setNewControllerName(event.target.value)} placeholder="z. B. RaspberryPi" /></label>
+            <button type="button" disabled={effectiveBusy || !newControllerName.trim()} onClick={addRequestedController}>Controller ergänzen</button>
+            <button type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>
+            {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
+          </section>
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
           {!equipmentOwnershipReady && <p role="alert">Vor der Übergabe müssen alle Teilnehmer aktiver Cluster einem Controller zugeordnet oder der betreffende Cluster abgewählt werden.</p>}
@@ -3044,7 +3174,7 @@ export function EngineeringAgentWizard({
           )}
           <div className="agent-equipment-list">
             {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
-              <details key={key}><summary>{label} · {equipmentCounts[key]}</summary>
+              <details key={key}><summary>{label} · {identifiedCounts[key]} erkannt / {equipmentCounts[key]} vorgegeben</summary>
                 <ul>{plannedEquipment.chains.filter((chain) => type === "Controller" ? isEngineeringControllerDevice(chain.device_type) : chain.device_type === type)
                   .sort((a, b) => a.hardware_name.localeCompare(b.hardware_name, "de"))
                   .map((chain, index) => <li key={`${chain.device_type}:${chain.hardware_name}:${index}`}>{chain.hardware_name}</li>)}</ul>
@@ -3109,6 +3239,12 @@ export function EngineeringAgentWizard({
 
           {supplementOpen && (
             <section className="agent-wizard-supplement" aria-label="Engineering-Auftrag ergänzen">
+              {submittedContext?.engineering_draft_ref ? <>
+                <ProjectDraftEditor projectId={projectId} draftId={submittedContext.engineering_draft_ref.draft_id} onStateChange={setLinkedDraftStatus} />
+                <button type="button" className="button primary" disabled={supplementBusy || agentPending || !linkedDraftStatus?.ready
+                  || linkedDraftStatus.revision === submittedContext.engineering_draft_ref.revision}
+                  onClick={() => void adoptLinkedDraftRevision()}>Gespeicherten Entwurf im Auftrag übernehmen</button>
+              </> : <>
               <label>
                 <span>Ergänzung zur Analyse</span>
                 <textarea
@@ -3122,6 +3258,13 @@ export function EngineeringAgentWizard({
               <button className="button primary tiny" disabled={!supplementText.trim() || supplementBusy} onClick={() => void submitSupplement()} type="button">
                 {supplementBusy ? "Wird analysiert ..." : "Ergänzung analysieren"}
               </button>
+              {submittedContext?.structured_draft_ref && <details><summary>Gemeinsamen Projektentwurf bearbeiten</summary>
+                <ProjectDraftEditor projectId={projectId} draftId={submittedContext.structured_draft_ref.draft_id} onStateChange={setLinkedDraftStatus} />
+                <button type="button" className="button primary" disabled={supplementBusy || agentPending || !linkedDraftStatus?.ready
+                  || linkedDraftStatus.revision === submittedContext.structured_draft_ref.revision}
+                  onClick={() => void adoptLinkedDraftRevision()}>Gespeicherten Entwurf im Auftrag übernehmen</button>
+              </details>}
+              </>}
             </section>
           )}
 
@@ -3224,7 +3367,7 @@ export function EngineeringAgentWizard({
             : activeStepId === "project"
               ? projectReady ? "Projektname bereit" : "Projektname fehlt"
             : activeStepId === "equipment"
-              ? equipmentReady && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, Busse und Controller-Zuordnung prüfen"
+              ? equipmentReady && equipmentIdentityReady && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, erkannte Geräte, Busse und Controller-Zuordnung prüfen"
             : activeStepId === "architecture"
               ? architectureReady ? "Architektur gewählt" : "Auswahl erforderlich"
               : activeGroup

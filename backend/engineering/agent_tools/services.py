@@ -4,8 +4,9 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
+from pydantic import Field
 from backend.agent_core.api.tool_contract import Permission as P, ToolResult, ToolStatus
-from ..repository import get_object, ENTITY_SPECS, NotFoundError
+from ..repository import get_object, ENTITY_SPECS, BASE_COLUMNS, NotFoundError
 from ..project_context import current_project_id
 from ..device_classification import DeviceClassificationRegistry
 from ..semantic_intelligence import SemanticClassificationService
@@ -25,6 +26,11 @@ from . import model as access, generation, proposal_service as proposals, analys
 from .catalog import TOOLS, register, ID, TEXT, PROMPT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
 CanonicalObjectType = Enum('CanonicalObjectType', {name: name for name in ENTITY_SPECS}, type=str)
+
+from . import model_import
+_import_fields = dict(filename=(str, Field(min_length=1, max_length=240)),
+                     text=(str | None, Field(default=None, max_length=5 * 1024 * 1024)),
+                     content_base64=(str | None, Field(default=None, max_length=7 * 1024 * 1024)))
 
 
 def _inspect_project(_arguments):
@@ -203,6 +209,25 @@ def _update(a):
         "action": "UPDATE", "data": a["changes"]}], a["rationale"])
 
 
+def _create_objects(a):
+    """Use the same canonical validators and review boundary as the model UI."""
+    changes = []
+    for item in a['objects']:
+        if set(item) - {'object_type', 'local_ref', 'data'}:
+            raise ValueError('Anlagevorschläge erlauben nur object_type, local_ref und data.')
+        if item.get('object_type') not in ENTITY_SPECS:
+            raise ValueError('Unbekannter kanonischer Objekttyp.')
+        if not isinstance(item.get('data'), dict):
+            raise ValueError('Objektdaten fehlen.')
+        fields = set(BASE_COLUMNS) | set(ENTITY_SPECS[item['object_type']].own_columns)
+        unknown = set(item['data']) - fields
+        if unknown:
+            raise ValueError('Unbekannte oder nicht editierbare Felder: ' + ', '.join(sorted(unknown)))
+        changes.append({**item, 'action': 'CREATE'})
+    proposal = proposals.create('MODEL_OBJECT_CREATION', changes, a['rationale'])
+    return proposals.validate(proposal['proposal_id'])
+
+
 def _delete(a):
     impact = proposals.impact(a["object_type"], a["object_id"])
     return proposals.create("OBJECT_DELETE", [{"object_type": a["object_type"], "object_id": a["object_id"],
@@ -292,15 +317,18 @@ def register_tools():
     register("search_model", "Objekte über Typen hinweg nach Namen suchen.", P.READ_MODEL, lambda a: {"items": [
         {**item,"object_type":kind} for kind in ([a["object_type"]] if a.get("object_type") else ENTITY_SPECS)
         for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(CanonicalObjectType|None,None), limit=LIMIT)
-    register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str,"automotive"))
+    register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str|None,None))
     for name in ["generate_functions", "generate_function_structure", "decompose_function"]:
         register(name, "Funktionen aus der Anforderung als gemeinsamen Proposal erzeugen.", P.GENERATE_PROPOSAL,
-                 lambda a,n=name: generation.functions({**a,"decompose":n=="decompose_function"}), prompt=PROMPT, hardware_id=(str|None,None), count=(int|None,Field(default=None,ge=1,le=100)), domain=(str,"automotive"))
+                 lambda a,n=name: generation.functions({**a,"decompose":n=="decompose_function"}), prompt=PROMPT, hardware_id=(str|None,None),
+                 new_hardware=(dict[str, str]|None, None), status_technology=(str|None, None),
+                 status_cycle_ms=(float|None, Field(default=None, gt=0, le=3600000)),
+                 count=(int|None,Field(default=None,ge=1,le=100)), domain=(str|None,None))
     register("generate_function_interfaces", "Logische Interfaces einer Funktion vorschlagen.", P.GENERATE_PROPOSAL, generation.interfaces, function_id=ID, count=COUNT, technology=TECHNOLOGY, name=(str,"Interface"))
     for name in ["generate_hardware_interfaces", "create_hardware_interface_proposal"]:
         register(name, "Physische Hardware-Schnittstellen vorschlagen.", P.GENERATE_PROPOSAL, lambda a:generation.interfaces(a,physical=True), hardware_id=ID, count=COUNT, technology=TECHNOLOGY, name=(str,"Port"))
     for name,kind in [("generate_status_models","StatusModel"),("generate_data_objects","DataObject")]:
-        register(name, "Fachliches Modell aus der Anforderung vorschlagen.", P.GENERATE_PROPOSAL, lambda a,k=kind:generation.data_models(a,k), prompt=PROMPT, domain=(str,"automotive"))
+        register(name, "Fachliches Modell aus der Anforderung vorschlagen.", P.GENERATE_PROPOSAL, lambda a,k=kind:generation.data_models(a,k), prompt=PROMPT, domain=(str|None,None))
     for name in ["classify_device", "get_device_class_profile", "get_device_capabilities", "inspect_hardware_capabilities"]:
         register(name, "Geräteklasse und Fähigkeiten mit dem Python-Register bestimmen.", P.READ_MODEL, _device, device=(dict[str,Any]|None,None), hardware_id=(str|None,None))
     register("generate_device_capabilities", "Bestimmte Gerätefähigkeiten zur Freigabe vorschlagen.", P.GENERATE_PROPOSAL,
@@ -366,8 +394,13 @@ def register_tools():
              lambda a:IntelligenceService(current_project_id()).assess(persist=True))
     for name in ["find_graph_gaps","find_single_points_of_failure"]:
         register(name,"Graphlücken und Ausfallpunkte aus kanonischen Routen ermitteln.",P.READ_MODEL,lambda a:analysis.graph_analysis())
+    register("describe_model_object_fields", "Editierbare Felder, Pflichtangaben und erlaubte Werte des kanonischen Modells vor einer Anlage lesen.", P.READ_MODEL,
+             lambda a: {'object_type': a['object_type'], 'fields': list(BASE_COLUMNS) + list(ENTITY_SPECS[a['object_type']].own_columns),
+                        'required': ['name', *ENTITY_SPECS[a['object_type']].required], 'enum_fields': ENTITY_SPECS[a['object_type']].enum_fields or {},
+                        'json_fields': sorted(ENTITY_SPECS[a['object_type']].json_columns)}, object_type=(CanonicalObjectType, ...))
+    register("create_objects_via_proposal", "Kanonische Modellobjekte gemeinsam anlegen lassen: object_type, lokale Referenz local_ref und vollständige data; Verweise innerhalb des Vorschlags als $local_ref. Felder mit describe_model_object_fields lesen. Validiert den konkreten Vorschlag. Übernahme ausschließlich nach menschlicher Freigabe.", P.GENERATE_PROPOSAL, _create_objects, objects=ITEMS, rationale=TEXT)
     register("update_object_via_proposal","Versionierte Änderung als Proposal erzeugen.",P.GENERATE_PROPOSAL,_update,object_type=TEXT,object_id=ID,changes=OBJECT,rationale=TEXT)
-    register("delete_object_via_impact_analysis","Löschung mit Auswirkungsanalyse ausschließlich vorschlagen.",P.DELETE_WITH_IMPACT_ANALYSIS,_delete,object_type=TEXT,object_id=ID,rationale=TEXT)
+    register("delete_object_via_impact_analysis","Löschung mit Auswirkungsanalyse ausschließlich vorschlagen. Erst menschliches Review und autorisiertes Apply löschen das Objekt.",P.GENERATE_PROPOSAL,_delete,object_type=TEXT,object_id=ID,rationale=TEXT)
     register("inspect_proposal","Gemeinsamen Proposal-Vertrag lesen.",P.READ_MODEL,lambda a:proposals.get(a["proposal_id"]),proposal_id=ID)
     register("validate_proposal","Proposal und referenzierten Modellstand validieren.",P.VALIDATE,lambda a:proposals.validate(a["proposal_id"]),proposal_id=ID)
     register("apply_approved_proposal","Ausschließlich menschlich freigegebenen, aktuellen Proposal atomar anwenden.",P.APPLY_APPROVED_PROPOSAL,lambda a:proposals.apply(a["proposal_id"],actor=a["_actor"],trace_id=a["_trace_id"]),proposal_id=ID)
@@ -395,8 +428,13 @@ def register_tools():
              recommended_options=(list[str],Field(default_factory=list,max_length=4)))
 
 
-from pydantic import Field
 register_tools()
+register('preview_model_import', 'Engineering-Datei mit dem UI-Parser lesen. Keine Modelländerung.',
+         P.READ_MODEL, model_import.preview, **_import_fields)
+register('plan_model_import', 'Dateiinhalt als editierbaren Modellvorschlag planen; menschliches Review und Apply erforderlich.',
+         P.GENERATE_PROPOSAL, model_import.plan, **_import_fields, rationale=TEXT)
+register('export_project_bundle', 'Aktuelles Projektpaket mit dem UI-Exportdienst erzeugen. Metadaten und Downloadadresse; include_data liefert bis 5 MiB Paketinhalt.',
+         P.READ_MODEL, model_import.export_project, include_data=(bool, False))
 
 from ..reasoning.tools import register_reasoning_tools
 register_reasoning_tools()
@@ -407,17 +445,52 @@ register('inspect_assistant_capabilities', 'Verfügbare Agenten, alle Wizards, F
          capabilities.catalog, capability_id=(str | None, None))
 register('prepare_assistant_action', 'Passenden Wizard oder Fachagenten als ausführbare Kachel anbieten. Öffnen führt keine Modelländerung aus.', P.READ_MODEL,
          capabilities.prepare_action, capability_id=ID)
-register('prepare_project_request', 'Eine neue Projektanforderung als editierbaren Engineering-Auftrag vorbereiten und fehlende Vorgaben benennen. Keine Modelländerung.', P.READ_MODEL,
+register('prepare_project_request', 'Projektanforderung als versionierten Entwurf speichern und fehlende Vorgaben benennen. Keine Modelländerung.', P.GENERATE_PROPOSAL,
          capabilities.prepare_project_request, requirement=(str, Field(min_length=1, max_length=16000)),
-         planning_notes=(str, Field(default='', max_length=6000)))
+         planning_notes=(str, Field(default='', max_length=6000)),
+         operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
+         revision=(int | None, Field(default=None, ge=1)))
+from . import project_draft
+from . import project_creation
+from . import project_bundle_restore
+register('plan_project_bundle_restore', 'Projektpaket als prüfbaren Vorschlag in ein neues benanntes Projekt übernehmen. Menschliche Freigabe erforderlich; startet keine gespeicherten Aufträge.', P.GENERATE_PROPOSAL,
+         project_bundle_restore.plan, bundle=OBJECT, name=(str, Field(min_length=1, max_length=120)), rationale=TEXT)
+register('create_project_from_draft', 'Aus einer bestimmten Entwurfsrevision ausdrücklich ein neues Projekt anlegen. Das Ursprungsmodell bleibt unverändert.', P.GENERATE_PROPOSAL,
+         project_creation.create, operation_id=(str, Field(min_length=8, max_length=120)), draft_id=ID,
+         revision=(int, Field(ge=1)), name=(str, Field(min_length=1, max_length=120)))
+register('inspect_project_draft', 'Gespeicherten Projektentwurf und offene Entscheidungen lesen.', P.READ_MODEL, project_draft.inspect)
+register('prepare_draft_workflow', 'Gespeicherten Entwurf für den vorhandenen dauerhaften Workflow vorbereiten. Start und Review erfolgen separat.', P.READ_MODEL,
+         project_draft.workflow_request, draft_id=ID, revision=(int, Field(ge=1)),
+         run_id=(str, Field(min_length=8, max_length=120, pattern=r'^[A-Za-z0-9._-]+$')),
+         project_name=(str, Field(min_length=1, max_length=120, pattern=r'^[^\r\n]+$')),
+         scope_ids=(list[str], Field(min_length=1, max_length=9)))
+register('plan_project_model', 'Modell aus geklärter Entwurfsrevision durch den gemeinsamen Engineering-Generator planen und validieren. Menschliche Modellfreigabe bleibt erforderlich.', P.GENERATE_PROPOSAL,
+         project_draft.plan_model, draft_id=ID, revision=(int, Field(ge=1)))
+register('update_project_draft', 'Entwurf unter Revisionsprüfung ergänzen. Keine Freigabe oder Modelländerung.', P.GENERATE_PROPOSAL,
+         project_draft.command, action=(str, Field(pattern='^(CREATE|AMEND|RESOLVE)$')),
+         operation_id=(str, Field(min_length=8, max_length=120)), revision=(int | None, Field(default=None, ge=1)),
+         requirement=(str, Field(default='', max_length=16000)), industry=(str | None, Field(default=None, max_length=80)),
+         devices=(list[project_draft.DeviceUpdate], Field(default_factory=list, max_length=1000)),
+         remove_device_ids=(list[str], Field(default_factory=list, max_length=1000)),
+         allow_simulation_defaults=(bool | None, None))
 register('inspect_communication_repair', 'Aktuelle Hardwarearchitektur, etablierte Funktionspartner, alte und neue Signalwege sowie betroffene Routing-Einträge vergleichen. Nur Vorschau; Strategie wird im Reparatur-Agenten gewählt.', P.READ_MODEL,
          capabilities.repair_preview)
 register('analyze_structure_transfer', 'Quellstruktur mit expliziten Ziel-ECUs vergleichen und prüfbare Transfer-Vorschläge erzeugen.', P.GENERATE_PROPOSAL,
          capabilities.structure_preview, source_hardware_id=ID, target_hardware_ids=(list[str], Field(min_length=1, max_length=100)))
+from . import structure_transfer_adapter
+register('plan_structure_transfer', 'Einen analysierten ECU-Transfer mit expliziten create/reuse/skip-Entscheidungen in einen validierten gemeinsamen Vorschlag überführen. Keine Freigabe oder direkte Modelländerung.', P.GENERATE_PROPOSAL,
+         structure_transfer_adapter.plan, transfer_proposal_id=ID, rationale=PROMPT,
+         decisions=(list[dict], Field(default_factory=list, max_length=1000)))
 register('evaluate_structure_dependencies', 'Ausgewählte Hardware, Funktionen, Interfaces, Nachrichten und Signale semantisch zuordnen. Prüfung im Structure Wizard.', P.GENERATE_PROPOSAL,
          capabilities.structure_evaluate, selection=OBJECT)
+register('plan_structure_assignments', 'Explizite Hierarchiezuordnungen über denselben Fachdienst wie der Structure Wizard als validierten Vorschlag vorbereiten. Menschliche Freigabe bleibt erforderlich.', P.GENERATE_PROPOSAL,
+         capabilities.structure_assignments, assignments=(list[dict], Field(min_length=1, max_length=1000)), rationale=PROMPT)
 register('inspect_system_duplicates', 'Mögliche System-Dubletten mit Strukturevidenz vergleichen. Keine Zusammenführung.', P.READ_MODEL, capabilities.duplicates_preview)
-register('generate_fault_proposals', 'Modellbezogene Fehlerszenarien vorbereiten. Erst im Simulations-Wizard prüfen und aktivieren.', P.GENERATE_PROPOSAL, capabilities.fault_proposals)
+register('generate_fault_proposals', 'Modellbezogene Fehlerszenarien vorbereiten. Vor Aktivierung als Szenario prüfen und menschlich freigeben.', P.GENERATE_PROPOSAL, capabilities.fault_proposals)
+register('plan_fault_activation', 'Ausgewählte Fehlervorschläge als Simulationsszenario zur menschlichen Freigabe planen. Erst Apply aktiviert das gespeicherte Szenario; startet keinen Lauf.',
+         P.GENERATE_PROPOSAL, capabilities.plan_fault_activation,
+         fault_proposal_ids=(list[str], Field(min_length=1, max_length=100)), name=TEXT,
+         duration_s=(float, Field(gt=0, le=3600)), rationale=TEXT)
 register("get_interface_load", "Physische Schnittstellenlast durch den vorhandenen Kapazitätsrechner bestimmen.", P.READ_MODEL, _interface_load, interface_id=ID)
 from ..goal_execution import tools as goal_execution_tools
 from . import repair_execution

@@ -9,6 +9,7 @@ import { GoalHardwareFacts } from './goal-hardware-facts';
 import { useGoalResponse } from '@/lib/agent/use-goal-response';
 import { EngineeringOutputs } from './engineering-outputs';
 import { AssistantCapabilityCards } from './assistant-capability-cards';
+import { ProjectDraftEditor } from './project-draft-editor';
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
@@ -253,7 +254,16 @@ function FindingDecision({ event, projectId, onAnswer }: { event: EngineeringAge
   </div>}</LazyDetails>;
 }
 
+export function ProjectDraftWorkspace({ projectId, draftId }: { projectId: string; draftId: string }) {
+  const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
+  useEffect(() => setProposal(null), [projectId, draftId]);
+  return <><ProjectDraftEditor projectId={projectId} draftId={draftId} onProposal={setProposal} />
+    {proposal && <ProposalReview key={`${projectId}:${proposal.proposal_id}`} initial={proposal} projectId={projectId} />}</>;
+}
+
 export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; wizardReview?: boolean }) {
+  const [draftProposal, setDraftProposal] = useState<EngineeringProposal | null>(null);
+  useEffect(() => setDraftProposal(null), [projectId, event.id]);
   event = useGoalResponse(event, projectId);
   if (event.type === 'CONTEXT' || event.type === 'HEARTBEAT') return null;
   if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} />;
@@ -278,6 +288,8 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
     {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Im Workspace öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
     <ContextLinks refs={(event.actions ?? []).filter(action => action.type === 'NAVIGATE' && typeof action.object_type === 'string').map(action => ({object_type:String(action.object_type),id:String(action.object_id ?? ''),name:String(action.label ?? 'Objekt öffnen')}))} projectId={projectId} />
     {event.metadata?.details != null && <LazyDetails title="Technische Details">{() => <Value value={event.metadata?.details} />}</LazyDetails>}
+    {typeof event.metadata?.project_draft_id === 'string' && <ProjectDraftEditor projectId={projectId} draftId={event.metadata.project_draft_id} onProposal={setDraftProposal} />}
+    {draftProposal && <ProposalReview key={`${projectId}:${draftProposal.proposal_id}`} initial={draftProposal} projectId={projectId} />}
     <AssistantCapabilityCards actions={event.actions ?? []} projectId={projectId} />
   </section>;
 }

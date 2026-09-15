@@ -24,7 +24,9 @@ class AgentContext(BaseModel):
     selected_object_refs: list[dict[str, str]] = Field(default_factory=list, max_length=100)
     current_requirement: str = Field(default="", max_length=MAX_REQUIREMENT_LENGTH)
     current_workload: str | None = None
-    project_domain: str = "automotive"
+    project_domain: str = "custom"
+    project_draft_id: str | None = None
+    project_draft_revision: int | None = Field(default=None, ge=1)
     assumptions: list[str] = Field(default_factory=list)
     unresolved_findings: list[dict[str, Any]] = Field(default_factory=list)
     user_constraints: list[str] = Field(default_factory=list)

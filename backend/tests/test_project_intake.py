@@ -1,12 +1,15 @@
 import asyncio
 
 import pytest
+from uuid import uuid4
 
 from backend.agent_core.api.tool_contract import ToolResult
 from backend.agent_core.context.agent_context import AgentContext
 from backend.agent_core.core.engineering_agent import EngineeringAgent
 from backend.agent_core.orchestration.project_intake import is_project_request, project_intake_text
 from backend.engineering.agent_tools import capabilities
+from backend.engineering.agent_tools.runtime import ToolAuthority, execute
+from backend.agent_core.api.tool_contract import Permission
 
 
 REQUEST = ('ich möchte ein kleines Projekt: ich habe drei sensoren die temperatur messen '
@@ -14,6 +17,8 @@ REQUEST = ('ich möchte ein kleines Projekt: ich habe drei sensoren die temperat
 
 
 @pytest.mark.parametrize('text', [REQUEST, 'Bitte plane ein System mit Sensoren und Ventilen.',
+                                'Ein neues Projekt mit Raspberry Pi und drei Temperatursensoren.',
+                                'New project with two temperature sensors.',
                                 'I want a small project with temperature sensors and a Raspberry Pi.'])
 def test_natural_project_requests(text):
     assert is_project_request(text)
@@ -26,6 +31,7 @@ def test_read_queries_and_object_commands_keep_their_own_workflow(text):
 
 
 def test_project_request_prepares_real_capability_instead_of_search_apology(monkeypatch):
+    authority = ToolAuthority('intake-' + uuid4().hex)
     monkeypatch.setattr(capabilities, 'catalog', lambda _: {'capabilities': [{
         'available': True, 'action': {'type': 'CAPABILITY', 'capability_id': 'project', 'project_id': 'test-intake'},
     }]})
@@ -34,7 +40,7 @@ def test_project_request_prepares_real_capability_instead_of_search_apology(monk
             return [{'name': 'prepare_project_request'}]
         async def call(self, name, arguments=None):
             assert name == 'prepare_project_request'
-            return ToolResult(data=capabilities.prepare_project_request(arguments))
+            return execute(authority, name, Permission.GENERATE_PROPOSAL, arguments, capabilities.prepare_project_request)
     class Reasoner:
         async def next(self, *args):
             return {'calls': [], 'text': 'Ich konnte keine passenden Ergebnisse finden.'}
@@ -59,6 +65,13 @@ def test_intake_does_not_invent_protocol_counts_or_electrical_compatibility():
     assert 'nicht bestätigt' in text
 
 
+def test_explicit_quantity_is_not_asked_again_in_generic_intake_prose():
+    text = project_intake_text('Ich möchte ein Projekt mit Raspberry-Pi, drei Temperatursensoren und zwei Ventilen.')
+    assert 'Wie viele Ventile' not in text
+    assert 'Temperatursensoren → Raspberry Pi' in text
+    assert 'Projektentwurf ausarbeiten' not in text
+
+
 def test_model_can_reason_about_the_draft_but_cannot_replace_the_user_requirement():
     calls = []
     class Client:
@@ -73,8 +86,12 @@ def test_model_can_reason_about_the_draft_but_cannot_replace_the_user_requiremen
             return {'calls': [{'name': 'prepare_project_request', 'arguments': {
                 'requirement': 'erfunden', 'planning_notes': 'Drei Messstellen, Zuordnung zu den Ventilen noch offen.'}}]}
     asyncio.run(EngineeringAgent(Client(), reasoner=Reasoner()).run(REQUEST, AgentContext(active_project_id='test-intake')))
-    assert calls == [('prepare_project_request', {'requirement': REQUEST,
-                     'planning_notes': 'Drei Messstellen, Zuordnung zu den Ventilen noch offen.'})]
+    assert len(calls) == 1
+    assert calls[0][0] == 'prepare_project_request'
+    assert calls[0][1]['requirement'] == REQUEST
+    assert calls[0][1]['planning_notes'] == 'Drei Messstellen, Zuordnung zu den Ventilen noch offen.'
+    assert calls[0][1]['operation_id']
+    assert calls[0][1]['revision'] is None
 
 
 @pytest.mark.parametrize('text', ['Ich möchte kein Projekt mit Sensoren.',

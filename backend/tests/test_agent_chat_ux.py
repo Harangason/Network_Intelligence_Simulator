@@ -517,7 +517,9 @@ def test_human_edit_creates_new_validated_revision_and_survives_reload():
     from backend.app import create_app
     from backend.engineering.agent_tools.services import TOOLS
     authority = ToolAuthority(f'chat-edit-{uuid4()}')
-    made = execute(authority,'generate_functions',Permission.GENERATE_PROPOSAL,{'prompt':'Erzeuge eine Funktion zur Temperaturüberwachung.'},TOOLS['generate_functions'].handler)
+    made = execute(authority,'generate_functions',Permission.GENERATE_PROPOSAL,{'prompt':'Erzeuge eine Funktion zur Temperaturüberwachung.',
+        'new_hardware': {'name': 'ThermalController', 'device_type': 'EmbeddedController'},
+        'status_technology': 'Ethernet', 'status_cycle_ms': 100},TOOLS['generate_functions'].handler)
     assert made.success, made
     proposal = run(authority, lambda: proposal_service.validate(made.data['proposal_id'])).data
     function = next(change for change in proposal['changes'] if change['object_type']=='Function')
@@ -537,14 +539,35 @@ def test_human_edit_creates_new_validated_revision_and_survives_reload():
 
 
 def test_explicit_single_function_keeps_quantity_and_generator_workflow():
+    from backend.engineering.repository import create_object
     authority = ToolAuthority(f'chat-function-count-{uuid4()}')
+    hardware = run(authority, lambda: create_object('HardwareNode', {
+        'name': 'VisionController', 'device_type': 'EmbeddedController'})).data
     async def generate():
         async with EngineeringMCPClient(create_server(authority)) as client:
-            return await EngineeringAgent(client).run('Erzeuge 1 Funktion für eine 360 Grad Kamera.', AgentContext(active_project_id=authority.project_id))
+            return await EngineeringAgent(client).run('Erzeuge 1 Funktion für eine 360 Grad Kamera.',
+                AgentContext(active_project_id=authority.project_id,
+                             selected_object_refs=[{'object_type': 'HardwareNode', 'id': str(hardware['id'])}]))
     result = asyncio.run(generate())
     assert result['status'] == 'READY_FOR_REVIEW'
     assert not any(event.get('question') for event in result['events'])
     assert len([change for change in result['proposals'][0]['changes'] if change['object_type']=='Function']) == 1
+
+
+def test_function_without_controller_exposes_concrete_missing_assignment():
+    authority = ToolAuthority(f'chat-function-no-controller-{uuid4()}')
+    prompt = 'Erzeuge 1 Funktion für eine 360 Grad Kamera.'
+    async def generate():
+        async with EngineeringMCPClient(create_server(authority)) as client:
+            return await EngineeringAgent(client).run(prompt, AgentContext(active_project_id=authority.project_id))
+    result = asyncio.run(generate())
+    assert result['status'] == 'INCOMPLETE'
+    assert not result['proposals']
+    finding = next(event for event in result['events'] if event['type'] == 'FINDING')
+    assert finding['metadata']['missing_fields'] == ['hardware_id']
+    assert finding['metadata']['requirement'] == prompt
+    assert finding['actions'][0]['capability_id'] == 'hardware'
+    assert not any(trace['tool'] == 'generate_functions' for trace in result['trace'])
 
 
 def test_optional_mcp_question_can_be_skipped_and_resumed():

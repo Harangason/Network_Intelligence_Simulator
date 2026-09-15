@@ -48,7 +48,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v18-preserve-domain-and-technology'
+MODEL_GENERATOR_VERSION = 'wizard-model-v19-explicit-real-project-inventory'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v9-explicit-forwarding-scope'
 
 
@@ -397,9 +397,32 @@ def generate_parameters(arguments: dict) -> dict:
     }
 
 
-def generate(arguments: dict) -> dict:
+def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> dict:
     state = WorkflowStatusService(current_project_id()).get()
     prompt = _canonical_wizard_prompt(arguments['prompt'])
+    draft_marker = re.search(r'^- Projektentwurf: ([A-Za-z0-9._-]+) Revision (\d+)\s*$', prompt, re.M)
+    wizard_context = (state.get('context') or {}).get('agent_wizard_status') or {}
+    structured_ref = wizard_context.get('structured_draft_ref')
+    saved_prompt = (state.get('context') or {}).get('wizard_request', {}).get('prompt', '')
+    if structured_ref and _canonical_wizard_prompt(saved_prompt) == prompt:
+        from .project_draft import inspect as inspect_draft
+        from ..db import ConcurrentUpdateError
+        draft = inspect_draft()
+        current_ref = wizard_context.get('engineering_draft_ref') or structured_ref
+        if not draft or draft['draft_id'] != current_ref['draft_id'] or draft['revision'] != current_ref['revision']:
+            raise ConcurrentUpdateError('Der gemeinsame Projektentwurf wurde geändert. Aktuelle Revision im Auftrag übernehmen.')
+        source_evidence = [*(source_evidence or []), {'source': 'engineering_draft',
+            'draft_id': draft['draft_id'], 'revision': draft['revision'], 'adapter_version': 2}]
+    if draft_marker:
+        from .project_draft import inspect as inspect_draft
+        from ..db import ConcurrentUpdateError
+        draft = inspect_draft()
+        if not draft or draft['draft_id'] != draft_marker[1] or draft['revision'] != int(draft_marker[2]):
+            raise ConcurrentUpdateError('Der Projektentwurf wurde nach der Auftragsvorbereitung geändert.')
+        source_evidence = [*(source_evidence or [])]
+        if not any(item.get('source') == 'engineering_draft' for item in source_evidence):
+            source_evidence.append({'source': 'engineering_draft', 'draft_id': draft['draft_id'],
+                                   'revision': draft['revision'], 'requirement': draft['original_requirement'], 'adapter_version': 1})
     kinds = ('HardwareNode', 'Function', 'HardwareNetworkInterface', 'Interface', 'Message', 'Signal')
     existing = {kind: model.objects(kind) for kind in kinds}
     proposal_identity = _proposal_identity('engineering_model', prompt, existing, state, MODEL_GENERATOR_VERSION)
@@ -777,7 +800,7 @@ def generate(arguments: dict) -> dict:
                      'Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.',
                      'Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).',
                      'Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe.'],
-        evidence=[{'source': 'wizard-specification-generator', **proposal_identity, 'target_counts': spec['targetCounts'],
+        evidence=[*(source_evidence or []), {'source': 'wizard-specification-generator', **proposal_identity, 'target_counts': spec['targetCounts'],
                    'communication_system_counts': spec['communicationSystemCounts'],
                    'model_type': spec.get('modelType') or spec.get('domain'),
                    'architecture': 'HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement'}])

@@ -1121,6 +1121,7 @@ function expandArchitectureChains(
   communicationSystems: string[],
   overrides: Partial<EngineeringHardwareCounts> = {},
   completenessFirst = false,
+  allowExampleTemplates = false,
 ) {
   const canonicalRecognizedChains = canonicalizeRecognizedSystems(recognizedChains, domain);
   const recognizedCounts = chainCounts(canonicalRecognizedChains);
@@ -1150,7 +1151,10 @@ function expandArchitectureChains(
     })
     : [...canonicalRecognizedChains];
   const names = new Set(chains.map((chain) => normalized(normalizeHardwareName(chain.hardware_name))));
-  if (!targets.explicit) return { chains, targets };
+  // A quantity is not permission to invent device identities, physical
+  // technologies or additional owners. Only an explicit example request may
+  // expand a catalogue. Keep missing inventory visible to the caller.
+  if (!targets.explicit || !allowExampleTemplates) return { chains: allowExampleTemplates ? chains : [...canonicalRecognizedChains], targets };
 
   const templates = architectureTemplates(domain);
   const targetFor = (deviceType: ArchitectureTemplate["deviceType"]) => (
@@ -1339,7 +1343,7 @@ function naturalLanguageHardwareNames(line: string) {
 
 /** Explicit role-first declarations keep identifiers that have no role suffix. */
 function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
-  const roles = /\b(gateways?|ecus?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
+  const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
   const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
   const result: Array<{ name: string; declaredType: string }> = [];
@@ -1350,7 +1354,7 @@ function declaredHardwareNames(line: string): Array<{ name: string; declaredType
     // ("Gateway muss ...") does not declare a participant. Require a local
     // naming/count/enumeration context instead of consuming its next word.
     const explicitName = /:\s*$|\b(?:namens|named)\s*$/iu.test(match[0]) || /^["„']/.test(remainingName);
-    const declarationContext = /\b(?:ein(?:e|en|em|er|es)?|\d+|den|dem)\s*$/iu.test(prefix)
+    const declarationContext = (/^\s*(?:[-*]\s*)?$/.test(prefix) && /^(PLC|SPS)$/i.test(match[1])) || /\b(?:ein(?:e|en|em|er|es)?|\d+|den|dem)\s*$/iu.test(prefix)
       || /\b(?:mit|aus|with|containing)\s+(?:(?:der|die|das|den|dem|the|an?)\s+)?$/iu.test(prefix);
     if (!explicitName && !declarationContext) continue;
     const role = normalized(match[1]);
@@ -1394,10 +1398,10 @@ function impliedHardwareNames(line: string, confirmedActuators?: number) {
   if (temperatureCount) {
     for (let i = 1; i <= Math.min(1000, countValue(temperatureCount[1])); i++) names.push(`Temperatursensor${i}`);
   }
-  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventile?|valves?)\\b`));
+  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventil(?:e|en)?|valves?)\\b`));
   if (valveCount) {
     for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
-  } else if (/\b(?:ventile|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
+  } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
     for (let i = 1; i <= Math.min(1000, confirmedActuators!); i++) names.push(`Ventilaktor${i}`);
   }
   if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {
@@ -1697,6 +1701,13 @@ function generatedPhysicalDefaults(name: string) {
   return { min: undefined, max: undefined, unit: undefined };
 }
 
+export function engineeringGenerationMode(text: string): 'REAL_PROJECT' | 'EXAMPLE_PROJECT' {
+  const explicit = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
+  if (explicit === 'REAL_PROJECT' || explicit === 'EXAMPLE_PROJECT') return explicit;
+  const withoutNegatedExamples = text.replace(/\b(?:kein(?:e|en)?|not?\s+(?:an?\s+)?|ohne)\s+(?:Musterprojekt|Beispielprojekt|example project|sample project)\b/gi, '');
+  return /\b(?:Musterprojekt|Beispielprojekt|example project|sample project|Skalierungsziel)\b/i.test(withoutNegatedExamples) ? 'EXAMPLE_PROJECT' : 'REAL_PROJECT';
+}
+
 export function extractEngineeringSpecification(
   text: string,
   overrides: Partial<EngineeringHardwareCounts> = {},
@@ -1704,6 +1715,9 @@ export function extractEngineeringSpecification(
   completenessFirst = false,
 ): ExtractedEngineeringSpecification {
   text = withoutPlanningLimits(text);
+  const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
+  const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
+  const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
   const lines = specificationBody(text).split(/\r?\n/);
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
@@ -1727,7 +1741,7 @@ export function extractEngineeringSpecification(
   const domain = domainOverride || modelType || inferredDomain;
   const communicationSystems = extractCommunicationSystems(text);
   const unconfiguredPi = /\b(?:raspberry|rasperry|respary)\s*pi\b|\braspi\b/i.test(text) && !communicationSystems.length;
-  const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text, domain === 'automotive' ? 'CAN' : 'Other');
+  const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text, (exampleRequested || legacyConfirmed) && domain === 'automotive' ? 'CAN' : 'Other');
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
   const networkArchitecture = extractNetworkArchitectureMode(text);
   const declaredControllers = [...contexts.values()].filter(entry =>
@@ -1807,6 +1821,7 @@ export function extractEngineeringSpecification(
     communicationSystems,
     { ...confirmedHardwareCounts(text), ...overrides },
     completenessFirst || /System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten/i.test(text),
+    exampleRequested || legacyConfirmed,
   );
 
   return {
@@ -1844,7 +1859,7 @@ type ConfirmedClusterGraph = Array<{
   network_id?: string;
   network_label?: string;
   bus_name?: string;
-  controllers?: Array<{ ecu?: string; sensors?: string[]; actuators?: string[] }>;
+  controllers?: Array<{ ecu?: string; device_type?: 'Gateway'; sensors?: string[]; actuators?: string[] }>;
 }>;
 
 /** The reviewed graph owns device identities; catalog expansion must not replace them. */
@@ -1866,7 +1881,8 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   };
   for (const cluster of graph) {
     for (const controller of cluster.controllers ?? []) {
-      add(controller.ecu, controllerDeviceTypeForModel(spec.modelType));
+      if (controller.device_type && controller.device_type !== 'Gateway') throw new Error('Unbekannte explizite Controllerrolle im bestätigten Graph.');
+      add(controller.ecu, controller.device_type === 'Gateway' ? 'Gateway' : controllerDeviceTypeForModel(spec.modelType));
       for (const name of controller.sensors ?? []) add(name, "SensorController", controller.ecu);
       for (const name of controller.actuators ?? []) add(name, "ActuatorController", controller.ecu);
     }

@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
+import re
+
 from .text_utils import match_any
 
 
 DOMAIN_KEYWORDS = {
-    "Automotive": (r"\bvehicle\b", r"\bcar\b", r"\bautomotive\b", r"\bfahrzeug\b", r"\badas\b", r"\becu\b"),
-    "Industrial": (r"\bindustrial\b", r"\banlage\b", r"\bplc\b", r"\bmaschine\b", r"\brobot\b", r"\bros\b"),
+    "Automotive": (r"\bvehicle\b", r"\bcar\b", r"\bautomotive\b", r"\bfahrzeug\b", r"\badas\b"),
+    "Industrial": (r"\bindustrial\b", r"\bplc\b", r"\bmaschine\b", r"\brobot\b", r"\bros\b"),
     "Rail": (r"\brail\b", r"\bzug\b", r"\bbahn\b", r"\btrain\b"),
     "Aerospace": (r"\baerospace\b", r"\bflug\b", r"\buav\b", r"\bdrone\b", r"\bdrohne\b"),
-    "Energy": (r"\benergy\b", r"\bgrid\b", r"\bpower\b", r"\bnetz\b", r"\bumrichter\b"),
+    "Energy": (r"\benergy\b", r"\bpower\s+grid\b", r"\bstromnetz\b", r"\benergienetz\b"),
 }
 
 
 def choose_domain(text: str, domain: str | None) -> str:
-    hint = str(domain or "automotive").strip().lower()
+    hint = str(domain or "").strip().lower()
     explicit_domains = {
         "energy": "Energy",
         "rail": "Rail",
@@ -23,6 +25,7 @@ def choose_domain(text: str, domain: str | None) -> str:
         "industrial": "Industrial",
         "robotics": "Industrial",
         "generic": "Generic",
+        "custom": "Generic",
         "automotive": "Automotive",
         "industrial_automation": "Industrial",
         "embedded_systems": "Generic",
@@ -30,20 +33,22 @@ def choose_domain(text: str, domain: str | None) -> str:
         "robotics_ros": "Industrial",
         "generic_networking": "Generic",
     }
-    if hint in explicit_domains:
-        return explicit_domains[hint]
-
+    if hint:
+        # A selected industry without its own template family remains generic;
+        # incidental component words must never replace the selected industry.
+        return explicit_domains.get(hint, 'Generic')
+    matches = set()
     for resolved_domain, patterns in DOMAIN_KEYWORDS.items():
-        if match_any(text, *patterns):
-            return resolved_domain
-
-    if match_any(text, r"\bkameras?\b", r"\bcameras?\b", r"\bumfeld\b", r"\bsicht\b"):
-        return "Automotive"
-    if match_any(text, r"\btemperatur\b", r"\btemperature\b", r"\bdruck\b", r"\bpressure\b", r"\bmotor\b"):
-        return "Automotive"
-    if match_any(text, r"\bposition\b", r"\bros\b", r"\broboter\b"):
-        return "Industrial"
-    return "Generic"
+        for match in re.finditer('|'.join(patterns), text, re.I):
+            clause = re.split(r'[.!?;\n]|\b(?:sondern|but|instead)\b', text[:match.start()], flags=re.I)[-1]
+            prefix = ' '.join(clause.split()[-4:])
+            suffix = text[match.end():match.end() + 36]
+            if re.search(r'\b(?:kein\w*|nicht|ohne|nix|no|not|non)\b', prefix, re.I):
+                continue
+            if re.match(r'\s+(?:(?:ist|is)\s+)?(?:ausgeschlossen|unerwünscht|nicht\s+gewünscht|excluded)\b', suffix, re.I):
+                continue
+            matches.add(resolved_domain)
+    return next(iter(matches)) if len(matches) == 1 else 'Generic'
 
 
 def sensor_family(text: str) -> str:
@@ -55,7 +60,7 @@ def sensor_family(text: str) -> str:
         return "radar"
     if match_any(text, r"\bultraschall\b", r"\bultrasonic\b", r"\bsonar\b"):
         return "ultrasonic"
-    if match_any(text, r"\btemperatur\b", r"\btemperature\b", r"\bmotor\b"):
+    if match_any(text, r"\btemperatur\b", r"\btemperature\b"):
         return "temperature"
     if match_any(text, r"\bdruck\b", r"\bpressure\b"):
         return "pressure"

@@ -222,6 +222,26 @@ def _proposal_item(assignment: dict[str, Any], relation_id: str | None = None) -
     return item
 
 
+def assignment_updates(assignment: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    """Resolve the same hierarchy change for UI writes and agent proposals."""
+    child_type = str(assignment.get('child_type') or '')
+    child_id = str(assignment.get('child_id') or '')
+    parent_type = str(assignment.get('parent_type') or '')
+    parent_id = str(assignment.get('parent_id') or '')
+    parent_field, _, _ = _assignment_link(child_type, parent_type)
+    get_object(child_type, child_id)
+    parent = get_object(parent_type, parent_id)
+    if child_type == 'Interface' and parent_type == 'HardwareNode' and parent.get('device_class') not in (0, 1, 2):
+        raise EngineeringValidationError('Dieses Gerät benötigt ein Funktionsmodell. Wähle eine seiner Funktionen.')
+    updates = {parent_field: parent_id}
+    if child_type == 'Interface' and parent_type == 'HardwareNode':
+        updates['function_id'] = None
+    name = str(assignment.get('name') or '').strip()
+    if name:
+        updates['name'] = name
+    return child_type, child_id, updates
+
+
 def apply_structure(data: dict[str, Any]) -> dict[str, Any]:
     assignments = data.get("assignments")
     if not isinstance(assignments, list) or not assignments:
@@ -282,12 +302,8 @@ def apply_structure(data: dict[str, Any]) -> dict[str, Any]:
         parent_field, _, relation_type = parent_link
         child = get_object(child_type, child_id)
         parent = get_object(parent_type, parent_id)
-        updates: dict[str, Any] = {parent_field: parent_id}
-        if child_type == "Interface" and parent_type == "HardwareNode":
-            updates["function_id"] = None
+        _, _, updates = assignment_updates(assignment)
         requested_name = str(assignment.get("name") or "").strip()
-        if requested_name and requested_name != child.get("name"):
-            updates["name"] = requested_name
         confidence = assignment.get("confidence")
         update_object(
             child_type,

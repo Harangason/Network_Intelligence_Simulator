@@ -13,21 +13,30 @@ from . import proposal_service as proposals
 
 
 def expand(arguments: dict) -> dict:
-    return expand_requirement(arguments["prompt"], domain=arguments.get("domain", "automotive"))
+    return expand_requirement(arguments["prompt"], domain=arguments.get("domain"))
 
 
 def functions(arguments: dict) -> dict:
     expansion = expand(arguments)
     changes = []
     hardware_id = arguments.get("hardware_id")
+    new_hardware = arguments.get('new_hardware')
+    status_technology = arguments.get('status_technology')
+    status_cycle_ms = arguments.get('status_cycle_ms')
+    if hardware_id and new_hardware:
+        raise ValueError('Vorhandene Hardware oder neue Hardware wählen, nicht beides.')
     if hardware_id:
         get_object("HardwareNode", hardware_id)
     else:
-        hardware = expansion["hardware"][0]
-        profile = DeviceClassificationRegistry().resolve_profile(name=hardware["name"], device_type="ECU").to_dict()
+        if not isinstance(new_hardware, dict) or not new_hardware.get('name') or not new_hardware.get('device_type'):
+            raise ValueError('Welcher Controller führt die Funktionen aus? Vorhandene hardware_id wählen oder Name und Gerätetyp für neue Hardware bestätigen.')
+        if not status_technology or status_cycle_ms is None:
+            raise ValueError('Anschlusstechnologie und Statuszyklus der neuen Hardware ausdrücklich festlegen.')
+        hardware = new_hardware
+        profile = DeviceClassificationRegistry().resolve_profile(name=hardware["name"], device_type=hardware['device_type']).to_dict()
         changes.append({"object_type": "HardwareNode", "local_ref": "hardware", "data": {
-            "name": hardware["name"], "device_type": "ECU", "device_class": max(3, profile["device_class"]),
-            "description": "Hardwarezuordnung als Annahme; vor Übernahme prüfen."}})
+            "name": hardware["name"], "device_type": hardware['device_type'], "device_class": profile["device_class"],
+            "description": "Ausdrücklich angeforderte Hardwarezuordnung; vor Übernahme prüfen."}})
         hardware_id = "$hardware"
     requested = arguments.get("count")
     count_match = re.search(r"(\d+)\s*(?!(?:Grad|degrees?)\b)(?:[A-Za-zÄÖÜäöüß_-]+\s+){0,2}(?:Funktion(?:en)?|functions?)\b",arguments["prompt"],re.I)
@@ -44,17 +53,17 @@ def functions(arguments: dict) -> dict:
         raise ValueError(f"Fachlich begründete Funktionen: {len(candidates)}, angefordert: {requested}. Anforderung präzisieren.")
     for index, function in enumerate(candidates[:requested] if requested else candidates):
         changes.append({"object_type": "Function", "local_ref": f"function-{index}", "data": {
-            "name": function["name"], "hardware_node_id": hardware_id, "domain": arguments.get("domain", "automotive"),
+            "name": function["name"], "hardware_node_id": hardware_id, "domain": arguments.get("domain") or "custom",
             "description": ", ".join(function.get("subfunctions") or [])}})
-    complete_new_controller_status(changes)
+    complete_new_controller_status(changes, status_technology=status_technology, status_cycle_ms=status_cycle_ms)
     return proposals.create("FUNCTION_STRUCTURE", changes, arguments["prompt"],
-                            assumptions=[*[str(item) for item in expansion["assumptions"]], "Neue Controller senden den einheitlichen Betriebsstatus vorläufig alle 100 ms über CAN-FD; Buszuordnung und Timing vor Routing prüfen."],
+                            assumptions=[*[str(item) for item in expansion["assumptions"]], *([f"Gewählter Statuszyklus: {status_cycle_ms} ms über {status_technology}; Buszuordnung und Timing vor Routing prüfen."] if new_hardware else [])],
                             evidence=[{"source": "requirement_expansion", "interpretation": expansion["interpretation"]}])
 
 
 def interfaces(arguments: dict, *, physical: bool = False) -> dict:
     count = int(arguments.get("count", 1))
-    technology = arguments.get("technology", "CAN_FD")
+    technology = arguments["technology"]
     parent = arguments["hardware_id" if physical else "function_id"]
     get_object("HardwareNode" if physical else "Function", parent)
     changes = [{"object_type": "HardwareNetworkInterface" if physical else "Interface", "data": {
@@ -81,7 +90,7 @@ def packed(arguments: dict) -> list[dict]:
         candidates.append(SignalCandidate(name=signal["name"], required_bits=int(bits),
             producer_function_ref=str(signal.get("producer_function_ref") or arguments.get("function_id") or "unassigned"),
             sender_hardware_ref=str(signal.get("sender_hardware_ref") or arguments.get("hardware_id") or "unassigned"),
-            technology=arguments.get("technology", "CAN_FD"), cycle_ms=float(signal.get("cycle_ms", arguments.get("cycle_ms", 10))),
+            technology=arguments["technology"], cycle_ms=float(signal.get("cycle_ms", arguments.get("cycle_ms", 10))),
             receiver_set=tuple(sorted(signal.get("receiver_set") or [])), priority=str(signal.get("priority", "NORMAL")), data=signal))
     return [message.to_dict() for message in pack_signals(candidates)]
 
@@ -115,7 +124,7 @@ def mapping(arguments: dict) -> dict:
 
 def network(arguments: dict) -> dict:
     data = {**(arguments.get("configuration") or {}), "id": arguments.get("network_id") or str(uuid4()), "name": arguments["name"],
-            "technology": arguments.get("technology", "CAN_FD")}
+            "technology": arguments["technology"]}
     from ..naming import is_ethernet, new_bus_name
     from . import model
     if is_ethernet(data['technology']) and data.get('name_source') != 'user':
@@ -126,7 +135,9 @@ def network(arguments: dict) -> dict:
 
 
 def scenario(arguments: dict) -> dict:
-    data = arguments["scenario"]
+    data = {**arguments["scenario"], 'source': 'ai_generated',
+            'faults': [{**fault, 'source': 'ai_generated', 'approved': False}
+                       for fault in arguments['scenario'].get('faults') or []]}
     return proposals.create("SIMULATION_SCENARIO", [{"object_type": "SimulationScenario", "data": data}],
                             arguments.get("prompt") or "Simulations- oder Fehlerszenario zur Prüfung vorschlagen.")
 
@@ -159,7 +170,7 @@ def camera_architecture(arguments: dict) -> dict:
             'fields': [{'name':'timestamp', 'data_type':'uint64', 'unit':'us'},
                 {'name': {'objects':'objects','free_space':'regions','raw_image':'pixels','status':'state'}[output],
                  'data_type':'uint8' if output == 'status' else 'array', 'dimension_status':'UNSPECIFIED'}]}})
-    complete_new_controller_status(changes)
+    complete_new_controller_status(changes, status_cycle_ms=100)
     return proposals.create('CAMERA_ARCHITECTURE', changes, arguments.get('prompt') or 'Kameraarchitektur',
         assumptions=['Neue Controller senden den einheitlichen Betriebsstatus vorläufig alle 100 ms über Ethernet; Timing vor Routing prüfen.', f'Explizite Auswahl: {coverage}, Sensorprofil {profile}, Ausgaben {", ".join(outputs)}.',
             '100° horizontale Sicht bei vier Weitwinkelkameras bzw. 190° bei zwei Fisheye-Kameras sind Planungsannahmen; Montage und Überlappung validieren.',

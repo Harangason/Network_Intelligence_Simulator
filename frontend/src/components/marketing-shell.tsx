@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { withProjectParam } from "@/lib/user-settings";
-import { ProjectActions } from "./project-actions";
+import { ProjectRefreshButton } from "./project-refresh-button";
 
 const navigation = [
   { href: "/platform", label: "Platform" },
@@ -60,8 +60,8 @@ export function MarketingNav() {
         ))}
       </div>
       <div className="landing-nav-actions">
-        <ProjectActions className="landing-project-actions" showMessage={false} />
-        <ProjectAwareLink className="nav-cta" href="/studio">Open studio <Arrow /></ProjectAwareLink>
+        <ProjectRefreshButton disabled={false} />
+        <ProjectAwareLink className="nav-cta" href="/projects">Open studio <Arrow /></ProjectAwareLink>
       </div>
     </nav>
   );
@@ -72,7 +72,7 @@ export function MarketingFooter() {
     <footer className="landing-footer">
       <ProjectAwareLink className="landing-logo footer-logo" href="/"><LogoMark /><span>communication<br />simulator</span></ProjectAwareLink>
       <p>Simulation infrastructure for connected systems.</p>
-      <div>{navigation.map((item) => <ProjectAwareLink href={item.href} key={item.href}>{item.label}</ProjectAwareLink>)}<ProjectAwareLink href="/studio">Studio</ProjectAwareLink></div>
+      <div>{navigation.map((item) => <ProjectAwareLink href={item.href} key={item.href}>{item.label}</ProjectAwareLink>)}<ProjectAwareLink href="/projects">Studio</ProjectAwareLink></div>
       <span>© 2026 CS LAB</span>
     </footer>
   );

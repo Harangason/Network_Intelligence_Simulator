@@ -462,7 +462,9 @@ function controllerBranches(
     const uniqueFamilyOwner = controllers.length === 1 ? controllers[0] : undefined;
     const owner = best?.score >= 240 && (!tiedBest || best.score >= 1_000) ? best.controller : uniqueFamilyOwner;
     if (!owner) {
-      unassigned.push(deviceLeaf(endpoint, 0, "Mehrere fachlich mögliche Controller; Zuordnung muss bestätigt werden."));
+      unassigned.push(deviceLeaf(endpoint, 0, controllers.length
+        ? "Mehrere fachlich mögliche Controller; Zuordnung muss bestätigt werden."
+        : "Kein Controller vorhanden. Controller ergänzen oder die Anforderung korrigieren."));
       continue;
     }
     const branch = branches.find((candidate) => candidate.name === owner.hardware_name)!;
