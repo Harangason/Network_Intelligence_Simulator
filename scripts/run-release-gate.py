@@ -24,7 +24,7 @@ POSTGRES = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b676793
 
 
 def verification_manifest():
-    paths = set((ROOT/'backend/tests').rglob('*')) | set((ROOT/'frontend/e2e').rglob('*'))
+    paths = set((ROOT/'backend/tests').rglob('*')) | set((ROOT/'frontend/e2e').rglob('*')) | set((ROOT/'tests/fixtures').rglob('*'))
     paths.update(ROOT/name for name in ('frontend/playwright.config.ts',
         'scripts/run-release-gate.py', 'scripts/run-isolated-tests.py',
         'scripts/verify-live-wizard.py', 'scripts/deploy-verified-release.py',

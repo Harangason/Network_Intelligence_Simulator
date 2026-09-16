@@ -34,6 +34,7 @@ import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive,
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement } from '@/lib/agent/sensor-measurements';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
@@ -286,7 +287,7 @@ export function AgentChatCore({
   }, [activeProjectId, historyReady, messages.length, setMessages, stableMessages, status]);
 
   useEffect(() => {
-    if (!historyReady || status !== 'ready') return;
+    if (!historyReady || (status !== 'ready' && status !== 'error')) return;
     let active = true;
     const timer = window.setInterval(() => {
       if (document.visibilityState !== 'visible') return;
@@ -1162,6 +1163,17 @@ export function EngineeringAgentWizard({
   }
   const equipmentIdentityReady = EQUIPMENT_CATEGORIES.every(({ key }) => identifiedCounts[key] === equipmentCounts[key]);
   const connectionInventory = [...new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain])).values()];
+  const sensorInventory = connectionInventory.filter(chain => chain.device_type === 'SensorController');
+  const namedSensors = sensorInventory.filter(chain => !/^Sensor\d+$/.test(chain.hardware_name));
+  const sensorRows = Array.from({ length: Math.min(1000, Math.max(equipmentCounts.sensors || 0, sensorInventory.length)) }, (_, index) => {
+    const chain = namedSensors[index] ?? sensorInventory.find(item => item.hardware_name === `Sensor${index + 1}`);
+    return { name: chain?.hardware_name ?? `Sensor${index + 1}`, label: `Sensor ${index + 1}`, chain };
+  });
+  const deviceRows = [
+    ...connectionInventory.filter(chain => !['SensorController', 'ActuatorController'].includes(chain.device_type)).map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
+    ...sensorRows.map(row => ({ ...row, sensor: true })),
+    ...connectionInventory.filter(chain => chain.device_type === 'ActuatorController').map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
+  ];
   const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
   function selectDeviceConnection(name: string, technology: string) {
     const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
@@ -3003,22 +3015,26 @@ export function EngineeringAgentWizard({
             ))}</tbody>
           </table>
           {!equipmentReady && <p role="alert">Die Anzahl muss je Gerätetyp zwischen 0 und 1000 liegen. Mindestens ein Gerät ist erforderlich.</p>}
-          {!equipmentIdentityReady && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Bitte die Geräte und ihre Aufgabe in der Anforderung konkret benennen.</p>}
+          {!equipmentIdentityReady && <p role="alert">Geräteumfang noch unvollständig: {EQUIPMENT_CATEGORIES.filter(({ key }) => identifiedCounts[key] !== equipmentCounts[key]).map(({ key, label }) => `${label}: ${identifiedCounts[key]} erkannt, ${equipmentCounts[key]} vorgegeben`).join('; ')}. Eine Anzahl allein beschreibt noch keine Gerätefunktion. Ergänze in der Anforderung, was die Sensoren messen und was die Aktoren steuern, zum Beispiel „3 Temperatursensoren und 4 Ventilaktoren“.{networkArchitecture === 'sensor_ecu_actuator' && equipmentCounts.gateways === 0 && ' Für diesen lokalen Regelkreis ist kein Gateway erforderlich.'}</p>}
           {identifiedCounts.ecus < equipmentCounts.ecus && <section aria-label="Controller ergänzen" className="agent-cluster-review">
             <label>Controller im Auftrag ergänzen<input aria-label="Name des zusätzlichen Controllers" value={newControllerName} disabled={effectiveBusy} onChange={event => setNewControllerName(event.target.value)} placeholder="z. B. RaspberryPi" /></label>
             <button type="button" disabled={effectiveBusy || !newControllerName.trim()} onClick={addRequestedController}>Controller ergänzen</button>
             {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
           </section>}
           {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>}
-          {(unresolvedConnections.length > 0 || /^- Geräteanschlüsse:/m.test(taskText)) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
+          {(sensorRows.length > 0 || unresolvedConnections.length > 0 || /^- Geräteanschlüsse:/m.test(taskText)) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
             <h3>Geräteanschlüsse festlegen</h3>
-            <p>Der Gerätetyp legt seinen Anschluss nicht fest. Wähle je Gerät die vorgesehene Technik. Für einen Entwurf gilt deine Auswahl als Modellannahme, nicht als Nachweis realer Hardware.</p>
-            {connectionInventory.map(chain => <label key={chain.hardware_name}>{chain.hardware_name}
-              <select aria-label={`${chain.hardware_name}: Anschluss`} disabled={effectiveBusy} value={chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(chain.hardware_name, event.target.value)}>
+            <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Für einen Entwurf gilt deine Auswahl als Modellannahme, nicht als Nachweis realer Hardware.</p>
+            {deviceRows.map(({ name, label, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
+              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={`${label}: Messgröße`} disabled={effectiveBusy} value={String(chain?.configuration?.sensor_measurement ?? sensorMeasurement(name, chain?.signal_name)?.id ?? '')} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
+                <option value="" disabled>Bitte auswählen</option>
+                {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select></label>}
+              <label className="agent-device-choice"><span>Verbindungstyp</span><select aria-label={`${name}: Anschluss`} disabled={effectiveBusy || (sensor && !chain)} value={!chain || chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(name, event.target.value)}>
                 <option value="">Bitte auswählen</option>
-                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'GPIO', 'PWM', 'ADC', 'DAC', ...(chain.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
-              </select>
-            </label>)}
+                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'GPIO', 'PWM', 'ADC', 'DAC', ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
+              </select></label>
+            </div>)}
             {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
           </section>}
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}

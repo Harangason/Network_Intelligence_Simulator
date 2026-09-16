@@ -91,6 +91,11 @@ def _signal(a):
 def _ask_question(a):
     from backend.agent_core.api.agent_response import AgentResponse, InteractiveQuestion
     from uuid import uuid4
+    from . import conversation
+    answered = conversation.snapshot(current_project_id()).get('answered_questions', {}).get(a['question_id'])
+    if answered:
+        return {'decision_already_answered': a['question_id'], 'answer': answered,
+                'next_action': 'Continue using the persisted decision. A new requirement revision is needed to change it.'}
     options = [{**{key:value for key,value in option.items() if key != 'value'},
         'id':option.get('id') or option.get('value')} for option in a['options']]
     question = InteractiveQuestion(id=str(uuid4()), question=a['question'], description=a.get('question_description', ''),

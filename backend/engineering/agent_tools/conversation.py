@@ -286,6 +286,8 @@ def record_event(run_id, event):
         conn.execute('INSERT INTO engineering_agent_responses(project_id, response_id, body) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING',
             (current_project_id(), event['id'], Jsonb(event)))
     event = deepcopy(event)
+    if event['type'] in {'RESULT', 'ERROR', 'APPROVAL', 'VALIDATION'}:
+        state['durable_response_ids'] = list(dict.fromkeys([*state.get('durable_response_ids', []), event['id']]))[-40:]
     if len(event.get('text', '')) > 700 or event.get('metadata', {}).get('details') is not None:
         event['text'] = event.get('text', '')[:700]
         event.setdefault('metadata', {}).pop('details', None)
@@ -392,6 +394,7 @@ def history(messages=None, *, clear=False):
     state = read()
     if clear:
         state['ui_history'] = []
+        state['durable_response_ids'] = []
         state['ui_updated_at'] = int(datetime.now(timezone.utc).timestamp() * 1000)
         write(state)
     elif messages is not None:
@@ -422,10 +425,26 @@ def history(messages=None, *, clear=False):
             if previous is None or len(message['parts']) > len(previous['parts']):
                 existing[message['id']] = message
         complete_questions = {_question_id(part) for message in existing.values() if not message['id'].startswith('restored-question-') for part in message['parts']}
+        complete_responses = {part.get('data', {}).get('id') for message in existing.values()
+            if not message['id'].startswith('restored-response-') for part in message['parts']
+            if part.get('type') == 'data-engineering' and isinstance(part.get('data'), dict)}
+        existing = {key: message for key, message in existing.items()
+                    if not (key.startswith('restored-response-') and key.removeprefix('restored-response-') in complete_responses)}
         state['ui_history'] = _history_proposal_references([message for message in existing.values() if not (message['id'].startswith('restored-question-') and message['id'].removeprefix('restored-question-') in complete_questions)][-60:])
         state['ui_updated_at'] = int(datetime.now(timezone.utc).timestamp() * 1000)
         write(state)
     result = _history_proposal_references(state.get('ui_history', []))
+    # The execution worker survives a disconnected stream. Recover its results
+    # from authoritative responses, rather than relying on a browser PUT.
+    present = {part.get('data', {}).get('id') for message in result for part in message.get('parts', [])
+               if part.get('type') == 'data-engineering' and isinstance(part.get('data'), dict)}
+    for response_id in state.get('durable_response_ids', []) if not clear else []:
+        if response_id in present:
+            continue
+        response = response_detail(response_id)
+        result.append({'id': 'restored-response-' + response_id, 'role': 'assistant',
+                       'parts': [{'type': 'data-engineering', 'data': response}]})
+    result = _history_proposal_references(result)
     question_id = state.get('current_question')
     if not clear and question_id and not any(_question_id(part) == question_id for message in result for part in message['parts']):
         question = state['questions'][question_id]

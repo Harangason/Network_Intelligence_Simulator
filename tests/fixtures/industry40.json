@@ -1,0 +1,405 @@
+{
+  "source_sha256": "5f3d9eecb6339412c5deb40d17d7a1504562e1142f4a7db3d29038c50da95aeb",
+  "cases": [
+    {
+      "id": "S01-A",
+      "input": "1 Raspberry Pi 5\n3 Sensoren:\n- PT100 über SPI-ADC, -20…150 °C, 0,1 °C, 100 ms\n- Drucksensor über I2C, 0…10 bar, 0,01 bar, 20 ms\n- Drehzahlsensor über GPIO Counter, 0…6000 rpm, 10 ms\n\n4 Aktoren:\n- 2 PWM-Ventile\n- 1 DC-Motorcontroller über CAN-FD\n- 1 Relaisausgang\n\nCAN-FD:\n500 kbit/s nominal\n2 Mbit/s data\n\nFunktionen:\nTemperatureMonitoring\nPressureControl\nSpeedControl\nSafetyShutdown\n\n\nErzeuge Modell, Interfaces, Ports, Signale, Transport Units, Routing und Validation.",
+      "counts": {
+        "sensors": 3,
+        "actuators": 4,
+        "ecus": 1,
+        "gateways": 0
+      }
+    },
+    {
+      "id": "S01-B",
+      "input": "Ich habe 3 Sensoren, 4 Aktoren und einen zentralen kleinen Rechner.\n\nDer Rechner soll:\n- Temperatur überwachen,\n- Druck regeln,\n- eine Drehzahl regeln,\n- bei kritischem Zustand die Anlage abschalten.\n\nLege eine sinnvolle Architektur an.",
+      "counts": {
+        "sensors": 3,
+        "actuators": 4,
+        "ecus": 1,
+        "gateways": 0
+      }
+    },
+    {
+      "id": "S02-A",
+      "input": "1 PLC\n2 IO-Link-Sensoren:\n- Durchfluss 0–100 l/min, 20 ms\n- Druck 0–16 bar, 20 ms\n\n2 Aktoren:\n- Frequenzumrichter über PROFINET\n- Magnetventil über digitales Remote-I/O\n\nPROFINET:\n100 Mbit/s\n\nFunktionen:\nFlowControl\nPressureLimit\nPumpCommand",
+      "counts": {
+        "sensors": 2,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": 0
+      }
+    },
+    {
+      "id": "S02-B",
+      "input": "Eine Steuerung soll eine Pumpe und ein Ventil anhand\nvon Durchfluss und Druck regeln.\n\nEs gibt:\n- 2 Sensoren\n- 2 Aktoren\n- 1 Steuerung\n\nErzeuge eine sinnvolle Kommunikations- und Regelungsarchitektur.",
+      "counts": {
+        "sensors": 2,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": 0
+      }
+    },
+    {
+      "id": "S03-A",
+      "input": "1 Embedded Controller\n2 Positionssensoren über CANopen\n2 Servoantriebe über CANopen\n1 Ethernet-Gateway\n\nCANopen:\n500 kbit/s\nSensorzyklus 10 ms\nDrive Command 5 ms\n\nGateway:\nCANopen ↔ Ethernet\nEthernet 1 Gbit/s\n\nFunktionen:\nPositionAcquire\nPositionControl\nMotionCommand\nDiagnosticStatus",
+      "counts": {
+        "sensors": 2,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S03-B",
+      "input": "Ein System besitzt:\n- 2 Positionssensoren\n- 2 Servoantriebe\n- 1 Controller\n- 1 Verbindung zu einem übergeordneten System\n\nDie Positionen sollen zyklisch geregelt werden.",
+      "counts": {
+        "sensors": 2,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S04-A",
+      "input": "1 Controller\n4 Temperatursensoren über LIN\n3 Lüfteraktoren über LIN\n1 Gateway mit LIN- und Ethernet-Port\n\nLIN:\n19,2 kbit/s\nSensoren 500 ms\nLüfterstatus 250 ms\n\nEthernet:\n100 Mbit/s\n\nFunktionen:\nZoneTemperatureAcquire\nFanControl\nThermalStatus",
+      "counts": {
+        "sensors": 4,
+        "actuators": 3,
+        "ecus": 1,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S04-B",
+      "input": "Vier Temperatursensoren und drei Lüfter\nsollen durch eine gemeinsame Steuerung geregelt werden.\n\nDie Steuerung muss außerdem mit einem übergeordneten Netzwerk verbunden sein.",
+      "counts": {
+        "sensors": 4,
+        "actuators": 3,
+        "ecus": 1,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S05-A",
+      "input": "1 Safety Controller\n3 digitale Sicherheitssensoren\n2 Safety-Aktoren\n1 Gateway\n\nKommunikation:\nEtherCAT / FSoE\n\nSafety Cycle:\n4 ms\n\nFunktionen:\nSafetyInputMonitor\nSafetyDecision\nSafeStop",
+      "counts": {
+        "sensors": 3,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S05-B",
+      "input": "Ein Sicherheitssystem besitzt:\n- 3 Sicherheitssensoren\n- 2 sicherheitsrelevante Aktoren\n- 1 Sicherheitssteuerung\n- 1 übergeordnete Kommunikationsanbindung\n\nDie Reaktionszeit muss kurz und deterministisch sein.",
+      "counts": {
+        "sensors": 3,
+        "actuators": 2,
+        "ecus": 1,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S06-A",
+      "input": "3 PLC/Controller\n12 Sensoren:\n- 4 Temperatur\n- 4 Position\n- 4 Druck\n\n8 Aktoren:\n- 4 Ventile\n- 2 Motor Drives\n- 2 Linearantriebe\n\nNetzwerke:\n- 2 × PROFINET\n- 1 × EtherCAT\n- 1 × 1-Gbit-Ethernet Backbone\n\n1 zentrales Gateway / Edge Controller\n\nZyklus:\nMotion 2 ms\nPosition 5 ms\nPressure 20 ms\nTemperature 100 ms\n\n\nErzeuge Segmentierung, Routing, Process Data, Capacity und Timing.",
+      "counts": {
+        "sensors": 12,
+        "actuators": 8,
+        "ecus": 3,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S06-B",
+      "input": "Eine verteilte Maschinenzelle besitzt:\n- 3 Steuerungen\n- 12 Sensoren\n- 8 Aktoren\n- 1 zentrale Kopplung\n\nEin Teil der Funktionen ist sehr zeitkritisch,\nandere Messwerte sind langsam.",
+      "counts": {
+        "sensors": 12,
+        "actuators": 8,
+        "ecus": 3,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S07-A",
+      "input": "1 Robot Controller\n1 Edge Computer\n\n8 Sensoren:\n- 2 LiDAR\n- 2 Kameras\n- 2 Encoder\n- 1 IMU\n- 1 Abstandssensor\n\n6 Aktoren:\n- 4 Motor Drives\n- 2 Steering Actuators\n\nKommunikation:\n- LiDAR/Kamera: Ethernet / DDS\n- Motor Drives: EtherCAT\n- IMU/Encoder: CAN-FD\n- Edge ↔ Robot Controller: 1-Gbit Ethernet\n\nFunktionen:\nEnvironmentPerception\nLocalization\nMotionControl\nSteeringControl\nHealthMonitoring",
+      "counts": {
+        "sensors": 8,
+        "actuators": 6,
+        "ecus": null,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S07-B",
+      "input": "Ein mobiles Robotersystem besitzt:\n- 8 Sensoren mit einfachen Messwerten und hochauflösenden Umgebungsdaten,\n- 6 Aktoren,\n- 1 Echtzeitsteuerung,\n- 1 leistungsfähigen Rechner.\n\nErzeuge eine sinnvolle hybride Kommunikationsarchitektur.",
+      "counts": {
+        "sensors": 8,
+        "actuators": 6,
+        "ecus": null,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S08-A",
+      "input": "4 intelligente Controller\n16 Strom-/Spannungssensoren\n8 Schaltaktoren\n1 Gateway\n\nKommunikation:\n- Modbus RTU / RS-485 für 8 Sensoren\n- CAN-FD für 8 Sensoren + 8 Aktoren\n- Ethernet / OPC UA zwischen Controllern und Gateway\n\nMesszyklen:\n- Strom/Spannung 50 ms\n- Schaltstatus 20 ms\n- Diagnose 1 s",
+      "counts": {
+        "sensors": 16,
+        "actuators": 8,
+        "ecus": 4,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S08-B",
+      "input": "Ein Energieverteilungssystem besitzt:\n- 16 elektrische Messstellen,\n- 8 Schaltelemente,\n- 4 lokale Steuerungen,\n- 1 zentrale Kopplung.\n\nMessung, Schalten und Diagnose benötigen unterschiedliche Aktualisierungsraten.",
+      "counts": {
+        "sensors": 16,
+        "actuators": 8,
+        "ecus": 4,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S09-A",
+      "input": "4 Zone Controller\n20 Sensoren:\n- Temperatur\n- CO2\n- Feuchtigkeit\n- Präsenz\n\n12 Aktoren:\n- Ventile\n- Klappen\n- Lüfter\n\nKommunikation:\n- BACnet MS/TP lokal\n- BACnet/IP zum Gateway\n- Ethernet Backbone\n\n1 Building Gateway\n\nZyklus:\nPräsenz 100 ms\nKlima 1 s",
+      "counts": {
+        "sensors": 20,
+        "actuators": 12,
+        "ecus": 4,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S09-B",
+      "input": "Vier räumliche Zonen besitzen insgesamt:\n- 20 Sensoren\n- 12 Aktoren\n- 4 lokale Controller\n- 1 zentrales Gateway\n\nJede Zone soll lokal arbeiten und zentral beobachtbar sein.",
+      "counts": {
+        "sensors": 20,
+        "actuators": 12,
+        "ecus": 4,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S10-A",
+      "input": "3 PLCs\n18 Sensoren:\n- pH\n- Leitfähigkeit\n- Füllstand\n- Durchfluss\n- Druck\n\n10 Aktoren:\n- Pumpen\n- Ventile\n- Dosierpumpen\n\nKommunikation:\n- PROFIBUS PA für Prozesssensoren\n- PROFINET für Drives / PLCs\n- OPC UA zum zentralen Gateway",
+      "counts": {
+        "sensors": 18,
+        "actuators": 10,
+        "ecus": 3,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S10-B",
+      "input": "Ein Prozesssystem besitzt:\n- 18 Prozesssensoren\n- 10 Aktoren\n- 3 lokale Steuerungen\n- 1 zentrale Datenanbindung\n\nLangsame Prozessmessungen und schnellere Pumpen-/Ventilsteuerungen\nsollen gemeinsam integriert werden.",
+      "counts": {
+        "sensors": 18,
+        "actuators": 10,
+        "ecus": 3,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S11-A",
+      "input": "2 Real-Time Controller\n1 Industrial PC\n24 Sensoren\n8 Aktoren\n1 Data Gateway\n\nSensorik:\n- 8 Analogkanäle, 10 kHz\n- 8 CAN-FD-Sensoren, 10 ms\n- 8 Ethernet-Sensoren, 1 ms\n\nAktoren:\n- 4 CAN-FD\n- 4 EtherCAT\n\nBackbone:\n1 Gbit Ethernet\n\nAnforderung:\nMessung, Regelung und Logging synchronisieren.",
+      "counts": {
+        "sensors": 24,
+        "actuators": 8,
+        "ecus": null,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S11-B",
+      "input": "Ein technischer Prüfstand besitzt:\n- 24 Sensoren mit stark unterschiedlichen Datenraten,\n- 8 Aktoren,\n- 2 Echtzeitsteuerungen,\n- 1 Auswerte-PC,\n- 1 zentrale Datenkopplung.\n\nErzeuge eine Architektur für Regelung und synchrones Logging.",
+      "counts": {
+        "sensors": 24,
+        "actuators": 8,
+        "ecus": null,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S12-A",
+      "input": "5 Controller\n15 Sensoren\n10 Motor Drives\n1 Gateway\n\nKommunikation:\n- EtherCAT für Drives und schnelle Positionssensoren\n- IO-Link für einfache Sensoren\n- Ethernet / MQTT für Zustandsdaten zum Gateway\n\nFunktionen:\nMaterialDetection\nPositionTracking\nConveyorControl\nJamDetection\nEnergyMonitoring",
+      "counts": {
+        "sensors": 15,
+        "actuators": 10,
+        "ecus": 5,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S12-B",
+      "input": "Ein Fördersystem besitzt:\n- 15 Sensoren\n- 10 Antriebe\n- 5 lokale Controller\n- 1 zentrale Zustandsanbindung\n\nEinige Sensoren sind zeitkritisch,\nandere dienen nur der Zustandsüberwachung.",
+      "counts": {
+        "sensors": 15,
+        "actuators": 10,
+        "ecus": 5,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S13-A",
+      "input": "4 Embedded Controller\n12 Sensoren\n10 Aktoren\n1 Edge Gateway\n\nKommunikation:\n- I2C/SPI lokal\n- CAN-FD zwischen Embedded Controllern\n- Ethernet zum Edge Gateway\n\nDaten:\n- Temperatur\n- Druck\n- Flüssigkeitslevel\n- Position\n- Pumpenstatus\n- Ventilstatus",
+      "counts": {
+        "sensors": 12,
+        "actuators": 10,
+        "ecus": 4,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S13-B",
+      "input": "Eine automatisierte Laboranlage besitzt:\n- 12 Sensoren\n- 10 Aktoren\n- 4 lokale Recheneinheiten\n- 1 zentrale Schnittstelle\n\nViele Komponenten liegen physisch nahe an den lokalen Recheneinheiten.",
+      "counts": {
+        "sensors": 12,
+        "actuators": 10,
+        "ecus": 4,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S14-A",
+      "input": "6 Controller\n20 Sensoren\n12 Aktoren\n1 Gateway\n\nNetzwerke:\n- 2 × ISOBUS / CAN\n- 2 × CAN-FD\n- 1 × Ethernet Backbone\n\nSensoren:\n- Position\n- Druck\n- Drehzahl\n- Durchfluss\n- Feuchtigkeit\n\nAktoren:\n- Ventile\n- Motoren\n- Dosierer",
+      "counts": {
+        "sensors": 20,
+        "actuators": 12,
+        "ecus": 6,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S14-B",
+      "input": "Eine mobile Arbeitsmaschine besitzt:\n- 20 Sensoren\n- 12 Aktoren\n- 6 Controller\n- 1 zentrale Kopplung\n\nDie Maschine benötigt lokale Regelkreise,\nmehrere getrennte Funktionsbereiche und einen Backbone.",
+      "counts": {
+        "sensors": 20,
+        "actuators": 12,
+        "ecus": 6,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S15-A",
+      "input": "5 Controller\n18 Sensoren\n10 Aktoren\n1 Gateway\n\nKommunikation:\n- NMEA 2000 für verteilte Messgeräte\n- Modbus RTU für Energie-/Pumpendaten\n- Ethernet für Controller/Gateway\n\nFunktionen:\nPumpControl\nTankMonitoring\nPowerMonitoring\nAlarmManagement",
+      "counts": {
+        "sensors": 18,
+        "actuators": 10,
+        "ecus": 5,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S15-B",
+      "input": "Ein technisches Hilfssystem besitzt:\n- 18 Sensoren\n- 10 Aktoren\n- 5 lokale Controller\n- 1 zentrale Verbindung\n\nMessgeräte, Pumpensteuerung und Energieüberwachung\nverwenden unterschiedliche Datencharakteristika.",
+      "counts": {
+        "sensors": 18,
+        "actuators": 10,
+        "ecus": 5,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S16-A",
+      "input": "8 Controller\n24 Sensoren\n16 Aktoren\n1 Gateway\n\nKommunikation:\n- PROFINET\n- IO-Link\n- 1-Gbit Ethernet\n\nSensoren:\n- Lichtschranken\n- Position\n- Abstand\n- Last\n\nAktoren:\n- Motor Drives\n- Stopper\n- Greifer",
+      "counts": {
+        "sensors": 24,
+        "actuators": 16,
+        "ecus": 8,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S16-B",
+      "input": "Ein automatisches Lagersystem besitzt:\n- 24 Sensoren\n- 16 Aktoren\n- 8 lokale Steuerungen\n- 1 zentrale Kopplung\n\nTransportbewegungen sind zeitkritisch,\nBestands-/Zustandsdaten deutlich weniger.",
+      "counts": {
+        "sensors": 24,
+        "actuators": 16,
+        "ecus": 8,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S17-A",
+      "input": "10 Smart Sensor Nodes\n2 Edge Controller\n1 Gateway\n\nMessgrößen:\n- Vibration\n- Temperatur\n- Strom\n- Spannung\n\nKommunikation:\n- 6 Nodes über CAN-FD\n- 4 Nodes über Ethernet\n- Edge ↔ Gateway über Ethernet\n\nSampling:\n- Vibration 5 kHz lokal aggregiert auf 10-ms-Features\n- Temperatur 1 s\n- Strom/Spannung 100 ms",
+      "counts": {
+        "sensors": 10,
+        "actuators": 0,
+        "ecus": 2,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S17-B",
+      "input": "Ein verteiltes Messsystem besitzt:\n- 10 intelligente Messknoten,\n- 2 Edge-Rechner,\n- 1 zentrale Kopplung.\n\nEin Teil der Messungen ist hochfrequent,\nandere ändern sich langsam.",
+      "counts": {
+        "sensors": 10,
+        "actuators": 0,
+        "ecus": 2,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S18-A",
+      "input": "2 Motion Controller\n12 Servo Drives\n12 Encoder\n4 Safety Sensoren\n1 Gateway\n\nKommunikation:\n- EtherCAT für Motion\n- FSoE für Safety\n- Ethernet zum Gateway\n\nMotion Cycle:\n1 ms\n\nSafety Cycle:\n4 ms",
+      "counts": {
+        "sensors": 16,
+        "actuators": 12,
+        "ecus": 2,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S18-B",
+      "input": "Ein Mehrachssystem besitzt:\n- 12 Antriebe\n- 12 Positionsrückführungen\n- 4 Sicherheitssensoren\n- 2 Motion Controller\n- 1 zentrale Kopplung\n\nDie Achsregelung benötigt harte Echtzeit.",
+      "counts": {
+        "sensors": 16,
+        "actuators": 12,
+        "ecus": 2,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S19-A",
+      "input": "Erzeuge ein großes industrieneutrales Kommunikationssystem.\n\nSystemumfang:\n- 100 Sensoren\n- 100 Aktoren\n- 50 Funktionscontroller\n- genau 1 zentrales Gateway\n\nSensorgruppen:\n- 20 Temperatur\n- 15 Druck\n- 15 Strom\n- 10 Spannung\n- 10 Drehzahl\n- 10 Position\n- 10 Abstand\n- 10 Zustands-/Qualitätssensoren\n\nAktoren:\n- 25 Ventile\n- 20 Motor Drives\n- 15 Relais/Schalter\n- 15 Linearantriebe\n- 10 Pumpen\n- 10 Lüfter\n- 5 sonstige intelligente Aktoren\n\nNetzwerke:\n- 15 lokale Low-Speed-Segmente:\n  LIN / RS-485 / IO-Link nach Geräteeignung\n- 10 CAN-FD-Segmente\n- 5 Industrial-Ethernet-Segmente\n- 5 Ethernet-Backbone-Segmente\n- 1 zentrales Gateway\n\nController:\n- gemischte PLC-, Embedded- und Edge-Controller\n- jede Funktion erhält 5–20 fachlich notwendige Eingangs-/Ausgangsdaten\n\nKommunikationsregeln:\n- einfache Sensoren/Aktoren bevorzugt lokal am zuständigen Controller\n- zeitkritische Steuerdaten über CAN-FD / Industrial Ethernet\n- datenintensive Teilnehmer über Ethernet\n- Gateway verbindet notwendige Segmente\n- direkte Gateway-Anbindung nur bei technischer Begründung\n\nAdressierung:\n- alle adressierbaren Controller/Gateways erhalten eine 4-stellige LogicalNodeAddress\n\nFür alle relevanten Daten erzeugen:\n- Semantic Type\n- Unit\n- Min/Max\n- Resolution\n- Cycle Time\n- Producer\n- Consumer\n- FunctionalInterface\n- HardwareInterface / Port\n- Transport Unit\n- Technology Binding\n\nErzeuge:\n1. Engineering Model\n2. Hardware-/Function Mapping\n3. Physical Ports\n4. Networks\n5. Messages / Transport Units\n6. Signal/DataObject Bindings\n7. vollständiges Routing\n8. Capacity & Timing\n9. Gateway Load\n10. Validation\n11. Simulation Preflight\n12. Netzwerkvisualisierung\n13. Routingvisualisierung\n\nKeine zufälligen fachlichen Zuordnungen.",
+      "counts": {
+        "sensors": 100,
+        "actuators": 100,
+        "ecus": 50,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S19-B",
+      "input": "Erzeuge ein großes technisches System mit:\n\n- 100 Sensoren\n- 100 Aktoren\n- 50 funktionalen Steuerungen\n- genau einer zentralen Kopplung\n\nDie Sensoren erfassen unterschiedliche physikalische Größen.\nDie Aktoren reichen von einfachen Schaltelementen\nbis zu schnellen geregelten Antrieben.\n\nEinige Funktionen sind stark zeitkritisch.\nAndere übertragen langsame Zustandsdaten.\nEin kleiner Teil der Teilnehmer erzeugt größere Datenmengen.\n\nJede funktionale Steuerung soll alle fachlich notwendigen\nEin- und Ausgangsdaten besitzen.\n\nEntwickle eine belastbare industrieneutrale Architektur,\nstelle notwendige Rückfragen,\nerzeuge die Kommunikationsstruktur,\nroute alle notwendigen Datenströme,\nberechne Kapazität und Timing\nund führe anschließend die vollständige Validierung durch.\n\n\nDer Agent muss selbst bestimmen bzw. erfragen:\n\nDevice Classes\nData Complexity\nController-Typen\nlokal vs. direkt angebundene Teilnehmer\nSegmentierung\nTechnology Candidates\nPortbedarf\nGateway-Rolle\nSignal vs. DataObject\nCycle Classes\nRouting\nCapacity\nTiming",
+      "counts": {
+        "sensors": 100,
+        "actuators": 100,
+        "ecus": 50,
+        "gateways": null
+      }
+    },
+    {
+      "id": "S20-A",
+      "input": "Erzeuge ein großes Multi-Technology-System.\n\nHardware:\n- 100 Sensoren\n- 100 Aktoren\n- 50 Controller\n- 1 Central Gateway\n- 4 Edge Compute Nodes\n- 2 High-Performance Compute Nodes\n\nKommunikationsstruktur:\n- 10 CAN-FD\n- 10 Modbus-RTU / RS-485 Segmente\n- 5 PROFINET-Netze\n- 5 EtherCAT-Netze\n- 5 Ethernet-Netze\n- 1 Ethernet Backbone\n\nSensoren:\n- 30 PHYSICAL_SCALAR\n- 20 MULTI_VALUE\n- 20 STATE / QUALITY\n- 10 STRUCTURED_OBJECT\n- 10 STRUCTURED_OBJECT_LIST\n- 5 IMAGE_STREAM\n- 5 High-Rate Data Sources\n\nAktoren:\n- 40 einfache Schalt-/Ventilaktoren\n- 30 geregelte Motor-/Motion-Aktoren\n- 20 intelligente Aktoren mit Diagnose\n- 10 sicherheitsrelevante Aktoren\n\nArchitekturvorgaben:\n- einfache lokale Geräte → Controller-vermittelt\n- Smart/Perception Devices dürfen direkt am Backbone liegen\n- Motion → EtherCAT\n- klassische Prozesssteuerung → PROFINET / CAN-FD\n- langsame Registerkommunikation → Modbus RTU\n- Streams / Object Lists → Ethernet\n- Gateway verbindet notwendige Segmente\n- Edge Nodes übernehmen lokale Aggregation\n- HCP Nodes verarbeiten datenintensive Datenobjekte\n\nFür jeden Controller:\n- 5–20 fachlich erforderliche Ein-/Ausgangsdaten\n- OperatingState\n- HealthState\n- CommunicationState, wenn sinnvoll\n\nErzeuge zusätzlich:\n- LogicalNodeAddresses\n- vollständige Route Table\n- Transport Units\n- Gateway Forwarding\n- Capacity & Timing\n- Queueing\n- End-to-End Latency\n- Validation\n- Simulation Snapshot\n- Golden-Trace-fähige Konfiguration\n- Trace-Analyse-fähige Source-/Destination-Zuordnung\n\nSimulation:\n- 60 s\n- reproduzierbarer Seed\n- keine Faults im Golden Run\n\nTrace muss auflösbar sein nach:\n- Source\n- Destination\n- Logical Address\n- Function\n- Message / Transport Unit\n- Signal / DataObject\n- Network\n- Route",
+      "counts": {
+        "sensors": 100,
+        "actuators": 100,
+        "ecus": 50,
+        "gateways": 1
+      }
+    },
+    {
+      "id": "S20-B",
+      "input": "Erzeuge ein großes verteiltes technisches System.\n\nUmfang:\n- 100 Sensoren\n- 100 Aktoren\n- 50 Steuerungs-/Rechenknoten\n- 1 zentrale Kopplung\n- mehrere leistungsfähige Rechenknoten\n\nDie Daten reichen von:\n- einfachen langsamen Messwerten\nbis\n- zeitkritischen Regelungsdaten\nbis\n- strukturierten Objektlisten\nund\n- sehr datenintensiven Streams.\n\nDie Aktoren reichen von:\n- einfachen Schaltern\nbis\n- schnellen geregelten Antrieben\nund\n- intelligenten diagnostizierbaren Geräten.\n\nEntwickle selbst eine sinnvolle segmentierte Architektur.\n\nDer Agent soll:\n- Teilnehmer klassifizieren,\n- sinnvolle lokale und direkte Anbindungen bestimmen,\n- notwendige Architekturentscheidungen erfragen,\n- passende Kommunikationstechnologien vorschlagen,\n- Ports und Interfaces planen,\n- Networks erzeugen,\n- Transportstrukturen erzeugen,\n- Routing vollständig aufbauen,\n- Capacity und Timing berechnen,\n- das Gateway dimensionieren,\n- validieren,\n- eine reproduzierbare Simulation vorbereiten,\n- einen fehlerfreien Golden Run ermöglichen,\n- die Trace-Analyse vollständig vorbereiten.",
+      "counts": {
+        "sensors": 100,
+        "actuators": 100,
+        "ecus": 50,
+        "gateways": null
+      }
+    }
+  ]
+}

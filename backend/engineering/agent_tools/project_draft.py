@@ -60,7 +60,7 @@ def _negated(text, match):
 def industry_candidates(text):
     patterns = {
         'building_automation': r'\b(?:gebäude\w*|gebaeude\w*|building\s+automation|gebäudeautomation)\b',
-        'industrial_automation': r'\b(?:industrie\w*|industrial\s+automation|fabrik\w*)\b',
+        'industrial_automation': r'\b(?:industrieautomation|industrieanlage\w*|industrial\s+automation|fabrik\w*)\b',
         'automotive': r'\b(?:automotive|fahrzeug\w*|auto|car|vehicle)\b',
         'embedded_systems': r'\b(?:embedded\w*|eingebettete\s+systeme)\b',
         'robotics_ros': r'\b(?:robotik|robotics)\b',
@@ -152,6 +152,26 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
             add(f'{stem}{i + 1}', role, match[0], known_kind=known)
     if re.search(r'\b(?:ventile(?:n)?|valves|aktoren|actuators)\b', requirement, re.I) and 'ACTUATOR' not in counts and not any(d['role'] == 'ACTUATOR' for d in devices.values()):
         issues.append({'code': 'ACTUATOR_COUNT_REQUIRED', 'message': 'Wie viele Ventile bzw. Aktoren sollen gesteuert werden?', 'action': 'SPECIFY_COUNT'})
+    # Preserve the entire requested inventory, including qualified/compound
+    # roles. Unspecified identities are draft slots, never confirmed hardware
+    # capabilities, connections or canonical model objects.
+    from .inventory_quantities import quantities
+    scope = quantities(requirement)
+    for key, role, stem in [('sensors', 'SENSOR', 'Sensor'), ('actuators', 'ACTUATOR', 'Aktor'),
+                            ('ecus', 'CONTROLLER', 'Controller'), ('gateways', 'GATEWAY', 'Gateway')]:
+        current = sum(d['role'] == role for d in devices.values())
+        target = max(current, scope[key])
+        if target:
+            counts[role] = target
+        index = 0
+        while current < target:
+            index += 1
+            name = f'{stem}{index}'
+            if name.casefold() in devices:
+                continue
+            add(name, role, f'Aus ausdrücklich genanntem Geräteumfang ({scope[key]}), Typ/Funktion noch zu klären',
+                known_kind=False)
+            current += 1
     controllers = [d for d in devices.values() if d['role'] in {'CONTROLLER', 'GATEWAY'}]
     endpoints = [d for d in devices.values() if d['role'] in {'SENSOR', 'ACTUATOR'}]
     if endpoints and not controllers:

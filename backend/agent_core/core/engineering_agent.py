@@ -34,7 +34,14 @@ def requests_model_change(prompt: str) -> bool:
 
 def unsupported_change_claim(text: str) -> bool:
     return bool(re.search(r'\b(?:angelegt|erstellt|erzeugt|geändert|gelöscht|entfernt|übernommen|'
-                          r'created|updated|deleted|removed|applied)\b', text, re.I))
+                          r'created|updated|deleted|removed|applied)\b|'
+                          r'\b(?:ist|sind|is|are)\s+(?:jetzt\s+|now\s+)?(?:komplett|vollständig|complete|completed)\b|'
+                          r'\b(?:create_objects_via_proposal|generate_functions|generate_signals)\s*["( :]', text, re.I))
+
+
+def numeric_engineering_claim(text: str) -> bool:
+    return bool(re.search(r'\d+(?:[.,]\d+)?\s*(?:%|ms\b|[kmg]?bit/s\b|µs\b)', text, re.I)
+                and re.search(r'last|load|kapazit|capacity|latenz|latency|timing|berechn|calculate', text, re.I))
 
 
 class EngineeringAgent:
@@ -124,7 +131,7 @@ class EngineeringAgent:
             if self.reasoner:
                 try:
                     tools = [tool for tool in await self.client.tools() if tool['name'] == 'prepare_project_request']
-                    decision = await self.reasoner.next([
+                    decision = await asyncio.wait_for(self.reasoner.next([
                         {'role': 'system', 'content':
                             'Der Nutzer beschreibt ein neu zu planendes Projekt, keine Suche nach bestehenden Objekten. '
                             'Erarbeite einen fachlichen Entwurf und nutze prepare_project_request. '
@@ -133,7 +140,7 @@ class EngineeringAgent:
                             'Erfinde keine Stückzahlen, Anschlussarten, Versorgung, Zeiten oder bestätigte Hardwareeignung. '
                             'Es wurde noch nichts angelegt. Die Originalanforderung bleibt unverändert.'},
                         {'role': 'user', 'content': prompt},
-                    ], context, tools)
+                    ], context, tools), timeout=20)
                     for tool_call in decision.get('calls', []):
                         if tool_call.get('name') != 'prepare_project_request':
                             continue
@@ -803,6 +810,7 @@ class EngineeringAgent:
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
             change_requested = requests_model_change(prompt)
             evidence_retries = 0
+            failed_calls = {}
             status, text = "INCOMPLETE", "Bitte beschreibe das gewünschte Engineering-Ergebnis oder wähle ein Objekt aus."
             if self.reasoner:
                 for step in range(self.max_steps):
@@ -825,21 +833,46 @@ class EngineeringAgent:
                             status = 'READY_FOR_REVIEW' if reviewed_changes else 'INCOMPLETE'
                             text = ('Der Änderungsvorschlag wurde erzeugt und validiert. Die Änderungen warten auf deine Freigabe und Übernahme.'
                                     if reviewed_changes else 'Der Änderungsvorschlag ist noch nicht vollständig validiert. Bitte die konkreten Findings prüfen.')
+                        elif numeric_engineering_claim(decision.get('text') or ''):
+                            # Free prose is not a calculation artifact, even when
+                            # an earlier unrelated read tool succeeded.
+                            status = 'INCOMPLETE'
+                            text = ('Die genannten Rechenwerte sind nicht als Ergebnisartefakt belegt. '
+                                    'Für belastbare Kapazitäts- und Timingwerte muss die Berechnung für den aktuellen Modellstand ausgeführt und geprüft werden.')
                         elif change_requested or unsupported_change_claim(decision.get('text') or ''):
                             status = 'INCOMPLETE'
                             text = 'Für die gewünschte Änderung liegt noch kein validierter Vorschlag vor. Es wurde keine Modelländerung übernommen. Bitte die fehlenden Angaben oder verfügbaren Werkzeuge prüfen.'
                         else:
                             text = decision.get("text") or text
                             # A language-model sentence cannot mark the workload complete.
-                            status = "READY_FOR_REVIEW" if proposals and all(p["status"]=="VALIDATED" for p in proposals.values()) else "ANSWERED" if not proposals and traces and all(t["status"] == "SUCCESS" for t in traces) else "INCOMPLETE"
+                            status = "READY_FOR_REVIEW" if proposals and all(p["status"]=="VALIDATED" for p in proposals.values()) else "ANSWERED" if not proposals and not failed_calls and traces and all(t["status"] == "SUCCESS" for t in traces) else "INCOMPLETE"
                         break
                     messages.append(decision["assistant_message"])
                     for tool_call in decision["calls"]:
                         name, arguments = tool_call["name"], tool_call["arguments"]
+                        import json
+                        signature = json.dumps([name, arguments], sort_keys=True, ensure_ascii=False)
                         if name not in {tool["name"] for tool in allowed}:
                             result = ToolResult(success=False,status="PERMISSION_DENIED",findings=[{"message":"Werkzeug nicht verfügbar."}])
+                        elif failed_calls.get(signature, 0) >= max(1, self.max_repairs):
+                            result = ToolResult(success=False, status="BLOCKED", findings=[{
+                                "message": "Identischer fehlgeschlagener Aufruf: Reparaturbudget ausgeschöpft. Argumente korrigieren; keine technische Nutzerentscheidung erfinden."}])
                         else:
-                            result = await call(name, arguments.get("request", arguments))
+                            try:
+                                from ..orchestration.local_reasoner import _tool_parameters
+                                from ..orchestration.tool_arguments import prepare_arguments
+                                tool = next(tool for tool in allowed if tool['name'] == name)
+                                arguments = prepare_arguments(arguments.get("request", arguments), _tool_parameters(tool.get('input_schema', {})))
+                                if name == 'ask_engineering_question' and arguments.get('question_id') in context.answered_questions:
+                                    result = ToolResult(data={'decision_already_answered': arguments['question_id'],
+                                        'answer': context.answered_questions[arguments['question_id']],
+                                        'next_action': 'Continue the original requirement using this decision; do not ask it again.'})
+                                else:
+                                    result = await call(name, arguments)
+                            except ValueError as exc:
+                                result = ToolResult(success=False, status="INVALID_INPUT", findings=[{"message": str(exc)}])
+                        if not result.success:
+                            failed_calls[signature] = failed_calls.get(signature, 0) + 1
                         messages.append({"role":"tool","tool_call_id":tool_call["id"],"tool_name":name,"content":result.model_dump_json()})
                         if result.success and isinstance(result.data,dict):
                             if name == "discover_engineering_tools":

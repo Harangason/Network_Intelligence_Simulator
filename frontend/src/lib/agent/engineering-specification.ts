@@ -1,6 +1,8 @@
 import { industryTemplateLabel, industryTemplateProfile } from "./industry-templates/index.ts";
 import { conciseGeneratedName } from "../engineering-names.ts";
 import { automotiveFunctionOutputs } from "./industry-templates/automotive-functions.ts";
+import { SENSOR_MEASUREMENTS, sensorMeasurementSelections } from './sensor-measurements.ts';
+import inventoryVocabulary from './inventory-vocabulary.json' with { type: 'json' };
 
 export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string): ExtractedEngineeringChain[] {
   if (domain !== "automotive") return chains;
@@ -733,15 +735,37 @@ function requestedCount(text: string, nounPattern: string, modifierPattern = "")
   }, 0);
 }
 
+// Repeated mentions of a group are not additional hardware. Distinct typed
+// groups are additive; a declared category total precedes its breakdown.
+function inventoryCount(text: string, nouns: string, modifiers: string, generic: RegExp) {
+  const groups = new Map<string, number>();
+  const before = new RegExp("\\b" + COUNT_TOKEN + "\\s+((?:(?:" + modifiers + ")\\s+){0,3}(?:" + nouns + "))\\b", "g");
+  let declared = 0;
+  for (const line of text.split(/\r?\n/)) {
+    const source = normalized(line.replace(/^\s*\d+[.)]\s+/, "").replace(/\bVariante\s+\d+/gi, "Variante")
+      .replace(/([a-zäöü]+)-\/([a-zäöü]+)/gi, "$1$2"));
+    for (const match of source.matchAll(before)) {
+      const label = match[2];
+      const count = countValue(match[1]);
+      if (generic.test(label)) declared = Math.max(declared, count);
+      else groups.set(label, Math.max(groups.get(label) ?? 0, count));
+    }
+  }
+  return Math.max(declared, [...groups.values()].reduce((sum, count) => sum + count, 0));
+}
+
 export function extractEngineeringTargetCounts(text: string): EngineeringTargetCounts {
   const body = specificationBody(text);
-  const sensors = requestedCount(body, "sensor(?:en|s)?", "technische|physikalische|logische|fahrzeugrelevante");
-  const actuators = requestedCount(body, "(?:actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?)", "technische|physikalische|logische|einfache");
+  const modifiers = inventoryVocabulary.modifiers;
+  const sensors = Math.max(requestedCount(body, "sensor(?:en|s)?"), inventoryCount(body,
+    inventoryVocabulary.roles.sensors.nouns, modifiers, new RegExp(inventoryVocabulary.roles.sensors.generic)));
+  const actuators = Math.max(requestedCount(body, "(?:actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?)", modifiers), inventoryCount(body,
+    inventoryVocabulary.roles.actuators.nouns, modifiers, new RegExp(inventoryVocabulary.roles.actuators.generic)));
   const ecus = Math.max(
     requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere"),
-    requestedCount(body, "(?:sps|plc|controller|steuerung(?:en)?|flugrechner|industrial\\s*pc)(?:s)?", "zentrale|typische|weitere"),
+    inventoryCount(body, inventoryVocabulary.roles.ecus.nouns, modifiers, new RegExp(inventoryVocabulary.roles.ecus.generic)),
   );
-  const gateways = requestedCount(body, "gateway(?:s)?", "zentralen|zentrales|zentraler|zentrale|einziges|einzigen");
+  const gateways = requestedCount(body, "gateway(?:s)?", modifiers + "|einziges|einzigen");
   return {
     sensors,
     actuators,
@@ -1731,7 +1755,8 @@ export function extractEngineeringSpecification(
   const explicitMode = text.match(/^- Generierungsmodus:\s*(REAL_PROJECT|EXAMPLE_PROJECT)\s*$/mi)?.[1]?.toUpperCase();
   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
-  const lines = specificationBody(text).split(/\r?\n/);
+  const measurements = sensorMeasurementSelections(text);
+  const lines = specificationBody(text).replace(/^- Sensor-Messgrößen:[^\r\n]*$/gm, '').split(/\r?\n/);
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
   const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
@@ -1748,6 +1773,13 @@ export function extractEngineeringSpecification(
     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, nextIndex)));
     contexts.set(key, existing);
   });
+  // Explicit choices can resolve count-only Sensor1… slots without inventing a function.
+  for (const name of Object.keys(measurements)) {
+    const key = normalized(normalizeHardwareName(name));
+    if (!contexts.has(key) && /^Sensor\d+$/.test(name)) {
+      contexts.set(key, { name, lines: [], declaredType: 'SensorController' });
+    }
+  }
 
   const inferredDomain = domainOverride || domainFrom(text);
   const modelType = domainOverride || extractProjectModelType(text, inferredDomain);
@@ -1767,10 +1799,12 @@ export function extractEngineeringSpecification(
     const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
       ? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
     const countedTemperature = hardwareName.match(/^Temperatursensor(\d+)$/);
-    const signal = countedTemperature ? `Temperatur${countedTemperature[1]}`
+    const measurement = declaredType === 'SensorController' ? SENSOR_MEASUREMENTS.find(item =>
+      item.id === Object.entries(measurements).find(([name]) => normalized(normalizeHardwareName(name)) === normalized(hardwareName))?.[1]) : undefined;
+    const signal = measurement ? `${measurement.label}_${identifier(hardwareName)}` : countedTemperature ? `Temperatur${countedTemperature[1]}`
       : hardwareName === 'RaspberryPi' ? 'RaspberryPiStatus' : signalName(hardwareName, context);
-    const defaults = generatedPhysicalDefaults(signal);
-    const unit = unitFrom(context) ?? defaults.unit;
+    const defaults = generatedPhysicalDefaults(measurement?.label ?? signal);
+    const unit = measurement?.unit ?? unitFrom(context) ?? defaults.unit;
     const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
     const objectDetectionSignal = signal === "ObjektErkannt";
@@ -1801,7 +1835,7 @@ export function extractEngineeringSpecification(
       hardware_name: hardwareName,
       hardware_description: context.slice(0, 1000),
       device_type: declaredType,
-      function_name: functionName(hardwareName, entry.lines, entry.name),
+      function_name: measurement ? `${hardwareId}_${measurement.label}Erfassung` : functionName(hardwareName, entry.lines, entry.name),
       function_description: `Aus Nutzerspezifikation abgeleitete Funktion. ${context}`.slice(0, 1000),
       interface_name: `${hardwareId}_${chainInterfaceType}`,
       interface_type: chainInterfaceType,
@@ -1823,6 +1857,7 @@ export function extractEngineeringSpecification(
       max_value: maxValue,
       ...architectureMetadata,
       configuration: { ...architectureMetadata.configuration,
+        ...(measurement ? { sensor_measurement: measurement.id, measurement_source: 'explicit_user_selection' } : {}),
         ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
         ...(functionalOwner ? { functional_owner: functionalOwner, functional_owner_source: 'explicit_user_statement' } : {}) },
       domain,

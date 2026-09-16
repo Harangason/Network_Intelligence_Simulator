@@ -521,6 +521,11 @@ def chat():
     def worker():
         heartbeat_stop = threading.Event()
         heartbeat_failure = []
+        def terminal(event):
+            event = validate_response(event)
+            saved = execute(authority, 'record_conversation_response', Permission.READ_MODEL, {},
+                lambda _: conversation.record_event(run_id, event))
+            queue.put(saved.data if saved.success else event)
         def heartbeat():
             while not heartbeat_stop.wait(_HEARTBEAT_SECONDS):
                 if cancellation.cancelled.is_set():
@@ -547,11 +552,11 @@ def chat():
             if heartbeat_failure:
                 if tracker:
                     tracker.failed(heartbeat_failure[0])
-                queue.put(validate_response({'type': 'ERROR', 'status': 'BLOCKED',
-                    'text': heartbeat_failure[0], 'metadata': {'run_id': run_id}}))
+                terminal({'type': 'ERROR', 'status': 'BLOCKED',
+                    'text': heartbeat_failure[0], 'metadata': {'run_id': run_id}})
             else:
-                queue.put(validate_response({'type': 'RESULT', 'status': 'CANCELED',
-                    'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'}))
+                terminal({'type': 'RESULT', 'status': 'CANCELED',
+                    'text': 'Auftrag abgebrochen. Bereits übernommene Modelldaten bleiben erhalten.'})
         except Exception as error:
             import logging
             logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)
@@ -560,7 +565,7 @@ def chat():
                 message = "Das Zeitlimit des Hintergrundlaufs wurde erreicht. Der letzte Projektstand bleibt erhalten."
             if tracker:
                 tracker.failed(message)
-            queue.put(validate_response({"type":"ERROR","status":"BLOCKED","text":message,"metadata":{"run_id":run_id},"actions":[{"type":"RETRY","label":"Erneut versuchen"}]}))
+            terminal({"type":"ERROR","status":"BLOCKED","text":message,"metadata":{"run_id":run_id},"actions":[{"type":"RETRY","label":"Erneut versuchen"}]})
         finally:
             cancellation.close()
             heartbeat_stop.set()

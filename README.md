@@ -197,6 +197,109 @@ Nur das Backend starten:
 uv run --project backend python generate_realistic_communication_tool.py backend
 ```
 
+## MCP-Schnittstellen
+
+Der Server `simulator-engineering-mcp` stellt Engineering-Werkzeuge und
+Modellressourcen über das Model Context Protocol (MCP) bereit. Der Python-Agent
+nutzt ihn eingebettet über den MCP-SDK-Client; externe Clients können denselben
+Server als eigenen Prozess starten:
+
+| Zugang | Verwendung |
+|---|---|
+| Eingebettet | Interner Engineering-Agent mit serverseitigem Projektkontext |
+| stdio | Ein MCP-Client startet den Server und kommuniziert über Standardein-/ausgabe |
+| Streamable HTTP | Separater MCP-Server, standardmäßig unter `http://127.0.0.1:15052/mcp` |
+
+### Start und Konfiguration
+
+Voraussetzungen sind die installierten Backend-Abhängigkeiten, die konfigurierte
+PostgreSQL-Datenbank und eine vorhandene Projekt-ID. Für Simulationsjobs muss
+zusätzlich die Anwendungs-API laufen. `PROJEKT_ID` in den folgenden Befehlen
+durch die ID aus dem gewünschten Projektlink ersetzen. Aus dem Projektstamm:
+
+```powershell
+# Standardtransport: stdio; normalerweise vom MCP-Client gestartet.
+backend\.venv\Scripts\python.exe -m backend.simulator_engineering_mcp --project PROJEKT_ID
+
+# Alternativ: eigener Streamable-HTTP-Server auf Loopback.
+backend\.venv\Scripts\python.exe -m backend.simulator_engineering_mcp `
+  --project PROJEKT_ID --transport streamable-http --port 15052
+```
+
+Für einen stdio-Client das Arbeitsverzeichnis auf den Projektstamm setzen und
+folgende Prozesskonfiguration verwenden:
+
+- Programm: `I:\PycharmProjects\My_first_Network_Simulator\backend\.venv\Scripts\python.exe`
+- Argumente: `-m`, `backend.simulator_engineering_mcp`, `--project`, `PROJEKT_ID`
+- Umgebung: `DATABASE_URL` und bei abweichender API-Adresse `SIMULATOR_JOB_API_URL`
+  explizit an den gestarteten Prozess weiterreichen.
+
+| Umgebungsvariable | Bedeutung |
+|---|---|
+| `DATABASE_URL` | PostgreSQL-Verbindung derselben Simulator-Instanz; erforderlich, keine Zugangsdaten in Client-Konfigurationen veröffentlichen |
+| `SIMULATOR_JOB_API_URL` | Anwendungs-API für den zentralen Job-Executor; Standard `http://127.0.0.1:15050/api` |
+| `SIMULATOR_ENGINEERING_API_URL` | Engineering-API für den Web-/Agent-Pfad; Standard `http://127.0.0.1:15050/api/engineering`, kein MCP-Endpunkt |
+
+Der externe Server ist für seine Laufzeit an `--project` gebunden. Projekt-ID,
+Akteur und Berechtigungen werden serverseitig festgelegt und können nicht durch
+Tool-Argumente gewechselt werden. Der HTTP-Start bindet an `127.0.0.1`; Port
+`15052` gehört zum separat gestarteten MCP-Prozess.
+
+### Werkzeuge und Ressourcen
+
+Der aktuelle Werkzeugkatalog wird über MCP-Discovery (`tools/list`)
+einschließlich Eingabeschemas bereitgestellt. Beispiele:
+
+| Bereich | Werkzeuge (Auswahl) |
+|---|---|
+| Modell und Fähigkeiten | `inspect_project`, `search_model`, `inspect_object`, `inspect_assistant_capabilities`, `discover_engineering_tools` |
+| Modellvorschläge | `create_objects_via_proposal`, `update_object_via_proposal`, `generate_signals`, `generate_messages`, `generate_routing` |
+| Prüfung und Kapazität | `validate_signal`, `validate_message`, `calculate_bus_load`, `calculate_capacity`, `evaluate_architecture` |
+| Review und Nachvollziehbarkeit | `inspect_proposal`, `validate_proposal`, `apply_approved_proposal`, `inspect_agent_audit` |
+| Simulation | `validate_simulation_preflight`, `create_simulation_snapshot`, `start_simulation`, `get_simulation_status`, `stop_simulation`, `get_simulation_results` |
+| Trace-Analyse | `get_trace_window`, `analyze_trace`, `correlate_signals`, `compare_golden_trace`, `find_trace_root_cause` |
+
+Tools besitzen einen typisierten Parameter `request`. Beispielsweise erhält
+`inspect_project` die MCP-Argumente `{"request": {}}`, `search_model` etwa
+`{"request": {"query": "Sensor"}}`. Objekt-IDs aus Suchergebnissen verwenden.
+Die strukturierten Antworten enthalten unter anderem `success`, `status`,
+`data`, `findings`, `warnings` und `trace_id`. Ein erfolgreicher Tool-Aufruf
+belegt noch keinen abgeschlossenen Engineering-Auftrag.
+
+Lesbare MCP-Ressourcen und Ressourcenvorlagen:
+
+| URI | Inhalt |
+|---|---|
+| `simulator://project/{project_id}` | Projekt und Workflow-Stand |
+| `simulator://project/{project_id}/model` | Vollständiges kanonisches Modell |
+| `simulator://project/{project_id}/{section}` | `hardware`, `functions`, `interfaces`, `hardware-interfaces`, `signals`, `messages`, `networks`, `routing`, `findings` oder `capabilities` |
+| `simulator://schemas/{object_type}` | Schema für `signal`, `message`, `function` oder `hardware-interface` |
+| `simulator://technologies/can-fd` | CAN-FD-Payloadklassen und Frameberechnungsdienst |
+| `simulator://device-classes` | Geräteklassen aus dem zentralen Register |
+
+### Berechtigungen und Ausführung
+
+Standardmäßig erlaubt der Server Lesen, Vorschläge, Validierung, Simulation,
+Trace-Analyse und die Ausführung bereits nutzerautorisierter Engineering-Ziele.
+Modellvorschläge durchlaufen Validierung und menschliches Review. Mit
+`--allow-apply-approved` darf ein externer Client bereits freigegebene Vorschläge
+übernehmen; `--allow-delete-proposals` ergänzt die Berechtigung für Löschungen
+mit Auswirkungsanalyse. Eine menschliche Freigabe kann kein MCP-Tool erteilen.
+Ein bereits serverseitig freigegebener Engineering-Gesamtplan darf über
+`continue_engineering_goal` innerhalb seines gespeicherten Umfangs fortgesetzt
+werden.
+
+Simulationen verwenden die Reihenfolge Preflight → unveränderlicher Snapshot →
+Start → Status/Ergebnisse/Trace. Der MCP-Server nutzt dafür den bestehenden
+Job-Executor der Anwendungs-API. Die Projektbindung ersetzt keine
+Benutzerauthentifizierung für einen öffentlich erreichbaren Mehrbenutzerdienst.
+
+Implementierung: [MCP-Server](backend/simulator_engineering_mcp/server.py),
+[Startparameter](backend/simulator_engineering_mcp/__main__.py) und
+[Werkzeugregistrierung](backend/engineering/agent_tools/services.py).
+Weitere Details: [Engineering Agent und MCP](docs/agent_core/14_MCP_IMPLEMENTATION.md)
+und [Assistentenfähigkeiten](docs/assistant-capabilities-mcp-2026-09-11.md).
+
 ## Docker-Start
 
 Die vollständige lokale Umgebung kann auch als Docker-Setup gestartet werden.

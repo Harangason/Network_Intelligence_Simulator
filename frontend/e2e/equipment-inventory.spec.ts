@@ -1,6 +1,30 @@
 import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
+test('generic sensors expose separate measurement and connection choices without losing slot identity', async ({ page }) => {
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-measurement-${randomUUID()}`);
+  const dialog = page.locator('.engineering-agent-wizard-dialog');
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await dialog.locator('#engineering-project-name').fill('Sensorfunktionen');
+  await dialog.getByTitle('Aufgabe', { exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill('3 Sensoren und ein RaspberryPi');
+  await dialog.getByTitle('Netzarchitektur', { exact: true }).click();
+  await dialog.getByRole('radio', { name: /Variante 0/ }).check();
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  await expect(dialog.getByLabel('Sensor1: Anschluss', { exact: true })).toBeDisabled();
+  await dialog.getByLabel('Sensor 2: Messgröße', { exact: true }).selectOption('torque');
+  await dialog.getByLabel('Sensor2: Anschluss', { exact: true }).selectOption('I2C');
+  await dialog.getByLabel('Sensor 1: Messgröße', { exact: true }).selectOption('temperature');
+  await dialog.getByLabel('Sensor 3: Messgröße', { exact: true }).selectOption('speed');
+  await expect(dialog.getByLabel('Sensor 2: Messgröße', { exact: true })).toHaveValue('torque');
+  await expect(dialog.getByLabel('Sensor2: Anschluss', { exact: true })).toHaveValue('I2C');
+  await dialog.getByLabel('Sensor 2: Messgröße', { exact: true }).selectOption('pressure');
+  await expect(dialog.getByLabel('Sensor2: Anschluss', { exact: true })).toHaveValue('I2C');
+  for (const name of ['Sensor1', 'Sensor3', 'RaspberryPi']) await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
+  await expect(dialog.locator('.agent-equipment-list')).toContainText('Sensoren · 3 erkannt / 3 vorgegeben');
+  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
+});
+
 test('temperature purpose inventory permits review without a spurious controller repair', async ({ page }) => {
   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-temperature-${randomUUID()}`);
   const dialog = page.locator('.engineering-agent-wizard-dialog');

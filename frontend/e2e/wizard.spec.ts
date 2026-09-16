@@ -351,6 +351,9 @@ for (const technology of ['I2C', 'Modbus RTU']) {
       for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
         await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
       }
+      await dialog.getByLabel('Sensor 1: Messgröße', { exact: true }).selectOption('speed');
+      await expect(dialog.getByLabel('Temperatursensor1: Anschluss', { exact: true })).toHaveValue('I2C');
+      await dialog.getByLabel('Sensor 1: Messgröße', { exact: true }).selectOption('temperature');
     }
     await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
     const continuity = await completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']);
@@ -360,6 +363,10 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     expect(interfaces.every(item => !/automotive|can|lin/i.test(item.technology))).toBe(true);
     const hardware = await allObjects(page, project, 'hardware-nodes');
     expect(hardware.every(item => item.domain !== 'automotive')).toBe(true);
+    if (technology === 'I2C') {
+      const signals = await allObjects(page, project, 'signals');
+      expect(signals.some(item => item.name === 'Temperatur_Temperatursensor1' && item.unit === 'degC')).toBe(true);
+    }
     const finished = page.waitForResponse(response => response.url().includes(`/runs/${continuity.runId}/finish`)
       && response.request().method() === 'POST');
     await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();

@@ -15,3 +15,20 @@ Der Bericht trennt Quellbefund, Reproduktion, Tests und offene Abnahme. Er ände
 | EA-06 | WIZARD_RELEASE_GATE | Isolierte SQL-/E2E-Abnahme; ausschließlich exaktes PASS-Image ausliefern |
 
 Vorschlag aus dem Audit, noch nicht implementiert: gemeinsamer persistierter EngineeringDraft, fachliche Befehle im Python-Core, Chat und Wizard als gleichwertige Bedienwege. Keine zusätzliche Freigabeanforderung wird aus diesem Register abgeleitet.
+
+<!-- tool-check:industry40 -->
+## Tool Check: industry40
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_40_INDUSTRY_NEUTRAL_AGENT_TEST_SCENARIOS.md
+- Source Hash: 5f3d9eecb6339412c5deb40d17d7a1504562e1142f4a7db3d29038c50da95aeb
+- Status: ACTIVE
+- Last Ingest: 2026-09-16T06:34:41.897486+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\industry40\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:industry40 -->

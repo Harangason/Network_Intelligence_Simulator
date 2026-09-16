@@ -104,7 +104,10 @@ export async function POST(request: Request) {
         if (responseMessage.parts.length) await persistResponse();
       } finally { reader.releaseLock(); }
     },
-    onError: error => error instanceof AgentServiceError ? error.message : "Der Engineering-Agent konnte den Auftrag nicht abschließen. Bitte den Dienststatus prüfen.",
+    onError: error => error instanceof AgentServiceError ? error.message
+      : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name)
+        ? "Die Antwortverbindung wurde unterbrochen. Der gespeicherte Gesprächsstand wird nachgeladen; ein laufender Auftrag kann im Hintergrund weiterarbeiten."
+        : "Der Engineering-Agent konnte den Auftrag nicht abschließen. Bitte den Dienststatus prüfen.",
   });
   return createUIMessageStreamResponse({ stream });
 }
