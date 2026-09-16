@@ -68,7 +68,10 @@ def test_intake_does_not_invent_protocol_counts_or_electrical_compatibility():
 def test_explicit_quantity_is_not_asked_again_in_generic_intake_prose():
     text = project_intake_text('Ich möchte ein Projekt mit Raspberry-Pi, drei Temperatursensoren und zwei Ventilen.')
     assert 'Wie viele Ventile' not in text
-    assert 'Temperatursensoren → Raspberry Pi' in text
+    assert 'Temperatursensor1' in text
+    assert 'Ventilaktor2' in text
+    assert 'RaspberryPi' in text
+    assert '→' not in text
     assert 'Projektentwurf ausarbeiten' not in text
 
 

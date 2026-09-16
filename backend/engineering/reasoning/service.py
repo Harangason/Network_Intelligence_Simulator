@@ -13,7 +13,7 @@ from ..repository import NotFoundError
 from ..simulation import trace_metadata
 from ..workflow.service import WorkflowStatusService, WorkflowConflictError
 from .contracts import CAPABILITY_VERSION, ReasoningRequest, SimulationReasoningResult
-from .correlation import FirstDivergenceAnalyzer, event_time, signal_samples, correlate_time, object_refs, event_id
+from .correlation import FirstDivergenceAnalyzer, complete_window_counterparts, event_time, signal_samples, correlate_time, object_refs, event_id
 from .engine import EngineeringReasoningEngine
 
 SOURCE_STEPS = ("engineering_model", "routing", "network_editor", "parameters", "simulation")
@@ -35,6 +35,20 @@ class TraceWindowResolver:
     """At most three existing trace-window requests, bounded in bytes and events."""
     def __init__(self, reader=None):
         self.reader = reader or gateway.request_json
+
+    def stream(self, job_id):
+        cursor = 0
+        for _ in range(2001):
+            parameters = urlencode({'start_s': 0, 'end_s': 1e15, 'cursor': cursor, 'limit': 500})
+            page = self.reader(f'/simulations/{quote(job_id, safe="")}/trace-window?{parameters}')
+            yield from page['events']
+            following = page['next_cursor']
+            if following is None:
+                return
+            if following <= cursor:
+                raise ValueError('Trace-Cursor hat keinen Fortschritt gemacht.')
+            cursor = following
+        raise ValueError('GOLDEN_ALIGNMENT_INCOMPLETE: Gegenereignisse überschreiten das Seitenbudget.')
 
     def resolve(self, request: ReasoningRequest):
         start, end = request.start_s, request.end_s
@@ -134,7 +148,11 @@ class ReasoningService:
             golden, golden_window = TraceWindowResolver().resolve(request.model_copy(update={"job_id": request.golden_job_id, "cursor": 0}))
             golden_context = self.context(request.golden_job_id)
             if golden:
-                comparison = FirstDivergenceAnalyzer.analyze(events, golden)
+                actual_comparison, golden_comparison = complete_window_counterparts(
+                    events, golden, lambda: TraceWindowResolver().stream(request.job_id),
+                    lambda: TraceWindowResolver().stream(request.golden_job_id))
+                comparison = FirstDivergenceAnalyzer.analyze(actual_comparison, golden_comparison)
+                comparison['alignment'] = 'WINDOW_WITH_STREAM_VERIFIED_COUNTERPARTS'
                 comparison["golden_job_id"] = request.golden_job_id
                 comparison["golden_lineage"] = golden_context["lineage"]
             if golden_window["next_cursor"] is not None or not golden or request.cursor:

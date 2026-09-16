@@ -41,6 +41,11 @@ test('temperature purpose inventory permits review without a spurious controller
   for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
     await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   }
+  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
+  await expect(dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true })).toHaveValue('');
+  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('POSITION');
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
 });
 

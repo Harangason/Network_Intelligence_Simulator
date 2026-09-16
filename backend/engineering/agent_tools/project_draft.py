@@ -25,6 +25,7 @@ class DeviceUpdate(BaseModel):
     known_kind: bool | None = None
     owner_id: str | None = Field(default=None, max_length=80)
     technology: str | None = Field(default=None, min_length=1, max_length=80)
+    technologies: list[str] | None = Field(default=None, min_length=1, max_length=32)
     command: dict | None = None
     purpose: str | None = Field(default=None, min_length=1, max_length=500)
 
@@ -241,6 +242,23 @@ def resolve_devices(draft, updates):
             technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(changes['technology'])
             DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
             changes['technology'] = technology_id
+        if changes.get('technologies'):
+            from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+            ids = list(dict.fromkeys(DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(value) for value in changes['technologies']))
+            for technology_id in ids:
+                DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+            if device['role'] not in {'CONTROLLER', 'GATEWAY'} and len(ids) > 1:
+                raise ValueError('Mehrere Endpunktanschlüsse benötigen eine explizite Zuordnung der Messwerte oder Befehle.')
+            if changes.get('technology') and changes['technology'] not in ids:
+                raise ValueError('Der primäre Anschluss fehlt in den bestätigten Geräteanschlüssen.')
+            changes['technologies'] = ids
+            # Legacy consumers require a primary interface. This is only the
+            # first explicitly listed connection, not an inferred capability.
+            changes.setdefault('technology', ids[0])
+        confirmed_connections = changes.get('technologies', device.get('technologies'))
+        primary_connection = changes.get('technology', device.get('technology'))
+        if confirmed_connections and primary_connection not in confirmed_connections:
+            raise ValueError('Der primäre Anschluss fehlt in den bestätigten Geräteanschlüssen. Die Anschlussliste ausdrücklich aktualisieren.')
         if 'name' in changes:
             if changes['name'] is None or not changes['name'].strip():
                 raise ValueError('Ein Gerätename darf nicht leer sein.')
@@ -413,7 +431,7 @@ def planning_prompt(draft):
         lines.append(f"{labels[device['role']]} namens {name} mit {device['technology']}{purpose}.")
         if device.get('owner_id'):
             lines.append(f"{device['name']} wird von {by_id[device['owner_id']]['name']} ausgewertet.")
-    technologies = sorted({d['technology'] for d in devices})
+    technologies = sorted({tech for d in devices for tech in (d.get('technologies') or [d['technology']])})
     return '\n'.join([
         'Strukturierte Vorgaben fuer den Engineering-Agenten:',
         '- Generierungsmodus: REAL_PROJECT',
@@ -422,6 +440,9 @@ def planning_prompt(draft):
         '- Hardware-Sollwerte: ' + json.dumps(counts),
         '- Netzwerktechnologien: ' + ', '.join(f'{tech} ({tech})' for tech in technologies),
         '- Systemcluster-Graph: ' + json.dumps(clusters, ensure_ascii=False),
+        '- Geräteanschlüsse: ' + json.dumps({d['name']: d['technology'] for d in devices}, ensure_ascii=False),
+        '- Bestätigte-Geräteanschlüsse: ' + json.dumps({d['name']: d.get('technologies') or [d['technology']] for d in devices}, ensure_ascii=False),
+        '- Geräte-Spezifikationen: ' + json.dumps({d['name']: d.get('source', '') for d in devices}, ensure_ascii=False),
         '- Aktor-Befehle: ' + json.dumps({d['name']: d['command'] for d in devices if d['role'] == 'ACTUATOR'}, ensure_ascii=False),
         '- Fachliche-Anforderungen: ' + json.dumps([source['text'] for source in draft['sources']], ensure_ascii=False),
         '- Parameter: Technologie-Defaults für Simulation; reale Hardwareeignung bleibt unbestätigt.',
@@ -477,7 +498,7 @@ def workflow_request(arguments):
                'industry': draft['industry'], 'model_type': draft['industry'],
                'scope': scopes, 'scope_ids': scopes, 'process': [], 'process_ids': [],
                'notes': '', 'attachments': [], 'parameters': 'Technologie-Defaults für Simulation',
-               'technologies': sorted({d['technology'] for d in draft['devices']}),
+               'technologies': sorted({tech for d in draft['devices'] for tech in (d.get('technologies') or [d['technology']])}),
                'task': '\n\n'.join(source['text'] for source in draft['sources']),
                'agent_prompt': prompt,
                'engineering_draft_ref': {'draft_id': draft['draft_id'], 'revision': draft['revision']}}

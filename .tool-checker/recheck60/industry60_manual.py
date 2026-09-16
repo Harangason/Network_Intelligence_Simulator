@@ -5,7 +5,7 @@ from industry60_adapter import request
 from run_industry60_jobs import cli,ROOT
 M=json.loads((ROOT/'.tool-checker/industry60-recheck.normalized.json').read_text(encoding='utf8'))
 def snapshot(cid,label):
- p='nis-e2e-industry60-'+cid.lower();d=ROOT/'.tool-checker/evidence/industry60-recheck'/cid;d.mkdir(parents=True,exist_ok=True)
+ p='nis-e2e-industry60-trace' if cid=='S28' else 'nis-e2e-industry60-'+cid.lower();d=ROOT/'.tool-checker/evidence/industry60-recheck'/cid;d.mkdir(parents=True,exist_ok=True)
  value={}
  for key,path in [('workflow','/api/engineering/workflow?view=summary'),('history','/api/agent/history?projectId='+p),('conversation','/api/engineering/agent/conversation'),('hardware','/api/engineering/hardware-nodes'),('hardware_interfaces','/api/engineering/hardware-interfaces'),('functions','/api/engineering/functions'),('messages','/api/engineering/messages'),('signals','/api/engineering/signals'),('routing','/api/engineering/routing'),('resources','/api/engineering/communication-resources')]:
   code,body=request('http://127.0.0.1:49546',p,path)

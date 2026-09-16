@@ -59,6 +59,8 @@ export function ReasoningPanel({ project, jobId, jobs, start, end, focus }: {
     {busy && <p role="status">Trace-Fenster und technische Belege werden geprüft …</p>}
     {error && <p role="alert">{error}</p>}
     {result && <>
+      <p>Analysiertes Zeitfenster: {result.time_range ? `${result.time_range.start_s}–${result.time_range.end_s} s` : "Nicht dokumentiert"}</p>
+      {result.time_range && (result.time_range.start_s !== (focus === undefined ? start : Math.max(start, focus - .1)) || result.time_range.end_s !== (focus === undefined ? end : Math.min(end, focus + .1))) && <p role="alert">Gespeicherter Befund für ein anderes Zeitfenster. „Ursache analysieren“ prüft die aktuelle Auswahl.</p>}
       <p role="status"><strong>{result.validation_status} · {result.completion_status}</strong></p>
       <h4>Root Cause</h4><p>{result.conclusion}</p>
       <p>Konfidenz: {(result.confidence * 100).toFixed(0)} % · regelbasierter Evidenz-Score, keine kalibrierte Wahrscheinlichkeit.</p>

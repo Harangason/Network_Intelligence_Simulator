@@ -1653,7 +1653,7 @@ function numeric(value: string | undefined) {
 function rangeFrom(text: string) {
   const match = text
     .replace(/−/g, "-")
-    .match(/(-?\d+(?:[,.]\d+)?)\s*(?:°\s*c|a|u\s*\/\s*min|\/\s*min)?\s*(?:bis|–|—)\s*\+?(-?\d+(?:[,.]\d+)?)/i);
+    .match(/(-?\d+(?:[,.]\d+)?)\s*(?:°\s*c|a|bar|rpm|u\s*\/\s*min|\/\s*min)?\s*(?:bis|–|—|…|\.\.\.)\s*\+?(-?\d+(?:[,.]\d+)?)/i);
   return { min: numeric(match?.[1]), max: numeric(match?.[2]) };
 }
 
@@ -1661,12 +1661,20 @@ function factorFrom(text: string, unit: string | undefined) {
   const match = text.match(/(?:auflösung|aufloesung|schrittweite)\s*:?\s*(-?\d+(?:[,.]\d+)?)/i);
   const explicit = numeric(match?.[1]);
   if (explicit !== undefined) return explicit;
+  // Compact device specifications put resolution after the range, separated
+  // by a comma ("0…10 bar, 0,01 bar, 20 ms"). Never read the range as resolution.
+  // A decimal comma inside a value is not a specification separator:
+  // "Auflösung beispielsweise: 0,1 A" must never become "1 A".
+  const compact = text.match(/(?:^|(?<!\d)[,;])\s*(\d+(?:[,.]\d+)?)\s*(?:°\s*c|bar|rpm|a)\s*(?=[,;]|$)/i);
+  const resolution = numeric(compact?.[1]);
+  if (resolution !== undefined && resolution > 0) return resolution;
   return unit === "degC" || unit === "A" ? 0.1 : 1;
 }
 
 function unitFrom(text: string) {
   if (/°\s*c/i.test(text)) return "degC";
-  if (/u\s*\/\s*min|\/\s*min/i.test(text)) return "rpm";
+  if (/\bbar\b/i.test(text)) return "bar";
+  if (/\brpm\b|u\s*\/\s*min|\/\s*min/i.test(text)) return "rpm";
   if (/(^|\s)\d+(?:[,.]\d+)?\s*a\b/i.test(text)) return "A";
   return undefined;
 }
@@ -1791,11 +1799,20 @@ export function extractEngineeringSpecification(
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
   const networkArchitecture = extractNetworkArchitectureMode(text);
   const deviceConnections = explicitDeviceConnections(text);
+  const deviceSpecificationRaw = text.match(/^- Geräte-Spezifikationen:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+  let deviceSpecifications: Record<string, string> = {};
+  if (deviceSpecificationRaw) {
+    const parsed: unknown = JSON.parse(deviceSpecificationRaw);
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object' || Object.values(parsed).some(value => typeof value !== 'string')) {
+      throw new Error('Ungültige Gerätespezifikationen.');
+    }
+    deviceSpecifications = parsed as Record<string, string>;
+  }
   const declaredControllers = [...contexts.values()].filter(entry =>
     isEngineeringControllerDevice(entry.declaredType ?? deviceType(entry.name))).map(entry => normalizeHardwareName(entry.name));
   const recognizedChains = [...contexts.values()].map((entry, index): ExtractedEngineeringChain => {
-    const context = entry.lines.map((line) => cleanLabel(line)).filter(Boolean).join("; ");
     const hardwareName = normalizeHardwareName(entry.name);
+    const context = [deviceSpecifications[hardwareName], ...entry.lines.map((line) => cleanLabel(line))].filter(Boolean).join("; ");
     const declaredType = entry.declaredType ?? deviceType(entry.name);
     const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
       ? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
@@ -1808,6 +1825,7 @@ export function extractEngineeringSpecification(
     const unit = measurement?.unit ?? unitFrom(context) ?? defaults.unit;
     const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
+    const cycleMs = numeric(context.match(/(?:^|[,;\s])(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1]) ?? 10;
     const objectDetectionSignal = signal === "ObjektErkannt";
     const minValue = range.min ?? (objectDetectionSignal ? 0 : defaults.min);
     const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
@@ -1821,7 +1839,7 @@ export function extractEngineeringSpecification(
       signalName: signal,
       hardwareName,
       interfaceType: chainInterfaceType,
-      cycleMs: 10,
+      cycleMs,
       minValue,
       maxValue,
       factor,
@@ -1830,7 +1848,7 @@ export function extractEngineeringSpecification(
       dataType,
     });
     const architectureMetadata = signalArchitectureMetadata({ signalName: signal, hardwareName,
-      interfaceType: chainInterfaceType, cycleMs: 10, dataType, lengthBits, startBit: 0,
+      interfaceType: chainInterfaceType, cycleMs, dataType, lengthBits, startBit: 0,
       byteOrder: 'little_endian', factor, offset: 0, unit, minValue, maxValue });
     return {
       hardware_name: hardwareName,
@@ -1843,7 +1861,7 @@ export function extractEngineeringSpecification(
       message_name: `${hardwareId}Data`,
       message_id_hex: `0x${(0x180 + index).toString(16).toUpperCase()}`,
       direction: "tx",
-      cycle_ms: 10,
+      cycle_ms: cycleMs,
       dlc: generatedMessageDlc(lengthBits),
       signal_name: signal,
       signal_display_name: signal,

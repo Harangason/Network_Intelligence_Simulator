@@ -1,0 +1,55 @@
+# S39 — PARTIAL
+
+Run: run-170ec74da94c4e02ab14978ab344ac33
+
+- TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern
+- REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand
+- completion_criteria:Test mit:
+
+```text
+> 100.000 Events
+```
+
+Filter:
+
+```text
+time range
+source
+destination
+logical address
+network
+technology
+message
+signal
+function
+route
+fault
+severity
+```
+
+MCP:
+```text
+trace.query
+trace.get_window
+trace.get_page
+trace.get_count
+```
+
+Pflicht:
+
+```text
+windowing
+pagination
+streaming
+downsampling
+```
+
+Nicht:
+```text
+full trace in browser memory
+```
+- UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung
+- TC_BROWSER_ACTION_FAILED
+- BROWSER_SCREENSHOT_MISSING
+
+Evidence: 39 files

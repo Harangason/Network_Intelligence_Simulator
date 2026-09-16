@@ -21,6 +21,31 @@ class Client:
         return ToolResult(data={})
 
 
+def test_blocked_wizard_reports_validation_cause_in_result_and_finding():
+    finding = {'severity': 'ERROR', 'code': 'COMMAND_SIGNALS_MISSING',
+               'object_id': '$command', 'object_type': 'Message',
+               'message': 'Ventilbefehl: Befehlssignal, Codierung und Wertebereich festlegen.'}
+    proposal = {'proposal_id': 'invalid-valve', 'status': 'PROPOSED',
+                'changes': [], 'rationale': 'Ventile vorbereiten',
+                'validation_result': {'valid': False, 'findings': [finding]}}
+
+    class WizardClient(Client):
+        async def call(self, name, arguments=None):
+            self.calls.append((name, arguments))
+            return ToolResult(data=proposal if name in {'generate_wizard_model', 'validate_proposal'} else {})
+
+    client = WizardClient()
+    result = asyncio.run(EngineeringAgent(client).run('Bestätigter Ventilauftrag',
+        AgentContext(active_project_id='guard-test', wizard_request={'target': 'data_science_intelligence'})))
+    assert result['status'] == 'INCOMPLETE'
+    assert finding['message'] in result['text']
+    assert 'Ergänzen' in result['text']
+    event = next(event for event in result['events'] if event.get('type') == 'FINDING')
+    assert event['metadata']['code'] == finding['code']
+    assert event['metadata']['object_id'] == '$command'
+    assert not any('apply' in name for name, _ in client.calls)
+
+
 def test_answered_architecture_decision_is_reused_without_a_new_question():
     client = Client()
 

@@ -1,0 +1,56 @@
+{
+  "test_id": "S21",
+  "title": "Fähigkeiten/Wizards: Einstieg „Architektur erstellen“",
+  "input": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+  "source_lines": [
+    1500,
+    1586
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat Agent + Wizard + Browser + Skill Routing\n\n### Testeingabe\n\nBrowser öffnet die Agent-Startfläche:\n\n```text\nFähigkeiten und Wizards\n\nWoran möchtest du arbeiten?\n\n[Architektur erstellen]\n[Signal prüfen]\n[Trace analysieren]\n[Finding bewerten]\n```\n\nBrowser klickt:\n\n```text\nArchitektur erstellen\n```\n\nDanach Eingabe:\n\n```text\nIch habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.\n```\n\n### Erwartetes Agentenverhalten\n\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.\n\n### MCP-Prüfung\n\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```\n\n### Browser-Prüfung\n\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.\n\n### PASS\n\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Teststack des korrigierten Kandidatenimages ae24b52bb3ec"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Erwartetes Agentenverhalten:\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.",
+    "MCP-Prüfung:\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```",
+    "Browser-Prüfung:\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.",
+    "PASS:\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "54c46106811abc0fc958eb464a9b3bf54d15136cd552ed37d0a070ace6189a88",
+  "status": "READY",
+  "last_run": null
+}

@@ -21,6 +21,9 @@ from .timing import generated_timing
 
 BUS_PROTOCOLS = {
     "i2c": "I2C",
+    "spi": "SPI",
+    "gpio": "GPIO",
+    "pwm": "PWM",
     "modbus_rtu": "MODBUS_RTU",
     "modbus_tcp": "MODBUS_TCP",
     "can": "CAN",

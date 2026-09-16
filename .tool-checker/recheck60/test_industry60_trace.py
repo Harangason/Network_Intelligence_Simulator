@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 import pytest
 pytest_plugins=['backend.tests.conftest']
-OUT=Path(__file__).resolve().parent/'evidence/industry60-recheck/trace'
+OUT=Path(__file__).resolve().parents[1]/'evidence/industry60-recheck/trace'
 def save(name,data):
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8')

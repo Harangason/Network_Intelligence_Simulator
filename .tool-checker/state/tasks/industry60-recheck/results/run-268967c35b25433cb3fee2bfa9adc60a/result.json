@@ -1,0 +1,551 @@
+{
+  "task_id": "industry60-recheck",
+  "test_id": "S27",
+  "run_id": "run-268967c35b25433cb3fee2bfa9adc60a",
+  "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+  "contract_hash": "79ff0e8b7036d820223ce2bda4ffb00791b7637f5bc813f8bdd8900096375293",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T15:15:11.025331+00:00",
+  "finished_at": "2026-09-16T15:15:12.533485+00:00",
+  "context": {
+    "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n---\n",
+      "# 24. Trace-Analyse-Abnahmematrix\n\n| Bereich | Pflicht |\n|---|---|\n| Session | Source, Timebase, Technology, SimulationRef |\n| Botschaften | Transport Units, Source/Destination, Payload |\n| Sequenz | Teilnehmer, Gateway Hops, Delay |\n| Signale | Decode, Unit, Quality, State |\n| Sync | gemeinsame Zeitbasis aller Views |\n| Routing | Trace ↔ Route ↔ Network |\n| Faults | Fault Event ↔ Auswirkungen |\n| Golden Trace | Diff + First Divergence |\n| Root Cause | Evidence + Causal Chain |\n| Findings | persistent + verlinkt |\n| Performance | Windowing / Pagination / Streaming |\n| Browser | echte Klicks und View-Prüfung |\n| MCP | vollständige Trace Tool Contracts |\n| Completion | kein PASS ohne Evidence |\n\n---\n\n# 25. Gesamtumfang\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Prüfungen\n+\n10 Trace-Analyse-Prüfungen\n=\n60 Prüfungen\n```\n\nVollständige Prüfkette:\n\n```text\nINPUT\n→ AGENT\n→ MODEL\n→ MCP\n→ ENGINEERING EXECUTION\n→ ROUTING\n→ CAPACITY\n→ TIMING\n→ VALIDATION\n→ SIMULATION\n→ UNIVERSAL TRACE\n→ TRACE ANALYSE\n→ ROOT CAUSE\n→ FINDING\n→ COMPLETION\n```\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\python_core\\11_TRACE_CORE.md",
+        "sha256": "9187b6a595047c14ff5cdafb993f517fa98ea2adcf3be2705d0cdad2b53d0f7c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\simulation\\13_TRACE_INTEGRATION.md",
+        "sha256": "02f012b43f288ffa51b0626314b06e76d6023eb323114935ce577df3ff9cde7d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\TRACE_IMPORT.md",
+        "sha256": "7141b79237012e2352c5afc0e7ec2b036ca80c8eabc15b609182a2ac5a912e74"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S27",
+      "title": "Wizard „Signal prüfen“: MCP bis zur fachlichen Validation",
+      "input": "Prüfe MotorRPM: 0 bis 5000 rpm, Auflösung 50 rpm, Zyklus 10 ms, CAN-FD; Message Binding verwendet 4 bit.",
+      "source_lines": [
+        1941,
+        2019
+      ],
+      "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat Wizard + Signal Semantics + Binding + Validation\n\n### Browser\n\nKlick:\n\n```text\nSignal prüfen\n```\n\n### Testsignal\n\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```\n\n### Erwarteter Flow\n\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```\n\n### MCP-Prüfung\n\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```\n\n### Negative Fall\n\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```\n\n### PASS\n\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des korrigierten Kandidatenimages f32703613317"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Browser:\nKlick:\n\n```text\nSignal prüfen\n```",
+        "Testsignal:\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```",
+        "Erwarteter Flow:\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```",
+        "MCP-Prüfung:\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```",
+        "Negative Fall:\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```",
+        "PASS:\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---"
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": [],
+      "contract_hash": "79ff0e8b7036d820223ce2bda4ffb00791b7637f5bc813f8bdd8900096375293",
+      "status": "OUTDATED",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "35dbee16039bacbf8ca7a8ad7ca5b05b201d92dc1abf4b85abcb5fece79b6c77"
+  },
+  "evidence": [
+    {
+      "id": "ev-d3e5341a770b4cb88b41238f64f5c70e",
+      "path": "evidence\\ev-d3e5341a770b4cb88b41238f64f5c70e.json",
+      "sha256": "6836298f40516237ea0990278bc20cd50de7f35aad02bd5ed58d0d0ed6509ccf",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:11.173895+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\review\\current.json"
+    },
+    {
+      "id": "ev-84feb65a7c7a43bf88abf779fbc8ea22",
+      "path": "evidence\\ev-84feb65a7c7a43bf88abf779fbc8ea22.json",
+      "sha256": "ee4efa811500e0b85261da0b15d540c1d5bc0261581f2e249ec2e987ef3a4ae2",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:11.311237+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\after.json"
+    },
+    {
+      "id": "ev-5580f9ddb0ff41ae869a3e73a1288b8e",
+      "path": "evidence\\ev-5580f9ddb0ff41ae869a3e73a1288b8e.sse",
+      "sha256": "ebbbd43c423712a86f611de52a1664f887e581b9cccef9c17a9e23397b377eda",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:15:11.441673+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\agent.sse"
+    },
+    {
+      "id": "ev-17f867882a6a465090626c467ae669ed",
+      "path": "evidence\\ev-17f867882a6a465090626c467ae669ed.json",
+      "sha256": "74b3c4b18481dadc320bb87e998a2a38bfb5cc26467599812e58e1de09f1cd7d",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:11.571131+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\before.json"
+    },
+    {
+      "id": "ev-25b0b1ff65a84ed18806868414cb96f8",
+      "path": "evidence\\ev-25b0b1ff65a84ed18806868414cb96f8.txt",
+      "sha256": "be759f02bfcf1a3139c79cb7ee34999d99883117d057f08f77f4145a6650ea1c",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:15:11.699945+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\browser.txt"
+    },
+    {
+      "id": "ev-dc3404ebf9ce4de5bc1fc7d7e3c188a2",
+      "path": "evidence\\ev-dc3404ebf9ce4de5bc1fc7d7e3c188a2.json",
+      "sha256": "e0bdae3fe8d903658fa59e8a6b5ca3c4eed24824e20c9d2fec69a4b368d6038d",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:11.827188+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\fixture.json"
+    },
+    {
+      "id": "ev-357e93ea8f704aaeb131570d818463d2",
+      "path": "evidence\\ev-357e93ea8f704aaeb131570d818463d2.json",
+      "sha256": "5ca08b1148b77be17d1e95f501e500bd67e61771bd2e36dd2bda551f3d969d60",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:11.951760+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\request.json"
+    },
+    {
+      "id": "ev-f020d7a56c8b4bed9c1d295e87e76270",
+      "path": "evidence\\ev-f020d7a56c8b4bed9c1d295e87e76270.json",
+      "sha256": "bc932ac5eee0e4b5553e76b49f8b6637bbb4348a4496fdae9bcd02e9456196ce",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:12.077995+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S27\\transport.json"
+    },
+    {
+      "id": "ev-0e921af5b7f0472985d67d61071c02ff",
+      "path": "evidence\\ev-0e921af5b7f0472985d67d61071c02ff.json",
+      "sha256": "2fa3f4b8a782b359df52e749698dbf892105d8273bbe491cefc9da7bcf44e30a",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:12.206362+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\mcp\\full-channels.json"
+    },
+    {
+      "id": "ev-a5c541767f5541f599e20b2d837e0275",
+      "path": "evidence\\ev-a5c541767f5541f599e20b2d837e0275.json",
+      "sha256": "b60075db20db890f5a2d2e0a95c60fc98687d2cd2a9c3580c2f95a3383b2bb33",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:12.337434+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\mcp\\protocol.json"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nSignal prüfen\n```",
+    "completion_criteria:Testsignal:\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```",
+    "completion_criteria:Erwarteter Flow:\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```",
+    "completion_criteria:MCP-Prüfung:\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```",
+    "completion_criteria:Negative Fall:\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```",
+    "completion_criteria:PASS:\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED",
+    "BROWSER_SCREENSHOT_MISSING"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nSignal prüfen\n```",
+    "completion_criteria:Testsignal:\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```",
+    "completion_criteria:Erwarteter Flow:\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```",
+    "completion_criteria:MCP-Prüfung:\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```",
+    "completion_criteria:Negative Fall:\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```",
+    "completion_criteria:PASS:\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED",
+    "BROWSER_SCREENSHOT_MISSING"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-268967c35b25433cb3fee2bfa9adc60a",
+    "actions": [],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-d3e5341a770b4cb88b41238f64f5c70e",
+          "ev-84feb65a7c7a43bf88abf779fbc8ea22",
+          "ev-5580f9ddb0ff41ae869a3e73a1288b8e",
+          "ev-17f867882a6a465090626c467ae669ed",
+          "ev-25b0b1ff65a84ed18806868414cb96f8",
+          "ev-dc3404ebf9ce4de5bc1fc7d7e3c188a2",
+          "ev-357e93ea8f704aaeb131570d818463d2",
+          "ev-f020d7a56c8b4bed9c1d295e87e76270",
+          "ev-0e921af5b7f0472985d67d61071c02ff",
+          "ev-a5c541767f5541f599e20b2d837e0275"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 6,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "workflow": {
+        "active_step": "engineering_model",
+        "artifact_checks": {
+          "engineering_model": {
+            "complete": true,
+            "consistency": {
+              "function_required": 1,
+              "functions_duplicate": 0,
+              "functions_missing": 0,
+              "functions_unexpected": 0,
+              "hardware_interfaces_missing": 0,
+              "messages_overflow": 0
+            },
+            "counts": {
+              "functions": 1,
+              "hardware_interfaces": 1,
+              "hardware_nodes": 1,
+              "interfaces": 1,
+              "messages": 1,
+              "signals": 1
+            },
+            "hardware_by_type": {
+              "ECU": 1
+            },
+            "incomplete": {
+              "functions": 0,
+              "interfaces": 0,
+              "messages": 0,
+              "signals": 0,
+              "transmission": 0
+            },
+            "scope_mismatches": {},
+            "status": "COMPLETE"
+          },
+          "network_editor": {
+            "complete": false,
+            "counts": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "invalid": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "status": "EMPTY"
+          },
+          "parameters": {
+            "complete": true,
+            "invalid_numeric": [],
+            "required": {},
+            "status": "APPROVED",
+            "uses_defaults": true
+          },
+          "routing": {
+            "complete": false,
+            "counts": {
+              "approved": 0,
+              "conflicts": 0,
+              "gateway_fanout_interfaces": 0,
+              "gateway_fanout_routes": 0,
+              "invalid": 0,
+              "total": 0,
+              "valid": 0
+            },
+            "coverage": {
+              "complete": false,
+              "covered_messages": 0,
+              "covered_signals": 0,
+              "errors": [],
+              "excluded_message_ids": [],
+              "excluded_messages": 0,
+              "excluded_signal_ids": [],
+              "excluded_signals": 0,
+              "message_coverage_percent": 0.0,
+              "missing_message_ids": [
+                "64dfe00e-b140-44a0-907e-a9ed94766eb8"
+              ],
+              "missing_signal_ids": [
+                "ea601887-aead-47c5-bea5-16903e895b03"
+              ],
+              "required_message_ids": [
+                "64dfe00e-b140-44a0-907e-a9ed94766eb8"
+              ],
+              "required_messages": 1,
+              "required_signal_ids": [
+                "ea601887-aead-47c5-bea5-16903e895b03"
+              ],
+              "required_signals": 1,
+              "scope_mode": "ALL",
+              "signal_coverage_percent": 0.0,
+              "total_messages": 1,
+              "total_signals": 1,
+              "transport_exclusions": [],
+              "version": 1
+            },
+            "status": "EMPTY"
+          }
+        },
+        "context": {
+          "active_project": "nis-e2e-industry60-s27",
+          "active_workflow_step": "engineering_model",
+          "selected_network": null,
+          "selected_object": null,
+          "selected_route": null,
+          "selected_signal": null,
+          "selected_simulation": null
+        },
+        "edit_tokens": {
+          "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        "latest_analyses": {},
+        "parameters": {},
+        "project_id": "nis-e2e-industry60-s27",
+        "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+        "simulation_snapshots": [],
+        "stale_reasons": {},
+        "status_vocabulary": [
+          "EMPTY",
+          "IN_PROGRESS",
+          "COMPLETE",
+          "WARNING",
+          "ERROR",
+          "APPROVED",
+          "OUTDATED"
+        ],
+        "statuses": {
+          "capacity_timing": "EMPTY",
+          "data_science_intelligence": "EMPTY",
+          "engineering_model": "COMPLETE",
+          "network_editor": "EMPTY",
+          "parameters": "APPROVED",
+          "results_analysis": "EMPTY",
+          "routing": "EMPTY",
+          "simulation": "EMPTY",
+          "validation": "EMPTY"
+        },
+        "steps": [
+          {
+            "id": "engineering_model",
+            "label": "Engineering-Modell",
+            "position": 1,
+            "reason": null,
+            "status": "COMPLETE",
+            "version": 6
+          },
+          {
+            "id": "routing",
+            "label": "Routing-Tabelle",
+            "position": 2,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "network_editor",
+            "label": "Netzwerk-Editor",
+            "position": 3,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "parameters",
+            "label": "Parameter",
+            "position": 4,
+            "reason": null,
+            "status": "APPROVED",
+            "version": 0
+          },
+          {
+            "id": "capacity_timing",
+            "label": "Capacity & Timing",
+            "position": 5,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "validation",
+            "label": "Validation / Preflight",
+            "position": 6,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "simulation",
+            "label": "Simulation",
+            "position": 7,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "results_analysis",
+            "label": "Results / Analysis",
+            "position": 8,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "data_science_intelligence",
+            "label": "Data Science & Intelligence",
+            "position": 9,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          }
+        ],
+        "topology": {},
+        "updated_at": "2026-09-16T15:13:05.634371+00:00",
+        "versions": {
+          "capacity_timing": 0,
+          "data_science_intelligence": 0,
+          "engineering_model": 6,
+          "network_editor": 0,
+          "parameters": 0,
+          "results_analysis": 0,
+          "routing": 0,
+          "simulation": 0,
+          "validation": 0
+        }
+      },
+      "scope": "Evidence review; execution baselines and isolated SQL fixture evidence retained separately."
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "review_scope": "Frischer Teilpfad über HTTP/MCP/Browser untersucht; vollständiger Completion-Vertrag nicht belegt. Siehe fallbezogene Nachweise und Grenzen im Bericht.",
+    "evidence_review": true,
+    "not_a_replay": true
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Browser:\nKlick:\n\n```text\nSignal prüfen\n```",
+      "Testsignal:\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```",
+      "Erwarteter Flow:\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```",
+      "MCP-Prüfung:\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```",
+      "Negative Fall:\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```",
+      "PASS:\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

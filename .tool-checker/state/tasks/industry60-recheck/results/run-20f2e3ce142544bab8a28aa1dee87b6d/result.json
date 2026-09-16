@@ -1,0 +1,799 @@
+{
+  "task_id": "industry60-recheck",
+  "test_id": "S37",
+  "run_id": "run-20f2e3ce142544bab8a28aa1dee87b6d",
+  "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+  "contract_hash": "8b9ec3c393d4e2b449c5ad74adcda603c967cd88b5ca4f49033b18e81c948d39",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T15:15:58.300630+00:00",
+  "finished_at": "2026-09-16T15:16:03.689531+00:00",
+  "context": {
+    "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n---\n",
+      "# 24. Trace-Analyse-Abnahmematrix\n\n| Bereich | Pflicht |\n|---|---|\n| Session | Source, Timebase, Technology, SimulationRef |\n| Botschaften | Transport Units, Source/Destination, Payload |\n| Sequenz | Teilnehmer, Gateway Hops, Delay |\n| Signale | Decode, Unit, Quality, State |\n| Sync | gemeinsame Zeitbasis aller Views |\n| Routing | Trace ↔ Route ↔ Network |\n| Faults | Fault Event ↔ Auswirkungen |\n| Golden Trace | Diff + First Divergence |\n| Root Cause | Evidence + Causal Chain |\n| Findings | persistent + verlinkt |\n| Performance | Windowing / Pagination / Streaming |\n| Browser | echte Klicks und View-Prüfung |\n| MCP | vollständige Trace Tool Contracts |\n| Completion | kein PASS ohne Evidence |\n\n---\n\n# 25. Gesamtumfang\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Prüfungen\n+\n10 Trace-Analyse-Prüfungen\n=\n60 Prüfungen\n```\n\nVollständige Prüfkette:\n\n```text\nINPUT\n→ AGENT\n→ MODEL\n→ MCP\n→ ENGINEERING EXECUTION\n→ ROUTING\n→ CAPACITY\n→ TIMING\n→ VALIDATION\n→ SIMULATION\n→ UNIVERSAL TRACE\n→ TRACE ANALYSE\n→ ROOT CAUSE\n→ FINDING\n→ COMPLETION\n```\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\python_core\\11_TRACE_CORE.md",
+        "sha256": "9187b6a595047c14ff5cdafb993f517fa98ea2adcf3be2705d0cdad2b53d0f7c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\simulation\\13_TRACE_INTEGRATION.md",
+        "sha256": "02f012b43f288ffa51b0626314b06e76d6023eb323114935ce577df3ff9cde7d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\TRACE_IMPORT.md",
+        "sha256": "7141b79237012e2352c5afc0e7ec2b036ca80c8eabc15b609182a2ac5a912e74"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S37",
+      "title": "Golden Trace Vergleich",
+      "input": "Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird.",
+      "source_lines": [
+        2616,
+        2646
+      ],
+      "source_requirements": "Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird.",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": false,
+      "preconditions": [
+        "Isolierter Teststack des korrigierten Kandidatenimages f32703613317"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird."
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp",
+        "trace"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": [],
+      "contract_hash": "8b9ec3c393d4e2b449c5ad74adcda603c967cd88b5ca4f49033b18e81c948d39",
+      "status": "OUTDATED",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "35dbee16039bacbf8ca7a8ad7ca5b05b201d92dc1abf4b85abcb5fece79b6c77"
+  },
+  "evidence": [
+    {
+      "id": "ev-17265ccd01be42e297117551930cd272",
+      "path": "evidence\\ev-17265ccd01be42e297117551930cd272.json",
+      "sha256": "17c2c833f09963d15409c24910ac8921f13657e5e0518dee87bd20e5d189bc9f",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:58.441665+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S37\\review\\current.json"
+    },
+    {
+      "id": "ev-b6f0b5bdfc494d5485c1c8d71bd7d5c2",
+      "path": "evidence\\ev-b6f0b5bdfc494d5485c1c8d71bd7d5c2.json",
+      "sha256": "a6fe876281ef39b5efe364bb5fac7064ec56f49ef997207b5c9c6715b9346cac",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:58.569347+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\canonical-jobs.json"
+    },
+    {
+      "id": "ev-9b0772f234dd4e3094e2332036c91646",
+      "path": "evidence\\ev-9b0772f234dd4e3094e2332036c91646.json",
+      "sha256": "abe67d465fee97fe9f6962d8b58a68dd2265d3926d41d3be17d02d64db4585a6",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:58.695842+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\canonical-map.json"
+    },
+    {
+      "id": "ev-28281e6a5cf34b9d801b23240d0e73f3",
+      "path": "evidence\\ev-28281e6a5cf34b9d801b23240d0e73f3.json",
+      "sha256": "f7f36865ad665d90c907036aaf36033f7acb8d610b3d0c68763f149401c602a2",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:58.819373+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-canonical-config.json"
+    },
+    {
+      "id": "ev-78e9dc4ebc8e49b689a918982850e2fb",
+      "path": "evidence\\ev-78e9dc4ebc8e49b689a918982850e2fb.json",
+      "sha256": "ac78690e022c7e2d9484bd3eeec7f393d5f2afdcff9df7ceaefae56e72326f2f",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:58.950995+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-canonical-job.json"
+    },
+    {
+      "id": "ev-45e7fc67ef434ba48d3ef77f860d3b92",
+      "path": "evidence\\ev-45e7fc67ef434ba48d3ef77f860d3b92.json",
+      "sha256": "0b2a026a28dea6e9d0b5b2a17ab32429a09c32423a9909c3efa49d55c8d216d6",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.078861+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-canonical-reasoning.json"
+    },
+    {
+      "id": "ev-00b187e418a54864b3cf0b39aa946363",
+      "path": "evidence\\ev-00b187e418a54864b3cf0b39aa946363.json",
+      "sha256": "d48ba41f292561434511dac36de3ab1636abb57e4071533147a2c14b8dd47623",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.206614+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-canonical-submitted.json"
+    },
+    {
+      "id": "ev-6ce7e39d77574f269a408b0a68f964ab",
+      "path": "evidence\\ev-6ce7e39d77574f269a408b0a68f964ab.json",
+      "sha256": "1424e533f5ff00ba6928e3637c12c04fca690e21d3d3fd55f5dce6d14a842c5f",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.332468+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-canonical-window.json"
+    },
+    {
+      "id": "ev-8cfafa41364f40138942f444b374fca6",
+      "path": "evidence\\ev-8cfafa41364f40138942f444b374fca6.json",
+      "sha256": "88ee6e15c8e7afa92cf46b48f33498b6f2077fa3804d09371b94c36199b4d5cb",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.457060+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-config.json"
+    },
+    {
+      "id": "ev-6e737a9cc1eb475eab760f8ea0d21b0b",
+      "path": "evidence\\ev-6e737a9cc1eb475eab760f8ea0d21b0b.json",
+      "sha256": "1cb311f6b346f5365c3bae3b5e0d8c231d9540e2d11a7e52e0dbd8af5c1440d9",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.594825+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-events.json"
+    },
+    {
+      "id": "ev-92e37d5eefb24121bcc2e6f9ad3c7d41",
+      "path": "evidence\\ev-92e37d5eefb24121bcc2e6f9ad3c7d41.json",
+      "sha256": "9a5fbcf5b12ec58774010ed71e893ca901d83d6c9517952915e0462a7aa758bb",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.721217+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\fault-metrics.json"
+    },
+    {
+      "id": "ev-0c3db61f8b3a47c18b02c9d88b3a835f",
+      "path": "evidence\\ev-0c3db61f8b3a47c18b02c9d88b3a835f.json",
+      "sha256": "48e95c2a07148834ea9ca350cc72447fc444c407057f7c6278bcf4de29b55fc3",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.845808+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\generation-summary.json"
+    },
+    {
+      "id": "ev-34cf23ee1f8e466ba397ee6d80ee9351",
+      "path": "evidence\\ev-34cf23ee1f8e466ba397ee6d80ee9351.json",
+      "sha256": "fd9f8ae90222eb7ec3d425592966293b84017258366328db1364749afeeb45d4",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:15:59.989302+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-canonical-config.json"
+    },
+    {
+      "id": "ev-b94a4a859b20483797e4e4b2c5cadd4a",
+      "path": "evidence\\ev-b94a4a859b20483797e4e4b2c5cadd4a.json",
+      "sha256": "9d000dc513106624086dcb0209e3d82802a53a4d493071e52d93434c3460a7a4",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.133380+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-canonical-job.json"
+    },
+    {
+      "id": "ev-eab559e75ece42888a94322b5034c20b",
+      "path": "evidence\\ev-eab559e75ece42888a94322b5034c20b.json",
+      "sha256": "ff5c11a9e3d8e3095bc4efdbfbc01f2197f1fbc02573c9fbabc637ce8ee0db6c",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.262015+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-canonical-reasoning.json"
+    },
+    {
+      "id": "ev-fa64b78eab3148d0b961ff6923124ded",
+      "path": "evidence\\ev-fa64b78eab3148d0b961ff6923124ded.json",
+      "sha256": "84252942acc61f0b519aff357a1d6d36d62cfa2a840a0ebb565cb8cbe9183500",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.390699+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-canonical-submitted.json"
+    },
+    {
+      "id": "ev-9538cf4461774bdebf39a8b20439d932",
+      "path": "evidence\\ev-9538cf4461774bdebf39a8b20439d932.json",
+      "sha256": "5f20f5d181101ba24156d671dbc0c2d711abfad5d31398cd64d954498cda8d44",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.520348+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-canonical-window.json"
+    },
+    {
+      "id": "ev-1f8873eb1a2c4afaa7eb3ce8e9abac0a",
+      "path": "evidence\\ev-1f8873eb1a2c4afaa7eb3ce8e9abac0a.json",
+      "sha256": "ebf2dfdcab065ee60a014b15b8cb7bb9fb26af0836b3d22baa32b3474841bb8c",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.647724+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-config.json"
+    },
+    {
+      "id": "ev-ab99a45446974f968655a80e016772aa",
+      "path": "evidence\\ev-ab99a45446974f968655a80e016772aa.json",
+      "sha256": "c9490907fd1384b6bd99ac8e8e0f00e66fb93482e31753f897e02f9ae7e09d90",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.793679+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-events.json"
+    },
+    {
+      "id": "ev-4bf3a5001eda4c9f9e924c9661016ca0",
+      "path": "evidence\\ev-4bf3a5001eda4c9f9e924c9661016ca0.json",
+      "sha256": "0297f5dfac1da81682658b3f8ad90eb6cbe5e9bf27d8a33742fefeb05b2dfacd",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:00.922755+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\golden-metrics.json"
+    },
+    {
+      "id": "ev-c79d6d81db6d4564862d87575cf9bca1",
+      "path": "evidence\\ev-c79d6d81db6d4564862d87575cf9bca1.json",
+      "sha256": "35fac28d048a13c86e104de233d1e255f6ce7003027844eb4070658eeaa3b5a8",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.050660+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-import-http.json"
+    },
+    {
+      "id": "ev-861ce9b5368645f18ba8868d819917cb",
+      "path": "evidence\\ev-861ce9b5368645f18ba8868d819917cb.json",
+      "sha256": "2761fb3f6cddf290fd3c47652f5c21641a093bd2cd845beaf3095afd9685ebce",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.203129+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-next.json"
+    },
+    {
+      "id": "ev-cacc30d5a67f4597835151fa6875d38d",
+      "path": "evidence\\ev-cacc30d5a67f4597835151fa6875d38d.json",
+      "sha256": "a99630b217167a3cb87e774636fc8dac4fe91a4cdfe385fd8d5abe26d577fc58",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.335317+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-other-project.json"
+    },
+    {
+      "id": "ev-319fd73b96794fbda2fbb8540928300e",
+      "path": "evidence\\ev-319fd73b96794fbda2fbb8540928300e.json",
+      "sha256": "57af72bbadb795b2680d567df170e4b69acd6d0447f9c2dd3373e11bcde39c75",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.463348+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-reload.json"
+    },
+    {
+      "id": "ev-4feca921351a40e9835d73890b6daa76",
+      "path": "evidence\\ev-4feca921351a40e9835d73890b6daa76.json",
+      "sha256": "37beafb149614304aeacdf42e5724507e3c1bfa1fd15b4f8d16bb3406600af64",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.594601+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-window.json"
+    },
+    {
+      "id": "ev-7070157c922940608713964d3a972ac4",
+      "path": "evidence\\ev-7070157c922940608713964d3a972ac4.json",
+      "sha256": "d6363549a33151e9cbd30b9a8e6a6264c64c20db5b2a00170ba21fe38aa96670",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.733393+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\mcp-inline.json"
+    },
+    {
+      "id": "ev-aba6661f1b494606b93d4116a2880a91",
+      "path": "evidence\\ev-aba6661f1b494606b93d4116a2880a91.json",
+      "sha256": "ebf2dfdcab065ee60a014b15b8cb7bb9fb26af0836b3d22baa32b3474841bb8c",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:01.864901+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\repeat-config.json"
+    },
+    {
+      "id": "ev-283c6988e4b54f7b8a9f5ed6299f095e",
+      "path": "evidence\\ev-283c6988e4b54f7b8a9f5ed6299f095e.json",
+      "sha256": "c9490907fd1384b6bd99ac8e8e0f00e66fb93482e31753f897e02f9ae7e09d90",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:02.005380+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\repeat-events.json"
+    },
+    {
+      "id": "ev-5af2c429fdfb4dc2b1961d75fbea6780",
+      "path": "evidence\\ev-5af2c429fdfb4dc2b1961d75fbea6780.json",
+      "sha256": "0297f5dfac1da81682658b3f8ad90eb6cbe5e9bf27d8a33742fefeb05b2dfacd",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:16:02.136979+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\repeat-metrics.json"
+    },
+    {
+      "id": "ev-71df9c10053a4b0384b84abb8db3b2bc",
+      "path": "evidence\\ev-71df9c10053a4b0384b84abb8db3b2bc.txt",
+      "sha256": "6c583987033975815f6d1fd074b7b49a139235a0933a1bbfc6d025ffdb2442f1",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.271539+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\findings-browser.txt"
+    },
+    {
+      "id": "ev-728e864993c6488ea7ef660288c4bd7a",
+      "path": "evidence\\ev-728e864993c6488ea7ef660288c4bd7a.txt",
+      "sha256": "fab5475e6ae11834137fd33935bc1e1ecc8103dbef356668929c98572656dcd0",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.423196+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-first-browser.txt"
+    },
+    {
+      "id": "ev-3eb55b06984540bb93265542870f044e",
+      "path": "evidence\\ev-3eb55b06984540bb93265542870f044e.txt",
+      "sha256": "8dc9898ad2621d7c8e2eb8d179a076186316fd00b56d4af71b3ec68e716a29b8",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.555126+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\large-next-browser.txt"
+    },
+    {
+      "id": "ev-bbcaa8147236471d8117edee5729cab7",
+      "path": "evidence\\ev-bbcaa8147236471d8117edee5729cab7.txt",
+      "sha256": "b0c2a93c9bca930686db8ea27b548ee86bf503bf5e6876d0d9bc0cbac26cd982",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.682727+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\messages-browser.txt"
+    },
+    {
+      "id": "ev-81e4867338e34a799fc361c5df522809",
+      "path": "evidence\\ev-81e4867338e34a799fc361c5df522809.txt",
+      "sha256": "0440c764859cf9d1958c8ac1eb6c3f819d42fcc2d20198615a69b74f372b095c",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.808852+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\reload-browser.txt"
+    },
+    {
+      "id": "ev-6ebc098669224bd499c203e4ccca5c8b",
+      "path": "evidence\\ev-6ebc098669224bd499c203e4ccca5c8b.txt",
+      "sha256": "a04f5762468a138d4bcf7a91e24bc9bb664b8be5012c4a422b154a470d35a1ac",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:02.932544+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\root-cause-browser.txt"
+    },
+    {
+      "id": "ev-1a719647cbe5435ea47446f0816b29e2",
+      "path": "evidence\\ev-1a719647cbe5435ea47446f0816b29e2.txt",
+      "sha256": "49663a8cee9d0ab283f9986edc4c598b941d6fd7d938480cdd5fbd85fb0cf977",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:03.057678+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\sequence-browser.txt"
+    },
+    {
+      "id": "ev-be5320ee82564eea96de4d16ef5589dc",
+      "path": "evidence\\ev-be5320ee82564eea96de4d16ef5589dc.txt",
+      "sha256": "f65d905d4a3c8c965ece7deaa6dfd92c7d4b6b46782f5694969155e434c31713",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:03.183188+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\session-browser.txt"
+    },
+    {
+      "id": "ev-cf6d500cdb9f497e95e1f38fb2c93d16",
+      "path": "evidence\\ev-cf6d500cdb9f497e95e1f38fb2c93d16.txt",
+      "sha256": "49177315e842e331edd10d4b742d67596ad7b499b214e9aa541f30be386106fb",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:03.306903+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\signals-browser.txt"
+    },
+    {
+      "id": "ev-6d274e68b2c94523858924fa64f7db45",
+      "path": "evidence\\ev-6d274e68b2c94523858924fa64f7db45.txt",
+      "sha256": "1ac08d6d8ad955cfde32dd9edc63e45e9427cf00f3131158f2b4be37cb09302e",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:16:03.439723+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\trace\\sync-browser.txt"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird.",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird.",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-20f2e3ce142544bab8a28aa1dee87b6d",
+    "actions": [],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-17265ccd01be42e297117551930cd272",
+          "ev-b6f0b5bdfc494d5485c1c8d71bd7d5c2",
+          "ev-9b0772f234dd4e3094e2332036c91646",
+          "ev-28281e6a5cf34b9d801b23240d0e73f3",
+          "ev-78e9dc4ebc8e49b689a918982850e2fb",
+          "ev-45e7fc67ef434ba48d3ef77f860d3b92",
+          "ev-00b187e418a54864b3cf0b39aa946363",
+          "ev-6ce7e39d77574f269a408b0a68f964ab",
+          "ev-8cfafa41364f40138942f444b374fca6",
+          "ev-6e737a9cc1eb475eab760f8ea0d21b0b",
+          "ev-92e37d5eefb24121bcc2e6f9ad3c7d41",
+          "ev-0c3db61f8b3a47c18b02c9d88b3a835f",
+          "ev-34cf23ee1f8e466ba397ee6d80ee9351",
+          "ev-b94a4a859b20483797e4e4b2c5cadd4a",
+          "ev-eab559e75ece42888a94322b5034c20b",
+          "ev-fa64b78eab3148d0b961ff6923124ded",
+          "ev-9538cf4461774bdebf39a8b20439d932",
+          "ev-1f8873eb1a2c4afaa7eb3ce8e9abac0a",
+          "ev-ab99a45446974f968655a80e016772aa",
+          "ev-4bf3a5001eda4c9f9e924c9661016ca0",
+          "ev-c79d6d81db6d4564862d87575cf9bca1",
+          "ev-861ce9b5368645f18ba8868d819917cb",
+          "ev-cacc30d5a67f4597835151fa6875d38d",
+          "ev-319fd73b96794fbda2fbb8540928300e",
+          "ev-4feca921351a40e9835d73890b6daa76",
+          "ev-7070157c922940608713964d3a972ac4",
+          "ev-aba6661f1b494606b93d4116a2880a91",
+          "ev-283c6988e4b54f7b8a9f5ed6299f095e",
+          "ev-5af2c429fdfb4dc2b1961d75fbea6780",
+          "ev-71df9c10053a4b0384b84abb8db3b2bc",
+          "ev-728e864993c6488ea7ef660288c4bd7a",
+          "ev-3eb55b06984540bb93265542870f044e",
+          "ev-bbcaa8147236471d8117edee5729cab7",
+          "ev-81e4867338e34a799fc361c5df522809",
+          "ev-6ebc098669224bd499c203e4ccca5c8b",
+          "ev-1a719647cbe5435ea47446f0816b29e2",
+          "ev-be5320ee82564eea96de4d16ef5589dc",
+          "ev-cf6d500cdb9f497e95e1f38fb2c93d16",
+          "ev-6d274e68b2c94523858924fa64f7db45"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 16,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 1,
+        "simulation": 0,
+        "validation": 0
+      },
+      "workflow": {
+        "active_step": "engineering_model",
+        "artifact_checks": {
+          "engineering_model": {
+            "complete": true,
+            "consistency": {
+              "function_required": 3,
+              "functions_duplicate": 0,
+              "functions_missing": 0,
+              "functions_unexpected": 0,
+              "hardware_interfaces_missing": 0,
+              "messages_overflow": 0
+            },
+            "counts": {
+              "functions": 3,
+              "hardware_interfaces": 4,
+              "hardware_nodes": 3,
+              "interfaces": 4,
+              "messages": 1,
+              "signals": 1
+            },
+            "hardware_by_type": {
+              "ECU": 2,
+              "Gateway": 1
+            },
+            "incomplete": {
+              "functions": 0,
+              "interfaces": 0,
+              "messages": 0,
+              "signals": 0,
+              "transmission": 0
+            },
+            "scope_mismatches": {},
+            "status": "COMPLETE"
+          },
+          "network_editor": {
+            "complete": false,
+            "counts": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "invalid": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "status": "EMPTY"
+          },
+          "parameters": {
+            "complete": true,
+            "invalid_numeric": [],
+            "required": {},
+            "status": "APPROVED",
+            "uses_defaults": true
+          },
+          "routing": {
+            "complete": false,
+            "counts": {
+              "approved": 0,
+              "conflicts": 0,
+              "gateway_fanout_interfaces": 0,
+              "gateway_fanout_routes": 0,
+              "invalid": 0,
+              "total": 1,
+              "valid": 0
+            },
+            "coverage": {
+              "complete": false,
+              "covered_messages": 0,
+              "covered_signals": 0,
+              "errors": [],
+              "excluded_message_ids": [],
+              "excluded_messages": 0,
+              "excluded_signal_ids": [],
+              "excluded_signals": 0,
+              "message_coverage_percent": 0.0,
+              "missing_message_ids": [
+                "bbada090-144f-46d4-b6f4-244adb168ff5"
+              ],
+              "missing_signal_ids": [
+                "c98c302a-0812-4e83-9b84-353f4606cab0"
+              ],
+              "required_message_ids": [
+                "bbada090-144f-46d4-b6f4-244adb168ff5"
+              ],
+              "required_messages": 1,
+              "required_signal_ids": [
+                "c98c302a-0812-4e83-9b84-353f4606cab0"
+              ],
+              "required_signals": 1,
+              "scope_mode": "ALL",
+              "signal_coverage_percent": 0.0,
+              "total_messages": 1,
+              "total_signals": 1,
+              "transport_exclusions": [],
+              "version": 1
+            },
+            "status": "IN_PROGRESS"
+          }
+        },
+        "context": {
+          "active_project": "nis-e2e-industry60-trace",
+          "active_workflow_step": "engineering_model",
+          "selected_network": null,
+          "selected_object": null,
+          "selected_route": null,
+          "selected_signal": null,
+          "selected_simulation": null
+        },
+        "edit_tokens": {
+          "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        "latest_analyses": {
+          "reasoning": {
+            "analysis_type": "reasoning",
+            "created_at": "2026-09-16T15:09:42.630947+00:00",
+            "id": "05ec8a02-0ca2-405f-91d4-2a8c408cb8d1",
+            "is_outdated": false,
+            "outdated_reason": null,
+            "status": "INCOMPLETE"
+          }
+        },
+        "parameters": {},
+        "project_id": "nis-e2e-industry60-trace",
+        "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+        "simulation_snapshots": [],
+        "stale_reasons": {},
+        "status_vocabulary": [
+          "EMPTY",
+          "IN_PROGRESS",
+          "COMPLETE",
+          "WARNING",
+          "ERROR",
+          "APPROVED",
+          "OUTDATED"
+        ],
+        "statuses": {
+          "capacity_timing": "EMPTY",
+          "data_science_intelligence": "EMPTY",
+          "engineering_model": "COMPLETE",
+          "network_editor": "EMPTY",
+          "parameters": "APPROVED",
+          "results_analysis": "EMPTY",
+          "routing": "IN_PROGRESS",
+          "simulation": "EMPTY",
+          "validation": "EMPTY"
+        },
+        "steps": [
+          {
+            "id": "engineering_model",
+            "label": "Engineering-Modell",
+            "position": 1,
+            "reason": null,
+            "status": "COMPLETE",
+            "version": 16
+          },
+          {
+            "id": "routing",
+            "label": "Routing-Tabelle",
+            "position": 2,
+            "reason": null,
+            "status": "IN_PROGRESS",
+            "version": 1
+          },
+          {
+            "id": "network_editor",
+            "label": "Netzwerk-Editor",
+            "position": 3,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "parameters",
+            "label": "Parameter",
+            "position": 4,
+            "reason": null,
+            "status": "APPROVED",
+            "version": 0
+          },
+          {
+            "id": "capacity_timing",
+            "label": "Capacity & Timing",
+            "position": 5,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "validation",
+            "label": "Validation / Preflight",
+            "position": 6,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "simulation",
+            "label": "Simulation",
+            "position": 7,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "results_analysis",
+            "label": "Results / Analysis",
+            "position": 8,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "data_science_intelligence",
+            "label": "Data Science & Intelligence",
+            "position": 9,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          }
+        ],
+        "topology": {},
+        "updated_at": "2026-09-16T15:13:07.418012+00:00",
+        "versions": {
+          "capacity_timing": 0,
+          "data_science_intelligence": 0,
+          "engineering_model": 16,
+          "network_editor": 0,
+          "parameters": 0,
+          "results_analysis": 0,
+          "routing": 1,
+          "simulation": 0,
+          "validation": 0
+        }
+      },
+      "scope": "Evidence review; execution baselines and isolated SQL fixture evidence retained separately."
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "review_scope": "Frischer Teilpfad über HTTP/MCP/Browser untersucht; vollständiger Completion-Vertrag nicht belegt. Siehe fallbezogene Nachweise und Grenzen im Bericht.",
+    "evidence_review": true,
+    "not_a_replay": true
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Vergleiche:\n\n```text\nRun A → Golden Trace\nRun B → Changed/Faulted Trace\n```\n\nPrüfe:\n\n```text\nmissing events\nadditional events\ntiming deviation\nsignal deviation\nstate deviation\nroute deviation\nfault deviation\n```\n\nMCP:\n```text\ntrace.compare_golden\ntrace.find_first_divergence\ntrace.get_deviation_summary\n```\n\nPASS nur, wenn die `first credible divergence` bestimmt wird."
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

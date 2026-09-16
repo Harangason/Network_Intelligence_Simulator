@@ -1,0 +1,57 @@
+{
+  "test_id": "S25",
+  "title": "MCP Schema-, Fehler- und Timeout-Verhalten",
+  "input": "MCP-Schema-, Unsupported-, Timeout- und Kanalgrenzenprüfung",
+  "source_lines": [
+    1796,
+    1861
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Robustheit / ToolResult / Retry\n\n### Test 1 – ungültiges Argument\n\nRufe testweise ein MCP-Tool mit ungültigem Parameter auf.\n\nErwartung:\n\n```text\nINVALID_INPUT\n```\n\nmit:\n\n```text\nfield\nreason\nexpected schema\n```\n\n### Test 2 – nicht unterstützte Technologie\n\nErwartung:\n\n```text\nNOT_SUPPORTED\n```\n\n### Test 3 – Timeout\n\nSimuliere einen transienten Tool-Timeout.\n\nErwartung:\n\n```text\nTOOL_TIMEOUT\n```\n\nTool Checker darf nach Retry-Policy erneut versuchen.\n\n### Test 4 – fachlicher Fehler\n\nBeispiel:\n\n```text\nCAN Controller max_channels = 2\nused_channels = 2\ncreate_port(channel=3)\n```\n\nErwartung:\n\n```text\nCAPACITY_EXCEEDED / NO_FREE_CHANNEL\n```\n\nKein Auto-Retry als technischer Timeout.\n\n### PASS\n\nFehler werden strukturiert behandelt und niemals als Erfolg oder erfundener Completion-Status ausgegeben.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": false,
+  "preconditions": [
+    "Isolierter Teststack des korrigierten Kandidatenimages f32703613317"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Test 1 – ungültiges Argument:\nRufe testweise ein MCP-Tool mit ungültigem Parameter auf.\n\nErwartung:\n\n```text\nINVALID_INPUT\n```\n\nmit:\n\n```text\nfield\nreason\nexpected schema\n```",
+    "Test 2 – nicht unterstützte Technologie:\nErwartung:\n\n```text\nNOT_SUPPORTED\n```",
+    "Test 3 – Timeout:\nSimuliere einen transienten Tool-Timeout.\n\nErwartung:\n\n```text\nTOOL_TIMEOUT\n```\n\nTool Checker darf nach Retry-Policy erneut versuchen.",
+    "Test 4 – fachlicher Fehler:\nBeispiel:\n\n```text\nCAN Controller max_channels = 2\nused_channels = 2\ncreate_port(channel=3)\n```\n\nErwartung:\n\n```text\nCAPACITY_EXCEEDED / NO_FREE_CHANNEL\n```\n\nKein Auto-Retry als technischer Timeout.",
+    "PASS:\nFehler werden strukturiert behandelt und niemals als Erfolg oder erfundener Completion-Status ausgegeben.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "5de08151c1bfafcb749ac7a09317ba5769be842c73126a335e2538e3dcac0f29",
+  "status": "PARTIAL",
+  "last_run": "run-97cc13aa9a4f46578bc03ce423a79c6b"
+}

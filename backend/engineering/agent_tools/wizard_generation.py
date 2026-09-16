@@ -48,7 +48,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v20-local-controller-status'
+MODEL_GENERATOR_VERSION = 'wizard-model-v21-explicit-functions'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v10-preserve-local-technology'
 
 
@@ -56,6 +56,33 @@ def _canonical_wizard_prompt(prompt: str) -> str:
     # Compatibility for persisted v1 requests: the entire appended continuation
     # is control text, not a new engineering requirement.
     return re.split(r'\nFortsetzung des bestätigten Wizard-Auftrags:', str(prompt), maxsplit=1)[0].strip()
+
+
+def _declared_function_names(prompt: str) -> list[str]:
+    """Preserve explicit function lists, without deriving functions from device names."""
+    sources = [prompt]
+    match = re.search(r'^- Fachliche-Anforderungen:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
+    if match:
+        values = json.loads(match[1])
+        if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
+            raise ValueError('Ungültige fachliche Anforderungen.')
+        sources.extend(values)
+    names = {}
+    for source in sources:
+        active = False
+        for line in source.splitlines():
+            text = line.strip()
+            if re.fullmatch(r'(?:Funktionen|Functions):', text, re.I):
+                active = True
+                continue
+            if not active:
+                continue
+            text = re.sub(r'^[-*]\s+', '', text)
+            if not re.fullmatch(r'[\w][\w .()/+-]{0,119}', text) or not text:
+                active = False
+                continue
+            names.setdefault(text.casefold(), text)
+    return list(names.values())
 
 
 def _confirmed_actuator_commands(prompt: str) -> dict:
@@ -616,6 +643,25 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 'source_ref': hw,
                 'technology_binding_ref': technology_contract['technology_id'],
             }]}, 'message_id')
+
+    # A named functional requirement must not disappear behind the generic
+    # controller status function. A sole function host is unambiguous; with
+    # several hosts an explicit mapping is needed instead of choosing one.
+    declared_functions = _declared_function_names(arguments['prompt'])
+    existing_function_names = {row['name'].casefold() for row in existing['Function']}
+    existing_function_names.update(change['data']['name'].casefold() for change in changes
+                                   if change['object_type'] == 'Function')
+    missing_functions = [name for name in declared_functions if name.casefold() not in existing_function_names]
+    function_hosts = [key for key, reference in function_refs.items() if reference]
+    if missing_functions:
+        if len(function_hosts) != 1:
+            raise ValueError('Funktionszuordnung fehlt für: ' + ', '.join(missing_functions)
+                             + '. Bitte den ausführenden Controller je Funktion festlegen.')
+        for name in missing_functions:
+            ensure('Function', name, {'hardware_node_id': hardware_refs[function_hosts[0]],
+                'domain': spec['domain'],
+                'description': 'Explizit benannte Nutzerfunktion; Ausführung auf dem einzigen Funktionscontroller. '
+                               'Ein-/Ausgangszuordnung und funktionale Anforderungen separat prüfen.'}, 'hardware_node_id')
 
     # The selected cluster technology is the ECU/Gateway backbone. Controllers
     # also need a matching local interface for every endpoint technology they

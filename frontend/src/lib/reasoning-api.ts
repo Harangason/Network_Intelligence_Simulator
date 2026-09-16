@@ -10,6 +10,7 @@ export type ReasoningResult = {
   recommended_actions: { id: string; type: string; description: string; requires_review: boolean; proposal_supported: boolean }[];
   downstream_effects: Record<string, unknown>[]; findings: { code: string; severity?: string }[];
   continuation: { cursor: number } | null; lineage: Record<string, unknown>;
+  time_range?: { start_s: number; end_s: number; focus_s?: number | null };
   comparison: { first_divergence: { timestamp: number; types: string[] } | null; golden_job_id: string } | null;
 };
 

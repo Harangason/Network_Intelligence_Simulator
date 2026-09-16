@@ -1,5 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+
+test('signal dictionaries preserve decoded numeric values and discrete states', () => {
+  const event = eventFromRecord({time_s: 12.5, signals: {
+    Temperature: {physical_value: 34.2, value: 342, unit: 'degC', quality: 'VALID'},
+    MotorRPM: {value: 1500, unit: 'rpm'}, MotorCurrent: {value: 2.1, unit: 'A'},
+    OperatingState: 'ACTIVE', HealthState: 'OK',
+  }}, 0);
+  assert.equal(event.signals.length, 5);
+  assert.equal(event.signals[0].value, 34.2);
+  assert.equal(event.signals[0].unit, 'degC');
+  assert.equal(event.signals[3].value, 'ACTIVE');
+  assert.equal(event.signals[4].value, 'OK');
+});
 import { eventFromRecord, parseTraceText, MAX_IMPORT_BYTES } from './trace-records.ts';
 
 test('IPv6 project addresses and physical TX/RX ports survive JSONL and CSV projection', () => {

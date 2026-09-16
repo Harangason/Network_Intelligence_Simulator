@@ -22,11 +22,14 @@ export function eventFromRecord(value: unknown, index: number): TraceEvent {
   if (timeKnown && (!Number.isFinite(timestamp) || timestamp < 0)) throw new Error(`Ereignis ${index + 1}: gültiger Zeitstempel in Sekunden fehlt.`);
   let rawSignals = record.signals;
   if (typeof rawSignals === 'string' && rawSignals.trim()) rawSignals = JSON.parse(rawSignals);
-  const candidates = Array.isArray(rawSignals) ? rawSignals : record.signal || record.signal_name ? [record] : [];
+  const candidates = Array.isArray(rawSignals) ? rawSignals
+    : rawSignals && typeof rawSignals === 'object' ? Object.entries(rawSignals).map(([name, value]) =>
+      value && typeof value === 'object' && !Array.isArray(value) ? { name, ...value } : { name, value })
+    : record.signal || record.signal_name ? [record] : [];
   const signals: TraceSignal[] = candidates.slice(0, 64).map((raw, signalIndex) => {
     const item = recordObject(raw);
-    const rawValue = item.value ?? item.signal_value;
-    return { id: String(item.signal_id ?? item.signal ?? item.signal_name ?? signalIndex),
+    const rawValue = item.physical_value ?? item.value ?? item.signal_value;
+    return { id: String(item.signal_id ?? item.signal ?? item.signal_name ?? item.name ?? signalIndex),
       name: String(item.signal ?? item.signal_name ?? item.name ?? item.signal_id ?? signalIndex),
       value: typeof rawValue === 'number' || typeof rawValue === 'string' || typeof rawValue === 'boolean' ? rawValue : null,
       unit: String(item.unit ?? ''), quality: String(item.quality ?? item.status ?? '') };

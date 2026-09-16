@@ -71,20 +71,43 @@ def signal_samples(event):
     return [v for v in raw if isinstance(v, dict)]
 
 
+def transport_identity(event):
+    identity = event.get('message_ids') or event.get('message_id') or event.get('route_id')
+    return (json.dumps(identity, sort_keys=True), str(event.get('sequence', event.get('time_s'))),
+            str(event.get('segment_index', event.get('segment_id', ''))))
+
+
+def complete_window_counterparts(actual, golden, actual_stream, golden_stream, max_scan=1000000):
+    """Find delayed counterparts outside arrival-time windows, retaining bounded data.
+
+    Missing/additional is only established after the other stream was exhausted.
+    Inputs retain only the original window and its matching counterparts.
+    """
+    a, b = list(actual), list(golden)
+    a_keys, b_keys = {transport_identity(e) for e in a}, {transport_identity(e) for e in b}
+    for target, missing, reader in ((a, b_keys - a_keys, actual_stream), (b, a_keys - b_keys, golden_stream)):
+        if not missing:
+            continue
+        for index, event in enumerate(reader()):
+            if index >= max_scan:
+                raise ValueError('GOLDEN_ALIGNMENT_INCOMPLETE: Gegenereignisse überschreiten das Suchbudget.')
+            if transport_identity(event) in missing:
+                target.append(event)
+        # Keep scanning after a match so duplicate identities are not hidden.
+    return a, b
+
+
 class FirstDivergenceAnalyzer:
     @staticmethod
     def analyze(actual, golden):
         # Existing comparator remains the shared source of frequency/value metrics.
         from ..agent_tools.analysis import compare
         summary = compare({"events": actual, "golden_events": golden})
-        def key(e):
-            identity = e.get("message_ids") or e.get("message_id") or e.get("route_id")
-            return json.dumps(identity, sort_keys=True), str(e.get("sequence", e.get("time_s")))
         a, b = defaultdict(list), defaultdict(list)
         for e in actual:
-            a[key(e)].append(e)
+            a[transport_identity(e)].append(e)
         for e in golden:
-            b[key(e)].append(e)
+            b[transport_identity(e)].append(e)
         deviations = []
         for identity in a.keys() | b.keys():
             for index in range(max(len(a[identity]), len(b[identity]))):
@@ -96,11 +119,15 @@ class FirstDivergenceAnalyzer:
                 else:
                     if abs(event_time(left) - event_time(right)) > 1e-9:
                         kinds.append("TIMING_DEVIATION")
-                    for field, kind in (("route_id", "ROUTE_DEVIATION"), ("network", "ROUTE_DEVIATION"), ("status", "STATE_DEVIATION"), ("faults", "FAULT_DEVIATION")):
+                    for field, kind in (("route_id", "ROUTE_DEVIATION"), ("route_ref", "ROUTE_DEVIATION"),
+                                        ("route_refs", "ROUTE_DEVIATION"), ("network", "ROUTE_DEVIATION"),
+                                        ("network_id", "ROUTE_DEVIATION"), ("status", "STATE_DEVIATION"), ("faults", "FAULT_DEVIATION")):
                         if left.get(field) != right.get(field):
                             kinds.append(kind)
                     def values(e):
-                        return {str(s.get("signal_id") or s.get("name") or s.get("signal")): (s.get("value"), s.get("state"), s.get("quality")) for s in signal_samples(e)}
+                        return {str(s.get("signal_id") or s.get("name") or s.get("signal")):
+                                (s.get("value"), s.get("physical_value"), s.get("state"), s.get("quality"), s.get("unit"))
+                                for s in signal_samples(e)}
                     if values(left) != values(right):
                         kinds.append("SIGNAL_DEVIATION")
                 if kinds:

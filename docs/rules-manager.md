@@ -70,3 +70,41 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:industry60 -->
+
+<!-- tool-check:industry60-recheck -->
+## Tool Check: industry60-recheck
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_60_INDUSTRY_NEUTRAL_AGENT_MCP_TRACE_TEST_SCENARIOS.md
+- Source Hash: e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327
+- Status: ACTIVE
+- Last Ingest: 2026-09-16T15:09:26.922772+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\industry60-recheck\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:industry60-recheck -->
+
+<!-- tool-check:industry60-completion -->
+## Tool Check: industry60-completion
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_60_INDUSTRY_NEUTRAL_AGENT_MCP_TRACE_TEST_SCENARIOS.md
+- Source Hash: e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327
+- Status: ACTIVE
+- Last Ingest: 2026-09-16T17:23:31.718926+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\industry60-completion\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:industry60-completion -->

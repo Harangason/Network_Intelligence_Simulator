@@ -597,6 +597,14 @@ test("recognized physical sensors receive complete conservative defaults when th
   assert.equal(pressure.semantic.semantic_type, "NUMERIC");
 });
 
+test("decimal commas in the original large request never become integer resolutions", () => {
+  const prompt = readFileSync(new URL('../../../e2e/fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
+  const current = extractEngineeringSpecification(prompt).chains.find(chain => chain.hardware_name === 'Strom');
+  assert.ok(current);
+  assert.equal(current.factor, 0.1);
+  assert.equal(current.length_bits, 8);
+});
+
 test("direct prose creation request extracts front camera engineering chain", () => {
   const result = extractEngineeringSpecification(
     "lege ein Hardware konten an. Frontkamera mit der Funktion umfelderfassung mit Schnittstellen die notwendigen Signale sollen Objekte wie Bälle erkennen lönnen",

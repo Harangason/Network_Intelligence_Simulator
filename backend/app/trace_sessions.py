@@ -42,6 +42,8 @@ def persist_import(data, filename, source_path):
         stage = Path(directory)
         count = 0
         entries = []
+        technologies, networks, time_bases = set(), set(), set()
+        first_time, last_time, missing_times = None, None, 0
         ordered, previous_time = True, -1.0
         with (stage / 'events.jsonl').open('wb') as target:
             try:
@@ -52,6 +54,19 @@ def persist_import(data, filename, source_path):
                     if len(line) > 1_048_576:
                         raise ValueError('Ein Trace-Ereignis überschreitet 1 MiB.')
                     timestamp = event.get('timestamp')
+                    for field, values in (('technology', technologies), ('network_id', networks), ('network', networks), ('time_basis', time_bases)):
+                        value = event.get(field)
+                        if value is not None:
+                            if not isinstance(value, str) or not value.strip():
+                                raise ValueError(f'Ungültige Trace-Metadaten: {field}.')
+                            values.add(value)
+                    if not event.get('time_basis'):
+                        time_bases.add('unknown')
+                    if timestamp is None:
+                        missing_times += 1
+                    else:
+                        first_time = timestamp if first_time is None else min(first_time, timestamp)
+                        last_time = timestamp if last_time is None else max(last_time, timestamp)
                     if timestamp is None or timestamp < previous_time:
                         ordered = False
                     if timestamp is not None:
@@ -65,11 +80,21 @@ def persist_import(data, filename, source_path):
         if not count:
             raise ValueError('Keine unterstützten Ereignisse in der Datei gefunden.')
         stat = (stage / 'events.jsonl').stat()
+        # An index must not treat unrelated clocks as one ordered timeline.
+        ordered = ordered and len(time_bases) == 1
         (stage / 'events.index.json').write_text(json.dumps(dict(schema='trace-time-index-v1',
             ordered=ordered, entries=entries, size_bytes=stat.st_size, mtime_ns=stat.st_mtime_ns)), encoding='utf8')
         metadata = dict(session_id=session_id, filename=Path(filename).name, format=fmt,
                         source_sha256=hashlib.sha256(data).hexdigest(), total_events=count,
                         warnings=warnings, analysis_only=True, partial=any('nicht' in warning for warning in warnings))
+        metadata.update(source_type='ImportTrace', source=Path(filename).name,
+                        simulation_run_ref=None, technologies=sorted(technologies), networks=sorted(networks),
+                        metadata={'filename': Path(filename).name, 'format': fmt, 'analysis_only': True},
+                        time_range={'start_s': first_time if len(time_bases) == 1 else None,
+                                    'end_s': last_time if len(time_bases) == 1 else None},
+                        timebase={'unit': 's', 'bases': sorted(time_bases), 'missing_timestamps': missing_times},
+                        sync_status=('unavailable' if missing_times else 'unknown' if 'unknown' in time_bases
+                                     else 'unsynchronized' if len(time_bases) > 1 else 'single_timebase'))
         shutil.copyfile(source_path, stage / 'source.trace')
         (stage / 'metadata.json').write_text(json.dumps(metadata, ensure_ascii=False), encoding='utf8')
         # Both paths are newly allocated direct children of the scoped root.

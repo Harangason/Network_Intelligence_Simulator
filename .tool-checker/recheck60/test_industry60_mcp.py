@@ -5,7 +5,7 @@ from uuid import uuid4
 from unittest.mock import AsyncMock
 import pytest
 pytest_plugins=['backend.tests.conftest']
-OUT=Path(__file__).resolve().parent/'evidence/industry60-recheck/mcp'
+OUT=Path(__file__).resolve().parents[1]/'evidence/industry60-recheck/mcp'
 
 def test_observe_registered_protocol_and_failures():
     from backend.agent_core.api.mcp_client import EngineeringMCPClient

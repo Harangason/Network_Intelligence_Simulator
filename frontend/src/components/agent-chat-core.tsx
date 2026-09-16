@@ -35,6 +35,7 @@ import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement } from '@/lib/agent/sensor-measurements';
+import { actuatorCommands, actuatorCommandChoice, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
@@ -1184,6 +1185,9 @@ export function EngineeringAgentWizard({
     ...connectionInventory.filter(chain => chain.device_type === 'ActuatorController').map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
   ];
   const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
+  const commandSource = `${taskSource}\n${notes}`;
+  const selectedActuatorCommands = actuatorCommands(commandSource);
+  const unresolvedCommands = unresolvedActuatorCommands(connectionInventory, commandSource);
   function selectDeviceConnection(name: string, technology: string) {
     const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
     let connections: Record<string, string> = {};
@@ -2440,6 +2444,7 @@ export function EngineeringAgentWizard({
     ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
     ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
     ...(unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
+    ...(unresolvedCommands.length ? [{ step: 'equipment', text: `Stellbefehl und Kodierung festlegen: ${unresolvedCommands.join(', ')}.` }] : []),
     ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
     ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
     ...(domainMismatch && !domainMismatchAccepted ? [{ step: 'equipment', text: 'Industrieangabe und Geräte passen noch nicht zusammen.' }] : []),
@@ -3031,7 +3036,7 @@ export function EngineeringAgentWizard({
             {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
           </section>}
           {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>}
-          {(sensorRows.length > 0 || unresolvedConnections.length > 0 || /^- Geräteanschlüsse:/m.test(taskText)) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
+          {(deviceRows.length > 0) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
             <h3>Geräteanschlüsse festlegen</h3>
             <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Für einen Entwurf gilt deine Auswahl als Modellannahme, nicht als Nachweis realer Hardware.</p>
             {deviceRows.map(({ name, label, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
@@ -3039,12 +3044,25 @@ export function EngineeringAgentWizard({
                 <option value="" disabled>Bitte auswählen</option>
                 {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select></label>}
+              {chain?.device_type === 'ActuatorController' && <label className="agent-device-choice"><span>Stellbefehl</span><select aria-label={`${name}: Stellbefehl`} disabled={effectiveBusy}
+                value={actuatorCommandChoice(selectedActuatorCommands[name]) || (unresolvedCommands.includes(name) ? '' : 'TEMPLATE')}
+                onChange={event => {
+                  setTaskText(selectActuatorCommand(taskText, name, event.target.value, commandSource));
+                  setNotes(notes.replace(/\n?^- (?:Weitere Hinweise:\s*-\s*)?Aktor-Befehle:[^\r\n]*$/gm, '').trim());
+                }}>
+                <option value="" disabled>Bitte auswählen</option>
+                <option value="OPEN_CLOSE">Auf/Zu: 0 = zu, 1 = auf (1 Bit)</option>
+                <option value="POSITION">Stellposition: 0–100 %, 0,1 % (10 Bit)</option>
+                <option value="CUSTOM" disabled>Eigene Kodierung aus dem Auftrag</option>
+                <option value="TEMPLATE" disabled>Explizite Simulationsvorlage</option>
+              </select></label>}
               <label className="agent-device-choice"><span>Verbindungstyp</span><select aria-label={`${name}: Anschluss`} disabled={effectiveBusy || (sensor && !chain)} value={!chain || chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(name, event.target.value)}>
                 <option value="">Bitte auswählen</option>
                 {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'GPIO', 'PWM', 'ADC', 'DAC', ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
               </select></label>
             </div>)}
             {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
+            {unresolvedCommands.length > 0 && <p role="alert">Stellbefehl fehlt: {unresolvedCommands.join(', ')}. Die Auswahl gilt nur für den jeweiligen Aktor.</p>}
           </section>}
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}

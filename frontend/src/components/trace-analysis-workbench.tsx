@@ -260,7 +260,7 @@ export function TraceAnalysisWorkbench() {
               {traceJob && <div className="trace-actions"><button disabled={loading} type="button" onClick={() => void loadWindow(traceJob)}>Zeitfenster laden</button><button disabled={loading || nextCursor === null} type="button" onClick={() => void loadWindow(traceJob, nextCursor ?? 0)}>Nächstes Fenster</button></div>}
             </div>
             <p>{loading ? "Trace-Fenster wird geladen …" : `${events.length} Ereignisse im Speicher · gemeinsames Zeitfenster für alle Ansichten`}</p>
-            {selectedEvent && <div aria-label="Gemeinsamer Trace-Kontext"><strong>{selectedEvent.timeKnown ? `${selectedEvent.timestamp.toFixed(6)} s` : "Zeit unbekannt"} · {selectedEvent.source} → {selectedEvent.destination}</strong><p>{selectedEvent.message} · {selectedEvent.signal}: {selectedEvent.value ?? '—'} {selectedEvent.unit}</p>{selectedEvent.ipContext && <p aria-label="IP- und Port-Zuordnung">{selectedEvent.ipContext}</p>}{selectedEvent.refs.map(ref => { const href = engineeringContextHref(ref, readActiveProjectId()); return href ? <a key={ref.object_type + ref.id} href={href}>{ref.object_type} öffnen </a> : null; })}</div>}
+            {selectedEvent && <div aria-label="Gemeinsamer Trace-Kontext"><strong>{selectedEvent.timeKnown ? `${selectedEvent.timestamp.toFixed(6)} s` : "Zeit unbekannt"} · {selectedEvent.source} → {selectedEvent.destination}</strong><p>{selectedEvent.message} · {selectedEvent.signal}: {displayTraceValue(selectedEvent.signals[0]?.value ?? selectedEvent.value)} {selectedEvent.unit}</p>{selectedEvent.ipContext && <p aria-label="IP- und Port-Zuordnung">{selectedEvent.ipContext}</p>}{selectedEvent.refs.map(ref => { const href = engineeringContextHref(ref, readActiveProjectId()); return href ? <a key={ref.object_type + ref.id} href={href}>{ref.object_type} öffnen </a> : null; })}</div>}
             {error && <div className="notice error" role="alert">{error}</div>}
             {importWarnings.map((warning, index) => <div className="notice" role="status" key={index}>{warning}</div>)}
             <p className="trace-view-note">{viewMeta.note}</p>
@@ -305,10 +305,7 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
   const [custom, setCustom] = useState<string[] | null>(null);
   const available = useMemo(() => availableColumns(sessionEvents), [sessionEvents]);
   const resolved = profile === 'auto' ? automaticProfile(sessionEvents) : profile;
-  const common = available.filter(field => ['source', 'destination', 'message', 'status', 'time_basis'].includes(field.key));
-  const defaults = resolved === 'generic'
-    ? (common.length ? common : available.filter(field => !['timestamp', 'time_status', 'payload', 'payload_hex'].includes(field.key)).slice(0, 8))
-    : TRACE_PROFILES[resolved].columns.filter(field => available.some(item => item.key === field.key));
+  const defaults = TRACE_PROFILES[resolved].columns.filter(field => available.some(item => item.key === field.key));
   const columns = custom === null ? defaults : available.filter(field => custom.includes(field.key));
   const shown = events.filter(event => protocolFilter === 'all' || event.technology === protocolFilter);
   const selected = selection.selected;

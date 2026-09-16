@@ -33,31 +33,32 @@ def is_project_request(prompt: str) -> bool:
     return bool((desire or brief) and project and equipment)
 
 
-def project_intake_text(requirement: str) -> str:
-    """Keep source requirements intact; suggestions are never confirmed specifications."""
-    temperature = bool(re.search(r'temperatur|temperature', requirement, re.I))
-    valves = bool(re.search(r'ventil|valve', requirement, re.I))
-    pi = bool(re.search(r'(?:raspberry|rasperry|respary)[\s-]*pi|\braspi\b', requirement, re.I))
+def project_intake_text(requirement: str, devices: list[dict] | None = None) -> str:
+    """Describe the actual draft inventory without inventing a control chain."""
+    if devices is None:
+        from backend.engineering.agent_tools.project_draft import parse_requirement
+        devices = parse_requirement(requirement)['devices']
+    labels = {'CONTROLLER': 'Controller', 'GATEWAY': 'Gateways',
+              'SENSOR': 'Sensoren', 'ACTUATOR': 'Aktoren'}
     lines = ['Daraus lässt sich ein Projektentwurf entwickeln. Deine Vorgabe:', requirement]
-    if pi and temperature and valves:
-        lines += [
-            'Entwurf: Temperatursensoren → Raspberry Pi → Ventilansteuerung → Ventile. '
-            'Der Raspberry Pi übernimmt die Verarbeitung der Messwerte und die Steuerfunktion. '
-            '„respary pi“ verstehe ich dabei als Raspberry Pi.',
-            'Lokale Messwerte und Stellbefehle bleiben im lokalen System; eine Weiterleitung '
-            'an andere Systeme wird nur bei ausdrücklich gewünschter Nutzung eingeplant.',
-            'Die Regelungsaufgabe muss festlegen, welcher Messwert welches Ventil beeinflusst '
-            'und ob automatisch nach Solltemperatur geregelt oder manuell geschaltet wird.',
-            'Anschlüsse, geeignete Ausgangstreiber, Versorgung und Abtast-/Schaltzeiten '
-            'bleiben bis zur Klärung offen. Eine direkte elektrische Ansteuerung der '
-            'Ventile durch den Pi ist damit nicht bestätigt.',
-        ]
-    else:
-        lines += ['Diese Angaben werden als editierbarer Projektentwurf gespeichert. '
-                  'Geräte und Funktionen, ihre Zuordnung, Verbindungen und Zeitverhalten werden geprüft. '
-                  'Bitte ergänze insbesondere noch ungenannte Stückzahlen, vorhandene Gerätetypen '
-                  'und das gewünschte Verhalten der Steuerung. Unbekannte Anschlüsse sind keine bestätigten Verbindungen.']
-    lines += ['Du kannst den gespeicherten Entwurf hier ergänzen und einen Modellvorschlag erstellen. '
-              'Die Übernahme ins Modell erfordert die Prüfung und Freigabe des konkreten Vorschlags. '
-              'Bisher wurde kein Modell angelegt oder verändert.']
+    inventory = []
+    for role, label in labels.items():
+        members = [device for device in devices if device['role'] == role]
+        if members:
+            inventory.append(label + ': ' + ', '.join(device['name'] for device in members))
+    if inventory:
+        lines += ['Geräte im Entwurf:\n' + '\n'.join(inventory)]
+    lines += [
+        'Geräteaufgaben, Controller-Zuordnungen und das gewünschte Regelungsverhalten '
+        'werden anhand deiner Angaben geprüft. Aus einer gemeinsamen Geräteliste '
+        'folgt noch keine bestätigte Steuerkette.',
+        'Lokale Messwerte und Stellbefehle bleiben im lokalen System; eine Weiterleitung '
+        'an andere Systeme wird nur bei ausdrücklich gewünschter Nutzung eingeplant.',
+        'Nicht angegebene Anschlüsse, geeignete Ausgangstreiber, Versorgung und '
+        'Abtast-/Schaltzeiten bleiben bis zur Klärung offen. Eine direkte elektrische '
+        'Ansteuerung ist damit nicht bestätigt.',
+        'Du kannst den gespeicherten Entwurf hier ergänzen und einen Modellvorschlag erstellen. '
+        'Die Übernahme ins Modell erfordert die Prüfung und Freigabe des konkreten Vorschlags. '
+        'Bisher wurde kein Modell angelegt oder verändert.',
+    ]
     return '\n\n'.join(lines)

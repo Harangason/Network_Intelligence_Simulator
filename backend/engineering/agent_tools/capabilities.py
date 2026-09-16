@@ -39,7 +39,7 @@ def prepare_project_request(arguments):
               'draft_id': draft['draft_id'],
               'requirement': '\n'.join(source['text'] for source in draft['sources'])}
     notes = arguments.get('planning_notes', '').strip()
-    text = project_intake_text(requirement)
+    text = project_intake_text(requirement, draft['devices'])
     if notes:
         text += '\n\nKI-Planungsvorschlag zur Prüfung:\n' + notes
     text += '\n\nGespeicherter Entwurf, Revision ' + str(draft['revision']) + '. Offene Angaben:\n'

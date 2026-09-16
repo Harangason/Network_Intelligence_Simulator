@@ -50,7 +50,8 @@ def effective_wizard_prompt(prompt: str) -> str:
         return prompt
     allowed = {'Hardware-Sollwerte', 'Systemcluster-Graph', 'Netzwerktechnologien',
                'Bus-Teilnehmergrenzen', 'Aktor-Befehle', 'Netzarchitektur-ID',
-               'Netzarchitektur', 'Raumarchitektur'}
+               'Netzarchitektur', 'Raumarchitektur', 'Geräteanschlüsse',
+               'Bestätigte-Geräteanschlüsse', 'Geräte-Spezifikationen'}
     amended = {}
     for section in prompt.split(marker)[1:]:
         for line in section.splitlines():

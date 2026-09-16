@@ -339,7 +339,6 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     await dialog.getByLabel('Aufgabentext', { exact: true }).fill(technology === 'I2C'
       ? '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi'
       : `2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi. Embedded Systems. Alle Geräte kommunizieren über ${technology}. Prüfe und arbeite bis Data Science & Intelligence.`);
-    await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"Ventilaktor1":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}},"Ventilaktor2":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
     await dialog.getByTitle('Netzarchitektur', { exact: true }).click();
     await dialog.getByRole('radio', { name: /Variante 0/ }).check();
     await dialog.getByTitle('Geräteumfang', { exact: true }).click();
@@ -355,6 +354,11 @@ for (const technology of ['I2C', 'Modbus RTU']) {
       await expect(dialog.getByLabel('Temperatursensor1: Anschluss', { exact: true })).toHaveValue('I2C');
       await dialog.getByLabel('Sensor 1: Messgröße', { exact: true }).selectOption('temperature');
     }
+    await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+    await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
+    await expect(dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true })).toHaveValue('');
+    await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+    await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
     await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
     const continuity = await completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']);
     const artifacts = await verifyArtifacts(page, project, 7, 'RaspberryPi');

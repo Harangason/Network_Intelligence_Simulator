@@ -31,6 +31,7 @@ PROTOCOL_CAPACITY = {
     "MODBUS_RTU": (115_200, 253),
     "MODBUS_TCP": (100_000_000, 253),
     "I2C": (400_000, 255),
+    "SPI": (50_000_000, 65_535),
     "ARINC": (100_000, 4),
     "MIL_STD_1553": (1_000_000, 4),
     "MVB": (1_500_000, 32),
@@ -53,6 +54,9 @@ INTERFACE_PROTOCOLS = {
     "ModbusTCP": {"MODBUS_TCP", "MODBUS", "TCP"},
     "ModbusRTU": {"MODBUS_RTU", "MODBUS"},
     "I2C": {"I2C"},
+    "SPI": {"SPI"},
+    "GPIO": {"GPIO"},
+    "PWM": {"PWM"},
     "OPCUA": {"OPC_UA"},
     "ARINC": {"ARINC"},
     "MIL_STD_1553": {"MIL_STD_1553"},
@@ -504,7 +508,6 @@ class RoutingValidator:
         protocol = str(source.get("protocol") or "CUSTOM").upper()
         if protocol not in PROTOCOL_CAPACITY:
             warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
-            protocol = "CUSTOM"
         if source.get("port_id") and any(not destination.get("port_id") for destination in destinations):
             error("DESTINATION_PHYSICAL_PORT_MISSING", "Empfänger besitzt keinen nachgewiesenen Anschluss für diesen Transport.")
         source_network_id = str(source.get("network_id") or "").strip().casefold()
@@ -630,7 +633,7 @@ class RoutingValidator:
             _, max_payload = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])
             if frame_payload_bytes > max_payload:
                 error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
-        bitrate, _ = PROTOCOL_CAPACITY[protocol]
+        bitrate, _ = PROTOCOL_CAPACITY.get(protocol, PROTOCOL_CAPACITY['CUSTOM'])
 
         hop_count = max(1, len(path.get("hops", [])) - 1)
         gateway_count = len(gateways)

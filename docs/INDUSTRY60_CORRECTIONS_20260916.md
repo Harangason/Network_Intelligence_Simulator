@@ -19,7 +19,9 @@ Dieser Nachweis ersetzt nicht die ursprünglichen 60 Szenarioergebnisse durch pa
 
 - Gezielter Backend-Lauf: 39 bestanden (isolierte PostgreSQL-Datenbank).
 - Frontend: 390 bestanden; TypeScript erfolgreich im laufenden Release-Gate.
-- Vollständiges Release-Gate: läuft, noch keine Auslieferungsfreigabe.
+- Release-Gate 65739aa984db: 1796 Backendtests, 390 Frontendtests, Typprüfung, Build,
+  68 Browser-E2E und kleiner HTTP-Test bestanden. Der große HTTP-Test hat keinen
+  Abschlussnachweis; Prozess beendet, Receipt weiterhin RUNNING. Keine Freigabe.
 - Produktdeployment: bisher keines für diese Korrekturen.
 
 Die offenen Architekturentscheidungen der ursprünglichen A/B-Szenarien wurden nicht automatisch beantwortet.

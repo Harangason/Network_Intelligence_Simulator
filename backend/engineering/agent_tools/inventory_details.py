@@ -17,6 +17,22 @@ TECHNOLOGIES = [
 ]
 
 
+def _scope_matches(scope, name):
+    """Match named families, including 'Drives' in 'Motor Drives'.
+
+    Keep qualifiers: 'schnelle Positionssensoren' must not select generic
+    sensor slots, and 'einfache Sensoren' must not select all sensors.
+    """
+    def words(value):
+        return [word.casefold().rstrip('s') for word in re.findall(r'\w+', value)]
+    target = words(name)
+    for label in re.split(r'\s+(?:und|and)\s+|/|,', scope, flags=re.I):
+        family = words(label.strip())
+        if family and len(family) <= len(target) and target[-len(family):] == family:
+            return True
+    return False
+
+
 def details(text):
     if '\n' not in text:
         return []  # Prose uses the quantity/parser path, not the line grammar.
@@ -87,20 +103,19 @@ def details(text):
     if communication:
         body = communication[1]
         for group in result:
-            if group['technology']:
-                continue
-            candidates = set()
+            candidates = set(group['connection_candidates'])
             sources = []
             for line in body.splitlines():
+                if re.search(r'\b(?:nicht|kein\w*|ohne|not|no)\b', line, re.I):
+                    continue
                 scope, separator, binding = line.strip('- ').partition(':')
                 if separator:
-                    # Plural endings do not change the named device family.
-                    labels = [re.sub(r'[^\w]', '', part).casefold().rstrip('s') for part in scope.split('/')]
-                    name = re.sub(r'[^\w]', '', group['name']).casefold().rstrip('s')
-                    applies = any(label and (name == label or name == label + 's') for label in labels)
+                    applies = _scope_matches(scope, group['name'])
                 else:
-                    binding = scope
-                    applies = len(body.strip().splitlines()) == 1
+                    assignment = re.split(r'\s+(?:für|fuer|for)\s+', scope, maxsplit=1, flags=re.I)
+                    binding = assignment[0]
+                    applies = (_scope_matches(assignment[1], group['name']) if len(assignment) == 2
+                               else len(body.strip().splitlines()) == 1)
                 if applies:
                     found = [canonical for pattern, canonical in TECHNOLOGIES if re.search(r'(?<!\w)' + pattern + r'(?!\w)', binding, re.I)]
                     candidates.update(found)

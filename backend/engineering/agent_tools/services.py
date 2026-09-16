@@ -391,8 +391,18 @@ def register_tools():
     for name,action in [("get_simulation_status","status"),("stop_simulation","stop"),("get_simulation_results","results")]:
         register(name,"Projektgebundenen Simulationslauf lesen oder stoppen.",P.RUN_SIMULATION,lambda a,x=action:_simulation(a,x),job_id=ID)
     trace_fields=dict(job_id=(str|None,None),events=(list[dict[str,Any]]|None,None))
+    time_fields = dict(job_id=(str|None,None), session_id=(str|None,None),
+                       time_s=(float,Field(ge=0)), time_basis=(str|None,None))
+    register('resolve_trace_time', 'Gemeinsame Zeitposition der Trace-Ansichten prüfen; keine unbekannten Uhren umrechnen.',
+             P.ANALYZE_TRACE, analysis.resolve_trace_time, **time_fields)
+    register('resolve_trace_event_context', 'Genaues Ereignis und Modellreferenzen der synchronisierten Trace-Auswahl lesen.',
+             P.ANALYZE_TRACE, analysis.resolve_trace_event_context, **time_fields, event_id=ID)
+    for name in ('inspect_trace_session', 'get_trace_metadata'):
+        register(name, 'Projektgebundene Import-, Simulations- oder ausdrücklich gewählte Golden-Trace-Quelle mit Zeitbasis und vollständiger Ereigniszahl lesen.',
+                 P.ANALYZE_TRACE, analysis.inspect_trace_session, job_id=(str|None,None), session_id=(str|None,None), golden=(bool,False))
     for name,handler in [("load_trace",analysis.window),("get_trace_window",analysis.window),("analyze_trace",analysis.analyze),("find_trace_root_cause",analysis.root_cause),("find_anomalies",analysis.analyze)]:
-        register(name,"Projektgebundene Trace-Ereignisse auswerten. Job-Fenster: next_cursor als cursor fortsetzen; offset nur für Inline-Ereignisse.",P.ANALYZE_TRACE,handler,**trace_fields,start_s=(float,0.0),end_s=(float,1e12),limit=LIMIT,offset=(int,Field(default=0,ge=0)),cursor=(int,Field(default=0,ge=0)),configuration=OPTIONAL_OBJECT)
+        import_fields = dict(session_id=(str|None,None), query=(str,Field(default='',max_length=2000))) if handler == analysis.window else {}
+        register(name,"Projektgebundene Trace-Ereignisse auswerten. Job-/Import-Fenster: next_cursor als cursor fortsetzen; offset nur für Inline-Ereignisse.",P.ANALYZE_TRACE,handler,**trace_fields,**import_fields,start_s=(float,0.0),end_s=(float,1e12),limit=LIMIT,offset=(int,Field(default=0,ge=0)),cursor=(int,Field(default=0,ge=0)),configuration=OPTIONAL_OBJECT)
     register("correlate_signals","Signalreihen auf gemeinsamen Zeitpunkten korrelieren.",P.ANALYZE_TRACE,analysis.correlate,**trace_fields,signal_names=(list[str]|None,None))
     register("compare_golden_trace","Trace mit einem Golden Trace vergleichen.",P.ANALYZE_TRACE,analysis.compare,**trace_fields,golden_job_id=(str|None,None),golden_events=(list[dict[str,Any]],Field(default_factory=list)))
     for name in ["classify_trace_fault","classify_fault"]:

@@ -355,6 +355,15 @@ class EngineeringAgent:
                 status = 'READY_FOR_REVIEW' if valid else 'INCOMPLETE'
                 text = ('Das Engineering-Modell ist als geprüfter Vorschlag vorbereitet. Bitte die Modelländerungen freigeben; die weiteren Workflow-Schritte sind noch offen.'
                         if valid else 'Der Modellvorschlag benötigt Korrekturen. Die Validierung zeigt die konkreten Findings.')
+                if not valid:
+                    findings = (proposal.get('validation_result') or {}).get('findings') or []
+                    blockers = [finding for finding in findings if finding.get('severity') == 'ERROR']
+                    for finding in blockers:
+                        event('FINDING', severity='ERROR', text=finding.get('message', finding.get('code', 'Modellfehler')),
+                              metadata={key: finding[key] for key in ('code', 'object_id', 'object_type') if key in finding})
+                    if blockers:
+                        text += '\n' + '\n'.join(str(finding.get('message') or finding.get('code')) for finding in blockers)
+                        text += '\nDie fehlenden Angaben über „Ergänzen“ festlegen und den neuen Vorschlag erneut prüfen.'
             else:
                 status = 'INCOMPLETE'
                 text = 'Der Wizard-Generator konnte den Modellvorschlag nicht vorbereiten. ' + '; '.join(str(f.get('message', '')) for f in result.findings)

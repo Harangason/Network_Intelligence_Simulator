@@ -235,6 +235,27 @@ def test_amendment_creates_revision_and_preserves_base_request(request_case):
     assert state['context']['agent_execution']['model_review_required'] is True
 
 
+def test_amendment_replaces_device_connections_and_specifications_in_effective_header():
+    from backend.engineering.agent_tools.wizard_commands import effective_wizard_prompt
+    old = {'Geräteanschlüsse': {'RaspberryPi': 'SPI'},
+           'Bestätigte-Geräteanschlüsse': {'RaspberryPi': ['SPI']},
+           'Geräte-Spezifikationen': {'Sensor1': {'resolution': 1}}}
+    new = {'Geräteanschlüsse': {'RaspberryPi': 'I2C'},
+           'Bestätigte-Geräteanschlüsse': {'RaspberryPi': ['I2C', 'SPI']},
+           'Geräte-Spezifikationen': {'Sensor1': {'resolution': 0.1}}}
+    def header(fields):
+        return '\n'.join(f'- {key}: {json.dumps(value)}' for key, value in fields.items())
+    base = header(old) + '\nOriginale Anforderung bleibt erhalten.'
+    prompt = base + '\n\nBestaetigte Ergaenzung des Nutzers:\n' + header(new)
+    effective = effective_wizard_prompt(prompt)
+    for key, value in new.items():
+        lines = [line for line in effective.splitlines() if line.startswith(f'- {key}:')]
+        assert len(lines) == 1
+        assert json.loads(lines[0].split(':', 1)[1]) == value
+    assert 'Originale Anforderung bleibt erhalten.' in effective
+    assert effective_wizard_prompt(base) == base
+
+
 def test_amendment_updates_confirmed_count_and_graph_status_without_rewriting_base(request_case):
     first = start(request_case)
     release(request_case, first)

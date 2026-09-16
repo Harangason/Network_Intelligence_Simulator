@@ -1,0 +1,441 @@
+{
+  "name": "approved_routing_table",
+  "industry": "generic",
+  "duration_s": 18,
+  "cycle_ms": 20.0,
+  "node_count": 3,
+  "networks": [
+    {
+      "id": "input-bus",
+      "name": "input-bus",
+      "technology": "can_fd",
+      "protocol": "CAN_FD",
+      "bitrate": 500000,
+      "data_bitrate": 2000000,
+      "cycle_ms": 20.0,
+      "nodes": [
+        "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "8f559d8a-b01a-4d91-8c0b-eadec61b8515"
+      ]
+    },
+    {
+      "id": "output-bus",
+      "name": "output-bus",
+      "technology": "ethernet",
+      "protocol": "Ethernet",
+      "bitrate": 100000000,
+      "cycle_ms": 20.0,
+      "nodes": [
+        "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "786fb7fc-795b-4e6f-af0c-2851ed975fb6"
+      ]
+    }
+  ],
+  "parameters": {
+    "technology": "can_fd",
+    "bitrate": 500000,
+    "jitter_ms": 1,
+    "gateway_delay_ms": 2,
+    "networks": [
+      {
+        "id": "input-bus",
+        "bitrate": 500000,
+        "data_bitrate": 2000000
+      },
+      {
+        "id": "output-bus",
+        "bitrate": 100000000
+      }
+    ]
+  },
+  "hardware": {
+    "devices": [
+      {
+        "id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "name": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "type": "Gateway",
+        "logical_node_address": 2,
+        "formatted_logical_node_address": "0x0002",
+        "address_namespace": "PROJECT",
+        "interfaces": [
+          {
+            "id": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+            "name": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+            "technology": "can_fd",
+            "network": "input-bus",
+            "physical_port_ref": "gateway:gateway-in"
+          },
+          {
+            "id": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+            "name": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+            "technology": "ethernet",
+            "network": "output-bus",
+            "physical_port_ref": "gateway:gateway-out"
+          }
+        ]
+      },
+      {
+        "id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "name": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "type": "ECU",
+        "logical_node_address": 1,
+        "formatted_logical_node_address": "0x0001",
+        "address_namespace": "PROJECT",
+        "interfaces": [
+          {
+            "id": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+            "name": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+            "technology": "can_fd",
+            "network": "input-bus",
+            "physical_port_ref": "source:source-if"
+          }
+        ]
+      },
+      {
+        "id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "name": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "type": "ECU",
+        "logical_node_address": 3,
+        "formatted_logical_node_address": "0x0003",
+        "address_namespace": "PROJECT",
+        "interfaces": [
+          {
+            "id": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+            "name": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+            "technology": "ethernet",
+            "network": "output-bus",
+            "physical_port_ref": "target:target-if"
+          }
+        ]
+      }
+    ]
+  },
+  "communications": [
+    {
+      "id": "route-RT-1-target",
+      "name": "Source through gateway to target",
+      "routing_entry_id": "30f27d29-df6a-4008-b663-e237b3ad3721",
+      "routing_entry_ids": [
+        "30f27d29-df6a-4008-b663-e237b3ad3721"
+      ],
+      "canonical_route_id": "30f27d29-df6a-4008-b663-e237b3ad3721",
+      "source": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+      "source_name": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+      "source_interface": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+      "source_logical_address": "0x0001",
+      "target": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+      "target_name": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+      "target_interface": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+      "destination_logical_address": "0x0003",
+      "network_id": "input-bus",
+      "network_name": "input-bus",
+      "technology": "can_fd",
+      "physical_network_ids": [
+        "input-bus",
+        "output-bus"
+      ],
+      "segments": [
+        {
+          "id": "route-RT-1-target:segment:0",
+          "segment_index": 0,
+          "segment_count": 2,
+          "source": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+          "source_interface": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+          "target": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+          "target_interface": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+          "network_id": "input-bus",
+          "network_name": "input-bus",
+          "technology": "can_fd",
+          "topology_edge_ids": [
+            "edge-in"
+          ],
+          "gateway_ids": []
+        },
+        {
+          "id": "route-RT-1-target:segment:1",
+          "segment_index": 1,
+          "segment_count": 2,
+          "source": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+          "source_interface": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+          "target": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+          "target_interface": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+          "network_id": "output-bus",
+          "network_name": "output-bus",
+          "technology": "ethernet",
+          "topology_edge_ids": [
+            "edge-out"
+          ],
+          "gateway_ids": [
+            "9b7a409a-1858-46f1-bad0-a94888addcbe"
+          ]
+        }
+      ],
+      "cycle_ms": 20,
+      "maximum_latency_ms": 20,
+      "jitter_limit_ms": 5,
+      "timeout_ms": 50,
+      "deadline_ms": 20,
+      "requirement_provenance": {
+        "maximum_latency_ms": {
+          "source": "route",
+          "field": "max_latency_ms",
+          "unit": "ms"
+        },
+        "jitter_limit_ms": {
+          "source": "route",
+          "field": "jitter_limit_ms",
+          "unit": "ms"
+        },
+        "timeout_ms": {
+          "source": "route",
+          "field": "timeout_ms",
+          "unit": "ms"
+        }
+      },
+      "payload_bytes": 2,
+      "priority": "NORMAL",
+      "signal_ids": [
+        "c98c302a-0812-4e83-9b84-353f4606cab0"
+      ],
+      "message_ids": [
+        "bbada090-144f-46d4-b6f4-244adb168ff5"
+      ]
+    }
+  ],
+  "routing_entry_ids": [
+    "30f27d29-df6a-4008-b663-e237b3ad3721"
+  ],
+  "formats": [
+    "universal-jsonl",
+    "universal-csv"
+  ],
+  "seed": 42,
+  "topology": {
+    "nodes": [
+      {
+        "id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "engineeringId": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "ports": [
+          {
+            "id": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+            "engineeringId": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+            "hardwareInterfaceId": "c55bace4-812e-4b22-9087-4c9cc6ded494",
+            "bus": "can_fd",
+            "physicalNetworkId": "input-bus"
+          }
+        ]
+      },
+      {
+        "id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "engineeringId": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "ports": [
+          {
+            "id": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+            "engineeringId": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+            "hardwareInterfaceId": "5c29ea4c-1955-4543-b01b-3ceb82abe1fc",
+            "bus": "can_fd",
+            "physicalNetworkId": "input-bus"
+          },
+          {
+            "id": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+            "engineeringId": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+            "hardwareInterfaceId": "33ff8da0-72f5-4df2-a283-39321e6aca56",
+            "bus": "ethernet",
+            "physicalNetworkId": "output-bus"
+          }
+        ]
+      },
+      {
+        "id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "engineeringId": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "ports": [
+          {
+            "id": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+            "engineeringId": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+            "hardwareInterfaceId": "0d2fafa9-a62c-4bcd-8fdd-b1cddc1406e5",
+            "bus": "ethernet",
+            "physicalNetworkId": "output-bus"
+          }
+        ]
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-in",
+        "source": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "target": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "sourcePort": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+        "targetPort": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+        "bus": "can_fd",
+        "physicalNetworkId": "input-bus",
+        "routingEntryId": "30f27d29-df6a-4008-b663-e237b3ad3721"
+      },
+      {
+        "id": "edge-out",
+        "source": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "target": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "sourcePort": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+        "targetPort": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+        "bus": "ethernet",
+        "physicalNetworkId": "output-bus",
+        "routingEntryId": "30f27d29-df6a-4008-b663-e237b3ad3721"
+      }
+    ]
+  },
+  "scenario": {
+    "mode": "NORMAL",
+    "faults": []
+  },
+  "engineering_model": {
+    "nodes": [
+      {
+        "id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "name": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "device_type": "ECU",
+        "logical_node_address": 1
+      },
+      {
+        "id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "name": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "device_type": "Gateway",
+        "logical_node_address": 2
+      },
+      {
+        "id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "name": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "device_type": "ECU",
+        "logical_node_address": 3
+      }
+    ],
+    "routes": [
+      {
+        "id": "30f27d29-df6a-4008-b663-e237b3ad3721",
+        "route_code": "RT-1",
+        "name": "Source through gateway to target",
+        "approval_state": "APPROVED",
+        "source": {
+          "node_id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+          "interface_id": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+          "network_id": "input-bus",
+          "protocol": "CAN_FD"
+        },
+        "destinations": [
+          {
+            "node_id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+            "interface_id": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+            "network_id": "output-bus",
+            "protocol": "Ethernet"
+          }
+        ],
+        "route": {
+          "gateways": [
+            {
+              "node_id": "9b7a409a-1858-46f1-bad0-a94888addcbe"
+            }
+          ]
+        },
+        "timing": {
+          "cycle_time_ms": 20,
+          "max_latency_ms": 20,
+          "jitter_limit_ms": 5,
+          "timeout_ms": 50
+        },
+        "payload": {
+          "message_id": "bbada090-144f-46d4-b6f4-244adb168ff5",
+          "signal_ids": [
+            "c98c302a-0812-4e83-9b84-353f4606cab0"
+          ],
+          "payload_bytes": 2
+        }
+      }
+    ],
+    "interfaces": [
+      {
+        "id": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+        "hardware_node_id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "name": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+        "interface_type": "CAN_FD",
+        "configuration": {}
+      },
+      {
+        "id": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+        "hardware_node_id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "name": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+        "interface_type": "CAN_FD",
+        "configuration": {}
+      },
+      {
+        "id": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+        "hardware_node_id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "name": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+        "interface_type": "Ethernet",
+        "configuration": {}
+      },
+      {
+        "id": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+        "hardware_node_id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "name": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+        "interface_type": "Ethernet",
+        "configuration": {}
+      }
+    ],
+    "hardware_interfaces": [
+      {
+        "id": "c55bace4-812e-4b22-9087-4c9cc6ded494",
+        "hardware_node_id": "8f559d8a-b01a-4d91-8c0b-eadec61b8515",
+        "physical_port_ref": "fd762461-a2e0-4638-b9fa-4e13a775680d",
+        "capabilities": {}
+      },
+      {
+        "id": "5c29ea4c-1955-4543-b01b-3ceb82abe1fc",
+        "hardware_node_id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "physical_port_ref": "61b55e45-bd96-44f2-a245-3fa8552a68cc",
+        "capabilities": {}
+      },
+      {
+        "id": "33ff8da0-72f5-4df2-a283-39321e6aca56",
+        "hardware_node_id": "9b7a409a-1858-46f1-bad0-a94888addcbe",
+        "physical_port_ref": "f753664f-72ba-4f2f-a94d-58ff7c8d0c26",
+        "capabilities": {}
+      },
+      {
+        "id": "0d2fafa9-a62c-4bcd-8fdd-b1cddc1406e5",
+        "hardware_node_id": "786fb7fc-795b-4e6f-af0c-2851ed975fb6",
+        "physical_port_ref": "b2a6aeab-8c16-4ea9-843d-c38c66ff9c16",
+        "capabilities": {}
+      }
+    ],
+    "messages": [
+      {
+        "id": "bbada090-144f-46d4-b6f4-244adb168ff5",
+        "cycle_ms": 20,
+        "interface_id": "fd762461-a2e0-4638-b9fa-4e13a775680d"
+      }
+    ],
+    "signals": [
+      {
+        "id": "c98c302a-0812-4e83-9b84-353f4606cab0",
+        "name": "Temperature",
+        "message_id": "bbada090-144f-46d4-b6f4-244adb168ff5",
+        "start_bit": 0,
+        "length_bits": 16,
+        "byte_order": "little_endian",
+        "factor": 0.1,
+        "offset_value": -40,
+        "min_value": -40,
+        "max_value": 215,
+        "unit": "degC"
+      }
+    ],
+    "behaviors": [
+      {
+        "signal_id": "c98c302a-0812-4e83-9b84-353f4606cab0",
+        "behavior_type": "CONSTANT",
+        "parameters": {
+          "value": 100
+        }
+      }
+    ]
+  },
+  "max_events": 20000
+}

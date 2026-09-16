@@ -1,0 +1,746 @@
+{
+  "task_id": "industry60-recheck",
+  "test_id": "S13-A",
+  "run_id": "run-d4f5f46e603841089bb39e4319410385",
+  "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+  "contract_hash": "5d5478f2549422dc17267306bf007b4c4cb065316ecb55fcdc9ae22326ec60da",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T15:14:20.038507+00:00",
+  "finished_at": "2026-09-16T15:14:22.351649+00:00",
+  "context": {
+    "source_hash": "e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n---\n",
+      "# 24. Trace-Analyse-Abnahmematrix\n\n| Bereich | Pflicht |\n|---|---|\n| Session | Source, Timebase, Technology, SimulationRef |\n| Botschaften | Transport Units, Source/Destination, Payload |\n| Sequenz | Teilnehmer, Gateway Hops, Delay |\n| Signale | Decode, Unit, Quality, State |\n| Sync | gemeinsame Zeitbasis aller Views |\n| Routing | Trace ↔ Route ↔ Network |\n| Faults | Fault Event ↔ Auswirkungen |\n| Golden Trace | Diff + First Divergence |\n| Root Cause | Evidence + Causal Chain |\n| Findings | persistent + verlinkt |\n| Performance | Windowing / Pagination / Streaming |\n| Browser | echte Klicks und View-Prüfung |\n| MCP | vollständige Trace Tool Contracts |\n| Completion | kein PASS ohne Evidence |\n\n---\n\n# 25. Gesamtumfang\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Prüfungen\n+\n10 Trace-Analyse-Prüfungen\n=\n60 Prüfungen\n```\n\nVollständige Prüfkette:\n\n```text\nINPUT\n→ AGENT\n→ MODEL\n→ MCP\n→ ENGINEERING EXECUTION\n→ ROUTING\n→ CAPACITY\n→ TIMING\n→ VALIDATION\n→ SIMULATION\n→ UNIVERSAL TRACE\n→ TRACE ANALYSE\n→ ROOT CAUSE\n→ FINDING\n→ COMPLETION\n```\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\python_core\\11_TRACE_CORE.md",
+        "sha256": "9187b6a595047c14ff5cdafb993f517fa98ea2adcf3be2705d0cdad2b53d0f7c"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\simulation\\13_TRACE_INTEGRATION.md",
+        "sha256": "02f012b43f288ffa51b0626314b06e76d6023eb323114935ce577df3ff9cde7d"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\TRACE_IMPORT.md",
+        "sha256": "7141b79237012e2352c5afc0e7ec2b036ca80c8eabc15b609182a2ac5a912e74"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S13-A",
+      "title": "Laborautomatisierung – A",
+      "input": "4 Embedded Controller\n12 Sensoren\n10 Aktoren\n1 Edge Gateway\n\nKommunikation:\n- I2C/SPI lokal\n- CAN-FD zwischen Embedded Controllern\n- Ethernet zum Edge Gateway\n\nDaten:\n- Temperatur\n- Druck\n- Flüssigkeitslevel\n- Position\n- Pumpenstatus\n- Ventilstatus",
+      "source_lines": [
+        596,
+        616
+      ],
+      "source_requirements": "```text\n4 Embedded Controller\n12 Sensoren\n10 Aktoren\n1 Edge Gateway\n\nKommunikation:\n- I2C/SPI lokal\n- CAN-FD zwischen Embedded Controllern\n- Ethernet zum Edge Gateway\n\nDaten:\n- Temperatur\n- Druck\n- Flüssigkeitslevel\n- Position\n- Pumpenstatus\n- Ventilstatus\n```",
+      "difficulty": "medium",
+      "variant": "A",
+      "architecture_variant": "V1",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des korrigierten Kandidatenimages f32703613317"
+      ],
+      "required_model_context": [
+        "Kanonisches Inventar und Modellrevision vor Ausführung"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Wie soll Sensor 1 heißen?"
+      ],
+      "required_actions": [
+        "Modellkontext erfassen",
+        "Originalauftrag an Engineering-Agent senden",
+        "Agentenantwort und Persistenz prüfen",
+        "Ergebnis im Browser prüfen"
+      ],
+      "required_tools": [
+        "NIS HTTP API",
+        "Browser"
+      ],
+      "required_views": [
+        "Engineering"
+      ],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [
+        "Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag"
+      ],
+      "expected_calculations": [
+        "Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt"
+      ],
+      "expected_validations": [
+        "Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert"
+      ],
+      "expected_visualizations": [
+        "Netzwerk- und Routingdarstellung passend zum gespeicherten Modell"
+      ],
+      "completion_criteria": [
+        "Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+        "Vollständige Validierung ohne offene Identifier-Konflikte",
+        "Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+        "Wiederholung verwendet bestehende passende Objekte ohne Duplikate"
+      ],
+      "failure_conditions": [
+        "Fachfremde Automotive-Zuordnung ohne Begründung",
+        "Erfundene bestätigte Hardwarefakten oder Kodierungen",
+        "Unnötige Delegation der Engineering-Ausführung an den Nutzer"
+      ],
+      "metrics": [
+        "Typing Accuracy",
+        "Correct Existing-Object Reuse",
+        "Architecture Validity",
+        "Correct Questions",
+        "Unnecessary Question Count",
+        "Device Classification Accuracy",
+        "Technology Compatibility",
+        "Port / Interface Validity",
+        "Routing Completeness",
+        "Transport Completeness",
+        "Capacity Validation",
+        "Timing Validation",
+        "Blocking Findings",
+        "Completion Accuracy",
+        "Hallucinated Objects",
+        "Duplicate Objects"
+      ],
+      "tags": [
+        "industry-neutral",
+        "pair:S13"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": [
+        {
+          "step_id": "real-agent",
+          "step_label": "Originalauftrag und Persistenz prüfen",
+          "kind": "adapter",
+          "adapter": "industry60-recheck-http",
+          "channel": "mcp",
+          "phase": "engineering_execution",
+          "base_url": "http://127.0.0.1:49546",
+          "project_id": "nis-e2e-industry60-s13-a-61dde37e",
+          "case": {
+            "test_id": "S13-A",
+            "title": "Laborautomatisierung – A",
+            "input": "4 Embedded Controller\n12 Sensoren\n10 Aktoren\n1 Edge Gateway\n\nKommunikation:\n- I2C/SPI lokal\n- CAN-FD zwischen Embedded Controllern\n- Ethernet zum Edge Gateway\n\nDaten:\n- Temperatur\n- Druck\n- Flüssigkeitslevel\n- Position\n- Pumpenstatus\n- Ventilstatus",
+            "source_lines": [
+              596,
+              616
+            ],
+            "source_requirements": "```text\n4 Embedded Controller\n12 Sensoren\n10 Aktoren\n1 Edge Gateway\n\nKommunikation:\n- I2C/SPI lokal\n- CAN-FD zwischen Embedded Controllern\n- Ethernet zum Edge Gateway\n\nDaten:\n- Temperatur\n- Druck\n- Flüssigkeitslevel\n- Position\n- Pumpenstatus\n- Ventilstatus\n```",
+            "difficulty": "medium",
+            "variant": "A",
+            "architecture_variant": "V1",
+            "mutating": true,
+            "browser_required": true,
+            "preconditions": [
+              "Isoliertes leeres Testprojekt auf geprüftem Build"
+            ],
+            "required_model_context": [
+              "Kanonisches Inventar und Modellrevision vor Ausführung"
+            ],
+            "expected_questions": [],
+            "forbidden_questions": [
+              "Wie soll Sensor 1 heißen?"
+            ],
+            "required_actions": [
+              "Modellkontext erfassen",
+              "Originalauftrag an Engineering-Agent senden",
+              "Agentenantwort und Persistenz prüfen",
+              "Ergebnis im Browser prüfen"
+            ],
+            "required_tools": [
+              "NIS HTTP API",
+              "Browser"
+            ],
+            "required_views": [
+              "Engineering"
+            ],
+            "required_skills": [
+              "tool-checker"
+            ],
+            "expected_model_changes": [
+              "Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag"
+            ],
+            "expected_calculations": [
+              "Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt"
+            ],
+            "expected_validations": [
+              "Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert"
+            ],
+            "expected_visualizations": [
+              "Netzwerk- und Routingdarstellung passend zum gespeicherten Modell"
+            ],
+            "completion_criteria": [
+              "Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+              "Vollständige Validierung ohne offene Identifier-Konflikte",
+              "Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+              "Wiederholung verwendet bestehende passende Objekte ohne Duplikate"
+            ],
+            "failure_conditions": [
+              "Fachfremde Automotive-Zuordnung ohne Begründung",
+              "Erfundene bestätigte Hardwarefakten oder Kodierungen",
+              "Unnötige Delegation der Engineering-Ausführung an den Nutzer"
+            ],
+            "metrics": [
+              "Typing Accuracy",
+              "Correct Existing-Object Reuse",
+              "Architecture Validity",
+              "Correct Questions",
+              "Unnecessary Question Count",
+              "Device Classification Accuracy",
+              "Technology Compatibility",
+              "Port / Interface Validity",
+              "Routing Completeness",
+              "Transport Completeness",
+              "Capacity Validation",
+              "Timing Validation",
+              "Blocking Findings",
+              "Completion Accuracy",
+              "Hallucinated Objects",
+              "Duplicate Objects"
+            ],
+            "tags": [
+              "industry-neutral",
+              "pair:S13"
+            ],
+            "decision_mode": "INTERACTIVE",
+            "overall_timeout": 1800
+          }
+        }
+      ],
+      "contract_hash": "5d5478f2549422dc17267306bf007b4c4cb065316ecb55fcdc9ae22326ec60da",
+      "status": "OUTDATED",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "35dbee16039bacbf8ca7a8ad7ca5b05b201d92dc1abf4b85abcb5fece79b6c77"
+  },
+  "evidence": [
+    {
+      "id": "ev-ca905ac0219a46ae9ea4cffd84ef10f7",
+      "path": "evidence\\ev-ca905ac0219a46ae9ea4cffd84ef10f7.json",
+      "sha256": "310672d916f9afb8c91b7d3a21dcdca60885c9e1b8458d2279fffdec5cf69faa",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:20.195885+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\review\\current.json"
+    },
+    {
+      "id": "ev-bc3b230845e44938b7c88cb0fd2e566f",
+      "path": "evidence\\ev-bc3b230845e44938b7c88cb0fd2e566f.json",
+      "sha256": "875bf36ffc76fd986ac714f6ba7a84d75368a074b400347b2278534b67a7cc48",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:20.329151+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\adapter-observations.json"
+    },
+    {
+      "id": "ev-ee5cae67a3e64335a384aef5156a1bc0",
+      "path": "evidence\\ev-ee5cae67a3e64335a384aef5156a1bc0.json",
+      "sha256": "99dfdf336e3bf1d9ea6a23c89dfc8ee362e50b210d79eba942aab3a742f339d5",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:20.468468+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\after.json"
+    },
+    {
+      "id": "ev-0660172c89b24606bbd6d6c53b45df4e",
+      "path": "evidence\\ev-0660172c89b24606bbd6d6c53b45df4e.sse",
+      "sha256": "e1df3343a8632c4195c6c3855f204469fb25abdb93b4d4a5f1c228b9f7de6d91",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:14:20.599344+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\agent.sse"
+    },
+    {
+      "id": "ev-359d1add0bca40b2bc777099f70306e3",
+      "path": "evidence\\ev-359d1add0bca40b2bc777099f70306e3.json",
+      "sha256": "ef514abffeaf645bf422c04d51ad27f6ab06318379f88027a566bd11de187f39",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:20.744658+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\baseline.json"
+    },
+    {
+      "id": "ev-df62a31d216e442c94d73a8ccdb4a22e",
+      "path": "evidence\\ev-df62a31d216e442c94d73a8ccdb4a22e.json",
+      "sha256": "99dfdf336e3bf1d9ea6a23c89dfc8ee362e50b210d79eba942aab3a742f339d5",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:20.885432+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\before.json"
+    },
+    {
+      "id": "ev-941c641b31754b1c8c2bdc9d24369aac",
+      "path": "evidence\\ev-941c641b31754b1c8c2bdc9d24369aac.png",
+      "sha256": "c51f5cf31eb89facd1b0e817e0a84b2f5495907f5b1cb6e66c1031b04f2ce911",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T15:14:21.018955+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\browser.png"
+    },
+    {
+      "id": "ev-b6c2f48274cf485bb57738b9c24d0537",
+      "path": "evidence\\ev-b6c2f48274cf485bb57738b9c24d0537.txt",
+      "sha256": "2af693cfb00b335d8bb1d716beff70be3e314a03972e160e3629512becfbf90a",
+      "kind": "log",
+      "captured_at": "2026-09-16T15:14:21.153546+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\browser.txt"
+    },
+    {
+      "id": "ev-79d15bcd8569468b977ae90dfb719267",
+      "path": "evidence\\ev-79d15bcd8569468b977ae90dfb719267.json",
+      "sha256": "634697205a3d8981792094e19918583ba55efc4fed93d2a389d23926353ecd87",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:21.292940+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\draft.json"
+    },
+    {
+      "id": "ev-7b834a65d6ad4a9c9a92f6bab9920c4c",
+      "path": "evidence\\ev-7b834a65d6ad4a9c9a92f6bab9920c4c.json",
+      "sha256": "7fbc18b71cb7227cb0ae194e695e6a0a938320f5fe55601b2fd92f1435aec9e2",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:21.431628+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\events.json"
+    },
+    {
+      "id": "ev-25c9fbf8ffd1473dad884da432f7a37a",
+      "path": "evidence\\ev-25c9fbf8ffd1473dad884da432f7a37a.json",
+      "sha256": "fb117d64fab2a3828b39257c22df2ea04d866d794d0ee376279614f291ffeca8",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:21.576194+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\history.json"
+    },
+    {
+      "id": "ev-604662125d324437ae33e51dd6ec137b",
+      "path": "evidence\\ev-604662125d324437ae33e51dd6ec137b.json",
+      "sha256": "5c5419e0125fb82e96c325a9f1d6254f84afb9efc6c81ab0ce32cb95cd56981e",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:21.723032+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\job.json"
+    },
+    {
+      "id": "ev-6709d5c3e9964f00ae713e0d178745ea",
+      "path": "evidence\\ev-6709d5c3e9964f00ae713e0d178745ea.json",
+      "sha256": "153c39315463ff5f07d60a0b84b7cb73a1a602c8e05e17d49bbc6d556216df2f",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:21.862936+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\model.json"
+    },
+    {
+      "id": "ev-604c93d078b849e78ec986cb78ba0928",
+      "path": "evidence\\ev-604c93d078b849e78ec986cb78ba0928.json",
+      "sha256": "bd8b51c1a45d3f0e80e7128587bbed19b191c719513ac8c4e5b12b5e40b03595",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:22.000235+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\preflight.json"
+    },
+    {
+      "id": "ev-1158fca40174451f81b2cb0232a97b98",
+      "path": "evidence\\ev-1158fca40174451f81b2cb0232a97b98.json",
+      "sha256": "71fac618339cf1e1fcb919f2d16cf7acf2bfefda2d1463341341b89b62f70864",
+      "kind": "model",
+      "captured_at": "2026-09-16T15:14:22.134081+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry60-recheck\\S13-A\\request.json"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "TC_WRONG_TOOL_SEQUENCE:Modellkontext erfassen",
+    "TC_WRONG_TOOL_SEQUENCE:Originalauftrag an Engineering-Agent senden",
+    "TC_WRONG_TOOL_SEQUENCE:Agentenantwort und Persistenz prüfen",
+    "TC_WRONG_TOOL_SEQUENCE:Ergebnis im Browser prüfen",
+    "REQUIRED_TOOLS:Browser",
+    "REQUIRED_VIEWS:Engineering",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "expected_model_changes:Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag",
+    "expected_calculations:Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt",
+    "expected_validations:Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert",
+    "expected_visualizations:Netzwerk- und Routingdarstellung passend zum gespeicherten Modell",
+    "completion_criteria:Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+    "completion_criteria:Vollständige Validierung ohne offene Identifier-Konflikte",
+    "completion_criteria:Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+    "completion_criteria:Wiederholung verwendet bestehende passende Objekte ohne Duplikate",
+    "UNASSESSED_FAILURE_CONDITION:Fachfremde Automotive-Zuordnung ohne Begründung",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene bestätigte Hardwarefakten oder Kodierungen",
+    "UNASSESSED_FAILURE_CONDITION:Unnötige Delegation der Engineering-Ausführung an den Nutzer",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "TC_WRONG_TOOL_SEQUENCE:Modellkontext erfassen",
+    "TC_WRONG_TOOL_SEQUENCE:Originalauftrag an Engineering-Agent senden",
+    "TC_WRONG_TOOL_SEQUENCE:Agentenantwort und Persistenz prüfen",
+    "TC_WRONG_TOOL_SEQUENCE:Ergebnis im Browser prüfen",
+    "REQUIRED_TOOLS:Browser",
+    "REQUIRED_VIEWS:Engineering",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "expected_model_changes:Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag",
+    "expected_calculations:Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt",
+    "expected_validations:Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert",
+    "expected_visualizations:Netzwerk- und Routingdarstellung passend zum gespeicherten Modell",
+    "completion_criteria:Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+    "completion_criteria:Vollständige Validierung ohne offene Identifier-Konflikte",
+    "completion_criteria:Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+    "completion_criteria:Wiederholung verwendet bestehende passende Objekte ohne Duplikate",
+    "UNASSESSED_FAILURE_CONDITION:Fachfremde Automotive-Zuordnung ohne Begründung",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene bestätigte Hardwarefakten oder Kodierungen",
+    "UNASSESSED_FAILURE_CONDITION:Unnötige Delegation der Engineering-Ausführung an den Nutzer",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-d4f5f46e603841089bb39e4319410385",
+    "actions": [],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-ca905ac0219a46ae9ea4cffd84ef10f7",
+          "ev-bc3b230845e44938b7c88cb0fd2e566f",
+          "ev-ee5cae67a3e64335a384aef5156a1bc0",
+          "ev-0660172c89b24606bbd6d6c53b45df4e",
+          "ev-359d1add0bca40b2bc777099f70306e3",
+          "ev-df62a31d216e442c94d73a8ccdb4a22e",
+          "ev-941c641b31754b1c8c2bdc9d24369aac",
+          "ev-b6c2f48274cf485bb57738b9c24d0537",
+          "ev-79d15bcd8569468b977ae90dfb719267",
+          "ev-7b834a65d6ad4a9c9a92f6bab9920c4c",
+          "ev-25c9fbf8ffd1473dad884da432f7a37a",
+          "ev-604662125d324437ae33e51dd6ec137b",
+          "ev-6709d5c3e9964f00ae713e0d178745ea",
+          "ev-604c93d078b849e78ec986cb78ba0928",
+          "ev-1158fca40174451f81b2cb0232a97b98"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 0,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "workflow": {
+        "active_step": "engineering_model",
+        "artifact_checks": {
+          "engineering_model": {
+            "complete": false,
+            "consistency": {
+              "function_required": 0,
+              "functions_duplicate": 0,
+              "functions_missing": 0,
+              "functions_unexpected": 0,
+              "hardware_interfaces_missing": 0,
+              "messages_overflow": 0
+            },
+            "counts": {
+              "functions": 0,
+              "hardware_interfaces": 0,
+              "hardware_nodes": 0,
+              "interfaces": 0,
+              "messages": 0,
+              "signals": 0
+            },
+            "hardware_by_type": {},
+            "incomplete": {
+              "functions": 0,
+              "interfaces": 0,
+              "messages": 0,
+              "signals": 0,
+              "transmission": 0
+            },
+            "scope_mismatches": {},
+            "status": "EMPTY"
+          },
+          "network_editor": {
+            "complete": false,
+            "counts": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "invalid": {
+              "edges": 0,
+              "nodes": 0
+            },
+            "status": "EMPTY"
+          },
+          "parameters": {
+            "complete": true,
+            "invalid_numeric": [],
+            "required": {},
+            "status": "APPROVED",
+            "uses_defaults": true
+          },
+          "routing": {
+            "complete": false,
+            "counts": {
+              "approved": 0,
+              "conflicts": 0,
+              "gateway_fanout_interfaces": 0,
+              "gateway_fanout_routes": 0,
+              "invalid": 0,
+              "total": 0,
+              "valid": 0
+            },
+            "coverage": {
+              "complete": true,
+              "covered_messages": 0,
+              "covered_signals": 0,
+              "errors": [],
+              "excluded_message_ids": [],
+              "excluded_messages": 0,
+              "excluded_signal_ids": [],
+              "excluded_signals": 0,
+              "message_coverage_percent": 100.0,
+              "missing_message_ids": [],
+              "missing_signal_ids": [],
+              "required_message_ids": [],
+              "required_messages": 0,
+              "required_signal_ids": [],
+              "required_signals": 0,
+              "scope_mode": "ALL",
+              "signal_coverage_percent": 100.0,
+              "total_messages": 0,
+              "total_signals": 0,
+              "transport_exclusions": [],
+              "version": 1
+            },
+            "status": "EMPTY"
+          }
+        },
+        "context": {
+          "active_project": "nis-e2e-industry60-s13-a-61dde37e",
+          "active_workflow_step": "engineering_model",
+          "selected_network": null,
+          "selected_object": null,
+          "selected_route": null,
+          "selected_signal": null,
+          "selected_simulation": null
+        },
+        "edit_tokens": {
+          "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+        },
+        "latest_analyses": {},
+        "parameters": {},
+        "project_id": "nis-e2e-industry60-s13-a-61dde37e",
+        "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+        "simulation_snapshots": [],
+        "stale_reasons": {},
+        "status_vocabulary": [
+          "EMPTY",
+          "IN_PROGRESS",
+          "COMPLETE",
+          "WARNING",
+          "ERROR",
+          "APPROVED",
+          "OUTDATED"
+        ],
+        "statuses": {
+          "capacity_timing": "EMPTY",
+          "data_science_intelligence": "EMPTY",
+          "engineering_model": "EMPTY",
+          "network_editor": "EMPTY",
+          "parameters": "APPROVED",
+          "results_analysis": "EMPTY",
+          "routing": "EMPTY",
+          "simulation": "EMPTY",
+          "validation": "EMPTY"
+        },
+        "steps": [
+          {
+            "id": "engineering_model",
+            "label": "Engineering-Modell",
+            "position": 1,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "routing",
+            "label": "Routing-Tabelle",
+            "position": 2,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "network_editor",
+            "label": "Netzwerk-Editor",
+            "position": 3,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "parameters",
+            "label": "Parameter",
+            "position": 4,
+            "reason": null,
+            "status": "APPROVED",
+            "version": 0
+          },
+          {
+            "id": "capacity_timing",
+            "label": "Capacity & Timing",
+            "position": 5,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "validation",
+            "label": "Validation / Preflight",
+            "position": 6,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "simulation",
+            "label": "Simulation",
+            "position": 7,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "results_analysis",
+            "label": "Results / Analysis",
+            "position": 8,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          },
+          {
+            "id": "data_science_intelligence",
+            "label": "Data Science & Intelligence",
+            "position": 9,
+            "reason": null,
+            "status": "EMPTY",
+            "version": 0
+          }
+        ],
+        "topology": {},
+        "updated_at": "2026-09-16T15:05:13.113614+00:00",
+        "versions": {
+          "capacity_timing": 0,
+          "data_science_intelligence": 0,
+          "engineering_model": 0,
+          "network_editor": 0,
+          "parameters": 0,
+          "results_analysis": 0,
+          "routing": 0,
+          "simulation": 0,
+          "validation": 0
+        }
+      },
+      "scope": "Evidence review; execution baselines and isolated SQL fixture evidence retained separately."
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "review_scope": "Frische Originaleingabe, persistierter Entwurf, Modellzustand und Browserdarstellung geprüft. Weitere Architekturentscheidungen bleiben offen; keine neunstufige E2E-Abnahme.",
+    "evidence_review": true,
+    "not_a_replay": true
+  },
+  "expected": {
+    "expected_model_changes": [
+      "Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag"
+    ],
+    "expected_calculations": [
+      "Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt"
+    ],
+    "expected_validations": [
+      "Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert"
+    ],
+    "expected_visualizations": [
+      "Netzwerk- und Routingdarstellung passend zum gespeicherten Modell"
+    ],
+    "completion_criteria": [
+      "Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+      "Vollständige Validierung ohne offene Identifier-Konflikte",
+      "Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+      "Wiederholung verwendet bestehende passende Objekte ohne Duplikate"
+    ],
+    "required_actions": [
+      "Modellkontext erfassen",
+      "Originalauftrag an Engineering-Agent senden",
+      "Agentenantwort und Persistenz prüfen",
+      "Ergebnis im Browser prüfen"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": [
+      "Wie soll Sensor 1 heißen?"
+    ]
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

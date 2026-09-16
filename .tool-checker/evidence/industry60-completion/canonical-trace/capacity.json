@@ -1,0 +1,1059 @@
+{
+  "diagnostic_snapshot_id": "30310d2c-b077-489c-9bc6-6de9dc1cc7e3",
+  "findings": [
+    {
+      "code": "CAPACITY_SOURCE_NOT_READY",
+      "message": "Netzwerk-Editor ist nicht vollstaendig (OUTDATED).",
+      "recommendation": "Workflow-Schritt Netzwerk-Editor vervollstaendigen.",
+      "severity": "ERROR",
+      "step": "network_editor"
+    },
+    {
+      "code": "CAPACITY_SOURCE_NOT_READY",
+      "message": "Parameter ist nicht vollstaendig (IN_PROGRESS).",
+      "recommendation": "Workflow-Schritt Parameter vervollstaendigen.",
+      "severity": "ERROR",
+      "step": "parameters"
+    },
+    {
+      "code": "COMMUNICATION_UNVERIFIED",
+      "message": "output-bus: Port-/Technologieanalyse bleibt f\u00fcr dieses Protokoll erforderlich.",
+      "object_id": "output-bus",
+      "object_type": "Network",
+      "recommendation": "Kommunikation dimensionieren; Zyklusvarianten und Grenzen im Plan vergleichen.",
+      "severity": "WARNING"
+    },
+    {
+      "code": "SIGNAL_OVERSIZED",
+      "evidence": [
+        {
+          "length_bits": 16,
+          "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+          "message_name": "TemperatureMessage",
+          "required_bits": 12
+        }
+      ],
+      "message": "Temperature: Reservehinweis: 16 Bit belegt, rechnerisch 12 Bit ausreichend. Nur per Proposal verkleinern, wenn Reserven fachlich bestaetigt sind.",
+      "object_id": "77c63b43-e025-4c72-93cd-dbf933f54d2e",
+      "object_type": "Signal",
+      "recommendation": "Signalbreite, Wertebereich, Skalierung und Nachrichtenbelegung pruefen. KI-Vorschlaege duerfen daraus Optimierungen ableiten, aber nicht automatisch freigeben.",
+      "severity": "WARNING"
+    }
+  ],
+  "project_id": "nis-e2e-industry60-canonical-trace-ce66",
+  "provenance": {
+    "assumptions": {
+      "burst_factor": 1.5,
+      "burst_window_ms": 100.0,
+      "clock_drift_ppm": 20.0,
+      "gateway_delay_ms": 2.0,
+      "gateway_queue_delay_ms": 0.0,
+      "generic_models": [],
+      "numeric_acceleration": {
+        "accelerated": false,
+        "backend": "python",
+        "deterministic": true,
+        "device": null,
+        "fallback_reason": "cpu-forced",
+        "item_count": 8,
+        "requested": "cpu"
+      },
+      "peak_factor": 1.15,
+      "protocol_conversion_delay_ms": 0.0,
+      "queue_policy": "FIFO",
+      "retransmission_rate": 0.0,
+      "sync_precision_ms": 0.1,
+      "target_bus_load_percent": 60.0,
+      "thresholds": {
+        "critical": 75.0,
+        "overload": 90.0,
+        "warning": 60.0
+      }
+    },
+    "calculation_model": "TECHNOLOGY_AWARE_CAPACITY_TIMING",
+    "calculation_version": "3.1",
+    "inputs": {
+      "messages": 1,
+      "network_version": 1,
+      "parameters_version": 1,
+      "routing_entries": 1,
+      "signals": 1
+    },
+    "timestamp": "2026-09-16T17:37:26.849529Z"
+  },
+  "results": {
+    "bottlenecks": [
+      {
+        "component": "gateway_processing_ms",
+        "object_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "severity": "INFO",
+        "type": "route_delay",
+        "unit": "ms",
+        "value": 2.0
+      }
+    ],
+    "critical_paths": [
+      {
+        "arbitration_id": 288,
+        "average_load_percent": 0.7875,
+        "bitrate": 500000.0,
+        "bottleneck": {
+          "component": "gateway_processing_ms",
+          "delay_ms": 2.0
+        },
+        "breakdown": {
+          "gateway_processing_ms": 2.0,
+          "gateway_queue_ms": 0.0,
+          "network_transmission_ms": 0.17094,
+          "propagation_ms": 0.0,
+          "protocol_conversion_ms": 0.0,
+          "source_processing_ms": 0.1,
+          "source_queue_ms": 0.000627,
+          "target_processing_ms": 0.1
+        },
+        "burst_load_percent": 1.1812,
+        "burst_window_ms": 100.0,
+        "calculation_model": "CAN_FD_PHASE_ESTIMATE",
+        "calculation_version": "1.0",
+        "consumers": [
+          "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2"
+        ],
+        "cycle_ms": 20.0,
+        "end_to_end_latency_ms": 2.371567,
+        "estimated_jitter_ms": 0.100157,
+        "frame_bits": 117,
+        "freshness_ms": null,
+        "gateway_latency_ms": 2.0,
+        "gateways": [
+          {
+            "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93"
+          }
+        ],
+        "jitter_budget_ms": 5.0,
+        "jitter_status": "UNVERIFIED",
+        "latency_status": "UNVERIFIED",
+        "max_latency_ms": 20.0,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Source through gateway to target",
+        "network_id": "input-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.9056,
+        "period_origin": "user",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "priority": 50,
+        "producer": "77762735-7e93-468e-9e89-f438337e071a",
+        "protocol": "CAN_FD",
+        "queue_policy": "FIFO",
+        "queueing_latency_ms": 0.000627,
+        "release_jitter_ms": 0,
+        "requirement_status": "UNVERIFIED",
+        "response_time_bound_ms": null,
+        "route_code": "RT-D6E3A386",
+        "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "route_segment_count": 2,
+        "status": "NORMAL",
+        "timeout_ms": 50.0,
+        "timing_verified": false,
+        "traffic_load_basis": "PERIODIC_DEMAND",
+        "traffic_profile_errors": [],
+        "traffic_profile_incomplete": false,
+        "transmission_contract": {},
+        "transmission_latency_ms": 0.17094
+      }
+    ],
+    "gateways": [
+      {
+        "current_throughput_bps": 5850.0,
+        "gateway_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+        "maximum_throughput_bps": 100000000.0,
+        "name": "Central",
+        "peak_load_percent": 0.9056,
+        "peak_throughput_bps": 8775.0,
+        "processing_delay_ms": 2.0,
+        "processing_load_percent": 0.0059,
+        "protocol_conversion_delay_ms": 0.0,
+        "queue_delay_ms": 0.0,
+        "queue_load_percent": 0.0088,
+        "route_count": 1,
+        "status": "NORMAL"
+      }
+    ],
+    "messages": [
+      {
+        "average_load_percent": 0.7875,
+        "burst_load_percent": 1.1812,
+        "calculation_model": "CAN_FD_PHASE_ESTIMATE",
+        "cycle_ms": 20.0,
+        "freshness_ms": null,
+        "maximum_jitter_ms": null,
+        "maximum_latency_ms": null,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "name": "TemperatureMessage",
+        "network_id": "input-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.9056,
+        "priority": "NORMAL",
+        "protocol": "CAN_FD",
+        "timeout_ms": null
+      }
+    ],
+    "networks": [
+      {
+        "available_capacity_percent": 99.2125,
+        "average_load_percent": 0.7875,
+        "bitrate": 500000.0,
+        "burst_load_percent": 1.1812,
+        "capacity_margin_percent": 98.8188,
+        "capacity_reserve_percent": 99.2125,
+        "communication_schedule": {
+          "assumptions": [
+            "Vollst\u00e4ndiger modellierter Verkehr",
+            "Keine zus\u00e4tzlichen Busfehler oder Retransmissions-Bursts",
+            "Serialisierte \u00dcbertragungen",
+            "Standard-Identifier; streng nach CAN-ID priorisierte Senderqueues; konservative Rahmendauer inklusive Stuffing und Intermission"
+          ],
+          "model": "CAN_SUFFICIENT_COMPLETION_BOUND_V1",
+          "nominal_load_percent": 0.7875,
+          "reasons": [],
+          "responses": {
+            "23251edc1b73e6098d3f": 0.528
+          },
+          "slots": [],
+          "status": "FEASIBLE_UNDER_ASSUMPTIONS"
+        },
+        "evaluation": {
+          "capacity": {
+            "basis": "PERIODIC_DEMAND",
+            "load_percent": 0.7875,
+            "status": "PASS"
+          },
+          "functional": {
+            "explanation": "Funktionsfrist, Abtastung und Aktuation sind getrennt von der Bus-Antwortgrenze nachzuweisen.",
+            "messages": [
+              {
+                "event_to_response_bound_ms": null,
+                "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+                "name": "TemperatureMessage",
+                "requirement_ms": null,
+                "status": "UNVERIFIED"
+              }
+            ],
+            "status": "UNVERIFIED"
+          },
+          "payload": {
+            "errors": 0,
+            "open": 0,
+            "signal_count": 1,
+            "status": "PASS"
+          },
+          "schedule": {
+            "slot_load_percent": null,
+            "status": "FEASIBLE_UNDER_ASSUMPTIONS"
+          },
+          "stress": {
+            "burst_percent": 1.1812,
+            "peak_percent": 0.9056,
+            "status": "PASS"
+          }
+        },
+        "lin_schedule": {
+          "status": "NOT_APPLICABLE"
+        },
+        "load_basis": "SHARED_BUS",
+        "network_id": "input-bus",
+        "network_name": "input-bus",
+        "peak_load_percent": 0.9056,
+        "port_metrics": [],
+        "protocol": "CAN_FD",
+        "response_time_bound_ms": 0.528,
+        "route_count": 1,
+        "status": "NORMAL",
+        "target_bus_load_percent": 60.0,
+        "target_margin_percent": 58.8188,
+        "target_status": "PASS",
+        "timing_verified": true,
+        "top_contributors": [
+          {
+            "load_percent": 0.7875,
+            "name": "Source through gateway to target",
+            "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3"
+          }
+        ],
+        "worst_end_to_end_latency_ms": 2.371567
+      },
+      {
+        "available_capacity_percent": 99.9664,
+        "average_load_percent": 0.0336,
+        "bitrate": 100000000.0,
+        "burst_load_percent": 0.0504,
+        "capacity_margin_percent": 99.9496,
+        "capacity_reserve_percent": 99.9664,
+        "communication_schedule": {
+          "assumptions": [
+            "Vollst\u00e4ndiger modellierter Verkehr",
+            "Keine zus\u00e4tzlichen Busfehler oder Retransmissions-Bursts",
+            "Serialisierte \u00dcbertragungen"
+          ],
+          "nominal_load_percent": 0.0672,
+          "reasons": [
+            "Port-/Technologieanalyse bleibt f\u00fcr dieses Protokoll erforderlich."
+          ],
+          "responses": {},
+          "slots": [],
+          "status": "UNVERIFIED"
+        },
+        "evaluation": {
+          "capacity": {
+            "basis": "PERIODIC_DEMAND",
+            "load_percent": 0.0336,
+            "status": "PASS"
+          },
+          "functional": {
+            "explanation": "Funktionsfrist, Abtastung und Aktuation sind getrennt von der Bus-Antwortgrenze nachzuweisen.",
+            "messages": [
+              {
+                "event_to_response_bound_ms": null,
+                "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+                "name": "TemperatureMessage",
+                "requirement_ms": null,
+                "status": "UNVERIFIED"
+              }
+            ],
+            "status": "UNVERIFIED"
+          },
+          "payload": {
+            "errors": 0,
+            "open": 0,
+            "signal_count": 1,
+            "status": "PASS"
+          },
+          "schedule": {
+            "slot_load_percent": null,
+            "status": "UNVERIFIED"
+          },
+          "stress": {
+            "burst_percent": 0.0504,
+            "peak_percent": 0.0386,
+            "status": "PASS"
+          }
+        },
+        "lin_schedule": {
+          "status": "NOT_APPLICABLE"
+        },
+        "load_basis": "BUSIEST_FULL_DUPLEX_PORT",
+        "network_id": "output-bus",
+        "network_name": "output-bus",
+        "peak_load_percent": 0.0386,
+        "port_metrics": [
+          {
+            "average_load_percent": 0.0336,
+            "burst_load_percent": 0.0504,
+            "direction": "TX",
+            "hardware_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+            "peak_load_percent": 0.0386,
+            "port_id": "f60ca643-40e6-4d23-adaa-c41a40640290"
+          },
+          {
+            "average_load_percent": 0.0336,
+            "burst_load_percent": 0.0504,
+            "direction": "RX",
+            "hardware_id": "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2",
+            "peak_load_percent": 0.0386,
+            "port_id": "be682f81-6aff-411a-84d6-9adae3a1a15a"
+          }
+        ],
+        "protocol": "ETHERNET",
+        "response_time_bound_ms": null,
+        "route_count": 1,
+        "status": "NORMAL",
+        "target_bus_load_percent": 60.0,
+        "target_margin_percent": 59.9496,
+        "target_status": "PASS",
+        "timing_verified": false,
+        "top_contributors": [
+          {
+            "load_percent": 0.0336,
+            "name": "Source through gateway to target",
+            "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3"
+          }
+        ],
+        "worst_end_to_end_latency_ms": 2.371567
+      }
+    ],
+    "numeric_acceleration": {
+      "accelerated": false,
+      "backend": "python",
+      "deterministic": true,
+      "device": null,
+      "fallback_reason": "cpu-forced",
+      "item_count": 8,
+      "requested": "cpu"
+    },
+    "overview": {
+      "burst_factor": 1.5,
+      "gateway_count": 1,
+      "highest_load_network": "input-bus",
+      "load_status_counts": {
+        "CRITICAL": 0,
+        "NORMAL": 2,
+        "OVERLOAD": 0,
+        "WARNING": 0
+      },
+      "max_burst_load_percent": 1.1812,
+      "max_peak_load_percent": 0.9056,
+      "minimum_capacity_margin_percent": 98.8188,
+      "minimum_capacity_reserve_percent": 99.2125,
+      "network_count": 2,
+      "peak_factor": 1.15,
+      "route_count": 1,
+      "route_segment_count": 2,
+      "signal_count": 1,
+      "status": "ERROR",
+      "target_bus_load_percent": 60.0,
+      "timing_verified": false,
+      "worst_end_to_end_latency_ms": 2.371567
+    },
+    "reliability": {
+      "configured_retransmission_rate": 0.0,
+      "expected_delivery_probability": 1.0,
+      "packet_loss_probability": 0.0,
+      "required_reliability": null,
+      "status": "PASS",
+      "traffic_multiplier": 1.0
+    },
+    "routes": [
+      {
+        "arbitration_id": 288,
+        "average_load_percent": 0.7875,
+        "bitrate": 500000.0,
+        "bottleneck": {
+          "component": "gateway_processing_ms",
+          "delay_ms": 2.0
+        },
+        "breakdown": {
+          "gateway_processing_ms": 2.0,
+          "gateway_queue_ms": 0.0,
+          "network_transmission_ms": 0.17094,
+          "propagation_ms": 0.0,
+          "protocol_conversion_ms": 0.0,
+          "source_processing_ms": 0.1,
+          "source_queue_ms": 0.000627,
+          "target_processing_ms": 0.1
+        },
+        "burst_load_percent": 1.1812,
+        "burst_window_ms": 100.0,
+        "calculation_model": "CAN_FD_PHASE_ESTIMATE",
+        "calculation_version": "1.0",
+        "consumers": [
+          "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2"
+        ],
+        "cycle_ms": 20.0,
+        "end_to_end_latency_ms": 2.371567,
+        "estimated_jitter_ms": 0.100157,
+        "fixed_path_delay_ms": 2.2,
+        "frame_bits": 117,
+        "frame_time_bound_ms": 0.528,
+        "freshness_ms": null,
+        "gateway_latency_ms": 2.0,
+        "gateways": [
+          {
+            "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93"
+          }
+        ],
+        "jitter_budget_ms": 5.0,
+        "jitter_status": "UNVERIFIED",
+        "latency_status": "UNVERIFIED",
+        "load_basis": "SHARED_BUS",
+        "max_latency_ms": 20.0,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Source through gateway to target",
+        "network_id": "input-bus",
+        "network_name": "input-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.9056,
+        "period_origin": "user",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "physical_path_resolved": true,
+        "physical_source": {
+          "address_namespace": "PROJECT",
+          "formatted_logical_node_address": "0x0001",
+          "hardware_interface_id": "12409657-7b44-4539-923e-276297ffe967",
+          "interface_id": "9cece9d1-8c2b-47b5-bcfb-31d336326c32",
+          "logical_node_address": 1,
+          "network_id": "input-bus",
+          "network_name": "input-bus",
+          "node_id": "77762735-7e93-468e-9e89-f438337e071a",
+          "node_name": "source",
+          "physical_port_ref": "9cece9d1-8c2b-47b5-bcfb-31d336326c32",
+          "port_id": "12409657-7b44-4539-923e-276297ffe967",
+          "protocol": "CAN_FD"
+        },
+        "physical_target": {
+          "hardware_interface_id": "d1b8e26e-ec6c-47ef-96aa-b14f9a1f47d7",
+          "interface_id": "4aed8a65-8e95-4512-a71c-9a68fa7d47ae",
+          "network_id": "input-bus",
+          "network_name": "input-bus",
+          "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+          "physical_port_ref": "4aed8a65-8e95-4512-a71c-9a68fa7d47ae",
+          "port_id": "d1b8e26e-ec6c-47ef-96aa-b14f9a1f47d7",
+          "protocol": "CAN_FD"
+        },
+        "priority": 50,
+        "producer": "77762735-7e93-468e-9e89-f438337e071a",
+        "protocol": "CAN_FD",
+        "queue_policy": "FIFO",
+        "queueing_latency_ms": 0.000627,
+        "release_jitter_ms": 0,
+        "requirement_status": "UNVERIFIED",
+        "response_time_bound_ms": null,
+        "route_code": "RT-D6E3A386",
+        "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "route_segment_count": 2,
+        "route_segment_index": 1,
+        "segment_queueing_latency_ms": 0.000625,
+        "segment_transmission_latency_ms": 0.1575,
+        "status": "NORMAL",
+        "timeout_ms": 50.0,
+        "timing_verified": false,
+        "traffic_load_basis": "PERIODIC_DEMAND",
+        "traffic_profile_errors": [],
+        "traffic_profile_incomplete": false,
+        "transmission_contract": {},
+        "transmission_latency_ms": 0.17094
+      },
+      {
+        "arbitration_id": 288,
+        "average_load_percent": 0.0336,
+        "bitrate": 100000000.0,
+        "bottleneck": {
+          "component": "gateway_processing_ms",
+          "delay_ms": 2.0
+        },
+        "breakdown": {
+          "gateway_processing_ms": 2.0,
+          "gateway_queue_ms": 0.0,
+          "network_transmission_ms": 0.17094,
+          "propagation_ms": 0.0,
+          "protocol_conversion_ms": 0.0,
+          "source_processing_ms": 0.1,
+          "source_queue_ms": 0.000627,
+          "target_processing_ms": 0.1
+        },
+        "burst_load_percent": 0.0504,
+        "burst_window_ms": 100.0,
+        "calculation_model": "ETHERNET_WIRE_ESTIMATE",
+        "calculation_version": "1.0",
+        "consumers": [
+          "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2"
+        ],
+        "cycle_ms": 20.0,
+        "end_to_end_latency_ms": 2.371567,
+        "estimated_jitter_ms": 0.100157,
+        "fixed_path_delay_ms": 2.2,
+        "frame_bits": 672,
+        "frame_time_bound_ms": null,
+        "freshness_ms": null,
+        "gateway_latency_ms": 2.0,
+        "gateways": [
+          {
+            "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93"
+          }
+        ],
+        "jitter_budget_ms": 5.0,
+        "jitter_status": "UNVERIFIED",
+        "latency_status": "UNVERIFIED",
+        "load_basis": "BUSIEST_FULL_DUPLEX_PORT",
+        "max_latency_ms": 20.0,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Source through gateway to target",
+        "network_id": "output-bus",
+        "network_name": "output-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.0386,
+        "period_origin": "user",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "physical_path_resolved": true,
+        "physical_source": {
+          "hardware_interface_id": "a50c7b65-ef78-43a1-b96f-ca4f55bba4e8",
+          "interface_id": "f60ca643-40e6-4d23-adaa-c41a40640290",
+          "network_id": "output-bus",
+          "network_name": "output-bus",
+          "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+          "physical_port_ref": "f60ca643-40e6-4d23-adaa-c41a40640290",
+          "port_id": "a50c7b65-ef78-43a1-b96f-ca4f55bba4e8",
+          "protocol": "ETHERNET"
+        },
+        "physical_target": {
+          "address_namespace": "PROJECT",
+          "formatted_logical_node_address": "0x0003",
+          "hardware_interface_id": "5befd4de-2801-49ae-bd76-09401796ce22",
+          "interface_id": "be682f81-6aff-411a-84d6-9adae3a1a15a",
+          "logical_node_address": 3,
+          "network_id": "output-bus",
+          "network_name": "output-bus",
+          "node_id": "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2",
+          "node_name": "target",
+          "physical_port_ref": "be682f81-6aff-411a-84d6-9adae3a1a15a",
+          "port_id": "5befd4de-2801-49ae-bd76-09401796ce22",
+          "protocol": "ETHERNET"
+        },
+        "priority": 50,
+        "producer": "77762735-7e93-468e-9e89-f438337e071a",
+        "protocol": "ETHERNET",
+        "queue_policy": "FIFO",
+        "queueing_latency_ms": 0.000627,
+        "release_jitter_ms": 0,
+        "requirement_status": "UNVERIFIED",
+        "response_time_bound_ms": null,
+        "route_code": "RT-D6E3A386",
+        "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "route_segment_count": 2,
+        "route_segment_index": 2,
+        "segment_queueing_latency_ms": 2e-06,
+        "segment_transmission_latency_ms": 0.01344,
+        "status": "NORMAL",
+        "timeout_ms": 50.0,
+        "timing_verified": false,
+        "traffic_load_basis": "PERIODIC_DEMAND",
+        "traffic_profile_errors": [],
+        "traffic_profile_incomplete": false,
+        "transmission_contract": {},
+        "transmission_latency_ms": 0.17094
+      }
+    ],
+    "signal_quality": {
+      "ai_assist_context": "Signal- und Netzdiagnose fuer KI-gestuetzte Vorschlaege; keine automatische Freigabe.",
+      "issues": [
+        {
+          "byte_order": "little_endian",
+          "checks": [
+            {
+              "code": "SIGNAL_OVERSIZED",
+              "severity": "WARNING",
+              "text": "Reservehinweis: 16 Bit belegt, rechnerisch 12 Bit ausreichend. Nur per Proposal verkleinern, wenn Reserven fachlich bestaetigt sind."
+            }
+          ],
+          "data_type": "unsigned",
+          "factor": 0.1,
+          "length_bits": 16,
+          "max_value": 215.0,
+          "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+          "message_name": "TemperatureMessage",
+          "min_value": -40.0,
+          "name": "Temperature",
+          "occupied_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "offset_value": -40.0,
+          "required_bits": 12,
+          "semantic_type": "NUMERIC",
+          "signal_id": "77c63b43-e025-4c72-93cd-dbf933f54d2e",
+          "start_bit": 0,
+          "status": "WARNING",
+          "unit": "degC"
+        }
+      ],
+      "messages": [
+        {
+          "dlc": 2,
+          "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+          "minimum_dlc": 2,
+          "name": "TemperatureMessage",
+          "occupied_bits": 16,
+          "signal_count": 1
+        }
+      ],
+      "networks": [
+        {
+          "message_count": 1,
+          "network_id": "input-bus",
+          "participant_count": 2,
+          "participants": [
+            {
+              "id": "77762735-7e93-468e-9e89-f438337e071a",
+              "interfaces": [
+                "source-if"
+              ],
+              "name": "source",
+              "roles": [
+                "Sender"
+              ],
+              "system_frame": {
+                "basis": "self",
+                "id": "77762735-7e93-468e-9e89-f438337e071a",
+                "name": "source"
+              },
+              "type": "ECU"
+            },
+            {
+              "id": "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2",
+              "interfaces": [
+                "target-if"
+              ],
+              "name": "target",
+              "roles": [
+                "Teilnehmer"
+              ],
+              "system_frame": {
+                "basis": "self",
+                "id": "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2",
+                "name": "target"
+              },
+              "type": "ECU"
+            }
+          ],
+          "sender_count": 1,
+          "signal_count": 1,
+          "system_frame_count": 2
+        }
+      ],
+      "signals": [
+        {
+          "byte_order": "little_endian",
+          "checks": [
+            {
+              "code": "SIGNAL_OVERSIZED",
+              "severity": "WARNING",
+              "text": "Reservehinweis: 16 Bit belegt, rechnerisch 12 Bit ausreichend. Nur per Proposal verkleinern, wenn Reserven fachlich bestaetigt sind."
+            }
+          ],
+          "data_type": "unsigned",
+          "factor": 0.1,
+          "length_bits": 16,
+          "max_value": 215.0,
+          "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+          "message_name": "TemperatureMessage",
+          "min_value": -40.0,
+          "name": "Temperature",
+          "occupied_bits": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "offset_value": -40.0,
+          "required_bits": 12,
+          "semantic_type": "NUMERIC",
+          "signal_id": "77c63b43-e025-4c72-93cd-dbf933f54d2e",
+          "start_bit": 0,
+          "status": "WARNING",
+          "unit": "degC"
+        }
+      ],
+      "summary": {
+        "errors": 0,
+        "messages": 1,
+        "networks": 1,
+        "open": 0,
+        "participants": 2,
+        "passed": 0,
+        "signals": 1,
+        "warnings": 1
+      },
+      "topology_available": true
+    },
+    "signals": [
+      {
+        "critical": false,
+        "cycle_ms": 20.0,
+        "freshness_ms": null,
+        "load_contribution_percent": 0.7875,
+        "maximum_jitter_ms": null,
+        "maximum_latency_ms": null,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Temperature",
+        "priority": "NORMAL",
+        "signal_id": "77c63b43-e025-4c72-93cd-dbf933f54d2e",
+        "timeout_ms": null
+      }
+    ],
+    "synchronization": {
+      "clock_drift_ppm": 20.0,
+      "expected_maximum_error_ms": 0.46,
+      "max_drift_over_observation_ms": 0.36,
+      "maximum_allowed_error_ms": null,
+      "observation_s": 18.0,
+      "status": "PASS",
+      "sync_precision_ms": 0.1
+    },
+    "thresholds": {
+      "critical": 75.0,
+      "overload": 90.0,
+      "warning": 60.0
+    },
+    "timing": {
+      "deadline_violations": 0,
+      "jitter_violations": 0,
+      "queue_policy": "FIFO",
+      "worst_end_to_end_latency_ms": 2.371567,
+      "worst_estimated_jitter_ms": 0.100157,
+      "worst_queueing_latency_ms": 0.000627
+    },
+    "transmissions": [
+      {
+        "arbitration_id": 288,
+        "average_load_percent": 0.7875,
+        "bitrate": 500000.0,
+        "bottleneck": {
+          "component": "gateway_processing_ms",
+          "delay_ms": 2.0
+        },
+        "breakdown": {
+          "gateway_processing_ms": 2.0,
+          "gateway_queue_ms": 0.0,
+          "network_transmission_ms": 0.17094,
+          "propagation_ms": 0.0,
+          "protocol_conversion_ms": 0.0,
+          "source_processing_ms": 0.1,
+          "source_queue_ms": 0.000627,
+          "target_processing_ms": 0.1
+        },
+        "burst_load_percent": 1.1812,
+        "burst_window_ms": 100.0,
+        "calculation_model": "CAN_FD_PHASE_ESTIMATE",
+        "calculation_version": "1.0",
+        "consumers": [
+          "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2"
+        ],
+        "cycle_ms": 20.0,
+        "end_to_end_latency_ms": 2.371567,
+        "estimated_jitter_ms": 0.100157,
+        "fixed_path_delay_ms": 2.2,
+        "frame_bits": 117,
+        "frame_time_bound_ms": 0.528,
+        "freshness_ms": null,
+        "gateway_latency_ms": 2.0,
+        "gateways": [
+          {
+            "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93"
+          }
+        ],
+        "jitter_budget_ms": 5.0,
+        "jitter_status": "PASS",
+        "latency_status": "PASS",
+        "load_basis": "SHARED_BUS",
+        "max_latency_ms": 20.0,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Source through gateway to target",
+        "network_id": "input-bus",
+        "network_name": "input-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.9056,
+        "period_origin": "user",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "physical_path_resolved": true,
+        "physical_source": {
+          "address_namespace": "PROJECT",
+          "formatted_logical_node_address": "0x0001",
+          "hardware_interface_id": "12409657-7b44-4539-923e-276297ffe967",
+          "interface_id": "9cece9d1-8c2b-47b5-bcfb-31d336326c32",
+          "logical_node_address": 1,
+          "network_id": "input-bus",
+          "network_name": "input-bus",
+          "node_id": "77762735-7e93-468e-9e89-f438337e071a",
+          "node_name": "source",
+          "physical_port_ref": "9cece9d1-8c2b-47b5-bcfb-31d336326c32",
+          "port_id": "12409657-7b44-4539-923e-276297ffe967",
+          "protocol": "CAN_FD"
+        },
+        "physical_target": {
+          "hardware_interface_id": "d1b8e26e-ec6c-47ef-96aa-b14f9a1f47d7",
+          "interface_id": "4aed8a65-8e95-4512-a71c-9a68fa7d47ae",
+          "network_id": "input-bus",
+          "network_name": "input-bus",
+          "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+          "physical_port_ref": "4aed8a65-8e95-4512-a71c-9a68fa7d47ae",
+          "port_id": "d1b8e26e-ec6c-47ef-96aa-b14f9a1f47d7",
+          "protocol": "CAN_FD"
+        },
+        "priority": 50,
+        "producer": "77762735-7e93-468e-9e89-f438337e071a",
+        "protocol": "CAN_FD",
+        "queue_policy": "FIFO",
+        "queueing_latency_ms": 0.000627,
+        "release_jitter_ms": 0,
+        "requirement_status": "PASS",
+        "route_code": "RT-D6E3A386",
+        "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "route_ids": [
+          "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3"
+        ],
+        "route_segment_count": 2,
+        "route_segment_index": 1,
+        "segment_queueing_latency_ms": 0.000625,
+        "segment_transmission_latency_ms": 0.1575,
+        "status": "NORMAL",
+        "stream_id": "23251edc1b73e6098d3f",
+        "timeout_ms": 50.0,
+        "traffic_load_basis": "PERIODIC_DEMAND",
+        "traffic_profile_errors": [],
+        "traffic_profile_incomplete": false,
+        "transmission_contract": {},
+        "transmission_latency_ms": 0.17094
+      },
+      {
+        "arbitration_id": 288,
+        "average_load_percent": 0.0336,
+        "bitrate": 100000000.0,
+        "bottleneck": {
+          "component": "gateway_processing_ms",
+          "delay_ms": 2.0
+        },
+        "breakdown": {
+          "gateway_processing_ms": 2.0,
+          "gateway_queue_ms": 0.0,
+          "network_transmission_ms": 0.17094,
+          "propagation_ms": 0.0,
+          "protocol_conversion_ms": 0.0,
+          "source_processing_ms": 0.1,
+          "source_queue_ms": 0.000627,
+          "target_processing_ms": 0.1
+        },
+        "burst_load_percent": 0.0504,
+        "burst_window_ms": 100.0,
+        "calculation_model": "ETHERNET_WIRE_ESTIMATE",
+        "calculation_version": "1.0",
+        "consumers": [
+          "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2"
+        ],
+        "cycle_ms": 20.0,
+        "end_to_end_latency_ms": 2.371567,
+        "estimated_jitter_ms": 0.100157,
+        "fixed_path_delay_ms": 2.2,
+        "frame_bits": 672,
+        "frame_time_bound_ms": null,
+        "freshness_ms": null,
+        "gateway_latency_ms": 2.0,
+        "gateways": [
+          {
+            "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93"
+          }
+        ],
+        "jitter_budget_ms": 5.0,
+        "jitter_status": "PASS",
+        "latency_status": "PASS",
+        "load_basis": "BUSIEST_FULL_DUPLEX_PORT",
+        "max_latency_ms": 20.0,
+        "message_id": "69c1c660-6150-4d4a-89f6-9b5a94e91310",
+        "message_name": "TemperatureMessage",
+        "name": "Source through gateway to target",
+        "network_id": "output-bus",
+        "network_name": "output-bus",
+        "payload_bytes": 2,
+        "peak_load_percent": 0.0386,
+        "period_origin": "user",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "physical_path_resolved": true,
+        "physical_source": {
+          "hardware_interface_id": "a50c7b65-ef78-43a1-b96f-ca4f55bba4e8",
+          "interface_id": "f60ca643-40e6-4d23-adaa-c41a40640290",
+          "network_id": "output-bus",
+          "network_name": "output-bus",
+          "node_id": "4c960cb2-4ed7-49b4-acaf-528caed62b93",
+          "physical_port_ref": "f60ca643-40e6-4d23-adaa-c41a40640290",
+          "port_id": "a50c7b65-ef78-43a1-b96f-ca4f55bba4e8",
+          "protocol": "ETHERNET"
+        },
+        "physical_target": {
+          "address_namespace": "PROJECT",
+          "formatted_logical_node_address": "0x0003",
+          "hardware_interface_id": "5befd4de-2801-49ae-bd76-09401796ce22",
+          "interface_id": "be682f81-6aff-411a-84d6-9adae3a1a15a",
+          "logical_node_address": 3,
+          "network_id": "output-bus",
+          "network_name": "output-bus",
+          "node_id": "cf5cb1ef-4bd4-4b26-9c49-f9819a952ac2",
+          "node_name": "target",
+          "physical_port_ref": "be682f81-6aff-411a-84d6-9adae3a1a15a",
+          "port_id": "5befd4de-2801-49ae-bd76-09401796ce22",
+          "protocol": "ETHERNET"
+        },
+        "priority": 50,
+        "producer": "77762735-7e93-468e-9e89-f438337e071a",
+        "protocol": "ETHERNET",
+        "queue_policy": "FIFO",
+        "queueing_latency_ms": 0.000627,
+        "release_jitter_ms": 0,
+        "requirement_status": "PASS",
+        "route_code": "RT-D6E3A386",
+        "route_id": "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3",
+        "route_ids": [
+          "bbc99256-b07d-42c0-8ab6-28b34f9ce3c3"
+        ],
+        "route_segment_count": 2,
+        "route_segment_index": 2,
+        "segment_queueing_latency_ms": 2e-06,
+        "segment_transmission_latency_ms": 0.01344,
+        "status": "NORMAL",
+        "stream_id": "65c91b30bf8a2fcc6010",
+        "timeout_ms": 50.0,
+        "traffic_load_basis": "PERIODIC_DEMAND",
+        "traffic_profile_errors": [],
+        "traffic_profile_incomplete": false,
+        "transmission_contract": {},
+        "transmission_latency_ms": 0.17094
+      }
+    ]
+  },
+  "scenario": false,
+  "snapshot_id": "0b7028b6-dc1e-47cb-aff8-3a8a8dcc8a18",
+  "source_versions": {
+    "capacity_timing": 1,
+    "data_science_intelligence": 0,
+    "engineering_model": 18,
+    "network_editor": 1,
+    "parameters": 1,
+    "results_analysis": 0,
+    "routing": 7,
+    "simulation": 0,
+    "validation": 0
+  },
+  "status": "ERROR"
+}

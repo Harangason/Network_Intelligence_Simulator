@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--base-url', default='http://127.0.0.1:13500')
     parser.add_argument('--report', type=Path)
     parser.add_argument('--prompt-file', type=Path, help='Replay a real wizard specification in an isolated project.')
+    parser.add_argument('--project-id', help='Continue a newly created isolated draft, before canonical model generation.')
     parser.add_argument('--initial-can-fd-segments', type=int)
     parser.add_argument('--technology', choices=['can_fd', 'ethernet'], default='can_fd')
     parser.add_argument('--complete-scope', action='store_true', help='Confirm consumers for both ECU status messages, so ALL is executable.')
@@ -32,7 +33,9 @@ def main():
         raise SystemExit('Use run-release-gate.py. HTTP acceptance refuses the product stack.')
     expected_steps = {'engineering_model', 'routing', 'network_editor', 'parameters', 'capacity_timing',
                       'validation', 'simulation', 'results_analysis', 'data_science_intelligence'}
-    project = 'astra-e2e-' + uuid4().hex[:12]
+    if args.project_id and not args.project_id.startswith('nis-e2e-'):
+        raise SystemExit('Existing-project acceptance requires a nis-e2e- test project.')
+    project = args.project_id or 'astra-e2e-' + uuid4().hex[:12]
     print(json.dumps({'phase': 'start', 'project': project}), flush=True)
     run_id = str(uuid4())
     opener = build_opener(HTTPCookieProcessor(CookieJar()))
