@@ -2,7 +2,8 @@
 
 Der Dateidialog in `/trace-analysis` sendet die Datei an `POST /api/trace-import?filename=...`.
 Der Python-Adapter liefert eine reine Analyseprojektion zurück. Er schreibt keine
-Engineering-Objekte, Evidence, TraceLinks oder Dateien in den Projektspeicher.
+Engineering-Objekte, Evidence oder TraceLinks. Originaldatei, Herkunfts-Hash und
+normalisierte Ereignisse werden unter `SAVED/<Projekt>/trace-imports/<Session>/` gespeichert.
 
 | Format | Unterstützte Inhalte |
 | --- | --- |
@@ -18,7 +19,12 @@ Eine Binärendung ohne passende Signatur wird abgelehnt. CAN-Textdateien unterst
 UTF-8 und Windows-1252. Nicht unterstützte Busobjekte sind keine dekodierten Signale.
 DBC-/ARXML-gestützte Decodierung von Rohframes ist noch nicht Teil dieses Imports.
 
-Die Vorschau umfasst maximal 500 MiB Upload und 2.000 Ereignisse. MDF erlaubt maximal
+Der Upload umfasst maximal 500 MiB. Text-, CAN- und Capture-Importe werden vollständig
+normalisiert; der Browser lädt begrenzte Seiten mit maximal 2.000 Ereignissen.
+`GET /api/trace-import/<session_id>` unterstützt Byte-Cursor, Zeitfenster und Textfilter.
+Sessions sind projektgebunden und nach dem Neuladen wieder verfügbar.
+Unterstützte skalare MDF-Kanäle werden in begrenzten Blöcken vollständig gelesen;
+nicht unterstützte strukturierte Kanäle und Busobjekte bleiben ausdrücklich gekennzeichnete Grenzen. MDF erlaubt maximal
 256 Messkanäle; strukturierte Messkanäle werden mit Hinweis ausgelassen. Eine
 gekürzte Vorschau wird ausdrücklich markiert und ist keine vollständige Analyse
 der Quelldatei. Originalzeitstempel bleiben erhalten; MDF-Busframes werden auf die
@@ -63,8 +69,8 @@ Eine Synchronisierung unterschiedlicher Uhren wird nicht durchgeführt.
 
 
 Große Uploads werden in 1-MiB-Blöcken in eine temporäre Datei geschrieben und
-anschließend gelöscht. Capture-Validierung nutzt eine Dateispeicherabbildung;
-CSV, JSONL und JSON werden für die Vorschau fortlaufend gelesen. Die ersten
+nach erfolgreichem Import mit der Session gespeichert; temporäre Uploads werden gelöscht. Capture-Validierung nutzt eine Dateispeicherabbildung;
+CSV, JSONL und JSON werden fortlaufend in den Session-Speicher geschrieben. Die ersten
 2.000 Ereignisse sind keine vollständige Analyse der Datei. Der Assistent kann
 Trace-Dateien bis 500 MiB auswählen und erhält nur einen als Auszug markierten
 Text mit maximal 16.000 Zeichen. Normale Dokumentanhänge bleiben bei 5 MiB.

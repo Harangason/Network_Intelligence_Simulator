@@ -119,13 +119,89 @@ class EngineeringAgent:
         if context.current_workload and not str(context.current_workload).startswith('goal-') and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
+        from ..orchestration.capability_intent import connectivity_question, signal_inspection, finding_assessment
+        assessment = finding_assessment(prompt) if not context.wizard_request else None
+        if assessment:
+            result = await call('inspect_saved_finding', {'code': assessment[0], 'reference': assessment[1]})
+            items = (result.data or {}).get('items', []) if result.success else []
+            for entry in items:
+                finding = entry['finding']
+                event('FINDING', id=entry['finding_id'], title=finding.get('title', assessment[0]), text=finding.get('text', assessment[0]),
+                      context_refs=finding.get('context_refs', []), actions=finding.get('actions', []),
+                      severity=finding.get('severity', 'WARNING'), metadata={**finding.get('metadata', {}), 'decision': entry['decision']})
+            text = ('Der gespeicherte Befund bleibt bestehen. Eine Risikoakzeptanz benötigt deine begründete Entscheidung; Modelländerungen erfordern eine erneute Prüfung.' if items else
+                    'Für dieses Objekt wurde kein passender gespeicherter Befund gefunden. Bitte den Befund mit seiner ID auswählen oder die Modellanalyse ausführen.')
+            status = 'ANSWERED' if items else 'INCOMPLETE'
+            event('RESULT', status=status, text=text, data=result.data)
+            return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        if not context.wizard_request and context.requested_mode == 'ANALYZE_TRACE':
+            jobs = {ref['id'] for ref in context.selected_object_refs if ref.get('object_type') == 'SimulationRun' and ref.get('id')}
+            if len(jobs) != 1:
+                event('RESULT', status='INCOMPLETE', text='Bitte den zu analysierenden Simulationslauf in der Trace-Ansicht auswählen. Eine Lauf-ID wird nicht geraten.')
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            result = await call('analyze_trace_root_cause', {'job_id': next(iter(jobs)), 'goal': prompt[:2000]})
+            data = result.data or {}
+            status = 'ANSWERED' if result.success and result.status.value == 'SUCCESS' else 'INCOMPLETE'
+            text = data.get('conclusion') or 'Die Trace-Analyse ist unvollständig. Bitte die fehlenden Evidenzen prüfen.'
+            for warning in result.warnings:
+                event('FINDING', severity='WARNING', text=warning)
+            if data.get('continuation'):
+                text += ' Weitere Trace-Ereignisse sind vorhanden; die gespeicherte Analyse kann im nächsten Fenster fortgesetzt werden.'
+            event('RESULT', status=status, text=text, data=data)
+            return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        from ..orchestration.capability_intent import communication_question
+        communication = communication_question(prompt) if not context.wizard_request else None
+        if communication:
+            result = await call('inspect_communication_feasibility', {'source_ref': communication[0], 'target_ref': communication[1]})
+            data = result.data or {}
+            for finding in data.get('findings', []):
+                event('FINDING', severity=finding.get('severity', 'WARNING'), text=finding.get('message', str(finding)))
+            decision = data.get('pending_decision') or {}
+            text = ('Die bestehenden Zuordnungen und der Kommunikationsbedarf wurden geprüft. '
+                    'Eine technische Freigabe ist damit noch nicht erteilt. '
+                    + (decision.get('question') or 'Die Werkzeugbefunde enthalten die fehlenden Voraussetzungen und möglichen Verbindungswege.'))
+            status = 'ANSWERED' if result.success else 'INCOMPLETE'
+            event('RESULT', status=status, text=text, data=data)
+            return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        refs = connectivity_question(prompt) if not context.wizard_request else None
+        signal_ref = signal_inspection(prompt) if not context.wizard_request else None
+        if context.requested_mode == 'VALIDATE_SIGNAL' and not context.wizard_request:
+            selected = [ref.get('id') for ref in context.selected_object_refs if ref.get('object_type', ref.get('type', ref.get('kind'))) == 'Signal' and ref.get('id')]
+            signal_ref = signal_ref or (selected[0] if len(selected) == 1 else None)
+            if not signal_ref and re.fullmatch(r'[\w.-]+', prompt.strip()):
+                signal_ref = prompt.strip()
+            if not signal_ref:
+                event('RESULT', status='INCOMPLETE', text='Bitte ein vorhandenes Signal auswählen oder seinen eindeutigen Namen angeben. Es werden keine neuen Signale erzeugt.')
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        if refs or signal_ref:
+            result = await call('inspect_object_connectivity' if refs else 'inspect_signal_definition',
+                                {'references': list(refs)} if refs else {'reference': signal_ref})
+            if result.success and refs:
+                lines = []
+                for item in result.data['items']:
+                    ports = ', '.join(str(p.get('name') or p['id']) for p in item['ports']) or 'keine Anschlüsse zugeordnet'
+                    networks = ', '.join(str(n.get('name') or n['id']) for n in item['networks']) or 'kein Netz zugeordnet'
+                    lines.append(f"{item['object']['name']} → {item['hardware']['name']}: {ports}; Netze: {networks}.")
+                text = '\n'.join(lines)
+            elif result.success:
+                bits = result.data['required_bits']
+                text = f"{result.data['signal']['name']}: erforderliche Bitbreite {bits if bits is not None else 'nicht bestimmbar'}. Die Prüfung bezieht sich auf die gespeicherte Signaldefinition."
+                for check in (result.data.get('validation') or {}).get('checks', []):
+                    if check.get('severity') in {'ERROR', 'WARNING', 'OPEN'}:
+                        event('FINDING', severity=check['severity'], text=check.get('text', check.get('message', check.get('code', 'Prüfbefund'))))
+            else:
+                text = 'Die angefragten Objekte konnten nicht eindeutig geprüft werden. Die Befunde zeigen die offenen Angaben.'
+            status = 'ANSWERED' if result.success else 'INCOMPLETE'
+            event('RESULT', status=status, text=text, data=result.data)
+            return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
         from ..orchestration.project_intake import is_project_request
         draft_amendment = bool(context.project_draft_id) and bool(re.search(
             r'\b(?:ergänz\w*|zusätzlich|stattdessen|controller namens|raspberry[ -]?pi|'
             r'\d+\s+(?:ventile?n?|sensoren)|(?:zwei|drei|vier|fünf)\s+(?:ventile?n?|sensoren))\b', prompt, re.I))
         if re.match(r'\s*(?:zeige|liste|warum|wie|was|welche|show|list|why|how|status|lösch|entfern)\b', prompt, re.I):
             draft_amendment = False
-        if not context.wizard_request and not answer and (is_project_request(prompt) or draft_amendment):
+        from ..orchestration.capability_intent import connection_request
+        if not context.wizard_request and not answer and not connection_request(prompt) and (is_project_request(prompt) or draft_amendment or context.requested_mode == 'CREATE_ARCHITECTURE'):
             arguments = {'requirement': prompt, 'operation_id': context.input_envelope.input_id,
                          'revision': context.project_draft_revision}
             if self.reasoner:
@@ -741,7 +817,7 @@ class EngineeringAgent:
 
         # Signal counts are interpreted and checked by the existing Python
         # workload planner behind MCP, not by the language model.
-        signal_request = bool(re.search(r"\d+.*signal|signal.*\d+", prompt, re.I)) and not re.search(r"\b(welche|zeige|liste|list|inspect)\b", prompt, re.I)
+        signal_request = bool(re.search(r"\d+.*signal|signal.*\d+", prompt, re.I)) and requests_model_change(prompt)
         if context.current_workload or (signal_request and not confirmed_wizard):
             workload_id = context.current_workload
             if not workload_id:
@@ -811,10 +887,21 @@ class EngineeringAgent:
             change_requested = requests_model_change(prompt)
             evidence_retries = 0
             failed_calls = {}
+            completed_calls = set()
+            stalled = False
+            deadline = asyncio.get_running_loop().time() + 180
             status, text = "INCOMPLETE", "Bitte beschreibe das gewünschte Engineering-Ergebnis oder wähle ein Objekt aus."
             if self.reasoner:
                 for step in range(self.max_steps):
-                    decision = await self.reasoner.next(messages, context, allowed)
+                    remaining = deadline - asyncio.get_running_loop().time()
+                    if remaining <= 0:
+                        text = 'Das Analysezeitbudget ist erreicht. Die bisherigen Werkzeugbefunde bleiben erhalten; bitte den Prüfbereich eingrenzen.'
+                        break
+                    try:
+                        decision = await asyncio.wait_for(self.reasoner.next(messages, context, allowed), timeout=min(45, remaining))
+                    except TimeoutError:
+                        text = 'Die Agentenplanung hat ihr Zeitlimit erreicht. Die bisherigen Werkzeugbefunde bleiben erhalten; die Analyse ist unvollständig.'
+                        break
                     if not decision.get("calls"):
                         reviewed_changes = bool(proposals) and all(p.get('status') == 'VALIDATED' and p.get('changes') for p in proposals.values())
                         if change_requested and not proposals and evidence_retries < min(2, self.max_repairs) and step + 1 < self.max_steps:
@@ -852,6 +939,11 @@ class EngineeringAgent:
                         name, arguments = tool_call["name"], tool_call["arguments"]
                         import json
                         signature = json.dumps([name, arguments], sort_keys=True, ensure_ascii=False)
+                        if signature in completed_calls:
+                            stalled = True
+                            text = 'Die Analyse wurde ohne weiteren Fortschritt angehalten. Ein identischer Werkzeugaufruf wurde bereits bearbeitet. Bitte die offenen Befunde prüfen oder ein neues Trace-Zeitfenster wählen.'
+                            break
+                        completed_calls.add(signature)
                         if name not in {tool["name"] for tool in allowed}:
                             result = ToolResult(success=False,status="PERMISSION_DENIED",findings=[{"message":"Werkzeug nicht verfügbar."}])
                         elif failed_calls.get(signature, 0) >= max(1, self.max_repairs):
@@ -894,6 +986,8 @@ class EngineeringAgent:
                         text=f"Arbeitsschritt {step+1} geprüft.",
                         workload=reasoning_workload_progress(step, self.max_steps),
                     )
+                    if stalled:
+                        break
             else:
                 result = await call("inspect_findings")
                 event("RESULT", text="Projektprüfung", data=result.data)

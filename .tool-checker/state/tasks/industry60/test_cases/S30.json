@@ -1,0 +1,58 @@
+{
+  "test_id": "S30",
+  "title": "Vollständiger Chat-Agent/MCP/Browser-Systemtest",
+  "input": "Verbinde ParkAssist mit DriverAssistance, prüfe die Kommunikation in einer kurzen Simulation und analysiere auftretende Timingprobleme.",
+  "source_lines": [
+    2193,
+    2318
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration / System E2E  \n**Prüfbereich:** gesamter Agentenpfad\n\n### Ziel\n\nEin einzelner Test prüft die vollständige Kette:\n\n```text\nWizard\n→ Chat Agent\n→ Typing\n→ Model Context\n→ Decision\n→ MCP\n→ Core Mutation\n→ Routing\n→ Capacity\n→ Timing\n→ Validation\n→ Simulation\n→ Trace\n→ Finding\n→ Visualization\n→ Completion\n```\n\n### Start\n\nBrowser klickt:\n\n```text\nArchitektur erstellen\n```\n\nPrompt:\n\n```text\nVerbinde ParkAssist mit DriverAssistance,\nprüfe die Kommunikation in einer kurzen Simulation\nund analysiere auftretende Timingprobleme.\n```\n\n### Erwartete Ausführung\n\n1. Agent liest bestehendes Modell.\n2. Agent erkennt fehlenden CAN-Port oder vorhandene Alternative.\n3. Nur notwendige Engineering-Frage wird gestellt.\n4. Browser beantwortet die Frage.\n5. Agent setzt denselben Workload fort.\n6. MCP erzeugt/ändert Port, Interface, Network und Route.\n7. Capacity wird neu berechnet.\n8. Timing wird neu berechnet.\n9. Preflight läuft.\n10. Simulation wird gestartet.\n11. Universal Trace wird erzeugt.\n12. Trace wird analysiert.\n13. Findings werden erzeugt.\n14. Ergebnis wird visualisiert.\n15. Completion Evaluator entscheidet.\n\n### MCP-Vertragsprüfung\n\nFür jeden Tool Call prüfen:\n\n```text\nregistered tool\nvalid input schema\nvalid output schema\nactor / permission\nproject scope\ncanonical IDs\nstructured ToolResult\nevidence / trace_id\n```\n\n### Browser Skill\n\nBrowser prüft reale:\n\n```text\nClicks\nChoices\nProgress\nViews\nResult\n```\n\n### Progress\n\nTool Checker zeigt nur deterministischen Fortschritt:\n\n```text\n0–99 %\n```\n\n100 % erst bei erfolgreicher Completion.\n\nFür die Fortschrittsanzeige:\n\n```text\nllm_calls_progress = 0\n```\n\n### Audit\n\nPrüfe:\n\n```text\nuser decision\nMCP mutations\nmodel revision\nrouting change\nsimulation run\nfinding\ncompletion\n```\n\nsind nachvollziehbar.\n\n### PASS\n\nNur wenn die gesamte Kette technisch und fachlich geschlossen ist.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Teststack des veröffentlichten Images"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Erwartete Ausführung:\n1. Agent liest bestehendes Modell.\n2. Agent erkennt fehlenden CAN-Port oder vorhandene Alternative.\n3. Nur notwendige Engineering-Frage wird gestellt.\n4. Browser beantwortet die Frage.\n5. Agent setzt denselben Workload fort.\n6. MCP erzeugt/ändert Port, Interface, Network und Route.\n7. Capacity wird neu berechnet.\n8. Timing wird neu berechnet.\n9. Preflight läuft.\n10. Simulation wird gestartet.\n11. Universal Trace wird erzeugt.\n12. Trace wird analysiert.\n13. Findings werden erzeugt.\n14. Ergebnis wird visualisiert.\n15. Completion Evaluator entscheidet.",
+    "MCP-Vertragsprüfung:\nFür jeden Tool Call prüfen:\n\n```text\nregistered tool\nvalid input schema\nvalid output schema\nactor / permission\nproject scope\ncanonical IDs\nstructured ToolResult\nevidence / trace_id\n```",
+    "Browser Skill:\nBrowser prüft reale:\n\n```text\nClicks\nChoices\nProgress\nViews\nResult\n```",
+    "Progress:\nTool Checker zeigt nur deterministischen Fortschritt:\n\n```text\n0–99 %\n```\n\n100 % erst bei erfolgreicher Completion.\n\nFür die Fortschrittsanzeige:\n\n```text\nllm_calls_progress = 0\n```",
+    "Audit:\nPrüfe:\n\n```text\nuser decision\nMCP mutations\nmodel revision\nrouting change\nsimulation run\nfinding\ncompletion\n```\n\nsind nachvollziehbar.",
+    "PASS:\nNur wenn die gesamte Kette technisch und fachlich geschlossen ist.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "8762b2dbd04ea422362b139b211d3783484cd38e4540fc1d7871f89990ff0317",
+  "status": "FAILED",
+  "last_run": "run-29c08dbcc5064e2586e6920891197698"
+}

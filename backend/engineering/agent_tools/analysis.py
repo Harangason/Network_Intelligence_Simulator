@@ -40,7 +40,11 @@ def window(arguments: dict) -> dict:
     offset = int(arguments.get("offset", 0))
     selected, total = [], 0
     for event in events:
-        if start <= float(event.get("time_s", 0)) <= end:
+        from ..reasoning.correlation import event_time
+        # Missing time is not t=0. A time-window operation needs a valid
+        # timestamp; callers must supply the missing evidence explicitly.
+        timestamp = event_time(event)
+        if start <= timestamp <= end:
             if offset <= total < offset+limit:
                 selected.append(event)
             total += 1

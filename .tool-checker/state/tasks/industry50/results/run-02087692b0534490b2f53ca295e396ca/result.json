@@ -1,0 +1,1538 @@
+{
+  "task_id": "industry50",
+  "test_id": "S21",
+  "run_id": "run-02087692b0534490b2f53ca295e396ca",
+  "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+  "contract_hash": "979654615d8bcf620668e02fdc122fd3bd7fa3868f21e4e44aed862258bc2b34",
+  "status": "FAILED",
+  "started_at": "2026-09-16T10:51:48.124206+00:00",
+  "finished_at": "2026-09-16T10:53:03.535677+00:00",
+  "context": {
+    "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S21",
+      "title": "Fähigkeiten/Wizards: Einstieg „Architektur erstellen“",
+      "input": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+      "source_lines": [
+        1500,
+        1586
+      ],
+      "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat Agent + Wizard + Browser + Skill Routing\n\n### Testeingabe\n\nBrowser öffnet die Agent-Startfläche:\n\n```text\nFähigkeiten und Wizards\n\nWoran möchtest du arbeiten?\n\n[Architektur erstellen]\n[Signal prüfen]\n[Trace analysieren]\n[Finding bewerten]\n```\n\nBrowser klickt:\n\n```text\nArchitektur erstellen\n```\n\nDanach Eingabe:\n\n```text\nIch habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.\n```\n\n### Erwartetes Agentenverhalten\n\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.\n\n### MCP-Prüfung\n\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```\n\n### Browser-Prüfung\n\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.\n\n### PASS\n\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des veröffentlichten Images"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Erwartetes Agentenverhalten:\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.",
+        "MCP-Prüfung:\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```",
+        "Browser-Prüfung:\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.",
+        "PASS:\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---"
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "contract_hash": "979654615d8bcf620668e02fdc122fd3bd7fa3868f21e4e44aed862258bc2b34",
+      "status": "READY",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "a8505ae85346cab0f15c46801d552e568e9b701395c13628afdced97d220e98d"
+  },
+  "evidence": [
+    {
+      "id": "ev-8d31230399534c12ac0792cbf812d3a3",
+      "path": "evidence\\ev-8d31230399534c12ac0792cbf812d3a3.json",
+      "sha256": "ad32f14d0033e4f98e1fe5ea0e605e8fc030baeb6c02a33df533451da7914f12",
+      "kind": "model",
+      "captured_at": "2026-09-16T10:52:52.410496+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\after.json"
+    },
+    {
+      "id": "ev-bc51ab450685486ca227487c60ee3e30",
+      "path": "evidence\\ev-bc51ab450685486ca227487c60ee3e30.json",
+      "sha256": "14cd062532a19699b1ebe94e43be61698f888c3d25a67893cf0ecbc0e8c5ec7a",
+      "kind": "model",
+      "captured_at": "2026-09-16T10:52:52.547875+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\before.json"
+    },
+    {
+      "id": "ev-c93bce83ed57436b8c045311a2052e57",
+      "path": "evidence\\ev-c93bce83ed57436b8c045311a2052e57.png",
+      "sha256": "5a191e8ee7a416c6b36dc80d40031d346e55409ccec23a19a910b8762c67bdee",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T10:52:52.699418+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\browser.png"
+    },
+    {
+      "id": "ev-78b80524b1a14ce795141ba1dbc62732",
+      "path": "evidence\\ev-78b80524b1a14ce795141ba1dbc62732.txt",
+      "sha256": "466741916053cbe4e3f7694b0fba689894939978fc0b82f5d6dcef7fac00ba38",
+      "kind": "log",
+      "captured_at": "2026-09-16T10:52:52.840875+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\browser.txt"
+    },
+    {
+      "id": "ev-4d4a7b6e3dc046468c09267caa8c652d",
+      "path": "evidence\\ev-4d4a7b6e3dc046468c09267caa8c652d.png",
+      "sha256": "13cfb3e87bc2033c3ab45223988629d8c6ff8004857a321afbef7cbd639dc6df",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T10:52:52.977402+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\entry.png"
+    },
+    {
+      "id": "ev-51bc775816c649a69c9405b54325fa03",
+      "path": "evidence\\ev-51bc775816c649a69c9405b54325fa03.txt",
+      "sha256": "7e7f1a2750e7700584fb515fda76e2b4ea2cb18ae2ceea91aee2c4b39be78f6d",
+      "kind": "log",
+      "captured_at": "2026-09-16T10:52:53.120401+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\entry.txt"
+    },
+    {
+      "id": "ev-d25d1671ef984f868f1a1c83ec1a426c",
+      "path": "evidence\\ev-d25d1671ef984f868f1a1c83ec1a426c.json",
+      "sha256": "579ac1f3ad31c1db7e905eadff10bf034019b627d3df0161043bf1e19f9edee1",
+      "kind": "model",
+      "captured_at": "2026-09-16T10:53:02.626854+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\after.json"
+    },
+    {
+      "id": "ev-888563b9470047c5bc21d28dd20f586e",
+      "path": "evidence\\ev-888563b9470047c5bc21d28dd20f586e.json",
+      "sha256": "14cd062532a19699b1ebe94e43be61698f888c3d25a67893cf0ecbc0e8c5ec7a",
+      "kind": "model",
+      "captured_at": "2026-09-16T10:53:02.770391+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\before.json"
+    },
+    {
+      "id": "ev-cfebed6716d64059b5a218476ca02077",
+      "path": "evidence\\ev-cfebed6716d64059b5a218476ca02077.png",
+      "sha256": "5a191e8ee7a416c6b36dc80d40031d346e55409ccec23a19a910b8762c67bdee",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T10:53:02.914614+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\browser.png"
+    },
+    {
+      "id": "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+      "path": "evidence\\ev-40602ff2e7bd4dcf9014df5c79c742a7.txt",
+      "sha256": "466741916053cbe4e3f7694b0fba689894939978fc0b82f5d6dcef7fac00ba38",
+      "kind": "log",
+      "captured_at": "2026-09-16T10:53:03.055145+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\browser.txt"
+    },
+    {
+      "id": "ev-ba1234e84edc4ad499a82e64474d8d54",
+      "path": "evidence\\ev-ba1234e84edc4ad499a82e64474d8d54.png",
+      "sha256": "13cfb3e87bc2033c3ab45223988629d8c6ff8004857a321afbef7cbd639dc6df",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T10:53:03.194590+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\entry.png"
+    },
+    {
+      "id": "ev-031487f59079408ca4a1027a9b74b73b",
+      "path": "evidence\\ev-031487f59079408ca4a1027a9b74b73b.txt",
+      "sha256": "7e7f1a2750e7700584fb515fda76e2b4ea2cb18ae2ceea91aee2c4b39be78f6d",
+      "kind": "log",
+      "captured_at": "2026-09-16T10:53:03.335343+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S21\\entry.txt"
+    }
+  ],
+  "findings": [
+    {
+      "code": "TC_OBSERVED_CONTRACT_DEVIATION",
+      "category": "AGENT_BUG",
+      "blocking": true,
+      "detail": "Einstieg und gespeicherter Entwurf funktionieren im selben Chat. Acht Geräte, aber kein CREATE_ARCHITECTURE-Goal/Execution Plan nachgewiesen; generische Aktoren erhalten unpassend Ventilbefehl-Auswahl. Offene Fachentscheidungen bleiben unbeantwortet.",
+      "evidence": [
+        "ev-d25d1671ef984f868f1a1c83ec1a426c",
+        "ev-888563b9470047c5bc21d28dd20f586e",
+        "ev-cfebed6716d64059b5a218476ca02077",
+        "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+        "ev-ba1234e84edc4ad499a82e64474d8d54",
+        "ev-031487f59079408ca4a1027a9b74b73b"
+      ]
+    }
+  ],
+  "failures": [
+    "TC_OBSERVED_CONTRACT_DEVIATION"
+  ],
+  "warnings": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Erwartetes Agentenverhalten:\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.",
+    "completion_criteria:MCP-Prüfung:\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```",
+    "completion_criteria:Browser-Prüfung:\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.",
+    "completion_criteria:PASS:\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Erwartetes Agentenverhalten:\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.",
+    "completion_criteria:MCP-Prüfung:\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```",
+    "completion_criteria:Browser-Prüfung:\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.",
+    "completion_criteria:PASS:\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-02087692b0534490b2f53ca295e396ca",
+    "actions": [
+      {
+        "name": "Originalfall ausführen und Nachweise sichern",
+        "status": "PASSED",
+        "evidence": [
+          "ev-d25d1671ef984f868f1a1c83ec1a426c",
+          "ev-888563b9470047c5bc21d28dd20f586e",
+          "ev-cfebed6716d64059b5a218476ca02077",
+          "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+          "ev-ba1234e84edc4ad499a82e64474d8d54",
+          "ev-031487f59079408ca4a1027a9b74b73b"
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-d25d1671ef984f868f1a1c83ec1a426c",
+          "ev-888563b9470047c5bc21d28dd20f586e",
+          "ev-cfebed6716d64059b5a218476ca02077",
+          "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+          "ev-ba1234e84edc4ad499a82e64474d8d54",
+          "ev-031487f59079408ca4a1027a9b74b73b"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "workflow": {
+        "http_status": 200,
+        "data": {
+          "active_step": "engineering_model",
+          "artifact_checks": {
+            "engineering_model": {
+              "complete": false,
+              "consistency": {
+                "function_required": 0,
+                "functions_duplicate": 0,
+                "functions_missing": 0,
+                "functions_unexpected": 0,
+                "hardware_interfaces_missing": 0,
+                "messages_overflow": 0
+              },
+              "counts": {
+                "functions": 0,
+                "hardware_interfaces": 0,
+                "hardware_nodes": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0
+              },
+              "hardware_by_type": {},
+              "incomplete": {
+                "functions": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0,
+                "transmission": 0
+              },
+              "scope_mismatches": {},
+              "status": "EMPTY"
+            },
+            "network_editor": {
+              "complete": false,
+              "counts": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "invalid": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "status": "EMPTY"
+            },
+            "parameters": {
+              "complete": true,
+              "invalid_numeric": [],
+              "required": {},
+              "status": "APPROVED",
+              "uses_defaults": true
+            },
+            "routing": {
+              "complete": false,
+              "counts": {
+                "approved": 0,
+                "conflicts": 0,
+                "gateway_fanout_interfaces": 0,
+                "gateway_fanout_routes": 0,
+                "invalid": 0,
+                "total": 0,
+                "valid": 0
+              },
+              "coverage": {
+                "complete": true,
+                "covered_messages": 0,
+                "covered_signals": 0,
+                "errors": [],
+                "excluded_message_ids": [],
+                "excluded_messages": 0,
+                "excluded_signal_ids": [],
+                "excluded_signals": 0,
+                "message_coverage_percent": 100.0,
+                "missing_message_ids": [],
+                "missing_signal_ids": [],
+                "required_message_ids": [],
+                "required_messages": 0,
+                "required_signal_ids": [],
+                "required_signals": 0,
+                "scope_mode": "ALL",
+                "signal_coverage_percent": 100.0,
+                "total_messages": 0,
+                "total_signals": 0,
+                "transport_exclusions": [],
+                "version": 1
+              },
+              "status": "EMPTY"
+            }
+          },
+          "context": {
+            "active_project": "nis-e2e-industry50-s21",
+            "active_workflow_step": "engineering_model",
+            "selected_network": null,
+            "selected_object": null,
+            "selected_route": null,
+            "selected_signal": null,
+            "selected_simulation": null
+          },
+          "edit_tokens": {
+            "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          "latest_analyses": {},
+          "parameters": {},
+          "project_id": "nis-e2e-industry50-s21",
+          "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+          "simulation_snapshots": [],
+          "stale_reasons": {},
+          "status_vocabulary": [
+            "EMPTY",
+            "IN_PROGRESS",
+            "COMPLETE",
+            "WARNING",
+            "ERROR",
+            "APPROVED",
+            "OUTDATED"
+          ],
+          "statuses": {
+            "capacity_timing": "EMPTY",
+            "data_science_intelligence": "EMPTY",
+            "engineering_model": "EMPTY",
+            "network_editor": "EMPTY",
+            "parameters": "APPROVED",
+            "results_analysis": "EMPTY",
+            "routing": "EMPTY",
+            "simulation": "EMPTY",
+            "validation": "EMPTY"
+          },
+          "steps": [
+            {
+              "id": "engineering_model",
+              "label": "Engineering-Modell",
+              "position": 1,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "routing",
+              "label": "Routing-Tabelle",
+              "position": 2,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "network_editor",
+              "label": "Netzwerk-Editor",
+              "position": 3,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "parameters",
+              "label": "Parameter",
+              "position": 4,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 0
+            },
+            {
+              "id": "capacity_timing",
+              "label": "Capacity & Timing",
+              "position": 5,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "validation",
+              "label": "Validation / Preflight",
+              "position": 6,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "simulation",
+              "label": "Simulation",
+              "position": 7,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "results_analysis",
+              "label": "Results / Analysis",
+              "position": 8,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "data_science_intelligence",
+              "label": "Data Science & Intelligence",
+              "position": 9,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            }
+          ],
+          "topology": {},
+          "updated_at": "2026-09-16T10:51:55.247574+00:00",
+          "versions": {
+            "capacity_timing": 0,
+            "data_science_intelligence": 0,
+            "engineering_model": 0,
+            "network_editor": 0,
+            "parameters": 0,
+            "results_analysis": 0,
+            "routing": 0,
+            "simulation": 0,
+            "validation": 0
+          }
+        }
+      },
+      "history": {
+        "http_status": 200,
+        "data": {
+          "messages": [
+            {
+              "id": "pzq4EvqwyGfykbKU",
+              "parts": [
+                {
+                  "text": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "0ad6de1c-f058-4c03-b056-6a03e3a5cfa9",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T10:52:10.624729+00:00",
+                    "findings": [],
+                    "id": "c59d59a9-e1a9-4b8f-9675-a1613697c261",
+                    "metadata": {
+                      "input_ref": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                      "run_id": "a75e112b-67f9-45f0-9329-aa081f08a0ad"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "f5963854-e25c-4f03-8b7b-0011ad54c458",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [
+                      {
+                        "capability_id": "project",
+                        "description": "Gespeicherten Entwurf ergänzen und prüfen",
+                        "draft_id": "4f5926f7-854a-4607-a584-0d34a7dc8c45",
+                        "execution_mode": "REVIEWABLE_PROPOSAL",
+                        "label": "Im Wizard bearbeiten",
+                        "navigation_executes": false,
+                        "project_id": "nis-e2e-industry50-s21",
+                        "requirement": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+                        "type": "CAPABILITY"
+                      }
+                    ],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T10:52:30.709937+00:00",
+                    "findings": [],
+                    "id": "dac547c3-5aa3-4d26-a962-349a1b19979d",
+                    "metadata": {
+                      "detail_id": "dac547c3-5aa3-4d26-a962-349a1b19979d",
+                      "draft_revision": 1,
+                      "input_ref": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                      "planning_mode": "guided_intake",
+                      "project_draft_id": "4f5926f7-854a-4607-a584-0d34a7dc8c45",
+                      "run_id": "a75e112b-67f9-45f0-9329-aa081f08a0ad"
+                    },
+                    "options": [],
+                    "outputs": [
+                      {
+                        "affected_objects": [],
+                        "content": "Daraus lässt sich ein Projektentwurf entwickeln. Deine Vorgabe:\n\nIch habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.\n\nDiese Angaben werden als editierbarer Projektentwurf gespeichert. Geräte und Funktionen, ihre Zuordnung, Verbindungen und Zeitverhalten werden geprüft. Bitte ergänze insbesondere noch ungenannte Stückzahlen, vorhandene Gerätetypen und das gewünschte Verhalten der Steuerung. Unbekannte Anschlüsse sind keine bestätigten Verbindungen.\n\nDu kannst den gespeicherten Entwurf hier ergänzen und einen Modellvorschlag erstellen. Die Übernahme ins Modell erfordert die Prüfung und Freigabe des konkreten Vorschlags. Bisher wurde kein Modell angelegt oder verändert.\n\nGespeicherter Entwurf, Revision 1. Offene Angaben:\n- RaspberryPi: Physische Anschlüsse angeben.\n- Sensor1: Controller zuordnen.\n- Sensor1: Typ und Aufgabe angeben.\n- Sensor1: Physische Anschlüsse angeben.\n- Sensor2: Controller zuordnen.\n- Sensor2: Typ und Aufgabe angeben.\n- Sensor2: Physische Anschlüsse angeben.\n- Sensor3: Controller zuordnen.\n- Sensor3: Typ und Aufgabe angeben.\n- Sensor3: Physische Anschlüsse angeben.\n- Aktor1: Controller zuordnen.\n- Aktor1: Typ und Aufgabe angeben.\n- Aktor1: Physische Anschlüsse angeben.\n- Aktor1: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition).\n- Aktor2: Controller zuordnen.\n- Aktor2: Typ und Aufgabe angeben.\n- Aktor2: Physische Anschlüsse angeben.\n- Aktor2: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition).\n- Aktor3: Controller zuordnen.\n- Aktor3: Typ und Aufgabe angeben.",
+                        "evidence_refs": [
+                          "1c03ade3-29ad-4a81-9cd6-d865c6894f80"
+                        ],
+                        "output_id": "3799376b-4a0b-459d-a888-b101bf5f3ea8",
+                        "output_type": "CHAT",
+                        "project_ref": "nis-e2e-industry50-s21",
+                        "provenance": {
+                          "capability_version": "1",
+                          "input_ref": "5c19e8df-2c06-4af5-acca-b5522fabf541"
+                        },
+                        "run_ref": "a75e112b-67f9-45f0-9329-aa081f08a0ad",
+                        "schema_version": 1,
+                        "status": "INCOMPLETE",
+                        "validation": {}
+                      }
+                    ],
+                    "progress": [],
+                    "severity": "",
+                    "status": "INCOMPLETE",
+                    "text": "Daraus lässt sich ein Projektentwurf entwickeln. Deine Vorgabe:\n\nIch habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.\n\nDiese Angaben werden als editierbarer Projektentwurf gespeichert. Geräte und Funktionen, ihre Zuordnung, Verbindungen und Zeitverhalten werden geprüft. Bitte ergänze insbesondere noch ungenannte Stückzahlen, vorhandene Gerätetypen und das gewünschte Verhalten der Steuerung. Unbekannte Anschlüsse sind keine bestätigten Verbindungen.\n\nDu kannst den gespeicherten Entwurf hier ergänzen und einen Modellvorschlag erstellen. Die Übernahme ins Modell erfordert die Prüfung und Freigabe des konkreten Vorschlags. Bisher wurde kein Modell ang",
+                    "title": "",
+                    "type": "RESULT"
+                  },
+                  "id": "19f19c36-cf2d-4ad5-8234-062b5a4dac63",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s21",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering",
+                      "answered_questions": {},
+                      "assumptions": [],
+                      "current_requirement": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+                      "current_workload": null,
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": null,
+                          "text": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur."
+                        },
+                        "files": [],
+                        "input_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                        "input_type": "TEXT",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s21",
+                        "request_revision": null,
+                        "run_ref": "a75e112b-67f9-45f0-9329-aa081f08a0ad",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T10:52:10.108486+00:00",
+                        "user_intent": "ENGINEERING_REQUEST"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": "4f5926f7-854a-4607-a584-0d34a7dc8c45",
+                      "project_draft_revision": 1,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "INCOMPLETE",
+                    "type": "CONTEXT"
+                  },
+                  "id": "3bc854a7-9b5e-42a9-850f-1266a3399e7c",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            }
+          ],
+          "updatedAt": 1789555951571
+        }
+      },
+      "conversation": {
+        "http_status": 200,
+        "data": {
+          "affected_objects": [],
+          "data": {
+            "active_proposal": null,
+            "active_workload": null,
+            "answered_questions": {},
+            "conversation_id": "nis-e2e-industry50-s21",
+            "current_question": null,
+            "current_requirement": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+            "decisions": {},
+            "durable_response_ids": [
+              "dac547c3-5aa3-4d26-a962-349a1b19979d"
+            ],
+            "engineering_draft": {
+              "allow_simulation_defaults": false,
+              "declared_counts": {
+                "ACTUATOR": 4,
+                "CONTROLLER": 1,
+                "SENSOR": 3
+              },
+              "devices": [
+                {
+                  "id": "a24f839b0f4fb34ce640",
+                  "known_kind": true,
+                  "name": "RaspberryPi",
+                  "owner_id": null,
+                  "role": "CONTROLLER",
+                  "source": "Raspberry Pi in der Nutzeranforderung",
+                  "source_known_kind": true,
+                  "technology": null
+                },
+                {
+                  "id": "c79355773d9d51963415",
+                  "known_kind": false,
+                  "name": "Sensor1",
+                  "owner_id": null,
+                  "role": "SENSOR",
+                  "source": "3 Sensoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "be070cd611450dd34561",
+                  "known_kind": false,
+                  "name": "Sensor2",
+                  "owner_id": null,
+                  "role": "SENSOR",
+                  "source": "3 Sensoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "3fac732d84065947669d",
+                  "known_kind": false,
+                  "name": "Sensor3",
+                  "owner_id": null,
+                  "role": "SENSOR",
+                  "source": "3 Sensoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "120f1263a5d6f82d85fd",
+                  "known_kind": false,
+                  "name": "Aktor1",
+                  "owner_id": null,
+                  "role": "ACTUATOR",
+                  "source": "4 Aktoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "2951c29ad7e791e1c5dd",
+                  "known_kind": false,
+                  "name": "Aktor2",
+                  "owner_id": null,
+                  "role": "ACTUATOR",
+                  "source": "4 Aktoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "a58e450ce89e174b452e",
+                  "known_kind": false,
+                  "name": "Aktor3",
+                  "owner_id": null,
+                  "role": "ACTUATOR",
+                  "source": "4 Aktoren",
+                  "source_known_kind": false,
+                  "technology": null
+                },
+                {
+                  "id": "ea356baf703112b01c30",
+                  "known_kind": false,
+                  "name": "Aktor4",
+                  "owner_id": null,
+                  "role": "ACTUATOR",
+                  "source": "4 Aktoren",
+                  "source_known_kind": false,
+                  "technology": null
+                }
+              ],
+              "draft_id": "4f5926f7-854a-4607-a584-0d34a7dc8c45",
+              "edits": [
+                {
+                  "action": "CREATE",
+                  "devices": [],
+                  "industry": null,
+                  "operation_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                  "remove_device_ids": [],
+                  "revision": 1
+                }
+              ],
+              "industry": "embedded_systems",
+              "issues": [
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "RaspberryPi",
+                  "device_id": "a24f839b0f4fb34ce640",
+                  "id": "d792d0a8c48deb4b455d",
+                  "message": "RaspberryPi: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Sensor1",
+                  "device_id": "c79355773d9d51963415",
+                  "id": "977fe2a9d3f60a8f9a77",
+                  "message": "Sensor1: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Sensor1",
+                  "device_id": "c79355773d9d51963415",
+                  "id": "0cd5bc7720c6195fb9bd",
+                  "message": "Sensor1: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Sensor1",
+                  "device_id": "c79355773d9d51963415",
+                  "id": "04b8bae405972a4171bf",
+                  "message": "Sensor1: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Sensor2",
+                  "device_id": "be070cd611450dd34561",
+                  "id": "b0d85f1df6cafc8cd630",
+                  "message": "Sensor2: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Sensor2",
+                  "device_id": "be070cd611450dd34561",
+                  "id": "6bc8fa685bf701f0747d",
+                  "message": "Sensor2: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Sensor2",
+                  "device_id": "be070cd611450dd34561",
+                  "id": "3d48c7237794edb365de",
+                  "message": "Sensor2: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Sensor3",
+                  "device_id": "3fac732d84065947669d",
+                  "id": "a250e7cf6814426ab3cc",
+                  "message": "Sensor3: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Sensor3",
+                  "device_id": "3fac732d84065947669d",
+                  "id": "ad916c51b9b297988c20",
+                  "message": "Sensor3: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Sensor3",
+                  "device_id": "3fac732d84065947669d",
+                  "id": "389811c7430d364a9a58",
+                  "message": "Sensor3: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Aktor1",
+                  "device_id": "120f1263a5d6f82d85fd",
+                  "id": "f1935d88301cdde5090e",
+                  "message": "Aktor1: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Aktor1",
+                  "device_id": "120f1263a5d6f82d85fd",
+                  "id": "4b76ce5b6d99658c47fa",
+                  "message": "Aktor1: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Aktor1",
+                  "device_id": "120f1263a5d6f82d85fd",
+                  "id": "c4709e095478e9276346",
+                  "message": "Aktor1: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "SPECIFY_COMMAND",
+                  "code": "ACTUATOR_COMMAND_REQUIRED",
+                  "device": "Aktor1",
+                  "device_id": "120f1263a5d6f82d85fd",
+                  "id": "eb4ad6333416ec95343d",
+                  "message": "Aktor1: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Aktor2",
+                  "device_id": "2951c29ad7e791e1c5dd",
+                  "id": "c0b8620fb2ff79b193e2",
+                  "message": "Aktor2: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Aktor2",
+                  "device_id": "2951c29ad7e791e1c5dd",
+                  "id": "a6042233757c351ef11e",
+                  "message": "Aktor2: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Aktor2",
+                  "device_id": "2951c29ad7e791e1c5dd",
+                  "id": "53fdc4365197d50b9b7c",
+                  "message": "Aktor2: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "SPECIFY_COMMAND",
+                  "code": "ACTUATOR_COMMAND_REQUIRED",
+                  "device": "Aktor2",
+                  "device_id": "2951c29ad7e791e1c5dd",
+                  "id": "e73db2cbd43d2b6e9b4c",
+                  "message": "Aktor2: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Aktor3",
+                  "device_id": "a58e450ce89e174b452e",
+                  "id": "6a4196d772fb47671667",
+                  "message": "Aktor3: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Aktor3",
+                  "device_id": "a58e450ce89e174b452e",
+                  "id": "1ca64f9675a57776e1ee",
+                  "message": "Aktor3: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Aktor3",
+                  "device_id": "a58e450ce89e174b452e",
+                  "id": "3fc0a3c189e1b26c6bd5",
+                  "message": "Aktor3: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "SPECIFY_COMMAND",
+                  "code": "ACTUATOR_COMMAND_REQUIRED",
+                  "device": "Aktor3",
+                  "device_id": "a58e450ce89e174b452e",
+                  "id": "3dfea7e8f86d7caed725",
+                  "message": "Aktor3: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                },
+                {
+                  "action": "ASSIGN_CONTROLLER",
+                  "code": "OWNER_REQUIRED",
+                  "device": "Aktor4",
+                  "device_id": "ea356baf703112b01c30",
+                  "id": "c030756c21e4cbced850",
+                  "message": "Aktor4: Controller zuordnen."
+                },
+                {
+                  "action": "SPECIFY_DEVICE",
+                  "code": "DEVICE_KIND_REQUIRED",
+                  "device": "Aktor4",
+                  "device_id": "ea356baf703112b01c30",
+                  "id": "0b27bb720b6103d54b80",
+                  "message": "Aktor4: Typ und Aufgabe angeben."
+                },
+                {
+                  "action": "SPECIFY_CONNECTION",
+                  "code": "CONNECTION_REQUIRED",
+                  "device": "Aktor4",
+                  "device_id": "ea356baf703112b01c30",
+                  "id": "8dd404da45facc966e09",
+                  "message": "Aktor4: Physische Anschlüsse angeben."
+                },
+                {
+                  "action": "SPECIFY_COMMAND",
+                  "code": "ACTUATOR_COMMAND_REQUIRED",
+                  "device": "Aktor4",
+                  "device_id": "ea356baf703112b01c30",
+                  "id": "496d02069d837c7ef708",
+                  "message": "Aktor4: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                }
+              ],
+              "mode": "REAL_PROJECT",
+              "original_requirement": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+              "project_id": "nis-e2e-industry50-s21",
+              "removed_device_ids": [],
+              "revision": 1,
+              "schema_version": 2,
+              "sources": [
+                {
+                  "operation_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                  "source": "USER",
+                  "text": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur."
+                }
+              ],
+              "status": "NEEDS_DECISION"
+            },
+            "engineering_draft_operations": {
+              "5c19e8df-2c06-4af5-acca-b5522fabf541": {
+                "result": {
+                  "draft": {
+                    "allow_simulation_defaults": false,
+                    "declared_counts": {
+                      "ACTUATOR": 4,
+                      "CONTROLLER": 1,
+                      "SENSOR": 3
+                    },
+                    "devices": [
+                      {
+                        "id": "a24f839b0f4fb34ce640",
+                        "known_kind": true,
+                        "name": "RaspberryPi",
+                        "owner_id": null,
+                        "role": "CONTROLLER",
+                        "source": "Raspberry Pi in der Nutzeranforderung",
+                        "source_known_kind": true,
+                        "technology": null
+                      },
+                      {
+                        "id": "c79355773d9d51963415",
+                        "known_kind": false,
+                        "name": "Sensor1",
+                        "owner_id": null,
+                        "role": "SENSOR",
+                        "source": "3 Sensoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "be070cd611450dd34561",
+                        "known_kind": false,
+                        "name": "Sensor2",
+                        "owner_id": null,
+                        "role": "SENSOR",
+                        "source": "3 Sensoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "3fac732d84065947669d",
+                        "known_kind": false,
+                        "name": "Sensor3",
+                        "owner_id": null,
+                        "role": "SENSOR",
+                        "source": "3 Sensoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "120f1263a5d6f82d85fd",
+                        "known_kind": false,
+                        "name": "Aktor1",
+                        "owner_id": null,
+                        "role": "ACTUATOR",
+                        "source": "4 Aktoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "2951c29ad7e791e1c5dd",
+                        "known_kind": false,
+                        "name": "Aktor2",
+                        "owner_id": null,
+                        "role": "ACTUATOR",
+                        "source": "4 Aktoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "a58e450ce89e174b452e",
+                        "known_kind": false,
+                        "name": "Aktor3",
+                        "owner_id": null,
+                        "role": "ACTUATOR",
+                        "source": "4 Aktoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      },
+                      {
+                        "id": "ea356baf703112b01c30",
+                        "known_kind": false,
+                        "name": "Aktor4",
+                        "owner_id": null,
+                        "role": "ACTUATOR",
+                        "source": "4 Aktoren",
+                        "source_known_kind": false,
+                        "technology": null
+                      }
+                    ],
+                    "draft_id": "4f5926f7-854a-4607-a584-0d34a7dc8c45",
+                    "edits": [
+                      {
+                        "action": "CREATE",
+                        "devices": [],
+                        "industry": null,
+                        "operation_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                        "remove_device_ids": [],
+                        "revision": 1
+                      }
+                    ],
+                    "industry": "embedded_systems",
+                    "issues": [
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "RaspberryPi",
+                        "device_id": "a24f839b0f4fb34ce640",
+                        "id": "d792d0a8c48deb4b455d",
+                        "message": "RaspberryPi: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Sensor1",
+                        "device_id": "c79355773d9d51963415",
+                        "id": "977fe2a9d3f60a8f9a77",
+                        "message": "Sensor1: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Sensor1",
+                        "device_id": "c79355773d9d51963415",
+                        "id": "0cd5bc7720c6195fb9bd",
+                        "message": "Sensor1: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Sensor1",
+                        "device_id": "c79355773d9d51963415",
+                        "id": "04b8bae405972a4171bf",
+                        "message": "Sensor1: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Sensor2",
+                        "device_id": "be070cd611450dd34561",
+                        "id": "b0d85f1df6cafc8cd630",
+                        "message": "Sensor2: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Sensor2",
+                        "device_id": "be070cd611450dd34561",
+                        "id": "6bc8fa685bf701f0747d",
+                        "message": "Sensor2: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Sensor2",
+                        "device_id": "be070cd611450dd34561",
+                        "id": "3d48c7237794edb365de",
+                        "message": "Sensor2: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Sensor3",
+                        "device_id": "3fac732d84065947669d",
+                        "id": "a250e7cf6814426ab3cc",
+                        "message": "Sensor3: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Sensor3",
+                        "device_id": "3fac732d84065947669d",
+                        "id": "ad916c51b9b297988c20",
+                        "message": "Sensor3: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Sensor3",
+                        "device_id": "3fac732d84065947669d",
+                        "id": "389811c7430d364a9a58",
+                        "message": "Sensor3: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Aktor1",
+                        "device_id": "120f1263a5d6f82d85fd",
+                        "id": "f1935d88301cdde5090e",
+                        "message": "Aktor1: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Aktor1",
+                        "device_id": "120f1263a5d6f82d85fd",
+                        "id": "4b76ce5b6d99658c47fa",
+                        "message": "Aktor1: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Aktor1",
+                        "device_id": "120f1263a5d6f82d85fd",
+                        "id": "c4709e095478e9276346",
+                        "message": "Aktor1: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "SPECIFY_COMMAND",
+                        "code": "ACTUATOR_COMMAND_REQUIRED",
+                        "device": "Aktor1",
+                        "device_id": "120f1263a5d6f82d85fd",
+                        "id": "eb4ad6333416ec95343d",
+                        "message": "Aktor1: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Aktor2",
+                        "device_id": "2951c29ad7e791e1c5dd",
+                        "id": "c0b8620fb2ff79b193e2",
+                        "message": "Aktor2: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Aktor2",
+                        "device_id": "2951c29ad7e791e1c5dd",
+                        "id": "a6042233757c351ef11e",
+                        "message": "Aktor2: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Aktor2",
+                        "device_id": "2951c29ad7e791e1c5dd",
+                        "id": "53fdc4365197d50b9b7c",
+                        "message": "Aktor2: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "SPECIFY_COMMAND",
+                        "code": "ACTUATOR_COMMAND_REQUIRED",
+                        "device": "Aktor2",
+                        "device_id": "2951c29ad7e791e1c5dd",
+                        "id": "e73db2cbd43d2b6e9b4c",
+                        "message": "Aktor2: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Aktor3",
+                        "device_id": "a58e450ce89e174b452e",
+                        "id": "6a4196d772fb47671667",
+                        "message": "Aktor3: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Aktor3",
+                        "device_id": "a58e450ce89e174b452e",
+                        "id": "1ca64f9675a57776e1ee",
+                        "message": "Aktor3: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Aktor3",
+                        "device_id": "a58e450ce89e174b452e",
+                        "id": "3fc0a3c189e1b26c6bd5",
+                        "message": "Aktor3: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "SPECIFY_COMMAND",
+                        "code": "ACTUATOR_COMMAND_REQUIRED",
+                        "device": "Aktor3",
+                        "device_id": "a58e450ce89e174b452e",
+                        "id": "3dfea7e8f86d7caed725",
+                        "message": "Aktor3: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                      },
+                      {
+                        "action": "ASSIGN_CONTROLLER",
+                        "code": "OWNER_REQUIRED",
+                        "device": "Aktor4",
+                        "device_id": "ea356baf703112b01c30",
+                        "id": "c030756c21e4cbced850",
+                        "message": "Aktor4: Controller zuordnen."
+                      },
+                      {
+                        "action": "SPECIFY_DEVICE",
+                        "code": "DEVICE_KIND_REQUIRED",
+                        "device": "Aktor4",
+                        "device_id": "ea356baf703112b01c30",
+                        "id": "0b27bb720b6103d54b80",
+                        "message": "Aktor4: Typ und Aufgabe angeben."
+                      },
+                      {
+                        "action": "SPECIFY_CONNECTION",
+                        "code": "CONNECTION_REQUIRED",
+                        "device": "Aktor4",
+                        "device_id": "ea356baf703112b01c30",
+                        "id": "8dd404da45facc966e09",
+                        "message": "Aktor4: Physische Anschlüsse angeben."
+                      },
+                      {
+                        "action": "SPECIFY_COMMAND",
+                        "code": "ACTUATOR_COMMAND_REQUIRED",
+                        "device": "Aktor4",
+                        "device_id": "ea356baf703112b01c30",
+                        "id": "496d02069d837c7ef708",
+                        "message": "Aktor4: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition)."
+                      }
+                    ],
+                    "mode": "REAL_PROJECT",
+                    "original_requirement": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur.",
+                    "project_id": "nis-e2e-industry50-s21",
+                    "removed_device_ids": [],
+                    "revision": 1,
+                    "schema_version": 2,
+                    "sources": [
+                      {
+                        "operation_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                        "source": "USER",
+                        "text": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur."
+                      }
+                    ],
+                    "status": "NEEDS_DECISION"
+                  },
+                  "receipt": {
+                    "accepted": true,
+                    "operation_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+                    "revision": 1
+                  }
+                },
+                "signature": "a80b99d8d0bceb8f2ef08fa8870a23f538fece64c4124a3e3295e616b42f583b"
+              }
+            },
+            "input_envelope": {
+              "active_view": "/studio/engineering",
+              "constraints": [],
+              "content": {
+                "decision": null,
+                "text": "Ich habe 3 Sensoren, 4 Aktoren und einen Raspberry Pi.\nErzeuge eine sinnvolle lokale Architektur."
+              },
+              "files": [],
+              "input_id": "5c19e8df-2c06-4af5-acca-b5522fabf541",
+              "input_type": "TEXT",
+              "operation_ref": null,
+              "project_ref": "nis-e2e-industry50-s21",
+              "request_revision": null,
+              "run_ref": "a75e112b-67f9-45f0-9329-aa081f08a0ad",
+              "schema_version": 1,
+              "selected_objects": [],
+              "source": "conversation",
+              "timestamp": "2026-09-16T10:52:10.108486+00:00",
+              "user_intent": "ENGINEERING_REQUEST"
+            },
+            "lease_until": "2026-09-16T10:57:10.108394+00:00",
+            "pending_approvals": [],
+            "questions": {},
+            "run_id": null,
+            "selected_context": {
+              "active_view": "/studio/engineering",
+              "selected_object_refs": []
+            },
+            "ui_updated_at": 1789555951571
+          },
+          "evidence": [],
+          "evidence_refs": [],
+          "findings": [],
+          "next_actions": [],
+          "status": "SUCCESS",
+          "success": true,
+          "time_range": null,
+          "trace_id": "0a2c16b0-2d3e-4978-83e8-f6aa7039ab1b",
+          "validation_status": "NOT_EVALUATED",
+          "warnings": []
+        }
+      },
+      "hardware": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "hardware_interfaces": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "functions": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "messages": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "signals": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "routing": {
+        "http_status": 400,
+        "data": {
+          "error": "Unbekannte Ressource: 'workflow'"
+        }
+      },
+      "resources": {
+        "http_status": 200,
+        "data": {
+          "model_revision": "fe6f3ac4e88b892718cedb3b5e66a392a130d989857805e1c8265401ef324912",
+          "ports": [],
+          "resources": {
+            "CommunicationCapability": [],
+            "CommunicationController": [],
+            "NetworkConnection": [],
+            "PhysicalPort": []
+          }
+        }
+      },
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 0,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "captured_at": "2026-09-16T10:53:02.488152+00:00"
+    },
+    "claimed_complete": false,
+    "findings": [
+      {
+        "code": "TC_OBSERVED_CONTRACT_DEVIATION",
+        "category": "AGENT_BUG",
+        "blocking": true,
+        "detail": "Einstieg und gespeicherter Entwurf funktionieren im selben Chat. Acht Geräte, aber kein CREATE_ARCHITECTURE-Goal/Execution Plan nachgewiesen; generische Aktoren erhalten unpassend Ventilbefehl-Auswahl. Offene Fachentscheidungen bleiben unbeantwortet.",
+        "evidence": [
+          "ev-d25d1671ef984f868f1a1c83ec1a426c",
+          "ev-888563b9470047c5bc21d28dd20f586e",
+          "ev-cfebed6716d64059b5a218476ca02077",
+          "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+          "ev-ba1234e84edc4ad499a82e64474d8d54",
+          "ev-031487f59079408ca4a1027a9b74b73b"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Observed scoped result",
+        "status": "PASSED",
+        "evidence": [
+          "ev-d25d1671ef984f868f1a1c83ec1a426c",
+          "ev-888563b9470047c5bc21d28dd20f586e",
+          "ev-cfebed6716d64059b5a218476ca02077",
+          "ev-40602ff2e7bd4dcf9014df5c79c742a7",
+          "ev-ba1234e84edc4ad499a82e64474d8d54",
+          "ev-031487f59079408ca4a1027a9b74b73b"
+        ],
+        "detail": "Einstieg und gespeicherter Entwurf funktionieren im selben Chat. Acht Geräte, aber kein CREATE_ARCHITECTURE-Goal/Execution Plan nachgewiesen; generische Aktoren erhalten unpassend Ventilbefehl-Auswahl. Offene Fachentscheidungen bleiben unbeantwortet."
+      }
+    ]
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Erwartetes Agentenverhalten:\n```text\nWizard Selection\n→ AgentInputEnvelope\n→ Goal Type = CREATE_ARCHITECTURE\n→ Typing\n→ Model Context\n→ Architecture Reasoning\n→ benötigte Entscheidungen\n→ Execution Plan\n```\n\nDer Agent darf nicht nur einen anderen Editor öffnen.",
+      "MCP-Prüfung:\nMindestens prüfen:\n\n```text\nCapability Discovery\nmodel.inspect\nhardware.inspect\nfunction.inspect\nhardware.interface.inspect\nnetwork.inspect\n```\n\nWenn noch kein Modell existiert:\n\n```text\ncontrolled proposal / create path\n```",
+      "Browser-Prüfung:\nBrowser Skill prüft:\n\n1. Wizard-Button ist sichtbar.\n2. Klick aktiviert den richtigen Modus.\n3. Prompt wird korrekt übernommen.\n4. Agent beginnt erst nach dem vorgesehenen Start/Senden.\n5. Ergebnis erscheint im selben Chat-Kontext.\n6. Keine unnötige Navigation zu einem anderen Werkzeug als Ersatz für die Ausführung.",
+      "PASS:\n```text\nWizard → Agent Goal → MCP Context → Engineering Execution\n```\n\nist durchgängig nachgewiesen.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

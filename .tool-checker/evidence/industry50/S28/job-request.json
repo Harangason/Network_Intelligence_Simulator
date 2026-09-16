@@ -1,0 +1,455 @@
+{
+  "project_id": "nis-e2e-industry50-s28",
+  "config": {
+    "name": "approved_routing_table",
+    "industry": "generic",
+    "duration_s": 15,
+    "cycle_ms": 20.0,
+    "node_count": 3,
+    "networks": [
+      {
+        "id": "input-bus",
+        "name": "input-bus",
+        "technology": "can_fd",
+        "protocol": "CAN_FD",
+        "bitrate": 500000,
+        "data_bitrate": 2000000,
+        "cycle_ms": 20.0,
+        "nodes": [
+          "gateway",
+          "source"
+        ]
+      },
+      {
+        "id": "output-bus",
+        "name": "output-bus",
+        "technology": "lin",
+        "protocol": "LIN",
+        "bitrate": 19200,
+        "cycle_ms": 20.0,
+        "nodes": [
+          "gateway",
+          "target"
+        ]
+      }
+    ],
+    "parameters": {
+      "technology": "can_fd",
+      "bitrate": 500000,
+      "jitter_ms": 1,
+      "gateway_delay_ms": 2,
+      "networks": [
+        {
+          "id": "input-bus",
+          "bitrate": 500000,
+          "data_bitrate": 2000000
+        },
+        {
+          "id": "output-bus",
+          "bitrate": 19200
+        }
+      ]
+    },
+    "hardware": {
+      "devices": [
+        {
+          "id": "gateway",
+          "name": "gateway",
+          "type": "Gateway",
+          "logical_node_address": 2,
+          "formatted_logical_node_address": "0x0002",
+          "address_namespace": "PROJECT",
+          "interfaces": [
+            {
+              "id": "gateway-in",
+              "name": "gateway-in",
+              "technology": "can_fd",
+              "network": "input-bus",
+              "physical_port_ref": "gateway:gateway-in"
+            },
+            {
+              "id": "gateway-out",
+              "name": "gateway-out",
+              "technology": "lin",
+              "network": "output-bus",
+              "physical_port_ref": "gateway:gateway-out"
+            }
+          ]
+        },
+        {
+          "id": "source",
+          "name": "source",
+          "type": "ECU",
+          "logical_node_address": 1,
+          "formatted_logical_node_address": "0x0001",
+          "address_namespace": "PROJECT",
+          "interfaces": [
+            {
+              "id": "source-if",
+              "name": "source-if",
+              "technology": "can_fd",
+              "network": "input-bus",
+              "physical_port_ref": "source:source-if"
+            }
+          ]
+        },
+        {
+          "id": "target",
+          "name": "target",
+          "type": "ECU",
+          "logical_node_address": 3,
+          "formatted_logical_node_address": "0x0003",
+          "address_namespace": "PROJECT",
+          "interfaces": [
+            {
+              "id": "target-if",
+              "name": "target-if",
+              "technology": "lin",
+              "network": "output-bus",
+              "physical_port_ref": "target:target-if"
+            }
+          ]
+        }
+      ]
+    },
+    "communications": [
+      {
+        "id": "route-RT-1-target",
+        "name": "Source through gateway to target",
+        "routing_entry_id": "canonical-route",
+        "routing_entry_ids": [
+          "canonical-route"
+        ],
+        "canonical_route_id": "canonical-route",
+        "source": "source",
+        "source_name": "source",
+        "source_interface": "source-if",
+        "source_logical_address": "0x0001",
+        "target": "target",
+        "target_name": "target",
+        "target_interface": "target-if",
+        "destination_logical_address": "0x0003",
+        "network_id": "input-bus",
+        "network_name": "input-bus",
+        "technology": "can_fd",
+        "physical_network_ids": [
+          "input-bus",
+          "output-bus"
+        ],
+        "segments": [
+          {
+            "id": "route-RT-1-target:segment:0",
+            "segment_index": 0,
+            "segment_count": 2,
+            "source": "source",
+            "source_interface": "source-if",
+            "target": "gateway",
+            "target_interface": "gateway-in",
+            "network_id": "input-bus",
+            "network_name": "input-bus",
+            "technology": "can_fd",
+            "topology_edge_ids": [
+              "edge-in"
+            ],
+            "gateway_ids": []
+          },
+          {
+            "id": "route-RT-1-target:segment:1",
+            "segment_index": 1,
+            "segment_count": 2,
+            "source": "gateway",
+            "source_interface": "gateway-out",
+            "target": "target",
+            "target_interface": "target-if",
+            "network_id": "output-bus",
+            "network_name": "output-bus",
+            "technology": "lin",
+            "topology_edge_ids": [
+              "edge-out"
+            ],
+            "gateway_ids": [
+              "gateway"
+            ]
+          }
+        ],
+        "cycle_ms": 20,
+        "maximum_latency_ms": 20,
+        "jitter_limit_ms": 5,
+        "timeout_ms": 50,
+        "deadline_ms": 20,
+        "requirement_provenance": {
+          "maximum_latency_ms": {
+            "source": "route",
+            "field": "max_latency_ms",
+            "unit": "ms"
+          },
+          "jitter_limit_ms": {
+            "source": "route",
+            "field": "jitter_limit_ms",
+            "unit": "ms"
+          },
+          "timeout_ms": {
+            "source": "route",
+            "field": "timeout_ms",
+            "unit": "ms"
+          }
+        },
+        "payload_bytes": 2,
+        "priority": "NORMAL",
+        "signal_ids": [
+          "temperature"
+        ],
+        "message_ids": [
+          "message"
+        ]
+      }
+    ],
+    "routing_entry_ids": [
+      "canonical-route"
+    ],
+    "formats": [
+      "universal-jsonl",
+      "universal-csv"
+    ],
+    "seed": 0,
+    "topology": {
+      "nodes": [
+        {
+          "id": "source",
+          "engineeringId": "source",
+          "ports": [
+            {
+              "id": "source-if",
+              "engineeringId": "source-if",
+              "hardwareInterfaceId": "source-if-hw",
+              "bus": "can_fd",
+              "physicalNetworkId": "input-bus"
+            }
+          ]
+        },
+        {
+          "id": "gateway",
+          "engineeringId": "gateway",
+          "ports": [
+            {
+              "id": "gateway-in",
+              "engineeringId": "gateway-in",
+              "hardwareInterfaceId": "gateway-in-hw",
+              "bus": "can_fd",
+              "physicalNetworkId": "input-bus"
+            },
+            {
+              "id": "gateway-out",
+              "engineeringId": "gateway-out",
+              "hardwareInterfaceId": "gateway-out-hw",
+              "bus": "lin",
+              "physicalNetworkId": "output-bus"
+            }
+          ]
+        },
+        {
+          "id": "target",
+          "engineeringId": "target",
+          "ports": [
+            {
+              "id": "target-if",
+              "engineeringId": "target-if",
+              "hardwareInterfaceId": "target-if-hw",
+              "bus": "lin",
+              "physicalNetworkId": "output-bus"
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-in",
+          "source": "source",
+          "target": "gateway",
+          "sourcePort": "source-if",
+          "targetPort": "gateway-in",
+          "bus": "can_fd",
+          "physicalNetworkId": "input-bus",
+          "routingEntryId": "canonical-route"
+        },
+        {
+          "id": "edge-out",
+          "source": "gateway",
+          "target": "target",
+          "sourcePort": "gateway-out",
+          "targetPort": "target-if",
+          "bus": "lin",
+          "physicalNetworkId": "output-bus",
+          "routingEntryId": "canonical-route"
+        }
+      ]
+    },
+    "scenario": {
+      "mode": "USER_DEFINED_FAULT",
+      "faults": [
+        {
+          "scope": "NETWORK",
+          "type": "GATEWAY_DELAY",
+          "target": {
+            "id": "gateway"
+          },
+          "start_s": 12,
+          "end_s": 15,
+          "delay_ms": 100
+        }
+      ]
+    },
+    "engineering_model": {
+      "nodes": [
+        {
+          "id": "source",
+          "name": "source",
+          "device_type": "ECU",
+          "logical_node_address": 1
+        },
+        {
+          "id": "gateway",
+          "name": "gateway",
+          "device_type": "Gateway",
+          "logical_node_address": 2
+        },
+        {
+          "id": "target",
+          "name": "target",
+          "device_type": "ECU",
+          "logical_node_address": 3
+        }
+      ],
+      "routes": [
+        {
+          "id": "canonical-route",
+          "route_code": "RT-1",
+          "name": "Source through gateway to target",
+          "approval_state": "APPROVED",
+          "source": {
+            "node_id": "source",
+            "interface_id": "source-if",
+            "network_id": "input-bus",
+            "protocol": "CAN_FD"
+          },
+          "destinations": [
+            {
+              "node_id": "target",
+              "interface_id": "target-if",
+              "network_id": "output-bus",
+              "protocol": "LIN"
+            }
+          ],
+          "route": {
+            "gateways": [
+              {
+                "node_id": "gateway"
+              }
+            ]
+          },
+          "timing": {
+            "cycle_time_ms": 20,
+            "max_latency_ms": 20,
+            "jitter_limit_ms": 5,
+            "timeout_ms": 50
+          },
+          "payload": {
+            "message_id": "message",
+            "signal_ids": [
+              "temperature"
+            ],
+            "payload_bytes": 2
+          }
+        }
+      ],
+      "interfaces": [
+        {
+          "id": "source-if",
+          "hardware_node_id": "source",
+          "name": "source-if",
+          "interface_type": "CAN_FD",
+          "configuration": {}
+        },
+        {
+          "id": "gateway-in",
+          "hardware_node_id": "gateway",
+          "name": "gateway-in",
+          "interface_type": "CAN_FD",
+          "configuration": {}
+        },
+        {
+          "id": "gateway-out",
+          "hardware_node_id": "gateway",
+          "name": "gateway-out",
+          "interface_type": "LIN",
+          "configuration": {}
+        },
+        {
+          "id": "target-if",
+          "hardware_node_id": "target",
+          "name": "target-if",
+          "interface_type": "LIN",
+          "configuration": {}
+        }
+      ],
+      "hardware_interfaces": [
+        {
+          "id": "source-if-hw",
+          "hardware_node_id": "source",
+          "physical_port_ref": "source-if",
+          "capabilities": {}
+        },
+        {
+          "id": "gateway-in-hw",
+          "hardware_node_id": "gateway",
+          "physical_port_ref": "gateway-in",
+          "capabilities": {}
+        },
+        {
+          "id": "gateway-out-hw",
+          "hardware_node_id": "gateway",
+          "physical_port_ref": "gateway-out",
+          "capabilities": {}
+        },
+        {
+          "id": "target-if-hw",
+          "hardware_node_id": "target",
+          "physical_port_ref": "target-if",
+          "capabilities": {}
+        }
+      ],
+      "messages": [
+        {
+          "id": "message",
+          "cycle_ms": 20,
+          "interface_id": "source-if"
+        }
+      ],
+      "signals": [
+        {
+          "id": "temperature",
+          "name": "Temperature",
+          "message_id": "message",
+          "start_bit": 0,
+          "length_bits": 16,
+          "byte_order": "little_endian",
+          "factor": 0.1,
+          "offset_value": -40,
+          "min_value": -40,
+          "max_value": 215,
+          "unit": "degC"
+        }
+      ],
+      "behaviors": [
+        {
+          "signal_id": "temperature",
+          "behavior_type": "CONSTANT",
+          "parameters": {
+            "value": 100
+          }
+        }
+      ]
+    },
+    "max_events": 10000
+  }
+}

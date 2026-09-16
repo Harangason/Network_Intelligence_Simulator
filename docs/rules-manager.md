@@ -32,3 +32,41 @@ Perform UI checks with the available browser skill and actual browser tools.
 PASS requires stored evidence and verified completion criteria.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:industry40 -->
+
+<!-- tool-check:industry50 -->
+## Tool Check: industry50
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_50_INDUSTRY_NEUTRAL_AGENT_MCP_TEST_SCENARIOS.md
+- Source Hash: 25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09
+- Status: ACTIVE
+- Last Ingest: 2026-09-16T10:36:26.218260+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\industry50\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:industry50 -->
+
+<!-- tool-check:industry60 -->
+## Tool Check: industry60
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_60_INDUSTRY_NEUTRAL_AGENT_MCP_TRACE_TEST_SCENARIOS.md
+- Source Hash: e0f28f004b5b75a07157c73c3a2a0d7f086956907a6e16e486d6e2a0f2a0b327
+- Status: ACTIVE
+- Last Ingest: 2026-09-16T12:58:41.194607+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\industry60\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:industry60 -->

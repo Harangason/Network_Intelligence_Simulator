@@ -36,4 +36,15 @@ def quantities(text):
                 else:
                     groups[label] = max(groups.get(label, 0), count)
         result[role] = max(declared, sum(groups.values()))
+        if rule.get('additional_compute'):
+            source = text.lower().replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue')
+            source = re.sub(r'[^a-z0-9\n]+', ' ', source)
+            additional = {}
+            for match in re.finditer(r'\b' + NUMBER + r'\s+(' + rule['additional_compute'] + r')\b', source):
+                if re.search(r'\b(?:kein\w*|nicht|ohne)\s*$', source[:match.start()]): continue
+                number = int(match[1]) if match[1].isdigit() else WORDS[match[1]]
+                if number > 1000:
+                    raise ValueError('Maximal 1000 Geräte pro Geräteart.')
+                additional[match[2]] = max(additional.get(match[2], 0), number)
+            result[role] += sum(additional.values())
     return result

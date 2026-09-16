@@ -1,0 +1,55 @@
+{
+  "test_id": "S22",
+  "title": "MCP Capability Discovery und Tool Registry",
+  "input": "Prüfe die bestehende Architektur und stelle fest, ob ParkAssist mit DriverAssistance kommunizieren kann.",
+  "source_lines": [
+    1587,
+    1652
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** MCP Discovery / Registry / Schemas\n\n### Testeingabe\n\n```text\nPrüfe die bestehende Architektur und stelle fest,\nob ParkAssist mit DriverAssistance kommunizieren kann.\n```\n\n### Erwartung\n\nDer Agent bestimmt zuerst die benötigten Capabilities.\n\nBeispiel:\n\n```text\nmodel.search\nfunction.inspect\nhardware.inspect\nhardware.interface.inspect\nnetwork.inspect\nrouting.inspect\n```\n\n### MCP-Prüfung\n\nPrüfe:\n\n```text\nTool Registry erreichbar\nSkill Registry erreichbar\nTool Name eindeutig\nInput Schema verfügbar\nOutput Schema verfügbar\nPermission Contract vorhanden\nTool Version vorhanden\n```\n\nNicht erlaubt:\n\n```text\nhardcoded giant if/elif technology switch\nunregistriertes Tool\nfreie Toolnamen aus LLM-Text\n```\n\n### Negative Prüfung\n\nFordere bewusst eine nicht existierende Capability an.\n\nErwartung:\n\n```text\nNOT_SUPPORTED / TOOL_NOT_FOUND\n```\n\nund keine erfundene erfolgreiche Ausführung.\n\n### PASS\n\nDer Agent findet nur registrierte Capabilities und kann deren Schemas korrekt verwenden.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": false,
+  "preconditions": [
+    "Isolierter Teststack des veröffentlichten Images"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Erwartung:\nDer Agent bestimmt zuerst die benötigten Capabilities.\n\nBeispiel:\n\n```text\nmodel.search\nfunction.inspect\nhardware.inspect\nhardware.interface.inspect\nnetwork.inspect\nrouting.inspect\n```",
+    "MCP-Prüfung:\nPrüfe:\n\n```text\nTool Registry erreichbar\nSkill Registry erreichbar\nTool Name eindeutig\nInput Schema verfügbar\nOutput Schema verfügbar\nPermission Contract vorhanden\nTool Version vorhanden\n```\n\nNicht erlaubt:\n\n```text\nhardcoded giant if/elif technology switch\nunregistriertes Tool\nfreie Toolnamen aus LLM-Text\n```",
+    "Negative Prüfung:\nFordere bewusst eine nicht existierende Capability an.\n\nErwartung:\n\n```text\nNOT_SUPPORTED / TOOL_NOT_FOUND\n```\n\nund keine erfundene erfolgreiche Ausführung.",
+    "PASS:\nDer Agent findet nur registrierte Capabilities und kann deren Schemas korrekt verwenden.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "contract_hash": "11e8da29c5d9017960f19c494df9ee8ff0ec25e3719360e80f2f54d2e5d7da77",
+  "status": "FAILED",
+  "last_run": "run-d10013315ced4bf98e12684e14ff019d"
+}

@@ -1,0 +1,83 @@
+{
+  "model": {
+    "project_id": "test",
+    "hardware": [
+      {
+        "id": "adas",
+        "name": "ADAS",
+        "device_type": "ECU"
+      }
+    ],
+    "hardware-interfaces": [],
+    "parameters": {
+      "networks": [
+        {
+          "id": "can",
+          "name": "Chassis_CAN",
+          "technology": "CAN_FD",
+          "bitrate": 500000
+        }
+      ]
+    }
+  },
+  "resources": {
+    "CommunicationCapability": [
+      {
+        "id": "cap",
+        "hardware_node_ref": "adas",
+        "technology": "CAN_FD",
+        "supported": true,
+        "controller_count": 1,
+        "max_channels": 2,
+        "max_ports": 2,
+        "supported_bitrates": [
+          500000
+        ]
+      }
+    ],
+    "CommunicationController": [
+      {
+        "id": "ctrl",
+        "hardware_node_ref": "adas",
+        "technology": "CAN_FD",
+        "max_channels": 2,
+        "active_channels": [
+          1,
+          2
+        ],
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "result": {
+    "decision_id": "fc0446b3-2e26-4ad5-8d10-a17dd632bb72",
+    "hardware_node_ref": "adas",
+    "technology": "CAN_FD",
+    "controller_ref": null,
+    "existing_interface_ref": null,
+    "existing_port_ref": null,
+    "available_channels": [],
+    "target_network_ref": "can",
+    "options": [],
+    "recommended_option": null,
+    "engineering_impact": "REQUIRED",
+    "status": "BLOCKED",
+    "findings": [
+      {
+        "severity": "ERROR",
+        "code": "PORT_MISSING",
+        "message": "Für das Zielnetz existiert noch kein passender physischer Anschluss."
+      },
+      {
+        "severity": "ERROR",
+        "code": "NO_FREE_CHANNEL",
+        "message": "Es ist kein freier bestätigter Controllerkanal verfügbar."
+      },
+      {
+        "severity": "ERROR",
+        "code": "HARDWARE_INTERFACE_CAPACITY_EXCEEDED",
+        "message": "Die bestätigte Hardwaregrenze erlaubt keinen zusätzlichen Anschluss."
+      }
+    ]
+  }
+}

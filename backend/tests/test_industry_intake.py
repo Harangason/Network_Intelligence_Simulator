@@ -23,7 +23,13 @@ def test_chat_draft_preserves_full_scope_without_inventing_connections(case):
         expected = case['counts'][key]
         if expected is not None:
             assert sum(d['role'] == role for d in draft['devices']) == expected, role
-    assert all(device['technology'] is None for device in draft['devices'])
+    # Explicit device-local connections must survive; open variants still
+    # cannot inherit technologies from unrelated networks or prior projects.
+    if case['id'].endswith('-B'):
+        assert all(device['technology'] is None for device in draft['devices'])
+    for device in draft['devices']:
+        if device['technology']:
+            assert device['connection_candidates'] == [device['technology']]
 
 
 @pytest.mark.parametrize('prompt', [

@@ -9,7 +9,12 @@ export function setAssistantSelection(value: AssistantSelection | null) {
   window.dispatchEvent(new Event(ASSISTANT_CONTEXT_EVENT));
 }
 export function readAssistantContext() {
-  return { active_view: window.location.pathname, selected_object_refs: selection && selectionProject === readActiveProjectId() ? [selection] : [] };
+  const refs: Record<string, string>[] = selection && selectionProject === readActiveProjectId() ? [selection] : [];
+  const parameters = new URLSearchParams(window.location.search);
+  if (window.location.pathname.includes('trace') && parameters.get('job')) {
+    refs.push({ object_type: 'SimulationRun', id: parameters.get('job')! });
+  }
+  return { active_view: window.location.pathname, selected_object_refs: refs };
 }
 export function engineeringContextHref(ref: Record<string, string>, projectId: string) {
   const routes: Record<string, string> = { Routing: "/studio/routing", Route: "/studio/routing", Simulation: "/studio/simulation", Trace: "/studio/trace-analysis", Workspace: "/studio/agent", Capacity: '/studio/capacity' };

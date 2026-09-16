@@ -1,0 +1,20 @@
+{
+  "run_id": "run-d124045bc5c94a8689f6021f92e6cea5",
+  "status": "FAILED",
+  "failures": [
+    "F01"
+  ],
+  "missing": [
+    "TC_WRONG_TOOL_SEQUENCE:Originalfall ausführen und Nachweise sichern",
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Ausgangsmodell:\n```text\nParkAssist\n→ ChassisController\n→ Chassis_CAN / CAN-FD\n\nDriverAssistance\n→ ADAS_Controller\n→ Ethernet\n\nADAS_Controller:\nCAN-FD Capability = YES\nCAN Controller = vorhanden\nfree channel = YES\nCAN-FD Port = NONE\n```",
+    "completion_criteria:Erwartete Chat-Frage:\n```text\nDer ADAS_Controller unterstützt CAN-FD,\nbesitzt aber noch keinen CAN-FD-Port.\n\nSoll ich einen CAN-FD-Port erstellen\nund mit Chassis_CAN verbinden?\n\n○ Ja – direkt anbinden\n○ Gateway-Pfad prüfen\n○ Ethernet-Alternative prüfen\n```\n\nBrowser Skill wählt:\n\n```text\nJa – direkt anbinden\n```",
+    "completion_criteria:Danach ohne weitere unnötige Fragen:\nAgent muss über MCP/Core selbst ausführen:\n\n```text\ncreate/reuse HardwareInterface\ncreate PhysicalPort\nbind Controller Channel\nconnect Port to Chassis_CAN\nupdate Network Membership\nresolve Functional Interfaces\ngenerate/reuse Transport Units\npack Payload\nallocate Identifier\nupdate Routing\nrecalculate Capacity\nrecalculate Timing\nrun Validation\nrun Communication Preflight\nmark old dependent results STALE\nCompletion Check\n```",
+    "completion_criteria:Zu prüfende MCP-Schnittstellen:\nMindestens:\n\n```text\nhardware.interface.create\nhardware.port.create\nnetwork.connect\ntransport.generate / transport.bind\nrouting.create / routing.update\ncapacity.calculate\ntiming.calculate\nvalidation.run\n```",
+    "completion_criteria:PASS:\nEin einziges Nutzer-„Ja“ führt bis zur vollständig validierten Verbindung.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "blockers": [],
+  "summary": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\state\\tasks\\industry60\\results\\run-d124045bc5c94a8689f6021f92e6cea5\\summary.md"
+}

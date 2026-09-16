@@ -313,6 +313,38 @@ def test_real_mcp_protocol_executes_authorized_plan_and_streams_progress(project
         ProjectBundleService().reset_workspace(project)
         _request_unit.get().finish(True)
 
+
+def test_real_chat_connection_stream_keeps_every_response_valid(project, tmp_path):
+    import json
+    import subprocess
+    from pathlib import Path
+    from backend.app import create_app
+    from backend.engineering.db import _request_unit
+    from backend.agent_core.api.agent_response import AgentResponse
+    fixture(); _request_unit.get().finish(True)
+    _request_unit.get().close()
+    client = create_app(testing=True).test_client()
+    headers = {'X-Project-ID': project}
+    def send(body):
+        response = client.post('/api/engineering/agent/chat', headers=headers, json=body)
+        assert response.status_code == 200, response.data
+        events = [json.loads(line) for line in response.data.decode().splitlines()]
+        for event in events:
+            if event['type'] not in {'CONTEXT', 'HEARTBEAT'}:
+                assert not event.get('metadata', {}).get('contract_error'), event
+                AgentResponse.model_validate(event)
+        return events
+    first = send({'prompt': 'Verbinde ParkAssist mit DriverAssistance', 'context': {}})
+    question = next(e['question'] for e in first if e.get('question'))
+    second = send({'prompt': '', 'context': {}, 'input': {'type': 'QUESTION_ANSWER',
+        'question_id': question['id'], 'selected_options': [question['options'][0]['id']]}})
+    assert any(e.get('status') == 'COMPLETE' for e in second)
+    payload = tmp_path / 'responses.json'
+    payload.write_text(json.dumps([e for e in first + second if e['type'] not in {'CONTEXT', 'HEARTBEAT'}]), encoding='utf8')
+    root = Path(__file__).resolve().parents[2]
+    code = "import fs from 'node:fs'; import {agentResponseSchema} from './src/lib/agent/agent-response.ts'; for(const e of JSON.parse(fs.readFileSync(process.argv[1],'utf8'))) agentResponseSchema.parse(e);"
+    subprocess.run(['node', '--experimental-strip-types', '--input-type=module', '-e', code, str(payload)], cwd=root/'frontend', check=True)
+
 def test_missing_functional_requirement_is_not_reported_as_complete(project):
     from backend.engineering.repository import update_object
     from backend.engineering.goal_execution import service

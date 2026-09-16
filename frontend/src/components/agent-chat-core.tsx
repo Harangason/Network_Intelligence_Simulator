@@ -139,6 +139,13 @@ export function AgentChatCore({
     transport,
   });
   const [input, setInput] = useState("");
+  const requestedMode = useRef<string | null>(null);
+  useEffect(() => { requestedMode.current = null; }, [activeProjectId]);
+  function chooseMode(label: string) {
+    requestedMode.current = ({ 'Architektur erstellen': 'CREATE_ARCHITECTURE', 'Signal prüfen': 'VALIDATE_SIGNAL',
+      'Trace analysieren': 'ANALYZE_TRACE', 'Finding bewerten': 'ASSESS_FINDING' } as Record<string, string>)[label];
+    inputRef.current?.focus();
+  }
   const [historyReady, setHistoryReady] = useState(false);
   const [pendingTask, setPendingTask] = useState<EngineeringAgentTask | null>(null);
   const [taskNotice, setTaskNotice] = useState('');
@@ -168,7 +175,9 @@ export function AgentChatCore({
       setInput("");
       return;
     }
-    void sendMessage({ parts: [{ type: 'text', text }, ...attachments.map(data => ({ type: 'data-attachment' as const, data }))] });
+    void sendMessage({ parts: [{ type: 'text', text }, ...attachments.map(data => ({ type: 'data-attachment' as const, data }))] },
+      { body: { context: { ...readAssistantContext(), active_project_id: activeProjectId, requested_mode: requestedMode.current } } });
+    requestedMode.current = null;
     setInput("");
   }
 
@@ -458,13 +467,13 @@ export function AgentChatCore({
             <span className="empty-icon">◇</span>
             <strong>Woran möchtest du arbeiten?</strong>
             <p>Wähle einen Einstieg oder stelle deine eigene Frage. Erst mit „Senden“ beginnt der Assistent.</p>
-            <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { setInput(label); inputRef.current?.focus(); }}>{label}</button>)}</div>
+            <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { chooseMode(label); setInput(label); }}>{label}</button>)}</div>
           </div>
         )}
 
         {historyReady && stableMessages.length > 0 && <details className="eng-agent-examples">
           <summary>Frage vorbereiten</summary>
-          <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { setInput(current => current.trim() ? `${current}\n${label}` : label); inputRef.current?.focus(); }}>{label}</button>)}</div>
+          <div className="engineering-quick-prompts">{['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten'].map(label => <button key={label} type="button" onClick={() => { chooseMode(label); setInput(current => current.trim() ? current : label); }}>{label}</button>)}</div>
         </details>}
 
         {pendingTask && <section className="eng-agent-pending-task" aria-label="Vorbereiteter Auftrag">

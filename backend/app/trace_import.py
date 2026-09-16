@@ -215,19 +215,18 @@ def capture_records(data: bytes, fmt: str):
 
 def mdf_records(data: bytes, warnings: list[str], source_path=None):
     from asammdf import MDF
-    # Bounded samples per channel; keep original scalar values and stored conversions.
+    # Stream channels in bounded chunks; retain original channel timestamps.
+    # Session storage need not be time-sorted and never merges different clocks.
     with MDF(source_path or io.BytesIO(data)) as mdf:
-        rows = []
         channels = 0
         bus_groups = [group for group in mdf.groups if getattr(group.channel_group, "flags", 0) & 2]
         if bus_groups:
-            warnings.append("MDF-Busaufzeichnung: CAN/CAN-FD-Frames als Rohdaten; andere Busobjekte nicht übernommen. Signaldecodierung benötigt eine passende Datenbank.")
+            warnings.append("MDF-Busaufzeichnung: CAN/CAN-FD-Rohdaten; andere Busobjekte nicht übernommen. Signaldecodierung benötigt eine passende Datenbank.")
             bus_records = can_records(data, "mf4", source_path)
             try:
-                for event in itertools.islice(bus_records, MAX_EVENTS + 1):
-                    # MF4Reader adds the file epoch; scalar MDF channels are relative.
+                for event in bus_records:
                     event["timestamp"] -= mdf.header.start_time.timestamp()
-                    rows.append(event)
+                    yield event
             finally:
                 bus_records.close()
         for group_index, group in enumerate(mdf.groups):
@@ -238,22 +237,47 @@ def mdf_records(data: bytes, warnings: list[str], source_path=None):
                     continue
                 channels += 1
                 if channels > 256:
-                    raise ValueError("MDF-Vorschau unterstützt maximal 256 Messkanäle; Datei bitte aufteilen.")
-                signal = mdf.get(group=group_index, index=channel_index, record_count=MAX_EVENTS + 1)
-                if signal.samples.dtype.names or signal.samples.ndim != 1:
-                    warnings.append(f"MDF-Kanal {channel.name}: strukturierte/Array-Daten nicht als Skalarsignal importiert.")
-                    continue
-                for timestamp, sample in zip(signal.timestamps, signal.samples):
-                    value = sample.item()
-                    if isinstance(value, bytes):
-                        value = value.decode("utf-8", errors="replace")
-                    if not isinstance(value, (str, int, float, bool)) or isinstance(value, float) and not math.isfinite(value):
-                        value = None
-                    rows.append({"timestamp": float(timestamp), "technology": f"MDF group {group_index}",
-                                 "source": signal.name, "message": signal.name,
-                                 "signals": [{"signal": signal.name, "signal_id": f"mdf:{group_index}:{channel_index}",
-                                              "value": value, "unit": signal.unit, "quality": "measured" if value is not None else "invalid"}]})
-        yield from sorted(rows, key=lambda row: row["timestamp"])
+                    raise ValueError("MDF-Import unterstützt maximal 256 Messkanäle; Datei bitte aufteilen.")
+                offset = 0
+                while True:
+                    signal = mdf.get(group=group_index, index=channel_index, record_offset=offset, record_count=2000)
+                    if signal.samples.dtype.names or signal.samples.ndim != 1:
+                        warnings.append(f"MDF-Kanal {channel.name}: strukturierte/Array-Daten nicht als Skalarsignal importiert.")
+                        break
+                    if not len(signal.samples):
+                        break
+                    for timestamp, sample in zip(signal.timestamps, signal.samples):
+                        value = sample.item()
+                        if isinstance(value, bytes):
+                            value = value.decode("utf-8", errors="replace")
+                        if not isinstance(value, (str, int, float, bool)) or isinstance(value, float) and not math.isfinite(value):
+                            value = None
+                        yield {"timestamp": float(timestamp), "technology": f"MDF group {group_index}",
+                               "source": signal.name, "message": signal.name,
+                               "signals": [{"signal": signal.name, "signal_id": f"mdf:{group_index}:{channel_index}",
+                                            "value": value, "unit": signal.unit, "quality": "measured" if value is not None else "invalid"}]}
+                    offset += len(signal.samples)
+                    if len(signal.samples) < 2000:
+                        break
+
+
+def normalize_record(event, index):
+    if not isinstance(event, dict):
+        raise ValueError(f"Ereignis {index + 1}: ein Objekt wird erwartet.")
+    raw = next((event[key] for key in ("timestamp_s", "time_s", "timestamp", "t") if key in event), None)
+    event.setdefault("source_record_index", index)
+    event.setdefault("source_timestamp", raw)
+    if raw is None:
+        event["time_status"] = "unavailable"
+        event["timestamp"] = None
+        return event
+    if isinstance(raw, bool):
+        raise ValueError(f"Ereignis {index + 1}: Zeitstempel fehlt.")
+    timestamp = float(raw)
+    if not math.isfinite(timestamp) or timestamp < 0:
+        raise ValueError(f"Ereignis {index + 1}: ungültiger Zeitstempel.")
+    event["timestamp"] = timestamp
+    return event
 
 
 def import_trace(data: bytes, filename: str, source_path=None) -> dict:
@@ -281,22 +305,7 @@ def import_trace(data: bytes, filename: str, source_path=None) -> dict:
     events = events[:MAX_EVENTS]
     if not events:
         raise ValueError("Keine unterstützten Ereignisse oder skalaren Messkanäle in der Datei gefunden.")
-    for index, event in enumerate(events):
-        if not isinstance(event, dict):
-            raise ValueError(f"Ereignis {index + 1}: ein Objekt wird erwartet.")
-        raw = next((event[key] for key in ("timestamp_s", "time_s", "timestamp", "t") if key in event), None)
-        event.setdefault("source_record_index", index)
-        event.setdefault("source_timestamp", raw)
-        if raw is None:
-            event["time_status"] = "unavailable"
-            event["timestamp"] = None
-            continue
-        if isinstance(raw, bool):
-            raise ValueError(f"Ereignis {index + 1}: Zeitstempel fehlt.")
-        timestamp = float(raw)
-        if not math.isfinite(timestamp) or timestamp < 0:
-            raise ValueError(f"Ereignis {index + 1}: ungültiger Zeitstempel.")
-        event["timestamp"] = timestamp
+    events = [normalize_record(event, index) for index, event in enumerate(events)]
     # Unknown time does not imply zero or an ordering relative to other clocks.
     if all(event["timestamp"] is not None for event in events) and len({str(event.get("time_basis", "source")) for event in events}) == 1:
         events.sort(key=lambda event: event["timestamp"])
@@ -323,7 +332,8 @@ def upload_trace():
             if not size:
                 raise ValueError("Die Trace-Datei ist leer.")
             with path.open("rb") as source, mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as data:
-                return jsonify(import_trace(data, request.args.get("filename", ""), path))
+                from .trace_sessions import persist_import
+                return jsonify(persist_import(data, request.args.get("filename", ""), path))
     except ImportError:
         return jsonify(error="Trace-Adapter fehlt im Backend. Runtime-Abhängigkeiten installieren und Backend neu starten."), 503
     except Exception as exc:
@@ -332,3 +342,15 @@ def upload_trace():
             return jsonify(error="Trace-Import: maximal 500 MiB."), 413
         # Third-party parsers use several exception types; do not return a partial session.
         return jsonify(error=f"Trace konnte nicht eingelesen werden: {str(exc)[:300]}"), 422
+
+@trace_import_api.get('/trace-import/<session_id>')
+def get_import_window(session_id):
+    from .trace_sessions import session_window
+    try:
+        return jsonify(session_window(session_id, cursor=int(request.args.get('cursor', 0)),
+            limit=int(request.args.get('limit', 500)), start_s=float(request.args.get('start_s', 0)),
+            end_s=float(request.args.get('end_s', 1e15)), query=request.args.get('q', '')))
+    except FileNotFoundError:
+        return jsonify(error='Trace-Session im aktiven Projekt nicht gefunden.'), 404
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 422

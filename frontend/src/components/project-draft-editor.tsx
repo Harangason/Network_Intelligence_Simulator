@@ -181,7 +181,7 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
           <option value="">Noch offen</option>{owners.map(owner => <option key={owner.id} value={owner.id}>{owner.name}</option>)}
         </select></label>}
         <label>Anschlusstechnologie<input placeholder="Noch offen" value={device.technology ?? ''} onChange={event => edit(device.id, 'technology', event.target.value || null)} /></label>
-        {device.role === 'ACTUATOR' && <label>Ventilbefehl<select value={commandChoice(device.command)} onChange={event => { if (event.target.value !== 'CUSTOM') edit(device.id, 'command', event.target.value ? openCloseCommand : null); }}>
+        {device.role === 'ACTUATOR' && /ventil|valve/i.test(device.name + ' ' + (device.purpose ?? '')) && <label>Ventilbefehl<select value={commandChoice(device.command)} onChange={event => { if (event.target.value !== 'CUSTOM') edit(device.id, 'command', event.target.value ? openCloseCommand : null); }}>
           <option value="">Noch offen</option><option value="OPEN_CLOSE">Auf / Zu · 1 Bit: 0 = Zu, 1 = Auf</option>
           {commandChoice(device.command) === 'CUSTOM' && <option value="CUSTOM">Vorhandene individuelle Kodierung beibehalten</option>}
         </select></label>}

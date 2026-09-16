@@ -63,15 +63,11 @@ function compactValue(value: unknown, depth = 0): unknown {
       };
     }
   }
-  if (depth >= 8) return "[Cache-Tiefe begrenzt]";
   if (Array.isArray(value)) {
-    const compacted = value.slice(0, 100).map((item) => compactValue(item, depth + 1));
-    if (value.length > 100) compacted.push(`[${value.length - 100} weitere Eintraege nicht gecacht]`);
-    return compacted;
+    return value.map((item) => compactValue(item, depth + 1));
   }
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
-      .slice(0, 100)
       .map(([key, item]) => [key, compactValue(item, depth + 1)]),
   );
 }
@@ -81,7 +77,8 @@ export function transportMessages(messages: UIMessage[]) {
     .slice(-MAX_MESSAGES)
     .map((message) => compactValue(message) as UIMessage);
   let body = JSON.stringify({ messages: selected });
-  while (selected.length > 1 && body.length > MAX_TRANSPORT_BYTES) {
+  // Bound storage by evicting whole messages, never by corrupting typed nodes.
+  while (selected.length && new TextEncoder().encode(body).length > MAX_TRANSPORT_BYTES) {
     selected.shift();
     body = JSON.stringify({ messages: selected });
   }

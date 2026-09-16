@@ -156,6 +156,21 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
     # roles. Unspecified identities are draft slots, never confirmed hardware
     # capabilities, connections or canonical model objects.
     from .inventory_quantities import quantities
+    from .inventory_details import details
+    explicit_groups = details(requirement)
+    for role in {g['role'] for g in explicit_groups}:
+        # Prefer explicit typed lines to the earlier prose fallback for this
+        # role. Keep user-named objects when there is no matching line group.
+        for key in [k for k, d in devices.items() if d['role'] == role]:
+            del devices[key]
+        for group in (g for g in explicit_groups if g['role'] == role):
+            stem = re.sub(r'[^\w]', '', group['name'])
+            if re.search(r'raspberry', stem, re.I): stem = 'RaspberryPi'
+            for index in range(group['count']):
+                name = stem if group['count'] == 1 and role in {'CONTROLLER', 'GATEWAY'} else f'{stem}{index + 1}'
+                add(name, role, group['source'], known_kind=group['known_kind'])
+                devices[name.casefold()].update(technology=group['technology'],
+                    connection_candidates=group['connection_candidates'], purpose=group['name'] if group['known_kind'] else None)
     scope = quantities(requirement)
     for key, role, stem in [('sensors', 'SENSOR', 'Sensor'), ('actuators', 'ACTUATOR', 'Aktor'),
                             ('ecus', 'CONTROLLER', 'Controller'), ('gateways', 'GATEWAY', 'Gateway')]:
@@ -193,6 +208,8 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
     if not resolved_industry:
         issues.append({'code': 'INDUSTRY_REQUIRED', 'message': 'Für welchen Einsatzbereich wird das Projekt geplant?', 'action': 'SET_INDUSTRY'})
     for device in devices.values():
+        if device['technology']:
+            continue
         issues.append({'code': 'CONNECTION_REQUIRED', 'device': device['name'],
                        'message': f"{device['name']}: Physische Anschlüsse sind noch offen.", 'action': 'SPECIFY_CONNECTION'})
     for issue in issues:

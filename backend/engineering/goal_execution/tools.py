@@ -28,6 +28,67 @@ def type_input(arguments):
     return type_reference(graph, arguments['reference']).model_dump(mode='json')
 
 
+def connectivity(arguments):
+    graph = ModelGraphService.load()
+    items = []
+    for ref in arguments['references']:
+        obj = graph.find_object(ref)
+        host = graph.host(str(obj['id']))
+        ports = graph.find_hardware_interfaces(str(host['id']))
+        items.append({'object': obj, 'hardware': host, 'ports': ports,
+                      'networks': [graph.networks[n] for n in graph.find_network_membership(str(host['id'])) if n in graph.networks]})
+    return {'items': items, 'model_revision': graph.revision}
+
+
+def communication_feasibility(arguments):
+    from .planner import connection_plan
+    graph = ModelGraphService.load()
+    plan = connection_plan(graph, 'Kommunikationsmöglichkeit prüfen', arguments['source_ref'], arguments['target_ref'])
+    return {'model_revision': graph.revision, 'status': plan['status'],
+            'findings': plan.get('findings', []), 'data_gaps': plan.get('data_gaps', []),
+            'pending_decision': plan.get('pending_decision'),
+            'strategies': plan.get('strategies', []), 'read_only': True,
+            'functional_acceptance': 'UNVERIFIED'}
+
+register('inspect_communication_feasibility', 'Kommunikationsmöglichkeit zwischen vorhandenen Objekten prüfen. Keine Änderungen, Freigaben oder Simulation.',
+         P.READ_MODEL, communication_feasibility, source_ref=TEXT, target_ref=TEXT)
+
+
+def inspect_signal_definition(arguments):
+    from ..signal_audit import inspect_signal, required_signal_bits
+    graph = ModelGraphService.load()
+    obj = graph.find_object(arguments['reference'])
+    if str(obj['id']) not in graph.signals:
+        raise ValueError('Das ausgewählte Objekt ist kein Signal.')
+    message = graph.messages.get(str(obj.get('message_id')))
+    return {'signal': obj, 'required_bits': required_signal_bits(obj),
+            'validation': inspect_signal(obj, message), 'model_revision': graph.revision}
+
+
+register('inspect_object_connectivity', 'Vorhandene Objekt-, Hardware-, Anschluss- und Netzzuordnungen lesen. Keine Berechnung oder Mutation.',
+         P.READ_MODEL, connectivity, references=(list[str], Field(min_length=1, max_length=50)))
+register('inspect_signal_definition', 'Vorhandenes kanonisches Signal auf Encoding und Bitbedarf prüfen, ohne neue Signale zu erzeugen.',
+         P.READ_MODEL, inspect_signal_definition, reference=TEXT)
+
+
+def assess_saved_finding(arguments):
+    from ..agent_tools import conversation
+    state = conversation.inspect()
+    graph = ModelGraphService.load()
+    obj = graph.find_object(arguments['reference'])
+    matches = []
+    for identifier, finding in state.get('findings', {}).items():
+        text = str(finding)
+        if arguments['code'] in text and (str(obj['id']) in text or obj['name'] in text or arguments['reference'] in text):
+            matches.append({'finding_id': identifier, 'finding': finding,
+                            'decision': state.get('decisions', {}).get(identifier, {'status': 'OPEN'})})
+    return {'items': matches, 'object': obj, 'model_revision': graph.revision}
+
+
+register('inspect_saved_finding', 'Gespeicherten Befund und Entscheidungsstatus anhand Code und kanonischem Objekt lesen. Keine Risikoakzeptanz ableiten.',
+         P.READ_MODEL, assess_saved_finding, code=TEXT, reference=TEXT)
+
+
 register('type_engineering_input', 'Fachlichen Objekttyp aus kanonischer ID, Name oder Alias ermitteln. Mehrdeutigkeit bleibt offen; erzeugt keine Objekte.',
     P.READ_MODEL, type_input, reference=TEXT)
 

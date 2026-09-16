@@ -51,11 +51,12 @@ def read_trace_window(path: Path, *, cursor=0, limit=500, start_s=0.0, end_s=1e1
             event = json.loads(line)
             if not isinstance(event, dict):
                 raise ValueError('Trace-Ereignisse müssen JSON-Objekte sein.')
-            timestamp = float(event.get('time_s', event.get('timestamp_s', 0)))
-            if ordered and timestamp > end_s:
+            raw_time = event.get('time_s', event.get('timestamp_s', event.get('timestamp')))
+            timestamp = float(raw_time) if raw_time is not None else None
+            if ordered and timestamp is not None and timestamp > end_s:
                 reached_end = True
                 break
-            if start_s <= timestamp <= end_s and (not needle or needle in line.decode('utf-8').casefold()):
+            if (timestamp is None or start_s <= timestamp <= end_s) and (not needle or needle in line.decode('utf-8').casefold()):
                 selected.append(event)
                 selected_bytes += len(line)
         next_cursor = handle.tell()

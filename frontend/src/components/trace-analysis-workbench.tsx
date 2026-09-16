@@ -76,6 +76,7 @@ export function TraceAnalysisWorkbench() {
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const [sourceFormat, setSourceFormat] = useState("-");
   const [traceJob, setTraceJob] = useState<string | null>(null);
+  const [currentCursor, setCurrentCursor] = useState(0);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [timeStart, setTimeStart] = useState(0);
@@ -90,15 +91,18 @@ export function TraceAnalysisWorkbench() {
     if (requested === "session" || requested === "messages" || requested === "sequence" || requested === "signals" || requested === "trace" || requested === "findings" || requested === "root-cause") setView(requested);
   }, [search]);
   useEffect(() => {
-    const requestedJob = search.get("job");
+    const requestedJob = search.get("import") ? `import:${search.get("import")}` : search.get("job");
     const rawFocus = search.get("focus_s");
     const focus = rawFocus === null ? NaN : Number(rawFocus);
     const key = `${requestedJob}:${rawFocus ?? ''}`;
     if (!requestedJob || autoLoadedJobRef.current === key) return;
     autoLoadedJobRef.current = key;
-    const range = Number.isFinite(focus) && focus >= 0 ? { start: Math.max(0, focus - .1), end: focus + .1, focus } : undefined;
-    if (range) { setTimeStart(range.start); setTimeEnd(range.end); setQuery(""); }
-    void loadWindow(requestedJob, 0, false, range);
+    const savedStart = Number(search.get("start_s") ?? 0), savedEnd = Number(search.get("end_s") ?? 1e15);
+    const savedWindow = search.has("event") && Number.isFinite(savedStart) && Number.isFinite(savedEnd) && savedStart >= 0 && savedEnd >= savedStart;
+    const range = Number.isFinite(focus) && focus >= 0 ? { start: savedWindow ? savedStart : Math.max(0, focus - .1), end: savedWindow ? savedEnd : focus + .1, focus } : undefined;
+    if (range) { setTimeStart(range.start); setTimeEnd(range.end); setQuery(search.get("q") ?? ""); }
+    const cursor = Number(search.get("cursor") ?? 0);
+    void loadWindow(requestedJob, Number.isSafeInteger(cursor) && cursor >= 0 ? cursor : 0, false, range);
   }, [search]);
 
 
@@ -106,18 +110,20 @@ export function TraceAnalysisWorkbench() {
     const generation = ++loadGeneration.current;
     setLoading(true);
     try {
-      const parameters = new URLSearchParams({ cursor: String(cursor), limit: "500", start_s: String(range?.start ?? timeStart), end_s: String(range?.end ?? timeEnd), q: range ? "" : query });
-      const response = await fetch(`/api/simulations/${encodeURIComponent(jobId)}/trace-window?${parameters}`, {
+      const parameters = new URLSearchParams({ cursor: String(cursor), limit: "2000", start_s: String(range?.start ?? timeStart), end_s: String(range?.end ?? timeEnd), q: range ? search.get("q") ?? "" : query });
+      const endpoint = jobId.startsWith("import:") ? `/api/trace-import/${encodeURIComponent(jobId.slice(7))}` : `/api/simulations/${encodeURIComponent(jobId)}/trace-window`;
+      const response = await fetch(`${endpoint}?${parameters}`, {
         headers: { "X-Project-ID": readActiveProjectId() }, cache: "no-store", signal: AbortSignal.timeout(15000),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? `Trace-Abruf fehlgeschlagen (${response.status}).`);
       if (generation !== loadGeneration.current) return;
       const loaded = (result.events as Record<string, unknown>[]).map(eventFromRecord);
-      setEvents(loaded);
-      setSelectedEvent(range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
+      setEvents(loaded); setCurrentCursor(cursor);
+      setSelectedEvent(search.get("event") ? loaded.find(item => item.id === search.get("event")) ?? null : range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
       setTraceJob(jobId); setNextCursor(result.next_cursor); setSourceName(`Simulation ${jobId} · Trace-Fenster`);
-      setImportWarnings([]); setSourceFormat("JSONL · Simulation");
+      setImportWarnings(result.warnings ?? []); setSourceFormat(result.format ?? "JSONL · Simulation");
+      if (result.filename) setSourceName(result.filename);
       setError("");
       if (openDefaultView) { autoLoadedJobRef.current = `${jobId}:${search.get("focus_s") ?? ''}`; openMessagesView(jobId); }
     } catch (caught) {
@@ -141,13 +147,13 @@ export function TraceAnalysisWorkbench() {
       if (!response.ok) throw new Error(result.error ?? `Trace-Import fehlgeschlagen (${response.status}).`);
       if (generation !== loadGeneration.current) return;
       const imported = (result.events as Record<string, unknown>[]).map(eventFromRecord);
-      setEvents(imported);
+      setEvents(imported); setCurrentCursor(0);
       setImportWarnings(result.warnings ?? []); setSourceFormat(String(result.format).toUpperCase());
       setTimeStart(0); setTimeEnd(1e15); setQuery("");
       setSelectedEvent(null);
-      setTraceJob(null); setNextCursor(null);
+      setTraceJob(`import:${result.session_id}`); setNextCursor(result.next_cursor);
       setSourceName(files[0].name);
-      openMessagesView();
+      openMessagesView(`import:${result.session_id}`);
       setError("");
     } catch (caught) { if (generation === loadGeneration.current) setError(caught instanceof Error ? caught.message : 'Trace-Import fehlgeschlagen.'); }
     finally { if (generation === loadGeneration.current) { setLoading(false); if (inputRef.current) inputRef.current.value = ""; } }
@@ -190,11 +196,26 @@ export function TraceAnalysisWorkbench() {
               ? findings.length ? `${findings.length} FINDINGS` : "NO FINDINGS"
               : events.some((event) => event.finding || !["transmitted", "observed"].includes(event.status.toLowerCase())) ? "CAUSE CANDIDATE" : "NO ANOMALY";
 
+  function selectEvent(event: TraceEvent) {
+    setSelectedEvent(event);
+    const parameters = new URLSearchParams(search.toString());
+    parameters.set("event", event.id);
+    parameters.set("cursor", String(currentCursor));
+    parameters.set("start_s", String(timeStart)); parameters.set("end_s", String(timeEnd));
+    parameters.set("q", query);
+    if (event.timeKnown) parameters.set("focus_s", String(event.timestamp));
+    autoLoadedJobRef.current = `${traceJob}:${parameters.get("focus_s") ?? ''}`;
+    router.replace(withProjectParam(`/trace-analysis?${parameters}`), { scroll: false });
+  }
+
   function openMessagesView(jobId?: string) {
     setView("messages");
     const parameters = new URLSearchParams(search.toString());
     parameters.set("view", "messages");
-    if (jobId) parameters.set("job", jobId);
+    if (jobId) autoLoadedJobRef.current = `${jobId}:`;
+    parameters.delete("event"); parameters.delete("focus_s"); parameters.delete("import"); parameters.delete("cursor");
+    if (jobId?.startsWith("import:")) { parameters.set("import", jobId.slice(7)); parameters.delete("job"); }
+    else if (jobId) parameters.set("job", jobId);
     else { parameters.delete("job"); autoLoadedJobRef.current = null; }
     router.replace(withProjectParam(`/trace-analysis?${parameters.toString()}`));
   }
@@ -246,12 +267,12 @@ export function TraceAnalysisWorkbench() {
             <p className="trace-governance-note">IMPORT {"->"} ANALYSIS PROJECTION. Keine automatischen Core-, Evidence- oder TraceLink-Writes.</p>
           </div>
           {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Universeller Trace-Import: {ACCEPTED}. Binärformate werden anhand ihrer Dateisignatur erkannt. Vorschau bis 500 MiB und 2000 Ereignisse. ASC/BLF: CAN und CAN FD; PCAP/PCAPNG: Rohpakete; MDF/MF4: skalare Messkanäle. PCAPNG: eine Schnittstelle pro Datei. Rohbytes benötigen für Signalwerte eine passende Decoder-Datenbank.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
-          {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
-          {view === "sequence" && <SequenceView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} />}
-          {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} channels={signalChannels} onChannels={setSignalChannels} />}
-          {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={setSelectedEvent} compact />}
+          {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
+          {view === "sequence" && <SequenceView events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
+          {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={selectEvent} channels={signalChannels} onChannels={setSignalChannels} />}
+          {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} compact />}
           {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
-          {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timestamp} />}
+          {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob?.startsWith("import:") ? null : traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timestamp} />}
         </div>
         <aside className="side-column">
           <div className="panel snapshot-summary trace-summary-panel">

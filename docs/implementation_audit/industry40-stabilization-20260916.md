@@ -33,3 +33,43 @@ Neu hinzugefügte Browserprüfungen öffnen alle 40 Anforderungen im echten Wiza
 - Vollständige Zerlegung und Durchführung der Großaufträge S19/S20 durch den freien Agenten. Die Korrektur verhindert ihre Reduktion auf einen Signalauftrag, weist aber noch keine vollständige Ausführung nach.
 
 Ein Produkt-Rollout ist erst mit einem PASS-Receipt des exakt getesteten Images zulässig.
+
+## Abgeschlossene Produktionsabnahme
+
+Release-Gate `backend/test-output/release-gates/6e18e42d8df8/receipt.json`: **PASS**.
+Build `b1297e9bad56`, unveränderliches Image `sha256:8c249e600edeca8dc3f924afbb2d6c10eb4f6776f3d54f85ff7aa2ec7394f3cf`.
+
+Am 16.09.2026 über `start-networkis.ps1 -ReleaseReceipt ...` installiert. Laufender Container, Image-ID und Buildmanifest stimmen mit dem PASS-Receipt überein. Readiness meldet Datenbank und Speicher verfügbar; lokaler und LAN-Endpunkt erreichbar.
+
+- TypeScript erfolgreich; 388 Frontend-Tests bestanden.
+- Vollständige isolierte Backend-Suite: 1771 bestanden, 2 übersprungen. Bestehende Pydantic-Warnung zum Feldnamen `validate` bleibt sichtbar.
+- 67 Browserfälle auf dem Produktionsimage bestanden, einschließlich aller 40 Inventarprüfungen, direkter Chat-Modellerstellung, I2C und Modbus RTU durch alle neun Schritte, Großmodell, realem Wiederanlauf und Änderung nach Modellfreigabe.
+- Unabhängige HTTP-Abnahme klein: 8/8 Routen, 0 fehlgeschlagen, Konformität PASS.
+- Unabhängige HTTP-Abnahme groß: 838/838 Routen, 0 fehlgeschlagen, Konformität PASS.
+- Die Workflow-Befunde für Kapazität, Validierung und Bewertung können WARNING enthalten; bestandene Ausführung bedeutet keine pauschale fachliche Freigabe aller Annahmen.
+
+Der vorherige Lauf `57199c0b98a4` bleibt als FAIL dokumentiert: Der neue Schutztest hatte zulässige initiale Projektlesezugriffe fälschlich verboten. Nach Korrektur prüft er, dass der ungültige Agentenaufruf keine zusätzlichen Werkzeugaufrufe auslöst. Anschließend wurde das vollständige Gate erneut ausgeführt, nicht nur der Einzeltest.
+
+Diese Abnahme hebt die unten beschriebenen Grenzen für die vollständige Architekturqualität aller 40 Szenarien nicht auf.
+
+## Zusätzliche ausgeführte Nachweise
+
+- 40/40 reale MCP-Auftragsannahmen mit lokalem Modell: Mengen und Originalanforderung erhalten; weiterhin INCOMPLETE statt falscher Gesamtfertigmeldung. 19 Modellantworten, 21 begrenzte Fallbacks für optionale Planungsnotizen. Diese Quellstandprüfung ist kein Image-Freigabenachweis.
+- 43/43 Browserprüfungen auf isoliertem Diagnoseimage b1297e9bad56: 40 Inventarszenarien und drei Sensor-/Anschluss-/Freigaberegressionen.
+- 2/2 echte neunstufige Nicht-Automotive-E2E-Prüfungen auf demselben Diagnoseimage: Raspberry Pi mit I2C bzw. Modbus RTU, tatsächliche Modellübernahme und Simulation, Reload/Restart, keine Automotive-Technologien. Dies ist weiterhin kein Release-PASS: das Diagnoseimage ist ausdrücklich development_only.
+
+Belege: .tool-checker/reports/stabilization-live40-summary.json und backend/test-output/stabilization-preview/2e1c69ac76d3/. Das vollständige Produktions-Gate wird gesondert abgeschlossen.
+
+## Zuordnung zu den Ausgangsbefunden
+
+| Ausgangsbefund | Korrektur / Nachweis | Verbleibende Grenze |
+| --- | --- | --- |
+| 27 fehlerhafte Mengenfälle | 40 Mengenregressionen, 40 Chat-Inventare und 40 Browser-Inventare geprüft | Typisierung und technische Auslegung sind eigene Schritte |
+| S01-A / S19-A falscher Einzelgenerator | Vollständige Inventaraufträge zuerst als vollständiger Entwurf erfasst | Kein Beleg einer vollständigen S19/S20-Workload-Ausführung |
+| S02-A / S05-A falsche Argumenttypen | Schema-Prüfung vor Ausführung, begrenzte Wiederholung | Kein automatisches Erraten fachlich fehlender Argumente |
+| S03-A unzulässiges „Übernehmen“ | Sollumfang wieder korrekt erfasst; Browser prüft gesperrte Freigabe bei Lücken | Offene Angaben werden nicht durch Defaults verdeckt |
+| S07-B identische Rückfrage | Beantwortete Entscheidungsschlüssel im Orchestrator und Werkzeug wiederverwenden | Eine fachlich neue Entscheidung bleibt eine neue Frage |
+| S08-A unbelegte Zahlen | Freie Zahlenbehauptung ist kein bestätigtes Berechnungsartefakt | Keine Qualitätsgarantie für beliebigen LLM-Fließtext |
+| S14-A Zeichenkette null als Kennung | Vor Ausführung abweisen | Vorhandene Projekte werden nicht still migriert |
+| Antwort-Timeout / verlorene Anzeige | Planungsnotizen begrenzt; dauerhafte Antworten nachladbar und dedupliziert | Reale Langläufe können weiterhin Zeit benötigen |
+| Nicht-Automotive bis Schritt 9 | Zwei reale komplette Diagnose-E2Es bestanden | Nicht gleichbedeutend mit allen 40 vollständigen Branchenfällen |

@@ -1,0 +1,1631 @@
+{
+  "task_id": "industry50",
+  "test_id": "S28",
+  "run_id": "run-be0d9afafa2f4c6e9eaec0e0ad7b8099",
+  "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+  "contract_hash": "ad94e1a909b7ab65f0d5b3391064a0e7f418ed0eece9a8c90c15442d00f4bf64",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T11:05:17.529976+00:00",
+  "finished_at": "2026-09-16T11:08:26.454015+00:00",
+  "context": {
+    "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S28",
+      "title": "Wizard „Trace analysieren“: MCP, Simulation Trace und Root Cause",
+      "input": "Analysiere den Trace: Gateway Delay ab 12 s, Queue Growth, Message Delay, Deadline Miss.",
+      "source_lines": [
+        2020,
+        2095
+      ],
+      "source_requirements": "**Schwierigkeit:** Integration / E2E  \n**Prüfbereich:** Trace Tools + Reasoning + Evidence\n\n### Browser\n\nKlick:\n\n```text\nTrace analysieren\n```\n\n### Testgrundlage\n\nSimulation enthält:\n\n```text\nGateway Delay ab 12 s\n→ Queue Growth\n→ Message Delay\n→ Deadline Miss\n```\n\n### Erwarteter Toolflow\n\n```text\ntrace.load\ntrace.get_window\ntrace.get_events\nsignal.get_series\nrouting.get_route\ncapacity.get_metrics\ntiming.get_metrics\nfault.get_events\ntrace.correlate\ntrace.root_cause\n```\n\n### Erwartetes Ergebnis\n\nNicht nur:\n\n```text\n\"Es gibt ein Timingproblem.\"\n```\n\nsondern:\n\n```text\nObservation\nEvidence\nCausal Chain\nRoot Cause\nConfidence\nAffected Objects\n```\n\n### Browser-Prüfung\n\nPrüfe:\n\n```text\nBotschaften\nSequenz\nSignale\nTrace\n```\n\nund synchronen Zeitkontext.\n\n### PASS\n\nRoot Cause besitzt Evidence-Referenzen und kann auf Trace-, Route- und Modellobjekte zurückgeführt werden.\n\n---",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des veröffentlichten Images"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Browser:\nKlick:\n\n```text\nTrace analysieren\n```",
+        "Testgrundlage:\nSimulation enthält:\n\n```text\nGateway Delay ab 12 s\n→ Queue Growth\n→ Message Delay\n→ Deadline Miss\n```",
+        "Erwarteter Toolflow:\n```text\ntrace.load\ntrace.get_window\ntrace.get_events\nsignal.get_series\nrouting.get_route\ncapacity.get_metrics\ntiming.get_metrics\nfault.get_events\ntrace.correlate\ntrace.root_cause\n```",
+        "Erwartetes Ergebnis:\nNicht nur:\n\n```text\n\"Es gibt ein Timingproblem.\"\n```\n\nsondern:\n\n```text\nObservation\nEvidence\nCausal Chain\nRoot Cause\nConfidence\nAffected Objects\n```",
+        "Browser-Prüfung:\nPrüfe:\n\n```text\nBotschaften\nSequenz\nSignale\nTrace\n```\n\nund synchronen Zeitkontext.",
+        "PASS:\nRoot Cause besitzt Evidence-Referenzen und kann auf Trace-, Route- und Modellobjekte zurückgeführt werden.\n\n---"
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "contract_hash": "ad94e1a909b7ab65f0d5b3391064a0e7f418ed0eece9a8c90c15442d00f4bf64",
+      "status": "READY",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "a8505ae85346cab0f15c46801d552e568e9b701395c13628afdced97d220e98d"
+  },
+  "evidence": [
+    {
+      "id": "ev-070a9e2507fe4e85aab08abc566744a6",
+      "path": "evidence\\ev-070a9e2507fe4e85aab08abc566744a6.json",
+      "sha256": "a481cdfb4f90f3bddcae45529caf7696b2bd373f3a278749dec23345aa2accd7",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:08:24.645992+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\after.json"
+    },
+    {
+      "id": "ev-80309595e98242a1a90bda5b6e925ffc",
+      "path": "evidence\\ev-80309595e98242a1a90bda5b6e925ffc.json",
+      "sha256": "ba65447ffd4d9e0fbdedd388a8b16d14c217004b3ee3a0a5daca0e4b9c3c5629",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:08:24.793488+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\before.json"
+    },
+    {
+      "id": "ev-e0e2dfc651aa4b3f87762d41e27fb6f7",
+      "path": "evidence\\ev-e0e2dfc651aa4b3f87762d41e27fb6f7.png",
+      "sha256": "d73f7e32173793d3a9ccac45b5eded76340ea8c5976cbe7a38a78949ea8f85ec",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T11:08:24.939776+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\browser.png"
+    },
+    {
+      "id": "ev-27e6f6e84f224756b6250415d88ddabb",
+      "path": "evidence\\ev-27e6f6e84f224756b6250415d88ddabb.txt",
+      "sha256": "dd0fb2ba19ec4da5ed923dc6bd9f117377ef9f7764b719655798ed9646214b23",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.080316+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\browser.txt"
+    },
+    {
+      "id": "ev-c9a64b0eb55f4688a9416b6f170e0f5f",
+      "path": "evidence\\ev-c9a64b0eb55f4688a9416b6f170e0f5f.json",
+      "sha256": "db4d09875680d01d16dca16087009aebc41e8ca3a1f39ffcab17ebbd66389a92",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.219361+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\canonical-fixture-map.json"
+    },
+    {
+      "id": "ev-ff01e91493d54d9e8bc25996015ac964",
+      "path": "evidence\\ev-ff01e91493d54d9e8bc25996015ac964.json",
+      "sha256": "7cb9f59abb932ab8866f60321478ab8d9e3c7f700f82814803dd5a82fde93864",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.361901+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\canonical-job-result.json"
+    },
+    {
+      "id": "ev-2be4e5646283425c9bd26e232ec3318e",
+      "path": "evidence\\ev-2be4e5646283425c9bd26e232ec3318e.json",
+      "sha256": "3b04ec4c3ce009fe14ac051090556221a9211f37eeda770b538137f2c4c8b204",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.506743+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\canonical-job-submitted.json"
+    },
+    {
+      "id": "ev-6ec84521d2614351819dd526118b1288",
+      "path": "evidence\\ev-6ec84521d2614351819dd526118b1288.json",
+      "sha256": "9b56720ea40b3a56501fa01c71be321bf6aad7dc3af5c66e81378311d67edd82",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.658962+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\generated-trace.json"
+    },
+    {
+      "id": "ev-6c1adb3ebab2446b8d0130da5754b03b",
+      "path": "evidence\\ev-6c1adb3ebab2446b8d0130da5754b03b.json",
+      "sha256": "7206eb399ef375de7554b2e56c167426ef6ed9a2cf339d4d825ada8236627f64",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.802321+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\job-request.json"
+    },
+    {
+      "id": "ev-b63f2792586d4fc88078312ec5556d67",
+      "path": "evidence\\ev-b63f2792586d4fc88078312ec5556d67.json",
+      "sha256": "e1e156b496e81a45d5b14b97980030a63ef3e57908a2beedb591d0304c756b0b",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:25.951594+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\job-result.json"
+    },
+    {
+      "id": "ev-140e7c4cfa124c16b2c4f264c9bc2a84",
+      "path": "evidence\\ev-140e7c4cfa124c16b2c4f264c9bc2a84.json",
+      "sha256": "ace89f7aa4cefd8bbad0e17172e3325a4fd863459592b42b22ace41cbf505918",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:26.095979+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\job-submitted.json"
+    },
+    {
+      "id": "ev-9539f03866fd4df1b29153f041ae0621",
+      "path": "evidence\\ev-9539f03866fd4df1b29153f041ae0621.json",
+      "sha256": "8a2e7bfb363bdada8cb0fc8030314e11bb75b13900778bac946c06a8f1e96733",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:08:26.238433+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S28\\trace-window.json"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nTrace analysieren\n```",
+    "completion_criteria:Testgrundlage:\nSimulation enthält:\n\n```text\nGateway Delay ab 12 s\n→ Queue Growth\n→ Message Delay\n→ Deadline Miss\n```",
+    "completion_criteria:Erwarteter Toolflow:\n```text\ntrace.load\ntrace.get_window\ntrace.get_events\nsignal.get_series\nrouting.get_route\ncapacity.get_metrics\ntiming.get_metrics\nfault.get_events\ntrace.correlate\ntrace.root_cause\n```",
+    "completion_criteria:Erwartetes Ergebnis:\nNicht nur:\n\n```text\n\"Es gibt ein Timingproblem.\"\n```\n\nsondern:\n\n```text\nObservation\nEvidence\nCausal Chain\nRoot Cause\nConfidence\nAffected Objects\n```",
+    "completion_criteria:Browser-Prüfung:\nPrüfe:\n\n```text\nBotschaften\nSequenz\nSignale\nTrace\n```\n\nund synchronen Zeitkontext.",
+    "completion_criteria:PASS:\nRoot Cause besitzt Evidence-Referenzen und kann auf Trace-, Route- und Modellobjekte zurückgeführt werden.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nTrace analysieren\n```",
+    "completion_criteria:Testgrundlage:\nSimulation enthält:\n\n```text\nGateway Delay ab 12 s\n→ Queue Growth\n→ Message Delay\n→ Deadline Miss\n```",
+    "completion_criteria:Erwarteter Toolflow:\n```text\ntrace.load\ntrace.get_window\ntrace.get_events\nsignal.get_series\nrouting.get_route\ncapacity.get_metrics\ntiming.get_metrics\nfault.get_events\ntrace.correlate\ntrace.root_cause\n```",
+    "completion_criteria:Erwartetes Ergebnis:\nNicht nur:\n\n```text\n\"Es gibt ein Timingproblem.\"\n```\n\nsondern:\n\n```text\nObservation\nEvidence\nCausal Chain\nRoot Cause\nConfidence\nAffected Objects\n```",
+    "completion_criteria:Browser-Prüfung:\nPrüfe:\n\n```text\nBotschaften\nSequenz\nSignale\nTrace\n```\n\nund synchronen Zeitkontext.",
+    "completion_criteria:PASS:\nRoot Cause besitzt Evidence-Referenzen und kann auf Trace-, Route- und Modellobjekte zurückgeführt werden.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-be0d9afafa2f4c6e9eaec0e0ad7b8099",
+    "actions": [
+      {
+        "name": "Originalfall ausführen und Nachweise sichern",
+        "status": "PASSED",
+        "evidence": [
+          "ev-070a9e2507fe4e85aab08abc566744a6",
+          "ev-80309595e98242a1a90bda5b6e925ffc",
+          "ev-e0e2dfc651aa4b3f87762d41e27fb6f7",
+          "ev-27e6f6e84f224756b6250415d88ddabb",
+          "ev-c9a64b0eb55f4688a9416b6f170e0f5f",
+          "ev-ff01e91493d54d9e8bc25996015ac964",
+          "ev-2be4e5646283425c9bd26e232ec3318e",
+          "ev-6ec84521d2614351819dd526118b1288",
+          "ev-6c1adb3ebab2446b8d0130da5754b03b",
+          "ev-b63f2792586d4fc88078312ec5556d67",
+          "ev-140e7c4cfa124c16b2c4f264c9bc2a84",
+          "ev-9539f03866fd4df1b29153f041ae0621"
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-070a9e2507fe4e85aab08abc566744a6",
+          "ev-80309595e98242a1a90bda5b6e925ffc",
+          "ev-e0e2dfc651aa4b3f87762d41e27fb6f7",
+          "ev-27e6f6e84f224756b6250415d88ddabb",
+          "ev-c9a64b0eb55f4688a9416b6f170e0f5f",
+          "ev-ff01e91493d54d9e8bc25996015ac964",
+          "ev-2be4e5646283425c9bd26e232ec3318e",
+          "ev-6ec84521d2614351819dd526118b1288",
+          "ev-6c1adb3ebab2446b8d0130da5754b03b",
+          "ev-b63f2792586d4fc88078312ec5556d67",
+          "ev-140e7c4cfa124c16b2c4f264c9bc2a84",
+          "ev-9539f03866fd4df1b29153f041ae0621"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "workflow": {
+        "http_status": 200,
+        "data": {
+          "active_step": "engineering_model",
+          "artifact_checks": {
+            "engineering_model": {
+              "complete": false,
+              "consistency": {
+                "function_required": 3,
+                "functions_duplicate": 0,
+                "functions_missing": 0,
+                "functions_unexpected": 0,
+                "hardware_interfaces_missing": 0,
+                "messages_overflow": 0
+              },
+              "counts": {
+                "functions": 3,
+                "hardware_interfaces": 4,
+                "hardware_nodes": 3,
+                "interfaces": 4,
+                "messages": 1,
+                "signals": 1
+              },
+              "hardware_by_type": {
+                "ECU": 2,
+                "Gateway": 1
+              },
+              "incomplete": {
+                "functions": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 1,
+                "transmission": 0
+              },
+              "scope_mismatches": {},
+              "status": "IN_PROGRESS"
+            },
+            "network_editor": {
+              "complete": false,
+              "counts": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "invalid": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "status": "EMPTY"
+            },
+            "parameters": {
+              "complete": true,
+              "invalid_numeric": [],
+              "required": {},
+              "status": "APPROVED",
+              "uses_defaults": true
+            },
+            "routing": {
+              "complete": false,
+              "counts": {
+                "approved": 0,
+                "conflicts": 0,
+                "gateway_fanout_interfaces": 0,
+                "gateway_fanout_routes": 0,
+                "invalid": 0,
+                "total": 0,
+                "valid": 0
+              },
+              "coverage": {
+                "complete": false,
+                "covered_messages": 0,
+                "covered_signals": 0,
+                "errors": [],
+                "excluded_message_ids": [],
+                "excluded_messages": 0,
+                "excluded_signal_ids": [],
+                "excluded_signals": 0,
+                "message_coverage_percent": 0.0,
+                "missing_message_ids": [
+                  "84654a20-b9e3-47b5-8632-12208b69f10c"
+                ],
+                "missing_signal_ids": [
+                  "12da0e25-a638-4a80-be39-3fc45aa82b8a"
+                ],
+                "required_message_ids": [
+                  "84654a20-b9e3-47b5-8632-12208b69f10c"
+                ],
+                "required_messages": 1,
+                "required_signal_ids": [
+                  "12da0e25-a638-4a80-be39-3fc45aa82b8a"
+                ],
+                "required_signals": 1,
+                "scope_mode": "ALL",
+                "signal_coverage_percent": 0.0,
+                "total_messages": 1,
+                "total_signals": 1,
+                "transport_exclusions": [],
+                "version": 1
+              },
+              "status": "EMPTY"
+            }
+          },
+          "context": {
+            "active_project": "nis-e2e-industry50-s28",
+            "active_workflow_step": "engineering_model",
+            "selected_network": null,
+            "selected_object": null,
+            "selected_route": null,
+            "selected_signal": null,
+            "selected_simulation": null
+          },
+          "edit_tokens": {
+            "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          "latest_analyses": {
+            "reasoning": {
+              "analysis_type": "reasoning",
+              "created_at": "2026-09-16T11:06:35.791617+00:00",
+              "id": "91a577dc-fc4f-4cb9-a1d8-a7cfe1feb929",
+              "is_outdated": false,
+              "outdated_reason": null,
+              "status": "INCOMPLETE"
+            }
+          },
+          "parameters": {},
+          "project_id": "nis-e2e-industry50-s28",
+          "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+          "simulation_snapshots": [],
+          "stale_reasons": {},
+          "status_vocabulary": [
+            "EMPTY",
+            "IN_PROGRESS",
+            "COMPLETE",
+            "WARNING",
+            "ERROR",
+            "APPROVED",
+            "OUTDATED"
+          ],
+          "statuses": {
+            "capacity_timing": "EMPTY",
+            "data_science_intelligence": "EMPTY",
+            "engineering_model": "IN_PROGRESS",
+            "network_editor": "EMPTY",
+            "parameters": "APPROVED",
+            "results_analysis": "EMPTY",
+            "routing": "EMPTY",
+            "simulation": "EMPTY",
+            "validation": "EMPTY"
+          },
+          "steps": [
+            {
+              "id": "engineering_model",
+              "label": "Engineering-Modell",
+              "position": 1,
+              "reason": null,
+              "status": "IN_PROGRESS",
+              "version": 16
+            },
+            {
+              "id": "routing",
+              "label": "Routing-Tabelle",
+              "position": 2,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "network_editor",
+              "label": "Netzwerk-Editor",
+              "position": 3,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "parameters",
+              "label": "Parameter",
+              "position": 4,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 0
+            },
+            {
+              "id": "capacity_timing",
+              "label": "Capacity & Timing",
+              "position": 5,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "validation",
+              "label": "Validation / Preflight",
+              "position": 6,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "simulation",
+              "label": "Simulation",
+              "position": 7,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "results_analysis",
+              "label": "Results / Analysis",
+              "position": 8,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "data_science_intelligence",
+              "label": "Data Science & Intelligence",
+              "position": 9,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            }
+          ],
+          "topology": {},
+          "updated_at": "2026-09-16T11:06:33.993798+00:00",
+          "versions": {
+            "capacity_timing": 0,
+            "data_science_intelligence": 0,
+            "engineering_model": 16,
+            "network_editor": 0,
+            "parameters": 0,
+            "results_analysis": 0,
+            "routing": 0,
+            "simulation": 0,
+            "validation": 0
+          }
+        }
+      },
+      "history": {
+        "http_status": 200,
+        "data": {
+          "messages": [
+            {
+              "id": "xv53Ja0aqS2m317U",
+              "parts": [
+                {
+                  "text": "Analysiere den Trace des Simulationslaufs 1de0aa9322d744d8958213998bec6593. Prüfe das Zeitfenster 11 bis 15 Sekunden auf Gateway Delay, Queue Growth, Message Delay und Deadline Miss. Begründe eine Root Cause nur mit vorhandener Evidenz.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "c457e212-d151-4a9a-a3d5-bb5181a84aa7",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:06:35.727484+00:00",
+                    "findings": [],
+                    "id": "bf486b6d-0c87-4d08-8032-5e5c656d3028",
+                    "metadata": {
+                      "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                      "run_id": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "4c27b8d8-a350-4078-93ab-c1205c89042e",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:06:35.783773+00:00",
+                    "findings": [],
+                    "id": "1ad63669-9ae3-43ff-a76e-4bd327079a65",
+                    "metadata": {
+                      "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                      "run_id": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "PLANNING",
+                    "text": "Projektstand und benötigte Arbeitsschritte prüfen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "a71cf2ad-fa13-4c95-8177-f761a650ca2c",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:06:36.318429+00:00",
+                    "findings": [],
+                    "id": "1b577479-36ff-46cf-ab47-3427b96acf2a",
+                    "metadata": {
+                      "completion_status": "INCOMPLETE",
+                      "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                      "reasoning_id": "91a577dc-fc4f-4cb9-a1d8-a7cfe1feb929",
+                      "run_id": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3",
+                      "validation_status": "BLOCKED_BY_DATA_GAP"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [],
+                    "severity": "",
+                    "status": "",
+                    "text": "ROOT_CAUSE_UNCONFIRMED: Die Analyse benötigt weitere Evidenz; siehe Datenlücken und Hypothesen.",
+                    "title": "",
+                    "type": "FINDING"
+                  },
+                  "id": "29a7d92c-b329-489f-a188-c83562e5c183",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:06:36.323885+00:00",
+                    "findings": [],
+                    "id": "d7ac2636-605a-48a3-9912-aa5839c09fee",
+                    "metadata": {
+                      "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                      "run_id": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3"
+                    },
+                    "options": [],
+                    "outputs": [
+                      {
+                        "affected_objects": [],
+                        "content": "ROOT_CAUSE_UNCONFIRMED: Die Analyse benötigt weitere Evidenz; siehe Datenlücken und Hypothesen.",
+                        "evidence_refs": [
+                          "5ddfe0d8-c3f1-4a06-819c-d19c173a070d",
+                          "c46ec105-422e-4846-9d93-307d34fba2ae"
+                        ],
+                        "output_id": "c07913ea-c3b0-40ab-8763-1f262f237d78",
+                        "output_type": "CHAT",
+                        "project_ref": "nis-e2e-industry50-s28",
+                        "provenance": {
+                          "capability_version": "1",
+                          "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e"
+                        },
+                        "run_ref": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3",
+                        "schema_version": 1,
+                        "status": "INCOMPLETE",
+                        "validation": {}
+                      }
+                    ],
+                    "progress": [],
+                    "severity": "",
+                    "status": "INCOMPLETE",
+                    "text": "ROOT_CAUSE_UNCONFIRMED: Die Analyse benötigt weitere Evidenz; siehe Datenlücken und Hypothesen.",
+                    "title": "",
+                    "type": "RESULT"
+                  },
+                  "id": "5c65d8d0-9645-49c0-a3a1-57585c638976",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s28",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering_model",
+                      "answered_questions": {},
+                      "assumptions": [],
+                      "current_requirement": "Analysiere den Trace des Simulationslaufs 1de0aa9322d744d8958213998bec6593. Prüfe das Zeitfenster 11 bis 15 Sekunden auf Gateway Delay, Queue Growth, Message Delay und Deadline Miss. Begründe eine Root Cause nur mit vorhandener Evidenz.",
+                      "current_workload": null,
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": null,
+                          "text": "Analysiere den Trace des Simulationslaufs 1de0aa9322d744d8958213998bec6593. Prüfe das Zeitfenster 11 bis 15 Sekunden auf Gateway Delay, Queue Growth, Message Delay und Deadline Miss. Begründe eine Root Cause nur mit vorhandener Evidenz."
+                        },
+                        "files": [],
+                        "input_id": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                        "input_type": "TEXT",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s28",
+                        "request_revision": null,
+                        "run_ref": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T11:06:35.377377+00:00",
+                        "user_intent": "ENGINEERING_REQUEST"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": null,
+                      "project_draft_revision": null,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "INCOMPLETE",
+                    "type": "CONTEXT"
+                  },
+                  "id": "9061cfba-4981-4c5c-8a9d-85a426e062ea",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            }
+          ],
+          "updatedAt": 1789556797183
+        }
+      },
+      "conversation": {
+        "http_status": 200,
+        "data": {
+          "affected_objects": [],
+          "data": {
+            "active_proposal": null,
+            "active_workload": null,
+            "answered_questions": {},
+            "conversation_id": "nis-e2e-industry50-s28",
+            "current_question": null,
+            "current_requirement": "Analysiere den Trace des Simulationslaufs 1de0aa9322d744d8958213998bec6593. Prüfe das Zeitfenster 11 bis 15 Sekunden auf Gateway Delay, Queue Growth, Message Delay und Deadline Miss. Begründe eine Root Cause nur mit vorhandener Evidenz.",
+            "decisions": {},
+            "durable_response_ids": [
+              "d7ac2636-605a-48a3-9912-aa5839c09fee"
+            ],
+            "findings": {
+              "1b577479-36ff-46cf-ab47-3427b96acf2a": {
+                "actions": [],
+                "context_refs": [],
+                "created_at": "2026-09-16T11:06:36.318429+00:00",
+                "findings": [],
+                "id": "1b577479-36ff-46cf-ab47-3427b96acf2a",
+                "metadata": {
+                  "completion_status": "INCOMPLETE",
+                  "input_ref": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+                  "reasoning_id": "91a577dc-fc4f-4cb9-a1d8-a7cfe1feb929",
+                  "run_id": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3",
+                  "validation_status": "BLOCKED_BY_DATA_GAP"
+                },
+                "options": [],
+                "outputs": [],
+                "progress": [],
+                "severity": "",
+                "status": "",
+                "text": "ROOT_CAUSE_UNCONFIRMED: Die Analyse benötigt weitere Evidenz; siehe Datenlücken und Hypothesen.",
+                "title": "",
+                "type": "FINDING"
+              }
+            },
+            "input_envelope": {
+              "active_view": "/studio/engineering",
+              "constraints": [],
+              "content": {
+                "decision": null,
+                "text": "Analysiere den Trace des Simulationslaufs 1de0aa9322d744d8958213998bec6593. Prüfe das Zeitfenster 11 bis 15 Sekunden auf Gateway Delay, Queue Growth, Message Delay und Deadline Miss. Begründe eine Root Cause nur mit vorhandener Evidenz."
+              },
+              "files": [],
+              "input_id": "a050b9c4-1b13-4f1b-b259-01ddf55dfd4e",
+              "input_type": "TEXT",
+              "operation_ref": null,
+              "project_ref": "nis-e2e-industry50-s28",
+              "request_revision": null,
+              "run_ref": "9d6ea4f5-f4bf-43d7-a9a4-ff8a562ebda3",
+              "schema_version": 1,
+              "selected_objects": [],
+              "source": "conversation",
+              "timestamp": "2026-09-16T11:06:35.377377+00:00",
+              "user_intent": "ENGINEERING_REQUEST"
+            },
+            "lease_until": "2026-09-16T11:11:35.377280+00:00",
+            "pending_approvals": [],
+            "questions": {},
+            "run_id": null,
+            "selected_context": {
+              "active_view": "/studio/engineering",
+              "selected_object_refs": []
+            },
+            "ui_updated_at": 1789556797183
+          },
+          "evidence": [],
+          "evidence_refs": [],
+          "findings": [],
+          "next_actions": [],
+          "status": "SUCCESS",
+          "success": true,
+          "time_range": null,
+          "trace_id": "94890f6a-34fa-40f8-95ef-db4aa9e24c24",
+          "validation_status": "NOT_EVALUATED",
+          "warnings": []
+        }
+      },
+      "hardware": {
+        "http_status": 200,
+        "data": {
+          "count": 3,
+          "items": [
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0003",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "50243cdc-4e3f-465d-9595-3d515dbaa41e",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 3,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0003",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 3
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "target",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "Gateway",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0002",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "gateway",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 2,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0002",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 2
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "Central",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0001",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "c61cca7b-c4c3-4e26-9822-1202e1f6477a",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 1,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0001",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 1
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "source",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "hardware_interfaces": {
+        "http_status": 200,
+        "data": {
+          "count": 4,
+          "items": [
+            {
+              "approval_state": "pending",
+              "bitrate": 19200.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "50243cdc-4e3f-465d-9595-3d515dbaa41e",
+              "id": "37196985-8ec3-45c8-a0f2-0acdb230f427",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "target-ifPhysical",
+              "network_ref": "output-bus",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "b081496c-3630-4491-99ff-43109f21759c",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "LIN",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 19200.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "id": "58fb3add-1852-4d67-866c-da1542f87850",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "gateway-outPhysical",
+              "network_ref": "output-bus",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "15c46540-5d5a-4e12-a799-498d70de0a09",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "LIN",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "id": "12237f9d-15af-4885-951c-1adfafe7e03b",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "gateway-inPhysical",
+              "network_ref": "input-bus",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "b5bc86e8-5397-4889-98e7-1320f21e3d62",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "c61cca7b-c4c3-4e26-9822-1202e1f6477a",
+              "id": "fc75ff67-5bf1-4d13-ba3b-c39d21499098",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "source-ifPhysical",
+              "network_ref": "input-bus",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "29fdfaee-fe36-43bc-96a6-663b9dd95243",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            }
+          ]
+        }
+      },
+      "functions": {
+        "http_status": 200,
+        "data": {
+          "count": 3,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "50243cdc-4e3f-465d-9595-3d515dbaa41e",
+              "id": "577e79b9-a68f-4ed2-9e49-63546215794f",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "targetFunction",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "id": "6bce54ac-91d0-4d5d-b107-b812f1986b30",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "gatewayFunction",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "c61cca7b-c4c3-4e26-9822-1202e1f6477a",
+              "id": "ce4f4fc1-b5e5-4f74-9756-c6c04920f043",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "sourceFunction",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "messages": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "configuration": {},
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "cycle_ms": 20.0,
+              "description": null,
+              "direction": "tx",
+              "dlc": 2,
+              "domain": null,
+              "hardware_interface_id": "fc75ff67-5bf1-4d13-ba3b-c39d21499098",
+              "id": "84654a20-b9e3-47b5-8632-12208b69f10c",
+              "interface_id": "29fdfaee-fe36-43bc-96a6-663b9dd95243",
+              "lifecycle_state": "draft",
+              "message_id_hex": "0x120",
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "TemperatureMessage",
+              "object_type": "Message",
+              "project_id": "nis-e2e-industry50-s28",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "signals": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "approval_state": "pending",
+              "byte_order": "little_endian",
+              "communication": {},
+              "confidence": null,
+              "configuration": {},
+              "created_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "created_by": null,
+              "data": {},
+              "data_type": null,
+              "description": null,
+              "display_name": null,
+              "domain": null,
+              "factor": 0.1,
+              "id": "12da0e25-a638-4a80-be39-3fc45aa82b8a",
+              "length_bits": 16,
+              "lifecycle_state": "draft",
+              "max_value": 215.0,
+              "message_id": "84654a20-b9e3-47b5-8632-12208b69f10c",
+              "min_value": -40.0,
+              "modified_at": "Wed, 16 Sep 2026 11:06:11 GMT",
+              "modified_by": null,
+              "name": "Temperature",
+              "object_type": "Signal",
+              "offset_value": -40.0,
+              "project_id": "nis-e2e-industry50-s28",
+              "protocol_bindings": [],
+              "provenance": {},
+              "quality": {},
+              "review_state": "unreviewed",
+              "semantic": {},
+              "source": "manual",
+              "start_bit": 0,
+              "unit": "degC",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "routing": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "resources": {
+        "http_status": 200,
+        "data": {
+          "model_revision": "31834f2754b0f1303b81da6ec387161e8d1d7916763f4fc8e2ec1788554f4ae2",
+          "ports": [
+            {
+              "channel_index": null,
+              "connection_status": "CONNECTED",
+              "controller_ref": null,
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "37196985-8ec3-45c8-a0f2-0acdb230f427",
+              "hardware_node_ref": "50243cdc-4e3f-465d-9595-3d515dbaa41e",
+              "id": "b081496c-3630-4491-99ff-43109f21759c",
+              "network_ref": "output-bus",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "LIN"
+            },
+            {
+              "channel_index": null,
+              "connection_status": "CONNECTED",
+              "controller_ref": null,
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "58fb3add-1852-4d67-866c-da1542f87850",
+              "hardware_node_ref": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "id": "15c46540-5d5a-4e12-a799-498d70de0a09",
+              "network_ref": "output-bus",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "LIN"
+            },
+            {
+              "channel_index": null,
+              "connection_status": "CONNECTED",
+              "controller_ref": null,
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "12237f9d-15af-4885-951c-1adfafe7e03b",
+              "hardware_node_ref": "f3f57eb8-374a-46b1-9f66-64914afe0c27",
+              "id": "b5bc86e8-5397-4889-98e7-1320f21e3d62",
+              "network_ref": "input-bus",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "CAN_FD"
+            },
+            {
+              "channel_index": null,
+              "connection_status": "CONNECTED",
+              "controller_ref": null,
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "fc75ff67-5bf1-4d13-ba3b-c39d21499098",
+              "hardware_node_ref": "c61cca7b-c4c3-4e26-9822-1202e1f6477a",
+              "id": "29fdfaee-fe36-43bc-96a6-663b9dd95243",
+              "network_ref": "input-bus",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "CAN_FD"
+            }
+          ],
+          "resources": {
+            "CommunicationCapability": [],
+            "CommunicationController": [],
+            "NetworkConnection": [],
+            "PhysicalPort": []
+          }
+        }
+      },
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 16,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "captured_at": "2026-09-16T11:08:24.502191+00:00"
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "outputs": [
+      {
+        "name": "Observed scoped result",
+        "status": "PASSED",
+        "evidence": [
+          "ev-070a9e2507fe4e85aab08abc566744a6",
+          "ev-80309595e98242a1a90bda5b6e925ffc",
+          "ev-e0e2dfc651aa4b3f87762d41e27fb6f7",
+          "ev-27e6f6e84f224756b6250415d88ddabb",
+          "ev-c9a64b0eb55f4688a9416b6f170e0f5f",
+          "ev-ff01e91493d54d9e8bc25996015ac964",
+          "ev-2be4e5646283425c9bd26e232ec3318e",
+          "ev-6ec84521d2614351819dd526118b1288",
+          "ev-6c1adb3ebab2446b8d0130da5754b03b",
+          "ev-b63f2792586d4fc88078312ec5556d67",
+          "ev-140e7c4cfa124c16b2c4f264c9bc2a84",
+          "ev-9539f03866fd4df1b29153f041ae0621"
+        ],
+        "detail": "Realer 15-s-Simulationsjob mit Gateway Delay ab 12s erzeugt 150 Latenzverletzungen und wird im Trace-Wizard analysiert. Kein erfundener Root Cause: ROOT_CAUSE_UNCONFIRMED. Geforderte vollständige Queue-Growth-Kausalkette nicht im Testlauf nachgewiesen; kanonische Route/Snapshot fehlen im aufgebauten Testfixture. Deshalb Teilprüfung, kein E2E-PASS."
+      }
+    ]
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Browser:\nKlick:\n\n```text\nTrace analysieren\n```",
+      "Testgrundlage:\nSimulation enthält:\n\n```text\nGateway Delay ab 12 s\n→ Queue Growth\n→ Message Delay\n→ Deadline Miss\n```",
+      "Erwarteter Toolflow:\n```text\ntrace.load\ntrace.get_window\ntrace.get_events\nsignal.get_series\nrouting.get_route\ncapacity.get_metrics\ntiming.get_metrics\nfault.get_events\ntrace.correlate\ntrace.root_cause\n```",
+      "Erwartetes Ergebnis:\nNicht nur:\n\n```text\n\"Es gibt ein Timingproblem.\"\n```\n\nsondern:\n\n```text\nObservation\nEvidence\nCausal Chain\nRoot Cause\nConfidence\nAffected Objects\n```",
+      "Browser-Prüfung:\nPrüfe:\n\n```text\nBotschaften\nSequenz\nSignale\nTrace\n```\n\nund synchronen Zeitkontext.",
+      "PASS:\nRoot Cause besitzt Evidence-Referenzen und kann auf Trace-, Route- und Modellobjekte zurückgeführt werden.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

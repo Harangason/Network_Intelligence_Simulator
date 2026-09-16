@@ -130,7 +130,10 @@ def _frame(a):
     payload = valid_payload_bytes(technology, size)
     if payload is None:
         raise ValueError(f"Nutzlast von {size} Byte überschreitet die Grenze für {technology}.")
-    return estimate_frame(technology, payload, a.get("parameters") or {}).to_dict()
+    estimate = estimate_frame(technology, payload, a.get("parameters") or {})
+    if estimate.is_generic_estimate:
+        raise NotImplementedError(f'Kein technologiespezifisches Frame-Modell für {technology}. Eine generische Schätzung ist kein bestätigter Technologienachweis.')
+    return estimate.to_dict()
 
 
 def _network_capacity(a):

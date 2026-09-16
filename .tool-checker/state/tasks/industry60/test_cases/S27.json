@@ -1,0 +1,58 @@
+{
+  "test_id": "S27",
+  "title": "Wizard „Signal prüfen“: MCP bis zur fachlichen Validation",
+  "input": "Prüfe MotorRPM: 0 bis 5000 rpm, Auflösung 50 rpm, Zyklus 10 ms, CAN-FD; Message Binding verwendet 4 bit.",
+  "source_lines": [
+    1941,
+    2019
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat Wizard + Signal Semantics + Binding + Validation\n\n### Browser\n\nKlick:\n\n```text\nSignal prüfen\n```\n\n### Testsignal\n\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```\n\n### Erwarteter Flow\n\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```\n\n### MCP-Prüfung\n\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```\n\n### Negative Fall\n\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```\n\n### PASS\n\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Teststack des veröffentlichten Images"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Browser:\nKlick:\n\n```text\nSignal prüfen\n```",
+    "Testsignal:\n```text\nMotorRPM\n\nRange:\n0…5000 rpm\n\nResolution:\n50 rpm\n\nCycle:\n10 ms\n\nTechnology:\nCAN-FD\n```",
+    "Erwarteter Flow:\n```text\ninspect signal\n→ classify semantic type\n→ inspect definition vs message binding\n→ calculate required bit length\n→ inspect encoding\n→ inspect TransportUnit\n→ validate cycle / range / scaling\n→ create Finding if necessary\n```",
+    "MCP-Prüfung:\nMindestens:\n\n```text\nsignal.inspect\nsignal.semantic.classify\nsignal.encoding.resolve\nsignal.bit_length.calculate\ntransport.inspect\nsignal.validate\n```",
+    "Negative Fall:\nMessage Binding verwendet z. B.:\n\n```text\n4 bit\n```\n\nobwohl Wertebereich/Auflösung mehr benötigt.\n\nErwartung:\n\n```text\nVALIDATION_FAILED\nFinding\n```",
+    "PASS:\nDer Wizard führt eine echte fachliche Prüfung durch und zeigt nicht nur die Signal-Detailseite.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "3986881119f5e1027a80dd208da99d33b5ea8b69358073846c4327293aefa4d0",
+  "status": "PARTIAL",
+  "last_run": "run-57617f36fd9f4246aa57146992a8e42c"
+}

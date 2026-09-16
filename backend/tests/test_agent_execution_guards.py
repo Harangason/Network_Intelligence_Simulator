@@ -70,11 +70,13 @@ def test_repeated_failed_calls_do_not_repeat_side_effects_beyond_repair_budget()
 
 
 def test_preflight_argument_rejection_cannot_be_reported_as_successful_answer():
+    calls_before_rejected_request = []
     class Reasoner:
         step = 0
         async def next(self, *args):
             self.step += 1
             if self.step == 1:
+                calls_before_rejected_request.extend(client.calls)
                 return {'calls': [{'id': 'bad', 'name': 'inspect_project', 'arguments': {'request': 'not an object'}}],
                         'assistant_message': {'role': 'assistant', 'content': ''}}
             return {'calls': [], 'text': 'Die Prüfung ist beendet.'}
@@ -82,4 +84,6 @@ def test_preflight_argument_rejection_cannot_be_reported_as_successful_answer():
     result = asyncio.run(EngineeringAgent(client, reasoner=Reasoner()).run(
         'Prüfe das Projekt', AgentContext(active_project_id='guard-test')))
     assert result['status'] == 'INCOMPLETE'
-    assert not any(name == 'inspect_project' for name, _ in client.calls)
+    # Initial project context reads are legitimate; the malformed model call
+    # must not cause any additional MCP execution.
+    assert client.calls == calls_before_rejected_request

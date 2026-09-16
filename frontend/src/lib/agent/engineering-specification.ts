@@ -761,10 +761,11 @@ export function extractEngineeringTargetCounts(text: string): EngineeringTargetC
     inventoryVocabulary.roles.sensors.nouns, modifiers, new RegExp(inventoryVocabulary.roles.sensors.generic)));
   const actuators = Math.max(requestedCount(body, "(?:actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?)", modifiers), inventoryCount(body,
     inventoryVocabulary.roles.actuators.nouns, modifiers, new RegExp(inventoryVocabulary.roles.actuators.generic)));
+  const additionalCompute = inventoryCount(body, inventoryVocabulary.roles.ecus.additional_compute, "", /a^/);
   const ecus = Math.max(
     requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere"),
     inventoryCount(body, inventoryVocabulary.roles.ecus.nouns, modifiers, new RegExp(inventoryVocabulary.roles.ecus.generic)),
-  );
+  ) + additionalCompute;
   const gateways = requestedCount(body, "gateway(?:s)?", modifiers + "|einziges|einzigen");
   return {
     sensors,

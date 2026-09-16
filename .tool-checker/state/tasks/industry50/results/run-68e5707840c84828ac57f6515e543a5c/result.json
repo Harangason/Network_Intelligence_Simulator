@@ -1,0 +1,1499 @@
+{
+  "task_id": "industry50",
+  "test_id": "S26",
+  "run_id": "run-68e5707840c84828ac57f6515e543a5c",
+  "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+  "contract_hash": "b79df322990fb804ef197e50abb910ff219d2d84d7eea1645635093fa9db0958",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T11:02:33.303222+00:00",
+  "finished_at": "2026-09-16T11:03:25.377325+00:00",
+  "context": {
+    "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S26",
+      "title": "Chat Agent: Single-/Multi-Choice und Workload Resume",
+      "input": "Verbinde eine bestehende Funktion mit einem Zielcontroller, für den mehrere technisch valide Netzwerkoptionen existieren.",
+      "source_lines": [
+        1862,
+        1940
+      ],
+      "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat UX / Structured Decisions\n\n### Testeingabe\n\n```text\nVerbinde eine bestehende Funktion mit einem Zielcontroller,\nfür den mehrere technisch valide Netzwerkoptionen existieren.\n```\n\n### Erwartung\n\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```\n\n### Browser-Prüfung\n\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```\n\n### State-Prüfung\n\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```\n\n### MCP-Prüfung\n\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.\n\n### PASS\n\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des veröffentlichten Images"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Erwartung:\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```",
+        "Browser-Prüfung:\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```",
+        "State-Prüfung:\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```",
+        "MCP-Prüfung:\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.",
+        "PASS:\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---"
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "contract_hash": "b79df322990fb804ef197e50abb910ff219d2d84d7eea1645635093fa9db0958",
+      "status": "READY",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "a8505ae85346cab0f15c46801d552e568e9b701395c13628afdced97d220e98d"
+  },
+  "evidence": [
+    {
+      "id": "ev-1c5c14d54ac242779c6f5bf7101e9123",
+      "path": "evidence\\ev-1c5c14d54ac242779c6f5bf7101e9123.json",
+      "sha256": "46e11f8c0315d0f16d074366b6ba1f312d0a5644ed2aaed12e6643384becc35a",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:03:24.474528+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\after.json"
+    },
+    {
+      "id": "ev-5ff1df22a3664913859fd210df1266c7",
+      "path": "evidence\\ev-5ff1df22a3664913859fd210df1266c7.json",
+      "sha256": "364f86ffe46a3a18e8488ed966d7b6faf55cd8d797af4494c657b8d5f60aa042",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:03:24.613489+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\before.json"
+    },
+    {
+      "id": "ev-1bb53f944f1e42bf9f80511b44dda835",
+      "path": "evidence\\ev-1bb53f944f1e42bf9f80511b44dda835.png",
+      "sha256": "86b7bd1cfd158210e9927b382c8e2b556533db2ec374b134b303d967fc719498",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T11:03:24.752779+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\browser.png"
+    },
+    {
+      "id": "ev-32f5cbcce9ec4143ae90f4263fbca813",
+      "path": "evidence\\ev-32f5cbcce9ec4143ae90f4263fbca813.txt",
+      "sha256": "71bd9dc4bfd30a3846ac739d926cc4e39c8bff38c3ac88ca0948f0e412af98c7",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:03:24.895096+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\browser.txt"
+    },
+    {
+      "id": "ev-c20975942ef5477a8881a63db1296d79",
+      "path": "evidence\\ev-c20975942ef5477a8881a63db1296d79.json",
+      "sha256": "1bf06be180e8f96a5ee2068d10adaeb7077b0ff242daa7cc33ae7794c29fe703",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:03:25.038281+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\fixture-extension.json"
+    },
+    {
+      "id": "ev-846d966f4e2a49b7af704dbd86f440e0",
+      "path": "evidence\\ev-846d966f4e2a49b7af704dbd86f440e0.json",
+      "sha256": "c00ba327ebd828d0b195305acac2c24beaffad7b9d2b5ee65dc159431fcc1f37",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:03:25.188332+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S26\\fixture.json"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Erwartung:\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```",
+    "completion_criteria:Browser-Prüfung:\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```",
+    "completion_criteria:State-Prüfung:\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```",
+    "completion_criteria:MCP-Prüfung:\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.",
+    "completion_criteria:PASS:\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Erwartung:\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```",
+    "completion_criteria:Browser-Prüfung:\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```",
+    "completion_criteria:State-Prüfung:\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```",
+    "completion_criteria:MCP-Prüfung:\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.",
+    "completion_criteria:PASS:\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-68e5707840c84828ac57f6515e543a5c",
+    "actions": [
+      {
+        "name": "Originalfall ausführen und Nachweise sichern",
+        "status": "PASSED",
+        "evidence": [
+          "ev-1c5c14d54ac242779c6f5bf7101e9123",
+          "ev-5ff1df22a3664913859fd210df1266c7",
+          "ev-1bb53f944f1e42bf9f80511b44dda835",
+          "ev-32f5cbcce9ec4143ae90f4263fbca813",
+          "ev-c20975942ef5477a8881a63db1296d79",
+          "ev-846d966f4e2a49b7af704dbd86f440e0"
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-1c5c14d54ac242779c6f5bf7101e9123",
+          "ev-5ff1df22a3664913859fd210df1266c7",
+          "ev-1bb53f944f1e42bf9f80511b44dda835",
+          "ev-32f5cbcce9ec4143ae90f4263fbca813",
+          "ev-c20975942ef5477a8881a63db1296d79",
+          "ev-846d966f4e2a49b7af704dbd86f440e0"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "workflow": {
+        "http_status": 200,
+        "data": {
+          "active_step": "engineering_model",
+          "artifact_checks": {
+            "engineering_model": {
+              "complete": true,
+              "consistency": {
+                "function_required": 2,
+                "functions_duplicate": 0,
+                "functions_missing": 0,
+                "functions_unexpected": 0,
+                "hardware_interfaces_missing": 0,
+                "messages_overflow": 0
+              },
+              "counts": {
+                "functions": 2,
+                "hardware_interfaces": 3,
+                "hardware_nodes": 2,
+                "interfaces": 2,
+                "messages": 2,
+                "signals": 2
+              },
+              "hardware_by_type": {
+                "ECU": 2
+              },
+              "incomplete": {
+                "functions": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0,
+                "transmission": 0
+              },
+              "scope_mismatches": {},
+              "status": "COMPLETE"
+            },
+            "network_editor": {
+              "complete": false,
+              "counts": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "invalid": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "status": "EMPTY"
+            },
+            "parameters": {
+              "complete": true,
+              "invalid_numeric": [],
+              "required": {
+                "bitrate": true,
+                "cycle_ms": true,
+                "formats": true,
+                "industry": true,
+                "load_thresholds": true,
+                "payload_bytes": true,
+                "queue_size": true,
+                "target_bus_load": true,
+                "technology": true
+              },
+              "status": "APPROVED",
+              "uses_defaults": false
+            },
+            "routing": {
+              "complete": false,
+              "counts": {
+                "approved": 0,
+                "conflicts": 0,
+                "gateway_fanout_interfaces": 0,
+                "gateway_fanout_routes": 0,
+                "invalid": 0,
+                "total": 0,
+                "valid": 0
+              },
+              "coverage": {
+                "complete": false,
+                "covered_messages": 0,
+                "covered_signals": 0,
+                "errors": [],
+                "excluded_message_ids": [],
+                "excluded_messages": 0,
+                "excluded_signal_ids": [],
+                "excluded_signals": 0,
+                "message_coverage_percent": 0.0,
+                "missing_message_ids": [
+                  "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+                  "b48007aa-7dae-4288-a1f1-03470a2558fa"
+                ],
+                "missing_signal_ids": [
+                  "31a079a5-e094-44ad-b009-2d607c2238f0",
+                  "d1e41b5a-62b2-4af8-b0d9-b7d61f90422f"
+                ],
+                "required_message_ids": [
+                  "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+                  "b48007aa-7dae-4288-a1f1-03470a2558fa"
+                ],
+                "required_messages": 2,
+                "required_signal_ids": [
+                  "31a079a5-e094-44ad-b009-2d607c2238f0",
+                  "d1e41b5a-62b2-4af8-b0d9-b7d61f90422f"
+                ],
+                "required_signals": 2,
+                "scope_mode": "ALL",
+                "signal_coverage_percent": 0.0,
+                "total_messages": 2,
+                "total_signals": 2,
+                "transport_exclusions": [],
+                "version": 1
+              },
+              "status": "EMPTY"
+            }
+          },
+          "context": {
+            "active_project": "nis-e2e-industry50-s26",
+            "active_workflow_step": "engineering_model",
+            "selected_network": null,
+            "selected_object": null,
+            "selected_route": null,
+            "selected_signal": null,
+            "selected_simulation": null
+          },
+          "edit_tokens": {
+            "parameters": "dc097e268b08a660f7a75c10217f46fbf3186d93eb317d62051c709a1ca1e8c2",
+            "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          "latest_analyses": {},
+          "parameters": {},
+          "project_id": "nis-e2e-industry50-s26",
+          "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+          "simulation_snapshots": [],
+          "stale_reasons": {},
+          "status_vocabulary": [
+            "EMPTY",
+            "IN_PROGRESS",
+            "COMPLETE",
+            "WARNING",
+            "ERROR",
+            "APPROVED",
+            "OUTDATED"
+          ],
+          "statuses": {
+            "capacity_timing": "EMPTY",
+            "data_science_intelligence": "EMPTY",
+            "engineering_model": "COMPLETE",
+            "network_editor": "EMPTY",
+            "parameters": "APPROVED",
+            "results_analysis": "EMPTY",
+            "routing": "EMPTY",
+            "simulation": "EMPTY",
+            "validation": "EMPTY"
+          },
+          "steps": [
+            {
+              "id": "engineering_model",
+              "label": "Engineering-Modell",
+              "position": 1,
+              "reason": null,
+              "status": "COMPLETE",
+              "version": 13
+            },
+            {
+              "id": "routing",
+              "label": "Routing-Tabelle",
+              "position": 2,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "network_editor",
+              "label": "Netzwerk-Editor",
+              "position": 3,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "parameters",
+              "label": "Parameter",
+              "position": 4,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 2
+            },
+            {
+              "id": "capacity_timing",
+              "label": "Capacity & Timing",
+              "position": 5,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "validation",
+              "label": "Validation / Preflight",
+              "position": 6,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "simulation",
+              "label": "Simulation",
+              "position": 7,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "results_analysis",
+              "label": "Results / Analysis",
+              "position": 8,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "data_science_intelligence",
+              "label": "Data Science & Intelligence",
+              "position": 9,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            }
+          ],
+          "topology": {},
+          "updated_at": "2026-09-16T11:02:45.878902+00:00",
+          "versions": {
+            "capacity_timing": 0,
+            "data_science_intelligence": 0,
+            "engineering_model": 13,
+            "network_editor": 0,
+            "parameters": 2,
+            "results_analysis": 0,
+            "routing": 0,
+            "simulation": 0,
+            "validation": 0
+          }
+        }
+      },
+      "history": {
+        "http_status": 200,
+        "data": {
+          "messages": [
+            {
+              "id": "a3A4go86OzQ5NbZs",
+              "parts": [
+                {
+                  "text": "Verbinde ParkAssist mit DriverAssistance.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "1cf82667-cce3-4cdc-b358-a70a710c1605",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:02:47.166025+00:00",
+                    "findings": [],
+                    "id": "a9e4ae4b-0570-48b6-88a5-24e5761de0ba",
+                    "metadata": {
+                      "input_ref": "b23a87f9-1fa7-4cd2-b414-594b014ae826",
+                      "run_id": "49d1d958-0e43-4022-8913-80c4d29c49fa"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "51d98e62-f517-435e-aae8-29e61202b814",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:02:47.200888+00:00",
+                    "findings": [],
+                    "id": "902456d9-806a-4b22-8933-9b14d9afce84",
+                    "metadata": {
+                      "decision_key": "goal:goal-32a05120-a44a-4f36-aad4-f3bf4430ff05:874a065e-811f-4b22-9d5e-10d4a4458ad8",
+                      "input_ref": "b23a87f9-1fa7-4cd2-b414-594b014ae826",
+                      "run_id": "49d1d958-0e43-4022-8913-80c4d29c49fa"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [],
+                    "question": {
+                      "context_refs": [],
+                      "description": "Die gewählte Strategie umfasst alle beschriebenen Folgearbeiten. Neue Architekturentscheidungen werden erneut gefragt.",
+                      "engineering_impact": "REQUIRED",
+                      "id": "874a065e-811f-4b22-9d5e-10d4a4458ad8",
+                      "options": [
+                        {
+                          "description": "",
+                          "disabled": false,
+                          "id": "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+                          "label": "ParkAssistDiagnostics",
+                          "metadata": {},
+                          "reason": "",
+                          "recommended": false
+                        },
+                        {
+                          "description": "",
+                          "disabled": false,
+                          "id": "b48007aa-7dae-4288-a1f1-03470a2558fa",
+                          "label": "ParkAssistStatus",
+                          "metadata": {},
+                          "reason": "",
+                          "recommended": false
+                        }
+                      ],
+                      "question": "Welche Daten von ParkAssist benötigt DriverAssistance?",
+                      "recommended_options": [],
+                      "required": true,
+                      "selection_mode": "MULTI",
+                      "status": "OPEN"
+                    },
+                    "severity": "",
+                    "status": "",
+                    "text": "Welche Daten von ParkAssist benötigt DriverAssistance?",
+                    "title": "",
+                    "type": "QUESTION",
+                    "workload": {
+                      "completed": 0,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "SUSPENDED_FOR_DECISION",
+                      "total": 23,
+                      "workload_id": "goal-32a05120-a44a-4f36-aad4-f3bf4430ff05"
+                    }
+                  },
+                  "id": "6ec2b901-dde8-4f2f-ae37-2048ca958aac",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s26",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering",
+                      "answered_questions": {},
+                      "assumptions": [],
+                      "current_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+                      "current_workload": "goal-32a05120-a44a-4f36-aad4-f3bf4430ff05",
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": null,
+                          "text": "Verbinde ParkAssist mit DriverAssistance."
+                        },
+                        "files": [],
+                        "input_id": "b23a87f9-1fa7-4cd2-b414-594b014ae826",
+                        "input_type": "TEXT",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s26",
+                        "request_revision": null,
+                        "run_ref": "49d1d958-0e43-4022-8913-80c4d29c49fa",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T11:02:46.611903+00:00",
+                        "user_intent": "CONNECT_FUNCTIONS"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": null,
+                      "project_draft_revision": null,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "SUSPENDED_FOR_DECISION",
+                    "type": "CONTEXT"
+                  },
+                  "id": "9aeba9c6-7d04-4ab1-bc3d-91d77a2a460a",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            }
+          ],
+          "updatedAt": 1789556568124
+        }
+      },
+      "conversation": {
+        "http_status": 200,
+        "data": {
+          "affected_objects": [],
+          "data": {
+            "active_proposal": null,
+            "active_workload": "goal-32a05120-a44a-4f36-aad4-f3bf4430ff05",
+            "answered_questions": {},
+            "conversation_id": "nis-e2e-industry50-s26",
+            "current_question": "874a065e-811f-4b22-9d5e-10d4a4458ad8",
+            "current_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+            "decisions": {},
+            "goal_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+            "input_envelope": {
+              "active_view": "/studio/engineering",
+              "constraints": [],
+              "content": {
+                "decision": null,
+                "text": "Verbinde ParkAssist mit DriverAssistance."
+              },
+              "files": [],
+              "input_id": "b23a87f9-1fa7-4cd2-b414-594b014ae826",
+              "input_type": "TEXT",
+              "operation_ref": null,
+              "project_ref": "nis-e2e-industry50-s26",
+              "request_revision": null,
+              "run_ref": "49d1d958-0e43-4022-8913-80c4d29c49fa",
+              "schema_version": 1,
+              "selected_objects": [],
+              "source": "conversation",
+              "timestamp": "2026-09-16T11:02:46.611903+00:00",
+              "user_intent": "CONNECT_FUNCTIONS"
+            },
+            "lease_until": "2026-09-16T11:07:46.611808+00:00",
+            "pending_approvals": [],
+            "questions": {
+              "874a065e-811f-4b22-9d5e-10d4a4458ad8": {
+                "context_refs": [],
+                "decision_key": "goal:goal-32a05120-a44a-4f36-aad4-f3bf4430ff05:874a065e-811f-4b22-9d5e-10d4a4458ad8",
+                "description": "Die gewählte Strategie umfasst alle beschriebenen Folgearbeiten. Neue Architekturentscheidungen werden erneut gefragt.",
+                "engineering_impact": "REQUIRED",
+                "expires_at": "2026-09-17T11:02:47.277663+00:00",
+                "id": "874a065e-811f-4b22-9d5e-10d4a4458ad8",
+                "model_revision": "f1b657de509e8672488708c05469f94ae673962a1d889673f5b05eb29d048360",
+                "options": [
+                  {
+                    "description": "",
+                    "disabled": false,
+                    "id": "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+                    "label": "ParkAssistDiagnostics",
+                    "metadata": {},
+                    "reason": "",
+                    "recommended": false
+                  },
+                  {
+                    "description": "",
+                    "disabled": false,
+                    "id": "b48007aa-7dae-4288-a1f1-03470a2558fa",
+                    "label": "ParkAssistStatus",
+                    "metadata": {},
+                    "reason": "",
+                    "recommended": false
+                  }
+                ],
+                "question": "Welche Daten von ParkAssist benötigt DriverAssistance?",
+                "recommended_options": [],
+                "required": true,
+                "selection_mode": "MULTI",
+                "status": "OPEN"
+              }
+            },
+            "run_id": null,
+            "selected_context": {
+              "active_view": "/studio/engineering",
+              "selected_object_refs": []
+            },
+            "ui_updated_at": 1789556568124
+          },
+          "evidence": [],
+          "evidence_refs": [],
+          "findings": [],
+          "next_actions": [],
+          "status": "SUCCESS",
+          "success": true,
+          "time_range": null,
+          "trace_id": "bd578b54-d4a7-4e98-b4d2-a6c0508d165e",
+          "validation_status": "NOT_EVALUATED",
+          "warnings": []
+        }
+      },
+      "hardware": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0002",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 2,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0002",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 2
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "ADAS",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0001",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 1,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0001",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 1
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "Chassis",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "hardware_interfaces": {
+        "http_status": 200,
+        "data": {
+          "count": 3,
+          "items": [
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": 2,
+              "confidence": null,
+              "controller_ref": "controller-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "created_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "created_by": null,
+              "data_bitrate": 2000000.0,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "id": "2e855c3f-1136-424e-a709-5f1dbb6c4587",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "modified_by": null,
+              "name": "CAN_FD_2",
+              "network_ref": "alternative-can",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "connector-2",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 1000000000.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+              "id": "5d1fb197-3b0b-43a9-ab3d-ce85a422b60d",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "ETH_1",
+              "network_ref": "adas-ethernet",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": null,
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "Ethernet",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": 1,
+              "confidence": null,
+              "controller_ref": "controller-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "data_bitrate": 2000000.0,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "id": "a8af5336-97ba-47c5-b0b0-a10f2d68fc22",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "CAN_FD_1",
+              "network_ref": "chassis-can",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "connector-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            }
+          ]
+        }
+      },
+      "functions": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+              "id": "27d795e9-a9a3-40ed-9517-d551d98db7b3",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "DriverAssistance",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "id": "e0bcaa9b-afa5-4685-8c81-6352d28a1729",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 11:02:31 GMT",
+              "modified_by": null,
+              "name": "ParkAssist",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "messages": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "configuration": {
+                "communication_contract": {
+                  "consumer_refs": [
+                    "27d795e9-a9a3-40ed-9517-d551d98db7b3"
+                  ],
+                  "scope": "FUNCTION_OUTPUT",
+                  "transmission": {
+                    "functional_requirements": {
+                      "actuation_delay_ms": 0,
+                      "confirmed": true,
+                      "maximum_event_to_response_ms": 250,
+                      "sampling_delay_ms": 0
+                    },
+                    "mode": "CYCLIC",
+                    "period_ms": 100
+                  }
+                },
+                "maximum_jitter_ms": 5,
+                "maximum_latency_ms": 20
+              },
+              "created_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "created_by": null,
+              "cycle_ms": 100.0,
+              "description": null,
+              "direction": "tx",
+              "dlc": 1,
+              "domain": null,
+              "hardware_interface_id": "a8af5336-97ba-47c5-b0b0-a10f2d68fc22",
+              "id": "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+              "interface_id": "dcdbaf2d-fae5-4521-a7ea-0b9670d30ea6",
+              "lifecycle_state": "draft",
+              "message_id_hex": "0x121",
+              "modified_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "modified_by": null,
+              "name": "ParkAssistDiagnostics",
+              "object_type": "Message",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "configuration": {
+                "communication_contract": {
+                  "consumer_refs": [
+                    "27d795e9-a9a3-40ed-9517-d551d98db7b3"
+                  ],
+                  "scope": "FUNCTION_OUTPUT",
+                  "transmission": {
+                    "functional_requirements": {
+                      "actuation_delay_ms": 0,
+                      "confirmed": true,
+                      "maximum_event_to_response_ms": 250,
+                      "sampling_delay_ms": 0
+                    },
+                    "mode": "CYCLIC",
+                    "period_ms": 100
+                  }
+                },
+                "maximum_jitter_ms": 5,
+                "maximum_latency_ms": 20
+              },
+              "created_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "created_by": null,
+              "cycle_ms": 100.0,
+              "description": null,
+              "direction": "tx",
+              "dlc": 1,
+              "domain": null,
+              "hardware_interface_id": "a8af5336-97ba-47c5-b0b0-a10f2d68fc22",
+              "id": "b48007aa-7dae-4288-a1f1-03470a2558fa",
+              "interface_id": "dcdbaf2d-fae5-4521-a7ea-0b9670d30ea6",
+              "lifecycle_state": "draft",
+              "message_id_hex": "0x120",
+              "modified_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "modified_by": null,
+              "name": "ParkAssistStatus",
+              "object_type": "Message",
+              "project_id": "nis-e2e-industry50-s26",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "signals": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "approval_state": "pending",
+              "byte_order": "little_endian",
+              "communication": {},
+              "confidence": null,
+              "configuration": {
+                "semantic_type": "BOOLEAN"
+              },
+              "created_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "created_by": null,
+              "data": {},
+              "data_type": "boolean",
+              "description": null,
+              "display_name": null,
+              "domain": null,
+              "factor": 1.0,
+              "id": "d1e41b5a-62b2-4af8-b0d9-b7d61f90422f",
+              "length_bits": 1,
+              "lifecycle_state": "draft",
+              "max_value": 1.0,
+              "message_id": "a4458939-2ca4-4f11-83ac-0131a0c9587c",
+              "min_value": 0.0,
+              "modified_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "modified_by": null,
+              "name": "ParkAssistFault",
+              "object_type": "Signal",
+              "offset_value": 0.0,
+              "project_id": "nis-e2e-industry50-s26",
+              "protocol_bindings": [],
+              "provenance": {},
+              "quality": {},
+              "review_state": "unreviewed",
+              "semantic": {
+                "semantic_type": "BOOLEAN"
+              },
+              "source": "manual",
+              "start_bit": 0,
+              "unit": null,
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "byte_order": "little_endian",
+              "communication": {},
+              "confidence": null,
+              "configuration": {
+                "semantic_type": "BOOLEAN"
+              },
+              "created_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "created_by": null,
+              "data": {},
+              "data_type": "boolean",
+              "description": null,
+              "display_name": null,
+              "domain": null,
+              "factor": 1.0,
+              "id": "31a079a5-e094-44ad-b009-2d607c2238f0",
+              "length_bits": 1,
+              "lifecycle_state": "draft",
+              "max_value": 1.0,
+              "message_id": "b48007aa-7dae-4288-a1f1-03470a2558fa",
+              "min_value": 0.0,
+              "modified_at": "Wed, 16 Sep 2026 11:02:32 GMT",
+              "modified_by": null,
+              "name": "ParkAssistActive",
+              "object_type": "Signal",
+              "offset_value": 0.0,
+              "project_id": "nis-e2e-industry50-s26",
+              "protocol_bindings": [],
+              "provenance": {},
+              "quality": {},
+              "review_state": "unreviewed",
+              "semantic": {
+                "semantic_type": "BOOLEAN"
+              },
+              "source": "manual",
+              "start_bit": 0,
+              "unit": null,
+              "version": 1
+            }
+          ]
+        }
+      },
+      "routing": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "resources": {
+        "http_status": 200,
+        "data": {
+          "model_revision": "7708916a855fcbedd35520ef2d10a1d8c1e04b1b2ac56ce5cf96f48db024fa47",
+          "ports": [
+            {
+              "channel_index": 2,
+              "connection_status": "CONNECTED",
+              "controller_ref": "controller-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "2e855c3f-1136-424e-a709-5f1dbb6c4587",
+              "hardware_node_ref": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "id": "connector-2",
+              "network_ref": "alternative-can",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "CAN_FD"
+            },
+            {
+              "channel_index": 1,
+              "connection_status": "CONNECTED",
+              "controller_ref": "controller-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "a8af5336-97ba-47c5-b0b0-a10f2d68fc22",
+              "hardware_node_ref": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "id": "connector-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+              "network_ref": "chassis-can",
+              "provenance": {
+                "legacy": true,
+                "source": "canonical-hardware-interface"
+              },
+              "technology": "CAN_FD"
+            }
+          ],
+          "resources": {
+            "CommunicationCapability": [
+              {
+                "constraints": [],
+                "controller_count": 1,
+                "hardware_node_ref": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+                "id": "cap-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+                "max_channels": 2,
+                "max_ports": 2,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "redundancy_support": false,
+                "supported": true,
+                "supported_bitrates": [
+                  500000.0
+                ],
+                "supported_modes": [],
+                "technology": "CAN_FD"
+              },
+              {
+                "constraints": [],
+                "controller_count": 1,
+                "hardware_node_ref": "4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+                "id": "cap-4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+                "max_channels": 2,
+                "max_ports": 2,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "redundancy_support": false,
+                "supported": true,
+                "supported_bitrates": [
+                  500000.0
+                ],
+                "supported_modes": [],
+                "technology": "CAN_FD"
+              }
+            ],
+            "CommunicationController": [
+              {
+                "active_channels": [],
+                "capabilities": [],
+                "hardware_node_ref": "3e63eace-ed51-421f-9cb1-8cd0371f8603",
+                "id": "controller-3e63eace-ed51-421f-9cb1-8cd0371f8603",
+                "max_channels": 2,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "status": "ACTIVE",
+                "technology": "CAN_FD"
+              },
+              {
+                "active_channels": [],
+                "capabilities": [],
+                "hardware_node_ref": "4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+                "id": "controller-4b0d2a08-0a4c-4fe8-a892-d27d4cfc2d35",
+                "max_channels": 2,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "status": "ACTIVE",
+                "technology": "CAN_FD"
+              }
+            ],
+            "NetworkConnection": [],
+            "PhysicalPort": []
+          }
+        }
+      },
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 13,
+        "network_editor": 0,
+        "parameters": 2,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "captured_at": "2026-09-16T11:03:24.331826+00:00"
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "outputs": [
+      {
+        "name": "Observed scoped result",
+        "status": "PASSED",
+        "evidence": [
+          "ev-1c5c14d54ac242779c6f5bf7101e9123",
+          "ev-5ff1df22a3664913859fd210df1266c7",
+          "ev-1bb53f944f1e42bf9f80511b44dda835",
+          "ev-32f5cbcce9ec4143ae90f4263fbca813",
+          "ev-c20975942ef5477a8881a63db1296d79",
+          "ev-846d966f4e2a49b7af704dbd86f440e0"
+        ],
+        "detail": "Echte persistierte MULTI-Auswahl für zwei Funktionsnachrichten sichtbar, Bestätigen ohne Auswahl deaktiviert. Keine Nutzerentscheidung erfunden; vollständiger Resume bleibt entsprechend Nutzeranweisung offen. Single-Choice-Resume separat in S24 nachgewiesen."
+      }
+    ]
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Erwartung:\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```",
+      "Browser-Prüfung:\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```",
+      "State-Prüfung:\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```",
+      "MCP-Prüfung:\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.",
+      "PASS:\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

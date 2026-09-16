@@ -76,6 +76,10 @@ def execute(authority: ToolAuthority, name: str, permission: Permission, argumen
         unit.finish(False)
         if isinstance(error, PermissionError):
             status = ToolStatus.PERMISSION_DENIED
+        elif isinstance(error, NotImplementedError):
+            status = ToolStatus.NOT_SUPPORTED
+        elif isinstance(error, TimeoutError):
+            status = ToolStatus.TOOL_TIMEOUT
         elif isinstance(error, (ConcurrentUpdateError, WorkflowConflictError)):
             status = ToolStatus.CONFLICT
         elif isinstance(error, LookupError) and not isinstance(error, KeyError):

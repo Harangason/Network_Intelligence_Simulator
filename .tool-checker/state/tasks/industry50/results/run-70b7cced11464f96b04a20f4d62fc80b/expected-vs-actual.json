@@ -1,0 +1,3601 @@
+{
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Ausgangsmodell:\n```text\nParkAssist\n→ ChassisController\n→ Chassis_CAN / CAN-FD\n\nDriverAssistance\n→ ADAS_Controller\n→ Ethernet\n\nADAS_Controller:\nCAN-FD Capability = YES\nCAN Controller = vorhanden\nfree channel = YES\nCAN-FD Port = NONE\n```",
+      "Erwartete Chat-Frage:\n```text\nDer ADAS_Controller unterstützt CAN-FD,\nbesitzt aber noch keinen CAN-FD-Port.\n\nSoll ich einen CAN-FD-Port erstellen\nund mit Chassis_CAN verbinden?\n\n○ Ja – direkt anbinden\n○ Gateway-Pfad prüfen\n○ Ethernet-Alternative prüfen\n```\n\nBrowser Skill wählt:\n\n```text\nJa – direkt anbinden\n```",
+      "Danach ohne weitere unnötige Fragen:\nAgent muss über MCP/Core selbst ausführen:\n\n```text\ncreate/reuse HardwareInterface\ncreate PhysicalPort\nbind Controller Channel\nconnect Port to Chassis_CAN\nupdate Network Membership\nresolve Functional Interfaces\ngenerate/reuse Transport Units\npack Payload\nallocate Identifier\nupdate Routing\nrecalculate Capacity\nrecalculate Timing\nrun Validation\nrun Communication Preflight\nmark old dependent results STALE\nCompletion Check\n```",
+      "Zu prüfende MCP-Schnittstellen:\nMindestens:\n\n```text\nhardware.interface.create\nhardware.port.create\nnetwork.connect\ntransport.generate / transport.bind\nrouting.create / routing.update\ncapacity.calculate\ntiming.calculate\nvalidation.run\n```",
+      "PASS:\nEin einziges Nutzer-„Ja“ führt bis zur vollständig validierten Verbindung.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "actual": {
+    "run_id": "run-70b7cced11464f96b04a20f4d62fc80b",
+    "actions": [
+      {
+        "name": "Originalfall ausführen und Nachweise sichern",
+        "status": "PASSED",
+        "evidence": [
+          "ev-2c1191c376654112b72b5abb57d9f220",
+          "ev-e4c2828452d143cd96ca7f85fb7c437d",
+          "ev-bb5d7f6f83af41c9ba95259aaf18bd1b",
+          "ev-46a03414d917481bb63bf64bb823461d",
+          "ev-e3822b98587d40b3bc3eb4117719373b",
+          "ev-9ded742ad0154d779a88939f5f93801b",
+          "ev-2bcf8df3185b49a5ad24061a1998c018",
+          "ev-8266ff2b29c94d1dba9e976800004a18",
+          "ev-acb4949f01c945148f86f17f0d8f4e5b",
+          "ev-6e9c92ebf30442f094740d9822b8cd90",
+          "ev-596747206f084b0daba89399374235c8"
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-2c1191c376654112b72b5abb57d9f220",
+          "ev-e4c2828452d143cd96ca7f85fb7c437d",
+          "ev-bb5d7f6f83af41c9ba95259aaf18bd1b",
+          "ev-46a03414d917481bb63bf64bb823461d",
+          "ev-e3822b98587d40b3bc3eb4117719373b",
+          "ev-9ded742ad0154d779a88939f5f93801b",
+          "ev-2bcf8df3185b49a5ad24061a1998c018",
+          "ev-8266ff2b29c94d1dba9e976800004a18",
+          "ev-acb4949f01c945148f86f17f0d8f4e5b",
+          "ev-6e9c92ebf30442f094740d9822b8cd90",
+          "ev-596747206f084b0daba89399374235c8"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "workflow": {
+        "http_status": 200,
+        "data": {
+          "active_step": "validation",
+          "artifact_checks": {
+            "engineering_model": {
+              "complete": true,
+              "consistency": {
+                "function_required": 2,
+                "functions_duplicate": 0,
+                "functions_missing": 0,
+                "functions_unexpected": 0,
+                "hardware_interfaces_missing": 0,
+                "messages_overflow": 0
+              },
+              "counts": {
+                "functions": 2,
+                "hardware_interfaces": 3,
+                "hardware_nodes": 2,
+                "interfaces": 3,
+                "messages": 1,
+                "signals": 1
+              },
+              "hardware_by_type": {
+                "ECU": 2
+              },
+              "incomplete": {
+                "functions": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0,
+                "transmission": 0
+              },
+              "scope_mismatches": {},
+              "status": "COMPLETE"
+            },
+            "network_editor": {
+              "complete": true,
+              "counts": {
+                "edges": 1,
+                "nodes": 2
+              },
+              "invalid": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "physical_findings": [],
+              "status": "COMPLETE"
+            },
+            "parameters": {
+              "complete": true,
+              "invalid_numeric": [],
+              "required": {
+                "bitrate": true,
+                "cycle_ms": true,
+                "formats": true,
+                "industry": true,
+                "load_thresholds": true,
+                "payload_bytes": true,
+                "queue_size": true,
+                "target_bus_load": true,
+                "technology": true
+              },
+              "status": "APPROVED",
+              "uses_defaults": false
+            },
+            "routing": {
+              "complete": true,
+              "counts": {
+                "approved": 1,
+                "conflicts": 0,
+                "gateway_fanout_interfaces": 0,
+                "gateway_fanout_routes": 0,
+                "invalid": 0,
+                "total": 1,
+                "valid": 1
+              },
+              "coverage": {
+                "complete": true,
+                "covered_messages": 1,
+                "covered_signals": 1,
+                "errors": [],
+                "excluded_message_ids": [],
+                "excluded_messages": 0,
+                "excluded_signal_ids": [],
+                "excluded_signals": 0,
+                "message_coverage_percent": 100.0,
+                "missing_message_ids": [],
+                "missing_signal_ids": [],
+                "required_message_ids": [
+                  "69b3dd86-7ef5-43dd-b6f7-72781332767e"
+                ],
+                "required_messages": 1,
+                "required_signal_ids": [
+                  "a502cdc9-9f8f-4ad9-b2dc-1120ba2845a5"
+                ],
+                "required_signals": 1,
+                "scope_mode": "ALL",
+                "signal_coverage_percent": 100.0,
+                "total_messages": 1,
+                "total_signals": 1,
+                "transport_exclusions": [],
+                "version": 1
+              },
+              "status": "APPROVED"
+            }
+          },
+          "context": {
+            "active_project": "nis-e2e-industry50-s24",
+            "active_workflow_step": "validation",
+            "selected_network": null,
+            "selected_object": null,
+            "selected_route": null,
+            "selected_signal": null,
+            "selected_simulation": null
+          },
+          "edit_tokens": {
+            "parameters": "08cc83337feaf7f2b45452ba72f58ba734fcd8f590ef3330783b71ae34d90825",
+            "topology": "782c2b360ffd9eefbbebc87be8cc29a580bc2eb83d138501919bfc54121c5b89"
+          },
+          "latest_analyses": {
+            "capacity_timing": {
+              "analysis_type": "capacity_timing",
+              "created_at": "2026-09-16T11:00:01.263760+00:00",
+              "id": "0b90baef-f617-4ea3-85a9-686e58bd0052",
+              "is_outdated": false,
+              "outdated_reason": null,
+              "status": "COMPLETE"
+            },
+            "preflight": {
+              "analysis_type": "preflight",
+              "created_at": "2026-09-16T11:00:01.263760+00:00",
+              "id": "5afb7690-cec3-4ac4-b0f7-14c8d482063a",
+              "is_outdated": false,
+              "outdated_reason": null,
+              "status": "APPROVED"
+            }
+          },
+          "parameters": {},
+          "project_id": "nis-e2e-industry50-s24",
+          "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+          "simulation_snapshots": [],
+          "stale_reasons": {},
+          "status_vocabulary": [
+            "EMPTY",
+            "IN_PROGRESS",
+            "COMPLETE",
+            "WARNING",
+            "ERROR",
+            "APPROVED",
+            "OUTDATED"
+          ],
+          "statuses": {
+            "capacity_timing": "COMPLETE",
+            "data_science_intelligence": "EMPTY",
+            "engineering_model": "COMPLETE",
+            "network_editor": "COMPLETE",
+            "parameters": "APPROVED",
+            "results_analysis": "EMPTY",
+            "routing": "APPROVED",
+            "simulation": "EMPTY",
+            "validation": "APPROVED"
+          },
+          "steps": [
+            {
+              "id": "engineering_model",
+              "label": "Engineering-Modell",
+              "position": 1,
+              "reason": null,
+              "status": "COMPLETE",
+              "version": 11
+            },
+            {
+              "id": "routing",
+              "label": "Routing-Tabelle",
+              "position": 2,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 0
+            },
+            {
+              "id": "network_editor",
+              "label": "Netzwerk-Editor",
+              "position": 3,
+              "reason": null,
+              "status": "COMPLETE",
+              "version": 2
+            },
+            {
+              "id": "parameters",
+              "label": "Parameter",
+              "position": 4,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 1
+            },
+            {
+              "id": "capacity_timing",
+              "label": "Capacity & Timing",
+              "position": 5,
+              "reason": null,
+              "status": "COMPLETE",
+              "version": 1
+            },
+            {
+              "id": "validation",
+              "label": "Validation / Preflight",
+              "position": 6,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 1
+            },
+            {
+              "id": "simulation",
+              "label": "Simulation",
+              "position": 7,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "results_analysis",
+              "label": "Results / Analysis",
+              "position": 8,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "data_science_intelligence",
+              "label": "Data Science & Intelligence",
+              "position": 9,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            }
+          ],
+          "topology": {},
+          "updated_at": "2026-09-16T11:00:01.263760+00:00",
+          "versions": {
+            "capacity_timing": 1,
+            "data_science_intelligence": 0,
+            "engineering_model": 11,
+            "network_editor": 2,
+            "parameters": 1,
+            "results_analysis": 0,
+            "routing": 0,
+            "simulation": 0,
+            "validation": 1
+          }
+        }
+      },
+      "history": {
+        "http_status": 200,
+        "data": {
+          "messages": [
+            {
+              "id": "ZqWX56951jpgpMkC",
+              "parts": [
+                {
+                  "text": "Verbinde ParkAssist mit DriverAssistance.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "8c2ecfd3-4a48-4a73-b70b-9ec16a85cfa1",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T10:59:20.522340+00:00",
+                    "findings": [],
+                    "id": "b4e09bac-ac4e-4d0d-bbf3-b12b032ceca4",
+                    "metadata": {
+                      "input_ref": "96ed60c3-2a87-4495-9bd1-9de9467da05a",
+                      "run_id": "3582ea84-b482-436b-b61b-29bbdc80622a"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "ea6f182e-3233-45c9-8b93-0cf3cce956fc",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T10:59:20.926121+00:00",
+                    "findings": [],
+                    "id": "e4ddd108-40bf-454b-98d1-713c9a829e98",
+                    "metadata": {
+                      "decision_key": "goal:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314:621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                      "input_ref": "96ed60c3-2a87-4495-9bd1-9de9467da05a",
+                      "run_id": "3582ea84-b482-436b-b61b-29bbdc80622a"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [],
+                    "question": {
+                      "context_refs": [],
+                      "description": "Die gewählte Strategie umfasst alle beschriebenen Folgearbeiten. Neue Architekturentscheidungen werden erneut gefragt.",
+                      "engineering_impact": "REQUIRED",
+                      "id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                      "options": [
+                        {
+                          "description": "Neuer physischer Port erforderlich. Die Wahl umfasst Interface, Anschluss, Transport, Routing, Berechnung und Validierung.",
+                          "disabled": false,
+                          "id": "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT",
+                          "label": "Direkt über Chassis_CAN · CAN_FD",
+                          "metadata": {},
+                          "reason": "",
+                          "recommended": false
+                        },
+                        {
+                          "description": "Keine Änderung ausführen.",
+                          "disabled": false,
+                          "id": "DEFER",
+                          "label": "Offen lassen",
+                          "metadata": {},
+                          "reason": "",
+                          "recommended": false
+                        }
+                      ],
+                      "question": "ParkAssist läuft auf Chassis; DriverAssistance auf ADAS. Welcher Kommunikationsweg soll umgesetzt werden?",
+                      "recommended_options": [],
+                      "required": true,
+                      "selection_mode": "SINGLE",
+                      "status": "OPEN"
+                    },
+                    "severity": "",
+                    "status": "",
+                    "text": "ParkAssist läuft auf Chassis; DriverAssistance auf ADAS. Welcher Kommunikationsweg soll umgesetzt werden?",
+                    "title": "",
+                    "type": "QUESTION",
+                    "workload": {
+                      "completed": 0,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "SUSPENDED_FOR_DECISION",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "d877472b-4b60-4b02-8760-172b442c949d",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s24",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering",
+                      "answered_questions": {},
+                      "assumptions": [],
+                      "current_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+                      "current_workload": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": null,
+                          "text": "Verbinde ParkAssist mit DriverAssistance."
+                        },
+                        "files": [],
+                        "input_id": "96ed60c3-2a87-4495-9bd1-9de9467da05a",
+                        "input_type": "TEXT",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s24",
+                        "request_revision": null,
+                        "run_ref": "3582ea84-b482-436b-b61b-29bbdc80622a",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T10:59:20.202127+00:00",
+                        "user_intent": "CONNECT_FUNCTIONS"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": null,
+                      "project_draft_revision": null,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "SUSPENDED_FOR_DECISION",
+                    "type": "CONTEXT"
+                  },
+                  "id": "98bd0023-beb0-4d9b-80a5-40edf3961951",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            },
+            {
+              "id": "BgdNfDQtFZE1FaNA",
+              "parts": [
+                {
+                  "text": "Auswahl bestätigt.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "381b6665-e5c3-452d-8601-3782913c4257",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.257279+00:00",
+                    "findings": [],
+                    "id": "57714e01-db2e-43a8-8df2-77c8483afa4e",
+                    "metadata": {
+                      "input_ref": "706967e7-13d1-4af2-a9f5-62897d7d919c",
+                      "run_id": "cd050bac-a93f-4ef7-b9be-da1d1a9872f6"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "e63aeefd-476a-488a-a3a8-4b4c8f19e567",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.305933+00:00",
+                    "findings": [],
+                    "id": "df4b0254-7735-41ea-bfd0-7644269f679b",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Modellrevision prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Technologie-Fähigkeit prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Controller und Kanalgrenzen prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Modellrevision prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 0,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "4ec2bb0e-9ae1-4913-8d4e-df42b77ed9cc",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.306087+00:00",
+                    "findings": [],
+                    "id": "5957a902-17c8-4c84-8e15-70e31e6c8488",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Modellrevision prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Technologie-Fähigkeit prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Controller und Kanalgrenzen prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Technologie-Fähigkeit prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 1,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "325aa242-745e-407c-8ccc-d861a43ef1d1",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.306239+00:00",
+                    "findings": [],
+                    "id": "2695fc4e-a45f-49de-908a-947818d1e95b",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Modellrevision prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Technologie-Fähigkeit prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Controller und Kanalgrenzen prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Controller und Kanalgrenzen prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 2,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "8068ecfe-59f9-49a9-a263-5732b21f70af",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.306488+00:00",
+                    "findings": [],
+                    "id": "c4c34e43-a7dd-47da-9f0b-2c78014d5c46",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Technologie-Fähigkeit prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Controller und Kanalgrenzen prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "HardwareInterface wiederverwenden oder erstellen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 3,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "51544722-b619-46da-93f7-27f17080e43d",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.349163+00:00",
+                    "findings": [],
+                    "id": "2cd20587-8282-4fd2-960f-f3bc2a17deb7",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Controller und Kanalgrenzen prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Physischen Port wiederverwenden oder erstellen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 4,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "d281e623-c6e7-412f-996b-745c6ead96bb",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.349422+00:00",
+                    "findings": [],
+                    "id": "e9c74ca2-cae5-4912-928b-d3467275ef7f",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "HardwareInterface wiederverwenden oder erstellen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Controller, Interface und Port verbinden",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 5,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "066534e3-e4c1-40e1-a19d-c8e7f5b6528c",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.351662+00:00",
+                    "findings": [],
+                    "id": "3d1c0edd-6ef4-4d2a-9b4f-4e2e72af0c4f",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Physischen Port wiederverwenden oder erstellen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Port mit dem freigegebenen Netz verbinden",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 6,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "3a40b2b2-5858-4697-8416-07f6138a126b",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.351992+00:00",
+                    "findings": [],
+                    "id": "0bc79aca-65e8-4b27-bb12-e4191701711c",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Controller, Interface und Port verbinden",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 7,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "52e5d1bf-7c03-43ea-ba9f-a5bedc49947c",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.415168+00:00",
+                    "findings": [],
+                    "id": "4fa83e39-37a9-4455-8675-29de027f0e4c",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Port mit dem freigegebenen Netz verbinden",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Aktuelle Funktionszuordnung prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 8,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "30231c16-9cae-433e-8b04-18465e9c6cfa",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.415335+00:00",
+                    "findings": [],
+                    "id": "54f27369-6fe0-4fa4-95cd-5e27dbcd2b23",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Kanonische Topologie und Mitgliedschaft aktualisieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Logische Schnittstellen auflösen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 9,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "00064318-646a-4678-8bde-4fc150d1e6c1",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.420405+00:00",
+                    "findings": [],
+                    "id": "6c0e1c3d-9564-4d49-bc3f-605b811d2ec2",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Aktuelle Funktionszuordnung prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Benötigte Daten und Empfänger prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 10,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "0babb38c-0042-4769-99bf-6cef3c56c6d2",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.460997+00:00",
+                    "findings": [],
+                    "id": "c21c5f7e-75a5-4bb5-b1ba-bb16eb4e6854",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Logische Schnittstellen auflösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "TransportUnits wiederverwenden oder erzeugen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 11,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "0d0bc287-a1b2-41e4-8ae4-3325a1b0adee",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.461246+00:00",
+                    "findings": [],
+                    "id": "3388573d-d9bc-4a98-a2a9-1dfe56fb043d",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Benötigte Daten und Empfänger prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Technologiespezifische Nutzlast prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 12,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "0b3a857a-6346-44d9-ac0f-f435e343ed0a",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.461380+00:00",
+                    "findings": [],
+                    "id": "34dc7cb6-42ef-4713-9bbd-f84832cd3232",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "TransportUnits wiederverwenden oder erzeugen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Identifier kollisionsfrei auflösen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 13,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "a1ce6180-4ad4-4986-8f54-105c5a7b50cd",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.461499+00:00",
+                    "findings": [],
+                    "id": "a768539b-342b-42d3-b18e-35b1f07c50c4",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Technologiespezifische Nutzlast prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Betroffene Routing-Einträge aktualisieren",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 14,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "7142f1de-f096-4266-9e45-bdd1581b6ef6",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.532336+00:00",
+                    "findings": [],
+                    "id": "f0971429-c48c-42fc-8d1e-528c2e03d1c6",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Identifier kollisionsfrei auflösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Ersetzte Routen kontrolliert ablösen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 15,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "5cd6942b-bcf4-41df-a8be-30142e1f1295",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.532530+00:00",
+                    "findings": [],
+                    "id": "60b5e303-d5eb-46c9-83da-2609bace7798",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Betroffene Routing-Einträge aktualisieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Abhängige alte Ergebnisse als veraltet markieren",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 16,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "3985029e-7397-4f6c-b5ac-bdfac33c1573",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.592302+00:00",
+                    "findings": [],
+                    "id": "ecb11b53-1cdc-419d-a86e-7edd8981efb2",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Ersetzte Routen kontrolliert ablösen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Interface- und Netzlast berechnen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 17,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "28ad0112-99d8-4bff-b507-8d4e4292d132",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.614529+00:00",
+                    "findings": [],
+                    "id": "ffd9421d-f840-45bf-b988-037567ba6760",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Abhängige alte Ergebnisse als veraltet markieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Communication Preflight ausführen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Zeitverhalten und Fristen berechnen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 18,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "63b4f1a7-ab63-4bda-9378-0603d648d61a",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.641914+00:00",
+                    "findings": [],
+                    "id": "d76c92a9-499f-4f47-adb0-a2a9c73426cd",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Interface- und Netzlast berechnen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Communication Preflight ausführen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Zielzustand unabhängig prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Logische Adressen prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 19,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "dbabb44a-95a7-48a8-a230-98ca55036161",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.645853+00:00",
+                    "findings": [],
+                    "id": "c4859955-f6e4-49bf-835c-8793305fcd49",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Zeitverhalten und Fristen berechnen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Communication Preflight ausführen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Zielzustand unabhängig prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Modell, Port, Bindung, Transport und Routing validieren",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 20,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "d8b29f01-7c49-4599-b808-9adbe6e3d699",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.675941+00:00",
+                    "findings": [],
+                    "id": "1d71fd92-4fa6-4ac9-af9a-be9f575089fb",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Logische Adressen prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Communication Preflight ausführen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Zielzustand unabhängig prüfen",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Communication Preflight ausführen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 21,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "a70fba0f-f386-4cfd-81f0-f846e2a14a17",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.721891+00:00",
+                    "findings": [],
+                    "id": "fcf79729-3abb-4369-af2e-7889c5ab9ca8",
+                    "metadata": {
+                      "canonical_batch": "uncommitted",
+                      "transient": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Modell, Port, Bindung, Transport und Routing validieren",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Communication Preflight ausführen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Zielzustand unabhängig prüfen",
+                        "status": "active"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RUNNING",
+                    "text": "Zielzustand unabhängig prüfen",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 22,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "RUNNING",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "id": "abf27e36-0cf3-4142-9f63-801421fbbf44",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.875086+00:00",
+                    "findings": [],
+                    "id": "7e582b88-4740-4d9b-b1a8-566315b85c48",
+                    "metadata": {
+                      "contract_error": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [],
+                    "severity": "",
+                    "status": "",
+                    "text": "Die Antwort konnte nicht als Engineering-Karte dargestellt werden. Bitte die Anfrage präzisieren.",
+                    "title": "",
+                    "type": "TEXT"
+                  },
+                  "id": "9c3957b5-5d8e-4222-845b-202bb959d95f",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s24",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering",
+                      "answered_questions": {
+                        "goal:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314:621d3ac3-ed58-474f-9a33-c8fdbeadd960": {
+                          "labels": [
+                            "Direkt über Chassis_CAN · CAN_FD"
+                          ],
+                          "question_id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                          "selected_options": [
+                            "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT"
+                          ],
+                          "status": "ANSWERED"
+                        }
+                      },
+                      "assumptions": [],
+                      "current_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+                      "current_workload": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": {
+                            "question_id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                            "selected_options": "[Cache-Tiefe begrenzt]",
+                            "type": "QUESTION_ANSWER"
+                          },
+                          "text": "Verbinde ParkAssist mit DriverAssistance."
+                        },
+                        "files": [],
+                        "input_id": "706967e7-13d1-4af2-a9f5-62897d7d919c",
+                        "input_type": "USER_DECISION",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s24",
+                        "request_revision": null,
+                        "run_ref": "cd050bac-a93f-4ef7-b9be-da1d1a9872f6",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T11:00:00.907824+00:00",
+                        "user_intent": "CONNECT_FUNCTIONS"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": null,
+                      "project_draft_revision": null,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "COMPLETE",
+                    "type": "CONTEXT"
+                  },
+                  "id": "4844a45f-91d1-421e-8612-97761e1edb57",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            },
+            {
+              "id": "restored-response-d23cd94a-0092-4b4a-85cf-e08bff07a999",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:07.746790+00:00",
+                    "findings": [],
+                    "id": "97869cc2-0e89-4619-943b-aa93a8e700fd",
+                    "metadata": {
+                      "contract_error": true
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [],
+                    "severity": "",
+                    "status": "",
+                    "text": "Die Antwort konnte nicht als Engineering-Karte dargestellt werden. Bitte die Anfrage präzisieren.",
+                    "title": "",
+                    "type": "TEXT"
+                  },
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            },
+            {
+              "id": "restored-response-d23cd94a-0092-4b4a-85cf-e08bff07a999",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:00:01.792917+00:00",
+                    "findings": [],
+                    "id": "d23cd94a-0092-4b4a-85cf-e08bff07a999",
+                    "metadata": {
+                      "details": {
+                        "completion": {
+                          "blocking_findings": [],
+                          "evidence": {
+                            "address_valid": true,
+                            "capability_valid": true,
+                            "capacity_valid": true,
+                            "channel_valid": true,
+                            "controller_valid": true,
+                            "functional_relationship": true,
+                            "hosts_resolved": true,
+                            "identifiers_valid": true,
+                            "interface_valid": true,
+                            "network_membership_valid": true,
+                            "payload_identified": true,
+                            "port_valid": true,
+                            "preflight_valid": true,
+                            "projections_current": true,
+                            "routing_valid": true,
+                            "source_resolved": true,
+                            "stale_results_invalidated": true,
+                            "target_resolved": true,
+                            "technology_binding_valid": true,
+                            "timing_valid": true,
+                            "transport_valid": true
+                          },
+                          "missing_conditions": [],
+                          "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                          "note": "Kapazitätsnachweis und funktionale Timing-Freigabe werden getrennt bewertet.",
+                          "remaining_decisions": [],
+                          "status": "COMPLETE"
+                        },
+                        "findings": null,
+                        "followup": null,
+                        "journal": [
+                          {
+                            "hosts": [
+                              "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                              "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0"
+                            ],
+                            "kind": "MODEL_INSPECTED",
+                            "requirement": "Verbinde ParkAssist mit DriverAssistance.",
+                            "revision": "c619ec9bc12830b51f189673dc0e2e16164dc544cd6c525ffeac144b47fafb72",
+                            "time": "2026-09-16T10:59:20.554351+00:00"
+                          },
+                          {
+                            "authorization": {
+                              "affected_scope": [
+                                "281ac04b-5084-405c-a328-a76930bb2a4e",
+                                "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                                "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                                "69b3dd86-7ef5-43dd-b6f7-72781332767e",
+                                "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                                "chassis-can"
+                              ],
+                              "allowed_change_types": [
+                                "HardwareNetworkInterface",
+                                "PhysicalPort",
+                                "NetworkConnection",
+                                "Interface",
+                                "MessageBinding",
+                                "TransportUnit",
+                                "MissingTransportParameters",
+                                "RoutingEntry",
+                                "Relation",
+                                "Topology",
+                                "AnalysisSnapshot"
+                              ],
+                              "approved_goal": "Verbinde ParkAssist mit DriverAssistance.",
+                              "approved_strategy": "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT",
+                              "authorized_by": "conversation-user",
+                              "decision_id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                              "expires_on_context_change": true,
+                              "forbidden_changes": [
+                                "HardwareCapabilityExpansion",
+                                "CommunicationControllerCreation",
+                                "HardwareReplacement",
+                                "SignalEncodingChange",
+                                "UnrelatedRouteChange",
+                                "DeleteAllRoutes"
+                              ],
+                              "model_revision": "c619ec9bc12830b51f189673dc0e2e16164dc544cd6c525ffeac144b47fafb72",
+                              "plan_hash": "f7a60a3b0aaf62e88134e344dd40518c804366a38ee65802635ee0972c53983d"
+                            },
+                            "kind": "DECISION_AUTHORIZED",
+                            "time": "2026-09-16T11:00:00.903228+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "revision",
+                            "time": "2026-09-16T11:00:01.305838+00:00",
+                            "tool": "inspect_model_situation"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "revision",
+                            "time": "2026-09-16T11:00:01.306007+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "capability",
+                            "time": "2026-09-16T11:00:01.306029+00:00",
+                            "tool": "inspect_communication_capability"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "capability",
+                            "time": "2026-09-16T11:00:01.306164+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "controller",
+                            "time": "2026-09-16T11:00:01.306180+00:00",
+                            "tool": "inspect_controller_capacity"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "controller",
+                            "time": "2026-09-16T11:00:01.306408+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "interface",
+                            "time": "2026-09-16T11:00:01.306430+00:00",
+                            "tool": "create_hardware_interface"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "interface",
+                            "time": "2026-09-16T11:00:01.311672+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "port",
+                            "time": "2026-09-16T11:00:01.349059+00:00",
+                            "tool": "create_physical_port"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "port",
+                            "time": "2026-09-16T11:00:01.349336+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "port_binding",
+                            "time": "2026-09-16T11:00:01.349358+00:00",
+                            "tool": "bind_port_to_interface"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "port_binding",
+                            "time": "2026-09-16T11:00:01.351494+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "network",
+                            "time": "2026-09-16T11:00:01.351558+00:00",
+                            "tool": "connect_port_to_network"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "network",
+                            "time": "2026-09-16T11:00:01.351864+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "topology",
+                            "time": "2026-09-16T11:00:01.351897+00:00",
+                            "tool": "update_network_membership"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "topology",
+                            "time": "2026-09-16T11:00:01.378263+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "functions",
+                            "time": "2026-09-16T11:00:01.415076+00:00",
+                            "tool": "inspect_function_mapping"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "functions",
+                            "time": "2026-09-16T11:00:01.415257+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "functional_interfaces",
+                            "time": "2026-09-16T11:00:01.415278+00:00",
+                            "tool": "resolve_function_interfaces"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "functional_interfaces",
+                            "time": "2026-09-16T11:00:01.420279+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "payload",
+                            "time": "2026-09-16T11:00:01.420305+00:00",
+                            "tool": "resolve_payload_elements"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "payload",
+                            "time": "2026-09-16T11:00:01.423459+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "transport",
+                            "time": "2026-09-16T11:00:01.460887+00:00",
+                            "tool": "bind_transport_unit"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "transport",
+                            "time": "2026-09-16T11:00:01.461168+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "packing",
+                            "time": "2026-09-16T11:00:01.461189+00:00",
+                            "tool": "pack_transport_unit"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "packing",
+                            "time": "2026-09-16T11:00:01.461310+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "identifier",
+                            "time": "2026-09-16T11:00:01.461326+00:00",
+                            "tool": "allocate_identifier"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "identifier",
+                            "time": "2026-09-16T11:00:01.461430+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "routing",
+                            "time": "2026-09-16T11:00:01.461447+00:00",
+                            "tool": "update_goal_routing"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "routing",
+                            "time": "2026-09-16T11:00:01.532170+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "supersede",
+                            "time": "2026-09-16T11:00:01.532233+00:00",
+                            "tool": "supersede_goal_routes"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "supersede",
+                            "time": "2026-09-16T11:00:01.532426+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "invalidate",
+                            "time": "2026-09-16T11:00:01.532455+00:00",
+                            "tool": "invalidate_goal_results"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "invalidate",
+                            "time": "2026-09-16T11:00:01.592161+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "capacity",
+                            "time": "2026-09-16T11:00:01.592214+00:00",
+                            "tool": "recalculate_network_load"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "capacity",
+                            "time": "2026-09-16T11:00:01.614416+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "timing",
+                            "time": "2026-09-16T11:00:01.614450+00:00",
+                            "tool": "recalculate_timing"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "timing",
+                            "time": "2026-09-16T11:00:01.614613+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "addresses",
+                            "time": "2026-09-16T11:00:01.641813+00:00",
+                            "tool": "validate_logical_addresses"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "addresses",
+                            "time": "2026-09-16T11:00:01.645572+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "validation",
+                            "time": "2026-09-16T11:00:01.645700+00:00",
+                            "tool": "validate_goal_model"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "validation",
+                            "time": "2026-09-16T11:00:01.675810+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "preflight",
+                            "time": "2026-09-16T11:00:01.675854+00:00",
+                            "tool": "run_communication_preflight"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "preflight",
+                            "time": "2026-09-16T11:00:01.721775+00:00"
+                          },
+                          {
+                            "kind": "STEP_STARTED",
+                            "step_id": "completion",
+                            "time": "2026-09-16T11:00:01.721811+00:00",
+                            "tool": "evaluate_goal_completion"
+                          },
+                          {
+                            "kind": "STEP_SUCCEEDED",
+                            "step_id": "completion",
+                            "time": "2026-09-16T11:00:01.724431+00:00"
+                          },
+                          {
+                            "completion": {
+                              "blocking_findings": [],
+                              "evidence": {
+                                "address_valid": true,
+                                "capability_valid": true,
+                                "capacity_valid": true,
+                                "channel_valid": true,
+                                "controller_valid": true,
+                                "functional_relationship": true,
+                                "hosts_resolved": true,
+                                "identifiers_valid": true,
+                                "interface_valid": true,
+                                "network_membership_valid": true,
+                                "payload_identified": true,
+                                "port_valid": true,
+                                "preflight_valid": true,
+                                "projections_current": true,
+                                "routing_valid": true,
+                                "source_resolved": true,
+                                "stale_results_invalidated": true,
+                                "target_resolved": true,
+                                "technology_binding_valid": true,
+                                "timing_valid": true,
+                                "transport_valid": true
+                              },
+                              "missing_conditions": [],
+                              "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                              "note": "Kapazitätsnachweis und funktionale Timing-Freigabe werden getrennt bewertet.",
+                              "remaining_decisions": [],
+                              "status": "COMPLETE"
+                            },
+                            "kind": "EXECUTION_FINISHED",
+                            "route_ids": [
+                              "3a5a432b-c925-413a-9d60-4eda72c7ccaa"
+                            ],
+                            "status": "COMPLETE",
+                            "time": "2026-09-16T11:00:01.724453+00:00"
+                          },
+                          {
+                            "kind": "OUTPUTS_GENERATED",
+                            "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                            "output_ids": [
+                              "547fcbf2d6197f0c156cfb40b224583d286d7dc0dd50c824902d25edc6d0a2fb",
+                              "f443036dbedea5ec30cc32fa39b7984836e5c17b41b48a6264a2747100a83197"
+                            ],
+                            "time": "2026-09-16T11:00:01.759486+00:00"
+                          }
+                        ],
+                        "route_ids": [
+                          "3a5a432b-c925-413a-9d60-4eda72c7ccaa"
+                        ]
+                      },
+                      "hardware_facts_required": false,
+                      "input_ref": "706967e7-13d1-4af2-a9f5-62897d7d919c",
+                      "run_id": "cd050bac-a93f-4ef7-b9be-da1d1a9872f6"
+                    },
+                    "options": [],
+                    "outputs": [
+                      {
+                        "affected_objects": [
+                          "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                          "281ac04b-5084-405c-a328-a76930bb2a4e",
+                          "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                          "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                          "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                          "chassis-can",
+                          "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+                        ],
+                        "content": "Aktuelle Verbindung",
+                        "evidence_refs": [
+                          "3a5a432b-c925-413a-9d60-4eda72c7ccaa"
+                        ],
+                        "output_id": "547fcbf2d6197f0c156cfb40b224583d286d7dc0dd50c824902d25edc6d0a2fb",
+                        "output_type": "VISUALIZATION",
+                        "project_ref": "nis-e2e-industry50-s24",
+                        "provenance": {
+                          "capability_version": "1",
+                          "created_at": "2026-09-16T11:00:01.759272+00:00",
+                          "input_ref": "96ed60c3-2a87-4495-9bd1-9de9467da05a",
+                          "journal_ref": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                          "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                          "validation_evidence": {
+                            "address_valid": true,
+                            "capability_valid": true,
+                            "capacity_valid": true,
+                            "channel_valid": true,
+                            "controller_valid": true,
+                            "functional_relationship": true,
+                            "hosts_resolved": true,
+                            "identifiers_valid": true,
+                            "interface_valid": true,
+                            "network_membership_valid": true,
+                            "payload_identified": true,
+                            "port_valid": true,
+                            "preflight_valid": true,
+                            "projections_current": true,
+                            "routing_valid": true,
+                            "source_resolved": true,
+                            "stale_results_invalidated": true,
+                            "target_resolved": true,
+                            "technology_binding_valid": true,
+                            "timing_valid": true,
+                            "transport_valid": true
+                          }
+                        },
+                        "run_ref": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                        "schema_version": 1,
+                        "status": "CURRENT",
+                        "validation": {
+                          "status": "COMPLETE"
+                        },
+                        "visualization": {
+                          "columns": [],
+                          "nodes": [
+                            {
+                              "id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                              "label": "Chassis",
+                              "object_type": "HardwareNode"
+                            },
+                            {
+                              "id": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                              "label": "CAN_FD_1",
+                              "object_type": "HardwareNetworkInterface"
+                            },
+                            {
+                              "id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                              "label": "ADAS",
+                              "object_type": "HardwareNode"
+                            },
+                            {
+                              "id": "f3d1c2e7-3321-47ed-85b6-041d8f97b928",
+                              "label": "Chassis_CAN",
+                              "object_type": "HardwareNetworkInterface"
+                            },
+                            {
+                              "id": "chassis-can",
+                              "label": "Chassis_CAN",
+                              "object_type": "Network"
+                            },
+                            {
+                              "id": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                              "label": "ParkAssist",
+                              "object_type": "Function"
+                            },
+                            {
+                              "id": "281ac04b-5084-405c-a328-a76930bb2a4e",
+                              "label": "DriverAssistance",
+                              "object_type": "Function"
+                            }
+                          ],
+                          "purpose": "Aktuelle Verbindung",
+                          "relationships": [
+                            {
+                              "evidence_ref": "3a5a432b-c925-413a-9d60-4eda72c7ccaa",
+                              "label": "Anschluss",
+                              "source": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                              "target": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552"
+                            },
+                            {
+                              "evidence_ref": "3a5a432b-c925-413a-9d60-4eda72c7ccaa",
+                              "label": "Anschluss",
+                              "source": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                              "target": "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+                            },
+                            {
+                              "evidence_ref": "3a5a432b-c925-413a-9d60-4eda72c7ccaa",
+                              "label": "sendet",
+                              "source": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                              "target": "chassis-can"
+                            },
+                            {
+                              "evidence_ref": "3a5a432b-c925-413a-9d60-4eda72c7ccaa",
+                              "label": "empfängt",
+                              "source": "chassis-can",
+                              "target": "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+                            },
+                            {
+                              "evidence_ref": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                              "label": "läuft auf",
+                              "source": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                              "target": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988"
+                            },
+                            {
+                              "evidence_ref": "281ac04b-5084-405c-a328-a76930bb2a4e",
+                              "label": "läuft auf",
+                              "source": "281ac04b-5084-405c-a328-a76930bb2a4e",
+                              "target": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0"
+                            }
+                          ],
+                          "rows": [],
+                          "source_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                          "total_objects": 7,
+                          "truncated": false,
+                          "visualization_type": "NETWORK_DIAGRAM"
+                        }
+                      },
+                      {
+                        "affected_objects": [
+                          "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                          "281ac04b-5084-405c-a328-a76930bb2a4e",
+                          "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                          "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                          "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                          "chassis-can",
+                          "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+                        ],
+                        "content": "Getrennte Prüfnachweise",
+                        "evidence_refs": [
+                          "3a5a432b-c925-413a-9d60-4eda72c7ccaa"
+                        ],
+                        "output_id": "f443036dbedea5ec30cc32fa39b7984836e5c17b41b48a6264a2747100a83197",
+                        "output_type": "VALIDATION",
+                        "project_ref": "nis-e2e-industry50-s24",
+                        "provenance": {
+                          "capability_version": "1",
+                          "created_at": "2026-09-16T11:00:01.759272+00:00",
+                          "input_ref": "96ed60c3-2a87-4495-9bd1-9de9467da05a",
+                          "journal_ref": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                          "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                          "validation_evidence": {
+                            "address_valid": true,
+                            "capability_valid": true,
+                            "capacity_valid": true,
+                            "channel_valid": true,
+                            "controller_valid": true,
+                            "functional_relationship": true,
+                            "hosts_resolved": true,
+                            "identifiers_valid": true,
+                            "interface_valid": true,
+                            "network_membership_valid": true,
+                            "payload_identified": true,
+                            "port_valid": true,
+                            "preflight_valid": true,
+                            "projections_current": true,
+                            "routing_valid": true,
+                            "source_resolved": true,
+                            "stale_results_invalidated": true,
+                            "target_resolved": true,
+                            "technology_binding_valid": true,
+                            "timing_valid": true,
+                            "transport_valid": true
+                          }
+                        },
+                        "run_ref": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                        "schema_version": 1,
+                        "status": "CURRENT",
+                        "validation": {
+                          "status": "COMPLETE"
+                        },
+                        "visualization": {
+                          "columns": [
+                            "Prüfung",
+                            "Ergebnis"
+                          ],
+                          "nodes": [],
+                          "purpose": "Getrennte Prüfnachweise",
+                          "relationships": [],
+                          "rows": [
+                            [
+                              "Routing",
+                              "Nachgewiesen"
+                            ],
+                            [
+                              "Kapazität",
+                              "Nachgewiesen"
+                            ],
+                            [
+                              "Funktionales Timing",
+                              "Nachgewiesen"
+                            ],
+                            [
+                              "Preflight",
+                              "Nachgewiesen"
+                            ],
+                            [
+                              "Chassis_CAN · Netzlast",
+                              "0.153 %"
+                            ],
+                            [
+                              "Chassis_CAN · Sendeplan",
+                              "Unter Annahmen erfüllbar"
+                            ]
+                          ],
+                          "source_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+                          "total_objects": 6,
+                          "truncated": false,
+                          "visualization_type": "TABLE"
+                        }
+                      }
+                    ],
+                    "progress": [],
+                    "severity": "",
+                    "status": "COMPLETE",
+                    "text": "Die gewählte Kommunikation wurde umgesetzt und alle Zielbedingungen sind nachgewiesen.\nWeg: Direkt über Chassis_CAN · CAN_FD\nNetzlast Chassis_CAN: 0.15 %.\n1 Routing-Einträge geprüft. Frühere abhängige Auswertungen wurden als veraltet markiert.",
+                    "title": "",
+                    "type": "RESULT",
+                    "workload": {
+                      "completed": 23,
+                      "goal": "Verbinde ParkAssist mit DriverAssistance.",
+                      "status": "COMPLETE",
+                      "total": 23,
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    }
+                  },
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            }
+          ],
+          "updatedAt": 1789556407747
+        }
+      },
+      "conversation": {
+        "http_status": 200,
+        "data": {
+          "affected_objects": [],
+          "data": {
+            "active_proposal": null,
+            "active_workload": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+            "answered_questions": {
+              "goal:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314:621d3ac3-ed58-474f-9a33-c8fdbeadd960": {
+                "labels": [
+                  "Direkt über Chassis_CAN · CAN_FD"
+                ],
+                "question_id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                "selected_options": [
+                  "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT"
+                ],
+                "status": "ANSWERED"
+              }
+            },
+            "conversation_id": "nis-e2e-industry50-s24",
+            "current_question": null,
+            "current_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+            "decisions": {},
+            "durable_response_ids": [
+              "d23cd94a-0092-4b4a-85cf-e08bff07a999"
+            ],
+            "goal_requirement": "Verbinde ParkAssist mit DriverAssistance.",
+            "input_envelope": {
+              "active_view": "/studio/engineering",
+              "constraints": [],
+              "content": {
+                "decision": {
+                  "question_id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                  "selected_options": [
+                    "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT"
+                  ],
+                  "type": "QUESTION_ANSWER"
+                },
+                "text": "Verbinde ParkAssist mit DriverAssistance."
+              },
+              "files": [],
+              "input_id": "706967e7-13d1-4af2-a9f5-62897d7d919c",
+              "input_type": "USER_DECISION",
+              "operation_ref": null,
+              "project_ref": "nis-e2e-industry50-s24",
+              "request_revision": null,
+              "run_ref": "cd050bac-a93f-4ef7-b9be-da1d1a9872f6",
+              "schema_version": 1,
+              "selected_objects": [],
+              "source": "conversation",
+              "timestamp": "2026-09-16T11:00:00.907824+00:00",
+              "user_intent": "CONNECT_FUNCTIONS"
+            },
+            "lease_until": "2026-09-16T11:05:00.880188+00:00",
+            "pending_approvals": [],
+            "questions": {
+              "621d3ac3-ed58-474f-9a33-c8fdbeadd960": {
+                "context_refs": [],
+                "decision_key": "goal:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314:621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                "description": "Die gewählte Strategie umfasst alle beschriebenen Folgearbeiten. Neue Architekturentscheidungen werden erneut gefragt.",
+                "engineering_impact": "REQUIRED",
+                "expires_at": "2026-09-17T10:59:21.127746+00:00",
+                "id": "621d3ac3-ed58-474f-9a33-c8fdbeadd960",
+                "model_revision": "1515747df0384e775692ea8175a139d23e101a33959840b093adeffe6f28d3c2",
+                "options": [
+                  {
+                    "description": "Neuer physischer Port erforderlich. Die Wahl umfasst Interface, Anschluss, Transport, Routing, Berechnung und Validierung.",
+                    "disabled": false,
+                    "id": "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT",
+                    "label": "Direkt über Chassis_CAN · CAN_FD",
+                    "metadata": {},
+                    "reason": "",
+                    "recommended": false
+                  },
+                  {
+                    "description": "Keine Änderung ausführen.",
+                    "disabled": false,
+                    "id": "DEFER",
+                    "label": "Offen lassen",
+                    "metadata": {},
+                    "reason": "",
+                    "recommended": false
+                  }
+                ],
+                "question": "ParkAssist läuft auf Chassis; DriverAssistance auf ADAS. Welcher Kommunikationsweg soll umgesetzt werden?",
+                "recommended_options": [],
+                "required": true,
+                "selected_options": [
+                  "direct:1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552:CREATE_AND_CONNECT_PORT"
+                ],
+                "selection_mode": "SINGLE",
+                "status": "ANSWERED"
+              }
+            },
+            "run_id": null,
+            "selected_context": {
+              "active_view": "/studio/engineering",
+              "selected_object_refs": []
+            },
+            "ui_updated_at": 1789556407747
+          },
+          "evidence": [],
+          "evidence_refs": [],
+          "findings": [],
+          "next_actions": [],
+          "status": "SUCCESS",
+          "success": true,
+          "time_range": null,
+          "trace_id": "c3c34939-62ef-4010-8598-5e951f606997",
+          "validation_status": "NOT_EVALUATED",
+          "warnings": []
+        }
+      },
+      "hardware": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0002",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 2,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0002",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 2
+              },
+              "modified_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "modified_by": null,
+              "name": "ADAS",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 10:58:56 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "ECU",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0001",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "controller",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 1,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0001",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 1
+              },
+              "modified_at": "Wed, 16 Sep 2026 10:58:56 GMT",
+              "modified_by": null,
+              "name": "Chassis",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "hardware_interfaces": {
+        "http_status": 200,
+        "data": {
+          "count": 3,
+          "items": [
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": 1,
+              "confidence": null,
+              "controller_ref": "controller-9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "created_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "created_by": null,
+              "data_bitrate": 2000000.0,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "id": "f3d1c2e7-3321-47ed-85b6-041d8f97b928",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "modified_by": null,
+              "name": "Chassis_CAN",
+              "network_ref": "chassis-can",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "physical-port-619994c5-db9f-45d5-b09d-4fbe555b8415",
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {
+                "generator": "authorized-engineering-goal",
+                "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+              },
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "ai_generated",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 1000000000.0,
+              "capabilities": {},
+              "channel_index": null,
+              "confidence": null,
+              "controller_ref": null,
+              "created_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "created_by": null,
+              "data_bitrate": null,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "id": "92956e77-24b1-492e-afba-e7f81987e886",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "modified_by": null,
+              "name": "ETH_1",
+              "network_ref": "adas-ethernet",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": null,
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "Ethernet",
+              "version": 1,
+              "warning_load_limit": null
+            },
+            {
+              "approval_state": "pending",
+              "bitrate": 500000.0,
+              "capabilities": {},
+              "channel_index": 1,
+              "confidence": null,
+              "controller_ref": "controller-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "created_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "created_by": null,
+              "data_bitrate": 2000000.0,
+              "description": null,
+              "domain": null,
+              "hard_load_limit": null,
+              "hardware_node_id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "id": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+              "lifecycle_state": "draft",
+              "message_refs": [],
+              "modified_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "modified_by": null,
+              "name": "CAN_FD_1",
+              "network_ref": "chassis-can",
+              "object_type": "HardwareNetworkInterface",
+              "physical_port_ref": "connector-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "runtime_load": null,
+              "source": "manual",
+              "static_load": null,
+              "status": "UNMAPPED",
+              "target_load_limit": null,
+              "technology": "CAN_FD",
+              "version": 1,
+              "warning_load_limit": null
+            }
+          ]
+        }
+      },
+      "functions": {
+        "http_status": 200,
+        "data": {
+          "count": 2,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "id": "281ac04b-5084-405c-a328-a76930bb2a4e",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "modified_by": null,
+              "name": "DriverAssistance",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            },
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "created_by": null,
+              "description": null,
+              "domain": null,
+              "hardware_node_id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "id": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+              "lifecycle_state": "draft",
+              "modified_at": "Wed, 16 Sep 2026 10:58:57 GMT",
+              "modified_by": null,
+              "name": "ParkAssist",
+              "object_type": "Function",
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "messages": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "approval_state": "pending",
+              "confidence": null,
+              "configuration": {
+                "communication_contract": {
+                  "consumer_refs": [
+                    "281ac04b-5084-405c-a328-a76930bb2a4e"
+                  ],
+                  "scope": "FUNCTION_OUTPUT",
+                  "transmission": {
+                    "functional_requirements": {
+                      "actuation_delay_ms": 0,
+                      "confirmed": true,
+                      "maximum_event_to_response_ms": 250,
+                      "sampling_delay_ms": 0
+                    },
+                    "mode": "CYCLIC",
+                    "period_ms": 100
+                  }
+                },
+                "maximum_jitter_ms": 5,
+                "maximum_latency_ms": 20,
+                "physical_transmit_bindings": [
+                  {
+                    "hardware_interface_id": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                    "network_id": "chassis-can",
+                    "provenance": {
+                      "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                    },
+                    "technology": "CAN_FD"
+                  }
+                ],
+                "transport_unit": {
+                  "consumer_refs": [
+                    "281ac04b-5084-405c-a328-a76930bb2a4e"
+                  ],
+                  "cycle_ms": 100.0,
+                  "payload_bytes": 1,
+                  "provenance": {
+                    "encoding": "preserved-canonical-signal-positions",
+                    "generator": "authorized-engineering-goal",
+                    "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                  },
+                  "publisher_function_ref": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                  "publisher_hardware_ref": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                  "technology_id": "can_fd"
+                }
+              },
+              "created_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "created_by": null,
+              "cycle_ms": 100.0,
+              "description": null,
+              "direction": "tx",
+              "dlc": 1,
+              "domain": null,
+              "hardware_interface_id": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+              "id": "69b3dd86-7ef5-43dd-b6f7-72781332767e",
+              "interface_id": "78c98244-a072-439e-8beb-5bd3a6396da0",
+              "lifecycle_state": "draft",
+              "message_id_hex": "0x120",
+              "modified_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "modified_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+              "name": "ParkAssistStatus",
+              "object_type": "Message",
+              "project_id": "nis-e2e-industry50-s24",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "source": "manual",
+              "version": 2
+            }
+          ]
+        }
+      },
+      "signals": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "approval_state": "pending",
+              "byte_order": "little_endian",
+              "communication": {},
+              "confidence": null,
+              "configuration": {
+                "semantic_type": "BOOLEAN"
+              },
+              "created_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "created_by": null,
+              "data": {},
+              "data_type": "boolean",
+              "description": null,
+              "display_name": null,
+              "domain": null,
+              "factor": 1.0,
+              "id": "a502cdc9-9f8f-4ad9-b2dc-1120ba2845a5",
+              "length_bits": 1,
+              "lifecycle_state": "draft",
+              "max_value": 1.0,
+              "message_id": "69b3dd86-7ef5-43dd-b6f7-72781332767e",
+              "min_value": 0.0,
+              "modified_at": "Wed, 16 Sep 2026 10:58:58 GMT",
+              "modified_by": null,
+              "name": "ParkAssistActive",
+              "object_type": "Signal",
+              "offset_value": 0.0,
+              "project_id": "nis-e2e-industry50-s24",
+              "protocol_bindings": [],
+              "provenance": {},
+              "quality": {},
+              "review_state": "unreviewed",
+              "semantic": {
+                "semantic_type": "BOOLEAN"
+              },
+              "source": "manual",
+              "start_bit": 0,
+              "unit": null,
+              "version": 1
+            }
+          ]
+        }
+      },
+      "routing": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "approval_state": "APPROVED",
+              "approved_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "approved_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "created_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+              "description": "Verbinde ParkAssist mit DriverAssistance.",
+              "destinations": [
+                {
+                  "address_namespace": "PROJECT",
+                  "formatted_logical_node_address": "0x0002",
+                  "interface_id": "706eee3c-6433-4f79-a0ac-9f35a89ec2b4",
+                  "logical_node_address": 2,
+                  "network_id": "chassis-can",
+                  "node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                  "node_name": "ADAS",
+                  "port_id": "f3d1c2e7-3321-47ed-85b6-041d8f97b928",
+                  "protocol": "CAN_FD"
+                }
+              ],
+              "id": "3a5a432b-c925-413a-9d60-4eda72c7ccaa",
+              "modified_at": "Wed, 16 Sep 2026 11:00:01 GMT",
+              "modified_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+              "name": "ParkAssist → DriverAssistance",
+              "origin": "AI_GENERATED",
+              "payload": {
+                "interface_definition_id": null,
+                "interface_definition_ids": [],
+                "message_id": "69b3dd86-7ef5-43dd-b6f7-72781332767e",
+                "message_ids": [
+                  "69b3dd86-7ef5-43dd-b6f7-72781332767e"
+                ],
+                "signal_ids": [
+                  "a502cdc9-9f8f-4ad9-b2dc-1120ba2845a5"
+                ]
+              },
+              "project_id": "nis-e2e-industry50-s24",
+              "review_state": "REVIEWED",
+              "revision": 1,
+              "route": {
+                "functional_intent": {
+                  "destinations": [
+                    {
+                      "evidence": "Kanonische Funktionskommunikation",
+                      "function_id": "281ac04b-5084-405c-a328-a76930bb2a4e",
+                      "hardware_node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                      "interface_id": "706eee3c-6433-4f79-a0ac-9f35a89ec2b4"
+                    }
+                  ],
+                  "source": {
+                    "evidence": "Kanonische Funktionskommunikation",
+                    "function_id": "3e609bc5-780c-4614-b1dd-64dd7b3b64f6",
+                    "hardware_node_id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                    "interface_id": "78c98244-a072-439e-8beb-5bd3a6396da0"
+                  },
+                  "version": 1
+                },
+                "gateways": [],
+                "hops": [
+                  {
+                    "node_id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988"
+                  },
+                  {
+                    "node_id": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0"
+                  }
+                ],
+                "physical_paths": [
+                  {
+                    "edges": [
+                      "goal-edge-0d13e7ae-4fcf-4b0b-91a9-7ab248503701"
+                    ],
+                    "ports": [
+                      "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                      "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+                    ]
+                  }
+                ],
+                "priority": "NORMAL",
+                "transformations": []
+              },
+              "route_code": "RT-70FD51A9",
+              "routing_policy": {
+                "conditions": [],
+                "redundancy": "NONE",
+                "routing_type": "UNICAST"
+              },
+              "source": {
+                "address_namespace": "PROJECT",
+                "formatted_logical_node_address": "0x0001",
+                "interface_id": "78c98244-a072-439e-8beb-5bd3a6396da0",
+                "logical_node_address": 1,
+                "network_id": "chassis-can",
+                "node_id": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "node_name": "Chassis",
+                "port_id": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                "protocol": "CAN_FD"
+              },
+              "source_id": null,
+              "source_version": null,
+              "status": "APPROVED",
+              "supersedes_id": null,
+              "timing": {
+                "cycle_time_ms": 100.0,
+                "freshness_ms": 500,
+                "jitter_limit_ms": 5.0,
+                "max_latency_ms": 20.0,
+                "provenance": {
+                  "cycle_time_ms": {
+                    "assumption": "Initial reviewable timing budget",
+                    "source": "generated-default",
+                    "unit": "ms"
+                  },
+                  "freshness_ms": {
+                    "assumption": "max(500 ms, 3 × message cycle)",
+                    "source": "generated-default",
+                    "unit": "ms"
+                  },
+                  "jitter_limit_ms": {
+                    "field": "maximum_jitter_ms",
+                    "source": "message.configuration",
+                    "unit": "ms"
+                  },
+                  "max_latency_ms": {
+                    "field": "maximum_latency_ms",
+                    "source": "message.configuration",
+                    "unit": "ms"
+                  },
+                  "timeout_ms": {
+                    "assumption": "max(500 ms, 3 × message cycle)",
+                    "source": "generated-default",
+                    "unit": "ms"
+                  }
+                },
+                "timeout_ms": 500.0
+              },
+              "validation": {
+                "errors": [],
+                "evidence": [
+                  {
+                    "destinations": [
+                      "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0"
+                    ],
+                    "source_node": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                    "type": "TOPOLOGY"
+                  },
+                  {
+                    "compatible": true,
+                    "protocol": "CAN_FD",
+                    "type": "PROTOCOL"
+                  },
+                  {
+                    "estimated_latency_ms": 0.55,
+                    "max_latency_ms": 20.0,
+                    "type": "TIMING"
+                  },
+                  {
+                    "network_load_percent": {
+                      "chassis-can": 0.004
+                    },
+                    "payload_bytes": 1,
+                    "peak_segment_load_percent": 0.004,
+                    "physical_segment_count": 1,
+                    "route_load_percent": 0.004,
+                    "type": "LOAD"
+                  },
+                  {
+                    "mapped": true,
+                    "type": "PHYSICAL_NETWORK",
+                    "unmapped_destinations": []
+                  }
+                ],
+                "metrics": {
+                  "estimated_latency_ms": 0.55,
+                  "gateway_count": 0,
+                  "hop_count": 1,
+                  "payload_bytes": 1,
+                  "physical_path_mapped": true,
+                  "physical_segment_count": 1,
+                  "route_load_percent": 0.004
+                },
+                "valid": true,
+                "validation_timestamp": "2026-09-16T11:00:01.499901+00:00",
+                "warnings": []
+              }
+            }
+          ]
+        }
+      },
+      "resources": {
+        "http_status": 200,
+        "data": {
+          "model_revision": "12662a11d09818fe1cdeac3153974e76157cf6f00d985151ee7fa62da6380a6a",
+          "ports": [
+            {
+              "channel_index": 1,
+              "connection_status": "CONNECTED",
+              "controller_ref": "controller-9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "f3d1c2e7-3321-47ed-85b6-041d8f97b928",
+              "hardware_node_ref": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+              "id": "physical-port-619994c5-db9f-45d5-b09d-4fbe555b8415",
+              "network_ref": "chassis-can",
+              "provenance": {
+                "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+              },
+              "technology": "CAN_FD"
+            },
+            {
+              "channel_index": 1,
+              "connection_status": "CONNECTED",
+              "controller_ref": "controller-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "direction": "BIDIRECTIONAL",
+              "hardware_interface_ref": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+              "hardware_node_ref": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "id": "connector-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+              "network_ref": "chassis-can",
+              "provenance": {
+                "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+              },
+              "technology": "CAN_FD"
+            }
+          ],
+          "resources": {
+            "CommunicationCapability": [
+              {
+                "constraints": [],
+                "controller_count": 1,
+                "hardware_node_ref": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "id": "cap-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "max_channels": 1,
+                "max_ports": 1,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "redundancy_support": false,
+                "supported": true,
+                "supported_bitrates": [
+                  500000.0
+                ],
+                "supported_modes": [],
+                "technology": "CAN_FD"
+              },
+              {
+                "constraints": [],
+                "controller_count": 1,
+                "hardware_node_ref": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "id": "cap-9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "max_channels": 1,
+                "max_ports": 1,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "redundancy_support": false,
+                "supported": true,
+                "supported_bitrates": [
+                  500000.0
+                ],
+                "supported_modes": [],
+                "technology": "CAN_FD"
+              }
+            ],
+            "CommunicationController": [
+              {
+                "active_channels": [],
+                "capabilities": [],
+                "hardware_node_ref": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "id": "controller-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "max_channels": 1,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "status": "ACTIVE",
+                "technology": "CAN_FD"
+              },
+              {
+                "active_channels": [],
+                "capabilities": [],
+                "hardware_node_ref": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "id": "controller-9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "max_channels": 1,
+                "provenance": {
+                  "source": "human-hardware-fact"
+                },
+                "status": "ACTIVE",
+                "technology": "CAN_FD"
+              }
+            ],
+            "NetworkConnection": [
+              {
+                "connection_id": "connection:connector-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988:chassis-can",
+                "created_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                "network_ref": "chassis-can",
+                "port_ref": "connector-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "provenance": {
+                  "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                },
+                "status": "ACTIVE",
+                "technology_binding_ref": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552"
+              },
+              {
+                "connection_id": "connection:physical-port-619994c5-db9f-45d5-b09d-4fbe555b8415:chassis-can",
+                "created_by": "goal:conversation-user:goal-6bbf68b3-7177-4d23-9485-3633dd1ec314",
+                "network_ref": "chassis-can",
+                "port_ref": "physical-port-619994c5-db9f-45d5-b09d-4fbe555b8415",
+                "provenance": {
+                  "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                },
+                "status": "ACTIVE",
+                "technology_binding_ref": "f3d1c2e7-3321-47ed-85b6-041d8f97b928"
+              }
+            ],
+            "PhysicalPort": [
+              {
+                "channel_index": 1,
+                "connection_status": "CONNECTED",
+                "controller_ref": "controller-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "direction": "BIDIRECTIONAL",
+                "hardware_interface_ref": "1f7c3ed8-8ef0-4cd3-be51-1ea0a310c552",
+                "hardware_node_ref": "3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "id": "connector-3a1d5fbb-8e3a-4ce7-9b64-b692acbe7988",
+                "network_ref": "chassis-can",
+                "provenance": {
+                  "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                },
+                "technology": "CAN_FD"
+              },
+              {
+                "channel_index": 1,
+                "connection_status": "CONNECTED",
+                "controller_ref": "controller-9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "direction": "BIDIRECTIONAL",
+                "hardware_interface_ref": "f3d1c2e7-3321-47ed-85b6-041d8f97b928",
+                "hardware_node_ref": "9dbdcbdd-3d37-4cc4-985b-0c043a7e06a0",
+                "id": "physical-port-619994c5-db9f-45d5-b09d-4fbe555b8415",
+                "network_ref": "chassis-can",
+                "provenance": {
+                  "workload_id": "goal-6bbf68b3-7177-4d23-9485-3633dd1ec314"
+                },
+                "technology": "CAN_FD"
+              }
+            ]
+          }
+        }
+      },
+      "model_revision": {
+        "capacity_timing": 1,
+        "data_science_intelligence": 0,
+        "engineering_model": 11,
+        "network_editor": 2,
+        "parameters": 1,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 1
+      },
+      "captured_at": "2026-09-16T11:01:11.229403+00:00"
+    },
+    "claimed_complete": false,
+    "findings": [
+      {
+        "code": "TC_OBSERVED_CONTRACT_DEVIATION",
+        "category": "AGENT_BUG",
+        "blocking": true,
+        "detail": "Ein SCRIPTED_TEST-Ja führte im gleichen Workload zur kanonischen Port-/Routingmutation und COMPLETE mit Kapazität, funktionalem Timing und Preflight. Browser zeigt davor eine ungültige Antwortkarte. Daher technischer Teil erfolgreich, Gesamttest mit Darstellungsfehler.",
+        "evidence": [
+          "ev-2c1191c376654112b72b5abb57d9f220",
+          "ev-e4c2828452d143cd96ca7f85fb7c437d",
+          "ev-bb5d7f6f83af41c9ba95259aaf18bd1b",
+          "ev-46a03414d917481bb63bf64bb823461d",
+          "ev-e3822b98587d40b3bc3eb4117719373b",
+          "ev-9ded742ad0154d779a88939f5f93801b",
+          "ev-2bcf8df3185b49a5ad24061a1998c018",
+          "ev-8266ff2b29c94d1dba9e976800004a18",
+          "ev-acb4949f01c945148f86f17f0d8f4e5b",
+          "ev-6e9c92ebf30442f094740d9822b8cd90",
+          "ev-596747206f084b0daba89399374235c8"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "Observed scoped result",
+        "status": "PASSED",
+        "evidence": [
+          "ev-2c1191c376654112b72b5abb57d9f220",
+          "ev-e4c2828452d143cd96ca7f85fb7c437d",
+          "ev-bb5d7f6f83af41c9ba95259aaf18bd1b",
+          "ev-46a03414d917481bb63bf64bb823461d",
+          "ev-e3822b98587d40b3bc3eb4117719373b",
+          "ev-9ded742ad0154d779a88939f5f93801b",
+          "ev-2bcf8df3185b49a5ad24061a1998c018",
+          "ev-8266ff2b29c94d1dba9e976800004a18",
+          "ev-acb4949f01c945148f86f17f0d8f4e5b",
+          "ev-6e9c92ebf30442f094740d9822b8cd90",
+          "ev-596747206f084b0daba89399374235c8"
+        ],
+        "detail": "Ein SCRIPTED_TEST-Ja führte im gleichen Workload zur kanonischen Port-/Routingmutation und COMPLETE mit Kapazität, funktionalem Timing und Preflight. Browser zeigt davor eine ungültige Antwortkarte. Daher technischer Teil erfolgreich, Gesamttest mit Darstellungsfehler."
+      }
+    ]
+  }
+}

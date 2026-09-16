@@ -1,0 +1,1085 @@
+{
+  "task_id": "industry50",
+  "test_id": "S29",
+  "run_id": "run-cfe46a0d25094d1dba1c3244148058dd",
+  "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+  "contract_hash": "494971399b24949ca8e7e6d12934af78e963f8362e05d2155017271e39576c3d",
+  "status": "PARTIAL",
+  "started_at": "2026-09-16T11:08:27.299505+00:00",
+  "finished_at": "2026-09-16T11:13:59.741570+00:00",
+  "context": {
+    "source_hash": "25dfcb42be151010693db6a44f9e4f545a3c339627558608c2e659c07ba73a09",
+    "global_rules": [
+      "## 3. Agentenregeln für alle Szenarien\n\nDer Agent muss:\n\n1. Aufgabenstellung typisieren.\n2. bestehende Modellobjekte suchen.\n3. `REUSE before CREATE` anwenden.\n4. Geräte klassifizieren.\n5. Functions und Function Mappings bestimmen.\n6. Functional Interfaces bestimmen.\n7. Hardware Capabilities prüfen.\n8. Hardware Interfaces und Ports prüfen.\n9. fehlende Ports nur nach notwendiger Architekturentscheidung erzeugen.\n10. Networks und Technology Bindings bestimmen.\n11. Signals, DataObjects oder Streams passend zur Data Complexity erzeugen.\n12. Transport Units technologiespezifisch erzeugen.\n13. Routing vollständig erzeugen.\n14. Logical Node Addresses für adressierbare Hardware vergeben.\n15. Capacity und Timing berechnen.\n16. Validation / Preflight ausführen.\n17. Blocking Findings erkennen.\n18. Completion prüfen.\n19. Ergebnis passend visualisieren.\n\nNicht ausreichend:\n\n```text\n\"Öffnen Sie den Netzwerk-Editor.\"\n```\n\nDer Agent soll die notwendigen Engineering-Schritte selbst ausführen.\n\n---\n\n",
+      "# 8. Was die B-Varianten gezielt testen\n\nDie Varianten ohne Typangaben prüfen:\n\n```text\nTyping Quality\nModel Understanding\nDecision Detection\nClarification Quality\nArchitecture Reasoning\nTechnology Selection\nDevice Classification\nData Complexity Classification\nPort / Interface Reasoning\nNetwork Segmentation\nTransport Selection\nCompletion Behavior\n```\n\nDer Agent soll nicht unnötig fragen.\n\nNicht erforderlich:\n\n```text\n\"Wie soll Sensor 1 heißen?\"\n```\n\nwenn dies keine relevante Architekturentscheidung ist.\n\nRelevant kann dagegen sein:\n\n```text\n\"Soll der datenintensive Sensor direkt am Backbone\noder über den lokalen Controller angebunden werden?\"\n```\n\n---\n\n# 9. Bewertungsmetriken\n\nFür jedes Szenario mindestens:\n\n```text\nTyping Accuracy\nCorrect Existing-Object Reuse\nArchitecture Validity\nCorrect Questions\nUnnecessary Question Count\nDevice Classification Accuracy\nTechnology Compatibility\nPort / Interface Validity\nRouting Completeness\nTransport Completeness\nCapacity Validation\nTiming Validation\nBlocking Findings\nCompletion Accuracy\nHallucinated Objects\nDuplicate Objects\n```\n\n---\n\n# 10. A/B-Vergleich\n\nFür jedes Szenariopaar:\n\n```text\nA – konkreter Input\nvs.\nB – unvollständiger Input\n```\n\nZiel:\n\nDie B-Variante soll nach notwendigen Nutzerentscheidungen dieselbe Qualitätsstufe erreichen wie die A-Variante.\n\nNicht notwendig:\n\n```text\nidentische Technologien\n```\n\nwenn B technologieoffen ist.\n\nNotwendig:\n\n```text\ntechnisch begründete Architektur\n+\nvollständige Validierung\n+\nnachvollziehbare Entscheidungen\n```\n\n---\n\n# 11. Architekturvielfalt\n\nDer Testsatz gilt nur dann als sinnvoll, wenn der Agent nicht immer dieselbe Architektur erzeugt.\n\nEr muss situationsabhängig beherrschen:\n\n```text\nV0 – lokale Sensor-Controller-Aktor-Regelung\nV1 – einfaches EVA mit Gateway\nV2 – Controller-vermittelte Kommunikation\nV3 – direkte Gateway-Anbindung\nV4 – segmentierte Gateway-Architektur\nKI – hybride Kombination aus lokaler und direkter Anbindung\n```\n\n---\n\n# 12. Komplexitätssteigerung\n\nEmpfohlene Reihenfolge:\n\n```text\nS01–S05\n→ Basiskompetenz\n\nS06–S10\n→ Segmentierung / Multi-Controller\n\nS11–S15\n→ heterogene Technologien / Datenraten\n\nS16–S18\n→ größere Topologien / Echtzeit / Mixed Criticality\n\nS19\n→ großer Architektur- und Routing-Workload\n\nS20\n→ vollständiger Multi-Technology-Workflow\n   bis Simulation und Trace Readiness\n```\n\n---\n\n# 13. Komplexe Szenarien als Workload\n\nS19 und S20 dürfen nicht in einem einzigen LLM-Schritt erzeugt werden.\n\nPflicht:\n\n```text\nGoal\n↓\nWorkload\n↓\nWork Packages\n↓\nBatch Generation\n↓\nValidation per Batch\n↓\nGlobal Reconciliation\n↓\nRouting\n↓\nCapacity\n↓\nTiming\n↓\nPreflight\n↓\nCompletion\n```\n\nBeispiel:\n\n```text\nWP01 Device Classification\nWP02 Function Model\nWP03 Sensor/Actuator Mapping\nWP04 Hardware Interfaces / Ports\nWP05 Network Segmentation\nWP06 Payload Model\nWP07 Transport Generation\nWP08 Routing\nWP09 Capacity\nWP10 Timing\nWP11 Validation\nWP12 Simulation Readiness\nWP13 Visualization\n```\n\n---\n\n# 14. Completion-Regel\n\nObjektanzahlen allein reichen nicht.\n\nBeispiel:\n\n```text\n100 Sensoren generated\n100 Aktoren generated\n50 Controller generated\n```\n\nist noch nicht COMPLETE.\n\nZusätzlich erforderlich:\n\n```text\nvalid classification\nvalid mappings\nvalid ports\nvalid networks\nvalid payload semantics\nvalid transport units\ncomplete routes\nno unresolved identifier conflicts\ncapacity valid\ntiming valid\npreflight valid\n```\n\n---\n\n# 15. Verwendung für lokales LLM-Training\n\nDie 40 Aufgaben können aufgeteilt werden in:\n\n```text\ntyping\narchitecture_selection\ndecision_detection\ntool_selection\ntool_trajectory\ncompletion\nrepair\nvisualization\n```\n\nFür jede B-Variante besonders speichern:\n\n```text\nUser Input\n→ Model Context\n→ Missing Information\n→ Correct Question\n→ User Decision\n→ Execution Trajectory\n→ Validation Result\n→ Final Output\n```\n\n---\n\n# 16. Golden Evaluation\n\nEmpfehlung:\n\n```text\nTraining:\nS01–S15\n\nValidation:\nS16–S18\n\nGolden / Holdout:\nS19–S20\n```\n\nWichtig:\n\nA- und B-Variante desselben Basisszenarios nicht auf Training und Holdout aufteilen, wenn dadurch nahezu identische Inhalte durchsickern.\n\n---\n\n# 17. Referenz zum großen Umfang\n\nDie beiden komplexen Szenarien orientieren sich am großen Referenzumfang der bereitgestellten Datei:\n\n```text\n100 Sensoren\n100 Aktoren\n50 Funktions-ECUs/-Controller\n1 zentrales Gateway\nmehrere LIN-/CAN-FD-/Ethernet-Netze\n5–20 Signale je Funktion\nvollständiges Routing\nCapacity & Timing\nSimulation\nTrace-Analyse\n```\n\nFür die industrieneutrale Fassung werden die fahrzeugspezifischen Rollen abstrahiert zu:\n\n```text\nSensor\nAktor\nController\nGateway\nEdge/HPC\nTechnology Binding\nTransport Unit\nNetwork\nRoute\n```\n\n---\n\n# 18. Leitregel\n\n```text\nSAME ENGINEERING GOAL\n+\nDIFFERENT INPUT DETAIL\n→ SAME QUALITY STANDARD\n```\n\nDer Agent soll sowohl mit:\n\n```text\n\"3 Sensoren, 4 Aktoren, Raspberry Pi, CAN-FD ...\"\n```\n\nals auch mit:\n\n```text\n\"3 Sensoren, 4 Aktoren und ein Rechner ...\"\n```\n\narbeiten können.\n\nBei detailliertem Input:\n\n```text\nweniger Rückfragen\n```\n\nBei offenem Input:\n\n```text\nTyping\n→ Context\n→ gezielte Engineering-Fragen\n→ vollständige Ausführung\n```\n\n> **Ziel ist nicht, dass der Agent immer dieselbe Technologie auswählt. Ziel ist, aus unterschiedlich detaillierten industrieneutralen Anforderungen eine nachvollziehbare, vollständige und validierbare Kommunikationsarchitektur zu entwickeln.**\n\n---\n",
+      "# 20. Zusätzliche MCP-Abnahmematrix\n\nDie zehn neuen Prüfungen müssen zusammen mindestens folgende MCP-Bereiche abdecken:\n\n| Bereich | Muss geprüft werden |\n|---|---|\n| Discovery | Tool/Capability Registry, Versions- und Schemaauflösung |\n| Context | Projekt, Model Revision, Selected Object, Canonical IDs |\n| Read | Hardware, Function, Interface, Network, Route, Signal, Trace |\n| Mutation | Port, Interface, Connection, Route, Binding |\n| Calculation | Capacity, Timing, Encoding/Bit Length |\n| Validation | Topology, Binding, Routing, Capacity, Timing, Preflight |\n| Simulation | Preflight, Start, Status, Result |\n| Trace | Window, Events, Signals, Route Correlation, Root Cause |\n| Finding | Inspect, Decision, Review/Outdated |\n| Governance | Permission, Actor, Project Scope, Audit |\n| Failure | Invalid Input, Not Supported, Timeout, Conflict |\n| Result Contract | Structured ToolResult, Evidence, trace_id |\n\n---\n\n# 21. Zusätzliche Chat-Agent-Abnahmekriterien\n\nDer Chat Agent gilt in diesen Prüfungen nur als erfolgreich, wenn:\n\n```text\n1. Wizard Entry funktioniert.\n2. Agent versteht den gewählten Arbeitsmodus.\n3. Agent liest das bestehende Modell.\n4. Agent fragt nur bei echten Engineering Decisions.\n5. Checkboxen / Single Choice funktionieren.\n6. Antwort wird strukturiert übernommen.\n7. Workload wird fortgesetzt.\n8. Agent verwendet MCP selbst.\n9. Agent delegiert Arbeit nicht unnötig an den Nutzer.\n10. Agent berechnet abhängige Werte selbst.\n11. Agent validiert selbst.\n12. Agent zeigt kompakten Progress.\n13. Resultat wird im Chat verständlich zusammengefasst.\n14. Deep Links sind optional, nicht Ersatz für Ausführung.\n15. Completion wird nicht zu früh gemeldet.\n```\n\n---\n\n# 22. Gesamtumfang nach Ergänzung\n\nDer Testsatz enthält nun:\n\n```text\n40 fachliche A/B-Szenarien\n+\n10 Chat-Agent-/MCP-/Skill-/UI-Integrationsprüfungen\n=\n50 Prüfungen\n```\n\nDie zusätzlichen S21–S30 prüfen insbesondere die Ebene, die in den ersten 40 Szenarien nur implizit enthalten war:\n\n```text\nChat UX\n→ Skill/Wizard\n→ Agent State\n→ MCP Contract\n→ Core Execution\n→ Browser Evidence\n→ Validation\n→ Completion\n```\n\n"
+    ],
+    "architecture_rules": [
+      "## 2. Verbindliche Architekturvarianten\n\n### Variante 0 – Sensor → Controller → Aktor\n```text\nSensor → Controller → Aktor\n```\n\n### Variante 1 – Einfaches EVA\n```text\nSensor / Aktor → Controller → Gateway\n```\n\n### Variante 2 – Controller-vermittelt\n```text\nSensor ─┐\n        ├→ Controller → Gateway\nAktor  ─┘\n```\n\n### Variante 3 – Gateway-direkt\n```text\nSensor ──────┐\nController ──┼→ Gateway\nAktor ───────┘\n```\n\n### Variante 4 – Gateway-Segmente\n```text\nSensor/Aktor → Controller 1 ─┐\nSensor/Aktor → Controller 2 ─┼→ Gateway\nweitere Controller ──────────┘\n```\n\n### KI-Kombination – Variante 2 + 3\n```text\nlokale Teilnehmer → Controller ─┐\n                                ├→ Gateway\ndirekte Teilnehmer ─────────────┘\n```\n\n"
+    ],
+    "rule_files": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+        "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+        "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+        "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+        "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+        "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+        "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\02_TYPINGS.md",
+        "sha256": "bee2cb83c26c7e8d7943c4c3c5e15606fb25ed84b3b30d9e3eeac2752d2e6d51"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\device_classification\\03_DATA_COMPLEXITY.md",
+        "sha256": "a670067264f69c78f65e87bb82b7af1243538dab3b471f9b642258b491a5a858"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\technology_bindings\\00_OVERVIEW.md",
+        "sha256": "9de3a16be370c92d834eab199ca61ad43c559615f1a45f94d1ab4a6885758f8b"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\addressing\\02_ADDRESS_POLICY.md",
+        "sha256": "8e51b16e1eeeadfcfc14972ac2362c76349e1f79c979e97ceb57f9057ffdbce1"
+      }
+    ],
+    "required_skills": [],
+    "required_tools": [],
+    "required_views": [],
+    "required_outputs": [
+      "Originalantwort und persistierter Modellzustand"
+    ],
+    "version": "1.1.1",
+    "test": {
+      "test_id": "S29",
+      "title": "Wizard „Finding bewerten“: Entscheidung, Persistenz und Audit",
+      "input": "Bewerte SINGLE_POINT_OF_FAILURE am CentralGateway.",
+      "source_lines": [
+        2096,
+        2192
+      ],
+      "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Finding Lifecycle + Chat + MCP + Audit\n\n### Browser\n\nKlick:\n\n```text\nFinding bewerten\n```\n\n### Ausgangs-Finding\n\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```\n\n### Erwartete Optionen\n\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```\n\n### Fachregel\n\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```\n\n### MCP-Prüfung\n\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```\n\n### Persistenzprüfung\n\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```\n\n### PASS\n\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---",
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Teststack des veröffentlichten Images"
+      ],
+      "required_model_context": [
+        "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [],
+      "required_actions": [
+        "Originalfall ausführen und Nachweise sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Browser:\nKlick:\n\n```text\nFinding bewerten\n```",
+        "Ausgangs-Finding:\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```",
+        "Erwartete Optionen:\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```",
+        "Fachregel:\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```",
+        "MCP-Prüfung:\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```",
+        "Persistenzprüfung:\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```",
+        "PASS:\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---"
+      ],
+      "failure_conditions": [
+        "Erfundene erfolgreiche Ausführung"
+      ],
+      "tags": [
+        "integration",
+        "mcp"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "contract_hash": "494971399b24949ca8e7e6d12934af78e963f8362e05d2155017271e39576c3d",
+      "status": "READY",
+      "last_run": null
+    }
+  },
+  "versions": {
+    "tool_checker_version": "1.1.1",
+    "skill_contract_version": "1.1.1",
+    "manifest_schema_version": 1,
+    "browser_adapter_version": "codex-mediated-1",
+    "rules_version": "a8505ae85346cab0f15c46801d552e568e9b701395c13628afdced97d220e98d"
+  },
+  "evidence": [
+    {
+      "id": "ev-e2ed713307304d68b4734e1629852246",
+      "path": "evidence\\ev-e2ed713307304d68b4734e1629852246.json",
+      "sha256": "7a54f8d7b51dd566721383f5f9dd8ea2f3c7deaa250ac075f5a45990a63c4bef",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:13:58.824900+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\after.json"
+    },
+    {
+      "id": "ev-1865e1abdb434217b936f07ca9e3e986",
+      "path": "evidence\\ev-1865e1abdb434217b936f07ca9e3e986.json",
+      "sha256": "76a2a9926ee449afb1033eddb0395b22ecc3adcb6f7b8dde3ef982fd684bf69d",
+      "kind": "model",
+      "captured_at": "2026-09-16T11:13:58.969571+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\before.json"
+    },
+    {
+      "id": "ev-c9c1787bd4ba4795813d17ede54f6e0f",
+      "path": "evidence\\ev-c9c1787bd4ba4795813d17ede54f6e0f.png",
+      "sha256": "4b58dcccd85d624f800882d9dcbd26424216ed05e891cd33979f23e9b3af30eb",
+      "kind": "screenshot",
+      "captured_at": "2026-09-16T11:13:59.114330+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\browser.png"
+    },
+    {
+      "id": "ev-b33259904b344b5188136c0fc23725c4",
+      "path": "evidence\\ev-b33259904b344b5188136c0fc23725c4.txt",
+      "sha256": "764b9917769446026d0db2acf732983880fd189ad6076c0f049b723db955ec59",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:13:59.262453+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\browser.txt"
+    },
+    {
+      "id": "ev-e01e5786473d45b8a6f9ca5fae632158",
+      "path": "evidence\\ev-e01e5786473d45b8a6f9ca5fae632158.json",
+      "sha256": "b50996e5cfd90033784a90b043c8c36cdf34955a7360a55c577bfb5d58c6cfba",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:13:59.407147+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\core-lifecycle.json"
+    },
+    {
+      "id": "ev-2f8f732365034c3cacfe54f870df4770",
+      "path": "evidence\\ev-2f8f732365034c3cacfe54f870df4770.json",
+      "sha256": "c449a63c53a4f4030e060b2d27b957b086ee566cd43cedf03ed6202114eba718",
+      "kind": "log",
+      "captured_at": "2026-09-16T11:13:59.550325+00:00",
+      "original_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\evidence\\industry50\\S29\\ui-fixture.json"
+    }
+  ],
+  "findings": [],
+  "failures": [],
+  "warnings": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nFinding bewerten\n```",
+    "completion_criteria:Ausgangs-Finding:\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```",
+    "completion_criteria:Erwartete Optionen:\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```",
+    "completion_criteria:Fachregel:\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```",
+    "completion_criteria:MCP-Prüfung:\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```",
+    "completion_criteria:Persistenzprüfung:\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```",
+    "completion_criteria:PASS:\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "completion_status": "INCOMPLETE",
+  "next_actions": [
+    "REQUIRED_OUTPUTS:Originalantwort und persistierter Modellzustand",
+    "completion_criteria:Browser:\nKlick:\n\n```text\nFinding bewerten\n```",
+    "completion_criteria:Ausgangs-Finding:\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```",
+    "completion_criteria:Erwartete Optionen:\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```",
+    "completion_criteria:Fachregel:\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```",
+    "completion_criteria:MCP-Prüfung:\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```",
+    "completion_criteria:Persistenzprüfung:\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```",
+    "completion_criteria:PASS:\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---",
+    "UNASSESSED_FAILURE_CONDITION:Erfundene erfolgreiche Ausführung",
+    "TC_BROWSER_ACTION_FAILED"
+  ],
+  "lock": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\locks\\mutation.json",
+  "actual": {
+    "run_id": "run-cfe46a0d25094d1dba1c3244148058dd",
+    "actions": [
+      {
+        "name": "Originalfall ausführen und Nachweise sichern",
+        "status": "PASSED",
+        "evidence": [
+          "ev-e2ed713307304d68b4734e1629852246",
+          "ev-1865e1abdb434217b936f07ca9e3e986",
+          "ev-c9c1787bd4ba4795813d17ede54f6e0f",
+          "ev-b33259904b344b5188136c0fc23725c4",
+          "ev-e01e5786473d45b8a6f9ca5fae632158",
+          "ev-2f8f732365034c3cacfe54f870df4770"
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "NIS HTTP API",
+        "status": "PASSED",
+        "evidence": [
+          "ev-e2ed713307304d68b4734e1629852246",
+          "ev-1865e1abdb434217b936f07ca9e3e986",
+          "ev-c9c1787bd4ba4795813d17ede54f6e0f",
+          "ev-b33259904b344b5188136c0fc23725c4",
+          "ev-e01e5786473d45b8a6f9ca5fae632158",
+          "ev-2f8f732365034c3cacfe54f870df4770"
+        ]
+      }
+    ],
+    "checks": [],
+    "model_after": {
+      "workflow": {
+        "http_status": 200,
+        "data": {
+          "active_step": "engineering_model",
+          "artifact_checks": {
+            "engineering_model": {
+              "complete": false,
+              "consistency": {
+                "function_required": 1,
+                "functions_duplicate": 0,
+                "functions_missing": 1,
+                "functions_unexpected": 0,
+                "hardware_interfaces_missing": 1,
+                "messages_overflow": 0
+              },
+              "counts": {
+                "functions": 0,
+                "hardware_interfaces": 0,
+                "hardware_nodes": 1,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0
+              },
+              "hardware_by_type": {
+                "Gateway": 1
+              },
+              "incomplete": {
+                "functions": 0,
+                "interfaces": 0,
+                "messages": 0,
+                "signals": 0,
+                "transmission": 0
+              },
+              "scope_mismatches": {},
+              "status": "IN_PROGRESS"
+            },
+            "network_editor": {
+              "complete": false,
+              "counts": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "invalid": {
+                "edges": 0,
+                "nodes": 0
+              },
+              "status": "EMPTY"
+            },
+            "parameters": {
+              "complete": true,
+              "invalid_numeric": [],
+              "required": {},
+              "status": "APPROVED",
+              "uses_defaults": true
+            },
+            "routing": {
+              "complete": false,
+              "counts": {
+                "approved": 0,
+                "conflicts": 0,
+                "gateway_fanout_interfaces": 0,
+                "gateway_fanout_routes": 0,
+                "invalid": 0,
+                "total": 0,
+                "valid": 0
+              },
+              "coverage": {
+                "complete": true,
+                "covered_messages": 0,
+                "covered_signals": 0,
+                "errors": [],
+                "excluded_message_ids": [],
+                "excluded_messages": 0,
+                "excluded_signal_ids": [],
+                "excluded_signals": 0,
+                "message_coverage_percent": 100.0,
+                "missing_message_ids": [],
+                "missing_signal_ids": [],
+                "required_message_ids": [],
+                "required_messages": 0,
+                "required_signal_ids": [],
+                "required_signals": 0,
+                "scope_mode": "ALL",
+                "signal_coverage_percent": 100.0,
+                "total_messages": 0,
+                "total_signals": 0,
+                "transport_exclusions": [],
+                "version": 1
+              },
+              "status": "EMPTY"
+            }
+          },
+          "context": {
+            "active_project": "nis-e2e-industry50-s29",
+            "active_workflow_step": "engineering_model",
+            "selected_network": null,
+            "selected_object": null,
+            "selected_route": null,
+            "selected_signal": null,
+            "selected_simulation": null
+          },
+          "edit_tokens": {
+            "parameters": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "topology": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+          },
+          "latest_analyses": {},
+          "parameters": {},
+          "project_id": "nis-e2e-industry50-s29",
+          "rule": "Define -> Route -> Connect -> Configure -> Calculate -> Validate -> Simulate -> Analyze -> Assess -> Learn -> Improve",
+          "simulation_snapshots": [],
+          "stale_reasons": {},
+          "status_vocabulary": [
+            "EMPTY",
+            "IN_PROGRESS",
+            "COMPLETE",
+            "WARNING",
+            "ERROR",
+            "APPROVED",
+            "OUTDATED"
+          ],
+          "statuses": {
+            "capacity_timing": "EMPTY",
+            "data_science_intelligence": "EMPTY",
+            "engineering_model": "IN_PROGRESS",
+            "network_editor": "EMPTY",
+            "parameters": "APPROVED",
+            "results_analysis": "EMPTY",
+            "routing": "EMPTY",
+            "simulation": "EMPTY",
+            "validation": "EMPTY"
+          },
+          "steps": [
+            {
+              "id": "engineering_model",
+              "label": "Engineering-Modell",
+              "position": 1,
+              "reason": null,
+              "status": "IN_PROGRESS",
+              "version": 1
+            },
+            {
+              "id": "routing",
+              "label": "Routing-Tabelle",
+              "position": 2,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "network_editor",
+              "label": "Netzwerk-Editor",
+              "position": 3,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "parameters",
+              "label": "Parameter",
+              "position": 4,
+              "reason": null,
+              "status": "APPROVED",
+              "version": 0
+            },
+            {
+              "id": "capacity_timing",
+              "label": "Capacity & Timing",
+              "position": 5,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "validation",
+              "label": "Validation / Preflight",
+              "position": 6,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "simulation",
+              "label": "Simulation",
+              "position": 7,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "results_analysis",
+              "label": "Results / Analysis",
+              "position": 8,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            },
+            {
+              "id": "data_science_intelligence",
+              "label": "Data Science & Intelligence",
+              "position": 9,
+              "reason": null,
+              "status": "EMPTY",
+              "version": 0
+            }
+          ],
+          "topology": {},
+          "updated_at": "2026-09-16T11:08:59.078072+00:00",
+          "versions": {
+            "capacity_timing": 0,
+            "data_science_intelligence": 0,
+            "engineering_model": 1,
+            "network_editor": 0,
+            "parameters": 0,
+            "results_analysis": 0,
+            "routing": 0,
+            "simulation": 0,
+            "validation": 0
+          }
+        }
+      },
+      "history": {
+        "http_status": 200,
+        "data": {
+          "messages": [
+            {
+              "id": "JsaArTE2CAGQeYAn",
+              "parts": [
+                {
+                  "text": "Ausgangsbefund für diesen isolierten Lifecycle-Test: SINGLE_POINT_OF_FAILURE. CentralGateway is articulation point of topology. Bewerte diesen vorgegebenen Befund. Keine Modelländerung.",
+                  "type": "text"
+                }
+              ],
+              "role": "user"
+            },
+            {
+              "id": "68f313b7-41d9-4ba5-a8c7-2ce205d3b294",
+              "parts": [
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:09:00.933535+00:00",
+                    "findings": [],
+                    "id": "63410cfd-98ca-481e-92f3-22b4a2675dec",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "RECEIVED",
+                    "text": "Auftrag aufgenommen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "ed9f0f33-c235-43ab-b6fc-bdea389b0ad9",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:09:00.983760+00:00",
+                    "findings": [],
+                    "id": "bfefc296-a2a6-414e-806c-48c587fd6a35",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "pending"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "PLANNING",
+                    "text": "Projektstand und benötigte Arbeitsschritte prüfen.",
+                    "title": "",
+                    "type": "PROGRESS"
+                  },
+                  "id": "d6bb0e6f-300f-4668-84e3-2015fd6ed890",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:09:36.597967+00:00",
+                    "findings": [],
+                    "id": "a5c6a211-df25-4951-8e50-e0bb2756b008",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "IN_PROGRESS",
+                    "text": "Arbeitsschritt 1 geprüft.",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 1,
+                      "total": 12
+                    }
+                  },
+                  "id": "c2358728-4a7b-4e56-951b-3e2e5825cbcd",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:09:56.705450+00:00",
+                    "findings": [],
+                    "id": "821243f8-b818-4a03-88e8-c7913829b8e3",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "IN_PROGRESS",
+                    "text": "Arbeitsschritt 2 geprüft.",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 2,
+                      "total": 12
+                    }
+                  },
+                  "id": "95db89ff-2fcb-4cb9-a02b-ff56cf4aed31",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:10:17.595156+00:00",
+                    "findings": [],
+                    "id": "b020df1f-25d0-4d36-86a7-02404202b205",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [],
+                    "progress": [
+                      {
+                        "label": "Anforderung verstehen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Modell prüfen",
+                        "status": "done"
+                      },
+                      {
+                        "label": "Vorschlag vorbereiten",
+                        "status": "active"
+                      },
+                      {
+                        "label": "Validieren",
+                        "status": "pending"
+                      }
+                    ],
+                    "severity": "",
+                    "status": "IN_PROGRESS",
+                    "text": "Arbeitsschritt 3 geprüft.",
+                    "title": "",
+                    "type": "PROGRESS",
+                    "workload": {
+                      "completed": 3,
+                      "total": 12
+                    }
+                  },
+                  "id": "dfedacef-b714-4e3f-90a3-8eb30bb9a66f",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "actions": [],
+                    "context_refs": [],
+                    "created_at": "2026-09-16T11:11:45.707029+00:00",
+                    "findings": [],
+                    "id": "df30b41b-9a23-479d-a8bc-9bf063d89f68",
+                    "metadata": {
+                      "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                      "run_id": "30ed1fb6-1c2d-489b-a263-511614d7499b"
+                    },
+                    "options": [],
+                    "outputs": [
+                      {
+                        "affected_objects": [],
+                        "content": "Die genannten Rechenwerte sind nicht als Ergebnisartefakt belegt. Für belastbare Kapazitäts- und Timingwerte muss die Berechnung für den aktuellen Modellstand ausgeführt und geprüft werden.",
+                        "evidence_refs": [
+                          "dff8b43e-2913-4d74-ae6a-d331c0a66ff2",
+                          "7e149077-f079-4cd7-8da4-e84e4f5914b6",
+                          "26b5a8a0-a787-4c03-93d3-feb317951b99",
+                          "ac0364a8-cc6d-467d-b3a1-ed05b27c001d",
+                          "52fea7de-7694-422b-a2c6-e35c4ef4a8f4",
+                          "aca48fcd-5ce4-41e2-92fc-5f9d85102a5d",
+                          "6f7a1496-2eec-4f69-977c-3efaf8b0cacc"
+                        ],
+                        "output_id": "f62f6613-da64-4a55-8150-9b89bef3fe4b",
+                        "output_type": "CHAT",
+                        "project_ref": "nis-e2e-industry50-s29",
+                        "provenance": {
+                          "capability_version": "1",
+                          "input_ref": "91a3be06-b514-4b45-9198-4d47b0bed465"
+                        },
+                        "run_ref": "30ed1fb6-1c2d-489b-a263-511614d7499b",
+                        "schema_version": 1,
+                        "status": "INCOMPLETE",
+                        "validation": {}
+                      }
+                    ],
+                    "progress": [],
+                    "severity": "",
+                    "status": "INCOMPLETE",
+                    "text": "Die genannten Rechenwerte sind nicht als Ergebnisartefakt belegt. Für belastbare Kapazitäts- und Timingwerte muss die Berechnung für den aktuellen Modellstand ausgeführt und geprüft werden.",
+                    "title": "",
+                    "type": "RESULT"
+                  },
+                  "id": "ecb7f9d7-e891-481b-a612-a2f98d1924d2",
+                  "type": "data-engineering"
+                },
+                {
+                  "data": {
+                    "context": {
+                      "active_project_id": "nis-e2e-industry50-s29",
+                      "active_proposal": null,
+                      "active_view": "/studio/engineering",
+                      "active_workflow": "engineering_model",
+                      "answered_questions": {},
+                      "assumptions": [],
+                      "current_requirement": "Ausgangsbefund für diesen isolierten Lifecycle-Test: SINGLE_POINT_OF_FAILURE. CentralGateway is articulation point of topology. Bewerte diesen vorgegebenen Befund. Keine Modelländerung.",
+                      "current_workload": null,
+                      "document_sources": [],
+                      "input_envelope": {
+                        "active_view": "/studio/engineering",
+                        "constraints": [],
+                        "content": {
+                          "decision": null,
+                          "text": "Ausgangsbefund für diesen isolierten Lifecycle-Test: SINGLE_POINT_OF_FAILURE. CentralGateway is articulation point of topology. Bewerte diesen vorgegebenen Befund. Keine Modelländerung."
+                        },
+                        "files": [],
+                        "input_id": "91a3be06-b514-4b45-9198-4d47b0bed465",
+                        "input_type": "TEXT",
+                        "operation_ref": null,
+                        "project_ref": "nis-e2e-industry50-s29",
+                        "request_revision": null,
+                        "run_ref": "30ed1fb6-1c2d-489b-a263-511614d7499b",
+                        "schema_version": 1,
+                        "selected_objects": [],
+                        "source": "conversation",
+                        "timestamp": "2026-09-16T11:09:00.460390+00:00",
+                        "user_intent": "ENGINEERING_REQUEST"
+                      },
+                      "permissions": [
+                        "READ_MODEL",
+                        "ANALYZE_TRACE",
+                        "GENERATE_PROPOSAL",
+                        "RUN_SIMULATION",
+                        "VALIDATE",
+                        "EXECUTE_AUTHORIZED_GOAL"
+                      ],
+                      "project_domain": "custom",
+                      "project_draft_id": null,
+                      "project_draft_revision": null,
+                      "selected_object_refs": [],
+                      "unresolved_findings": [],
+                      "user_constraints": [],
+                      "wizard_request": null
+                    },
+                    "status": "INCOMPLETE",
+                    "type": "CONTEXT"
+                  },
+                  "id": "7733c20d-bfe9-448e-a2eb-04c1a2c80ece",
+                  "type": "data-engineering"
+                }
+              ],
+              "role": "assistant"
+            }
+          ],
+          "updatedAt": 1789557106568
+        }
+      },
+      "conversation": {
+        "http_status": 200,
+        "data": {
+          "affected_objects": [],
+          "data": {
+            "active_proposal": null,
+            "active_workload": null,
+            "answered_questions": {},
+            "conversation_id": "nis-e2e-industry50-s29",
+            "current_question": null,
+            "current_requirement": "Ausgangsbefund für diesen isolierten Lifecycle-Test: SINGLE_POINT_OF_FAILURE. CentralGateway is articulation point of topology. Bewerte diesen vorgegebenen Befund. Keine Modelländerung.",
+            "decisions": {},
+            "durable_response_ids": [
+              "df30b41b-9a23-479d-a8bc-9bf063d89f68"
+            ],
+            "input_envelope": {
+              "active_view": "/studio/engineering",
+              "constraints": [],
+              "content": {
+                "decision": null,
+                "text": "Ausgangsbefund für diesen isolierten Lifecycle-Test: SINGLE_POINT_OF_FAILURE. CentralGateway is articulation point of topology. Bewerte diesen vorgegebenen Befund. Keine Modelländerung."
+              },
+              "files": [],
+              "input_id": "91a3be06-b514-4b45-9198-4d47b0bed465",
+              "input_type": "TEXT",
+              "operation_ref": null,
+              "project_ref": "nis-e2e-industry50-s29",
+              "request_revision": null,
+              "run_ref": "30ed1fb6-1c2d-489b-a263-511614d7499b",
+              "schema_version": 1,
+              "selected_objects": [],
+              "source": "conversation",
+              "timestamp": "2026-09-16T11:09:00.460390+00:00",
+              "user_intent": "ENGINEERING_REQUEST"
+            },
+            "lease_until": "2026-09-16T11:16:30.470703+00:00",
+            "pending_approvals": [],
+            "questions": {},
+            "run_id": null,
+            "selected_context": {
+              "active_view": "/studio/engineering",
+              "selected_object_refs": []
+            },
+            "ui_updated_at": 1789557106568
+          },
+          "evidence": [],
+          "evidence_refs": [],
+          "findings": [],
+          "next_actions": [],
+          "status": "SUCCESS",
+          "success": true,
+          "time_range": null,
+          "trace_id": "0dd82507-a627-4f35-99eb-63ca1f0f2e18",
+          "validation_status": "NOT_EVALUATED",
+          "warnings": []
+        }
+      },
+      "hardware": {
+        "http_status": 200,
+        "data": {
+          "count": 1,
+          "items": [
+            {
+              "address_assignment_mode": "AUTO",
+              "address_namespace": "PROJECT",
+              "address_provenance": {
+                "actor": null,
+                "addressability_source": "policy",
+                "allocator": "LogicalNodeAddressAllocator",
+                "assignment_mode": "AUTO"
+              },
+              "address_status": "ASSIGNED",
+              "approval_state": "pending",
+              "capability_profile_ref": "class-4:intelligent_subsystem",
+              "classification_status": "PROPOSED",
+              "confidence": null,
+              "created_at": "Wed, 16 Sep 2026 11:08:44 GMT",
+              "created_by": null,
+              "data_complexity": "SERVICE_DATA",
+              "description": null,
+              "device_class": 4,
+              "device_type": "Gateway",
+              "device_typing": "Intelligent Subsystem",
+              "diagnostic_addressable": true,
+              "domain": null,
+              "formatted_logical_node_address": "0x0001",
+              "hardware_information": {
+                "device_capability_profile": {
+                  "actuation_capabilities": [],
+                  "capability_profile_ref": "class-4:intelligent_subsystem",
+                  "classification_name": "Intelligent Subsystem",
+                  "communication_capabilities": [
+                    "network_endpoint",
+                    "gatewaying"
+                  ],
+                  "data_complexity": "SERVICE_DATA",
+                  "device_class": 4,
+                  "device_role": "gateway",
+                  "device_typing": "Intelligent Subsystem",
+                  "diagnostic_capabilities": [
+                    "self_diagnostics",
+                    "health_state"
+                  ],
+                  "generator_policy": {
+                    "auto_function": "YES",
+                    "data_object_model": "YES",
+                    "hardware_interface": "YES",
+                    "health_model": "YES",
+                    "quality_model": "YES",
+                    "signals": "YES",
+                    "status_model": "YES",
+                    "stream": false
+                  },
+                  "intelligence_level": "subsystem",
+                  "measurement_capabilities": [],
+                  "output_types": [
+                    "service_data",
+                    "status",
+                    "health"
+                  ],
+                  "processing_capabilities": [
+                    "application_logic",
+                    "coordination",
+                    "routing"
+                  ],
+                  "provenance": "heuristic",
+                  "requires_data_object_model": true,
+                  "requires_function_model": true,
+                  "requires_hardware_interface_model": true,
+                  "requires_health_model": true,
+                  "requires_quality_model": true,
+                  "requires_status_model": true,
+                  "supports_raw_data": true,
+                  "supports_streaming": false
+                },
+                "generator_policy": {
+                  "auto_function": "YES",
+                  "data_object_model": "YES",
+                  "hardware_interface": "YES",
+                  "health_model": "YES",
+                  "quality_model": "YES",
+                  "signals": "YES",
+                  "status_model": "YES",
+                  "stream": false
+                }
+              },
+              "id": "9e2f4035-2108-4d27-af71-44e22a773b8c",
+              "identity": {},
+              "lifecycle_state": "draft",
+              "logical_node_address": 1,
+              "logical_node_address_object": {
+                "assignment_mode": "AUTO",
+                "formatted_value": "0x0001",
+                "namespace": "PROJECT",
+                "provenance": {
+                  "actor": null,
+                  "addressability_source": "policy",
+                  "allocator": "LogicalNodeAddressAllocator",
+                  "assignment_mode": "AUTO"
+                },
+                "status": "ASSIGNED",
+                "value": 1
+              },
+              "modified_at": "Wed, 16 Sep 2026 11:08:44 GMT",
+              "modified_by": null,
+              "name": "Central",
+              "object_type": "HardwareNode",
+              "product_information": {},
+              "project_id": "nis-e2e-industry50-s29",
+              "provenance": {},
+              "review_state": "unreviewed",
+              "software_information": {},
+              "source": "manual",
+              "version": 1
+            }
+          ]
+        }
+      },
+      "hardware_interfaces": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "functions": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "messages": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "signals": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "routing": {
+        "http_status": 200,
+        "data": {
+          "count": 0,
+          "items": []
+        }
+      },
+      "resources": {
+        "http_status": 200,
+        "data": {
+          "model_revision": "4b0d3a7e48acd5307e8048ab1c06de5107b38b6bfd1fefd2f713ff9a298a19db",
+          "ports": [],
+          "resources": {
+            "CommunicationCapability": [],
+            "CommunicationController": [],
+            "NetworkConnection": [],
+            "PhysicalPort": []
+          }
+        }
+      },
+      "model_revision": {
+        "capacity_timing": 0,
+        "data_science_intelligence": 0,
+        "engineering_model": 1,
+        "network_editor": 0,
+        "parameters": 0,
+        "results_analysis": 0,
+        "routing": 0,
+        "simulation": 0,
+        "validation": 0
+      },
+      "captured_at": "2026-09-16T11:13:58.678806+00:00"
+    },
+    "claimed_complete": false,
+    "findings": [],
+    "outputs": [
+      {
+        "name": "Observed scoped result",
+        "status": "PASSED",
+        "evidence": [
+          "ev-e2ed713307304d68b4734e1629852246",
+          "ev-1865e1abdb434217b936f07ca9e3e986",
+          "ev-c9c1787bd4ba4795813d17ede54f6e0f",
+          "ev-b33259904b344b5188136c0fc23725c4",
+          "ev-e01e5786473d45b8a6f9ca5fae632158",
+          "ev-2f8f732365034c3cacfe54f870df4770"
+        ],
+        "detail": "Exakter Finding-Lifecycle im isolierten Core geprüft: leere Begründung abgewiesen, ACCEPTED_RISK gespeichert, nach Modelländerung NEEDS_REVIEW; Finding bleibt. Browser-Zusatztest mit textuell vorgegebenem Ausgangsbefund liefert unpassenden Ersatztext über Kapazitäts-/Timingwerte statt Entscheidungskarte. Kein vollständiger Finding-ID/UI-E2E-Nachweis."
+      }
+    ]
+  },
+  "expected": {
+    "expected_model_changes": [],
+    "expected_calculations": [],
+    "expected_validations": [],
+    "expected_visualizations": [],
+    "completion_criteria": [
+      "Browser:\nKlick:\n\n```text\nFinding bewerten\n```",
+      "Ausgangs-Finding:\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```",
+      "Erwartete Optionen:\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```",
+      "Fachregel:\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```",
+      "MCP-Prüfung:\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```",
+      "Persistenzprüfung:\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```",
+      "PASS:\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---"
+    ],
+    "required_actions": [
+      "Originalfall ausführen und Nachweise sichern"
+    ],
+    "expected_questions": [],
+    "forbidden_questions": []
+  },
+  "question_metrics": {
+    "correct_question_count": 0,
+    "missing_question_count": 0,
+    "unnecessary_question_count": 0
+  }
+}

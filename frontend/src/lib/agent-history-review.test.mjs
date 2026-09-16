@@ -64,3 +64,9 @@ test('a reopened review always verifies canonical contents even for an apparentl
 test('a legacy truncation marker cannot be accepted as a complete proposal', () => {
   assert.equal(hasCompleteProposal({ ...full, changes: [...full.changes.slice(0, 100), '[2900 weitere Eintraege nicht gecacht]'] }), false);
 });
+
+test('deep typed diagram responses and long typed arrays survive history roundtrip', () => {
+  const nodes = Array.from({length: 130}, (_, i) => ({id: String(i), position: {x: i, y: 0}}));
+  const message = {id: 'diagram', role: 'assistant', parts: [{type: 'data-engineering', data: {outputs: [{visualization: {nodes, edges: []}}]}}]};
+  assert.deepEqual(transportMessages([message]), [message]);
+});

@@ -42,3 +42,10 @@ test('JSON, JSONL and imports remain bounded', () => {
   assert.throws(() => parseTraceText(' '.repeat(MAX_IMPORT_BYTES + 1)), /500 MiB/);
   assert.equal(eventFromRecord({ time_s: 0, signals: Array.from({ length: 100 }, (_, value) => ({ value })) }, 0).signals.length, 64);
 });
+
+test('event identity is independent of window offset and preserves explicit source IDs', () => {
+  const raw = {time_s:12.502, route_id:'egress', sequence:6, sender_interface:'gateway', network:'ETH'};
+  assert.equal(eventFromRecord(raw, 0).id, eventFromRecord(raw, 80).id);
+  assert.equal(eventFromRecord({...raw,event_id:'canonical-event'}, 5).id, 'canonical-event');
+  assert.notEqual(eventFromRecord(raw, 0).id, eventFromRecord({...raw,route_id:'ingress'}, 0).id);
+});

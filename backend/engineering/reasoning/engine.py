@@ -89,9 +89,12 @@ class EngineeringReasoningEngine:
             if event.get("faults"):
                 observe("FAULT_ACTIVE", timestamp, "Angewandte Fault-Marker im Ereignis; Ursache wird separat geprüft.", [r], objects, metrics, suffix="marker")
             path = route_context(event, routes)
-            transport_key = tuple(event.get("message_ids") or [event.get("route_id")])
-            path_key = (path["source_interface"], path["network"], tuple(path["destination_interfaces"]))
-            if transport_key in prior_paths and prior_paths[transport_key][0] != path_key:
+            # A message traverses multiple physical segments. Compare the same
+            # segment across transmissions, not successive gateway hops.
+            transport_key = (event.get("route_id"), event.get("segment_id", event.get("segment_index")),
+                             tuple(sorted(event.get("message_ids") or [])))
+            path_key = (path["source_interface"], path["network"], tuple(sorted(path["destination_interfaces"])))
+            if event.get("route_id") is not None and transport_key in prior_paths and prior_paths[transport_key][0] != path_key:
                 observe("ROUTE_CHANGE", timestamp, "Physischer Pfad desselben Transports hat sich geändert.", [prior_paths[transport_key][1], r], objects, metrics)
             prior_paths[transport_key] = (path_key, r)
             if path not in route_evidence:

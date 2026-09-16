@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import json
 from mcp.server import MCPServer
-from mcp.types import ToolAnnotations
+from mcp.types import ToolAnnotations, CallToolResult, TextContent
+from pydantic import ValidationError
 from backend.agent_core.api.tool_contract import Permission, ToolResult
 from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.engineering.agent_tools.services import TOOLS
@@ -12,8 +13,26 @@ from backend.engineering.repository import ENTITY_SPECS
 from backend.engineering.device_classification import DeviceClassificationRegistry
 
 
+class EngineeringMCPServer(MCPServer):
+    async def call_tool(self, name, arguments, context=None):
+        definition = TOOLS.get(name)
+        if definition:
+            try:
+                definition.input_model.model_validate(arguments.get('request'))
+            except ValidationError as error:
+                schema = definition.input_model.model_json_schema()
+                result = ToolResult(success=False, status='INVALID_INPUT', findings=[{
+                    'code': 'INVALID_INPUT', 'field': ['request', *item['loc']],
+                    'reason': item['type'], 'message': item['msg'],
+                    'expected_schema': schema,
+                } for item in error.errors(include_input=False, include_context=False)])
+                return CallToolResult(structured_content=result.model_dump(mode='json'),
+                    content=[TextContent(type='text', text=result.model_dump_json())], is_error=True)
+        return await super().call_tool(name, arguments, context)
+
+
 def create_server(authority: ToolAuthority) -> MCPServer:
-    server = MCPServer("simulator-engineering-mcp", version="1.0.0", instructions=(
+    server = EngineeringMCPServer("simulator-engineering-mcp", version="1.0.0", instructions=(
         "Projektgebundener Zugriff auf den Simulator. Tool-Erfolg bedeutet nicht Workload-Abschluss. "
         "Generierung erzeugt Vorschläge. Freigabe erfolgt ausschließlich durch die menschliche Review-Oberfläche. "
         "Der Agent meldet READY_FOR_REVIEW vor Apply und COMPLETED erst nach bestätigten kanonischen IDs. "
@@ -34,6 +53,7 @@ def create_server(authority: ToolAuthority) -> MCPServer:
         if definition.name in {"analyze_trace_root_cause", "find_trace_root_cause", "explain_simulation_failure", "investigate_deadline_miss", "analyze_fault_effects", "continue_reasoning"}:
             read_only = False  # Persists a derived analysis, never an architecture change.
         server.add_tool(make_tool(definition), name=definition.name, description=definition.description,
+                        meta={'version': '1.0.0', 'permission': definition.permission.value},
                         annotations=ToolAnnotations(read_only_hint=read_only, destructive_hint=definition.name == "apply_approved_proposal",
                                                     idempotent_hint=read_only, open_world_hint=False), structured_output=True)
 

@@ -1,0 +1,55 @@
+{
+  "test_id": "S23",
+  "title": "MCP Read Path: bestehendes Modell wirklich verstehen",
+  "input": "Wie sind ParkAssist und DriverAssistance aktuell angebunden?",
+  "source_lines": [
+    1653,
+    1709
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Model Awareness / Read Tools / Canonical IDs\n\n### Ausgangsmodell\n\n```text\nParkAssist\n→ ChassisController\n→ CAN_FD_1\n→ Chassis_CAN\n\nDriverAssistance\n→ ADAS_Controller\n→ ETH_1\n→ ADAS_ETHERNET\n```\n\n### Testeingabe\n\n```text\nWie sind ParkAssist und DriverAssistance aktuell angebunden?\n```\n\n### Erwartete MCP-Aufrufe\n\nMindestens:\n\n```text\nfind_function(\"ParkAssist\")\nfind_host_hardware(...)\nfind_hardware_interfaces(...)\nfind_network_membership(...)\n\nfind_function(\"DriverAssistance\")\nfind_host_hardware(...)\nfind_hardware_interfaces(...)\nfind_network_membership(...)\n\nfind_routes_between(...)\n```\n\n### Zu prüfen\n\n```text\ngleiche Canonical IDs in Agent, UI und Core\nkeine erfundenen Interfaces\nkeine erfundene Route\nkeine neue Model Mutation bei reinem Read-Auftrag\n```\n\n### PASS\n\nDer Chat beschreibt den tatsächlichen Modellzustand und kann alle Aussagen auf Core-Objekte zurückführen.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Teststack des veröffentlichten Images"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Ausgangsmodell:\n```text\nParkAssist\n→ ChassisController\n→ CAN_FD_1\n→ Chassis_CAN\n\nDriverAssistance\n→ ADAS_Controller\n→ ETH_1\n→ ADAS_ETHERNET\n```",
+    "Erwartete MCP-Aufrufe:\nMindestens:\n\n```text\nfind_function(\"ParkAssist\")\nfind_host_hardware(...)\nfind_hardware_interfaces(...)\nfind_network_membership(...)\n\nfind_function(\"DriverAssistance\")\nfind_host_hardware(...)\nfind_hardware_interfaces(...)\nfind_network_membership(...)\n\nfind_routes_between(...)\n```",
+    "Zu prüfen:\n```text\ngleiche Canonical IDs in Agent, UI und Core\nkeine erfundenen Interfaces\nkeine erfundene Route\nkeine neue Model Mutation bei reinem Read-Auftrag\n```",
+    "PASS:\nDer Chat beschreibt den tatsächlichen Modellzustand und kann alle Aussagen auf Core-Objekte zurückführen.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "contract_hash": "389e41d894f9e0f86cdf2c03b0d274b0435b64f223387f884167cdbd35c09acb",
+  "status": "FAILED",
+  "last_run": "run-e72b5319a9f44cfbbd302023903989bb"
+}

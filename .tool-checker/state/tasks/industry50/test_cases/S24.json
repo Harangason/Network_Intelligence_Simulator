@@ -1,0 +1,56 @@
+{
+  "test_id": "S24",
+  "title": "MCP Mutation: fehlenden CAN-Port nach Nutzerentscheidung vollständig umsetzen",
+  "input": "Verbinde ParkAssist mit DriverAssistance.",
+  "source_lines": [
+    1710,
+    1795
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration / E2E  \n**Prüfbereich:** Chat Decision + Port + Network + Routing + Validation\n\n### Ausgangsmodell\n\n```text\nParkAssist\n→ ChassisController\n→ Chassis_CAN / CAN-FD\n\nDriverAssistance\n→ ADAS_Controller\n→ Ethernet\n\nADAS_Controller:\nCAN-FD Capability = YES\nCAN Controller = vorhanden\nfree channel = YES\nCAN-FD Port = NONE\n```\n\n### Erwartete Chat-Frage\n\n```text\nDer ADAS_Controller unterstützt CAN-FD,\nbesitzt aber noch keinen CAN-FD-Port.\n\nSoll ich einen CAN-FD-Port erstellen\nund mit Chassis_CAN verbinden?\n\n○ Ja – direkt anbinden\n○ Gateway-Pfad prüfen\n○ Ethernet-Alternative prüfen\n```\n\nBrowser Skill wählt:\n\n```text\nJa – direkt anbinden\n```\n\n### Danach ohne weitere unnötige Fragen\n\nAgent muss über MCP/Core selbst ausführen:\n\n```text\ncreate/reuse HardwareInterface\ncreate PhysicalPort\nbind Controller Channel\nconnect Port to Chassis_CAN\nupdate Network Membership\nresolve Functional Interfaces\ngenerate/reuse Transport Units\npack Payload\nallocate Identifier\nupdate Routing\nrecalculate Capacity\nrecalculate Timing\nrun Validation\nrun Communication Preflight\nmark old dependent results STALE\nCompletion Check\n```\n\n### Zu prüfende MCP-Schnittstellen\n\nMindestens:\n\n```text\nhardware.interface.create\nhardware.port.create\nnetwork.connect\ntransport.generate / transport.bind\nrouting.create / routing.update\ncapacity.calculate\ntiming.calculate\nvalidation.run\n```\n\n### PASS\n\nEin einziges Nutzer-„Ja“ führt bis zur vollständig validierten Verbindung.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Teststack des veröffentlichten Images"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Ausgangsmodell:\n```text\nParkAssist\n→ ChassisController\n→ Chassis_CAN / CAN-FD\n\nDriverAssistance\n→ ADAS_Controller\n→ Ethernet\n\nADAS_Controller:\nCAN-FD Capability = YES\nCAN Controller = vorhanden\nfree channel = YES\nCAN-FD Port = NONE\n```",
+    "Erwartete Chat-Frage:\n```text\nDer ADAS_Controller unterstützt CAN-FD,\nbesitzt aber noch keinen CAN-FD-Port.\n\nSoll ich einen CAN-FD-Port erstellen\nund mit Chassis_CAN verbinden?\n\n○ Ja – direkt anbinden\n○ Gateway-Pfad prüfen\n○ Ethernet-Alternative prüfen\n```\n\nBrowser Skill wählt:\n\n```text\nJa – direkt anbinden\n```",
+    "Danach ohne weitere unnötige Fragen:\nAgent muss über MCP/Core selbst ausführen:\n\n```text\ncreate/reuse HardwareInterface\ncreate PhysicalPort\nbind Controller Channel\nconnect Port to Chassis_CAN\nupdate Network Membership\nresolve Functional Interfaces\ngenerate/reuse Transport Units\npack Payload\nallocate Identifier\nupdate Routing\nrecalculate Capacity\nrecalculate Timing\nrun Validation\nrun Communication Preflight\nmark old dependent results STALE\nCompletion Check\n```",
+    "Zu prüfende MCP-Schnittstellen:\nMindestens:\n\n```text\nhardware.interface.create\nhardware.port.create\nnetwork.connect\ntransport.generate / transport.bind\nrouting.create / routing.update\ncapacity.calculate\ntiming.calculate\nvalidation.run\n```",
+    "PASS:\nEin einziges Nutzer-„Ja“ führt bis zur vollständig validierten Verbindung.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "contract_hash": "7de65e5c7430bdc7bbe5f13dabe668a98b67e4cf0629a0cdd2d6a7116de7fb90",
+  "status": "FAILED",
+  "last_run": "run-70b7cced11464f96b04a20f4d62fc80b"
+}

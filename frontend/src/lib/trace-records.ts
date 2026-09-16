@@ -52,7 +52,7 @@ export function eventFromRecord(value: unknown, index: number): TraceEvent {
   const ipTargets = Array.isArray(ethernet?.destinations) ? ethernet.destinations as Record<string, unknown>[] : [];
   const ipEndpoint = (ip: unknown, port: unknown) => `${String(ip).includes(':') ? `[${ip}]` : ip}:${port}`;
   const ipContext = ethernet ? `IPv${ethernet.ip_version} / ${String(ethernet.transport_protocol).toUpperCase()} · TX ${ipSource?.port_id}: ${ipEndpoint(ipSource?.ip, ethernet.source_port)} → RX ${ipTargets.map((target, i) => `${target.port_id}: ${ipEndpoint(target.ip, Array.isArray(ethernet.destination_ports) ? ethernet.destination_ports[i] : '')}`).join(', ')}${ipSource?.ip_provenance === 'simulation_derived' || ipTargets.some(target => target.ip_provenance === 'simulation_derived') ? ' · Simulationsadressen (abgeleitet)' : ''}` : '';
-  return { id: `${record.route_id ?? message}-${record.sequence ?? index}-${index}`, timestamp, source, destination,
+  return { id: String(record.event_id ?? JSON.stringify([record.route_id ?? message, record.sequence ?? record.source_record_index ?? null, rawTime, record.sender_interface ?? null, record.network ?? null])), timestamp, source, destination,
     technology: String(record.technology ?? record.bus ?? record.channel ?? 'trace'),
     payload: String(record.payload_hex ?? record.payload ?? record.data ?? ''), message,
     signal: first?.name ?? String(record.signal ?? record.signal_name ?? '-'),

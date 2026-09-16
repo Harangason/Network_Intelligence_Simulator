@@ -163,7 +163,9 @@ def test_http_exact_500_mib_capture_stream(tmp_path):
         response = app.test_client().post('/api/trace-import?filename=large.pcapng',
             input_stream=stream, content_length=MAX_BYTES, content_type='application/octet-stream')
     assert response.status_code == 200, response.json
-    assert response.json['truncated']
+    assert not response.json['truncated']
+    assert response.json['session_id'] and response.json['next_cursor'] is not None
+    assert response.json['total_events'] > 2000
     assert response.json['imported_events'] == 2000
 
 
@@ -177,5 +179,7 @@ def test_large_text_upload_preview(filename, content):
     app.register_blueprint(trace_import_api, url_prefix='/api')
     response = app.test_client().post('/api/trace-import?filename=' + filename, data=content)
     assert response.status_code == 200, response.json
-    assert response.json['truncated']
+    assert not response.json['truncated']
+    assert response.json['session_id'] and response.json['next_cursor'] is not None
+    assert response.json['total_events'] > 2000
     assert response.json['imported_events'] == 2000

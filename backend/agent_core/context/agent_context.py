@@ -1,7 +1,7 @@
 """Consumer-independent context carried by the engineering agent, never authority."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 from backend.agent_core.context.limits import MAX_REQUIREMENT_LENGTH
 from pydantic import BaseModel, ConfigDict, Field
 from backend.agent_core.api.input_output import AgentInputEnvelope
@@ -21,6 +21,7 @@ class AgentContext(BaseModel):
     active_project_id: str = Field(min_length=1, max_length=200)
     active_workflow: str = "engineering"
     active_view: str = "model"
+    requested_mode: Literal['CREATE_ARCHITECTURE', 'VALIDATE_SIGNAL', 'ANALYZE_TRACE', 'ASSESS_FINDING'] | None = None
     selected_object_refs: list[dict[str, str]] = Field(default_factory=list, max_length=100)
     current_requirement: str = Field(default="", max_length=MAX_REQUIREMENT_LENGTH)
     current_workload: str | None = None

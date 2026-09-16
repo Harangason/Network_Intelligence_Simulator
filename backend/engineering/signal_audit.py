@@ -79,7 +79,9 @@ def _semantic_type(signal: dict[str, Any]) -> str:
         or configuration.get("semantic_type")
     ).upper().replace("-", "_").replace(" ", "_")
     if explicit:
-        return explicit
+        # Canonical scalar semantics use PHYSICAL_SCALAR; the encoding audit's
+        # NUMERIC branch is the same finite physical-value domain.
+        return "NUMERIC" if explicit == "PHYSICAL_SCALAR" else explicit
     datatype = _text(signal.get("data_type")).lower()
     if datatype in {"bool", "boolean"}:
         return "BOOLEAN"

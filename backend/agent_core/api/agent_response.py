@@ -97,7 +97,7 @@ def validate_response(value: dict) -> dict:
     """Fail closed to inert text; never interpret markup or arbitrary UI code."""
     try:
         return AgentResponse.model_validate(value).model_dump(mode='json', exclude_none=True)
-    except (ValueError, TypeError):
-        logging.getLogger(__name__).warning('Invalid engineering AgentResponse; using TEXT fallback')
+    except (ValueError, TypeError) as error:
+        logging.getLogger(__name__).warning('Invalid engineering AgentResponse (%s); using TEXT fallback', error)
         return AgentResponse(type='TEXT', text='Die Antwort konnte nicht als Engineering-Karte dargestellt werden. Bitte die Anfrage präzisieren.',
             metadata={'contract_error': True}).model_dump(mode='json', exclude_none=True)
