@@ -51,6 +51,19 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
 MODEL_GENERATOR_VERSION = 'wizard-model-v21-explicit-functions'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v10-preserve-local-technology'
 
+_CONTROLLER_DEVICE_TYPES = {
+    'ECU', 'PLC', 'RobotController', 'EmbeddedController', 'IndustrialPC',
+    'FlightComputer', 'BatteryManagementSystem', 'EnergyController', 'BuildingController',
+}
+
+
+def _is_local_main_controller(chain: dict, specification: dict) -> bool:
+    return (
+        specification.get('networkArchitecture') == 'sensor_ecu_actuator'
+        and chain.get('device_type') in _CONTROLLER_DEVICE_TYPES
+        and not any(item.get('device_type') == 'Gateway' for item in specification.get('chains') or [])
+    )
+
 
 def _canonical_wizard_prompt(prompt: str) -> str:
     # Compatibility for persisted v1 requests: the entire appended continuation
@@ -578,12 +591,16 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
 
     for chain in spec['chains']:
         technology_contract = _technology_contract(chain['interface_type'])
+        local_main_controller = _is_local_main_controller(chain, spec)
         profile = DeviceClassificationRegistry().resolve_profile(
             name=chain['hardware_name'], device_type=chain['device_type'],
-            device_class=chain.get('device_class'))
+            device_class=chain.get('device_class'),
+            device_typing='Main Controller' if local_main_controller else chain.get('device_typing'))
         hw = ensure('HardwareNode', chain['hardware_name'], {
             'device_type': chain['device_type'], 'device_class': profile.device_class,
+            'device_typing': profile.device_typing, 'data_complexity': profile.data_complexity,
             'identity': {**({'actuator_command_template': chain['configuration']['actuator_command_template']} if (chain.get('configuration') or {}).get('actuator_command_template') else {}),
+                         **({'system_role': 'MAIN_CONTROLLER'} if local_main_controller else {}),
                          'installation_zone': installation_zone(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture),
                          'installation_zone_source': ZONING_VERSION, 'installation_reference_frame': architecture['reference_frame'],
                          'spatial_decision': location_decision(chain['hardware_name'], driving_side=driving_side_from_prompt(arguments['prompt']), architecture=architecture)},
@@ -1434,7 +1451,7 @@ def generate_network_topology(arguments: dict) -> dict:
                     **({'physicalNetworkId': network_id, 'physicalNetworkName': network_name} if network_id else {}),
                     'direction': 'BIDIRECTIONAL',
                     'relationType': 'CONNECTED_VIA',
-                    'engineeringRelationId': f'{route_id}:segment:{segment_index}',
+                    'engineeringSegmentId': f'{route_id}:segment:{segment_index}',
                     'routingEntryId': route_id,
                     'routingEntryIds': [route_id],
                     'routingMetadata': {route_id: {
@@ -1516,7 +1533,7 @@ def generate_network_topology(arguments: dict) -> dict:
                 'sourcePort': anchor_port, 'targetPort': port_id, 'bus': bus,
                 'physicalNetworkId': network, 'physicalNetworkName': declared_network_names.get(network, network),
                 'direction': 'BIDIRECTIONAL', 'relationType': 'CONNECTED_VIA',
-                'engineeringRelationId': identifier, 'routingEntryIds': [], 'routingMetadata': {}, 'origin': 'CANONICAL_BUS_BINDING'}
+                'engineeringSegmentId': identifier, 'routingEntryIds': [], 'routingMetadata': {}, 'origin': 'CANONICAL_BUS_BINDING'}
             adjacency.setdefault(anchor, set()).add(node_id)
             adjacency.setdefault(node_id, set()).add(anchor)
     topology = {'nodes': list(node_data.values()), 'edges': list(segments.values())}

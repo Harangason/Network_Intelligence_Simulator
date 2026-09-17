@@ -1,0 +1,75 @@
+{
+  "test_id": "S53",
+  "title": "Decision Detection",
+  "input": "Prüfe Entscheidungsverhalten für freien CAN-Port, direkte CAN-FD-Port-Variante versus Gateway-Pfad und Policy reuse existing interface before create.",
+  "source_lines": [
+    298,
+    341
+  ],
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": false,
+  "browser_required": false,
+  "preconditions": [
+    "Agent kann deterministische Modellfakten lesen",
+    "Projektpolicy reuse existing interface before create ist als Testkontext gesetzt oder nachweisbar"
+  ],
+  "required_model_context": [
+    "Port- und Interfacebestand",
+    "Projektpolicy",
+    "Verfügbare Architekturvarianten"
+  ],
+  "expected_questions": [
+    "Frage bei echter Architekturentscheidung direkter CAN-FD-Port vs. Gateway-Pfad"
+  ],
+  "forbidden_questions": [
+    "Ist ein CAN-Port frei?",
+    "Soll bestehendes Interface wiederverwendet werden, wenn die Policy dies bereits festlegt?"
+  ],
+  "required_actions": [
+    "Deterministischen Fall selbst prüfen",
+    "Echte Architekturentscheidung als Nutzerfrage erfassen",
+    "Policy-defined Fall ohne Frage ausführen oder planen",
+    "correct_questions, missing_questions und unnecessary_questions speichern"
+  ],
+  "required_tools": [
+    "Engineering Agent",
+    "Canonical model inspection"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [
+    "correct_questions",
+    "missing_questions",
+    "unnecessary_questions"
+  ],
+  "expected_validations": [
+    "Agent fragt nur bei echten Engineering Decisions"
+  ],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Fall A wird ohne Nutzerfrage deterministisch geprüft.",
+    "Fall B erzeugt genau die nötige Architekturfrage.",
+    "Fall C folgt der Policy ohne Frage."
+  ],
+  "failure_conditions": [
+    "AGENT_UNNECESSARY_QUESTION",
+    "AGENT_MISSING_QUESTION",
+    "AGENT_WRONG_GOAL"
+  ],
+  "tags": [
+    "engineering-agent",
+    "decision-detection",
+    "question-quality"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "f547d870de154e6487b0cf29f9f26acaa7496cbaccfb17ae6693340474885dc1",
+  "status": "READY",
+  "last_run": null
+}

@@ -174,6 +174,24 @@ test("confirmed cluster graph binds only the controller to the selected backbone
   assert.equal(mapped.transport_network_ref, "Antriebsstrang_01");
 });
 
+test("gateway-free main controller preserves an explicit I2C connection", () => {
+  const prompt = `- Netzarchitektur-ID: sensor_ecu_actuator
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
+- Geräteanschlüsse: {"RaspberryPi":"I2C","Druck":"I2C"}
+- Systemcluster-Graph: [{"network_id":"can_fd","network_label":"CAN FD","bus_name":"Systemgruppe","controllers":[{"ecu":"RaspberryPi","sensors":["Druck"],"actuators":[]}]}]
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+1 Raspberry Pi und 1 Drucksensor über I2C.`;
+  const specification = extractEngineeringSpecification(prompt);
+  const mapped = applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt);
+  const controller = mapped.find((chain) => chain.hardware_name === "RaspberryPi");
+
+  assert.equal(specification.networkArchitecture, "sensor_ecu_actuator");
+  assert.equal(controller.interface_type, "I2C");
+  assert.equal(controller.interface_name, "RaspberryPi_I2C");
+  assert.equal(controller.configuration.connection_source, "explicit_device_connection");
+  assert.ok(!mapped.some((chain) => chain.hardware_name === "RaspberryPi" && chain.interface_type === "CAN_FD"));
+});
+
 test("a review with hardware evidence must never trigger model creation", () => {
   const review = `Bewerte diese Intelligence-Empfehlung als Engineering-Agent.
 Empfehlung: 2 LIN-Segmente innerhalb der Systemcluster vorsehen.
@@ -407,6 +425,36 @@ test("German and English actuator quantities and named actuators are recognized"
   }
   const result = extractEngineeringSpecification("- Bremsaktuator\n- Fensteraktor\n- DoorActuator");
   assert.equal(result.chains.filter((chain) => chain.device_type === "ActuatorController").length, 3);
+});
+
+test("counted hardware sections preserve the named S01-A devices", () => {
+  const requirement = `1 Raspberry Pi 5
+3 Sensoren:
+- PT100 über SPI-ADC, -20…150 °C, 0,1 °C, 100 ms
+- Drucksensor über I2C, 0…10 bar, 0,01 bar, 20 ms
+- Drehzahlsensor über GPIO Counter, 0…6000 rpm, 10 ms
+
+4 Aktoren:
+- 2 PWM-Ventile
+- 1 DC-Motorcontroller über CAN-FD
+- 1 Relaisausgang`;
+  const result = extractEngineeringSpecification(requirement);
+  const confirmed = extractEngineeringSpecification(`Strukturierte Vorgaben fuer den Engineering-Agenten:
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":3,"actuators":4}
+
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+${requirement}`);
+
+  for (const extracted of [result, confirmed]) {
+    assert.deepEqual(
+      extracted.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.hardware_name),
+      ["PT100", "Druck", "Drehzahl"],
+    );
+    assert.deepEqual(
+      extracted.chains.filter((chain) => chain.device_type === "ActuatorController").map((chain) => chain.hardware_name),
+      ["Ventilaktor1", "Ventilaktor2", "DC-Motor", "Relaisausgang"],
+    );
+  }
 });
 
 test("confirmed count corrections take precedence over the original sample, including zero", () => {

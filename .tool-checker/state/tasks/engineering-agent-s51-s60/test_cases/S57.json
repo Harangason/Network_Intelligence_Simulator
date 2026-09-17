@@ -1,0 +1,82 @@
+{
+  "test_id": "S57",
+  "title": "Workload Persistence und Resume",
+  "input": "Starte einen Agentenauftrag, warte auf eine Engineering Decision, lade die UI neu, beantworte die Entscheidung und setze denselben Auftrag fort.",
+  "source_lines": [
+    483,
+    520
+  ],
+  "difficulty": "e2e",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Testbereich",
+    "Agent-Auftrag erzeugt eine echte Engineering Decision",
+    "UI Reload während offener Entscheidung möglich"
+  ],
+  "required_model_context": [
+    "workload_id",
+    "goal",
+    "execution_plan",
+    "completed steps",
+    "pending steps",
+    "gespeicherte Frage/Entscheidung"
+  ],
+  "expected_questions": [
+    "Engineering Decision im Status SUSPENDED_FOR_DECISION"
+  ],
+  "forbidden_questions": [
+    "Neue unnötige Frage nach bereits beantworteter Entscheidung"
+  ],
+  "required_actions": [
+    "Agent bis SUSPENDED_FOR_DECISION laufen lassen",
+    "UI Reload durchführen",
+    "Userantwort speichern",
+    "RESUME ausführen",
+    "Persistenz von workload_id, goal, execution_plan, completed steps und pending steps prüfen"
+  ],
+  "required_tools": [
+    "NIS HTTP API",
+    "Engineering Agent"
+  ],
+  "required_views": [
+    "Engineering Agent chat"
+  ],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [
+    "Nur vom autorisierten Resume-Pfad erlaubte Änderungen"
+  ],
+  "expected_calculations": [],
+  "expected_validations": [
+    "same workload_id",
+    "same goal",
+    "same execution_plan",
+    "completed steps retained",
+    "pending steps retained"
+  ],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Agent setzt nach UI Reload und Userantwort denselben Auftrag fort.",
+    "Kein neuer Auftrag wird gestartet."
+  ],
+  "failure_conditions": [
+    "AGENT_WORKLOAD_LOST",
+    "AGENT_STARTED_NEW_TASK"
+  ],
+  "tags": [
+    "engineering-agent",
+    "resume",
+    "persistence",
+    "browser"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 3600,
+  "execution_plan": [],
+  "contract_hash": "51a080fa93df1447471c6f68042bdb43412eb115e7f45918b71125e14617e0ae",
+  "status": "READY",
+  "last_run": null
+}

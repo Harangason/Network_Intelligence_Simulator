@@ -21,6 +21,7 @@ test('generic sensors expose separate measurement and connection choices without
   await dialog.getByLabel('Sensor 2: Messgröße', { exact: true }).selectOption('pressure');
   await expect(dialog.getByLabel('Sensor2: Anschluss', { exact: true })).toHaveValue('I2C');
   for (const name of ['Sensor1', 'Sensor3', 'RaspberryPi']) await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
+  await expect(dialog.getByRole('button', { name: 'Anschlüsse übernehmen und Auftrag starten', exact: true })).toBeEnabled();
   await expect(dialog.locator('.agent-equipment-list')).toContainText('Sensoren · 3 erkannt / 3 vorgegeben');
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
 });
@@ -38,14 +39,22 @@ test('temperature purpose inventory permits review without a spurious controller
   await expect(dialog.getByRole('region', { name: 'Controller ergänzen', exact: true })).toHaveCount(0);
   await expect(dialog.locator('.agent-equipment-clusters').getByRole('listitem').filter({ hasText: /Temperatursensor/ })).toHaveCount(4);
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Anschlüsse übernehmen und Auftrag starten', exact: true })).toBeDisabled();
+  for (let index = 1; index <= 4; index++) {
+    await expect(dialog.getByLabel(`Sensor ${index}: Messgröße`, { exact: true })).toHaveValue('temperature');
+  }
   for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
     await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   }
+  await dialog.getByTitle('Aufgabe', { exact: true }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true })).toHaveValue(/- Sensor-Messgrößen: \{"Temperatursensor1":"temperature","Temperatursensor2":"temperature","Temperatursensor3":"temperature","Temperatursensor4":"temperature"\}/);
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
   await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
   await expect(dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true })).toHaveValue('');
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
   await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('POSITION');
+  await expect(dialog.getByRole('button', { name: 'Anschlüsse übernehmen und Auftrag starten', exact: true })).toBeEnabled();
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
 });
 

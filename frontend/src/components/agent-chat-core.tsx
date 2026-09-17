@@ -34,7 +34,7 @@ import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive,
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
-import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement } from '@/lib/agent/sensor-measurements';
+import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement, selectSensorMeasurements } from '@/lib/agent/sensor-measurements';
 import { actuatorCommands, actuatorCommandChoice, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
@@ -1179,6 +1179,11 @@ export function EngineeringAgentWizard({
     const chain = namedSensors[index] ?? sensorInventory.find(item => item.hardware_name === `Sensor${index + 1}`);
     return { name: chain?.hardware_name ?? `Sensor${index + 1}`, label: `Sensor ${index + 1}`, chain };
   });
+  const resolvedSensorMeasurements = Object.fromEntries(sensorRows.flatMap(({ name, chain }) => {
+    const measurement = String(chain?.configuration?.sensor_measurement ?? sensorMeasurement(name, chain?.signal_name)?.id ?? '');
+    return measurement ? [[name, measurement]] : [];
+  }));
+  const unresolvedSensorMeasurements = sensorRows.filter(({ name }) => !resolvedSensorMeasurements[name]);
   const deviceRows = [
     ...connectionInventory.filter(chain => !['SensorController', 'ActuatorController'].includes(chain.device_type)).map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
     ...sensorRows.map(row => ({ ...row, sensor: true })),
@@ -1196,7 +1201,8 @@ export function EngineeringAgentWizard({
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) connections = parsed as Record<string, string>;
     } catch { /* Incomplete manual input is replaced by this explicit selection. */ }
     if (technology) connections[name] = technology; else delete connections[name];
-    setTaskText(`${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`);
+    const withConnection = `${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`;
+    setTaskText(selectSensorMeasurements(withConnection, resolvedSensorMeasurements));
   }
   const [newControllerName, setNewControllerName] = useState('');
   const [controllerAdditionError, setControllerAdditionError] = useState('');
@@ -2017,7 +2023,10 @@ export function EngineeringAgentWizard({
     const attachments = taskFiles.length
       ? `\n\nAufgaben-Anlagen:\n${taskFiles.map((file) => formatTaskAttachment(file)).join("\n")}`
       : "";
-    const concreteTask = `${taskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}`;
+    const confirmedTaskText = selectSensorMeasurements(taskText, resolvedSensorMeasurements);
+    const confirmedTaskSource = `${confirmedTaskText}\n${taskFiles.map(formatTaskAttachment).join("\n")}`;
+    setTaskText(confirmedTaskText);
+    const concreteTask = `${confirmedTaskText.trim() || "Aufgabe wurde als Datei uebergeben."}${attachments}`;
     const nextRunId = crypto.randomUUID();
     const confirmedAt = new Date().toISOString();
     const topologyKnowledge = topologyClusterKnowledgeSummary(projectId, mode === "can" ? selectedIndustry : selectedDomain?.id ?? selectedIndustry);
@@ -2044,7 +2053,7 @@ export function EngineeringAgentWizard({
       run_id: nextRunId,
       scope: selectedScopeValues,
       scope_ids: scope,
-      task: taskText.trim() || "Aufgabe wurde als Datei übergeben.",
+      task: confirmedTaskText.trim() || "Aufgabe wurde als Datei übergeben.",
       technologies: selectedTechnologyValues,
       hardware_counts: equipmentCounts,
       communication_system_counts: communicationSystemCounts,
@@ -2055,7 +2064,7 @@ export function EngineeringAgentWizard({
     const clusterSummary = equipmentClusterSummary(equipmentClusterAssignments);
     const prompt =
       "Strukturierte Vorgaben fuer den Engineering-Agenten:\n" +
-        `- Generierungsmodus: ${engineeringGenerationMode(taskSource)}\n` +
+        `- Generierungsmodus: ${engineeringGenerationMode(confirmedTaskSource)}\n` +
         `- Lauf-ID: ${nextRunId}\n` +
         `- Projektname: ${projectName.trim()}\n` +
         `- Abfrage erfolgt: true\n` +
@@ -2444,6 +2453,7 @@ export function EngineeringAgentWizard({
     ...(!equipmentOwnershipReady ? [{ step: 'equipment', text: 'Die Zuordnung der Teilnehmer zu ihren Controllern ist noch offen.' }] : []),
     ...(!equipmentIdentityReady ? [{ step: 'equipment', text: 'Geräteanzahl und konkret benannte Geräte stimmen noch nicht überein. Bitte Geräte in der Anforderung benennen; fehlende Geräte werden nicht erfunden.' }] : []),
     ...(unresolvedConnections.length ? [{ step: 'equipment', text: `Anschlüsse festlegen: ${unresolvedConnections.map(chain => chain.hardware_name).join(', ')}. Eine Auswahl für den Controller ersetzt nicht die Anschlüsse seiner Sensoren und Aktoren.` }] : []),
+    ...(unresolvedSensorMeasurements.length ? [{ step: 'equipment', text: `Messgrößen festlegen: ${unresolvedSensorMeasurements.map(row => row.name).join(', ')}.` }] : []),
     ...(unresolvedCommands.length ? [{ step: 'equipment', text: `Stellbefehl und Kodierung festlegen: ${unresolvedCommands.join(', ')}.` }] : []),
     ...(!equipmentClusterValidationReady ? [{ step: 'equipment', text: 'Die markierten Cluster benötigen eine zulässige Buswahl.' }] : []),
     ...(!communicationSystemReady ? [{ step: 'equipment', text: 'Bitte die Anzahl der Kommunikationssysteme korrigieren.' }] : []),
@@ -3038,9 +3048,9 @@ export function EngineeringAgentWizard({
           {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>}
           {(deviceRows.length > 0) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
             <h3>Geräteanschlüsse festlegen</h3>
-            <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Für einen Entwurf gilt deine Auswahl als Modellannahme, nicht als Nachweis realer Hardware.</p>
+            <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Deine Auswahl wird sofort im Auftrag aktualisiert und gilt für einen Entwurf als Modellannahme, nicht als Nachweis realer Hardware.</p>
             {deviceRows.map(({ name, label, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
-              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={`${label}: Messgröße`} disabled={effectiveBusy} value={String(chain?.configuration?.sensor_measurement ?? sensorMeasurement(name, chain?.signal_name)?.id ?? '')} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
+              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={`${label}: Messgröße`} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
                 <option value="" disabled>Bitte auswählen</option>
                 {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select></label>}
@@ -3062,7 +3072,14 @@ export function EngineeringAgentWizard({
               </select></label>
             </div>)}
             {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
+            {unresolvedSensorMeasurements.length > 0 && <p role="alert">Messgröße fehlt: {unresolvedSensorMeasurements.map(row => row.name).join(', ')}.</p>}
             {unresolvedCommands.length > 0 && <p role="alert">Stellbefehl fehlt: {unresolvedCommands.join(', ')}. Die Auswahl gilt nur für den jeweiligen Aktor.</p>}
+            <div className="agent-device-connection-actions">
+              <span>{primaryDisabled ? "Vervollständige die markierten Angaben, bevor der Auftrag startet." : "Alle Anschlüsse sind im Auftrag übernommen."}</span>
+              <button className="button primary" type="button" disabled={primaryDisabled} onClick={handlePrimary}>
+                {submitting ? "Wird übernommen ..." : "Anschlüsse übernehmen und Auftrag starten"}
+              </button>
+            </div>
           </section>}
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}

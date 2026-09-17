@@ -105,7 +105,10 @@ function normalizeWireAlignmentOffset(value: number) {
   );
 }
 
-const busOrder: BusType[] = ["can", "can_fd", "can_xl", "lin", "automotive_ethernet", "flexray"];
+const busOrder: BusType[] = [
+  "can", "can_fd", "can_xl", "lin", "automotive_ethernet", "flexray",
+  "i2c", "spi", "uart", "modbus_rtu", "modbus_tcp", "gpio", "pwm", "adc", "dac",
+];
 
 type DragState =
   | { mode: "move-bus"; busId: string; portId?: string; startX: number; startY: number; coordinate: number; baseline: NetworkTopology }
@@ -179,6 +182,15 @@ const interfaceNameSuffix: Record<BusType, string> = {
   lin: "LIN",
   automotive_ethernet: "Ethernet",
   flexray: "FlexRay",
+  i2c: "I2C",
+  spi: "SPI",
+  uart: "UART",
+  modbus_rtu: "ModbusRTU",
+  modbus_tcp: "ModbusTCP",
+  gpio: "GPIO",
+  pwm: "PWM",
+  adc: "ADC",
+  dac: "DAC",
 };
 
 function automaticInterfaceName(nodeName: string, bus: BusType) {
@@ -354,6 +366,15 @@ const gatewayBusLabels: Record<BusType, string> = {
   lin: "LIN",
   automotive_ethernet: "Ethernet",
   flexray: "FlexRay",
+  i2c: "I2C",
+  spi: "SPI",
+  uart: "UART",
+  modbus_rtu: "Modbus-RTU",
+  modbus_tcp: "Modbus-TCP",
+  gpio: "GPIO",
+  pwm: "PWM",
+  adc: "ADC",
+  dac: "DAC",
 };
 
 function gatewayDomainLabel(nodeName: string) {

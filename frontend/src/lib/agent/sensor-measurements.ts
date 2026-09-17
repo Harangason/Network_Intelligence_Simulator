@@ -29,8 +29,18 @@ export function sensorMeasurementSelections(text: string): Record<string, string
 }
 
 export function selectSensorMeasurement(text: string, name: string, id: string) {
+  return selectSensorMeasurements(text, { [name]: id });
+}
+
+export function selectSensorMeasurements(text: string, values: Record<string, string>) {
   const selections = sensorMeasurementSelections(text);
-  if (!SENSOR_MEASUREMENTS.some(item => item.id === id)) return text;
-  selections[name] = id;
+  let changed = false;
+  for (const [name, id] of Object.entries(values)) {
+    if (!/^[\p{L}\d][\p{L}\d _-]{0,99}$/u.test(name) || !SENSOR_MEASUREMENTS.some(item => item.id === id)) continue;
+    if (selections[name] === id) continue;
+    selections[name] = id;
+    changed = true;
+  }
+  if (!changed) return text;
   return `${text.replace(/\n?^- Sensor-Messgrößen:[^\r\n]*$/gm, '').trim()}\n- Sensor-Messgrößen: ${JSON.stringify(selections)}`;
 }

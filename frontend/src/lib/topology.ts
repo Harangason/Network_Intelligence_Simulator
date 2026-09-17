@@ -6,7 +6,10 @@ import {
 } from "./topology-cluster-knowledge.ts";
 
 export type NodeKind = "ecu" | "gateway" | "sensor" | "actuator";
-export type BusType = "can" | "can_xl" | "can_fd" | "lin" | "automotive_ethernet" | "flexray";
+export type BusType =
+  | "can" | "can_xl" | "can_fd" | "lin" | "automotive_ethernet" | "flexray"
+  | "i2c" | "spi" | "uart" | "modbus_rtu" | "modbus_tcp"
+  | "gpio" | "pwm" | "adc" | "dac";
 export type PortSide = "left" | "right" | "top" | "bottom";
 
 export type TopologyPort = {
@@ -65,13 +68,14 @@ export type TopologyEdge = {
   targetPort: string;
   bus: BusType;
   engineeringRelationId?: string;
+  engineeringSegmentId?: string;
   routingEntryId?: string;
   routingEntryIds?: string[];
   routingMetadata?: Record<string, TopologyRouteMetadata>;
   physicalNetworkId?: string;
   physicalNetworkName?: string;
   physicalNetworkNameSource?: "user" | "generated";
-  origin?: "ROUTING_TABLE" | "WIZARD_PHYSICAL_COMPLETENESS";
+  origin?: "ROUTING_TABLE" | "WIZARD_PHYSICAL_COMPLETENESS" | "CANONICAL_BUS_BINDING";
 };
 
 export type TopologySyncResult = {
@@ -241,6 +245,15 @@ export const busProfiles: Record<BusType, { label: string; bitrate: number; cycl
   lin: { label: "LIN", bitrate: 19_200, cycleMs: 20, payload: 8, color: "#f2c94c" },
   automotive_ethernet: { label: "Ethernet", bitrate: 100_000_000, cycleMs: 5, payload: 1500, color: "#73a7ff" },
   flexray: { label: "FlexRay", bitrate: 10_000_000, cycleMs: 5, payload: 254, color: "#ef7d79" },
+  i2c: { label: "I2C", bitrate: 400_000, cycleMs: 10, payload: 255, color: "#65c6c4" },
+  spi: { label: "SPI", bitrate: 50_000_000, cycleMs: 5, payload: 65_535, color: "#cf8ee8" },
+  uart: { label: "UART", bitrate: 115_200, cycleMs: 10, payload: 65_535, color: "#75a9e8" },
+  modbus_rtu: { label: "Modbus RTU", bitrate: 115_200, cycleMs: 20, payload: 253, color: "#e5ad58" },
+  modbus_tcp: { label: "Modbus TCP", bitrate: 100_000_000, cycleMs: 10, payload: 253, color: "#69b88d" },
+  gpio: { label: "GPIO", bitrate: 1, cycleMs: 10, payload: 1, color: "#b6bec8" },
+  pwm: { label: "PWM", bitrate: 1, cycleMs: 10, payload: 1, color: "#ed9368" },
+  adc: { label: "ADC", bitrate: 1, cycleMs: 10, payload: 4, color: "#62b6a7" },
+  dac: { label: "DAC", bitrate: 1, cycleMs: 10, payload: 4, color: "#dc85a6" },
 };
 
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");

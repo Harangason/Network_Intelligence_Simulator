@@ -536,6 +536,10 @@ class WorkflowStatusService:
             target = str(edge.get("target") or "")
             source_port = str(edge.get("sourcePort") or "")
             target_port = str(edge.get("targetPort") or "")
+            has_connection_identity = bool(edge.get("engineeringRelationId")) or (
+                bool(edge.get("engineeringSegmentId"))
+                and edge.get("origin") in {"ROUTING_TABLE", "CANONICAL_BUS_BINDING"}
+            )
             if (
                 not edge.get("id")
                 or source == target
@@ -543,7 +547,7 @@ class WorkflowStatusService:
                 or target not in node_map
                 or port_owner.get(source_port) != source
                 or port_owner.get(target_port) != target
-                or not edge.get("engineeringRelationId")
+                or not has_connection_identity
             ):
                 invalid_edges += 1
         has_any = bool(nodes or edges)

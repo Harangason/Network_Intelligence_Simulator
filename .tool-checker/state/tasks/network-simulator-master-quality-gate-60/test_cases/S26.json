@@ -1,0 +1,58 @@
+{
+  "test_id": "S26",
+  "title": "Chat Agent: Single-/Multi-Choice und Workload Resume",
+  "input": "Verbinde eine bestehende Funktion mit einem Zielcontroller, für den mehrere technisch valide Netzwerkoptionen existieren.",
+  "source_lines": [
+    1,
+    1365
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Chat UX / Structured Decisions\n\n### Testeingabe\n\n```text\nVerbinde eine bestehende Funktion mit einem Zielcontroller,\nfür den mehrere technisch valide Netzwerkoptionen existieren.\n```\n\n### Erwartung\n\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```\n\n### Browser-Prüfung\n\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```\n\n### State-Prüfung\n\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```\n\n### MCP-Prüfung\n\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.\n\n### PASS\n\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Testbereich auf Kandidaten-Build 786b8087f15b",
+    "Realer Hauptprojekt-Wizard für die 40 Domänenprojekte"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Erwartung:\nDer Agent erkennt:\n\n```text\nENGINEERING_DECISION\n```\n\nund zeigt eine strukturierte Single-Choice-Frage.\n\nBeispiel:\n\n```text\n○ bestehendes CAN-FD\n○ Gateway-Pfad\n○ Ethernet\n```\n\nFür eine Mehrfachauswahl:\n\n```text\nWelche Daten sollen übertragen werden?\n\n☐ Status\n☐ Diagnose\n☐ Messwerte\n☐ Raw Stream\n```",
+    "Browser-Prüfung:\nBrowser Skill:\n\n```text\nselect option\nclick confirm\n```",
+    "State-Prüfung:\nVor Auswahl:\n\n```text\nWorkload = SUSPENDED_FOR_DECISION\n```\n\nNach Auswahl:\n\n```text\nWorkload = RESUME\n```\n\nNicht:\n\n```text\nnew independent task\n```",
+    "MCP-Prüfung:\nNach der Auswahl müssen die zuvor geplanten MCP-Schritte fortgesetzt werden.",
+    "PASS:\nFrage → strukturierte Antwort → gleicher Workload → Ausführung → Completion.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "8cc2c73b69631d0613cc940e266271efd9b022b4ba48ddb4ed337edce4e40f2b",
+  "status": "READY",
+  "last_run": null
+}

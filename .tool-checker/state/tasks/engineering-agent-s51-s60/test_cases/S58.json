@@ -1,0 +1,85 @@
+{
+  "test_id": "S58",
+  "title": "Validation und Repair Loop",
+  "input": "Erzeuge einen Fall, in dem Routing erfolgreich ist, Timing Validation aber fehlschlägt; prüfe, dass der Agent Repair und Revalidation ausführt.",
+  "source_lines": [
+    525,
+    571
+  ],
+  "difficulty": "e2e",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Testbereich mit kontrolliertem Timing-Fehlschlag",
+    "Repair-Strategie innerhalb freigegebener Grenzen zulässig oder als offen auszuweisen"
+  ],
+  "required_model_context": [
+    "Routing-Ergebnis",
+    "Timing-Validation-Befund",
+    "Zulässige Repair-Kandidaten",
+    "Freigegebener Strategieumfang"
+  ],
+  "expected_questions": [
+    "Nur falls Repair außerhalb der freigegebenen Strategie liegt"
+  ],
+  "forbidden_questions": [
+    "Triviale Nachfrage vor erlaubter Repair/Revalidation"
+  ],
+  "required_actions": [
+    "Routing erfolgreich ausführen oder als Fixture bereitstellen",
+    "Timing Validation fehlschlagen lassen",
+    "Completion als INCOMPLETE markieren",
+    "Failure inspizieren",
+    "Repair Candidate erzeugen",
+    "Repair ausführen, wenn freigegeben",
+    "Revalidate ausführen",
+    "Finalen Completion Check speichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API",
+    "Engineering Agent",
+    "Validation/Timing tools"
+  ],
+  "required_views": [
+    "Engineering Agent chat"
+  ],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [
+    "Repair-bedingte Änderung nur innerhalb freigegebener Strategie"
+  ],
+  "expected_calculations": [
+    "Timing Validation",
+    "Repair Revalidation"
+  ],
+  "expected_validations": [
+    "Completion bleibt INCOMPLETE nach Timing-Fehler",
+    "Repair Loop wird ausgeführt oder blockiert mit begründetem Finding",
+    "Agent stoppt nicht bei erstem Teilerfolg"
+  ],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Agent stoppt nicht bei erstem Teilerfolg.",
+    "Repair und Revalidation sind nachgewiesen oder ein erlaubter Blocker ist belegt."
+  ],
+  "failure_conditions": [
+    "Agent meldet Verbindung erfolgreich erstellt und COMPLETE trotz Timing-Fehler",
+    "AGENT_NO_REPAIR",
+    "AGENT_PREMATURE_COMPLETE"
+  ],
+  "tags": [
+    "engineering-agent",
+    "repair-loop",
+    "validation",
+    "timing"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 3600,
+  "execution_plan": [],
+  "contract_hash": "abeef59a640e032d864525acca55923b4dafba286debdf2078dcc6ababb26276",
+  "status": "READY",
+  "last_run": null
+}

@@ -1,0 +1,95 @@
+{
+  "test_id": "S20-A",
+  "title": "Großes Multi-Technology-System mit Simulation und Trace – A",
+  "input": "Erzeuge ein großes Multi-Technology-System.\n\nHardware:\n- 100 Sensoren\n- 100 Aktoren\n- 50 Controller\n- 1 Central Gateway\n- 4 Edge Compute Nodes\n- 2 High-Performance Compute Nodes\n\nKommunikationsstruktur:\n- 10 CAN-FD\n- 10 Modbus-RTU / RS-485 Segmente\n- 5 PROFINET-Netze\n- 5 EtherCAT-Netze\n- 5 Ethernet-Netze\n- 1 Ethernet Backbone\n\nSensoren:\n- 30 PHYSICAL_SCALAR\n- 20 MULTI_VALUE\n- 20 STATE / QUALITY\n- 10 STRUCTURED_OBJECT\n- 10 STRUCTURED_OBJECT_LIST\n- 5 IMAGE_STREAM\n- 5 High-Rate Data Sources\n\nAktoren:\n- 40 einfache Schalt-/Ventilaktoren\n- 30 geregelte Motor-/Motion-Aktoren\n- 20 intelligente Aktoren mit Diagnose\n- 10 sicherheitsrelevante Aktoren\n\nArchitekturvorgaben:\n- einfache lokale Geräte → Controller-vermittelt\n- Smart/Perception Devices dürfen direkt am Backbone liegen\n- Motion → EtherCAT\n- klassische Prozesssteuerung → PROFINET / CAN-FD\n- langsame Registerkommunikation → Modbus RTU\n- Streams / Object Lists → Ethernet\n- Gateway verbindet notwendige Segmente\n- Edge Nodes übernehmen lokale Aggregation\n- HCP Nodes verarbeiten datenintensive Datenobjekte\n\nFür jeden Controller:\n- 5–20 fachlich erforderliche Ein-/Ausgangsdaten\n- OperatingState\n- HealthState\n- CommunicationState, wenn sinnvoll\n\nErzeuge zusätzlich:\n- LogicalNodeAddresses\n- vollständige Route Table\n- Transport Units\n- Gateway Forwarding\n- Capacity & Timing\n- Queueing\n- End-to-End Latency\n- Validation\n- Simulation Snapshot\n- Golden-Trace-fähige Konfiguration\n- Trace-Analyse-fähige Source-/Destination-Zuordnung\n\nSimulation:\n- 60 s\n- reproduzierbarer Seed\n- keine Faults im Golden Run\n\nTrace muss auflösbar sein nach:\n- Source\n- Destination\n- Logical Address\n- Function\n- Message / Transport Unit\n- Signal / DataObject\n- Network\n- Route",
+  "source_lines": [
+    1,
+    1365
+  ],
+  "source_requirements": "```text\nErzeuge ein großes Multi-Technology-System.\n\nHardware:\n- 100 Sensoren\n- 100 Aktoren\n- 50 Controller\n- 1 Central Gateway\n- 4 Edge Compute Nodes\n- 2 High-Performance Compute Nodes\n\nKommunikationsstruktur:\n- 10 CAN-FD\n- 10 Modbus-RTU / RS-485 Segmente\n- 5 PROFINET-Netze\n- 5 EtherCAT-Netze\n- 5 Ethernet-Netze\n- 1 Ethernet Backbone\n\nSensoren:\n- 30 PHYSICAL_SCALAR\n- 20 MULTI_VALUE\n- 20 STATE / QUALITY\n- 10 STRUCTURED_OBJECT\n- 10 STRUCTURED_OBJECT_LIST\n- 5 IMAGE_STREAM\n- 5 High-Rate Data Sources\n\nAktoren:\n- 40 einfache Schalt-/Ventilaktoren\n- 30 geregelte Motor-/Motion-Aktoren\n- 20 intelligente Aktoren mit Diagnose\n- 10 sicherheitsrelevante Aktoren\n\nArchitekturvorgaben:\n- einfache lokale Geräte → Controller-vermittelt\n- Smart/Perception Devices dürfen direkt am Backbone liegen\n- Motion → EtherCAT\n- klassische Prozesssteuerung → PROFINET / CAN-FD\n- langsame Registerkommunikation → Modbus RTU\n- Streams / Object Lists → Ethernet\n- Gateway verbindet notwendige Segmente\n- Edge Nodes übernehmen lokale Aggregation\n- HCP Nodes verarbeiten datenintensive Datenobjekte\n\nFür jeden Controller:\n- 5–20 fachlich erforderliche Ein-/Ausgangsdaten\n- OperatingState\n- HealthState\n- CommunicationState, wenn sinnvoll\n\nErzeuge zusätzlich:\n- LogicalNodeAddresses\n- vollständige Route Table\n- Transport Units\n- Gateway Forwarding\n- Capacity & Timing\n- Queueing\n- End-to-End Latency\n- Validation\n- Simulation Snapshot\n- Golden-Trace-fähige Konfiguration\n- Trace-Analyse-fähige Source-/Destination-Zuordnung\n\nSimulation:\n- 60 s\n- reproduzierbarer Seed\n- keine Faults im Golden Run\n\nTrace muss auflösbar sein nach:\n- Source\n- Destination\n- Logical Address\n- Function\n- Message / Transport Unit\n- Signal / DataObject\n- Network\n- Route\n```",
+  "difficulty": "complex",
+  "variant": "A",
+  "architecture_variant": "Hybrid",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Testbereich auf Kandidaten-Build 786b8087f15b",
+    "Realer Hauptprojekt-Wizard für die 40 Domänenprojekte"
+  ],
+  "required_model_context": [
+    "Kanonisches Inventar und Modellrevision vor Ausführung"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [
+    "Wie soll Sensor 1 heißen?"
+  ],
+  "required_actions": [
+    "Modellkontext erfassen",
+    "Originalauftrag an Engineering-Agent senden",
+    "Agentenantwort und Persistenz prüfen",
+    "Ergebnis im Browser prüfen"
+  ],
+  "required_tools": [
+    "NIS HTTP API",
+    "Browser"
+  ],
+  "required_views": [
+    "Engineering"
+  ],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [
+    "Hardware, Funktionen, Zuordnungen, Interfaces, Ports, Netze, Payloads und Transport gemäß Originalauftrag"
+  ],
+  "expected_calculations": [
+    "Capacity, Timing und gegebenenfalls Gateway Load getrennt belegt"
+  ],
+  "expected_validations": [
+    "Typing, Technologiekompatibilität, Ports, Transport, Routing und Simulation Preflight validiert"
+  ],
+  "expected_visualizations": [
+    "Netzwerk- und Routingdarstellung passend zum gespeicherten Modell"
+  ],
+  "completion_criteria": [
+    "Technisch begründete Architektur und nachvollziehbare Entscheidungen",
+    "Vollständige Validierung ohne offene Identifier-Konflikte",
+    "Keine Fertigmeldung ohne vollständige fachliche Artefakte",
+    "Wiederholung verwendet bestehende passende Objekte ohne Duplikate",
+    "Workload, Work Packages, Batch Generation, Batch Validation und Global Reconciliation belegt",
+    "Reproduzierbare Simulation und nach Source, Destination, Address, Function, Transport, Payload, Network, Route auflösbarer Trace"
+  ],
+  "failure_conditions": [
+    "Fachfremde Automotive-Zuordnung ohne Begründung",
+    "Erfundene bestätigte Hardwarefakten oder Kodierungen",
+    "Unnötige Delegation der Engineering-Ausführung an den Nutzer"
+  ],
+  "metrics": [
+    "Typing Accuracy",
+    "Correct Existing-Object Reuse",
+    "Architecture Validity",
+    "Correct Questions",
+    "Unnecessary Question Count",
+    "Device Classification Accuracy",
+    "Technology Compatibility",
+    "Port / Interface Validity",
+    "Routing Completeness",
+    "Transport Completeness",
+    "Capacity Validation",
+    "Timing Validation",
+    "Blocking Findings",
+    "Completion Accuracy",
+    "Hallucinated Objects",
+    "Duplicate Objects"
+  ],
+  "tags": [
+    "industry-neutral",
+    "pair:S20"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "606c2b5d24becd9c4bd6086c5e604f6582a04544a568a8786977f759addedb88",
+  "status": "READY",
+  "last_run": null
+}

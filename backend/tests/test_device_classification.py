@@ -48,6 +48,20 @@ def test_user_confirmed_classification_wins_over_heuristic() -> None:
     assert profile.provenance == "user_confirmed"
 
 
+def test_main_controller_keeps_controller_capabilities_without_gatewaying() -> None:
+    profile = DeviceClassificationRegistry().resolve_profile(
+        name="RaspberryPi",
+        device_type="EmbeddedController",
+        device_typing="Main Controller",
+    )
+
+    assert profile.device_class == 4
+    assert profile.device_typing == "Main Controller"
+    assert profile.device_role == "controller"
+    assert profile.requires_function_model is True
+    assert profile.communication_capabilities == ("network_endpoint",)
+
+
 def test_invalid_typing_falls_back_to_class_default() -> None:
     profile = DeviceClassificationRegistry().resolve_profile(
         name="FrontCamera",

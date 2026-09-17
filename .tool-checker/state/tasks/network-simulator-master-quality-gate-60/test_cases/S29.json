@@ -1,0 +1,60 @@
+{
+  "test_id": "S29",
+  "title": "Wizard „Finding bewerten“: Entscheidung, Persistenz und Audit",
+  "input": "Bewerte SINGLE_POINT_OF_FAILURE am CentralGateway.",
+  "source_lines": [
+    1,
+    1365
+  ],
+  "source_requirements": "**Schwierigkeit:** Integration  \n**Prüfbereich:** Finding Lifecycle + Chat + MCP + Audit\n\n### Browser\n\nKlick:\n\n```text\nFinding bewerten\n```\n\n### Ausgangs-Finding\n\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```\n\n### Erwartete Optionen\n\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```\n\n### Fachregel\n\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```\n\n### MCP-Prüfung\n\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```\n\n### Persistenzprüfung\n\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```\n\n### PASS\n\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---",
+  "difficulty": "integration",
+  "variant": "",
+  "architecture_variant": "",
+  "mutating": true,
+  "browser_required": true,
+  "preconditions": [
+    "Isolierter Testbereich auf Kandidaten-Build 786b8087f15b",
+    "Realer Hauptprojekt-Wizard für die 40 Domänenprojekte"
+  ],
+  "required_model_context": [
+    "Modellrevision und szenariospezifische Ausgangsdaten prüfen"
+  ],
+  "expected_questions": [],
+  "forbidden_questions": [],
+  "required_actions": [
+    "Originalfall ausführen und Nachweise sichern"
+  ],
+  "required_tools": [
+    "NIS HTTP API"
+  ],
+  "required_views": [],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "expected_model_changes": [],
+  "expected_calculations": [],
+  "expected_validations": [],
+  "expected_visualizations": [],
+  "completion_criteria": [
+    "Browser:\nKlick:\n\n```text\nFinding bewerten\n```",
+    "Ausgangs-Finding:\n```text\nSINGLE_POINT_OF_FAILURE\n\nCentralGateway\nis articulation point of topology.\n```",
+    "Erwartete Optionen:\n```text\n○ Maßnahme vorschlagen\n○ Risiko akzeptieren\n○ False Positive\n○ Später prüfen\n```\n\nBei:\n\n```text\nRisiko akzeptieren\n```\n\nzusätzlich:\n\n```text\nBegründung\nReview bei Architekturänderung\n```",
+    "Fachregel:\nTechnischer Befund bleibt erhalten:\n\n```text\nDetection = ACTIVE\n```\n\nEntscheidung:\n\n```text\nDecision = ACCEPTED_RISK\n```\n\nNicht:\n\n```text\nFinding gelöscht\n```",
+    "MCP-Prüfung:\nMindestens:\n\n```text\nfinding.inspect\nfinding.decision.create\nfinding.decision.validate\naudit.write\n```",
+    "Persistenzprüfung:\nNach Reload:\n\n```text\nDecision exists\nRationale exists\nSource revision exists\n```\n\nBei Architekturänderung:\n\n```text\nACCEPTED_RISK\n→ REVIEW_REQUIRED / OUTDATED\n```",
+    "PASS:\nFinding-Entscheidung ist persistent, revisionsgebunden und auditiert.\n\n---"
+  ],
+  "failure_conditions": [
+    "Erfundene erfolgreiche Ausführung"
+  ],
+  "tags": [
+    "integration",
+    "mcp"
+  ],
+  "decision_mode": "INTERACTIVE",
+  "overall_timeout": 1800,
+  "execution_plan": [],
+  "contract_hash": "8e9bf42293fd2b12d88a7dc80d2bef42f754d014281acd2fe11f4503d9fc2ff7",
+  "status": "READY",
+  "last_run": null
+}

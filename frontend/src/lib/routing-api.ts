@@ -1,4 +1,11 @@
 import type { RoutingEntry, RoutingProposal, RoutingSchema } from "./types";
+import {
+  assertRoutingItemLimit,
+  isRoutingTimeoutError,
+  routingRequestSignal,
+  ROUTING_READ_TIMEOUT_MS,
+  ROUTING_WRITE_TIMEOUT_MS,
+} from "./routing-guards";
 import { readActiveProjectId } from "./user-settings";
 
 const BASE = "/api/engineering/routing";
@@ -8,15 +15,27 @@ function routingBaseUrl(): string {
 }
 
 async function request<T>(path = "", init?: RequestInit): Promise<T> {
-  const response = await fetch(`${routingBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Project-ID": readActiveProjectId(),
-      ...init?.headers,
-    },
-    cache: "no-store",
-  });
+  const timeout = init?.method && !["GET", "HEAD"].includes(init.method)
+    ? ROUTING_WRITE_TIMEOUT_MS
+    : ROUTING_READ_TIMEOUT_MS;
+  let response: Response;
+  try {
+    response = await fetch(`${routingBaseUrl()}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Project-ID": readActiveProjectId(),
+        ...init?.headers,
+      },
+      cache: "no-store",
+      signal: routingRequestSignal(init?.signal, timeout),
+    });
+  } catch (error) {
+    if (isRoutingTimeoutError(error)) {
+      throw new Error(`Die Routing-API antwortet nicht innerhalb von ${timeout / 1000} Sekunden.`);
+    }
+    throw new Error("Die Routing-API ist nicht erreichbar.", { cause: error });
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error((payload as { error?: string }).error ?? `Routing-API-Fehler ${response.status}`);
@@ -34,6 +53,7 @@ export async function listRoutes(projectId = readActiveProjectId()): Promise<Rou
     const page = await request<{ items: RoutingEntry[] }>(`?limit=${pageSize}&offset=${offset}`, { headers: { "X-Project-ID": projectId } });
     items.push(...page.items);
     if (page.items.length < pageSize) return items;
+    assertRoutingItemLimit(items.length);
   }
 }
 

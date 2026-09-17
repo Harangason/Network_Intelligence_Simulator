@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getNetworkView, type NetworkView } from '@/lib/workflow-api';
 import { readActiveProjectId } from '@/lib/user-settings';
+import { busProfiles } from '@/lib/topology';
 import styles from './routing-system-frame.module.css';
 
 export function useRoutingSystemFrameView() {
@@ -20,7 +21,6 @@ export function useRoutingSystemFrameView() {
   return state;
 }
 
-const colors = { can: '#a4e852', can_fd: '#a4e852', can_xl: '#c393f5', lin: '#ffd45a', automotive_ethernet: '#77c7f5', flexray: '#fa928d' };
 const kinds = { ecu: 'ECU', gateway: 'Gateway', sensor: 'Sensor', actuator: 'Aktor' };
 
 export function RoutingSystemFrame({ nodeId, state }: { nodeId: string; state: ReturnType<typeof useRoutingSystemFrameView> }) {
@@ -41,7 +41,7 @@ export function RoutingSystemFrame({ nodeId, state }: { nodeId: string; state: R
         <figcaption><span className={styles.eyebrow}>Systemrahmen</span><strong>{frame.label}</strong>{cluster && <small>{cluster.label}</small>}</figcaption>
         <svg viewBox={`${frame.left} ${frame.top} ${Math.max(1, frame.width)} ${Math.max(1, frame.height)}`} role="img" aria-label={`Systemrahmen ${frame.label}, ausgewählt: ${selected.map(node => node.name).join(', ')}`}>
           <rect x={frame.left + 2} y={frame.top + 2} width={Math.max(1, frame.width - 4)} height={Math.max(1, frame.height - 4)} rx="12" fill="#101820" stroke="#9a8446" />
-          {buses.map(bus => <g key={bus.id} fill="none" stroke={colors[bus.technology]} strokeWidth="2">
+          {buses.map(bus => <g key={bus.id} fill="none" stroke={busProfiles[bus.technology].color} strokeWidth="2">
             <title>{bus.name}</title><path d={bus.displayPath || bus.path} />
             {bus.branches.filter(branch => members.has(branch.nodeId)).map(branch => <path key={branch.portId} d={branch.displayPath || branch.path} />)}
           </g>)}

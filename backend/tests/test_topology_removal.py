@@ -1,7 +1,18 @@
 from copy import deepcopy
 import os
 import pytest
-from backend.engineering.topology_removal import detached_topology
+from backend.engineering.topology_removal import _canonical_relation_ids, detached_topology
+
+
+def test_generated_segment_ids_are_not_treated_as_relation_uuids():
+    relation_id = '73245dae-0684-4b27-bf56-2701890fd886'
+    edges = [
+        {'engineeringRelationId': relation_id},
+        {'engineeringRelationId': relation_id + ':segment:0'},
+        {'engineeringSegmentId': relation_id + ':segment:1'},
+    ]
+
+    assert _canonical_relation_ids(edges) == {relation_id}
 
 
 def test_only_newly_disconnected_ports_leave_their_previous_bus():

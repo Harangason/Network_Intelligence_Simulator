@@ -20,6 +20,25 @@ from backend.engineering.agent_tools import run_status
 import pytest
 
 
+def test_gateway_free_v0_identifies_only_the_controller_as_main_controller():
+    controller = {'device_type': 'EmbeddedController'}
+    sensor = {'device_type': 'SensorController'}
+    specification = {
+        'networkArchitecture': 'sensor_ecu_actuator',
+        'chains': [controller, sensor],
+    }
+
+    assert wizard_generation._is_local_main_controller(controller, specification)
+    assert not wizard_generation._is_local_main_controller(sensor, specification)
+
+    specification['chains'].append({'device_type': 'Gateway'})
+    assert not wizard_generation._is_local_main_controller(controller, specification)
+
+    specification['chains'].pop()
+    specification['networkArchitecture'] = 'gateway_direct'
+    assert not wizard_generation._is_local_main_controller(controller, specification)
+
+
 def define_fixture_command_signals():
     """Explicit test specification; production must never invent command bits."""
     for message in model.objects('Message'):
@@ -634,7 +653,9 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert len(topology['nodes']) == len(canonical_hardware)
     assert len(topology['edges']) >= 3
     assert all(node['engineeringId'] for node in topology['nodes'])
-    assert all(edge['engineeringRelationId'] for edge in topology['edges'])
+    assert all(edge.get('engineeringRelationId') or edge.get('engineeringSegmentId') for edge in topology['edges'])
+    assert all(edge.get('engineeringSegmentId') and not edge.get('engineeringRelationId')
+               for edge in topology['edges'] if edge['origin'] == 'ROUTING_TABLE')
     assert all(edge['routingEntryIds'] for edge in topology['edges'] if edge['origin'] == 'ROUTING_TABLE')
     connected_node_ids = {node_id for edge in topology['edges'] for node_id in (edge['source'], edge['target'])}
     assert connected_node_ids == {node['id'] for node in topology['nodes']}

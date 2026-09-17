@@ -1,0 +1,116 @@
+{
+  "task_id": "engineering-agent-s51-s60",
+  "title": "Engineering-Agent-Systemtests S51-S60",
+  "source": "H:\\OneDrive\\Download\\NETWORK_SIMULATOR_ENGINEERING_AGENT_TEST_EXTENSION_S51_S60.md",
+  "source_hash": "cc5e81173e584dca1273878403e9db4ac3488da29ea78778b6838a072a0b9316",
+  "domain": "engineering",
+  "purpose": "Eigenständige Abnahme des Engineering Agent als modellbewusstes Subsystem, getrennt von Wizard-, MCP-, UI- und Tool-Erfolg",
+  "test_case_ids": [
+    "S51",
+    "S52",
+    "S53",
+    "S54",
+    "S55",
+    "S56",
+    "S57",
+    "S58",
+    "S59",
+    "S60"
+  ],
+  "created_at": "2026-09-17T07:39:45.531197+00:00",
+  "updated_at": "2026-09-17T07:39:45.531208+00:00",
+  "manifest_path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\state\\tasks\\engineering-agent-s51-s60\\manifest.json",
+  "version": "1.1.1",
+  "manifest_schema_version": 1,
+  "acceptance_contract": "all mandatory checks plus evidence",
+  "global_rules": [
+    "Ein Wizard-Test, ein erfolgreicher MCP-Toolcall oder ein korrektes UI-Ergebnis ist kein vollständiger Agent-Test; die gesamte Arbeitslogik muss nachgewiesen werden.",
+    "Der Agent muss technische Aufträge verstehen, typisieren, Modellzustand lesen, relevante Objekte und Beziehungen analysieren, fehlende Informationen erkennen, deterministische Fakten selbst ermitteln, echte Engineering-Entscheidungen erkennen, nur notwendige Fragen stellen, einen Execution Plan erzeugen, Skills und MCP Tools auswählen, Tools ausführen, abhängige Schritte fortsetzen, Ergebnisse validieren, Fehler erkennen, Repair ausführen, Completion prüfen, Evidence referenzieren und das Ergebnis kompakt darstellen.",
+    "Nicht ausreichend sind reine Textantworten, Navigationsempfehlungen oder ein einzelner Toolcall mit Fertigmeldung. Ziel ist die Kette MODEL UNDERSTANDING, REASONING, DECISION, PLAN, EXECUTION, VALIDATION, REPAIR und COMPLETION.",
+    "Bei S01-A bis S20-B muss der Agent zusätzlich zu den Wizard-Prüfungen separat bewertet werden; Pflichtmetriken sind Goal Understanding, Typing Accuracy, Model Inspection, Existing Object Reuse, Decision Detection, Question Quality, Unnecessary Question Count, Plan Completeness, Skill Selection, MCP Tool Selection, Tool Order, Execution Continuity, Validation Coverage, Repair Behavior, Completion Accuracy, Evidence Quality und Output Quality.",
+    "Jedes Szenario muss mindestens einen agent_result mit goal_understood, model_inspected, correct_context_loaded, decision_required, decision_quality, plan_created, tools_selected, tools_executed, dependencies_completed, validation_complete, repair_required, repair_successful, completion_correct und evidence_complete speichern.",
+    "Tool Checker muss Agent-Anti-Patterns erkennen, darunter fehlende Modellinspektion, halluzinierte oder doppelte Objekte, falsches Goal/Typing, unnötige oder fehlende Fragen, falsche oder erfundene Tools, falsche Toolreihenfolge, reine Navigation, Delegation an den Nutzer, Stop nach einem Tool, fehlende Dependencies oder Validation, fehlender Repair, verlorener Workload, verfrühte Completion und fehlende Evidence.",
+    "Kein Raw Chain-of-Thought Logging speichern; zulässig sind strukturierte Observations, Evidence, Decision, Plan und Conclusion.",
+    "Revision Safety ist Pflicht: vor Mutation model_revision prüfen; bei Modelländerung PLAN_STALE, re-inspect und re-plan.",
+    "Agent Tool Calls müssen user actor, project scope und permission mitführen; der Agent darf keine höhere Berechtigung besitzen als der Benutzer.",
+    "Wizard, Engineering Agent, MCP und Python Core sind getrennte Schichten; Erfolg einer Schicht beweist die andere nicht.",
+    "Definition of Done verlangt geprüfte Goal Understanding, Typing, Model Awareness, Context Resolution, Decision Detection, Fragequalität, Planung, Skill Selection, MCP Tool Selection, Tool Order, Autonomous Execution, Workload Resume, Revision Safety, Validation, Repair Loop, Completion Evaluator, Evidence, Anti-Patterns, S60 End-to-End und Agent Contract über alle 40 A/B-Szenarien."
+  ],
+  "architecture_rules": [
+    "Der Agent muss UNDERSTAND, INSPECT, REASON, ASK ONLY IF NECESSARY, PLAN, EXECUTE, VALIDATE, REPAIR und COMPLETE eigenständig nachweisen.",
+    "Der Engineering Agent ist erst dann geprüft, wenn technische Ziele modellbewusst verstanden, richtige Entscheidungen erkannt, geeignete Skills und MCP-Tools ausgewählt, der vollständige Arbeitsplan ausgeführt und Completion erst nach erfolgreicher Validierung gemeldet wird."
+  ],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "required_tools": [
+    "NIS HTTP API",
+    "Engineering Agent",
+    "Engineering MCP tool registry",
+    "Canonical model inspection"
+  ],
+  "required_views": [
+    "Engineering Agent chat",
+    "Agent evidence/audit"
+  ],
+  "required_outputs": [
+    "goal.json",
+    "typing.json",
+    "model-context.json",
+    "reasoning-result.json",
+    "decision.json",
+    "execution-plan.json",
+    "skill-selection.json",
+    "tool-calls.json",
+    "tool-results.json",
+    "validation.json",
+    "repair.json",
+    "completion.json"
+  ],
+  "rule_files": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+      "sha256": "9788510a5227c878605f50348e198919c92850ac464c20c75b1a3be4a6cc88cc"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+      "sha256": "ae5d9f8556a8924de4ff6c9859352bd40ba74e800ec815bdb6aeb02c7619d19f"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+      "sha256": "3408508a596622024ceb795a631a7671c0aa5e21c22a33cd57205abab57362e4"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+      "sha256": "ee7c236fdadcd0c7718f819c5c512294e02059d77e893841de48e24bb20a7867"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+      "sha256": "afc884f6e809cca14712822724431209eed9d1920a7401a3d8946e668a2a0191"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\00_AGENT_CORE_OVERVIEW.md",
+      "sha256": "d4665c76fafd04051a89e183074e1849869a6cb0eedf0987174251424e5177a5"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\14_MCP_IMPLEMENTATION.md",
+      "sha256": "f80ae9fb5dd48c081954c9b577294734a9098bbe4811b22b3bbde844d0e2025e"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\15_CHAT_RESPONSE_CONTRACT.md",
+      "sha256": "471f98f683c2a003e02234d2b3f2db4058b0dff622ee88f06eef11b97afdec30"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+      "sha256": "cf99ec48f549e2f364ade8f5f1437d65f07afd75bde1f87fe472b33360a441b2"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\18_UNIVERSAL_INPUT_OUTPUT_UPDATE.md",
+      "sha256": "a5ce00ed3111e1c2e19742a7dcc930afb9663c04a3b2be5cdce74f53e53fe729"
+    },
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\19_UNIVERSAL_IO_IMPLEMENTATION.md",
+      "sha256": "1d5cd14220fece660215e612d4cbb1cce756219ac695e0b854e9ec3e2c6264a4"
+    }
+  ]
+}

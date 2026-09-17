@@ -108,3 +108,41 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:industry60-completion -->
+
+<!-- tool-check:engineering-agent-s51-s60 -->
+## Tool Check: engineering-agent-s51-s60
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_ENGINEERING_AGENT_TEST_EXTENSION_S51_S60.md
+- Source Hash: cc5e81173e584dca1273878403e9db4ac3488da29ea78778b6838a072a0b9316
+- Status: ACTIVE
+- Last Ingest: 2026-09-17T07:39:45.531208+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\engineering-agent-s51-s60\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:engineering-agent-s51-s60 -->
+
+<!-- tool-check:network-simulator-master-quality-gate-60 -->
+## Tool Check: network-simulator-master-quality-gate-60
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: H:\OneDrive\Download\NETWORK_SIMULATOR_MASTER_TEST_REPAIR_QUALITY_GATE_60_SCENARIOS.md
+- Source Hash: e2409f24d4ae510d5289b283efd75d92b0bddc758c3fc7117e08fd5d883c7eab
+- Status: ACTIVE
+- Last Ingest: 2026-09-17T11:21:15.633157+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-quality-gate-60\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-quality-gate-60 -->

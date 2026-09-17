@@ -19,7 +19,7 @@ DEVICE_TYPINGS_BY_CLASS: dict[int, tuple[str, ...]] = {
     1: ("Basic Sensor", "Basic Actuator", "Basic Communication Device"),
     2: ("Smart Sensor", "Controlled Actuator", "Smart I/O Device", "Embedded Device"),
     3: ("Perception Sensor", "Intelligent Sensor", "Perception Device"),
-    4: ("Intelligent Subsystem",),
+    4: ("Intelligent Subsystem", "Main Controller"),
 }
 
 DATA_COMPLEXITIES = (
@@ -197,16 +197,17 @@ class DeviceClassificationRegistry:
                 supports_streaming=data_complexity in {"IMAGE_STREAM", "POINT_CLOUD", "AUDIO_STREAM"},
                 provenance=provenance,
             )
+        is_main_controller = device_typing == "Main Controller"
         return DeviceCapabilityProfile(
             device_class,
             DEVICE_CLASSES[device_class],
             device_typing,
-            device_role,
-            "subsystem",
+            "controller" if is_main_controller else device_role,
+            "controller" if is_main_controller else "subsystem",
             data_complexity,
             processing_capabilities=("application_logic", "coordination", "routing"),
             diagnostic_capabilities=("self_diagnostics", "health_state"),
-            communication_capabilities=("network_endpoint", "gatewaying"),
+            communication_capabilities=("network_endpoint",) if is_main_controller else ("network_endpoint", "gatewaying"),
             output_types=("service_data", "status", "health"),
             requires_function_model=True,
             requires_status_model=True,

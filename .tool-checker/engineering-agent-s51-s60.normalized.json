@@ -1,0 +1,866 @@
+{
+  "source_hash": "cc5e81173e584dca1273878403e9db4ac3488da29ea78778b6838a072a0b9316",
+  "title": "Engineering-Agent-Systemtests S51-S60",
+  "domain": "engineering",
+  "purpose": "Eigenständige Abnahme des Engineering Agent als modellbewusstes Subsystem, getrennt von Wizard-, MCP-, UI- und Tool-Erfolg",
+  "global_rules": [
+    "Ein Wizard-Test, ein erfolgreicher MCP-Toolcall oder ein korrektes UI-Ergebnis ist kein vollständiger Agent-Test; die gesamte Arbeitslogik muss nachgewiesen werden.",
+    "Der Agent muss technische Aufträge verstehen, typisieren, Modellzustand lesen, relevante Objekte und Beziehungen analysieren, fehlende Informationen erkennen, deterministische Fakten selbst ermitteln, echte Engineering-Entscheidungen erkennen, nur notwendige Fragen stellen, einen Execution Plan erzeugen, Skills und MCP Tools auswählen, Tools ausführen, abhängige Schritte fortsetzen, Ergebnisse validieren, Fehler erkennen, Repair ausführen, Completion prüfen, Evidence referenzieren und das Ergebnis kompakt darstellen.",
+    "Nicht ausreichend sind reine Textantworten, Navigationsempfehlungen oder ein einzelner Toolcall mit Fertigmeldung. Ziel ist die Kette MODEL UNDERSTANDING, REASONING, DECISION, PLAN, EXECUTION, VALIDATION, REPAIR und COMPLETION.",
+    "Bei S01-A bis S20-B muss der Agent zusätzlich zu den Wizard-Prüfungen separat bewertet werden; Pflichtmetriken sind Goal Understanding, Typing Accuracy, Model Inspection, Existing Object Reuse, Decision Detection, Question Quality, Unnecessary Question Count, Plan Completeness, Skill Selection, MCP Tool Selection, Tool Order, Execution Continuity, Validation Coverage, Repair Behavior, Completion Accuracy, Evidence Quality und Output Quality.",
+    "Jedes Szenario muss mindestens einen agent_result mit goal_understood, model_inspected, correct_context_loaded, decision_required, decision_quality, plan_created, tools_selected, tools_executed, dependencies_completed, validation_complete, repair_required, repair_successful, completion_correct und evidence_complete speichern.",
+    "Tool Checker muss Agent-Anti-Patterns erkennen, darunter fehlende Modellinspektion, halluzinierte oder doppelte Objekte, falsches Goal/Typing, unnötige oder fehlende Fragen, falsche oder erfundene Tools, falsche Toolreihenfolge, reine Navigation, Delegation an den Nutzer, Stop nach einem Tool, fehlende Dependencies oder Validation, fehlender Repair, verlorener Workload, verfrühte Completion und fehlende Evidence.",
+    "Kein Raw Chain-of-Thought Logging speichern; zulässig sind strukturierte Observations, Evidence, Decision, Plan und Conclusion.",
+    "Revision Safety ist Pflicht: vor Mutation model_revision prüfen; bei Modelländerung PLAN_STALE, re-inspect und re-plan.",
+    "Agent Tool Calls müssen user actor, project scope und permission mitführen; der Agent darf keine höhere Berechtigung besitzen als der Benutzer.",
+    "Wizard, Engineering Agent, MCP und Python Core sind getrennte Schichten; Erfolg einer Schicht beweist die andere nicht.",
+    "Definition of Done verlangt geprüfte Goal Understanding, Typing, Model Awareness, Context Resolution, Decision Detection, Fragequalität, Planung, Skill Selection, MCP Tool Selection, Tool Order, Autonomous Execution, Workload Resume, Revision Safety, Validation, Repair Loop, Completion Evaluator, Evidence, Anti-Patterns, S60 End-to-End und Agent Contract über alle 40 A/B-Szenarien."
+  ],
+  "architecture_rules": [
+    "Der Agent muss UNDERSTAND, INSPECT, REASON, ASK ONLY IF NECESSARY, PLAN, EXECUTE, VALIDATE, REPAIR und COMPLETE eigenständig nachweisen.",
+    "Der Engineering Agent ist erst dann geprüft, wenn technische Ziele modellbewusst verstanden, richtige Entscheidungen erkannt, geeignete Skills und MCP-Tools ausgewählt, der vollständige Arbeitsplan ausgeführt und Completion erst nach erfolgreicher Validierung gemeldet wird."
+  ],
+  "required_skills": [
+    "tool-checker"
+  ],
+  "required_tools": [
+    "NIS HTTP API",
+    "Engineering Agent",
+    "Engineering MCP tool registry",
+    "Canonical model inspection"
+  ],
+  "required_views": [
+    "Engineering Agent chat",
+    "Agent evidence/audit"
+  ],
+  "required_outputs": [
+    "goal.json",
+    "typing.json",
+    "model-context.json",
+    "reasoning-result.json",
+    "decision.json",
+    "execution-plan.json",
+    "skill-selection.json",
+    "tool-calls.json",
+    "tool-results.json",
+    "validation.json",
+    "repair.json",
+    "completion.json"
+  ],
+  "rule_files": [
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\SPATIAL_ARCHITECTURE_CONTRACT.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\COMMUNICATION_DESIGN_CONTRACT.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\NETWORK_NAMING_CONTRACT.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_EXECUTION_CONTRACT.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\WIZARD_RELEASE_GATE.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\00_AGENT_CORE_OVERVIEW.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\14_MCP_IMPLEMENTATION.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\15_CHAT_RESPONSE_CONTRACT.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\16_MODEL_AWARE_EXECUTION.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\18_UNIVERSAL_INPUT_OUTPUT_UPDATE.md",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\agent_core\\19_UNIVERSAL_IO_IMPLEMENTATION.md"
+  ],
+  "test_cases": [
+    {
+      "test_id": "S51",
+      "title": "Goal Understanding und Typing",
+      "input": "Klassifiziere die Eingaben: Verbinde ParkAssist mit DriverAssistance.; Prüfe MotorRPM.; Analysiere den letzten Trace.; Erzeuge eine Architektur für 3 Sensoren, 4 Aktoren und einen Rechner.",
+      "source_lines": [
+        189,
+        243
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Engineering Agent Typing/Intent-Pfad verfügbar",
+        "Keine Mutation des kanonischen Modells für reine Klassifikation"
+      ],
+      "required_model_context": [
+        "Tool- und Capability-Verfügbarkeit für Typing prüfen",
+        "Bekannte Objektarten Function, Signal, TraceSession und HardwareNode prüfen"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Rückfrage zur bloßen Klassifikation eindeutiger Beispiele"
+      ],
+      "required_actions": [
+        "Vier Beispiele durch den Agent-Typingpfad senden",
+        "goal.json und typing.json je Eingabe sichern",
+        "Intent und Hauptobjekttyp validieren"
+      ],
+      "required_tools": [
+        "Engineering Agent"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [
+        "CONNECT_FUNCTIONS für ParkAssist/DriverAssistance",
+        "VALIDATE_SIGNAL für MotorRPM",
+        "ANALYZE_TRACE für letzten Trace",
+        "CREATE_ARCHITECTURE für Sensoren/Aktoren/Rechner",
+        "Objekttypen Function, Signal, TraceSession und HardwareNode erkannt"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Goal und Hauptobjekte werden korrekt erkannt.",
+        "AGENT_GOAL_MISCLASSIFIED tritt nicht auf.",
+        "AGENT_TYPING_FAILED tritt nicht auf."
+      ],
+      "failure_conditions": [
+        "AGENT_GOAL_MISCLASSIFIED",
+        "AGENT_TYPING_FAILED",
+        "Unnötige Nutzerfrage bei deterministisch typisierbarer Eingabe"
+      ],
+      "tags": [
+        "engineering-agent",
+        "typing",
+        "goal-understanding"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S52",
+      "title": "Model Awareness",
+      "input": "Verbinde ParkAssist mit DriverAssistance.",
+      "source_lines": [
+        247,
+        294
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Ausgangsmodell mit ParkAssist, ChassisController, CAN_FD_1, Chassis_CAN, DriverAssistance, ADAS_Controller, ETH_1 und ADAS_ETHERNET verfügbar",
+        "Lesender Agent-/MCP-Kontextzugriff verfügbar"
+      ],
+      "required_model_context": [
+        "Functions",
+        "Function Mappings",
+        "HardwareNodes",
+        "HardwareInterfaces",
+        "Physical Ports",
+        "Networks",
+        "Routes",
+        "Technology Bindings",
+        "LogicalNodeAddresses"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Frage nach bereits im Modell deterministisch lesbaren Objekten"
+      ],
+      "required_actions": [
+        "Aktuellen Canonical Model Context lesen",
+        "Vorhandene Controller, Interfaces, Ports, Networks und Routes referenzieren",
+        "Plan auf Basis der aktuellen Modellrevision erzeugen"
+      ],
+      "required_tools": [
+        "Canonical model inspection",
+        "Engineering MCP tool registry"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [
+        "Plan referenziert aktuelles Canonical Model",
+        "Bestehende Controller und Networks werden wiederverwendet oder korrekt als ungeeignet begründet"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Plan basiert nachweislich auf dem aktuellen Canonical Model."
+      ],
+      "failure_conditions": [
+        "neuen ChassisController erfinden",
+        "neuen ADAS_Controller erfinden",
+        "bestehende Networks ignorieren",
+        "AGENT_NO_MODEL_INSPECTION",
+        "AGENT_HALLUCINATED_OBJECT"
+      ],
+      "tags": [
+        "engineering-agent",
+        "model-awareness",
+        "canonical-model"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S53",
+      "title": "Decision Detection",
+      "input": "Prüfe Entscheidungsverhalten für freien CAN-Port, direkte CAN-FD-Port-Variante versus Gateway-Pfad und Policy reuse existing interface before create.",
+      "source_lines": [
+        298,
+        341
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Agent kann deterministische Modellfakten lesen",
+        "Projektpolicy reuse existing interface before create ist als Testkontext gesetzt oder nachweisbar"
+      ],
+      "required_model_context": [
+        "Port- und Interfacebestand",
+        "Projektpolicy",
+        "Verfügbare Architekturvarianten"
+      ],
+      "expected_questions": [
+        "Frage bei echter Architekturentscheidung direkter CAN-FD-Port vs. Gateway-Pfad"
+      ],
+      "forbidden_questions": [
+        "Ist ein CAN-Port frei?",
+        "Soll bestehendes Interface wiederverwendet werden, wenn die Policy dies bereits festlegt?"
+      ],
+      "required_actions": [
+        "Deterministischen Fall selbst prüfen",
+        "Echte Architekturentscheidung als Nutzerfrage erfassen",
+        "Policy-defined Fall ohne Frage ausführen oder planen",
+        "correct_questions, missing_questions und unnecessary_questions speichern"
+      ],
+      "required_tools": [
+        "Engineering Agent",
+        "Canonical model inspection"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [
+        "correct_questions",
+        "missing_questions",
+        "unnecessary_questions"
+      ],
+      "expected_validations": [
+        "Agent fragt nur bei echten Engineering Decisions"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Fall A wird ohne Nutzerfrage deterministisch geprüft.",
+        "Fall B erzeugt genau die nötige Architekturfrage.",
+        "Fall C folgt der Policy ohne Frage."
+      ],
+      "failure_conditions": [
+        "AGENT_UNNECESSARY_QUESTION",
+        "AGENT_MISSING_QUESTION",
+        "AGENT_WRONG_GOAL"
+      ],
+      "tags": [
+        "engineering-agent",
+        "decision-detection",
+        "question-quality"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S54",
+      "title": "Engineering Planning",
+      "input": "Verbinde ParkAssist direkt per CAN-FD mit DriverAssistance.",
+      "source_lines": [
+        345,
+        385
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Agent kann einen Execution Plan vor Ausführung erzeugen",
+        "Keine Modellmutation vor Planprüfung"
+      ],
+      "required_model_context": [
+        "Aktuelle Modellrevision",
+        "Hardware Capability",
+        "Controller und freie Kanäle",
+        "Payload-, Routing-, Capacity-, Timing- und Validation-Kontext"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Triviale Rückfrage zu planbaren abhängigen Schritten"
+      ],
+      "required_actions": [
+        "Execution Plan vor Ausführung erzeugen",
+        "Planabhängigkeiten prüfen",
+        "Fehlende Abhängigkeiten als Findings markieren"
+      ],
+      "required_tools": [
+        "Engineering Agent",
+        "Engineering MCP tool registry"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [
+        "Plan enthält inspect model, check capability, check controller, check free channel, create/reuse interface, create/reuse port, connect network, resolve payload, generate/reuse transport, update routing, recalculate capacity, recalculate timing, validate, preflight und completion"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Alle notwendigen Abhängigkeiten sind vor Ausführung bekannt."
+      ],
+      "failure_conditions": [
+        "AGENT_PLAN_INCOMPLETE",
+        "AGENT_DEPENDENCY_MISSING",
+        "AGENT_SKIPS_DEPENDENCY"
+      ],
+      "tags": [
+        "engineering-agent",
+        "planning",
+        "dependency-planning"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S55",
+      "title": "Skill- und MCP-Tool-Auswahl",
+      "input": "Wähle Skills und registrierte MCP Tools für einen Engineering-Agent-Auftrag; prüfe zusätzlich den Negativfall ohne passendes Tool.",
+      "source_lines": [
+        389,
+        432
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Registrierte Tool Registry verfügbar",
+        "Negativfall mit fehlendem passenden Tool kontrolliert konfiguriert"
+      ],
+      "required_model_context": [
+        "Tool Registry",
+        "Skill/Capability-Katalog",
+        "Berechtigungen und Projektumfang"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Nutzer soll Toolnamen liefern, obwohl Registry lesbar ist"
+      ],
+      "required_actions": [
+        "Passende Skills auswählen",
+        "Passende registrierte MCP Tools auswählen",
+        "Negativfall ohne passendes Tool als BLOCKED oder NOT_SUPPORTED melden"
+      ],
+      "required_tools": [
+        "Engineering MCP tool registry"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [
+        "Skillauswahl enthält model.context.resolve, engineering.reason, engineering.plan, communication.route, capacity.calculate, timing.calculate und validation.run oder deren registrierte lokale Äquivalente",
+        "Keine erfundenen Tools",
+        "Kein UI-Link als Ersatz für Engineering Tool"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Agent wählt passende Fähigkeiten und registrierte Tools.",
+        "Fehlender Tool-Support führt zu BLOCKED / NOT_SUPPORTED, nicht zu halluziniertem Tool-Erfolg."
+      ],
+      "failure_conditions": [
+        "AGENT_WRONG_TOOL",
+        "AGENT_INVENTED_TOOL",
+        "AGENT_ONLY_NAVIGATES",
+        "halluzinierter Tool-Erfolg"
+      ],
+      "tags": [
+        "engineering-agent",
+        "skill-selection",
+        "mcp-tool-selection",
+        "negative-test"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S56",
+      "title": "Autonomous Execution",
+      "input": "Ja - CAN-FD-Port erstellen und direkt anbinden.",
+      "source_lines": [
+        436,
+        479
+      ],
+      "difficulty": "e2e",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter autorisierter Testbereich mit Baseline",
+        "Vorherige echte Nutzerentscheidung zur direkten CAN-FD-Anbindung gespeichert",
+        "Modellrevision vor Mutation geprüft"
+      ],
+      "required_model_context": [
+        "Aktueller Anschlussplan",
+        "Gespeicherte Nutzerentscheidung",
+        "Port-, Interface-, Network-, Transport-, Routing-, Capacity-, Timing- und Validation-Kontext"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Soll ich jetzt Routing aktualisieren?",
+        "Soll ich jetzt Buslast berechnen?",
+        "Soll ich validieren?"
+      ],
+      "required_actions": [
+        "Port ausführen",
+        "Interface ausführen",
+        "Network Connection ausführen",
+        "Transport ausführen",
+        "Routing ausführen",
+        "Capacity ausführen",
+        "Timing ausführen",
+        "Validation ausführen",
+        "Preflight ausführen",
+        "Evidence und model_after sichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API",
+        "Engineering Agent",
+        "Engineering MCP tool registry"
+      ],
+      "required_views": [
+        "Engineering Agent chat"
+      ],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [
+        "Direkt angebundener CAN-FD-Port/Interface/Network Connection im isolierten Testmodell, sofern der geprüfte Plan dies erfordert",
+        "Aktualisierte Transport-, Routing-, Capacity-, Timing-, Validation- und Preflight-Nachweise"
+      ],
+      "expected_calculations": [
+        "Capacity",
+        "Timing"
+      ],
+      "expected_validations": [
+        "Validation",
+        "Communication Preflight",
+        "Completion Check"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Agent arbeitet nach der Entscheidung bis zum Zielzustand selbstständig weiter.",
+        "Keine weitere triviale Nutzerfrage wird gestellt.",
+        "AGENT_UNNECESSARY_DELEGATION tritt nicht auf."
+      ],
+      "failure_conditions": [
+        "AGENT_UNNECESSARY_DELEGATION",
+        "AGENT_DELEGATES_TO_USER",
+        "AGENT_STOPS_AFTER_ONE_TOOL",
+        "AGENT_SKIPS_VALIDATION"
+      ],
+      "tags": [
+        "engineering-agent",
+        "autonomous-execution",
+        "mutation",
+        "e2e"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 3600,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S57",
+      "title": "Workload Persistence und Resume",
+      "input": "Starte einen Agentenauftrag, warte auf eine Engineering Decision, lade die UI neu, beantworte die Entscheidung und setze denselben Auftrag fort.",
+      "source_lines": [
+        483,
+        520
+      ],
+      "difficulty": "e2e",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Testbereich",
+        "Agent-Auftrag erzeugt eine echte Engineering Decision",
+        "UI Reload während offener Entscheidung möglich"
+      ],
+      "required_model_context": [
+        "workload_id",
+        "goal",
+        "execution_plan",
+        "completed steps",
+        "pending steps",
+        "gespeicherte Frage/Entscheidung"
+      ],
+      "expected_questions": [
+        "Engineering Decision im Status SUSPENDED_FOR_DECISION"
+      ],
+      "forbidden_questions": [
+        "Neue unnötige Frage nach bereits beantworteter Entscheidung"
+      ],
+      "required_actions": [
+        "Agent bis SUSPENDED_FOR_DECISION laufen lassen",
+        "UI Reload durchführen",
+        "Userantwort speichern",
+        "RESUME ausführen",
+        "Persistenz von workload_id, goal, execution_plan, completed steps und pending steps prüfen"
+      ],
+      "required_tools": [
+        "NIS HTTP API",
+        "Engineering Agent"
+      ],
+      "required_views": [
+        "Engineering Agent chat"
+      ],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [
+        "Nur vom autorisierten Resume-Pfad erlaubte Änderungen"
+      ],
+      "expected_calculations": [],
+      "expected_validations": [
+        "same workload_id",
+        "same goal",
+        "same execution_plan",
+        "completed steps retained",
+        "pending steps retained"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Agent setzt nach UI Reload und Userantwort denselben Auftrag fort.",
+        "Kein neuer Auftrag wird gestartet."
+      ],
+      "failure_conditions": [
+        "AGENT_WORKLOAD_LOST",
+        "AGENT_STARTED_NEW_TASK"
+      ],
+      "tags": [
+        "engineering-agent",
+        "resume",
+        "persistence",
+        "browser"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 3600,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S58",
+      "title": "Validation und Repair Loop",
+      "input": "Erzeuge einen Fall, in dem Routing erfolgreich ist, Timing Validation aber fehlschlägt; prüfe, dass der Agent Repair und Revalidation ausführt.",
+      "source_lines": [
+        525,
+        571
+      ],
+      "difficulty": "e2e",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter Testbereich mit kontrolliertem Timing-Fehlschlag",
+        "Repair-Strategie innerhalb freigegebener Grenzen zulässig oder als offen auszuweisen"
+      ],
+      "required_model_context": [
+        "Routing-Ergebnis",
+        "Timing-Validation-Befund",
+        "Zulässige Repair-Kandidaten",
+        "Freigegebener Strategieumfang"
+      ],
+      "expected_questions": [
+        "Nur falls Repair außerhalb der freigegebenen Strategie liegt"
+      ],
+      "forbidden_questions": [
+        "Triviale Nachfrage vor erlaubter Repair/Revalidation"
+      ],
+      "required_actions": [
+        "Routing erfolgreich ausführen oder als Fixture bereitstellen",
+        "Timing Validation fehlschlagen lassen",
+        "Completion als INCOMPLETE markieren",
+        "Failure inspizieren",
+        "Repair Candidate erzeugen",
+        "Repair ausführen, wenn freigegeben",
+        "Revalidate ausführen",
+        "Finalen Completion Check speichern"
+      ],
+      "required_tools": [
+        "NIS HTTP API",
+        "Engineering Agent",
+        "Validation/Timing tools"
+      ],
+      "required_views": [
+        "Engineering Agent chat"
+      ],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [
+        "Repair-bedingte Änderung nur innerhalb freigegebener Strategie"
+      ],
+      "expected_calculations": [
+        "Timing Validation",
+        "Repair Revalidation"
+      ],
+      "expected_validations": [
+        "Completion bleibt INCOMPLETE nach Timing-Fehler",
+        "Repair Loop wird ausgeführt oder blockiert mit begründetem Finding",
+        "Agent stoppt nicht bei erstem Teilerfolg"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Agent stoppt nicht bei erstem Teilerfolg.",
+        "Repair und Revalidation sind nachgewiesen oder ein erlaubter Blocker ist belegt."
+      ],
+      "failure_conditions": [
+        "Agent meldet Verbindung erfolgreich erstellt und COMPLETE trotz Timing-Fehler",
+        "AGENT_NO_REPAIR",
+        "AGENT_PREMATURE_COMPLETE"
+      ],
+      "tags": [
+        "engineering-agent",
+        "repair-loop",
+        "validation",
+        "timing"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 3600,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S59",
+      "title": "Completion Evaluator",
+      "input": "Prüfe CONNECT_FUNCTIONS Completion mit timing = UNKNOWN.",
+      "source_lines": [
+        575,
+        620
+      ],
+      "difficulty": "integration",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": false,
+      "browser_required": false,
+      "preconditions": [
+        "Completion Evaluator kann gegen kontrollierten CONNECT_FUNCTIONS-Zustand geprüft werden",
+        "Timing-Nachweis ist kontrolliert UNKNOWN"
+      ],
+      "required_model_context": [
+        "source function",
+        "target function",
+        "host hardware",
+        "required data",
+        "interfaces",
+        "ports",
+        "network connectivity",
+        "transport",
+        "route",
+        "capacity",
+        "timing",
+        "preflight",
+        "blocking findings"
+      ],
+      "expected_questions": [],
+      "forbidden_questions": [
+        "Nutzerfrage zur Ersetzung eines fehlenden Pflichtnachweises durch Behauptung"
+      ],
+      "required_actions": [
+        "Completion Contract auswerten",
+        "timing = UNKNOWN als fehlenden Pflichtpunkt markieren",
+        "Completion-Ergebnis INCOMPLETE speichern"
+      ],
+      "required_tools": [
+        "Engineering Agent",
+        "Completion Evaluator"
+      ],
+      "required_views": [],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [],
+      "expected_calculations": [],
+      "expected_validations": [
+        "source function resolved",
+        "target function resolved",
+        "host hardware resolved",
+        "required data resolved",
+        "interfaces valid",
+        "ports valid",
+        "network connectivity valid",
+        "transport valid",
+        "route valid",
+        "capacity valid",
+        "timing UNKNOWN führt zu INCOMPLETE",
+        "preflight valid",
+        "no blocking finding"
+      ],
+      "expected_visualizations": [],
+      "completion_criteria": [
+        "Agent meldet Completion nur bei erfülltem Zielvertrag.",
+        "Bei timing = UNKNOWN lautet das Ergebnis INCOMPLETE, nicht COMPLETE."
+      ],
+      "failure_conditions": [
+        "COMPLETE bei timing = UNKNOWN",
+        "AGENT_PREMATURE_COMPLETE"
+      ],
+      "tags": [
+        "engineering-agent",
+        "completion-evaluator",
+        "negative-test"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 1800,
+      "execution_plan": []
+    },
+    {
+      "test_id": "S60",
+      "title": "Vollständiger Engineering-Agent-E2E-Test",
+      "input": "Verbinde ParkAssist mit DriverAssistance, prüfe die Kommunikation, simuliere den Pfad und analysiere mögliche Timingprobleme.",
+      "source_lines": [
+        624,
+        695
+      ],
+      "difficulty": "e2e",
+      "variant": "",
+      "architecture_variant": "",
+      "mutating": true,
+      "browser_required": true,
+      "preconditions": [
+        "Isolierter autorisierter Testbereich mit Baseline",
+        "ParkAssist/DriverAssistance-Ausgangsmodell verfügbar",
+        "Simulation und Trace im Teststack verfügbar",
+        "Mutierende Schritte dürfen nicht gegen Produktdatenbank laufen"
+      ],
+      "required_model_context": [
+        "Goal Understanding",
+        "Typing",
+        "Model Inspection",
+        "Situation Analysis",
+        "Decision Detection",
+        "User Question",
+        "Resume",
+        "Execution Plan",
+        "Skill Discovery",
+        "MCP Tool Selection",
+        "Model Mutation",
+        "Routing",
+        "Capacity",
+        "Timing",
+        "Validation",
+        "Simulation",
+        "Trace",
+        "Root Cause",
+        "Finding",
+        "Completion"
+      ],
+      "expected_questions": [
+        "Nutzerfrage nur bei echter Engineering Decision"
+      ],
+      "forbidden_questions": [
+        "Triviale Rückfragen zu abhängigen Schritten nach Freigabe"
+      ],
+      "required_actions": [
+        "Goal Understanding prüfen",
+        "Typing prüfen",
+        "Model Inspection ausführen",
+        "Situation Analysis speichern",
+        "Decision Detection ausführen",
+        "User Question stellen, falls erforderlich",
+        "Resume nach Entscheidung ausführen",
+        "Execution Plan erzeugen",
+        "Skill Discovery ausführen",
+        "MCP Tool Selection prüfen",
+        "Model Mutation ausführen",
+        "Routing ausführen",
+        "Capacity berechnen",
+        "Timing berechnen",
+        "Validation ausführen",
+        "Simulation starten und auswerten",
+        "Trace analysieren",
+        "Root Cause prüfen",
+        "Finding speichern",
+        "Completion prüfen"
+      ],
+      "required_tools": [
+        "NIS HTTP API",
+        "Engineering Agent",
+        "Engineering MCP tool registry",
+        "Simulation",
+        "Trace analysis"
+      ],
+      "required_views": [
+        "Engineering Agent chat",
+        "Simulation/Trace evidence view"
+      ],
+      "required_skills": [
+        "tool-checker"
+      ],
+      "expected_model_changes": [
+        "Autorisiert mutierter Verbindungszustand im isolierten Testmodell",
+        "Aktuelle Routing-, Capacity-, Timing-, Validation-, Simulation-, Trace- und Finding-Nachweise"
+      ],
+      "expected_calculations": [
+        "Capacity",
+        "Timing",
+        "Simulation result",
+        "Trace root cause"
+      ],
+      "expected_validations": [
+        "Agent reasoning contract",
+        "Agent execution contract",
+        "MCP contract",
+        "Core result",
+        "Browser result",
+        "Simulation result",
+        "Trace result",
+        "Completion result"
+      ],
+      "expected_visualizations": [
+        "Belegbarer Output zum validierten Ergebnis, falls vom Agenten erzeugt"
+      ],
+      "completion_criteria": [
+        "Agent führt das vollständige technische Ziel selbst bis zum validierten Ergebnis.",
+        "Reasoning, Execution, MCP, Core, Browser, Simulation, Trace und Completion werden getrennt geprüft.",
+        "Kein PASS ohne vollständige Evidence."
+      ],
+      "failure_conditions": [
+        "AGENT_NO_MODEL_INSPECTION",
+        "AGENT_WRONG_TOOL_ORDER",
+        "AGENT_STOPS_AFTER_ONE_TOOL",
+        "AGENT_SKIPS_VALIDATION",
+        "AGENT_NO_REPAIR",
+        "AGENT_PREMATURE_COMPLETE",
+        "AGENT_NO_EVIDENCE"
+      ],
+      "tags": [
+        "engineering-agent",
+        "e2e",
+        "simulation",
+        "trace",
+        "completion"
+      ],
+      "decision_mode": "INTERACTIVE",
+      "overall_timeout": 7200,
+      "execution_plan": []
+    }
+  ]
+}

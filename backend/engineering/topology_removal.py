@@ -1,6 +1,21 @@
 """Disconnect removed drawing connections without deleting authored devices or payloads."""
 from copy import deepcopy
 from hashlib import sha256
+from uuid import UUID
+
+
+def _canonical_relation_ids(edges):
+    identifiers = set()
+    for edge in edges or []:
+        value = edge.get('engineeringRelationId') if isinstance(edge, dict) else None
+        if not value:
+            continue
+        try:
+            identifiers.add(str(UUID(str(value))))
+        except (TypeError, ValueError, AttributeError):
+            # Older generated topologies used route segment keys in this field.
+            continue
+    return identifiers
 
 
 def detached_topology(previous, current):
@@ -46,8 +61,8 @@ def retire_removed_connections(previous, current, *, actor='network-editor'):
     from .relations import delete_relation
     from .repository import NotFoundError, get_object, update_object
 
-    kept = {e.get('engineeringRelationId') for e in current.get('edges') or []}
-    removed = {e.get('engineeringRelationId') for e in previous.get('edges') or []} - kept - {None, ''}
+    kept = _canonical_relation_ids(current.get('edges'))
+    removed = _canonical_relation_ids(previous.get('edges')) - kept
     for identifier in removed:
         try:
             delete_relation(identifier)

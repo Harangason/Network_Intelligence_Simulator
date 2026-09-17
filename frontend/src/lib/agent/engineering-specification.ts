@@ -1403,6 +1403,33 @@ function declaredHardwareNames(line: string): Array<{ name: string; declaredType
   return result;
 }
 
+function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
+  const group = /^\s*(?:[-*]\s*)?(?:\d+|ein(?:e|en|em|er|es)?|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn)\s+(sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?)\s*:\s*$/iu;
+  const bullet = /^\s*[-*]\s+(.+?)\s*$/u;
+  const result: HardwareOccurrence[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const heading = lines[index].match(group);
+    if (!heading) continue;
+    const role = normalized(heading[1]).startsWith('sensor') ? 'SensorController' : 'ActuatorController';
+    let generatedValveIndex = 0;
+    for (let itemIndex = index + 1; itemIndex < lines.length; itemIndex += 1) {
+      const item = lines[itemIndex].match(bullet)?.[1];
+      if (!item) break;
+      const counted = item.match(/^((?:\d+|ein(?:e|en|em|er|es)?|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn))\s+(.+)$/iu);
+      const count = counted ? Math.max(1, countValue(normalized(counted[1]))) : 1;
+      const description = (counted?.[2] ?? item).split(/\s+(?:über|ueber|via)\s+|\s*[,;]\s*/iu, 1)[0].trim();
+      const valve = role === 'ActuatorController' && /\b(?:pwm[-\s]*)?ventil(?:e|en)?\b/iu.test(description);
+      for (let instance = 0; instance < count; instance += 1) {
+        const name = valve
+          ? `Ventilaktor${++generatedValveIndex}`
+          : count > 1 ? `${description}${instance + 1}` : description;
+        if (name) result.push({ index: itemIndex, name, declaredType: role });
+      }
+    }
+  }
+  return result;
+}
+
 function explicitFunctionalOwner(name: string, controllers: string[], text: string): string | undefined {
   const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const endpoint = escape(name);
@@ -1423,7 +1450,7 @@ function impliedHardwareNames(line: string, confirmedActuators?: number) {
   if (temperatureCount) {
     for (let i = 1; i <= Math.min(1000, countValue(temperatureCount[1])); i++) names.push(`Temperatursensor${i}`);
   }
-  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:ventilaktor(?:en)?|ventil(?:e|en)?|valves?)\\b`));
+  const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:(?:pwm|proportional)[-\\s]*)?(?:ventilaktor(?:en)?|ventil(?:e|en)?|valves?)\\b`));
   if (valveCount) {
     for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
   } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
@@ -1767,12 +1794,12 @@ export function extractEngineeringSpecification(
   const measurements = sensorMeasurementSelections(text);
   const lines = specificationBody(text).replace(/^- Sensor-Messgrößen:[^\r\n]*$/gm, '').split(/\r?\n/);
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
-  const occurrences = lines.flatMap((line, index): HardwareOccurrence[] => {
+  const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
     const headingName = hardwareName(headingLabel(line));
     const names = [headingName, ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line, confirmedCounts.actuators)].filter(Boolean);
     const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item }))];
     return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
-  });
+  }), ...groupedHardwareNames(lines)].sort((left, right) => left.index - right.index);
   const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
@@ -1939,6 +1966,7 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   const graph = JSON.parse(raw) as ConfirmedClusterGraph;
   if (!Array.isArray(graph)) throw new Error("Der bestätigte Systemcluster-Graph ist kein Array.");
   const keyOf = (name: string) => normalizeHardwareName(name).toLocaleLowerCase("de");
+  const confirmedConnections = explicitDeviceConnections(prompt);
   const desired = new Map<string, { name: string; role: ArchitectureTemplate["deviceType"]; owner?: string }>();
   const add = (name: string | undefined, role: ArchitectureTemplate["deviceType"], owner?: string) => {
     if (typeof name !== "string" || !name.trim()) throw new Error("Ein bestätigter Graph-Teilnehmer hat keinen Namen.");
@@ -1952,7 +1980,10 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   for (const cluster of graph) {
     for (const controller of cluster.controllers ?? []) {
       if (controller.device_type && controller.device_type !== 'Gateway') throw new Error('Unbekannte explizite Controllerrolle im bestätigten Graph.');
-      add(controller.ecu, controller.device_type === 'Gateway' ? 'Gateway' : controllerDeviceTypeForModel(spec.modelType));
+      const existingController = spec.chains.find((chain) =>
+        keyOf(chain.hardware_name) === keyOf(controller.ecu ?? '') && isEngineeringControllerDevice(chain.device_type));
+      add(controller.ecu, controller.device_type === 'Gateway' ? 'Gateway'
+        : (existingController?.device_type as ArchitectureTemplate["deviceType"] | undefined) ?? controllerDeviceTypeForModel(spec.modelType));
       for (const name of controller.sensors ?? []) add(name, "SensorController", controller.ecu);
       for (const name of controller.actuators ?? []) add(name, "ActuatorController", controller.ecu);
     }
@@ -1993,10 +2024,17 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
         deviceType: device.role, signalName: `${identifier(device.name)}Value`,
         interfaceType: spec.interfaceType, cycleMs: 100, minValue: 0, maxValue: 255, factor: 1,
       }), hardwareName: device.name, functionalOwner: device.owner }, result.length, spec.domain);
-      result.push({ ...chain, hardware_description: template
+      const explicitConnection = confirmedConnections[key];
+      result.push({ ...chain,
+        ...(explicitConnection ? {
+          interface_type: explicitConnection,
+          interface_name: `${normalizeHardwareName(device.name)}_${explicitConnection}`,
+        } : {}),
+        hardware_description: template
         ? `Bestätigter Graph-Teilnehmer; Parameter aus dem ${spec.domain}-Katalog.`
         : "Bestätigter Graph-Teilnehmer; generisches, vor Übernahme zu prüfendes Parametermodell (keine physikalische Zusicherung).",
         configuration: { ...chain.configuration, specification_source: "CONFIRMED_CLUSTER_GRAPH",
+          ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}),
           parameter_quality: template ? "DOMAIN_TEMPLATE" : "GENERIC_ESTIMATE" } });
     }
     used.add(key);

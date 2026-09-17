@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { normalizePhysicalTopology, topologyToConfig } from "./topology.ts";
+import { busProfiles, normalizePhysicalTopology, topologyToConfig } from "./topology.ts";
+
+test("wizard-local technologies have complete network-editor profiles", () => {
+  for (const technology of ["i2c", "spi", "uart", "modbus_rtu", "modbus_tcp", "gpio", "pwm", "adc", "dac"]) {
+    assert.equal(typeof busProfiles[technology]?.color, "string", technology);
+    assert.ok(busProfiles[technology].label, technology);
+    assert.ok(busProfiles[technology].payload > 0, technology);
+  }
+});
 
 test("shared hardware interface remains one multi-participant bus port", () => {
   const topology = normalizePhysicalTopology({
