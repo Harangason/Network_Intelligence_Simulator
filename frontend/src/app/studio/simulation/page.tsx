@@ -1,4 +1,4 @@
-import { ModelSimulationRunner } from "@/components/model-simulation-runner";
+import { ModelSimulationRunner } from "@/features/workflow/stage_07_simulation";
 import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";

@@ -27,6 +27,25 @@ export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[]
   return result;
 }
 
+type IndustryGenerationPath = (chains: ExtractedEngineeringChain[], domain: string) => ExtractedEngineeringChain[];
+
+const INDUSTRY_GENERATION_PATHS: Readonly<Record<string, IndustryGenerationPath>> = Object.freeze({
+  automotive: addAutomotiveFunctionOutputs,
+});
+
+/**
+ * Apply only the selected industry's optional enrichment path. Shared signal
+ * expansion and bus packing stay outside this dispatcher and therefore cannot
+ * accidentally activate an Automotive template for another industry.
+ */
+export function applyIndustryGenerationPath(
+  chains: ExtractedEngineeringChain[],
+  domain: string,
+): ExtractedEngineeringChain[] {
+  const path = INDUSTRY_GENERATION_PATHS[domain];
+  return path ? path(chains, domain) : chains;
+}
+
 /** Device roles belong to device_type; technical identifiers remain unchanged. */
 export function normalizeHardwareName(value: string): string {
   const original = value.trim();

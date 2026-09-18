@@ -201,7 +201,27 @@ def bus_schedule(rows, policy):
             result["reasons"].extend(_constraints(row, period, response + number(row.get("fixed_path_delay_ms")),
                                                   response - number(row.get("segment_transmission_latency_ms"))))
     else:
-        return {**result, "status": "UNVERIFIED", "reasons": ["Port-/Technologieanalyse bleibt für dieses Protokoll erforderlich."]}
+        evidence_gaps = {
+            "PWM": (
+                "PWM ist eine direkte Signalleitung und kein paketbasierter Bus. "
+                "PWM-Frequenz sowie Aktualisierungs- und Erfassungsgrenzen fehlen für den Reaktionszeitnachweis."
+            ),
+            "GPIO": (
+                "GPIO ist eine direkte Signalleitung und kein paketbasierter Bus. "
+                "Abtast-, Entprell- und Flankenerkennungszeiten fehlen für den Reaktionszeitnachweis."
+            ),
+            "I2C": (
+                "Für den I2C-Zeitnachweis fehlen Master-Zuordnung, Slave-Adresse und eine Grenze für Clock Stretching."
+            ),
+            "SPI": (
+                "Für den SPI-Zeitnachweis fehlen Master-Zuordnung, Chip-Select-Zuordnung und eine bestätigte Takt-/Transfergrenze."
+            ),
+        }
+        reason = evidence_gaps.get(
+            protocol,
+            f"Für {protocol or 'dieses Protokoll'} ist noch kein deterministisches Scheduling-Modell hinterlegt.",
+        )
+        return {**result, "status": "UNVERIFIED", "reasons": [reason]}
     result["status"] = "CONSTRAINT_VIOLATION" if result["reasons"] else "FEASIBLE_UNDER_ASSUMPTIONS"
     return result
 

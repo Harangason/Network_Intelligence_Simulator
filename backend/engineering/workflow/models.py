@@ -5,38 +5,10 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-WORKFLOW_STEPS = (
-    "engineering_model",
-    "routing",
-    "network_editor",
-    "parameters",
-    "capacity_timing",
-    "validation",
-    "simulation",
-    "results_analysis",
-    "data_science_intelligence",
-)
-
-WORKFLOW_LABELS = {
-    "engineering_model": "Engineering-Modell",
-    "routing": "Routing-Tabelle",
-    "network_editor": "Netzwerk-Editor",
-    "parameters": "Parameter",
-    "capacity_timing": "Capacity & Timing",
-    "validation": "Validation / Preflight",
-    "simulation": "Simulation",
-    "results_analysis": "Results / Analysis",
-    "data_science_intelligence": "Data Science & Intelligence",
-}
-
-WORKFLOW_STATUSES = (
-    "EMPTY",
-    "IN_PROGRESS",
-    "COMPLETE",
-    "WARNING",
-    "ERROR",
-    "APPROVED",
-    "OUTDATED",
+from backend.workflow.definition import (
+    WORKFLOW_LABELS,
+    WORKFLOW_STATUSES,
+    WORKFLOW_STEPS,
 )
 
 

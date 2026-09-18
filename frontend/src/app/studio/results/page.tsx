@@ -1,4 +1,4 @@
-import { ResultsWorkbench } from "@/components/results-workbench";
+import { ResultsWorkbench } from "@/features/workflow/stage_08_results_analysis";
 import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";

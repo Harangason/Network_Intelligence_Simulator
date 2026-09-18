@@ -59,9 +59,15 @@ class SimulationService:
         profiles = {profile["id"]: profile for profile in COMMUNICATION_TECHNOLOGY_REGISTRY.profiles()}
         domains: list[dict[str, Any]] = []
         for model_type in MODEL_TYPES:
-            selected_ids = model_type.get("recommended_technologies") or [
+            selected_ids = list(model_type.get("recommended_technologies") or [
                 technology_id for technology_id, profile in profiles.items() if profile["domain"] == model_type["id"]
-            ]
+            ])
+            selected_ids.extend(
+                technology_id for technology_id, profile in profiles.items()
+                if profile["domain"] == model_type["id"]
+                and profile.get("knowledge_origin") == "GENERATED_TECHNOLOGY_PACK"
+                and technology_id not in selected_ids
+            )
             technologies = []
             for technology_id in selected_ids:
                 if technology_id not in profiles:

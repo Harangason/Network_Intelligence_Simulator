@@ -16,6 +16,7 @@ from .build_info import build_info
 from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
 from ..engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
 from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
+from ..communication.technologies import DEFAULT_TECHNOLOGY_ONBOARDING
 
 
 api = Blueprint("api", __name__)
@@ -118,6 +119,60 @@ def readiness():
 @api.route("/technologies", methods=["GET"])
 def technologies():
     return jsonify(JOBS.simulations.catalog())
+
+
+@api.post("/technologies/resolve")
+def resolve_technology_knowledge():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not (payload.get("technology") or payload.get("technology_id")):
+        return jsonify({"error": "technology or technology_id is required"}), 400
+    value = payload.get("technology_id") or payload.get("technology")
+    return jsonify(DEFAULT_TECHNOLOGY_ONBOARDING.resolve(value, requested_revision=payload.get("revision")))
+
+
+@api.post("/technologies/research")
+def research_technology_knowledge():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not (payload.get("technology") or payload.get("technology_id")):
+        return jsonify({"error": "technology or technology_id is required"}), 400
+    value = payload.get("technology_id") or payload.get("technology")
+    return jsonify(DEFAULT_TECHNOLOGY_ONBOARDING.research(value, triggers=payload.get("triggers") or ("unknown_protocol",)))
+
+
+@api.post("/technology-packs")
+def create_technology_pack():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "A JSON object is required."}), 400
+    try:
+        pack = DEFAULT_TECHNOLOGY_ONBOARDING.create_pack(payload, persist=True)
+    except (TypeError, ValueError) as error:
+        return jsonify({"error": str(error)}), 400
+    return jsonify(pack), 201
+
+
+@api.get("/technology-packs/<technology_id>")
+def get_technology_pack(technology_id: str):
+    try:
+        pack = DEFAULT_TECHNOLOGY_ONBOARDING.load_pack(technology_id)
+    except FileNotFoundError:
+        return jsonify({"error": "Technology Pack not found."}), 404
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 409
+    return jsonify(pack)
+
+
+@api.post("/technology-packs/<technology_id>/register")
+def register_technology_pack(technology_id: str):
+    if request.headers.get("X-NIS-Technology-Registration") != "confirmed":
+        return jsonify({"error": "Core registration must be explicitly confirmed."}), 403
+    try:
+        result = DEFAULT_TECHNOLOGY_ONBOARDING.register_pack(technology_id)
+    except FileNotFoundError:
+        return jsonify({"error": "Technology Pack not found."}), 404
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 409
+    return jsonify(result)
 
 
 @api.route("/simulations", methods=["GET"])

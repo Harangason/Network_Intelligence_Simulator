@@ -80,6 +80,20 @@ def test_missing_identifier_and_event_bounds_never_pass():
     assert bus_schedule([stream(0, traffic_profile_incomplete=True)], policy_for(PARAMETERS))["status"] == "PROFILE_INCOMPLETE"
 
 
+def test_local_interfaces_report_actionable_evidence_gaps_instead_of_generic_warnings():
+    expected_terms = {
+        "PWM": ("direkte Signalleitung", "PWM-Frequenz"),
+        "GPIO": ("direkte Signalleitung", "Entprell"),
+        "I2C": ("Master-Zuordnung", "Clock Stretching"),
+        "SPI": ("Chip-Select-Zuordnung", "Transfergrenze"),
+    }
+    for protocol, terms in expected_terms.items():
+        result = bus_schedule([stream(0, protocol=protocol)], policy_for(PARAMETERS))
+        assert result["status"] == "UNVERIFIED"
+        assert all(term in result["reasons"][0] for term in terms)
+        assert "Port-/Technologieanalyse" not in result["reasons"][0]
+
+
 def test_history_is_rechecked_not_inherited():
     baseline = dimension_communications([stream(i) for i in range(8)], PARAMETERS)
     history = [{**baseline["networks"][0], "selected_floor_ms": 20, "snapshot_id": "old"}]

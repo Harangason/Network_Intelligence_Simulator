@@ -1,4 +1,4 @@
-import { CapacityWorkbench } from "@/components/capacity-workbench";
+import { CapacityWorkbench } from "@/features/workflow/stage_05_capacity_timing";
 import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";

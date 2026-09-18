@@ -2,32 +2,19 @@ import type { NetworkTopology } from "./topology";
 import type { SimulationResultPayload } from "./types";
 import { compactProjectId, readActiveProjectId } from "./user-settings.ts";
 import type { InspectionObject, InspectionSources } from "./capacity-network-inspection";
+import {
+  WORKFLOW_STEP_DEFINITIONS,
+  type WorkflowStatus,
+  type WorkflowStepId,
+} from "../features/workflow/definition.ts";
+
+export type { WorkflowStatus, WorkflowStepId } from "../features/workflow/definition.ts";
 
 const BASE = "/api/engineering";
 
 function workflowBaseUrl(): string {
   return BASE;
 }
-
-export type WorkflowStepId =
-  | "engineering_model"
-  | "routing"
-  | "network_editor"
-  | "parameters"
-  | "capacity_timing"
-  | "validation"
-  | "simulation"
-  | "results_analysis"
-  | "data_science_intelligence";
-
-export type WorkflowStatus =
-  | "EMPTY"
-  | "IN_PROGRESS"
-  | "COMPLETE"
-  | "WARNING"
-  | "ERROR"
-  | "APPROVED"
-  | "OUTDATED";
 
 export type WorkflowStep = {
   id: WorkflowStepId;
@@ -68,18 +55,6 @@ export type WorkflowState = {
     skipped: Array<{ source_id: string; reason: string }>;
   };
 };
-
-const WORKFLOW_STEP_DEFINITIONS: Array<{ id: WorkflowStepId; label: string }> = [
-  { id: "engineering_model", label: "Engineering-Modell" },
-  { id: "routing", label: "Routing-Tabelle" },
-  { id: "network_editor", label: "Netzwerk-Editor" },
-  { id: "parameters", label: "Parameter" },
-  { id: "capacity_timing", label: "Capacity & Timing" },
-  { id: "validation", label: "Validation / Preflight" },
-  { id: "simulation", label: "Simulation" },
-  { id: "results_analysis", label: "Results / Analysis" },
-  { id: "data_science_intelligence", label: "Data Science & Intelligence" },
-];
 
 function defaultVersions(): Record<WorkflowStepId, number> {
   return Object.fromEntries(WORKFLOW_STEP_DEFINITIONS.map((step) => [step.id, 0])) as Record<WorkflowStepId, number>;

@@ -1,4 +1,4 @@
-import { IntelligenceWorkbench } from "@/components/intelligence-workbench";
+import { IntelligenceWorkbench } from "@/features/workflow/stage_09_intelligence";
 import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";

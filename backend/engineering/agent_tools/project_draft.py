@@ -14,6 +14,10 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..db import ConcurrentUpdateError
+from ..generation_rule_manager import (
+    industry_candidates as generation_industry_candidates,
+    resolve_generation_policy,
+)
 from ..project_context import current_project_id
 from . import conversation
 
@@ -59,22 +63,8 @@ def _negated(text, match):
 
 
 def industry_candidates(text):
-    patterns = {
-        'building_automation': r'\b(?:gebäude\w*|gebaeude\w*|building\s+automation|gebäudeautomation)\b',
-        'industrial_automation': r'\b(?:industrieautomation|industrieanlage\w*|industrial\s+automation|fabrik\w*)\b',
-        'automotive': r'\b(?:automotive|fahrzeug\w*|auto|car|vehicle)\b',
-        'embedded_systems': r'\b(?:embedded\w*|eingebettete\s+systeme)\b',
-        'robotics_ros': r'\b(?:robotik|robotics)\b',
-        'aerospace': r'\b(?:luftfahrt|aerospace)\b',
-        'energy': r'\b(?:energietechnik|energieversorgung|power\s+grid)\b',
-    }
-    found = set()
-    for industry, pattern in patterns.items():
-        for match in re.finditer(pattern, text, re.I):
-            if _negated(text, match):
-                continue
-            found.add(industry)
-    return found
+    """Compatibility wrapper around the central generation rule manager."""
+    return generation_industry_candidates(text)
 
 
 def explicit_industry(text):
@@ -100,6 +90,15 @@ def migrate_draft(value):
     if not isinstance(draft.get('devices'), list) or len({d['id'] for d in draft['devices']}) != len(draft['devices']):
         raise ValueError('Der gespeicherte Entwurf besitzt ungültige Geräteidentitäten.')
     draft.setdefault('removed_device_ids', [])
+    if not draft.get('generation_policy'):
+        source_text = '\n'.join(str(item.get('text') or '') for item in draft.get('sources') or [])
+        bus_types = [technology for device in draft['devices']
+                     for technology in (device.get('technologies') or [device.get('technology')]) if technology]
+        draft['generation_policy'] = resolve_generation_policy(
+            source_text,
+            industry=draft.get('industry'),
+            bus_types=bus_types,
+        )
     draft['schema_version'] = 2
     return draft
 
@@ -215,8 +214,15 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
                        'message': f"{device['name']}: Physische Anschlüsse sind noch offen.", 'action': 'SPECIFY_CONNECTION'})
     for issue in issues:
         issue['id'] = hashlib.sha256((issue['code'] + ':' + issue.get('device', '')).encode()).hexdigest()[:20]
+    bus_types = [device['technology'] for device in devices.values() if device.get('technology')]
+    generation_policy = resolve_generation_policy(
+        requirement,
+        industry=resolved_industry,
+        bus_types=bus_types,
+    )
     return {'devices': list(devices.values()), 'declared_counts': counts,
-            'industry': resolved_industry, 'issues': issues}
+            'industry': resolved_industry, 'generation_policy': generation_policy,
+            'issues': issues}
 
 
 def inspect(_=None):
@@ -299,6 +305,14 @@ def resolve_devices(draft, updates):
             issue('CONNECTION_REQUIRED', f"{device['name']}: Physische Anschlüsse angeben.", 'SPECIFY_CONNECTION', device)
         if device['role'] == 'ACTUATOR' and not device.get('command'):
             issue('ACTUATOR_COMMAND_REQUIRED', f"{device['name']}: Stellbefehl und Kodierung festlegen (zum Beispiel Auf/Zu oder Stellposition).", 'SPECIFY_COMMAND', device)
+    source_text = '\n'.join(str(item.get('text') or '') for item in draft.get('sources') or [])
+    bus_types = [technology for device in devices.values()
+                 for technology in (device.get('technologies') or [device.get('technology')]) if technology]
+    draft['generation_policy'] = resolve_generation_policy(
+        source_text,
+        industry=draft.get('industry'),
+        bus_types=bus_types,
+    )
     return draft
 
 
@@ -436,6 +450,7 @@ def planning_prompt(draft):
         'Strukturierte Vorgaben fuer den Engineering-Agenten:',
         '- Generierungsmodus: REAL_PROJECT',
         '- Projekt-Modelltyp: ' + draft['industry'],
+        '- Erzeugungsregel: ' + json.dumps(draft['generation_policy'], ensure_ascii=False, sort_keys=True),
         '- Projektentwurf: ' + draft['draft_id'] + ' Revision ' + str(draft['revision']),
         '- Hardware-Sollwerte: ' + json.dumps(counts),
         '- Netzwerktechnologien: ' + ', '.join(f'{tech} ({tech})' for tech in technologies),

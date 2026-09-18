@@ -14,18 +14,9 @@ import {
 import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
 import { traceViewHref } from "@/lib/trace-navigation";
 import { normalizeEngineeringWizardSettings } from "@/lib/engineering-wizard-settings";
+import { WORKFLOW_LINKS, WORKFLOW_STEP_DEFINITIONS } from "@/features/workflow/definition";
 
-const LINKS: Record<WorkflowStepId, string> = {
-  engineering_model: "/studio/engineering",
-  routing: "/studio/routing",
-  network_editor: "/studio?mode=network",
-  parameters: "/studio?mode=parameters",
-  capacity_timing: "/studio/capacity",
-  validation: "/studio/validation",
-  simulation: "/studio/simulation",
-  results_analysis: "/studio/results",
-  data_science_intelligence: "/studio/intelligence",
-};
+const LINKS: Record<WorkflowStepId, string> = WORKFLOW_LINKS;
 
 const STATUS_LABELS: Record<WorkflowStatus, string> = {
   EMPTY: "Leer",
@@ -37,20 +28,10 @@ const STATUS_LABELS: Record<WorkflowStatus, string> = {
   OUTDATED: "Veraltet",
 };
 
-const FALLBACK_STEPS: WorkflowStep[] = [
-  ["engineering_model", "Engineering-Modell"],
-  ["routing", "Routing-Tabelle"],
-  ["network_editor", "Netzwerk-Editor"],
-  ["parameters", "Parameter"],
-  ["capacity_timing", "Capacity & Timing"],
-  ["validation", "Validation / Preflight"],
-  ["simulation", "Simulation"],
-  ["results_analysis", "Results / Analysis"],
-  ["data_science_intelligence", "Data Science & Intelligence"],
-].map(([id, label], index) => ({
-  id: id as WorkflowStepId,
-  label,
-  position: index + 1,
+const FALLBACK_STEPS: WorkflowStep[] = WORKFLOW_STEP_DEFINITIONS.map((stage) => ({
+  id: stage.id,
+  label: stage.label,
+  position: stage.position,
   status: "EMPTY" as WorkflowStatus,
   version: 0,
 }));

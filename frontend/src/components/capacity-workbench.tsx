@@ -403,10 +403,11 @@ function CapacityViewWarnings({ label, scenarioActive, sourceVersions, warning }
   if (warning.count === 0) return null;
   const sourceText = capacitySourceText(sourceVersions, scenarioActive);
   const meaningText = capacityMeaningText(label, warning.reasons);
+  const evidenceOnly = warning.reasons.every(isOpenEvidenceReason);
   return (
-    <section className="capacity-warning-origin" aria-label={`Warnursprung ${label}`}>
+    <section className={`capacity-warning-origin${evidenceOnly ? " capacity-warning-origin-open" : ""}`} aria-label={`${evidenceOnly ? "Offene Nachweise" : "Warnursprung"} ${label}`}>
       <div>
-        <strong>Warnursprung: {label}</strong>
+        <strong>{evidenceOnly ? "Nachweise offen" : "Warnursprung"}: {label}</strong>
         <span>{warning.count} Hinweis{warning.count === 1 ? "" : "e"} in dieser Ansicht</span>
       </div>
       <dl className="capacity-warning-explanation">
@@ -422,15 +423,29 @@ function CapacityViewWarnings({ label, scenarioActive, sourceVersions, warning }
 }
 
 function capacitySourceText(sourceVersions: Record<string, number> | null, scenarioActive: boolean) {
+  const versionLabels: Record<string, string> = {
+    engineering_model: "Engineering-Modell",
+    routing: "Routing",
+    network_editor: "Netzwerk-Editor",
+    parameters: "Parameter",
+  };
   const versions = sourceVersions
-    ? ["engineering_model", "routing", "network_editor", "parameters"].map((key) => `${key.replaceAll("_", " ")} v${sourceVersions[key] ?? 0}`).join(", ")
+    ? ["engineering_model", "routing", "network_editor", "parameters"].map((key) => `${versionLabels[key]} v${sourceVersions[key] ?? 0}`).join(", ")
     : "aktuelle Workflow-Quellen";
   const mode = scenarioActive ? "What-if-Szenario, nicht im Draft gespeichert" : "gespeicherter Capacity-Snapshot";
-  return `${mode}; berechnet aus Nachrichtenlaenge/DLC, Zykluszeiten, Routen, Bustechnik, Bitrate, Burst-Faktor und Queue-Policy (${versions}).`;
+  return `${mode}; berechnet aus Nachrichtenlänge/DLC, Zykluszeiten, Routen, Bustechnik, Bitrate, Burst-Faktor und Queue-Policy (${versions}).`;
+}
+
+function isOpenEvidenceReason(reason: string) {
+  return /\b(fehlt|fehlen|offen|unvollständig|nicht nachgewiesen|nicht ableitbar|kein deterministisches scheduling-modell|zeitnachweis)\b/i.test(reason)
+    && !/\b(überschreit|verletzt|overload|critical|engpass|zu viel|außerhalb)\b/i.test(reason);
 }
 
 function capacityMeaningText(label: string, reasons: string[]) {
   const joined = reasons.join(" ").toLowerCase();
+  if (reasons.length > 0 && reasons.every(isOpenEvidenceReason)) {
+    return "Diese Hinweise bezeichnen fehlende Eingabedaten oder noch offene Zeitnachweise. Sie sind keine Last-, Ziel- oder Plausibilitätsverletzungen; berechnete Auslastung und Reserve werden davon getrennt bewertet.";
+  }
   if (joined.includes("network_transmission_ms") || joined.includes("engpass")) {
     return "Mindestens eine Uebertragung belegt im aktuellen Netz rechnerisch zu viel Zeit oder Reserve. Die Detailtabellen zeigen, welche Route, Message oder welches Netz den Engpass erzeugt.";
   }
@@ -440,7 +455,7 @@ function capacityMeaningText(label: string, reasons: string[]) {
   if (label === "Empfehlungen") {
     return "Hier landen technische Optimierungshinweise aus der gleichen Rechnung; sie sind Vorschlaege und muessen fachlich freigegeben werden.";
   }
-  return "Die Hinweise sind aus der deterministischen Capacity-&-Timing-Berechnung abgeleitet und markieren Werte ausserhalb der Ziel- oder Plausibilitaetsgrenzen.";
+  return "Die Hinweise stammen aus der Capacity-&-Timing-Auswertung. Die Einträge benennen jeweils konkret, ob eine Grenze verletzt, ein Modell widersprüchlich oder ein Nachweis noch offen ist.";
 }
 
 function Metric({ label, value, tone, details = [] }: { label: string; value: string; tone?: string; details?: string[] }) {

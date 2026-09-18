@@ -1,4 +1,5 @@
 import { DEFAULT_BUS_PARTICIPANT_LIMITS, normalizeBusLimits } from "./bus-settings.ts";
+import { WORKFLOW_STEP_DEFINITIONS } from "../features/workflow/definition.ts";
 
 export type WizardChoiceOption = {
   id: string;
@@ -18,62 +19,12 @@ export const WIZARD_SCOPE_GROUP: WizardChoiceGroup = {
   id: "scope",
   label: "Workflowumfang",
   multi: true,
-  options: [
-    {
-      id: "engineering_model",
-      label: "1 Engineering-Modell",
-      detail: "Hardware-Knoten, Funktionen, Interfaces, Messages, Signals und Relations.",
-      value: "Workflow 1 Engineering-Modell: HardwareNodes, Functions, Interfaces, Messages, Signals und Relations anlegen",
-    },
-    {
-      id: "routing",
-      label: "2 Routing-Tabelle",
-      detail: "Producer, Consumer, Payload, Signal, Gateway, Protokoll und Pfad.",
-      value: "Workflow 2 Routing-Tabelle: Kommunikationspfade mit Producer, Consumer, Payload, Signal, Gateway, Protokoll und Pfad erstellen",
-    },
-    {
-      id: "network_editor",
-      label: "3 Netzwerk-Editor",
-      detail: "Physische Topologie, Ports, Verbindungen, Gateway-Übergänge und Layout.",
-      value: "Workflow 3 Netzwerk-Editor: physische Topologie, Ports, Verbindungen und Gateway-Uebergaenge erzeugen",
-    },
-    {
-      id: "parameters",
-      label: "4 Parameter",
-      detail: "Bitrate, Payload, Zyklus, Latenz, Jitter, Queueing und Safety-Defaults.",
-      value: "Workflow 4 Parameter: technologieabhaengige Bitrate, Payload, Zyklus, Latenz, Jitter, Queueing und Safety-Defaults setzen",
-    },
-    {
-      id: "capacity_timing",
-      label: "5 Capacity & Timing",
-      detail: "Last, Reserve, Gateway-Load, E2E-Latenz, Bottlenecks und Timing prüfen.",
-      value: "Workflow 5 Capacity & Timing: Last, Reserve, Gateway-Load, E2E-Latenz, Bottlenecks und Timing berechnen",
-    },
-    {
-      id: "validation",
-      label: "6 Validation / Preflight",
-      detail: "Konsistenz, fehlende Interfaces, Payloads, Duplikate und Blocker prüfen.",
-      value: "Workflow 6 Validation/Preflight: Konsistenz, fehlende Interfaces, Payloads, Duplikate und Blocker pruefen",
-    },
-    {
-      id: "simulation",
-      label: "7 Simulation",
-      detail: "Simulationssnapshot mit aktuellem Preflight und berechneter Konfiguration anlegen.",
-      value: "Workflow 7 Simulation: Simulationssnapshot nach aktuellem erfolgreichem Preflight anlegen",
-    },
-    {
-      id: "results_analysis",
-      label: "8 Results / Analysis",
-      detail: "Simulationsergebnisse, Artefakte, Nachweise und Ergebnisvergleich auswerten.",
-      value: "Workflow 8 Results/Analysis: Simulationsergebnisse, Artefakte, Nachweise und Ergebnisvergleich auswerten",
-    },
-    {
-      id: "data_science_intelligence",
-      label: "9 Data Science & Intelligence",
-      detail: "Systembewertung, Reifegrad, Issues, Anomalien und Optimierungsvorschläge.",
-      value: "Workflow 9 Data Science & Intelligence: Systembewertung, Reifegrad, Issues, Anomalien und Optimierungsvorschlaege erzeugen",
-    },
-  ],
+  options: WORKFLOW_STEP_DEFINITIONS.map((stage) => ({
+    id: stage.id,
+    label: `${stage.position} ${stage.label}`,
+    detail: stage.detail,
+    value: stage.instruction,
+  })),
 };
 
 export const WIZARD_PROCESS_GROUP: WizardChoiceGroup = {

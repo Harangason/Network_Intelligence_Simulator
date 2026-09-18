@@ -9,6 +9,7 @@ from backend.agent_core.api.tool_contract import Permission as P, ToolResult, To
 from ..repository import get_object, ENTITY_SPECS, BASE_COLUMNS, NotFoundError
 from ..project_context import current_project_id
 from ..device_classification import DeviceClassificationRegistry
+from ..generation_rule_manager import inspect_generation_rules
 from ..semantic_intelligence import SemanticClassificationService
 from ..signal_audit import required_signal_bits, inspect_signal, inspect_message_signals
 from ..capacity.calculators import estimate_frame, utilization_percent
@@ -22,6 +23,7 @@ from ..workloads import EngineeringWorkloadOrchestrator
 from ..intelligence import IntelligenceService
 from ..addressing import AddressResolutionService, LogicalNodeAddressAllocator
 from backend.intelligence.ml import MLInferenceService
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_ONBOARDING
 from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
 from .catalog import TOOLS, register, ID, TEXT, PROMPT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
@@ -176,6 +178,39 @@ def _load(a):
     return {**frame, "load_percent": load, "valid": load <= 100}
 
 
+def _technology_pack(a, *, persist: bool) -> dict:
+    request = dict(a["request"])
+    return DEFAULT_TECHNOLOGY_ONBOARDING.create_pack(request, persist=persist)
+
+
+def _technology_readiness(a) -> dict:
+    pack = DEFAULT_TECHNOLOGY_ONBOARDING.load_pack(a["technology_id"])
+    validation = pack["files"]["validation.json"]
+    return {
+        "technology_id": pack["technology_id"],
+        "status": validation["status"],
+        "selected_simulation_scopes": validation.get("selected_simulation_scopes") or [],
+        "readiness": validation["readiness"],
+        "data_gaps": validation.get("data_gaps") or [],
+        "findings": validation.get("findings") or [],
+        "pack_sha256": pack["pack_sha256"],
+    }
+
+
+def _technology_parameter(a) -> dict:
+    pack = DEFAULT_TECHNOLOGY_ONBOARDING.load_pack(a["technology_id"])
+    validation = pack["files"]["validation.json"]
+    parameter = str(a["parameter"])
+    resolved = (validation.get("selected_parameters") or {}).get(parameter)
+    return {
+        "technology_id": pack["technology_id"],
+        "parameter": parameter,
+        "status": "RESOLVED" if resolved else "DATA_GAP",
+        "value": resolved,
+        "pack_sha256": pack["pack_sha256"],
+    }
+
+
 def _identifier(a):
     interface = get_object("Interface", a["interface_id"])
     used = set()
@@ -303,6 +338,22 @@ def register_tools():
     register("inspect_network", "Kanonisches Netzwerk lesen.", P.READ_MODEL, _network, network_id=ID)
     register("inspect_route", "Kanonische Route lesen.", P.READ_MODEL, lambda a: get_route(a["route_id"]), route_id=ID)
     register("inspect_findings", "Projektfindings aus vorhandenen Analysediensten lesen.", P.READ_MODEL, lambda a: IntelligenceService(current_project_id()).assess(persist=False))
+    register("resolve_network_technology", "Netzwerk- oder Protokollnamen gegen Built-ins, gelernte Aliase, Revisionen und ähnliche Kandidaten auflösen; ändert kein Projekt.", P.READ_MODEL,
+             lambda a: DEFAULT_TECHNOLOGY_ONBOARDING.resolve(a["technology"], requested_revision=a.get("revision")),
+             technology=TEXT, revision=(str | None, None))
+    register("research_network_technology", "Research-Plan aus Discovery-Triggern erstellen und konfigurierte sichere Research-Provider ausführen; unbekannte Werte bleiben DATA_GAP.", P.READ_MODEL,
+             lambda a: DEFAULT_TECHNOLOGY_ONBOARDING.research(a["technology"], triggers=a["triggers"]),
+             technology=TEXT, triggers=(list[str], Field(default_factory=lambda: ["unknown_protocol"], min_length=1, max_length=8)))
+    register("validate_technology_pack", "Strukturierte technische Quellen, Einheiten, Revisionen, Konflikte und Simulation Readiness ohne Persistenz prüfen.", P.VALIDATE,
+             lambda a: _technology_pack(a, persist=False), request=OBJECT)
+    register("persist_technology_pack", "Validiertes oder vorläufiges allgemeines Technology Pack versioniert speichern; ändert kein Projekt und registriert noch keinen Generator.", P.ADMIN,
+             lambda a: _technology_pack(a, persist=True), request=OBJECT)
+    register("inspect_technology_simulation_readiness", "Readiness und DATA_GAPs eines gespeicherten Technology Packs je Simulationsumfang lesen.", P.READ_MODEL,
+             _technology_readiness, technology_id=TECHNOLOGY)
+    register("resolve_technology_parameter", "Einen normalisierten Parameter mit Einheit und Provenienz aus einem gespeicherten Technology Pack lesen.", P.READ_MODEL,
+             _technology_parameter, technology_id=TECHNOLOGY, parameter=TEXT)
+    register("register_technology_pack", "Ein konfliktfreies validiertes Technology Pack in den allgemeinen NIS Knowledge Core aufnehmen; überschreibt keine Built-ins und ändert kein Projekt.", P.ADMIN,
+             lambda a: DEFAULT_TECHNOLOGY_ONBOARDING.register_pack(a["technology_id"]), technology_id=TECHNOLOGY)
     register("get_logical_node_address", "Logische Diagnoseadresse eines HardwareNode lesen.", P.READ_MODEL,
              lambda a: AddressResolutionService(namespace=a["namespace"]).resolve_address(a["hardware_id"]),
              hardware_id=ID, namespace=(str, "PROJECT"))
@@ -326,6 +377,9 @@ def register_tools():
         {**item,"object_type":kind} for kind in ([a["object_type"]] if a.get("object_type") else ENTITY_SPECS)
         for item in access.objects(kind) if a["query"].casefold() in str(item.get("name", "")).casefold()][:a["limit"]]}, query=(str,Field(default="",max_length=2000)), object_type=(CanonicalObjectType|None,None), limit=LIMIT)
     register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str|None,None))
+    register("resolve_generation_rules", "Branche und Bustypen einer Aufgabe getrennt erkennen und den passenden, registry-basierten Erzeugungspfad mit Findings erklären.",
+             P.READ_MODEL, inspect_generation_rules, prompt=PROMPT,
+             industry=(str | None, None), bus_types=(list[str], Field(default_factory=list, max_length=64)))
     for name in ["generate_functions", "generate_function_structure", "decompose_function"]:
         register(name, "Funktionen aus der Anforderung als gemeinsamen Proposal erzeugen.", P.GENERATE_PROPOSAL,
                  lambda a,n=name: generation.functions({**a,"decompose":n=="decompose_function"}), prompt=PROMPT, hardware_id=(str|None,None),

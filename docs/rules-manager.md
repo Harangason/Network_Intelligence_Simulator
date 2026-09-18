@@ -14,6 +14,28 @@ Der Bericht trennt Quellbefund, Reproduktion, Tests und offene Abnahme. Er ände
 | EA-05 | SPATIAL_ARCHITECTURE_CONTRACT / NETWORK_NAMING_CONTRACT | Funktionaler Owner, Einbauort, Transport und persistierte Namen getrennt behandeln |
 | EA-06 | WIZARD_RELEASE_GATE | Isolierte SQL-/E2E-Abnahme; ausschließlich exaktes PASS-Image ausliefern |
 
+## Erzeugungspfad-Regeln — 18.09.2026
+
+| Kennung | Quelle | Wirkung |
+| --- | --- | --- |
+| GRM-01 | Nutzerauftrag 18.09.2026 | Industrie der aktuellen Aufgabe explizit erkennen; bei Mehrdeutigkeit keine Branchenvorlage wählen |
+| GRM-02 | Nutzerauftrag 18.09.2026 / Technology Bindings | Bustypen unabhängig von der Industrie erkennen und über registrierte Generatoren ausführen |
+| GRM-03 | Nutzerauftrag 18.09.2026 | Gemischte Bustypen behalten getrennte Transport-, Timing- und Kapazitätspfade |
+| GRM-04 | SPATIAL_ARCHITECTURE_CONTRACT | Räumliche Identität ist weder Industrie- noch Bustypbeweis |
+| GRM-05 | COMMUNICATION_DESIGN_CONTRACT | Explizite Kodierung und funktionale Timing-Annahme bleiben unabhängig von der Pfadauswahl erhalten |
+| GRM-06 | GENERATION_RULE_MANAGER | Branchenanreicherungen dürfen keinen anderen Industriezweig global verändern oder blockieren |
+
+## Technology-Knowledge-Onboarding — 18.09.2026
+
+| Kennung | Quelle | Wirkung |
+| --- | --- | --- |
+| TKO-01 | Nutzeranweisung `NIS_Anweisung_Automatische_Netzwerktechnologie_Parameter_Onboarding.md` | Unbekannte Technologien lösen kontrollierte Discovery und Research aus, keinen fremden Technologie-Fallback |
+| TKO-02 | gleiche Quelle / TECHNOLOGY_KNOWLEDGE_ONBOARDING | Werte benötigen Einheit, Scope, Revision und Provenienz; fehlende Daten bleiben `DATA_GAP` |
+| TKO-03 | gleiche Quelle | Primärquellen haben Vorrang; Konflikte und fremde Revisionen werden nicht intuitiv aufgelöst |
+| TKO-04 | gleiche Quelle | Simulationsbereitschaft wird je Scope getrennt und darf Teilwissen nicht als Gesamtfreigabe darstellen |
+| TKO-05 | gleiche Quelle / WIZARD_EXECUTION_CONTRACT | Knowledge-Core-Registrierung und konkrete Projektübernahme bleiben getrennte, nachvollziehbare Operationen |
+| TKO-06 | gleiche Quelle / Security | Externe Inhalte sind untrusted; kein Fremdcode, keine Shell-Anweisung und keine Paketinstallation aus Quellen |
+
 Vorschlag aus dem Audit, noch nicht implementiert: gemeinsamer persistierter EngineeringDraft, fachliche Befehle im Python-Core, Chat und Wizard als gleichwertige Bedienwege. Keine zusätzliche Freigabeanforderung wird aus diesem Register abgeleitet.
 
 <!-- tool-check:industry40 -->

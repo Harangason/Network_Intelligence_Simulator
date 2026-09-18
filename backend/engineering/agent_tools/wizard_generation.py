@@ -16,6 +16,7 @@ from . import model, proposal_service
 from .wizard_commands import effective_wizard_prompt
 from .. import proposals as proposal_store
 from ..device_classification import DeviceClassificationRegistry
+from ..generation_rule_manager import resolve_generation_policy
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from ..workflow.service import WorkflowStatusService
 from ..project_context import current_project_id
@@ -48,7 +49,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
     'SOMEIP': 'automotive_ethernet',
 }
 
-MODEL_GENERATOR_VERSION = 'wizard-model-v21-explicit-functions'
+MODEL_GENERATOR_VERSION = 'wizard-model-v22-generation-rules'
 ROUTING_GENERATOR_VERSION = 'wizard-routing-v10-preserve-local-technology'
 
 _CONTROLLER_DEVICE_TYPES = {
@@ -309,6 +310,19 @@ def _network_protocol(interface_type: str) -> str:
     return protocol if protocol in PROTOCOL_CAPACITY else _topology_bus(interface_type)
 
 
+def _generation_policy_for_specification(prompt: str, specification: dict) -> dict:
+    bus_types = list(dict.fromkeys(
+        str(chain.get('interface_type') or '')
+        for chain in specification.get('chains') or []
+        if chain.get('interface_type')
+    ))
+    return resolve_generation_policy(
+        prompt,
+        industry=specification.get('modelType') or specification.get('domain'),
+        bus_types=bus_types,
+    )
+
+
 def extract_specification(prompt: str) -> dict:
     node = shutil.which('node')
     if not node:
@@ -322,7 +336,9 @@ def extract_specification(prompt: str) -> dict:
     )
     if result.returncode:
         raise ValueError('Die Wizard-Spezifikation konnte nicht abgeleitet werden: ' + result.stderr[-1000:])
-    return json.loads(result.stdout)
+    specification = json.loads(result.stdout)
+    specification['generationPolicy'] = _generation_policy_for_specification(prompt, specification)
+    return specification
 
 
 def _wizard_parameter_technology_ids(prompt: str) -> list[str]:
@@ -475,6 +491,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         context = state.get("context") or {}
         arguments = {**arguments, "prompt": with_project_limits(arguments["prompt"], context)}
     spec = extract_specification(arguments['prompt'])
+    spec.setdefault('generationPolicy', _generation_policy_for_specification(arguments['prompt'], spec))
     confirmed_spec = deepcopy(spec) if '\n\nBestaetigte Ergaenzung des Nutzers:\n' in prompt else spec
     # Gateway status uses a real controller backbone, not an unconnected
     # catalogue-default transport. Resolve this before creating messages.
@@ -866,6 +883,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         evidence=[*(source_evidence or []), {'source': 'wizard-specification-generator', **proposal_identity, 'target_counts': spec['targetCounts'],
                    'communication_system_counts': spec['communicationSystemCounts'],
                    'model_type': spec.get('modelType') or spec.get('domain'),
+                   'generation_policy': spec['generationPolicy'],
                    'architecture': 'HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement'}])
     return _supersede_previous('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals, proposal)
 

@@ -799,3 +799,17 @@ test("hosted output templates preserve hosts, explicit signals and separate edit
   assert.deepEqual(addAutomotiveFunctionOutputs(enriched, spec.domain), enriched);
   assert.deepEqual(addAutomotiveFunctionOutputs(spec.chains, "rail"), spec.chains);
 });
+
+test("industry generation dispatcher isolates optional automotive enrichment", async () => {
+  const { applyIndustryGenerationPath } = await import("./engineering-specification.ts");
+  const automotive = extractEngineeringSpecification("Beispielprojekt: Automotive Fahrzeug mit 12 ECUs und 1 Gateway");
+  const automotiveResult = applyIndustryGenerationPath(automotive.chains, automotive.domain);
+  assert.ok(automotiveResult.some(chain => chain.configuration?.functional_output_template));
+
+  for (const domain of ["industrial_automation", "robotics_ros", "aerospace", "rail", "marine", "building_automation", "energy", "embedded_systems", "generic_networking"]) {
+    const specification = extractEngineeringSpecification(`- Generierungsmodus: EXAMPLE_PROJECT\n- Projekt-Modelltyp: ${domain}\n- Hardware-Sollwerte: {"gateways":1,"ecus":2,"sensors":1,"actuators":1}`);
+    const result = applyIndustryGenerationPath(specification.chains, domain);
+    assert.deepEqual(result, specification.chains, domain);
+    assert.equal(result.some(chain => chain.configuration?.functional_output_template), false, domain);
+  }
+});

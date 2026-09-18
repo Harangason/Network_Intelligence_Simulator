@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..generation_rule_manager import resolve_generation_policy
 from .analysis import (
     derive_ambiguity,
     derive_assumptions,
@@ -61,18 +62,24 @@ def expand_requirement(
     resolved_family = sensor_family(normalized_prompt)
     safety_context = resolve_safety_context(normalized_prompt, resolved_domain)
     architecture = resolve_architecture(normalized_prompt)
+    generation_policy = resolve_generation_policy(
+        normalized_prompt,
+        industry=domain,
+        bus_types=[] if architecture.get("technology") == "AUTO_SELECT" else [architecture.get("technology")],
+    )
+    generation_industry = generation_policy["industry"]["id"] or resolved_domain
 
     required_coverage = _resolve_required_coverage(normalized_prompt)
 
     assumptions = derive_assumptions(
-        resolved_domain,
+        generation_industry,
         normalized_prompt,
         resolved_family,
         required_coverage,
         safety_context=safety_context,
         architecture=architecture,
     )
-    ambiguities = derive_ambiguity(resolved_domain, normalized_prompt, resolved_family)
+    ambiguities = derive_ambiguity(generation_industry, normalized_prompt, resolved_family)
     open_decisions = derive_open_decisions(ambiguities, assumptions)
     findings = derive_findings(resolved_family, assumptions, ambiguities)
 
@@ -107,6 +114,7 @@ def expand_requirement(
         "resolved_family": resolved_family,
         "safety_context": safety_context,
         "architecture_hint": architecture,
+        "generation_policy": generation_policy,
         "model": model,
         "status": interpretation_status,
         "created_at": now_iso(),

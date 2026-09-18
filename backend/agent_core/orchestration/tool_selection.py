@@ -16,11 +16,11 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     focused = set()
     from .project_intake import is_project_request
     if is_project_request(prompt):
-        names.add('prepare_project_request')
+        names.update({'prepare_project_request', 'resolve_generation_rules'})
     if re.search(r'projekt|project|entwurf|draft', prompt, re.I):
         focused.update({'inspect_project_draft', 'update_project_draft', 'plan_project_model', 'create_project_from_draft'})
     if re.search(r'anleg|erstell|erzeug|hinzufüg|create|generate|add', prompt, re.I):
-        focused.update({'describe_model_object_fields', 'create_objects_via_proposal'})
+        focused.update({'describe_model_object_fields', 'create_objects_via_proposal', 'resolve_generation_rules'})
     if re.search(r'zuordn|verschieb|hierarch|assign|move', prompt, re.I):
         focused.update({'evaluate_structure_dependencies', 'plan_structure_assignments', 'map_function_to_hardware'})
     if re.search(r'lösch|loesch|entfern|delete|remove', prompt, re.I):
@@ -43,7 +43,7 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         (r"nachricht|message|pack", {"generate_messages","pack_function_messages","validate_message","calculate_message_size","calculate_bus_load","allocate_message_identifier"}),
         (r"route|routing|pfad", {"find_route_candidates","generate_routing","validate_route","rank_routes","inspect_route"}),
         (r"hardware|ecu|funktion|function|interface|schnittstelle|gerät|kamera|camera|wahrnehm", {"inspect_hardware","generate_functions","generate_hardware_interfaces","generate_function_interfaces","map_function_to_hardware","classify_device","get_device_capabilities","expand_requirement","generate_status_models","generate_data_objects"}),
-        (r"netz|network|kapaz|capacity|bus|can|ethernet", {"inspect_network","calculate_capacity","calculate_bus_load","find_available_capacity","create_network_proposal","assign_network_to_interface","calculate_message_size"}),
+        (r"netz|network|kapaz|capacity|bus|can|lin|flexray|ethernet|profinet|ethercat|modbus", {"inspect_network","calculate_capacity","calculate_bus_load","find_available_capacity","create_network_proposal","assign_network_to_interface","calculate_message_size","resolve_generation_rules"}),
         (r"simulation|simulier|szenario|scenario", {"validate_simulation_preflight","create_simulation_snapshot","start_simulation","get_simulation_status","get_simulation_results","generate_simulation_scenario"}),
         (r"trace|fehler|fault|anomal|golden", {"load_trace","analyze_trace","classify_trace_fault","find_trace_root_cause","correlate_signals","compare_golden_trace"}),
     ]

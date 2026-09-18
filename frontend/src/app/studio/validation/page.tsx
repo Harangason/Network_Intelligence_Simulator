@@ -1,4 +1,4 @@
-import { PreflightWorkbench } from "@/components/preflight-workbench";
+import { PreflightWorkbench } from "@/features/workflow/stage_06_validation";
 import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
 import { StudioTopbar } from "@/components/studio-topbar";
 import { WorkflowHeader } from "@/components/workflow-header";

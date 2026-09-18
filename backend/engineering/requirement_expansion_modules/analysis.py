@@ -47,6 +47,37 @@ def derive_assumptions(
 ) -> list[dict[str, Any]]:
     assumptions: list[dict[str, Any]] = []
     if resolved_family == "camera":
+        industry_key = str(resolved_domain or "").strip().lower()
+        reference_frames = {
+            "automotive": "VehicleReferenceFrame",
+            "industrial": "MachineCellReferenceFrame",
+            "industrial_automation": "MachineCellReferenceFrame",
+            "process_industry": "PlantReferenceFrame",
+            "robotics_ros": "RobotBaseReferenceFrame",
+            "aerospace": "PlatformReferenceFrame",
+            "rail": "TrainReferenceFrame",
+            "marine": "VesselReferenceFrame",
+            "building_automation": "BuildingReferenceFrame",
+            "energy": "EnergySiteReferenceFrame",
+            "embedded_systems": "DeviceReferenceFrame",
+            "iot_wireless": "SiteReferenceFrame",
+            "generic": "SystemReferenceFrame",
+            "generic_networking": "SystemReferenceFrame",
+            "custom": "SystemReferenceFrame",
+        }
+        transport_policies = {
+            "automotive": "raw_or_compressed_stream_on_ethernet_status_on_can_fd",
+            "industrial": "stream_on_selected_industrial_ethernet_status_separate",
+            "industrial_automation": "stream_on_selected_industrial_ethernet_status_separate",
+            "process_industry": "stream_transport_and_process_status_require_separate_bindings",
+            "robotics_ros": "typed_stream_over_dds_or_ethernet_status_separate",
+            "aerospace": "qualified_stream_transport_and_status_bus_require_selection",
+            "rail": "train_backbone_stream_and_control_status_require_separate_bindings",
+            "marine": "ip_stream_and_navigation_status_require_separate_bindings",
+            "building_automation": "ip_stream_and_building_status_require_separate_bindings",
+            "energy": "stream_transport_and_grid_status_require_separate_bindings",
+            "embedded_systems": "local_camera_link_and_control_status_require_separate_bindings",
+        }
         if required_coverage is None:
             assumptions.append(
                 {
@@ -70,10 +101,10 @@ def derive_assumptions(
                 }
             )
         assumptions.append(
-            {
-                "concept": "camera_operating_frame",
-                "proposed_value": "VehicleReferenceFrame",
-                "reason": "Spatial relation to vehicle requires fixed frame definition.",
+                {
+                    "concept": "camera_operating_frame",
+                    "proposed_value": reference_frames.get(industry_key, "SystemReferenceFrame"),
+                    "reason": f"Spatial relation in {resolved_domain} requires an explicit fixed reference frame.",
                 "confidence": 0.88,
                 "requires_confirmation": True,
                 "status": "REQUIRED_REVIEW",
@@ -91,10 +122,10 @@ def derive_assumptions(
             }
         )
         assumptions.append(
-            {
-                "concept": "image_transport_policy",
-                "proposed_value": "raw_or_compressed_stream_on_ethernet_status_on_can_fd",
-                "reason": "Camera payloads exceed practical CAN-FD payload for raw images.",
+                {
+                    "concept": "image_transport_policy",
+                    "proposed_value": transport_policies.get(industry_key, "stream_transport_and_status_transport_require_selection"),
+                    "reason": "Camera payload and status are separate meanings and require technology-specific bindings.",
                 "confidence": 0.9,
                 "requires_confirmation": True,
                 "status": "REQUIRED_REVIEW",

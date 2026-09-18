@@ -23,6 +23,7 @@ LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
 class TechnologyRegistry:
     def __init__(self) -> None:
         self._profiles: dict[str, dict[str, Any]] = {}
+        self._aliases: dict[str, str] = {}
         self._bindings: dict[str, Any] = {}
         self._generators: dict[str, Any] = {}
         self._validators: dict[str, list[Any]] = {}
@@ -31,8 +32,7 @@ class TechnologyRegistry:
         self._load_calculators: dict[str, Any] = {}
         self._timing_models: dict[str, Any] = {}
 
-    @staticmethod
-    def normalize_id(value: Any) -> str:
+    def normalize_id(self, value: Any) -> str:
         token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
         while "__" in token:
             token = token.replace("__", "_")
@@ -43,13 +43,45 @@ class TechnologyRegistry:
             "arinc": "arinc429", "milstd_1553": "mil_std_1553", "dds_rtps": "dds",
             "ros_2": "ros2", "ros2_dds": "ros2", "sps": "plc",
         }
-        return aliases.get(token, token)
+        token = aliases.get(token, token)
+        return self._aliases.get(token, token)
 
     def register_profile(self, technology_id: str, profile: dict[str, Any]) -> None:
         key = self.normalize_id(technology_id)
         if key in self._profiles:
             raise ValueError(f"technology already registered: {key}")
+        pending_aliases: dict[str, str] = {}
+        for alias in profile.get("aliases") or ():
+            alias_key = str(alias or "").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
+            while "__" in alias_key:
+                alias_key = alias_key.replace("__", "_")
+            if alias_key and alias_key != key:
+                owner = self._aliases.get(alias_key)
+                if owner and owner != key:
+                    raise ValueError(f"technology alias already registered: {alias_key}")
+                pending_aliases[alias_key] = key
         self._profiles[key] = {"id": key, **deepcopy(profile)}
+        self._aliases.update(pending_aliases)
+
+    def register_generated_profile(self, profile: dict[str, Any]) -> None:
+        """Register or update a validated generated pack without touching built-ins."""
+        technology_id = self.normalize_id(profile.get("id"))
+        existing = self._profiles.get(technology_id)
+        if existing and existing.get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
+            raise ValueError(f"generated pack cannot replace built-in technology: {technology_id}")
+        if profile.get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
+            raise ValueError("generated profile origin is missing")
+        if existing:
+            self._aliases = {alias: owner for alias, owner in self._aliases.items() if owner != technology_id}
+            self._profiles.pop(technology_id, None)
+            self._bindings.pop(technology_id, None)
+            self._generators.pop(technology_id, None)
+            self._validators.pop(technology_id, None)
+            self._encoders.pop(technology_id, None)
+            self._decoders.pop(technology_id, None)
+            self._load_calculators.pop(technology_id, None)
+            self._timing_models.pop(technology_id, None)
+        self.register_defaults([profile])
 
     def register_binding(self, technology_id: str, binding: Any) -> None:
         self._bindings[self.normalize_id(technology_id)] = binding

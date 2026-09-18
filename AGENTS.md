@@ -25,6 +25,11 @@ For generated Ethernet network names, follow `docs/NETWORK_NAMING_CONTRACT.md`.
 Persist readable `ETH_<Systemrahmen-or-context>_<NN>` names in the canonical
 model and inherited interface names, not only in rendering helpers.
 
+For industry detection, bus-type detection and generation-path selection, read
+`docs/GENERATION_RULE_MANAGER.md`. Keep industry templates independent from
+technology-specific transport paths; mixed buses use separate registered paths
+and unresolved inputs must not fall back silently to Automotive.
+
 For wizard, agent execution, proposal, or workflow changes, read
 `docs/WIZARD_EXECUTION_CONTRACT.md` and `docs/WIZARD_RELEASE_GATE.md`.
 Run SQL tests through `scripts/run-isolated-tests.py`; never target the product

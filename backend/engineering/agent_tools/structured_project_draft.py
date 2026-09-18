@@ -11,6 +11,7 @@ import re
 from uuid import uuid4
 
 from ..db import ConcurrentUpdateError
+from ..generation_rule_manager import resolve_generation_policy
 from ..project_context import current_project_id
 
 
@@ -48,11 +49,16 @@ def capture(state, descriptor, wizard):
                     devices[identity] = {'id': identity, 'name': leaf['name'], 'role': role,
                         'owner_id': owner_id, 'technology': leaf.get('interfaceType') or None,
                         'source': 'CONFIRMED_WIZARD_GRAPH', 'known_kind': True}
+    industry = wizard.get('industry') or wizard.get('model_type')
+    bus_types = [technology for device in devices.values()
+                 for technology in (device.get('technologies') or [device.get('technology')]) if technology]
+    bus_types.extend(wizard.get('technologies') or [])
+    generation_policy = resolve_generation_policy(prompt, industry=industry, bus_types=bus_types)
     draft = {'schema_version': 2, 'source_format': 'WIZARD_V2',
         'draft_id': previous['draft_id'] if same_run else str(uuid4()),
         'revision': previous['revision'] + 1 if same_run else 1,
         'project_id': current_project_id(), 'mode': 'EXAMPLE_PROJECT' if re.search(r'^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$', prompt, re.M) else 'REAL_PROJECT',
-        'industry': wizard.get('industry') or wizard.get('model_type'),
+        'industry': industry, 'generation_policy': generation_policy,
         'original_requirement': (previous.get('original_requirement') if same_run else None) or wizard.get('task') or prompt,
         'sources': [{'text': prompt, 'source': 'CONFIRMED_WIZARD'}],
         'devices': list(devices.values()), 'issues': [], 'removed_device_ids': [],
@@ -88,6 +94,11 @@ def amend(old, request):
     draft['revision'] += 1
     draft['sources'].append({'text': request.requirement, 'source': 'USER', 'operation_id': request.operation_id})
     draft['structured_source'].update(prompt=effective_wizard_prompt(prompt), context=context)
+    draft['generation_policy'] = resolve_generation_policy(
+        prompt,
+        industry=draft.get('industry'),
+        bus_types=context.get('technologies') or (),
+    )
     draft.pop('model_proposal_id', None)
     return draft
 
