@@ -2148,9 +2148,16 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
   const result: ExtractedEngineeringChain[] = [];
   for (const [key, device] of desired) {
     const matches = spec.chains.filter((chain) => keyOf(chain.hardware_name) === key && chain.device_type === device.role);
+    const explicitConnection = confirmedConnections[key];
     if (matches.length) {
       result.push(...matches.map((chain) => ({ ...chain, hardware_name: device.name,
-        configuration: { ...chain.configuration, ...(device.owner ? { functional_owner: device.owner } : {}) } })));
+        ...(explicitConnection ? {
+          interface_type: explicitConnection,
+          interface_name: `${normalizeHardwareName(device.name)}_${explicitConnection}`,
+        } : {}),
+        configuration: { ...chain.configuration,
+          ...(device.owner ? { functional_owner: device.owner } : {}),
+          ...(explicitConnection ? { connection_source: 'explicit_device_connection' } : {}) } })));
     } else {
       const template = catalog.find((item) => keyOf(item.hardwareName) === key && item.deviceType === device.role)
         ?? confirmedCoverageTemplate(device);
@@ -2158,7 +2165,6 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
         deviceType: device.role, signalName: `${identifier(device.name)}Value`,
         interfaceType: spec.interfaceType, cycleMs: 100, minValue: 0, maxValue: 255, factor: 1,
       }), hardwareName: device.name, functionalOwner: device.owner }, result.length, spec.domain);
-      const explicitConnection = confirmedConnections[key];
       result.push({ ...chain,
         ...(explicitConnection ? {
           interface_type: explicitConnection,
@@ -2248,11 +2254,25 @@ export function applyConfirmedClusterGraph(chains: ExtractedEngineeringChain[], 
       };
     }
     if (!assignment) return chain;
+    const hasExplicitConnection = chain.configuration?.connection_source === 'explicit_device_connection';
+    const technology = hasExplicitConnection ? chain.interface_type : assignment.technology;
+    const assignmentTechnology = canonicalCommunicationSystem(assignment.technology);
+    const explicitTechnology = canonicalCommunicationSystem(chain.interface_type);
+    const technologySuffix = explicitTechnology
+      .toLocaleLowerCase("de")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    // A V4 cluster may contain controllers on different confirmed field buses.
+    // Keep the reviewed cluster identity, but split its physical network per
+    // technology instead of assigning contradictory technologies to one ID.
+    const networkRef = hasExplicitConnection && explicitTechnology && explicitTechnology !== assignmentTechnology
+      ? `${assignment.networkRef}-${technologySuffix}`
+      : assignment.networkRef;
     return {
       ...chain,
-      interface_type: chain.configuration?.connection_source === 'explicit_device_connection' ? chain.interface_type : assignment.technology,
-      interface_name: `${normalizeHardwareName(chain.hardware_name)}_${chain.configuration?.connection_source === 'explicit_device_connection' ? chain.interface_type : assignment.technology}`,
-      transport_network_ref: assignment.networkRef,
+      interface_type: technology,
+      interface_name: `${normalizeHardwareName(chain.hardware_name)}_${technology}`,
+      transport_network_ref: networkRef,
     };
   });
 }

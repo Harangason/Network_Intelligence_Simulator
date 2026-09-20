@@ -570,6 +570,22 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             str(data.get('network_ref') or '').casefold(),
         )
 
+    def rebound_device_status_identity(data):
+        configuration = data.get('configuration') or {}
+        contract = configuration.get('communication_contract') or {}
+        transport = configuration.get('transport_unit') or {}
+        producer_ref = contract.get('producer_ref') or transport.get('producer_ref')
+        producer = next((row for row in existing['HardwareNode']
+                         if str(row.get('id')) == str(producer_ref)), None)
+        generated_gateway_status = (
+            producer
+            and producer.get('device_type') == 'Gateway'
+            and (transport.get('provenance') or {}).get('source') == 'wizard'
+        )
+        if not producer_ref or (contract.get('role') != 'DEVICE_STATUS' and not generated_gateway_status):
+            return None
+        return ('DEVICE_STATUS', str(producer_ref))
+
     def ensure(kind, name, data, parent=None):
         if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):
             row = named_networks.get(data.get('network_ref'))
@@ -598,6 +614,16 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         else:
             matches = [row for row in existing[kind] if row['name'].casefold() == name.casefold()
                        and (not parent or str(row.get(parent)) == str(data[parent]))]
+            # Gateway status is initially generated on the gateway's primary
+            # interface and then rebound to the confirmed recipient channel.
+            # On an identical rerun, the physical parent therefore differs at
+            # this early stage even though the transport is the same object.
+            if kind == 'Message' and not matches:
+                status_identity = rebound_device_status_identity(data)
+                if status_identity:
+                    matches = [row for row in existing[kind]
+                               if row['name'].casefold() == name.casefold()
+                               and rebound_device_status_identity(row) == status_identity]
         if len(matches) > 1:
             raise ValueError(f'Mehrdeutige vorhandene Zuordnung: {kind} {name}')
         if matches:
@@ -1234,21 +1260,37 @@ def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str
         return {}
     graph = json.loads(raw.group(1))
     limits = limits_from_prompt(prompt)
+    connections_match = re.search(r'^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$', prompt, re.M)
+    connections = {
+        str(name).strip().casefold(): _topology_bus(technology)
+        for name, technology in (json.loads(connections_match.group(1)).items() if connections_match else [])
+    }
     memberships: dict[str, list[tuple[str, str, int]]] = {}
     for cluster in graph:
         controllers = [item for item in cluster.get('controllers') or [] if isinstance(item, dict)]
         label = str(cluster.get('label') or cluster.get('cluster_id') or 'Netzsegment').strip()
         base_id = str(cluster.get('bus_name') or _semantic_slug(label) or 'network').strip()
         technology = cluster.get('technology_id') or cluster.get('technology') or cluster.get('network_id') or 'CAN_FD'
-        capacity = branch_capacity(limits, technology)
-        for index, controller in enumerate(controllers):
-            ordinal = index // capacity + 1
-            segment_id = f'{base_id}-S{ordinal:02d}'
+        # Confirmed graphs can retain the discovery source in values such as
+        # ``detected:ethernet``. The suffix is the reviewed physical protocol;
+        # arbitrary unknown technologies must still fail in ``_topology_bus``.
+        cluster_bus = _topology_bus(str(technology).rsplit(':', 1)[-1])
+        bus_indices: dict[str, int] = {}
+        for controller in controllers:
+            key = str(controller.get('ecu') or '').strip().casefold()
+            bus = connections.get(key, cluster_bus)
+            index = bus_indices.get(bus, 0)
+            bus_indices[bus] = index + 1
+            ordinal = index // branch_capacity(limits, bus) + 1
+            # One reviewed V4 cluster can contain controllers on different
+            # explicit field buses. Keep the legacy ID for the cluster bus and
+            # add the actual bus only when a technology-specific split is needed.
+            technology_suffix = bus.replace('_', '-')
+            segment_base = base_id if bus == cluster_bus else f'{base_id}-{technology_suffix}'
+            segment_id = f'{segment_base}-S{ordinal:02d}'
             membership = (segment_id, label, ordinal)
-            for member in [controller.get('ecu')]:
-                key = str(member or '').strip().casefold()
-                if key and membership not in memberships.setdefault(key, []):
-                    memberships[key].append(membership)
+            if key and membership not in memberships.setdefault(key, []):
+                memberships[key].append(membership)
     return memberships
 
 

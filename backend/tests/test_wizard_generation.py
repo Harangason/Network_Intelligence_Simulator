@@ -147,9 +147,9 @@ Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperaturse
         repeated = wizard_generation.generate({
             'prompt': prompt + '\n- Wiederholungsprüfung: gleiche bestätigte Architektur',
         })
-        repeated_ports = [change for change in repeated.get('changes') or []
-                          if change['object_type'] == 'HardwareNetworkInterface']
-        assert not repeated_ports, repeated_ports
+        repeated_creates = [change for change in repeated.get('changes') or []
+                            if change.get('action', 'CREATE') == 'CREATE']
+        assert not repeated_creates, repeated_creates
         define_fixture_command_signals()
         routing = wizard_generation.generate_routing({'prompt': prompt})
         routing = proposal_service.validate(routing['proposal_id'])
@@ -861,6 +861,64 @@ Erzeuge eine SPS mit Temperaturmessung über PROFINET.
     signals = [change['data'] for change in proposal['changes'] if change['object_type'] == 'Signal']
     assert all(signal['protocol_bindings'][0]['model_type'] == 'PayloadElement' for signal in signals)
     assert proposal['evidence'][0]['model_type'] == 'industrial_automation'
+
+
+def test_mixed_confirmed_controller_technologies_create_separate_networks():
+    authority = ToolAuthority(f'pytest-industrial-mixed-network-{uuid4()}')
+    prompt = '''Strukturierte Vorgaben fuer den Engineering-Agenten:
+- Lauf-ID: test-industrial-mixed-network
+- Industrie: Industrial Automation / SPS
+- Projekt-Modelltyp: industrial_automation
+- Netzwerktechnologien: Ethernet; PROFINET; EtherCAT
+- Netzarchitektur-ID: gateway_ecu_segments
+- Hardware-Sollwerte: {"gateways":1,"ecus":3,"sensors":0,"actuators":0}
+- Geräteanschlüsse: {"PLC1":"PROFINET","PLC2":"PROFINET","PLC3":"EtherCAT","System":"Ethernet"}
+- Systemcluster-Graph: [{"network_id":"ethernet","network_label":"Ethernet","bus_name":"Maschine_Motion","controllers":[{"ecu":"PLC1"},{"ecu":"PLC2"},{"ecu":"PLC3"}]}]
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Erzeuge drei PLCs mit PROFINET- und EtherCAT-Segmenten an einem Ethernet-Backbone.
+'''
+
+    def generate_apply_and_repeat():
+        proposal = wizard_generation.generate({'prompt': prompt})
+        validated = proposal_service.validate(proposal['proposal_id'])
+        assert validated['status'] == 'VALIDATED', validated['validation_result']
+        approved = proposal_service.review(proposal['proposal_id'], revision=validated['revision'],
+            decision='approve', actor='test-human', trace_id=str(uuid4()))
+        proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        repeated = wizard_generation.generate({'prompt': prompt + '\n- Wiederholungsprüfung: gleiche bestätigte Architektur'})
+        return {'proposal': proposal, 'repeated': repeated}
+
+    result = execute(authority, 'test_industrial_mixed_network', Permission.GENERATE_PROPOSAL, {},
+                     lambda _: generate_apply_and_repeat())
+    assert result.success, result.findings
+    proposal = result.data['proposal']
+    repeated = result.data['repeated']
+    networks = [change['data'] for change in proposal['changes'] if change['object_type'] == 'Network']
+    by_technology = {network['technology']: network for network in networks}
+    assert by_technology['PROFINET']['id'] == 'Maschine_Motion-profinet-S01'
+    assert by_technology['ETHERCAT']['id'] == 'Maschine_Motion-ethercat-S01'
+    interfaces = [change['data'] for change in proposal['changes']
+                  if change['object_type'] == 'HardwareNetworkInterface']
+    assert {(interface['technology'], interface['network_ref']) for interface in interfaces} >= {
+        ('ProfiNET', 'Maschine_Motion-profinet-S01'),
+        ('EtherCAT', 'Maschine_Motion-ethercat-S01'),
+    }
+    repeated_creates = [change for change in repeated.get('changes') or []
+                        if change.get('action', 'CREATE') == 'CREATE']
+    assert not repeated_creates, repeated_creates
+
+
+def test_v4_physical_memberships_split_explicit_controller_buses():
+    prompt = '''- Netzarchitektur-ID: gateway_ecu_segments
+- Geräteanschlüsse: {"PLC1":"ProfiNET","PLC2":"ProfiNET","PLC3":"EtherCAT"}
+- Systemcluster-Graph: [{"network_id":"detected:ethernet","bus_name":"Maschine_Motion","controllers":[{"ecu":"PLC1"},{"ecu":"PLC2"},{"ecu":"PLC3"}]}]
+'''
+
+    memberships = wizard_generation._confirmed_segment_memberships(prompt)
+
+    assert memberships['plc1'][0][0] == 'Maschine_Motion-profinet-S01'
+    assert memberships['plc2'][0][0] == 'Maschine_Motion-profinet-S01'
+    assert memberships['plc3'][0][0] == 'Maschine_Motion-ethercat-S01'
 
 
 @pytest.mark.parametrize('device_class', [0, 1, 2])

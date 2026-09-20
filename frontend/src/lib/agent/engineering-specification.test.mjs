@@ -263,6 +263,25 @@ test("confirmed cluster graph binds only the controller to the selected backbone
   assert.equal(mapped.transport_network_ref, "Antriebsstrang_01");
 });
 
+test("confirmed V4 cluster splits controllers with explicit mixed technologies", () => {
+  const prompt = `- Geräteanschlüsse: {"PLC1":"PROFINET","PLC2":"PROFINET","PLC3":"EtherCAT"}
+- Systemcluster-Graph: [{"network_id":"ethernet","network_label":"Ethernet","bus_name":"Maschine_Motion-S01","controllers":[{"ecu":"PLC1"},{"ecu":"PLC2"},{"ecu":"PLC3"}]}]`;
+  const base = extractEngineeringSpecification(`3 PLC/Controller
+Netzwerke:
+- 2 × PROFINET
+- 1 × EtherCAT
+- 1 × 1-Gbit-Ethernet Backbone`, { gateways: 0, ecus: 3, sensors: 0, actuators: 0 }, 'industrial_automation', true);
+  const mapped = applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(base, prompt), prompt);
+  const controllers = Object.fromEntries(mapped.map((chain) => [chain.hardware_name, chain]));
+
+  assert.equal(controllers.PLC1.interface_type, "ProfiNET");
+  assert.equal(controllers.PLC2.interface_type, "ProfiNET");
+  assert.equal(controllers.PLC3.interface_type, "EtherCAT");
+  assert.equal(controllers.PLC1.transport_network_ref, "Maschine_Motion-S01-profinet");
+  assert.equal(controllers.PLC2.transport_network_ref, "Maschine_Motion-S01-profinet");
+  assert.equal(controllers.PLC3.transport_network_ref, "Maschine_Motion-S01-ethercat");
+});
+
 test("gateway-free main controller preserves an explicit I2C connection", () => {
   const prompt = `- Netzarchitektur-ID: sensor_ecu_actuator
 - Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
