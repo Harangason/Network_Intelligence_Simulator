@@ -90,6 +90,35 @@ def test_diagnosis_persists_capacity_errors_without_a_successful_simulation(monk
     assert not result["provenance"]["ai_interpretation"]
 
 
+def test_empty_workspace_does_not_report_missing_evidence_as_critical_issues(monkeypatch):
+    service = IntelligenceService("empty-workspace-test")
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *args, **kwargs: None)
+    monkeypatch.setattr(service, "_collect", lambda: {
+        "objects": {key: [] for key in _objects()},
+        "hardware_interfaces": [],
+        "state": {"versions": default_versions(), "parameters": {}, "topology": {}},
+        "routes": [],
+        "relations": [],
+        "preflight": {},
+        "simulations": [],
+        "history": [],
+        "capacity": {},
+        "review_history": [],
+    })
+    monkeypatch.setattr(service, "_rag_insights", lambda issues: [])
+    monkeypatch.setattr(
+        "backend.engineering.intelligence.service.LogicalNodeAddressAllocator.findings",
+        lambda _self: [],
+    )
+
+    result = service.assess(persist=False)
+
+    assert result["status"] == "EMPTY"
+    assert result["results"]["assessment_mode"] == "DIAGNOSTIC"
+    assert result["results"]["missing_evidence"] == []
+    assert result["results"]["critical_issues"] == []
+
+
 def test_step_nine_is_invalidated_by_earlier_changes():
     state = {
         "versions": default_versions(),

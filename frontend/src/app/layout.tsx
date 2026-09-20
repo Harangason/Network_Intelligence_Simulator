@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0d0b",
+  themeColor: "#080b0f",
   width: "device-width",
   initialScale: 1,
 };
@@ -32,7 +32,16 @@ export default function RootLayout({
     <html
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} bg-background`}
+      data-theme="dark"
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("network-simulator:studio-theme");if(t!=="light"&&t!=="dark")t="dark";document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="light"?"#f4f7f9":"#080b0f"}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         {children}
         <GlobalAgentWidget />

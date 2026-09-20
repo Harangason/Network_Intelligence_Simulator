@@ -1,7 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectSensorMeasurement, sensorMeasurementSelections } from './sensor-measurements.ts';
+import { selectSensorMeasurement, sensorMeasurement, sensorMeasurementSelections } from './sensor-measurements.ts';
 import { extractEngineeringSpecification } from './engineering-specification.ts';
+
+test('PT100 is recognized as a temperature sensor', () => {
+  assert.equal(sensorMeasurement('PT100')?.id, 'temperature');
+});
+
+test('flow and IO-Link survive the S02 sensor wording', () => {
+  assert.equal(sensorMeasurement('Durchfluss 0–100 l/min')?.id, 'flow');
+  const result = extractEngineeringSpecification(`1 PLC
+2 IO-Link-Sensoren:
+- Durchfluss 0–100 l/min, 20 ms
+- Druck 0–16 bar, 20 ms`);
+  const sensors = result.chains.filter(c => c.device_type === 'SensorController');
+  assert.equal(sensors.length, 2);
+  assert.ok(sensors.every(sensor => sensor.interface_type === 'IO_LINK'));
+  assert.equal(sensors.find(sensor => /Durchfluss/.test(sensor.hardware_name))?.unit, 'l/min');
+});
 
 test('measurement choice resolves a generic sensor slot and preserves independent connections', () => {
   const original = '3 Sensoren und ein RaspberryPi\n- Geräteanschlüsse: {"Sensor2":"I2C","RaspberryPi":"I2C"}';

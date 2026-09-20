@@ -7,6 +7,7 @@ import { EngineeringImportWizard } from "@/components/engineering-import-wizard"
 import { ProjectSyncNotice } from "@/components/project-sync-notice";
 import { ProjectActions } from "@/components/project-actions";
 import { RuntimeStatus } from "@/components/runtime-status";
+import { StudioThemeControl } from "@/components/studio-theme-control";
 import {
   ENGINEERING_AGENT_WIZARD_SESSION_EVENT,
   readEngineeringAgentWizardSession,
@@ -82,6 +83,7 @@ export function StudioTopbar({ initialProjectId = "" }: { initialProjectId?: str
           <button className="topbar-command" onClick={() => setImportOpen(true)} type="button">
             Importieren
           </button>
+          <StudioThemeControl />
           <Link className="topbar-link" href={withProjectParam("/studio/settings", activeProjectId)}>Einstellungen</Link>
           <RuntimeStatus />
         </div>

@@ -41,6 +41,10 @@ def test_mixed_bus_task_gets_independent_transport_paths():
         "serial_field_bus",
     ]
     assert all(item["generator"] == "TechnologyTransportGenerator" for item in decision["bus_types"])
+    assert decision["industry"]["source_modules"]
+    assert all(item["source"]["source_modules"] for item in decision["bus_types"])
+    assert decision["provenance"]["policy_source"] == "backend.engineering.generation_rule_manager"
+    assert decision["guardrails"]["reviewed_history_is_advisory_only"] is True
 
 
 def test_can_fd_does_not_also_select_classic_can():

@@ -26,6 +26,8 @@ INTERFACE_TO_PROTOCOL = {
     "ModbusTCP": "MODBUS_TCP",
     "ModbusRTU": "MODBUS_RTU",
     "I2C": "I2C",
+    "UART": "UART",
+    "IO_LINK": "IO_LINK",
     "SPI": "SPI",
     "GPIO": "GPIO",
     "PWM": "PWM",

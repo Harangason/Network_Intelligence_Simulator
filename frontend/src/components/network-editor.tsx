@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
+  busProfile,
   busProfiles,
   engineeringHardwareKind,
   type BusType,
@@ -3016,11 +3017,11 @@ export function NetworkEditor({
     const position = overlayPosition(clientX, clientY);
     setContextOverlay({
       ...position,
-      accent: busProfiles[port.bus].color,
+      accent: busProfile(port.bus).color,
       title: `${networkLabel(port.name, port.bus)} Port`,
       subtitle: node.name,
       rows: [
-        { label: "Bus", value: busProfiles[port.bus].label },
+        { label: "Bus", value: busProfile(port.bus).label },
         { label: "Systemrahmen", value: systemFrameByNodeId.get(node.id) ?? node.name },
         { label: "Interface", value: interfaces.join(" / ") || "Nicht benannt" },
         { label: "Verbindungen", value: connectedEdges.length ? `${connectedEdges.length}` : "Keine" },
@@ -3046,11 +3047,11 @@ export function NetworkEditor({
     const position = overlayPosition(clientX, clientY);
     setContextOverlay({
       ...position,
-      accent: busProfiles[edge.bus].color,
+      accent: busProfile(edge.bus).color,
       title: edge.name || `${from?.name ?? edge.source} ↔ ${to?.name ?? edge.target}`,
       subtitle: "Verbindung",
       rows: [
-        { label: "Bus", value: busProfiles[edge.bus].label },
+        { label: "Bus", value: busProfile(edge.bus).label },
         { label: "Systemrahmen", value: frames.join(" → ") || "Nicht zugeordnet" },
         { label: "Interfaces", value: `${sourceInterface} → ${targetInterface}` },
         { label: "Relation", value: `${edge.relationType ?? "CONNECTED_TO"} · ${edge.direction ?? "BIDIRECTIONAL"}` },
@@ -3625,20 +3626,20 @@ export function NetworkEditor({
           >
             {scene?.buses.filter(bus => !visibleCanvasBounds || canvasRectangleIsVisible(bus.bounds, visibleCanvasBounds)).map(bus => (
               <g key={bus.id} className={`net-physical-bus ${selectedBus === bus.id ? 'selected' : ''} ${connectionTarget?.kind === 'bus' && connectionTarget.busId === bus.id ? 'connection-target' : ''}`} data-physical-network-id={bus.id} data-bus-type={bus.technology} onDoubleClick={event => {event.stopPropagation(); editBusRelationships(bus.id);}}>
-                <title>{bus.name} · {busProfiles[bus.technology]?.label ?? bus.technology} · {bus.participantCount} Teilnehmer</title>
+                <title>{bus.name} · {busProfile(bus.technology).label} · {bus.participantCount} Teilnehmer</title>
                 <path className="net-wire-hit net-bus-trunk-hit" d={bus.path} onPointerDown={event => beginBusDrag(event, bus)} />
-                <path className="net-bus-trunk" d={bus.displayPath ?? bus.path} stroke={busProfiles[bus.technology]?.color ?? "#9fea4e"} />
-                <text className="net-bus-label" onDoubleClick={onBusRename ? event => {event.stopPropagation(); openBusName(bus.id);} : undefined} onPointerDown={event => beginBusDrag(event, bus)} textAnchor="end" x={bus.label.x} y={bus.label.y} transform={`rotate(-90 ${bus.label.x} ${bus.label.y})`}>{bus.labelText ?? (bus.local ? `${busProfiles[bus.technology]?.label ?? bus.technology} ${bus.name.match(/(?: |\_)(\d+(?:\.\d+)?)$/)?.[1] ?? bus.id.match(/-S(\d+)$/)?.[1] ?? ""}` : networkLabel(bus.name))}</text>
+                <path className="net-bus-trunk" d={bus.displayPath ?? bus.path} stroke={busProfile(bus.technology).color} />
+                <text className="net-bus-label" onDoubleClick={onBusRename ? event => {event.stopPropagation(); openBusName(bus.id);} : undefined} onPointerDown={event => beginBusDrag(event, bus)} textAnchor="end" x={bus.label.x} y={bus.label.y} transform={`rotate(-90 ${bus.label.x} ${bus.label.y})`}>{bus.labelText ?? (bus.local ? `${busProfile(bus.technology).label} ${bus.name.match(/(?: |\_)(\d+(?:\.\d+)?)$/)?.[1] ?? bus.id.match(/-S(\d+)$/)?.[1] ?? ""}` : networkLabel(bus.name))}</text>
                 {bus.branches.map(branch => {
                   const edge = edgesByPortId.get(branch.portId)?.find(e => bus.edgeIds.includes(e.id));
                   return <g key={`${branch.nodeId}:${branch.portId}`} data-connection-id={edge?.id} data-branch-node-id={branch.nodeId} onPointerDown={event=>{beginBusDrag(event,bus,branch);if(edge && !deleting){setSelectedEdge(edge.id);setSelectedNode(null);}}} onDoubleClick={event=>{event.stopPropagation(); editBusRelationships(bus.id, branch.portId);}}
                     onPointerEnter={event=>{if(activeDragRef.current)return;const node=nodesById.get(branch.nodeId); const port=node?.ports.find(p=>p.id===branch.portId); if(node && port) showPortOverlay(node,port,event.clientX,event.clientY);}}
                     onPointerLeave={()=>setContextOverlay(null)}>
                     <path className="net-wire-hit net-bus-branch-hit" d={branchPath(branch.points)} />
-                    <path className={`net-bus-branch ${selectedBranch ? selectedBranch.busId === bus.id && selectedBranch.portId === branch.portId ? 'selected' : '' : edge && selectedEdge === edge.id ? 'selected' : ''}`} d={branch.displayPath ?? branchPath(branch.points)} stroke={busProfiles[bus.technology]?.color ?? "#9fea4e"} />
+                    <path className={`net-bus-branch ${selectedBranch ? selectedBranch.busId === bus.id && selectedBranch.portId === branch.portId ? 'selected' : '' : edge && selectedEdge === edge.id ? 'selected' : ''}`} d={branch.displayPath ?? branchPath(branch.points)} stroke={busProfile(bus.technology).color} />
                   </g>;
                 })}
-                {busJunctions(bus.branches).map((point,index)=><circle key={index} className="net-bus-junction" cx={point.x} cy={point.y} r="4" fill={busProfiles[bus.technology]?.color ?? "#9fea4e"} />)}
+                {busJunctions(bus.branches).map((point,index)=><circle key={index} className="net-bus-junction" cx={point.x} cy={point.y} r="4" fill={busProfile(bus.technology).color} />)}
               </g>
             ))}
             {visibleRenderedEdges.map(({ edge, path }) => {
@@ -3667,7 +3668,7 @@ export function NetworkEditor({
                   <path
                     className={`net-wire ${selectedEdge === edge.id ? "selected" : ""}`}
                     d={path}
-                    stroke={busProfiles[edge.bus].color}
+                    stroke={busProfile(edge.bus).color}
                   />
                 </g>
               );
@@ -3677,7 +3678,7 @@ export function NetworkEditor({
                 const bus = scene.buses.find(bus=>bus.id===bridge.busId);
                 return <g key={`${bridge.busId}:${index}`} data-bridge-bus-id={bridge.busId}>
                   <path className="net-wire-bridge-mask" d={bridge.path}/>
-                  <path className="net-wire-bridge" d={bridge.path} stroke={busProfiles[bus?.technology ?? 'lin'].color}/>
+                  <path className="net-wire-bridge" d={bridge.path} stroke={busProfile(bus?.technology ?? 'lin').color}/>
                 </g>;
               })}
             </g>
@@ -3690,7 +3691,7 @@ export function NetworkEditor({
                   <path
                     className="net-wire pending"
                     d={pendingEdgePath(effectiveTopology, from, fromPort, { x: drag.x, y: drag.y })}
-                    stroke={busProfiles[drag.bus].color}
+                    stroke={busProfile(drag.bus).color}
                   />
                 );
               })()}
@@ -3746,7 +3747,7 @@ export function NetworkEditor({
                 />
               )}
               <strong className="net-node-name">{node.name}</strong>
-              {scene && <span className="net-node-bus-types">{[...new Set(node.ports.map(p=>busProfiles[p.bus]?.label ?? p.bus))].join(" · ")}</span>}
+              {scene && <span className="net-node-bus-types">{[...new Set(node.ports.map(p=>busProfile(p.bus).label))].join(" · ")}</span>}
               {node.ports.length === 0 && <span className="net-node-empty">Rechtsklick → Port anlegen</span>}
               {visiblePorts.map((port) => {
                 const portSide = port.side;
@@ -3801,7 +3802,7 @@ export function NetworkEditor({
                     }}
                     style={{
                       ...portStyle,
-                      ["--bus" as string]: busProfiles[port.bus].color,
+                      ["--bus" as string]: busProfile(port.bus).color,
                     }}
                     title={`${networkLabel(port.name, port.bus)} · Klicken und Entf zum Löschen · Ziehen zum Verbinden · Shift + Ziehen zum Verschieben · Rechtsklick zum Entfernen`}
                     type="button"
@@ -3928,7 +3929,7 @@ export function NetworkEditor({
           <div>
             <span>Beziehung</span>
             <strong>{selectedRelationship.name || `${selectedRelationship.source} ↔ ${selectedRelationship.target}`}</strong>
-            <small>{selectedRelationship.relationType ?? "CONNECTED_TO"} · {selectedRelationship.direction ?? "BIDIRECTIONAL"} · {busProfiles[selectedRelationship.bus].label}</small>
+            <small>{selectedRelationship.relationType ?? "CONNECTED_TO"} · {selectedRelationship.direction ?? "BIDIRECTIONAL"} · {busProfile(selectedRelationship.bus).label}</small>
           </div>
           {selectedRelationshipRoutes.length > 0 && (
             <div className="net-relationship-routes">
@@ -3988,7 +3989,7 @@ export function NetworkEditor({
                   <tbody>{devicePorts.map(port => (
                     <tr key={port.hardwareInterfaceId || port.id}>
                       <td>{port.name || 'Unbenannter Port'}</td>
-                      <td><span className="net-device-port-technology"><i aria-hidden="true" style={{backgroundColor: busProfiles[port.bus].color}} />{busProfiles[port.bus].label}</span></td>
+                      <td><span className="net-device-port-technology"><i aria-hidden="true" style={{backgroundColor: busProfile(port.bus).color}} />{busProfile(port.bus).label}</span></td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -4074,7 +4075,7 @@ export function NetworkEditor({
               {relationship.connection && <div className="full-width"><span>Zielbus</span><strong>{relationship.edge.physicalNetworkName}</strong></div>}
               {onAssignmentChange && topology.scene && relationship.edge.physicalNetworkId && !relationship.isNew && <div className="net-transfer-entry"><span>Physischer Bus</span><strong>{topology.scene.buses.find(b => b.id === relationship.edge.physicalNetworkId)?.name ?? relationship.edge.physicalNetworkId}</strong>{onBusRename && <button className="button secondary" type="button" disabled={relationshipSaving || busChanged || relationshipModified} onClick={() => openBusName(relationship.edge.physicalNetworkId!)}>Bus umbenennen</button>}<button className="button secondary" type="button" disabled={relationshipSaving || busChanged || relationshipModified} onClick={() => setBusTransferOpen(true)}>Bus umhängen …</button>{(busChanged || relationshipModified) && <small>Änderungen an der Beziehung zuerst übernehmen.</small>}</div>}
               {!relationship.edge.physicalNetworkId && <p className="full-width muted">Verbindung zuerst speichern, um den physischen Bustyp zu ändern.</p>}
-              {busChanged && <div className="full-width notice" role="status">{busPreviewError || (busPreview && busPreview.bus === relationship.bus ? <><strong>Buswechsel auf {busProfiles[relationship.bus!].label}</strong><p>{busPreview.networks.map(n => n.name).join(" · ")}</p><p>{busPreview.devices} Geräte · {busPreview.messages} Nachrichten · {busPreview.routes} Routen. Gemeinsam genutzte Nachrichten werden auf allen zugehörigen Bussen umgestellt. Betroffene Routen benötigen danach eine erneute Freigabe.</p></> : "Betroffene Busse und Nachrichten werden geprüft …")}</div>}
+              {busChanged && <div className="full-width notice" role="status">{busPreviewError || (busPreview && busPreview.bus === relationship.bus ? <><strong>Buswechsel auf {busProfile(relationship.bus).label}</strong><p>{busPreview.networks.map(n => n.name).join(" · ")}</p><p>{busPreview.devices} Geräte · {busPreview.messages} Nachrichten · {busPreview.routes} Routen. Gemeinsam genutzte Nachrichten werden auf allen zugehörigen Bussen umgestellt. Betroffene Routen benötigen danach eine erneute Freigabe.</p></> : "Betroffene Busse und Nachrichten werden geprüft …")}</div>}
               <label className="full-width"><span>Beschreibung</span><textarea onChange={(event) => setRelationship({ ...relationship, description: event.target.value })} placeholder="Technischer Zweck, Randbedingungen oder Verantwortlichkeit" rows={3} value={relationship.description} /></label>
             </div>
             {relationshipError && <div className="notice error net-relationship-error" role="alert">{relationshipError}</div>}

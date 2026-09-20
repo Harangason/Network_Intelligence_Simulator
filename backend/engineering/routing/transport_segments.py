@@ -9,7 +9,7 @@ from ..models import EngineeringValidationError
 from ..physical_segments import physical_port_networks
 
 BUS_PROTOCOLS = {"can": "CAN", "can_fd": "CAN_FD", "can_xl": "CAN_XL", "lin": "LIN",
-    "automotive_ethernet": "ETHERNET", "ethernet": "ETHERNET", "flexray": "FLEXRAY"}
+    "uart": "UART", "automotive_ethernet": "ETHERNET", "ethernet": "ETHERNET", "flexray": "FLEXRAY"}
 
 
 class PhysicalRouteResolver:

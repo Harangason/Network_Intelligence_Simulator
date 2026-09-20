@@ -161,7 +161,12 @@ def materialize_physical_ports(topology, hardware, interfaces, networks, *, rout
     connected = {str(edge.get(side + 'Port') or '') for edge in updated.get('edges') or [] for side in ('source', 'target')}
     if prune_unconnected:
         for node in updated.get('nodes') or []:
-            node['ports'] = [port for port in node.get('ports') or [] if str(port.get('id') or '') in connected]
+            ports = node.get('ports') or []
+            connected_ports = [port for port in ports if str(port.get('id') or '') in connected]
+            # A capacity split only rewires its routed branch. Keep the reviewed
+            # ports of an otherwise isolated participant so an unrelated device
+            # does not become an invalid portless topology node.
+            node['ports'] = connected_ports if connected_ports else ports
     inferred = physical_port_networks(updated)
     for node in updated.get('nodes') or []:
         hardware_id = str(node.get('engineeringId') or '')

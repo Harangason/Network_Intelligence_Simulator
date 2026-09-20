@@ -33,7 +33,7 @@ import { uniqueMessagesById } from "@/lib/agent-message-history";
 import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
-import { engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement, selectSensorMeasurements } from '@/lib/agent/sensor-measurements';
 import { actuatorCommands, actuatorCommandChoice, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
@@ -63,6 +63,7 @@ import type { EngineeringObject, EngineeringResource, RoutingEntry, Technology, 
 import { DEFAULT_BUS_PARTICIPANT_LIMITS, busBranchCapacity } from "@/lib/bus-settings";
 import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import {
+  defaultWizardTechnologyIds,
   normalizeEngineeringWizardSettings,
   wizardQuestionnaireSteps,
   WIZARD_PROCESS_GROUP as PROCESS_GROUP,
@@ -1097,7 +1098,8 @@ export function EngineeringAgentWizard({
   const [selectedIndustry, setSelectedIndustry] = useState("automotive");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
   const manualTechnologyScopeRef = useRef('');
-  const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("gateway_direct");
+  const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("sensor_ecu_actuator");
+  const manualNetworkArchitectureRef = useRef(false);
   const [architectureAiProposal, setArchitectureAiProposal] = useState("");
   const [scope, setScope] = useState<string[]>(SCOPE_GROUP.options.map((option) => option.id));
   const [process, setProcess] = useState<string[]>(PROCESS_GROUP.options.map((option) => option.id));
@@ -1159,6 +1161,10 @@ export function EngineeringAgentWizard({
   const equipmentReady = Object.values(equipmentValues).every((value) => /^\d+$/.test(value)
     && Number(value) <= 1000) && Object.values(equipmentValues).some((value) => Number(value) > 0);
   const equipmentCounts = Object.fromEntries(EQUIPMENT_CATEGORIES.map(({ key }) => [key, Number(equipmentValues[key])])) as EngineeringHardwareCounts;
+  useEffect(() => {
+    if (manualNetworkArchitectureRef.current) return;
+    setNetworkArchitecture(extractNetworkArchitectureMode(taskSource));
+  }, [taskSource]);
   const plannedEquipment = useMemo(
     () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain, true),
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
@@ -1203,6 +1209,17 @@ export function EngineeringAgentWizard({
     if (technology) connections[name] = technology; else delete connections[name];
     const withConnection = `${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`;
     setTaskText(selectSensorMeasurements(withConnection, resolvedSensorMeasurements));
+  }
+  function applyConnectionToOpenDevices(technology: string) {
+    const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+    let connections: Record<string, string> = {};
+    try {
+      const parsed: unknown = marker ? JSON.parse(marker) : {};
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) connections = parsed as Record<string, string>;
+    } catch { /* The reviewed bulk selection replaces an incomplete marker. */ }
+    unresolvedConnections.forEach((chain) => { connections[chain.hardware_name] = technology; });
+    const withConnections = `${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`;
+    setTaskText(selectSensorMeasurements(withConnections, resolvedSensorMeasurements));
   }
   const [newControllerName, setNewControllerName] = useState('');
   const [controllerAdditionError, setControllerAdditionError] = useState('');
@@ -1397,7 +1414,7 @@ export function EngineeringAgentWizard({
       setSelectedTechnologies(preferred.length ? preferred : canIds.slice(0, 3));
       return;
     }
-    setSelectedTechnologies(defaultTechnologyIds(selectedDomain));
+    setSelectedTechnologies(defaultWizardTechnologyIds(selectedDomain));
   }, [mode, phase, recognizedEquipment.communicationSystems, selectedDomain, technologyChoices]);
 
   useEffect(() => {
@@ -1648,6 +1665,10 @@ export function EngineeringAgentWizard({
       };
     }),
   }), [technologyChoices]);
+  const selectedDeviceConnectionTypes = useMemo(() => [...new Set(allTechnologies
+    .filter((technology) => selectedTechnologies.includes(technology.id))
+    .map((technology) => canonicalCommunicationSystem(`${technology.id} ${technology.family} ${technology.label ?? ""}`))
+    .filter(Boolean))], [allTechnologies, selectedTechnologies]);
   const communicationSystemSource = [
     taskSource,
     selectedIndustry,
@@ -1924,6 +1945,7 @@ export function EngineeringAgentWizard({
   }
 
   function selectNetworkArchitecture(id: NetworkArchitectureId) {
+    manualNetworkArchitectureRef.current = true;
     setNetworkArchitecture(id);
     if (id !== "hybrid_ai") setArchitectureAiProposal("");
   }
@@ -1933,6 +1955,7 @@ export function EngineeringAgentWizard({
       .filter((option) => selectedTechnologies.includes(option.id))
       .map((option) => option.label)
       .join(", ");
+    manualNetworkArchitectureRef.current = true;
     setNetworkArchitecture("hybrid_ai");
     setArchitectureAiProposal(
       `Kombiniere Variante 2 und 3. Ordne lokale, echtzeit- und regelungskritische Sensoren/Aktoren dem fachlich zuständigen Controller zu. ` +
@@ -3049,6 +3072,10 @@ export function EngineeringAgentWizard({
           {(deviceRows.length > 0) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
             <h3>Geräteanschlüsse festlegen</h3>
             <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Deine Auswahl wird sofort im Auftrag aktualisiert und gilt für einen Entwurf als Modellannahme, nicht als Nachweis realer Hardware.</p>
+            {unresolvedConnections.length > 0 && selectedDeviceConnectionTypes.length === 1 && <button className="button secondary" type="button" disabled={effectiveBusy}
+              onClick={() => applyConnectionToOpenDevices(selectedDeviceConnectionTypes[0])}>
+              {selectedDeviceConnectionTypes[0]} für alle offenen Anschlüsse übernehmen
+            </button>}
             {deviceRows.map(({ name, label, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
               {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={`${label}: Messgröße`} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
                 <option value="" disabled>Bitte auswählen</option>
@@ -3068,7 +3095,7 @@ export function EngineeringAgentWizard({
               </select></label>}
               <label className="agent-device-choice"><span>Verbindungstyp</span><select aria-label={`${name}: Anschluss`} disabled={effectiveBusy || (sensor && !chain)} value={!chain || chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(name, event.target.value)}>
                 <option value="">Bitte auswählen</option>
-                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'GPIO', 'PWM', 'ADC', 'DAC', ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
+                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'IO_LINK', 'GPIO', 'PWM', 'ADC', 'DAC', ...selectedDeviceConnectionTypes, ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
               </select></label>
             </div>)}
             {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
@@ -3578,26 +3605,6 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function defaultTechnologyIds(domain?: TechnologyDomain) {
-  if (!domain) return [];
-  const ids = domain.technologies
-    .filter((technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED"))
-    .map((technology) => technology.id);
-  const preferredByDomain: Record<string, string[]> = {
-    automotive: ["can_fd", "automotive_ethernet", "lin", "someip"],
-    industrial_automation: ["profinet", "ethercat", "modbus_tcp", "opc_ua", "io_link"],
-    industrial: ["profinet", "ethercat", "modbus_tcp", "opc_ua", "io_link"],
-    aerospace: ["arinc429", "mil_std_1553", "afdx"],
-    iot: ["mqtt", "lorawan", "ble"],
-    telecom: ["ethernet", "5g_nr"],
-    energy: ["iec61850", "dnp3"],
-    robotics: ["ethercat", "ros2_dds"],
-    medical: ["hl7", "ble"],
-  };
-  const preferred = (preferredByDomain[domain.id] ?? []).filter((id) => ids.includes(id));
-  return preferred.length ? preferred : ids.slice(0, 4);
-}
-
 function technologyLabel(id: string, family: string) {
   return family && family.toLowerCase() !== id.replaceAll("_", " ").toLowerCase()
     ? `${family} · ${id}`
@@ -3668,7 +3675,8 @@ function communicationSystemInputRows(args: {
 }): CommunicationSystemInputRow[] {
   const selected = new Set(args.selectedTechnologyIds);
   const selectedTechnologies = args.technologies.filter((technology) => selected.has(technology.id));
-  const technologies = selectedTechnologies.length ? selectedTechnologies : args.technologies.slice(0, 4);
+  // Catalog availability is not a confirmed technology selection.
+  const technologies = selectedTechnologies;
   const representedRecognized = new Set<string>();
   const rows = technologies.map((technology) => {
     const matches = args.recognizedSystems.filter((system) => technologyMatchesRecognizedSystem(technology, system));

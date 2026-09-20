@@ -39,6 +39,33 @@ def test_gateway_free_v0_identifies_only_the_controller_as_main_controller():
     assert not wizard_generation._is_local_main_controller(controller, specification)
 
 
+def test_gateway_function_is_not_an_alternative_host_for_declared_domain_functions():
+    specification = {
+        'chains': [
+            {'hardware_name': 'Embedded', 'device_type': 'EmbeddedController'},
+            {'hardware_name': 'Ethernet', 'device_type': 'Gateway'},
+            {'hardware_name': 'Positionssensor1', 'device_type': 'SensorController'},
+        ],
+    }
+    function_refs = {
+        'embedded': '$controller-function',
+        'ethernet': '$gateway-function',
+        'positionssensor1': None,
+    }
+
+    assert wizard_generation._declared_function_hosts(specification, function_refs) == ['embedded']
+
+
+def test_generated_can_identifier_skips_persisted_and_pending_identifiers():
+    existing = [{'message_id_hex': '0x100'}]
+    pending = [
+        {'object_type': 'Message', 'data': {'message_id_hex': '0x101'}},
+        {'object_type': 'Signal', 'data': {'message_id_hex': '0x102'}},
+    ]
+
+    assert wizard_generation._next_generated_can_identifier(existing, pending) == '0x102'
+
+
 def define_fixture_command_signals():
     """Explicit test specification; production must never invent command bits."""
     for message in model.objects('Message'):
@@ -117,6 +144,12 @@ Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperaturse
         approved = proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
             decision='approve', actor='test-human', trace_id=str(uuid4()))
         proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        repeated = wizard_generation.generate({
+            'prompt': prompt + '\n- Wiederholungsprüfung: gleiche bestätigte Architektur',
+        })
+        repeated_ports = [change for change in repeated.get('changes') or []
+                          if change['object_type'] == 'HardwareNetworkInterface']
+        assert not repeated_ports, repeated_ports
         define_fixture_command_signals()
         routing = wizard_generation.generate_routing({'prompt': prompt})
         routing = proposal_service.validate(routing['proposal_id'])
@@ -182,7 +215,10 @@ def test_confirmed_backbones_are_routable_before_topology_creation(display_techn
     assert result.success, result
 
 
-def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monkeypatch):
+@pytest.mark.parametrize(('local_type', 'expected_identifier'), [('LIN', None), ('CAN', '0x100')])
+def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(
+    monkeypatch, local_type, expected_identifier,
+):
     def chain(name, device_type, interface_type, network_ref):
         return {
             'hardware_name': name,
@@ -212,15 +248,15 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
         'domain': 'Automotive',
         'modelType': 'automotive',
         'targetCounts': {'gateways': 0, 'ecus': 1, 'sensors': 0, 'actuators': 1},
-        'communicationSystemCounts': {'can_fd': 1, 'lin': 1},
+        'communicationSystemCounts': {'can_fd': 1, local_type.casefold(): 1},
         'chains': [
             chain('System', 'Gateway', 'CAN_FD', 'Antriebsstrang'),
             chain('Abgasnachbehandlung', 'ECU', 'CAN_FD', 'Antriebsstrang'),
             chain(
                 'AbgasnachbehandlungSchaltausgang',
                 'ActuatorController',
-                'LIN',
-                'Antriebsstrang-IO-abgasnachbehandlung-lin',
+                local_type,
+                f'Antriebsstrang-IO-abgasnachbehandlung-{local_type.casefold()}',
             ),
         ],
     }
@@ -251,19 +287,20 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
     by_ref = {'$' + item['local_ref']: item for item in changes if item.get('local_ref')}
     local_interface = next(
         item for item in changes
-        if item['object_type'] == 'Interface' and item['data']['name'] == 'Abgasnachbehandlung_LIN_IO'
+        if item['object_type'] == 'Interface'
+        and item['data']['name'] == f'Abgasnachbehandlung_{local_type}_IO'
     )
     local_port = next(
         item for item in changes
         if item['object_type'] == 'HardwareNetworkInterface'
         and item['data']['hardware_node_id'] == local_interface['data'].get('hardware_node_id',
             by_ref[local_interface['data']['function_id']]['data']['hardware_node_id'])
-        and item['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin-S01'
+        and item['data']['network_ref'] == f'Antriebsstrang-IO-abgasnachbehandlung-{local_type.casefold()}-S01'
     )
     local_message = next(
         item for item in changes
         if item['object_type'] == 'Message'
-        and item['data']['name'] == 'Abgasnachbehandlung LIN IO Befehl'
+        and item['data']['name'] == f'Abgasnachbehandlung {local_type} IO Befehl'
     )
     actuator = next(
         item for item in changes
@@ -278,8 +315,9 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(monk
     assert local_message['data']['direction'] == 'tx'
     assert by_ref[local_message['data']['interface_id']] is local_interface
     assert by_ref[local_message['data']['hardware_interface_id']] is local_port
-    assert local_port['data']['technology'] == local_interface['data']['interface_type'] == 'LIN'
-    assert local_port['data']['network_ref'] == 'Antriebsstrang-IO-abgasnachbehandlung-lin-S01'
+    assert local_port['data']['technology'] == local_interface['data']['interface_type'] == local_type
+    assert local_port['data']['network_ref'] == f'Antriebsstrang-IO-abgasnachbehandlung-{local_type.casefold()}-S01'
+    assert local_message['data'].get('message_id_hex') == expected_identifier
     assert local_message['data']['configuration']['transport_unit']['consumer_refs'] == ['$' + actuator['local_ref']]
     assert backbone_message['data']['interface_id'] != local_message['data']['interface_id']
     assert backbone_message['data']['hardware_interface_id'] != local_message['data']['hardware_interface_id']

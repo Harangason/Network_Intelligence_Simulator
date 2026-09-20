@@ -78,6 +78,16 @@ def test_bounded_hardware_inventory_uses_fast_model_but_mutations_keep_main_reas
     assert _is_semantic_fast_request([{'role': 'user', 'content': prompt}]) is fast
 
 
+def test_bounded_project_intake_uses_fast_local_model_for_advisory_planning():
+    assert _is_semantic_fast_request([
+        {'role': 'system', 'content': (
+            'Erarbeite einen fachlichen Entwurf und nutze prepare_project_request. '
+            'Die Originalanforderung bleibt unverändert.'
+        )},
+        {'role': 'user', 'content': 'Erstelle ein Projekt mit zwei Sensoren und einem Aktor.'},
+    ]) is True
+
+
 def test_local_reasoner_does_not_duplicate_the_full_requirement_in_system_context():
     context = AgentContext(active_project_id='reasoner-context', current_requirement='X' * 20_000)
     serialized = _context_for_reasoning(context)
@@ -194,6 +204,37 @@ def test_local_reasoner_keeps_fast_semantic_model_warm(monkeypatch):
     asyncio.run(invoke())
     assert captured['model'] == 'llama3.1:8b'
     assert captured['keep_alive'] == '45m'
+
+
+def test_missing_fast_model_falls_back_to_main_local_model(monkeypatch):
+    requests = []
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'qwen-test:latest')
+    monkeypatch.setenv('LOCAL_AI_FAST_MODEL', 'llama-test:latest')
+
+    def handler(request):
+        payload = json.loads(request.content)
+        requests.append(payload)
+        if payload['model'] == 'llama-test:latest':
+            return httpx.Response(404, json={'error': 'model not found; pull it first'})
+        return httpx.Response(200, json={'message': {'content': 'lokaler Fallback aktiv'}})
+
+    async def invoke():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+        try:
+            return await reasoner.next(
+                [{'role': 'user', 'content': 'Sensoren semantisch zuordnen'}],
+                AgentContext(active_project_id='local-model-fallback'),
+                [],
+            )
+        finally:
+            await reasoner.close()
+
+    result = asyncio.run(invoke())
+    assert [item['model'] for item in requests] == ['llama-test:latest', 'qwen-test:latest']
+    assert requests[1]['keep_alive'] == '10m'
+    assert result['text'] == 'lokaler Fallback aktiv'
 
 
 def test_wizard_execution_status_is_durable_and_uses_the_external_run_id():

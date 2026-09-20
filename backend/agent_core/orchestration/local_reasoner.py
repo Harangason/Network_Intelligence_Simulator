@@ -125,12 +125,22 @@ def _is_structured_wizard_request(messages) -> bool:
 
 def _is_semantic_fast_request(messages) -> bool:
     """Route bounded semantic classification work to the VRAM-sized model."""
+    bounded_project_intake = any(
+        message.get("role") == "system"
+        and "prepare_project_request" in str(message.get("content") or "")
+        and "Originalanforderung bleibt unverändert" in str(message.get("content") or "")
+        for message in messages
+    )
     for message in reversed(messages):
         if message.get("role") != "user":
             continue
         content = str(message.get("content") or "")
         if len(content) > 16_000:
             return False
+        # Intake is advisory language planning over deterministic Python policy
+        # and reviewed experience. It cannot apply changes or replace the input.
+        if bounded_project_intake:
+            return True
         normalized = content.casefold()
         if re.search(r'\b(ändere|aendere|erzeuge|erstelle|lösche|loesche|entferne|implementiere|create|update|delete|modify)\b', normalized):
             return False
@@ -161,6 +171,16 @@ class LocalEngineeringReasoner:
         self.chat_url = base_url.rstrip("/").removesuffix("/v1") + "/api/chat"
         self.client = httpx.AsyncClient(timeout=timeout_seconds)
 
+    @staticmethod
+    def _model_missing(response) -> bool:
+        if response.status_code not in {400, 404}:
+            return False
+        try:
+            detail = str(response.json().get("error") or "")
+        except ValueError:
+            detail = response.text
+        return bool(re.search(r"model.*(?:not found|missing|pull)|(?:not found|missing).*model", detail, re.I))
+
     async def next(self, messages, context, tools):
         from backend.engineering.spatial_architecture import REASONING_RULES
         system = (
@@ -182,6 +202,8 @@ class LocalEngineeringReasoner:
             "Antworte knapp, normalerweise maximal vier Sätze, ohne interne IDs oder Debug-Details. "
             "Vor jeder Erzeugung mit resolve_generation_rules Branche und Bustypen getrennt auflösen; "
             "branchenspezifische Vorlagen und bustypspezifische Transportpfade niemals vermischen. "
+            "Danach inspect_generation_experience abrufen. Frühere geprüfte Entscheidungen sind nur Vorschläge; "
+            "sie bestätigen weder Branche, Bustyp, Einbauort noch aktuelle Modelländerungen. "
             "Bei umfassenden Anforderungen danach expand_requirement nutzen, dann die benötigten Fachgeneratoren. "
             "Erkläre Annahmen und Findings knapp. "
             "Behaupte nie COMPLETED ohne bestätigte kanonische IDs und erfüllte Workload-Ziele. "
@@ -213,7 +235,7 @@ class LocalEngineeringReasoner:
                     break
         if instructions:
             system += '\n' + '\n'.join(instructions)
-        response = await self.client.post(self.chat_url, json={
+        payload = {
             "model": selected_model,
             "messages": [{"role":"system","content":system}, *native],
             "tools": [{"type":"function","function":{"name":t["name"],"description":t["description"],"parameters":_tool_parameters(t["input_schema"])}} for t in tools],
@@ -221,7 +243,20 @@ class LocalEngineeringReasoner:
             "stream": False,
             "keep_alive": self.fast_keep_alive if use_fast_model else self.keep_alive,
             "options": {"temperature": 0.2, "num_predict": 1600, "num_ctx": self.context_tokens},
-        })
+        }
+        response = await self.client.post(self.chat_url, json=payload)
+        # The compact classifier is an optimization, not a single point of
+        # failure.  If that configured model is absent, retry the same bounded
+        # request with the main local Qwen model.  Network errors and main-model
+        # failures remain visible and are never redirected to a cloud provider.
+        if use_fast_model and selected_model != self.model and self._model_missing(response):
+            selected_model = self.model
+            payload = {
+                **payload,
+                "model": selected_model,
+                "keep_alive": self.keep_alive,
+            }
+            response = await self.client.post(self.chat_url, json=payload)
         if response.is_error:
             try:
                 detail = str(response.json().get('error', ''))[:500]

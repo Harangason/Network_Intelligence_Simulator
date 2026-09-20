@@ -23,6 +23,8 @@ SUPPORTED_COMMUNICATION_SYSTEMS = {
     "RS485",
     "SPI",
     "I2C",
+    "UART",
+    "IO_LINK",
     "USB",
     "PCIe",
     "MQTT",
@@ -73,6 +75,9 @@ COMMUNICATION_SYSTEM_ALIASES = {
     "RS485": "RS485",
     "SPI": "SPI",
     "I2C": "I2C",
+    "UART": "UART",
+    "IO_LINK": "IO_LINK",
+    "IOLINK": "IO_LINK",
     "USB": "USB",
     "PCIE": "PCIe",
     "ARINC": "ARINC",
@@ -200,8 +205,15 @@ def scope_count_mismatches(hardware_by_type: dict[str, int], rules: Any) -> dict
             for key, target in limits.items() if actual[key] != target}
 
 
-def is_scope_placeholder_hardware(name: Any, source: Any) -> bool:
+def is_scope_placeholder_hardware(
+    name: Any,
+    source: Any,
+    review_state: Any = None,
+    approval_state: Any = None,
+) -> bool:
     if str(source or "") != "ai_generated":
+        return False
+    if str(review_state or "") == "reviewed" and str(approval_state or "") == "approved":
         return False
     normalized = re.sub(r"[^a-z0-9]+", " ", str(name or "").casefold()).strip()
     if normalized in {"ecu", "ecus", "gateway", "gateways", "sensor", "sensoren", "sensors"}:
@@ -215,7 +227,9 @@ def scope_placeholder_sql(alias: str) -> str:
     if alias not in {"h", "engineering_hardware_nodes"}:
         raise ValueError("Unbekannter SQL-Alias fuer Scope-Platzhalter.")
     return (
-        f"({alias}.source = 'ai_generated' AND ("
+        f"({alias}.source = 'ai_generated' "
+        f"AND NOT (COALESCE({alias}.review_state, '') = 'reviewed' "
+        f"AND COALESCE({alias}.approval_state, '') = 'approved') AND ("
         f"LOWER(BTRIM({alias}.name)) IN ('ecu', 'ecus', 'gateway', 'gateways', 'sensor', 'sensoren', 'sensors') "
         f"OR LOWER(BTRIM({alias}.name)) ~ '^[0-9]+[[:space:]].*(sensor(en|s)?|ecu(s)?|gateway(s)?)$'"
         "))"

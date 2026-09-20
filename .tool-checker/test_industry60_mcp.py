@@ -1,11 +1,14 @@
 """Observation probes, not product-PASS assertions. SQL isolated by launcher."""
-import asyncio, json
+import asyncio, json, os
 from pathlib import Path
 from uuid import uuid4
 from unittest.mock import AsyncMock
 import pytest
 pytest_plugins=['backend.tests.conftest']
-OUT=Path(__file__).resolve().parent/'evidence/industry60/mcp'
+OUT=Path(os.environ.get(
+    'TOOL_CHECKER_EVIDENCE_ROOT',
+    str(Path(__file__).resolve().parent/'evidence/industry60'),
+))/'mcp'
 
 def test_observe_registered_protocol_and_failures():
     from backend.agent_core.api.mcp_client import EngineeringMCPClient

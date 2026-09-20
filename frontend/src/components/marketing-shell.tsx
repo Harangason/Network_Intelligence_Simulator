@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { withProjectParam } from "@/lib/user-settings";
 import { ProjectRefreshButton } from "./project-refresh-button";
+import { StudioThemeControl } from "./studio-theme-control";
 
 const navigation = [
   { href: "/platform", label: "Platform" },
@@ -60,6 +61,7 @@ export function MarketingNav() {
         ))}
       </div>
       <div className="landing-nav-actions">
+        <StudioThemeControl />
         <ProjectRefreshButton disabled={false} />
       </div>
     </nav>

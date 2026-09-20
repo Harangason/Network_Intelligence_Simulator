@@ -97,6 +97,53 @@ def test_model_can_reason_about_the_draft_but_cannot_replace_the_user_requiremen
     assert calls[0][1]['revision'] is None
 
 
+def test_project_intake_reads_generator_policy_and_reviewed_experience_first():
+    calls = []
+
+    class Client:
+        async def tools(self):
+            return [
+                {'name': 'prepare_project_request'},
+                {'name': 'resolve_generation_rules'},
+                {'name': 'inspect_generation_experience'},
+            ]
+
+        async def call(self, name, arguments=None):
+            calls.append((name, arguments))
+            if name == 'prepare_project_request':
+                return ToolResult(data={'agent_response': {
+                    'type': 'RESULT', 'status': 'INCOMPLETE', 'text': 'Entwurf',
+                    'metadata': {},
+                }})
+            return ToolResult(data={
+                'status': 'READY',
+                'authority': 'advisory_only' if name == 'inspect_generation_experience' else 'registry',
+            })
+
+    class Reasoner:
+        async def next(self, messages, context, tools):
+            assert [tool['name'] for tool in tools] == ['prepare_project_request']
+            assert any(message.get('tool_name') == 'resolve_generation_rules' for message in messages)
+            assert any(message.get('tool_name') == 'inspect_generation_experience' for message in messages)
+            return {'calls': [{'name': 'prepare_project_request', 'arguments': {
+                'planning_notes': 'Registry und geprüfte Erfahrungen wurden getrennt berücksichtigt.',
+            }}]}
+
+    result = asyncio.run(EngineeringAgent(Client(), reasoner=Reasoner()).run(
+        REQUEST,
+        AgentContext(active_project_id='test-generation-experience-intake'),
+    ))
+
+    assert result['status'] == 'INCOMPLETE'
+    assert [name for name, _ in calls] == [
+        'resolve_generation_rules',
+        'inspect_generation_experience',
+        'prepare_project_request',
+    ]
+    assert calls[-1][1]['requirement'] == REQUEST
+    assert 'Registry und geprüfte Erfahrungen' in calls[-1][1]['planning_notes']
+
+
 @pytest.mark.parametrize('text', ['Ich möchte kein Projekt mit Sensoren.',
     'Strukturierte Vorgaben fuer den Engineering-Agenten: Erstelle Projekt mit Sensoren.'])
 def test_negation_and_confirmed_wizard_are_not_redirected(text):

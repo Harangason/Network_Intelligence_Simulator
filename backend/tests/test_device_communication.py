@@ -55,3 +55,30 @@ def test_explicit_generated_actuator_encoding_survives_model_boundary():
     assert signal['length_bits'] == 10 and signal['factor'] == 0.1 and signal['max_value'] == 100
     assert changes[1]['data']['dlc'] == 2
     assert actuator_command_template({'name': 'DrivePrimaryCommand'}) is None
+
+
+def test_explicit_safety_actuator_encoding_generates_command_and_feedback():
+    from backend.engineering.device_communication import complete_new_actuator_messages
+    definition = {
+        'source': 'wizard-safety-actuator-v1', 'length_bits': 1, 'data_type': 'unsigned',
+        'unit': 'code', 'factor': 1, 'min_value': 0, 'max_value': 1,
+        'semantic': {'semantic_type': 'BOOLEAN', 'meaning': 'Sicherer Stopp angefordert'},
+        'data': {'enum_values': {'RUN': 0, 'SAFE_STOP': 1}, 'default_value': 'RUN'},
+    }
+    changes = [
+        {'object_type': 'HardwareNode', 'local_ref': 'act', 'data': {
+            'name': 'SafetyAktor1', 'device_type': 'ActuatorController',
+            'identity': {'actuator_command_template': definition}}},
+        {'object_type': 'Message', 'local_ref': 'command', 'data': {
+            'name': 'Safety command', 'dlc': 1,
+            'configuration': {'transport_unit': {'consumer_refs': ['$act'],
+                'provenance': {'generator': 'wizard-local-actuator-command'}}}}},
+        {'object_type': 'Message', 'local_ref': 'feedback', 'data': {
+            'name': 'Safety feedback', 'dlc': 1,
+            'configuration': {'transport_unit': {'producer_ref': '$act'}}}},
+    ]
+    complete_new_actuator_messages(changes, {'HardwareNode': [], 'Message': [], 'Signal': []})
+    command = next(c['data'] for c in changes if c['object_type'] == 'Signal' and c['data']['message_id'] == '$command')
+    feedback = next(c['data'] for c in changes if c['object_type'] == 'Signal' and c['data']['message_id'] == '$feedback')
+    assert command['length_bits'] == 1 and command['data']['default_value'] == 'RUN'
+    assert feedback['semantic']['semantic_type'] == 'STATE'

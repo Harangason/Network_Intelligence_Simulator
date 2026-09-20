@@ -21,6 +21,8 @@ from .timing import generated_timing
 
 BUS_PROTOCOLS = {
     "i2c": "I2C",
+    "uart": "UART",
+    "io_link": "IO_LINK",
     "spi": "SPI",
     "gpio": "GPIO",
     "pwm": "PWM",
@@ -39,6 +41,7 @@ BUS_CYCLES_MS = {
     "can_xl": 10.0,
     "can_fd": 10.0,
     "lin": 20.0,
+    "uart": 10.0,
     "automotive_ethernet": 5.0,
     "flexray": 5.0,
 }

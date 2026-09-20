@@ -37,6 +37,30 @@ Branchensonderfälle werden als eigener registrierter Branchenpfad ergänzt; sie
 dürfen nicht als globales Verhalten oder als Default eines anderen Profils
 implementiert werden.
 
+Jede Policy liefert zusätzlich eine navigierbare `provenance`: zuständiges
+Python-Policy-Modul, Branchenquellen und die spezialisierten Quellmodule jedes
+Bustyps. Dadurch bleibt von der Agentenentscheidung bis zum konkreten Generator
+sichtbar, wo Fachwissen und Transportverhalten implementiert sind.
+
+## Lokale KI und kontrollierte Erfahrung
+
+Der Engineering-Agent nutzt den lokalen Ollama-Reasoner. Das Hauptmodell
+(`LOCAL_AI_MODEL`, standardmäßig Qwen) plant komplexe Engineering-Aufträge; das
+schnelle Modell (`LOCAL_AI_FAST_MODEL`, standardmäßig Llama 3.1) unterstützt
+begrenzte Klassifikations- und Zuordnungsaufgaben sowie den rein beratenden
+Projekt-Intake über bereits deterministisch aufgelösten Regeln und Erfahrungen.
+Fehlt nur das schnelle Modell,
+darf derselbe lokale Auftrag auf das Hauptmodell zurückfallen. Ein stiller
+Cloud-Fallback ist nicht zulässig. Runtime-Status weist Erreichbarkeit sowie die
+Verfügbarkeit beider Modelle getrennt aus.
+
+Vor einem neuen Projektentwurf werden `resolve_generation_rules` und danach
+`inspect_generation_experience` ausgeführt. Die Erfahrung stammt ausschließlich
+aus menschlich geprüften, angewendeten oder abgelehnten Vorschlägen. Sie verändert
+keine Modellgewichte, Generatoren oder Freigaben und darf aktuelle Branche,
+Bustypen, Einbauorte und technische Validierung nicht ersetzen. Ungeprüfte
+Entwürfe werden nicht als Lernerfahrung verwendet.
+
 ## Änderungsschutz
 
 Jede Änderung an Erkennung oder Pfadauswahl benötigt mindestens:

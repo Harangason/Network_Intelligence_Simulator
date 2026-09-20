@@ -10,6 +10,17 @@ def is_project_request(prompt: str) -> bool:
         return False
     if re.match(r'(?:bitte\s+)?(?:wie|warum|zeige|suche|finde|erkläre|prüfe|prüfen|pruefe|validiere|berechne|how|why|show|find|search|check|validate|calculate)\b', text, re.I):
         return False
+    # Meta requests must reach the typing/reasoning path even when one of their
+    # examples contains a complete hardware inventory.  Otherwise a request
+    # such as "Klassifiziere diese Eingaben: ... Erzeuge eine Architektur ..."
+    # is incorrectly converted into a project draft.
+    if re.match(
+        r'(?:bitte\s+)?(?:klassifiziere|klassifizieren|typisiere|ordne\s+die\s+'
+        r'eingaben|classify|categorize|type\s+the\s+inputs)\b',
+        text,
+        re.I,
+    ):
+        return False
     # A hardware brief is a whole-design request even without the word
     # "project". Requiring that word routed inventories into signal/function
     # generators and silently reduced their scope. At least two quantified

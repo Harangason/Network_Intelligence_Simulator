@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   DEFAULT_ENGINEERING_WIZARD_SETTINGS,
+  defaultWizardTechnologyIds,
   normalizeEngineeringWizardSettings,
   wizardQuestionnaireSteps,
   WIZARD_PROCESS_GROUP,
@@ -62,5 +63,47 @@ test("wizard pages start with project name and omit settings-owned choices", () 
   assert.deepEqual(
     wizardQuestionnaireSteps("can").map((step) => step.id),
     ["project", "technologies", "architecture", "parameters", "task", "equipment"],
+  );
+});
+
+const technology = (id, implementation_status = "IMPLEMENTED") => ({ id, implementation_status });
+
+test("generic and custom projects do not invent transport technologies", () => {
+  const technologies = [
+    technology("custom_binary"),
+    technology("custom_protocol"),
+    technology("custom_tcp"),
+    technology("custom_text"),
+  ];
+  assert.deepEqual(defaultWizardTechnologyIds({ id: "custom", label: "Custom", technologies }), []);
+  assert.deepEqual(defaultWizardTechnologyIds({ id: "generic_networking", label: "Generic", technologies }), []);
+  assert.deepEqual(defaultWizardTechnologyIds({ id: "generic", label: "Generic", technologies }), []);
+});
+
+test("registered domain defaults remain ordered and exclude unsupported technologies", () => {
+  const technologies = [
+    technology("lin"),
+    technology("someip", "NOT_SUPPORTED"),
+    technology("can_fd"),
+    technology("automotive_ethernet"),
+  ];
+  assert.deepEqual(
+    defaultWizardTechnologyIds({ id: "automotive", label: "Automotive", technologies }),
+    ["can_fd", "automotive_ethernet", "lin"],
+  );
+});
+
+test("a registered domain without a preference list retains executable catalog defaults", () => {
+  const technologies = [
+    technology("i2c"),
+    technology("spi"),
+    technology("uart"),
+    technology("planned", "PLANNED"),
+    technology("gpio"),
+    technology("pwm"),
+  ];
+  assert.deepEqual(
+    defaultWizardTechnologyIds({ id: "embedded_systems", label: "Embedded", technologies }),
+    ["i2c", "spi", "uart", "gpio"],
   );
 });

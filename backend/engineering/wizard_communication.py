@@ -63,13 +63,23 @@ def communication_plan(prompt, graph):
     nodes = graph['HardwareNode']
     hmi_choices = hmi_message_choices(clusters, graph)
     names = {str(n['name']).casefold(): key for key, n in nodes.items()}
+    controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController',
+                        'EmbeddedController', 'RobotController', 'FlightComputer',
+                        'BatteryManagementSystem', 'EnergyController', 'BuildingController'}
     owners, displays, internal_status = {}, {}, set()
     for cluster in clusters:
-        for controller in cluster.get('controllers') or []:
+        controllers = cluster.get('controllers') or []
+        has_external_routes = bool(cluster.get('hmi_routes') or cluster.get('functional_routes'))
+        for controller in controllers:
             owner = names.get(str(controller.get('ecu', '')).casefold())
-            if owner and cluster.get('controller_status_scope') == 'INTERNAL':
+            endpoints = [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]
+            other_monitors = [key for key, node in nodes.items()
+                              if key != owner and node.get('device_type') in controller_types]
+            local_closed_loop = (len(controllers) == 1 and bool(endpoints)
+                                 and not has_external_routes and not other_monitors)
+            if owner and (cluster.get('controller_status_scope') == 'INTERNAL' or local_closed_loop):
                 internal_status.add(owner)
-            for endpoint in [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]:
+            for endpoint in endpoints:
                 identifier = names.get(str(endpoint).casefold())
                 if not identifier or not owner:
                     raise ValueError(f'Kommunikationsplanung: Zuordnung {endpoint} → {controller.get("ecu")} fehlt.')
@@ -86,9 +96,6 @@ def communication_plan(prompt, graph):
         1 if nodes[key].get('device_type') == 'Gateway' else 2,
         str(nodes[key]['name']).casefold(),
     ))
-    controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController',
-                        'EmbeddedController', 'RobotController', 'FlightComputer',
-                        'BatteryManagementSystem', 'EnergyController', 'BuildingController'}
     monitors = [key for key in monitors if nodes[key].get('device_type') in controller_types]
     result = {}
     for identifier, message in graph['Message'].items():

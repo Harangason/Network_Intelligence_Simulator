@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { busProfiles, normalizePhysicalTopology, topologyToConfig } from "./topology.ts";
+import { busProfile, busProfiles, normalizePhysicalTopology, topologyToConfig } from "./topology.ts";
 
 test("wizard-local technologies have complete network-editor profiles", () => {
   for (const technology of ["i2c", "spi", "uart", "modbus_rtu", "modbus_tcp", "gpio", "pwm", "adc", "dac"]) {
@@ -9,6 +9,18 @@ test("wizard-local technologies have complete network-editor profiles", () => {
     assert.ok(busProfiles[technology].label, technology);
     assert.ok(busProfiles[technology].payload > 0, technology);
   }
+});
+
+test("catalog and unknown technologies always receive a renderable profile", () => {
+  assert.deepEqual(
+    [busProfile("profinet").label, busProfile("io_link").label],
+    ["PROFINET", "IO-Link"],
+  );
+  const unknown = busProfile("future_fieldbus");
+  assert.equal(unknown.label, "Future Fieldbus");
+  assert.match(unknown.color, /^hsl\(/);
+  assert.ok(unknown.bitrate > 0);
+  assert.deepEqual(busProfile("future_fieldbus"), unknown);
 });
 
 test("shared hardware interface remains one multi-participant bus port", () => {

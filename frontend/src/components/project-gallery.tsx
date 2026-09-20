@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Arrow } from "./marketing-shell";
 import { requestEngineeringAgentWizard } from "@/lib/agent-task-events";
+import { createNetworkProjectId } from "@/lib/project-ids";
 import { readUserSettings, withProjectParam, writeUserSettings } from "@/lib/user-settings";
 import { setWorkflowContext } from "@/lib/workflow-api";
 import styles from "./project-gallery.module.css";
@@ -57,8 +58,7 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
     createBusy.current = true; setCreating(true); setCreateError("");
     try {
       // Keep this identity on retry, including when the accepted save response was lost.
-      const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
-      const project = pendingProject.current ??= `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
+      const project = pendingProject.current ??= createNetworkProjectId();
       await setWorkflowContext({ engineering_wizard_settings: { project_name: trace ? "Neues Trace-Projekt" : "Neues Projekt", model_type: "custom" } }, project);
       writeUserSettings({ ...readUserSettings(), activeProject: project });
       if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
@@ -97,7 +97,7 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
       <button className="button secondary" disabled={loading} onClick={() => void load()}>Aktualisieren</button>
     </div>
     {error && <p role="alert" className={styles.error}>{error} <button className="button secondary" onClick={() => void load()}>Erneut versuchen</button></p>}
-    {createError && <p role="alert" className={styles.error}>{createError} Die Plus-Kachel wiederholt dieselbe Projektanlage.</p>}
+    {createError && <p role="alert" className={styles.error}>{createError} Bitte erneut versuchen.</p>}
     <div className={styles.grid} aria-busy={loading}>
       <button className={`${styles.card} ${styles.newCard}`} onClick={() => void create()} disabled={creating}>
         <span className={styles.plus} aria-hidden="true">+</span>

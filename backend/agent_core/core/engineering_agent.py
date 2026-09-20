@@ -2,9 +2,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 import re
 from typing import Callable
 from uuid import uuid4
+
+
+def _local_planning_timeout_seconds() -> int:
+    """Allow locally hosted larger models enough time without unbounded waits."""
+    return max(
+        30,
+        min(int(os.environ.get("LOCAL_AI_PLANNING_TIMEOUT_SECONDS", "120")), 600),
+    )
 from ..api.mcp_client import EngineeringMCPClient
 from ..api.tool_contract import ToolResult
 from ..context.agent_context import AgentContext
@@ -206,17 +216,68 @@ class EngineeringAgent:
                          'revision': context.project_draft_revision}
             if self.reasoner:
                 try:
-                    tools = [tool for tool in await self.client.tools() if tool['name'] == 'prepare_project_request']
-                    decision = await asyncio.wait_for(self.reasoner.next([
+                    available = {
+                        tool['name']: tool
+                        for tool in await self.client.tools()
+                        if tool['name'] in {
+                            'prepare_project_request',
+                            'resolve_generation_rules',
+                            'inspect_generation_experience',
+                        }
+                    }
+                    planning_messages = [
                         {'role': 'system', 'content':
                             'Der Nutzer beschreibt ein neu zu planendes Projekt, keine Suche nach bestehenden Objekten. '
-                            'Erarbeite einen fachlichen Entwurf und nutze prepare_project_request. '
+                            'Löse zuerst mit resolve_generation_rules die getrennten Branchen- und Technikpfade auf. '
+                            'Rufe danach inspect_generation_experience ab; diese Historie ist nur ein Hinweis und keine Freigabe. '
+                            'Erarbeite anschließend einen fachlichen Entwurf und nutze prepare_project_request. '
                             'planning_notes enthält bekannte Komponenten, vorgeschlagene Funktionsbeziehungen und gezielte '
                             'Rückfragen zu noch fehlenden Angaben. Behandle Schreibfehler kontextbezogen. '
                             'Erfinde keine Stückzahlen, Anschlussarten, Versorgung, Zeiten oder bestätigte Hardwareeignung. '
                             'Es wurde noch nichts angelegt. Die Originalanforderung bleibt unverändert.'},
                         {'role': 'user', 'content': prompt},
-                    ], context, tools), timeout=20)
+                    ]
+                    read_calls = [
+                        {'id': name, 'name': name, 'arguments': {'prompt': prompt}}
+                        for name in ('resolve_generation_rules', 'inspect_generation_experience')
+                        if name in available
+                    ]
+                    if read_calls:
+                        planning_messages.append({
+                            'role': 'assistant',
+                            'content': '',
+                            'tool_calls': [
+                                {
+                                    'id': item['id'],
+                                    'type': 'function',
+                                    'function': {
+                                        'name': item['name'],
+                                        'arguments': item['arguments'],
+                                    },
+                                }
+                                for item in read_calls
+                            ],
+                        })
+                        for item in read_calls:
+                            read_result = await call(item['name'], item['arguments'])
+                            planning_messages.append({
+                                'role': 'tool',
+                                'tool_call_id': item['id'],
+                                'tool_name': item['name'],
+                                'content': json.dumps(
+                                    read_result.model_dump(mode='json'),
+                                    ensure_ascii=False,
+                                    default=str,
+                                ),
+                            })
+                    decision = await asyncio.wait_for(
+                        self.reasoner.next(
+                            planning_messages,
+                            context,
+                            [available['prepare_project_request']] if 'prepare_project_request' in available else [],
+                        ),
+                        timeout=_local_planning_timeout_seconds(),
+                    )
                     for tool_call in decision.get('calls', []):
                         if tool_call.get('name') != 'prepare_project_request':
                             continue
@@ -224,9 +285,16 @@ class EngineeringAgent:
                         if isinstance(notes, str) and len(notes) <= 6000 and not unsupported_change_claim(notes):
                             arguments['planning_notes'] = notes
                             break
+                    if 'planning_notes' not in arguments:
+                        notes = decision.get('text')
+                        if isinstance(notes, str) and notes.strip() and len(notes) <= 6000 and not unsupported_change_claim(notes):
+                            arguments['planning_notes'] = notes.strip()
                 except Exception:
                     # The editable intake still works when inference is unavailable.
-                    pass
+                    import logging
+                    logging.getLogger(__name__).exception(
+                        'Local generator-assisted intake planning failed; using deterministic intake.'
+                    )
             result = await call('prepare_project_request', arguments)
             if result.success:
                 item = result.data['agent_response']
@@ -886,7 +954,6 @@ class EngineeringAgent:
             messages = [*(history or [])[-12:], {"role":"user","content":prompt}]
             directory = await call('inspect_assistant_capabilities')
             if directory.success and isinstance(directory.data.get('capabilities'), list):
-                import json
                 messages.insert(len(messages) - 1, {'role': 'system', 'content': 'Verifizierter Fähigkeitenkatalog. Nutze prepare_assistant_action für passende Bedienabläufe und inspect_communication_repair für die aktuelle Architektur. '
                     + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps', 'execution') if k in item} for item in directory.data['capabilities']], ensure_ascii=False)})
             tools = await self.client.tools()
@@ -946,7 +1013,6 @@ class EngineeringAgent:
                     messages.append(decision["assistant_message"])
                     for tool_call in decision["calls"]:
                         name, arguments = tool_call["name"], tool_call["arguments"]
-                        import json
                         signature = json.dumps([name, arguments], sort_keys=True, ensure_ascii=False)
                         if signature in completed_calls:
                             stalled = True

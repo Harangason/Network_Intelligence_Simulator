@@ -398,12 +398,19 @@ class IntelligenceService:
         verified = bool(results_analysis and not results_analysis.get("is_outdated") and results_analysis.get("status") in {"COMPLETE", "APPROVED", "WARNING"})
         data = self._collect()
         objects = data["objects"]
+        has_engineering_content = any(objects.values()) or bool(
+            data["routes"]
+            or data["relations"]
+            or data.get("hardware_interfaces")
+            or data["state"].get("topology")
+        )
         missing_evidence = []
-        if not verified:
+        if has_engineering_content and not verified:
             missing_evidence.append("Aktuelle Simulation und Results-/Analysis-Auswertung fehlen.")
         for key, label in (("capacity", "Capacity & Timing"), ("preflight", "Validation / Preflight")):
             if not data[key] or data[key].get("is_outdated"):
-                missing_evidence.append(f"{label}: kein aktueller Nachweis.")
+                if has_engineering_content:
+                    missing_evidence.append(f"{label}: kein aktueller Nachweis.")
                 data[key] = {}  # Old findings are history, not evidence about the current model.
         data_quality = DataQualityService().analyze(objects)
         graph = GraphAnalyticsService().analyze(
@@ -502,7 +509,7 @@ class IntelligenceService:
                 "issue_review_count": sum(1 for item in issues if str(item.get("status") or "").upper() == "APPROVED"),
             },
         }
-        status = self._assessment_status(issues)
+        status = self._assessment_status(issues) if has_engineering_content else "EMPTY"
         source_objects = [
             {"object_type": object_type, "object_id": str(item.get("id")), "version": item.get("version")}
             for object_type, items in objects.items() for item in items

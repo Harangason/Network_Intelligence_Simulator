@@ -23,3 +23,32 @@ test('typed groups add, repeated totals and network assignments do not duplicate
 test('an abstract coupling and technology names do not declare gateway hardware', () => {
   assert.equal(extractEngineeringTargetCounts('1 zentrale Kopplung\nCAN-FD und Ethernet').gateways, 0);
 });
+
+test('S04-A creates identities for the explicitly counted gateway and fan actuators', () => {
+  const input = `1 Controller
+4 Temperatursensoren über LIN
+3 Lüfteraktoren über LIN
+1 Gateway mit LIN- und Ethernet-Port
+
+LIN:
+19,2 kbit/s
+Sensoren 500 ms
+Lüfterstatus 250 ms
+
+Ethernet:
+100 Mbit/s
+
+Funktionen:
+ZoneTemperatureAcquire
+FanControl
+ThermalStatus`;
+  const specification = extractEngineeringSpecification(input, {}, 'custom', true);
+  const identities = new Map(specification.chains.map(chain => [chain.hardware_name, chain.device_type]));
+
+  assert.equal([...identities.values()].filter(type => type === 'Gateway').length, 1);
+  assert.equal([...identities.values()].filter(type => type === 'ActuatorController').length, 3);
+  assert.deepEqual(
+    [...identities.entries()].filter(([, type]) => type === 'ActuatorController').map(([name]) => name).sort(),
+    ['Luefteraktor1', 'Luefteraktor2', 'Luefteraktor3'],
+  );
+});

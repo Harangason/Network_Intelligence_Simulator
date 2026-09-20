@@ -238,7 +238,9 @@ export function engineeringHardwareKind(
   return "ecu";
 }
 
-export const busProfiles: Record<BusType, { label: string; bitrate: number; cycleMs: number; payload: number; color: string }> = {
+export type BusProfile = { label: string; bitrate: number; cycleMs: number; payload: number; color: string };
+
+export const busProfiles: Record<BusType, BusProfile> = {
   can: { label: "CAN", bitrate: 500_000, cycleMs: 10, payload: 8, color: "#70c48c" },
   can_xl: { label: "CAN-XL", bitrate: 10_000_000, cycleMs: 10, payload: 2048, color: "#58bfc4" },
   can_fd: { label: "CAN FD", bitrate: 2_000_000, cycleMs: 10, payload: 64, color: "#9fea4e" },
@@ -256,6 +258,40 @@ export const busProfiles: Record<BusType, { label: string; bitrate: number; cycl
   dac: { label: "DAC", bitrate: 1, cycleMs: 10, payload: 4, color: "#dc85a6" },
 };
 
+const catalogBusProfiles: Record<string, BusProfile> = {
+  profinet: { label: "PROFINET", bitrate: 100_000_000, cycleMs: 1, payload: 1440, color: "#4fb4d8" },
+  io_link: { label: "IO-Link", bitrate: 230_400, cycleMs: 20, payload: 32, color: "#a3c95b" },
+  ethercat: { label: "EtherCAT", bitrate: 100_000_000, cycleMs: 1, payload: 1486, color: "#e18a57" },
+  opc_ua: { label: "OPC UA", bitrate: 100_000_000, cycleMs: 20, payload: 1500, color: "#5ba8a0" },
+  ros2_dds: { label: "ROS 2 / DDS", bitrate: 1_000_000_000, cycleMs: 10, payload: 65_535, color: "#8b9fe8" },
+};
+
+function catalogTechnologyLabel(value: string) {
+  return value
+    .split(/[_\-\s]+/)
+    .filter(Boolean)
+    .map((part) => part.length <= 3 ? part.toUpperCase() : `${part[0].toUpperCase()}${part.slice(1)}`)
+    .join(" ") || "Unbekannter Bus";
+}
+
+/** API topology data can contain technologies from the extensible catalog.
+ * Render them deterministically even when the editor cannot offer them as a
+ * manually selectable bus yet. */
+export function busProfile(bus: string | null | undefined): BusProfile {
+  const key = (bus ?? "").trim().toLowerCase();
+  const known = busProfiles[key as BusType] ?? catalogBusProfiles[key];
+  if (known) return known;
+  let hash = 0;
+  for (const character of key) hash = ((hash * 31) + character.charCodeAt(0)) >>> 0;
+  return {
+    label: catalogTechnologyLabel(key),
+    bitrate: 1_000_000,
+    cycleMs: 10,
+    payload: 64,
+    color: `hsl(${hash % 360} 48% 58%)`,
+  };
+}
+
 const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 export type PhysicalNetworkAssignment = {
@@ -265,7 +301,7 @@ export type PhysicalNetworkAssignment = {
 };
 
 function busDisplayName(bus: BusType) {
-  return bus === "can_fd" ? "CAN" : busProfiles[bus].label;
+  return bus === "can_fd" ? "CAN" : busProfile(bus).label;
 }
 
 /** Keep distinct physical buses distinct, while joining a complete semantic
@@ -341,7 +377,7 @@ export function physicalNetworkAssignments(topology: NetworkTopology) {
   topology.edges.forEach((edge) => {
     const fallback = inferred.get(edge.id) ?? {
       id: `network-${edge.bus}`,
-      name: busProfiles[edge.bus].label,
+      name: busProfile(edge.bus).label,
       technology: edge.bus,
     };
     result.set(edge.id, {
@@ -388,7 +424,7 @@ function splitPortsByPhysicalNetwork(topology: NetworkTopology): NetworkTopology
   };
   topology.edges.forEach((edge) => {
     const networkId = edge.physicalNetworkId ?? `network-${edge.bus}`;
-    const networkName = edge.physicalNetworkName ?? busProfiles[edge.bus].label;
+    const networkName = edge.physicalNetworkName ?? busProfile(edge.bus).label;
     addUse(edge.source, edge.sourcePort, edge.id, "source", networkId, networkName);
     addUse(edge.target, edge.targetPort, edge.id, "target", networkId, networkName);
   });
@@ -453,8 +489,8 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
     id,
     name: assignment.name,
     technology,
-    bitrate: busProfiles[technology].bitrate,
-    cycle_ms: busProfiles[technology].cycleMs,
+    bitrate: busProfile(technology).bitrate,
+    cycle_ms: busProfile(technology).cycleMs,
     nodes: Array.from(new Set(edges.flatMap((edge) => [edge.source, edge.target]))),
   }); });
 
@@ -498,8 +534,8 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
         receiver_interfaces: [`${edge.targetPort}-interface`],
         network: assignments.get(edge.id)?.id ?? `network-${edge.bus}`,
         technology: edge.bus,
-        cycle_ms: busProfiles[edge.bus].cycleMs,
-        payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
+        cycle_ms: busProfile(edge.bus).cycleMs,
+        payload_bytes: Math.min(busProfile(edge.bus).payload, 64),
         routing_entry_id: edge.routingEntryId,
         routing_entry_ids: edge.routingEntryIds ?? (edge.routingEntryId ? [edge.routingEntryId] : []),
       }];
@@ -517,8 +553,8 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
         receiver_interfaces: [`${reversed ? edge.sourcePort : edge.targetPort}-interface`],
         network: assignments.get(edge.id)?.id ?? `network-${edge.bus}`,
         technology: edge.bus,
-        cycle_ms: busProfiles[edge.bus].cycleMs,
-        payload_bytes: Math.min(busProfiles[edge.bus].payload, 64),
+        cycle_ms: busProfile(edge.bus).cycleMs,
+        payload_bytes: Math.min(busProfile(edge.bus).payload, 64),
         routing_entry_id: route.routeId,
         routing_entry_ids: [route.routeId],
       };
@@ -530,7 +566,7 @@ export function topologyToConfig(topology: NetworkTopology, formats: string[] = 
       name: "ecu_network_topology",
       industry: "automotive",
       duration_s: 1,
-      cycle_ms: Math.min(...topology.edges.map((edge) => busProfiles[edge.bus].cycleMs)),
+      cycle_ms: Math.min(...topology.edges.map((edge) => busProfile(edge.bus).cycleMs)),
       node_count: topology.nodes.length,
       max_events: 100_000,
       seed: 42,

@@ -23,11 +23,16 @@ export function actuatorCommandChoice(command: unknown): string {
   return Object.entries(ACTUATOR_COMMANDS).find(([, value]) => JSON.stringify(command) === JSON.stringify(value))?.[0] ?? 'CUSTOM';
 }
 
+export function actuatorCommandLabel(role: string, name: string, purpose = ''): string {
+  if (role !== 'ACTUATOR') return '';
+  return /ventil|valve/i.test(`${name} ${purpose}`) ? 'Ventilbefehl' : 'Aktorbefehl';
+}
+
 export function unresolvedActuatorCommands(chains: ExtractedEngineeringChain[], text: string): string[] {
   const commands = actuatorCommands(text);
   return [...new Set(chains.filter(chain => chain.device_type === 'ActuatorController'
     && !actuatorCommandChoice(commands[chain.hardware_name])
-    && (chain.configuration?.actuator_command_template as { source?: string } | undefined)?.source !== 'wizard-generic-actuator-v1'
+    && !(chain.configuration?.actuator_command_template as { source?: string } | undefined)?.source?.startsWith('wizard-')
     && !/(?:Schaltausgang|SchaltausgangActuator|Stellglied|StellgliedActuator)$/.test(chain.hardware_name))
     .map(chain => chain.hardware_name))];
 }

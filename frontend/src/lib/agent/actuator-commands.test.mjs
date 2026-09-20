@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actuatorCommands, selectActuatorCommand, unresolvedActuatorCommands, ACTUATOR_COMMANDS } from './actuator-commands.ts';
+import { actuatorCommandLabel, actuatorCommands, selectActuatorCommand, unresolvedActuatorCommands, ACTUATOR_COMMANDS } from './actuator-commands.ts';
 
 const valves = ['Ventilaktor1', 'Ventilaktor2'].map(hardware_name => ({ hardware_name, device_type: 'ActuatorController' }));
 test('each valve needs its own explicit command and selection preserves the other device', () => {
@@ -11,6 +11,12 @@ test('each valve needs its own explicit command and selection preserves the othe
   const complete = selectActuatorCommand(first, 'Ventilaktor2', 'POSITION');
   assert.deepEqual(unresolvedActuatorCommands(valves, complete), []);
   assert.deepEqual(actuatorCommands(complete), { Ventilaktor1: ACTUATOR_COMMANDS.OPEN_CLOSE, Ventilaktor2: ACTUATOR_COMMANDS.POSITION });
+});
+test('draft command selection is available for every actuator role', () => {
+  assert.equal(actuatorCommandLabel('ACTUATOR', 'PWMVentil', 'Ventil'), 'Ventilbefehl');
+  assert.equal(actuatorCommandLabel('ACTUATOR', 'DCMotorcontroller', 'Stellposition'), 'Aktorbefehl');
+  assert.equal(actuatorCommandLabel('ACTUATOR', 'Relaisausgang', 'Auf / Zu'), 'Aktorbefehl');
+  assert.equal(actuatorCommandLabel('SENSOR', 'Drucksensor', 'Druck'), '');
 });
 test('custom encodings from notes survive a selection for another actuator', () => {
   const custom = { length_bits: 8, data: { enum_values: { CLOSED: 12, OPEN: 99 } } };

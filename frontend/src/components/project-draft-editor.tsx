@@ -3,17 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { readActiveProjectId, readUserSettings, writeUserSettings, withProjectParam } from '@/lib/user-settings';
 import type { EngineeringProposal } from '@/lib/agent/engineering-agent';
+import { ACTUATOR_COMMANDS, actuatorCommandChoice, actuatorCommandLabel } from '@/lib/agent/actuator-commands';
 import styles from './project-draft-editor.module.css';
 
 type Device = { id: string; name: string; role: string; technology: string | null; owner_id: string | null; command?: Record<string, unknown> | null; purpose?: string | null; known_kind?: boolean };
 type Draft = { source_format?: string; draft_id: string; revision: number; original_requirement: string; sources?: { text: string }[]; industry: string | null; allow_simulation_defaults?: boolean; model_proposal_id?: string; devices: Device[]; issues: { id: string; message: string }[] };
-const openCloseCommand = { length_bits: 1, data_type: 'boolean', factor: 1, unit: 'code', min_value: 0, max_value: 1,
-  semantic: { semantic_type: 'BOOLEAN' }, data: { enum_values: { CLOSE: 0, OPEN: 1 } } };
-function commandChoice(command: Device['command']) {
-  if (!command) return '';
-  const values = (command.data as { enum_values?: Record<string, unknown> } | undefined)?.enum_values;
-  return command.length_bits === 1 && values?.CLOSE === 0 && values?.OPEN === 1 && Object.keys(values).length === 2 ? 'OPEN_CLOSE' : 'CUSTOM';
-}
 const operationId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
 
 export type ProjectDraftStatus = { draftId: string; revision: number; ready: boolean };
@@ -181,9 +175,11 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
           <option value="">Noch offen</option>{owners.map(owner => <option key={owner.id} value={owner.id}>{owner.name}</option>)}
         </select></label>}
         <label>Anschlusstechnologie<input placeholder="Noch offen" value={device.technology ?? ''} onChange={event => edit(device.id, 'technology', event.target.value || null)} /></label>
-        {device.role === 'ACTUATOR' && /ventil|valve/i.test(device.name + ' ' + (device.purpose ?? '')) && <label>Ventilbefehl<select value={commandChoice(device.command)} onChange={event => { if (event.target.value !== 'CUSTOM') edit(device.id, 'command', event.target.value ? openCloseCommand : null); }}>
-          <option value="">Noch offen</option><option value="OPEN_CLOSE">Auf / Zu · 1 Bit: 0 = Zu, 1 = Auf</option>
-          {commandChoice(device.command) === 'CUSTOM' && <option value="CUSTOM">Vorhandene individuelle Kodierung beibehalten</option>}
+        {actuatorCommandLabel(device.role, device.name, device.purpose ?? '') && <label>{actuatorCommandLabel(device.role, device.name, device.purpose ?? '')}<select value={actuatorCommandChoice(device.command)} onChange={event => { if (event.target.value !== 'CUSTOM') edit(device.id, 'command', event.target.value ? ACTUATOR_COMMANDS[event.target.value as keyof typeof ACTUATOR_COMMANDS] : null); }}>
+          <option value="">Noch offen</option>
+          <option value="OPEN_CLOSE">Auf / Zu · 1 Bit: 0 = Zu, 1 = Auf</option>
+          <option value="POSITION">Stellposition · 0–100 %, 0,1 %</option>
+          {actuatorCommandChoice(device.command) === 'CUSTOM' && <option value="CUSTOM">Vorhandene individuelle Kodierung beibehalten</option>}
         </select></label>}
       </fieldset>)}</div>
       <label><span>Technische Parameter</span><select disabled={busy} value={draft.allow_simulation_defaults ? 'defaults' : ''}

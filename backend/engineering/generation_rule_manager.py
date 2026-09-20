@@ -126,6 +126,48 @@ _RAIL = {"mvb", "wtb", "etb", "trdp"}
 _MARINE = {"nmea0183", "nmea2000", "iec61162"}
 
 
+def _specialization_provenance(
+    industry: str | None,
+    technology_ids: Iterable[str],
+) -> dict[str, Any]:
+    """Resolve navigable source ownership without changing generation behavior."""
+    from backend.specializations.catalog import source_catalog
+
+    catalog = source_catalog()
+    industry_entry = next(
+        (item for item in catalog["industries"] if item["id"] == industry),
+        None,
+    )
+    technology_sources: dict[str, dict[str, Any]] = {}
+    for technology_id in technology_ids:
+        owners = [
+            item
+            for item in catalog["technologies"]
+            if technology_id in item["technology_ids"]
+        ]
+        technology_sources[technology_id] = {
+            "specialization_ids": [item["id"] for item in owners],
+            "source_modules": list(dict.fromkeys(
+                source
+                for item in owners
+                for source in item["source_modules"]
+            )),
+        }
+    return {
+        "policy_source": "backend.engineering.generation_rule_manager",
+        "industry": industry_entry or {
+            "id": industry,
+            "label": None,
+            "source_modules": [],
+        },
+        "technologies": technology_sources,
+        "authority": (
+            "Deterministic Python registries define generation behavior; "
+            "reviewed history is advisory evidence only."
+        ),
+    }
+
+
 def _slug(value: Any) -> str:
     token = str(value or "").strip().lower().replace("/", "_").replace("-", "_").replace(" ", "_")
     return re.sub(r"_+", "_", token).strip("_")
@@ -387,6 +429,12 @@ def resolve_generation_policy(
 
     blocked = any(item["severity"] == "ERROR" for item in findings)
     paths = list(dict.fromkeys(item["path"] for item in buses))
+    provenance = _specialization_provenance(
+        selected,
+        [item["id"] for item in buses],
+    )
+    for bus in buses:
+        bus["source"] = provenance["technologies"].get(bus["id"], {})
     decision = {
         "schema_version": 1,
         "policy_version": POLICY_VERSION,
@@ -396,6 +444,7 @@ def resolve_generation_policy(
             "source": selected_source or "unresolved",
             "candidates": candidates,
             "template_path": f"industry_template:{selected}" if selected else "industry_template:blocked",
+            "source_modules": provenance["industry"].get("source_modules", []),
         },
         "bus_types": buses,
         "generation_path": {
@@ -417,7 +466,9 @@ def resolve_generation_policy(
             "mixed_bus_paths_are_independent": True,
             "cross_industry_defaults_are_forbidden": True,
             "explicit_project_context_precedes_keyword_inference": True,
+            "reviewed_history_is_advisory_only": True,
         },
+        "provenance": provenance,
         "findings": findings,
     }
     canonical = json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":"))

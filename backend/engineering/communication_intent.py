@@ -120,11 +120,30 @@ def capture_route_intent(data, current=None):
         except ValueError: pass
     if not identifiers: return data
     with get_connection() as connection:
-        rows = connection.execute('SELECT id, function_id FROM engineering_interfaces WHERE project_id=%s AND id=ANY(%s::uuid[])',
-            (current_project_id(), identifiers)).fetchall()
+        rows = connection.execute('''
+            SELECT interface.id, interface.function_id, node.device_type
+            FROM engineering_interfaces AS interface
+            LEFT JOIN engineering_hardware_nodes AS node
+              ON node.id = interface.hardware_node_id AND node.project_id = interface.project_id
+            WHERE interface.project_id=%s AND interface.id=ANY(%s::uuid[])
+        ''', (current_project_id(), identifiers)).fetchall()
     interfaces = {str(i['id']):i for i in rows}
-    anchors = [{'function_id': str(f) if (f := interfaces.get(str(e.get('interface_id')), {}).get('function_id')) else None,
-        'interface_id': e.get('interface_id'), 'hardware_node_id': e.get('node_id'), 'evidence': 'Kanonische Route vor Hardwareänderung' if physical_edit else 'Kanonische Funktionskommunikation'} for e in endpoints]
+    anchors = []
+    for endpoint in endpoints:
+        interface = interfaces.get(str(endpoint.get('interface_id')), {})
+        function_id = interface.get('function_id')
+        anchor = {
+            'function_id': str(function_id) if function_id else None,
+            'interface_id': endpoint.get('interface_id'),
+            'hardware_node_id': endpoint.get('node_id'),
+            'evidence': 'Kanonische Route vor Hardwareänderung' if physical_edit else 'Kanonische Funktionskommunikation',
+        }
+        if not function_id and interface.get('device_type') in {'SensorController', 'ActuatorController'}:
+            anchor.update(
+                partner_type='hardware_io',
+                evidence='Kanonische Geräte-I/O des Kommunikationspartners',
+            )
+        anchors.append(anchor)
     # A freshly computed repair intent contains more complete canonical evidence.
     if actor == 'communication-repair-agent' and route.get('functional_intent'): return data
     return {**data, 'route': {**route, 'functional_intent': {'version':1,'source':anchors[0],'destinations':anchors[1:]}}}

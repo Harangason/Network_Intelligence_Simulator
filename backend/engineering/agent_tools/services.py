@@ -10,6 +10,7 @@ from ..repository import get_object, ENTITY_SPECS, BASE_COLUMNS, NotFoundError
 from ..project_context import current_project_id
 from ..device_classification import DeviceClassificationRegistry
 from ..generation_rule_manager import inspect_generation_rules
+from ..generation_experience import GenerationExperienceService
 from ..semantic_intelligence import SemanticClassificationService
 from ..signal_audit import required_signal_bits, inspect_signal, inspect_message_signals
 from ..capacity.calculators import estimate_frame, utilization_percent
@@ -379,6 +380,9 @@ def register_tools():
     register("expand_requirement", "Anforderung fachlich expandieren; Annahmen und offene Entscheidungen sichtbar halten.", P.READ_MODEL, generation.expand, prompt=PROMPT, domain=(str|None,None))
     register("resolve_generation_rules", "Branche und Bustypen einer Aufgabe getrennt erkennen und den passenden, registry-basierten Erzeugungspfad mit Findings erklären.",
              P.READ_MODEL, inspect_generation_rules, prompt=PROMPT,
+             industry=(str | None, None), bus_types=(list[str], Field(default_factory=list, max_length=64)))
+    register("inspect_generation_experience", "Ausschließlich menschlich geprüfte und angewendete oder abgelehnte Generatorentscheidungen als unverbindliche Erfahrung abrufen; aktuelle Registry und Validierung bleiben maßgeblich.",
+             P.READ_MODEL, lambda a: GenerationExperienceService().inspect(a), prompt=PROMPT,
              industry=(str | None, None), bus_types=(list[str], Field(default_factory=list, max_length=64)))
     for name in ["generate_functions", "generate_function_structure", "decompose_function"]:
         register(name, "Funktionen aus der Anforderung als gemeinsamen Proposal erzeugen.", P.GENERATE_PROPOSAL,

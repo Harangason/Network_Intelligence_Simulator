@@ -113,7 +113,9 @@ test('removing a draft device survives save, amendment and reload @project-draft
   const compact = '20260915000000000-' + randomUUID().replaceAll('-', '').slice(0, 8);
   await page.goto(`/studio/agent?project=${compact}`);
   await page.getByRole('textbox', { name: 'Nachricht an den Engineering-Assistenten' }).fill('Erstelle ein Projekt mit einem Raspberry Pi und drei Temperatursensoren.');
-  await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
+  const send = page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true });
+  await expect(send).toBeEnabled({ timeout: 120_000 });
+  await send.click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
   await expect(editor).toContainText('4 Geräte');
   await editor.getByRole('group', { name: 'Temperatursensor3 · SENSOR', exact: true })

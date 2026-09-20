@@ -15,6 +15,89 @@ test('temperature purpose phrases create the actual sensor inventory', () => {
     assert.ok(spec.chains.some(c => c.hardware_name === 'RaspberryPi'));
   }
 });
+
+test('a counted generic controller is inventory scope and never becomes a device named by its count', () => {
+  const task = `Ein System besitzt:
+- 2 Positionssensoren
+- 2 Servoantriebe
+- 1 Controller
+- 1 Verbindung zu einem übergeordneten System
+
+Die Positionen sollen zyklisch geregelt werden.`;
+  const spec = extractEngineeringSpecification(task, {}, 'custom', true);
+
+  assert.equal(spec.targetCounts.ecus, 1);
+  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 1);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'SensorController').length, 2);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'ActuatorController').length, 2);
+  assert.ok(!spec.chains.some(chain => chain.hardware_name === '1'));
+});
+
+test('S04-B materializes untyped fans, the shared controller, and the required upstream bridge', () => {
+  const task = `Vier Temperatursensoren und drei Lüfter
+sollen durch eine gemeinsame Steuerung geregelt werden.
+
+Die Steuerung muss außerdem mit einem übergeordneten Netzwerk verbunden sein.`;
+  const spec = extractEngineeringSpecification(task, {}, 'custom', true);
+
+  assert.deepEqual(spec.targetCounts, { sensors: 4, actuators: 3, ecus: 1, gateways: 1, explicit: true });
+  assert.deepEqual(
+    spec.chains.filter(chain => chain.device_type === 'SensorController').map(chain => chain.hardware_name),
+    ['Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4'],
+  );
+  assert.deepEqual(
+    spec.chains.filter(chain => chain.device_type === 'ActuatorController').map(chain => chain.hardware_name),
+    ['Luefteraktor1', 'Luefteraktor2', 'Luefteraktor3'],
+  );
+  assert.deepEqual(
+    spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name),
+    ['Steuerung'],
+  );
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name), ['System']);
+});
+
+test('S06-A materializes counted PLC controllers and the central edge gateway', () => {
+  const task = `3 PLC/Controller
+12 Sensoren:
+- 4 Temperatur
+- 4 Position
+- 4 Druck
+
+8 Aktoren:
+- 4 Ventile
+- 2 Motor Drives
+- 2 Linearantriebe
+
+Netzwerke:
+- 2 × PROFINET
+- 1 × EtherCAT
+- 1 × 1-Gbit-Ethernet Backbone
+
+1 zentrales Gateway / Edge Controller
+
+Zyklus:
+Motion 2 ms
+Position 5 ms
+Pressure 20 ms
+Temperature 100 ms
+
+Erzeuge Segmentierung, Routing, Process Data, Capacity und Timing.`;
+  const spec = extractEngineeringSpecification(task, {}, 'industrial_automation', true);
+
+  assert.deepEqual(spec.targetCounts, { sensors: 12, actuators: 8, ecus: 3, gateways: 1, explicit: true });
+  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 3);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 1);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'SensorController').length, 12);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'ActuatorController').length, 8);
+  assert.equal(spec.networkArchitecture, 'gateway_ecu_segments');
+  assert.deepEqual(spec.communicationSystemCounts, { Ethernet: 1, ProfiNET: 2, EtherCAT: 1 });
+});
+
+test('the engineering wizard applies the architecture inferred from the complete task', () => {
+  const source = readFileSync(new URL('../../components/agent-chat-core.tsx', import.meta.url), 'utf8');
+  assert.match(source, /setNetworkArchitecture\(extractNetworkArchitectureMode\(taskSource\)\)/);
+  assert.doesNotMatch(source, /setNetworkArchitecture\(defaultNetworkArchitectureMode\(equipmentCounts\.gateways\)\)/);
+});
 import { readFileSync } from 'node:fs';
 
 test('standard status replaces a generated legacy duplicate and class two has status', () => {
@@ -64,7 +147,13 @@ test("confirmed graph may exceed targets declared as minimum scope for system co
   );
 });
 
-import { applyConfirmedClusterGraph, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+import { applyConfirmedClusterGraph, canonicalCommunicationSystem, defaultNetworkArchitectureMode, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringControllerDevice, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+
+test("catalog technology identifiers resolve to device connection types", () => {
+  assert.equal(canonicalCommunicationSystem("ethercat industrial_automation"), "EtherCAT");
+  assert.equal(canonicalCommunicationSystem("generic_can custom"), "CAN");
+  assert.equal(canonicalCommunicationSystem("io_link industrial_automation"), "IO_LINK");
+});
 
 test('role-first user declarations retain named participants instead of filling their slots from the catalogue', () => {
   const task = 'Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Statuswerte werden an Anzeige und System übermittelt. Prüfe und arbeite bis Data Science & Intelligence.';
@@ -314,6 +403,10 @@ test("wizard architecture ids are extracted without ambiguity", () => {
   assert.equal(extractNetworkArchitectureMode("Variante 0 Sensor ECU Aktor"), "sensor_ecu_actuator");
   assert.equal(extractNetworkArchitectureMode("am Gateway haengen ueber eine Leitung bis zu 6 ECU"), "gateway_ecu_segments");
   assert.equal(extractNetworkArchitectureMode("Kombination aus Variante 2 und 3"), "hybrid_ai");
+  assert.equal(extractNetworkArchitectureMode("3 Sensoren, 4 Aktoren und ein Raspberry Pi"), "sensor_ecu_actuator");
+  assert.equal(extractNetworkArchitectureMode("3 Sensoren, 4 Aktoren, ein Raspberry Pi und ein Gateway"), "gateway_direct");
+  assert.equal(defaultNetworkArchitectureMode(0), "sensor_ecu_actuator");
+  assert.equal(defaultNetworkArchitectureMode(1), "gateway_direct");
 });
 
 test("wizard variant numbers never become hardware quantities", () => {
@@ -437,7 +530,17 @@ test("counted hardware sections preserve the named S01-A devices", () => {
 4 Aktoren:
 - 2 PWM-Ventile
 - 1 DC-Motorcontroller über CAN-FD
-- 1 Relaisausgang`;
+- 1 Relaisausgang
+
+CAN-FD:
+500 kbit/s nominal
+2 Mbit/s data
+
+Funktionen:
+TemperatureMonitoring
+PressureControl
+SpeedControl
+SafetyShutdown`;
   const result = extractEngineeringSpecification(requirement);
   const confirmed = extractEngineeringSpecification(`Strukturierte Vorgaben fuer den Engineering-Agenten:
 - Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":3,"actuators":4}
@@ -454,7 +557,48 @@ ${requirement}`);
       extracted.chains.filter((chain) => chain.device_type === "ActuatorController").map((chain) => chain.hardware_name),
       ["Ventilaktor1", "Ventilaktor2", "DC-Motor", "Relaisausgang"],
     );
+    assert.deepEqual(
+      Object.fromEntries(extracted.chains.map((chain) => [chain.hardware_name, chain.interface_type])),
+      {
+        RaspberryPi: "CAN_FD",
+        PT100: "SPI",
+        Druck: "I2C",
+        Drehzahl: "GPIO",
+        Ventilaktor1: "PWM",
+        Ventilaktor2: "PWM",
+        "DC-Motor": "CAN_FD",
+        Relaisausgang: "Other",
+      },
+    );
   }
+});
+
+test("counted CANopen position sensors and servo drives expand into typed devices", () => {
+  const requirement = `1 Embedded Controller
+2 Positionssensoren über CANopen
+2 Servoantriebe über CANopen
+1 Ethernet-Gateway
+
+CANopen:
+500 kbit/s
+Sensorzyklus 10 ms
+Drive Command 5 ms
+
+Gateway:
+CANopen ↔ Ethernet
+Ethernet 1 Gbit/s`;
+  const result = extractEngineeringSpecification(requirement);
+  assert.deepEqual(
+    result.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.hardware_name),
+    ["Positionssensor1", "Positionssensor2"],
+  );
+  assert.deepEqual(
+    result.chains.filter((chain) => chain.device_type === "ActuatorController").map((chain) => chain.hardware_name),
+    ["Servoantrieb1", "Servoantrieb2"],
+  );
+  assert.ok(result.chains.filter((chain) => /Positionssensor|Servoantrieb/.test(chain.hardware_name)).every((chain) => chain.interface_type === "CAN"));
+  assert.equal(result.chains.filter((chain) => chain.device_type === "EmbeddedController").length, 1);
+  assert.equal(result.chains.filter((chain) => chain.device_type === "Gateway").length, 1);
 });
 
 test("confirmed count corrections take precedence over the original sample, including zero", () => {
@@ -645,6 +789,22 @@ test("recognized physical sensors receive complete conservative defaults when th
   assert.equal(pressure.semantic.semantic_type, "NUMERIC");
 });
 
+test("confirmed single-bus and explicit example projects inherit their project technology", () => {
+  const confirmed = extractEngineeringSpecification(`- Industrie: Embedded Systems
+- Netzwerktechnologien: ADC (adc)
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":1}
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+ein Raspberry Pi, ein Temperatursensor und ein Ventilaktor`);
+  assert.ok(confirmed.chains.length >= 3);
+  assert.ok(confirmed.chains.every((chain) => chain.interface_type === "ADC"));
+
+  const example = extractEngineeringSpecification(`Beispielprojekt mit CAN-FD und Ethernet
+- Temperatursensor
+- Ventilaktor`);
+  assert.ok(example.chains.length >= 2);
+  assert.ok(example.chains.every((chain) => chain.interface_type !== "Other"));
+});
+
 test("decimal commas in the original large request never become integer resolutions", () => {
   const prompt = readFileSync(new URL('../../../e2e/fixtures/wizard-large-50-250-250.txt', import.meta.url), 'utf8');
   const current = extractEngineeringSpecification(prompt).chains.find(chain => chain.hardware_name === 'Strom');
@@ -798,6 +958,96 @@ test("hosted output templates preserve hosts, explicit signals and separate edit
   assert.equal(new Set(enriched.map(c => c.message_id_hex)).size, new Set(spec.chains.map(c => c.message_id_hex)).size + outputs.length);
   assert.deepEqual(addAutomotiveFunctionOutputs(enriched, spec.domain), enriched);
   assert.deepEqual(addAutomotiveFunctionOutputs(spec.chains, "rail"), spec.chains);
+});
+
+test("standalone PLC and IO-Link sensor groups remain concrete wizard hardware", () => {
+  const result = extractEngineeringSpecification(`1 PLC
+2 IO-Link-Sensoren:
+- Durchfluss 0–100 l/min, 20 ms
+- Druck 0–16 bar, 20 ms
+
+2 Aktoren:
+- Frequenzumrichter über PROFINET
+- Magnetventil über digitales Remote-I/O
+
+PROFINET:
+100 Mbit/s
+
+Funktionen:
+FlowControl
+PressureLimit
+PumpCommand`);
+
+  assert.equal(result.chains.filter((chain) => chain.device_type === "PLC").length, 1);
+  assert.equal(result.chains.filter((chain) => chain.device_type === "SensorController").length, 2);
+  assert.equal(result.chains.filter((chain) => chain.device_type === "ActuatorController").length, 2);
+});
+
+test("S05-A materializes explicit safety devices with FSoE semantics and the safety cycle", () => {
+  const result = extractEngineeringSpecification(`1 Safety Controller
+3 digitale Sicherheitssensoren
+2 Safety-Aktoren
+1 Gateway
+
+Kommunikation:
+EtherCAT / FSoE
+
+Safety Cycle:
+4 ms
+
+Funktionen:
+SafetyInputMonitor
+SafetyDecision
+SafeStop`);
+
+  assert.deepEqual(result.targetCounts, { ecus: 1, sensors: 3, actuators: 2, gateways: 1, explicit: true });
+  assert.equal(result.chains.filter(chain => chain.device_type === "ECU").length, 1);
+  assert.equal(result.chains.filter(chain => chain.device_type === "SensorController").length, 3);
+  assert.equal(result.chains.filter(chain => chain.device_type === "ActuatorController").length, 2);
+  assert.equal(result.chains.filter(chain => chain.device_type === "Gateway").length, 1);
+  assert.ok(result.chains.every(chain => chain.interface_type === "EtherCAT"));
+  assert.ok(result.chains.every(chain => chain.cycle_ms === 4));
+  assert.ok(result.chains.every(chain => chain.configuration?.safety_profile === "FSoE"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "SensorController")
+    .every(chain => chain.configuration?.sensor_measurement === "safety_state"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "ActuatorController")
+    .every(chain => chain.configuration?.actuator_command_template?.source === "wizard-safety-actuator-v1"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "ActuatorController")
+    .every(chain => chain.min_value === 0 && chain.max_value === 1 && chain.unit === "code"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "ActuatorController")
+    .every(chain => chain.configuration?.actuator_command_template?.data?.default_value === "RUN"));
+});
+
+test("S05-B materializes semantic safety inventory without inventing a transport", () => {
+  const task = `Ein Sicherheitssystem besitzt:
+- 3 Sicherheitssensoren
+- 2 sicherheitsrelevante Aktoren
+- 1 Sicherheitssteuerung
+- 1 übergeordnete Kommunikationsanbindung
+
+Die Reaktionszeit muss kurz und deterministisch sein.`;
+  const result = extractEngineeringSpecification(task);
+
+  assert.deepEqual(result.targetCounts, { ecus: 1, sensors: 3, actuators: 2, gateways: 1, explicit: true });
+  assert.equal(result.domain, "industrial_automation");
+  assert.equal(result.networkArchitecture, "gateway_direct");
+  assert.deepEqual(
+    result.chains.map(chain => [chain.hardware_name, chain.device_type]).sort(),
+    [
+      ["Sicherheitssensor1", "SensorController"],
+      ["Sicherheitssensor2", "SensorController"],
+      ["Sicherheitssensor3", "SensorController"],
+      ["SafetyAktor1", "ActuatorController"],
+      ["SafetyAktor2", "ActuatorController"],
+      ["Sicherheitssteuerung", "ECU"],
+      ["System", "Gateway"],
+    ].sort(),
+  );
+  assert.ok(result.chains.every(chain => chain.interface_type === "Other"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "SensorController")
+    .every(chain => chain.configuration?.sensor_measurement === "safety_state"));
+  assert.ok(result.chains.filter(chain => chain.device_type === "ActuatorController")
+    .every(chain => chain.configuration?.actuator_command_template?.data?.default_value === "RUN"));
 });
 
 test("industry generation dispatcher isolates optional automotive enrichment", async () => {

@@ -7,6 +7,7 @@ from backend.engineering.scope_rules import (
     is_scope_placeholder_hardware,
     normalize_engineering_scope_rules,
     scope_count_mismatches,
+    scope_placeholder_sql,
 )
 from backend.engineering.repository import _enforce_engineering_scope_rules
 
@@ -85,6 +86,18 @@ def test_scope_rules_accept_someip_as_ethernet_carried_protocol():
     assert communication_system_allows_interface(rules["communication_systems"], "Ethernet")
     assert communication_system_allows_interface(["SOME_IP"], "Ethernet")
     assert not communication_system_allows_interface(["SOME_IP"], "CAN_FD")
+
+
+def test_scope_rules_accept_io_link_as_explicit_sensor_interface():
+    rules = normalize_engineering_scope_rules(
+        {
+            "hardware_counts": {"sensors": 2, "ecus": 1, "gateways": 0},
+            "communication_systems": ["IO-Link", "IOLINK", "ProfiNET"],
+        }
+    )
+
+    assert rules["communication_systems"] == ["IO_LINK", "ProfiNET"]
+    assert communication_system_allows_interface(rules["communication_systems"], "IO_LINK")
 
 
 @pytest.mark.parametrize(
@@ -197,3 +210,26 @@ def test_model_cannot_be_complete_while_required_actuators_are_missing():
 )
 def test_scope_placeholder_detection(name, source, expected):
     assert is_scope_placeholder_hardware(name, source) is expected
+
+
+@pytest.mark.parametrize(
+    ("review_state", "approval_state", "expected"),
+    [
+        ("reviewed", "approved", False),
+        ("reviewed", "pending", True),
+        ("unreviewed", "approved", True),
+    ],
+)
+def test_reviewed_and_approved_generic_hardware_is_not_a_placeholder(
+    review_state, approval_state, expected
+):
+    assert is_scope_placeholder_hardware(
+        "Gateway", "ai_generated", review_state, approval_state
+    ) is expected
+
+
+def test_scope_placeholder_sql_preserves_reviewed_and_approved_hardware():
+    predicate = scope_placeholder_sql("h")
+
+    assert "COALESCE(h.review_state, '') = 'reviewed'" in predicate
+    assert "COALESCE(h.approval_state, '') = 'approved'" in predicate

@@ -54,6 +54,7 @@ class RuntimeSettings:
     ai_provider: str
     local_ai_base_url: str
     local_ai_model: str
+    local_ai_fast_model: str
 
 
 def runtime_settings() -> RuntimeSettings:
@@ -77,6 +78,8 @@ def runtime_settings() -> RuntimeSettings:
         ).rstrip("/"),
         local_ai_model=os.environ.get("LOCAL_AI_MODEL", "qwen3.8:27b").strip()
         or "qwen3.8:27b",
+        local_ai_fast_model=os.environ.get("LOCAL_AI_FAST_MODEL", "llama3.1:8b").strip()
+        or "llama3.1:8b",
     )
 
 
@@ -147,19 +150,28 @@ def _ollama_status(settings: RuntimeSettings) -> dict[str, object]:
             for item in payload.get("models", [])
             if isinstance(item, dict) and (item.get("name") or item.get("model"))
         )
-        requested = settings.local_ai_model.lower()
-        installed = any(
-            model.lower() == requested
-            or model.lower().removesuffix(":latest") == requested.removesuffix(":latest")
-            for model in models
-        )
+        def installed(requested: str) -> bool:
+            value = requested.lower()
+            return any(
+                model.lower() == value
+                or model.lower().removesuffix(":latest") == value.removesuffix(":latest")
+                for model in models
+            )
         return {
             "reachable": True,
-            "model_installed": installed,
+            "model_installed": installed(settings.local_ai_model),
+            "main_model_installed": installed(settings.local_ai_model),
+            "fast_model_installed": installed(settings.local_ai_fast_model),
             "models": models,
         }
     except (OSError, URLError, UnicodeError, json.JSONDecodeError):
-        return {"reachable": False, "model_installed": False, "models": []}
+        return {
+            "reachable": False,
+            "model_installed": False,
+            "main_model_installed": False,
+            "fast_model_installed": False,
+            "models": [],
+        }
 
 
 def runtime_status() -> dict[str, object]:
@@ -187,6 +199,8 @@ def runtime_status() -> dict[str, object]:
             "provider": settings.ai_provider,
             "local_base_url": settings.local_ai_base_url,
             "local_model": settings.local_ai_model,
+            "local_fast_model": settings.local_ai_fast_model,
+            "reasoner": "local_ollama",
             "ollama": _ollama_status(settings),
             "configured": _section(config, "ai"),
         },

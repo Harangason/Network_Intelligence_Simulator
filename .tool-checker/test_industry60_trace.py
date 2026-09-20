@@ -1,10 +1,13 @@
 """Fresh observation probes. Synthetic inputs are labelled, never simulation evidence."""
-import asyncio, copy, json, time
+import asyncio, copy, json, os, time
 from pathlib import Path
 from uuid import uuid4
 import pytest
 pytest_plugins=['backend.tests.conftest']
-OUT=Path(__file__).resolve().parent/'evidence/industry60/trace'
+OUT=Path(os.environ.get(
+    'TOOL_CHECKER_EVIDENCE_ROOT',
+    str(Path(__file__).resolve().parent/'evidence/industry60'),
+))/'trace'
 def save(name,data):
     OUT.mkdir(parents=True,exist_ok=True)
     (OUT/name).write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8')

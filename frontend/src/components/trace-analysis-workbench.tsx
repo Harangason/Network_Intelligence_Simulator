@@ -82,6 +82,7 @@ export function TraceAnalysisWorkbench() {
   const [timeStart, setTimeStart] = useState(0);
   const [timeEnd, setTimeEnd] = useState(1e15);
   const [selectedEvent, setSelectedEvent] = useState<TraceEvent | null>(null);
+  const [sessionDetailsOpen, setSessionDetailsOpen] = useState(false);
   const loadGeneration = useRef(0);
   const [signalChannels, setSignalChannels] = useState<string[]>([]);
 
@@ -222,12 +223,17 @@ export function TraceAnalysisWorkbench() {
 
   return (
     <section className="simulation-runner trace-analysis-workbench">
-      <div className="simulation-layout">
+      <div className={`simulation-layout trace-analysis-layout${sessionDetailsOpen ? "" : " context-collapsed"}`}>
         <div className="trace-main-column">
           <div className="panel simulation-control-panel trace-control-panel">
             <div className="panel-heading">
               <div><p className="eyebrow">{viewMeta.eyebrow}</p><h2>{viewMeta.title}</h2></div>
-              <span className={`snapshot-state ${events.length || view === "findings" ? "ready" : "blocked"}`}>{viewStatus}</span>
+              <div className="trace-panel-actions">
+                <span className={`snapshot-state ${events.length || view === "findings" ? "ready" : "blocked"}`}>{viewStatus}</span>
+                <button aria-expanded={sessionDetailsOpen} className="button secondary tiny" onClick={() => setSessionDetailsOpen((current) => !current)} type="button">
+                  {sessionDetailsOpen ? "Sessiondetails ausblenden" : "Sessiondetails anzeigen"}
+                </button>
+              </div>
             </div>
             {view === "session" ? <div className="trace-actions">
               <input ref={inputRef} type="file" accept={ACCEPTED} onChange={loadFiles} className="hidden-file" />
@@ -274,7 +280,7 @@ export function TraceAnalysisWorkbench() {
           {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
           {view === "root-cause" && <ReasoningPanel key={`${readActiveProjectId()}:${traceJob}`} project={readActiveProjectId()} jobId={traceJob?.startsWith("import:") ? null : traceJob} jobs={jobs} start={timeStart} end={timeEnd} focus={selectedEvent?.timestamp} />}
         </div>
-        <aside className="side-column">
+        {sessionDetailsOpen && <aside className="side-column trace-session-details">
           <div className="panel snapshot-summary trace-summary-panel">
             <p className="eyebrow">Session Header</p>
             <h2>Aktueller Stand</h2>
@@ -282,12 +288,7 @@ export function TraceAnalysisWorkbench() {
               {[["Trace Session Name", sourceName], ["Source File", sourceName], ["Format", sourceFormat], ["Start Time", timed.length ? `${start}s` : "unbekannt"], ["End Time", timed.length ? `${end}s` : "unbekannt"], ["Duration", timed.length ? `${Math.max(0, end - start).toFixed(3)}s` : "unbekannt"], ["Channels", channels], ["Detected Messages", messages], ["Detected Signals", signals], ["Findings", findings.length], ["Decode Status", signals ? "partial/decoded" : "missing"]].map(([label, value]) => <div key={String(label)}><dt>{label}</dt><dd>{value}</dd></div>)}
             </dl>
           </div>
-          <div className="empty-result trace-context-panel">
-            <strong>Status des Prozesses</strong>
-            <p>SESSION {events.length ? "LOADED" : "EMPTY"} · MESSAGES {messages ? "AVAILABLE" : "EMPTY"} · SIGNALS {signals ? "PARTIAL" : "MISSING"} · FINDINGS {findings.length}</p>
-            <p>RAW BYTE != ENGINEERING SIGNAL. Die Ansicht schreibt keine Engineering-Core-Daten.</p>
-          </div>
-        </aside>
+        </aside>}
       </div>
     </section>
   );

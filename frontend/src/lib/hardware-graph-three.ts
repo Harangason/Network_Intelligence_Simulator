@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { kindColors, graphLinkEndpoints, graphNodeRadius, hasCommunicationFlow, communicationColor, type GraphNode, type GraphLink } from './hardware-graph.ts';
-import { busProfiles } from './topology.ts';
+import { busProfile } from './topology.ts';
 
 export type ThreeGraphData = { nodes: GraphNode[]; links: GraphLink[]; selected: string; labels: boolean; focusIds: Set<string>; lighting: boolean; animate: boolean };
 export type ThreeGraphHandle = ReturnType<typeof createThreeGraph>;
@@ -131,7 +131,7 @@ export function createThreeGraph(host: HTMLElement, callbacks: { select: (id: st
       const source = byId.get(link.source), target = byId.get(link.target); if (!source || !target) continue;
       const ends = graphLinkEndpoints(source, target, true, data.selected);
       positions.push(...ends.source, ...ends.target);
-      const color = new THREE.Color(link.kind === 'communication' ? communicationColor(link) : link.bus ? busProfiles[link.bus].color : link.kind === 'mapping' ? '#bc9bff' : '#496373');
+      const color = new THREE.Color(link.kind === 'communication' ? communicationColor(link) : link.bus ? busProfile(link.bus).color : link.kind === 'mapping' ? '#bc9bff' : '#496373');
       if (data.selected && link.source !== data.selected && link.target !== data.selected) color.multiplyScalar(.5);
       colors.push(color.r, color.g, color.b, color.r, color.g, color.b);
       if (data.animate && hasCommunicationFlow(link)) {

@@ -74,6 +74,8 @@ INTERFACE_TYPES = (
     "RS485",
     "SPI",
     "I2C",
+    "UART",
+    "IO_LINK",
     "GPIO",
     "PWM",
     "USB",

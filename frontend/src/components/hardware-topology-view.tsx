@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EngFunction, EngInterface, EngineeringRelation, HardwareNode, RoutingEntry } from '@/lib/types';
 import { listAllEngineeringObjects, listAllEngineeringRelations } from '@/lib/engineering-api';
-import { busProfiles, type NetworkTopology } from '@/lib/topology';
+import { busProfile, busProfiles, type NetworkTopology } from '@/lib/topology';
 import { buildHardwareGraph, visibleHardwareGraph, nodePath, fitGraph2D, graphLinkPath, graphNodeRadius, hasCommunicationFlow, communicationColor, kindColors, kindLabels, compareNames, type DiagramMode, type GraphKind, type GraphLink, type ViewTransform } from '@/lib/hardware-graph';
 import type { ThreeGraphHandle, ThreeGraphData } from '@/lib/hardware-graph-three';
 
@@ -160,7 +160,7 @@ export function HardwareTopologyView({ functions, topology, routes, hardwareDeta
   const isOpen = (id: string) => visible.nodes.some(n => graph.byId.get(id)?.children.includes(n.id));
   const communicationLinks = neighbors.filter(l => l.kind === 'communication');
   const linkLabel = (edge: GraphLink) => edge.kind === 'communication' ? 'Kommunikation' : edge.kind === 'physical' ? 'Busverbindung' : edge.kind === 'mapping' ? 'Funktionszuordnung' : 'Struktur';
-  const edgeColor = (edge: GraphLink) => edge.kind === 'communication' ? communicationColor(edge) : edge.bus ? busProfiles[edge.bus].color : edge.kind === 'mapping' ? '#bc9bff' : '#496373';
+  const edgeColor = (edge: GraphLink) => edge.kind === 'communication' ? communicationColor(edge) : edge.bus ? busProfile(edge.bus).color : edge.kind === 'mapping' ? '#bc9bff' : '#496373';
 
   return <section className="hardware-topology-view hardware-explorer" aria-label="Hardware-Topologie" ref={viewRef}>
     <div className="hardware-topology-header">
@@ -229,7 +229,7 @@ export function HardwareTopologyView({ functions, topology, routes, hardwareDeta
             <header><small>{kindLabels[selectedNode.kind]}</small><button type="button" aria-label="Eigenschaften ausblenden" onClick={() => setOverlay(false)}>×</button></header>
             <h3>{selectedNode.name}</h3>
             <dl><div><dt>Zuordnung</dt><dd>{graph.byId.get(selectedNode.parentId ?? '')?.name ?? 'Projekt'}</dd></div>
-              {hardware && <div><dt>Anschlüsse</dt><dd>{hardware.ports.length} · {[...new Set(hardware.ports.map(p => busProfiles[p.bus].label))].join(', ')}</dd></div>}
+              {hardware && <div><dt>Anschlüsse</dt><dd>{hardware.ports.length} · {[...new Set(hardware.ports.map(p => busProfile(p.bus).label))].join(', ')}</dd></div>}
               {(canonicalHardware || selectedNode.functionRef) && <div><dt>Stand</dt><dd>{(canonicalHardware ?? selectedNode.functionRef)?.lifecycle_state} · Version {(canonicalHardware ?? selectedNode.functionRef)?.version}</dd></div>}
               <div><dt>Kommunikation</dt><dd>{communicationLinks.filter(l => l.directed && l.target === selected).length} eingehend · {communicationLinks.filter(l => l.directed && l.source === selected).length} ausgehend{communicationLinks.some(l => !l.directed) ? ` · ${communicationLinks.filter(l => !l.directed).length} Richtung offen` : ''}</dd></div>
               {!!selectedNode.children.length && <div><dt>Unterknoten</dt><dd>{selectedNode.children.length} · {isOpen(selected) ? 'aufgeklappt' : 'eingeklappt'}</dd></div>}
@@ -258,9 +258,9 @@ export function HardwareTopologyView({ functions, topology, routes, hardwareDeta
           <nav className="hardware-explorer-path" aria-label="Zuordnungspfad">{nodePath(graph, selected).map(node => <button type="button" key={node.id} onClick={() => reveal(node.id)}>{node.name}</button>)}</nav>
           {!visible.nodes.some(n => n.id === selected) && <p>Die Auswahl ist durch die aktuellen Filter ausgeblendet.</p>}
           {selectedNode.children.length > 0 && <button type="button" onClick={() => expand(selected)}>{isOpen(selected) ? 'Zweig einklappen' : 'Zweig ausklappen'}</button>}
-          {hardware && <><h4>Anschlüsse · {hardware.ports.length}</h4><ul>{[...hardware.ports].sort(compareNames).map(port => <li key={port.id}><strong>{busProfiles[port.bus].label}</strong><span>{topology.scene?.buses.find(b => b.id === port.physicalNetworkId)?.labelText || port.physicalNetworkName || port.name}</span></li>)}</ul></>}
+          {hardware && <><h4>Anschlüsse · {hardware.ports.length}</h4><ul>{[...hardware.ports].sort(compareNames).map(port => <li key={port.id}><strong>{busProfile(port.bus).label}</strong><span>{topology.scene?.buses.find(b => b.id === port.physicalNetworkId)?.labelText || port.physicalNetworkName || port.name}</span></li>)}</ul></>}
           {selectedNode.functionRef && <><h4>Funktion</h4><p>{selectedNode.functionRef.description || 'Keine Beschreibung hinterlegt.'}</p><p>{selectedNode.kind === 'unmapped' ? 'Keine Hardware zugeordnet.' : 'Hardware-Zuordnung vorhanden.'}</p></>}
-          <h4>Verbindungen und Zuordnungen · {neighbors.length}</h4><div className="hardware-explorer-neighbors">{neighbors.map(edge => { const other = graph.byId.get(edge.source === selected ? edge.target : edge.source)!; return <button key={edge.id} type="button" onClick={() => reveal(other.id)}>{other.name}<small>{edge.kind === 'communication' ? edge.directed ? edge.source === selected ? 'Empfängt von diesem Knoten' : 'Sendet an diesen Knoten' : 'Richtung offen' : edge.bus ? busProfiles[edge.bus].label : linkLabel(edge)}</small></button>; })}{!neighbors.length && <p>Keine direkten Verbindungen in dieser Darstellung.</p>}</div>
+          <h4>Verbindungen und Zuordnungen · {neighbors.length}</h4><div className="hardware-explorer-neighbors">{neighbors.map(edge => { const other = graph.byId.get(edge.source === selected ? edge.target : edge.source)!; return <button key={edge.id} type="button" onClick={() => reveal(other.id)}>{other.name}<small>{edge.kind === 'communication' ? edge.directed ? edge.source === selected ? 'Empfängt von diesem Knoten' : 'Sendet an diesen Knoten' : 'Richtung offen' : edge.bus ? busProfile(edge.bus).label : linkLabel(edge)}</small></button>; })}{!neighbors.length && <p>Keine direkten Verbindungen in dieser Darstellung.</p>}</div>
           <details><summary>Technische Kennung</summary><code>{hardware?.engineeringId || selectedNode.functionRef?.id || selectedNode.id}</code></details>
           {!!communicationLinks.length && <><h4>Sender und Empfänger</h4><ul>{communicationLinks.map(edge => <li key={edge.id}>
             <button type="button" onClick={() => selectLink(edge.id)}>{graph.byId.get(edge.source)?.name} {edge.directed ? '→' : '—'} {graph.byId.get(edge.target)?.name}</button>
@@ -268,7 +268,7 @@ export function HardwareTopologyView({ functions, topology, routes, hardwareDeta
           </li>)}</ul></>}
         </> : link ? <><small>{linkLabel(link)}</small><h3>{graph.byId.get(link.source)?.name} {link.directed ? '→' : '—'} {graph.byId.get(link.target)?.name}</h3>
           {[link.source, link.target].map(id => <button type="button" key={id} onClick={() => reveal(id)}>{graph.byId.get(id)?.name}</button>)}
-          {link.bus && <p>{busProfiles[link.bus].label}</p>}{link.edge?.description && <p>{link.edge.description}</p>}
+          {link.bus && <p>{busProfile(link.bus).label}</p>}{link.edge?.description && <p>{link.edge.description}</p>}
           {link.communications && <><p>{link.directed ? 'Senderichtung aus der gespeicherten Kommunikation.' : 'Für diese Beziehung ist keine Senderichtung angegeben.'}</p><ul>{link.communications.map(c => <li key={c.id}><strong>{c.name}</strong><span>{c.status}{c.protocol ? ` · ${c.protocol}` : ''}{c.cycleMs ? ` · Zyklus ${c.cycleMs} ms` : ''}</span></li>)}</ul></>}
         </> : <><small>Auswahl</small><h3>Topologie entdecken</h3><p>Wähle ein Gerät, eine Funktion oder eine Verbindung. Mit „Motor und HMI“ erscheinen beide Suchtreffer und ihre Zusammenhänge.</p><p>Klick auf einen Strukturknoten öffnet oder schließt seinen Zweig. „Aufbau abspielen“ zeigt die Hierarchie Ebene für Ebene.</p></>}
         <div className="hardware-explorer-key"><h4>Knotentypen</h4>{Object.entries(kindLabels).filter(([id]) => graph.nodes.some(n => n.kind === id)).map(([id, label]) => <button type="button" key={id} aria-pressed={kind === id} onClick={() => { setKind(k => k === id ? '' : id); setPlaying(false); }}><i style={{ background: kindColors[id as GraphKind] }} />{label}</button>)}</div>

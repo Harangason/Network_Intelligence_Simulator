@@ -1,5 +1,5 @@
 """Reviewed test-only HTTP adapter. No architecture choices or approvals."""
-import json, sys, time, urllib.request, urllib.error, uuid
+import json, os, sys, time, urllib.request, urllib.error, uuid
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 def request(base,project,path,data=None,timeout=180):
@@ -10,8 +10,20 @@ def request(base,project,path,data=None,timeout=180):
     except urllib.error.HTTPError as e: return e.code,e.read().decode()
 def main():
     job=json.load(sys.stdin); step=job['step']; case=step['case']; project=step['project_id']; base=step['base_url']
-    assert base=='http://127.0.0.1:51576' and project.startswith('nis-e2e-industry60-')
-    folder=root/'.tool-checker/evidence/industry60'/case['test_id'];folder.mkdir(parents=True,exist_ok=True)
+    configured_base=os.environ.get('TOOL_CHECKER_ALLOWED_BASE_URL','').rstrip('/')
+    allowed_targets=(
+        (base=='http://127.0.0.1:51576' and project.startswith('nis-e2e-industry60-'))
+        or (base=='http://127.0.0.1:50316' and project.startswith('nis-e2e-all-examples-'))
+        or (base=='http://127.0.0.1:50316' and project.startswith('nis-e2e-agent-'))
+        or (configured_base==base.rstrip('/') and project.startswith('nis-e2e-final-examples-'))
+        or (configured_base==base.rstrip('/') and project.startswith('nis-e2e-final-agent-'))
+    )
+    assert allowed_targets
+    evidence_root=Path(os.environ.get(
+        'TOOL_CHECKER_EVIDENCE_ROOT',
+        str(root/'.tool-checker/evidence/industry60'),
+    ))
+    folder=evidence_root/case['test_id'];folder.mkdir(parents=True,exist_ok=True)
     evidence=[]
     def save(name,value,kind='backend'):
         p=folder/name;p.write_text(value if isinstance(value,str) else json.dumps(value,ensure_ascii=False,indent=2),encoding='utf-8')

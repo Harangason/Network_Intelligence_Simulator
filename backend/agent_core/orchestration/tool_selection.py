@@ -16,11 +16,11 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     focused = set()
     from .project_intake import is_project_request
     if is_project_request(prompt):
-        names.update({'prepare_project_request', 'resolve_generation_rules'})
+        names.update({'prepare_project_request', 'resolve_generation_rules', 'inspect_generation_experience'})
     if re.search(r'projekt|project|entwurf|draft', prompt, re.I):
         focused.update({'inspect_project_draft', 'update_project_draft', 'plan_project_model', 'create_project_from_draft'})
     if re.search(r'anleg|erstell|erzeug|hinzufüg|create|generate|add', prompt, re.I):
-        focused.update({'describe_model_object_fields', 'create_objects_via_proposal', 'resolve_generation_rules'})
+        focused.update({'describe_model_object_fields', 'create_objects_via_proposal', 'resolve_generation_rules', 'inspect_generation_experience'})
     if re.search(r'zuordn|verschieb|hierarch|assign|move', prompt, re.I):
         focused.update({'evaluate_structure_dependencies', 'plan_structure_assignments', 'map_function_to_hardware'})
     if re.search(r'lösch|loesch|entfern|delete|remove', prompt, re.I):

@@ -33,6 +33,8 @@ PROTOCOL_TO_TECHNOLOGY = {
     "MODBUS_RTU": "modbus_rtu",
     "MODBUS_TCP": "modbus_tcp",
     "I2C": "i2c",
+    "UART": "uart",
+    "IO_LINK": "io_link",
     "SPI": "spi",
     "GPIO": "gpio",
     "PWM": "pwm",

@@ -104,6 +104,38 @@ def test_capacity_split_allocates_separate_gateway_channels_and_removes_obsolete
     assert not topology_port_findings(repaired, hardware, effective(interfaces, changes))
 
 
+def test_capacity_split_preserves_ports_of_an_unrelated_isolated_gateway():
+    topology, hardware, interfaces = sample()
+    gateway = topology['nodes'][1]
+    gateway['ports'] = [{
+        'id': 'gateway-ethernet',
+        'name': 'Gateway Ethernet',
+        'bus': 'ethernet',
+        'engineeringId': 'old-g',
+        'hardwareInterfaceId': 'old-g',
+        'physicalNetworkId': 'gateway-backbone',
+    }]
+    topology['edges'] = [topology['edges'][0]]
+    topology['edges'][0].update(source='a', sourcePort='a-CAN1', target='b', targetPort='b-CAN2')
+    topology['nodes'][2]['ports'][0]['physicalNetworkId'] = 'CAN1'
+
+    repaired, _changes = materialize_physical_ports(
+        topology,
+        hardware,
+        interfaces,
+        [
+            {'id': 'CAN1', 'technology': 'CAN_FD'},
+            {'id': 'gateway-backbone', 'technology': 'Ethernet'},
+        ],
+    )
+
+    isolated = next(node for node in repaired['nodes'] if node['engineeringId'] == 'g')
+    assert len(isolated['ports']) == 1
+    assert isolated['ports'][0]['id'] == 'gateway-ethernet'
+    assert isolated['ports'][0]['physicalNetworkId'] == 'gateway-backbone'
+    assert isolated['ports'][0]['hardwareInterfaceId']
+
+
 @pytest.mark.parametrize('technology,bus', [('LIN', 'lin'), ('CAN_FD', 'can_fd'), ('Ethernet', 'ethernet')])
 def test_split_channels_have_unique_names_under_their_hardware_without_renaming_existing_ports(technology, bus):
     topology, hardware, interfaces = sample()

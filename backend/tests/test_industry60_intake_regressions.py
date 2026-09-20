@@ -5,13 +5,28 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.orchestration.project_intake import project_intake_text
+from backend.agent_core.orchestration.project_intake import is_project_request, project_intake_text
 from backend.engineering.agent_tools import capabilities, project_draft
 from backend.engineering.agent_tools.inventory_details import details
 
 
 PROMPTS = json.loads((Path(__file__).resolve().parents[2] /
                      'tests/fixtures/industry60-intake-regressions.json').read_text(encoding='utf-8'))
+
+
+def test_meta_typing_request_is_not_converted_into_a_project_draft():
+    prompt = (
+        'Klassifiziere die Eingaben: Verbinde ParkAssist mit DriverAssistance.; '
+        'Prüfe MotorRPM.; Analysiere den letzten Trace.; '
+        'Erzeuge eine Architektur für 3 Sensoren, 4 Aktoren und einen Rechner.'
+    )
+    assert is_project_request(prompt) is False
+
+
+def test_direct_hardware_brief_remains_a_project_request():
+    assert is_project_request(
+        'Erzeuge eine Architektur für 3 Sensoren, 4 Aktoren und einen Rechner.'
+    ) is True
 
 
 def test_mixed_inventory_summary_uses_every_actual_device():

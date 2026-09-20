@@ -73,6 +73,8 @@ PROTOCOLS = (
     "MODBUS_RTU",
     "MODBUS_TCP",
     "I2C",
+    "UART",
+    "IO_LINK",
     "SPI",
     "GPIO",
     "PWM",

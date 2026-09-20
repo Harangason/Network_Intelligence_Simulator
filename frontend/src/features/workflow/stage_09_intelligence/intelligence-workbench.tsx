@@ -153,7 +153,7 @@ export function IntelligenceWorkbench() {
 
       {snapshot.is_outdated && <div className="workflow-blocker warning"><strong>OUTDATED</strong><span>{snapshot.outdated_reason}</span><button className="button secondary tiny" disabled={busy || loading} onClick={() => void recalculate()} type="button">Aktualisieren</button></div>}
       {error && <div className="notice error">{error}</div>}
-      {results.assessment_mode === "DIAGNOSTIC" && <div className="notice warning"><strong>Diagnose mit offenen Nachweisen</strong><ul>{results.missing_evidence?.map((item) => <li key={item}>{item}</li>)}</ul></div>}
+      {results.assessment_mode === "DIAGNOSTIC" && Boolean(results.missing_evidence?.length) && <div className="notice warning"><strong>Diagnose mit offenen Nachweisen</strong><ul>{results.missing_evidence?.map((item) => <li key={item}>{item}</li>)}</ul></div>}
       {results.interpretation && <p className="governance-note">{results.interpretation.ai_used ? "Snapshot mit KI-Interpretation" : "Rechnerischer Snapshot; KI-Reviews separat im Assistenten"} · {results.interpretation.learning}</p>}
       {results.review_learning && <p className="governance-note">Review-Erfahrung: {results.review_learning.reviewed_proposals} bewertete Vorschläge · {results.review_learning.matched_recommendations} aktuelle Empfehlungen mit früherem Review-Kontext</p>}
 
@@ -193,7 +193,7 @@ function Overview({ snapshot, proposals, onCreate, onApprove, onApproveAll }: { 
       </div>
 
       <NetworkDistribution snapshot={snapshot} onCreate={onCreate} proposals={proposals} />
-      <IssueTable issues={issues} onApprove={onApprove} onApproveAll={onApproveAll} onCreate={onCreate} proposals={proposals} />
+      {issues.length > 0 && <IssueTable issues={issues} onApprove={onApprove} onApproveAll={onApproveAll} onCreate={onCreate} proposals={proposals} />}
     </div>
   );
 }

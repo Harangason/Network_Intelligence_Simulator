@@ -99,6 +99,23 @@ def _declared_function_names(prompt: str) -> list[str]:
     return list(names.values())
 
 
+def _declared_function_hosts(specification: dict, function_refs: dict[str, str | None]) -> list[str]:
+    """Return controllers that may host explicitly named domain functions.
+
+    Gateways have their own generated communication function, but that must not
+    make them an alternative host for application functions when the project
+    contains one unambiguous controller.
+    """
+    device_types = {
+        str(chain.get('hardware_name') or '').casefold(): chain.get('device_type')
+        for chain in specification.get('chains') or []
+    }
+    return [
+        key for key, reference in function_refs.items()
+        if reference and device_types.get(key) in _CONTROLLER_DEVICE_TYPES
+    ]
+
+
 def _confirmed_actuator_commands(prompt: str) -> dict:
     # The questionnaire wraps its free-form notes in "Weitere Hinweise".
     # Accept that wrapper without changing any user-specified encoding.
@@ -308,6 +325,27 @@ def _network_protocol(interface_type: str) -> str:
     }
     protocol = aliases.get(key, key)
     return protocol if protocol in PROTOCOL_CAPACITY else _topology_bus(interface_type)
+
+
+def _next_generated_can_identifier(existing_messages: list[dict], pending_changes: list[dict]) -> str:
+    """Return the first free standard CAN identifier across persisted and pending messages."""
+    used: set[int] = set()
+    candidates = [
+        *existing_messages,
+        *(change.get('data') or {} for change in pending_changes if change.get('object_type') == 'Message'),
+    ]
+    for message in candidates:
+        value = str(message.get('message_id_hex') or '').strip()
+        if not value:
+            continue
+        try:
+            used.add(int(value, 16))
+        except ValueError:
+            continue
+    identifier = next((value for value in range(0x100, 0x800) if value not in used), None)
+    if identifier is None:
+        raise ValueError('Für die lokale Aktor-Nachricht ist kein freier Standard-CAN-Identifier verfügbar.')
+    return f'0x{identifier:03X}'
 
 
 def _generation_policy_for_specification(prompt: str, specification: dict) -> dict:
@@ -525,6 +563,13 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 chain.update(interface_type=technology, transport_network_ref=network)
     changes, refs = [], {}
 
+    def hardware_interface_identity(data):
+        return (
+            str(data.get('hardware_node_id') or ''),
+            _network_protocol(str(data.get('technology') or '')),
+            str(data.get('network_ref') or '').casefold(),
+        )
+
     def ensure(kind, name, data, parent=None):
         if kind == 'HardwareNetworkInterface' and is_ethernet(data.get('technology')):
             row = named_networks.get(data.get('network_ref'))
@@ -532,7 +577,9 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 name = row['name']
                 data = {**data, 'capabilities': {**(data.get('capabilities') or {}), 'name_source': 'network', 'name_network_id': row['id']}}
         name = concise_name(kind, name)
-        signature = (kind, name.casefold(), data.get(parent) if parent else None)
+        signature = ((kind, *hardware_interface_identity(data))
+                     if kind == 'HardwareNetworkInterface'
+                     else (kind, name.casefold(), data.get(parent) if parent else None))
         if signature in refs:
             # One logical local-I/O interface can terminate several explicitly
             # generated channels, including receive-only sensor segments.
@@ -545,8 +592,12 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                         *((data.get('configuration') or {}).get('physical_interface_ids') or []),
                     ]))
             return refs[signature]
-        matches = [row for row in existing[kind] if row['name'].casefold() == name.casefold()
-                   and (not parent or str(row.get(parent)) == str(data[parent]))]
+        if kind == 'HardwareNetworkInterface':
+            matches = [row for row in existing[kind]
+                       if hardware_interface_identity(row) == hardware_interface_identity(data)]
+        else:
+            matches = [row for row in existing[kind] if row['name'].casefold() == name.casefold()
+                       and (not parent or str(row.get(parent)) == str(data[parent]))]
         if len(matches) > 1:
             raise ValueError(f'Mehrdeutige vorhandene Zuordnung: {kind} {name}')
         if matches:
@@ -686,7 +737,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
     existing_function_names.update(change['data']['name'].casefold() for change in changes
                                    if change['object_type'] == 'Function')
     missing_functions = [name for name in declared_functions if name.casefold() not in existing_function_names]
-    function_hosts = [key for key, reference in function_refs.items() if reference]
+    function_hosts = _declared_function_hosts(spec, function_refs)
     if missing_functions:
         if len(function_hosts) != 1:
             raise ValueError('Funktionszuordnung fehlt für: ' + ', '.join(missing_functions)
@@ -796,9 +847,15 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                         ]
                         cycle_ms = min(float(chain.get('cycle_ms') or 10) for chain in actuator_chains)
                         dlc = max(int(chain.get('dlc') or 8) for chain in actuator_chains)
+                        message_id = (
+                            _next_generated_can_identifier(existing['Message'], changes)
+                            if _network_protocol(interface_type) in {'CAN', 'CAN_FD', 'CAN_XL'}
+                            else None
+                        )
                         command_ref = ensure('Message', f'{interface_name}_Command', {
                             'interface_id': interface,
                             'hardware_interface_id': port,
+                            **({'message_id_hex': message_id} if message_id else {}),
                             'direction': 'tx',
                             'cycle_ms': cycle_ms,
                             'dlc': dlc,

@@ -1,8 +1,10 @@
 export const SENSOR_MEASUREMENTS = [
-  { id: 'temperature', label: 'Temperatur', unit: 'degC', match: /temperatur|temperature/i },
+  { id: 'safety_state', label: 'Sicherheitszustand', unit: 'code', match: /sicherheit|safety/i },
+  { id: 'temperature', label: 'Temperatur', unit: 'degC', match: /temperatur|temperature|pt100/i },
   { id: 'speed', label: 'Drehzahl', unit: 'rpm', match: /drehzahl|rotationalspeed/i },
   { id: 'torque', label: 'Drehmoment', unit: 'Nm', match: /drehmoment|torque/i },
   { id: 'pressure', label: 'Druck', unit: 'bar', match: /druck|pressure/i },
+  { id: 'flow', label: 'Durchfluss', unit: 'l/min', match: /durchfluss|flow/i },
   { id: 'current', label: 'Strom', unit: 'A', match: /strom|current/i },
   { id: 'voltage', label: 'Spannung', unit: 'V', match: /spannung|voltage/i },
   { id: 'position', label: 'Position', unit: '%', match: /position/i },

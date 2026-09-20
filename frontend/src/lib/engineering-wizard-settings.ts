@@ -1,5 +1,6 @@
 import { DEFAULT_BUS_PARTICIPANT_LIMITS, normalizeBusLimits } from "./bus-settings.ts";
 import { WORKFLOW_STEP_DEFINITIONS } from "../features/workflow/definition.ts";
+import type { TechnologyDomain } from "./types.ts";
 
 export type WizardChoiceOption = {
   id: string;
@@ -39,6 +40,27 @@ export const WIZARD_PROCESS_GROUP: WizardChoiceGroup = {
 };
 
 export const REQUIRED_WIZARD_PROCESS_ID = "approve_after_allow";
+
+const PREFERRED_TECHNOLOGIES_BY_DOMAIN: Record<string, string[]> = {
+  automotive: ["can_fd", "automotive_ethernet", "lin", "someip"],
+  industrial_automation: ["profinet", "ethercat", "modbus_tcp", "opc_ua", "io_link"],
+  industrial: ["profinet", "ethercat", "modbus_tcp", "opc_ua", "io_link"],
+  aerospace: ["arinc429", "mil_std_1553", "afdx"],
+  iot: ["mqtt", "lorawan", "ble"],
+  telecom: ["ethernet", "5g_nr"],
+  energy: ["iec61850", "dnp3"],
+  robotics: ["ethercat", "ros2_dds"],
+  medical: ["hl7", "ble"],
+};
+
+export function defaultWizardTechnologyIds(domain?: TechnologyDomain): string[] {
+  if (!domain || ["custom", "generic", "generic_networking"].includes(domain.id)) return [];
+  const ids = domain.technologies
+    .filter((technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED"))
+    .map((technology) => technology.id);
+  const preferred = (PREFERRED_TECHNOLOGIES_BY_DOMAIN[domain.id] ?? []).filter((id) => ids.includes(id));
+  return preferred.length ? preferred : ids.slice(0, 4);
+}
 
 export type EngineeringWizardSettings = {
   project_name: string;

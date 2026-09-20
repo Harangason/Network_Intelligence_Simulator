@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearEngineeringAgentHistory } from "@/lib/agent-chat-history";
 import { openProjectBundleFromFile, saveProjectBundleToFile } from "@/lib/project-file";
+import { createNetworkProjectId } from "@/lib/project-ids";
 import { clearWorkflowApiCaches, exportProjectBundle, getWorkflowSummary, importProjectBundle, resetProjectWorkspace } from "@/lib/workflow-api";
 import { normalizeProjectId, readUserSettings, withProjectParam, writeUserSettings } from "@/lib/user-settings";
 import {
@@ -32,8 +33,7 @@ export function ProjectActions({ className = "project-actions", showMessage = tr
   }
 
   function createProjectId() {
-    const stamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 17);
-    return `network-project-${stamp}-${crypto.randomUUID().slice(0, 8)}`;
+    return createNetworkProjectId();
   }
 
   function clearBrowserProjectState(projectIds: string[]) {

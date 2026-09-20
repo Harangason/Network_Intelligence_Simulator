@@ -140,3 +140,33 @@ def test_sql_network_edit_retains_established_function_partner_until_repair():
     assert restored['destinations'][0]['node_id']==ids['receiver']
     assert restored['destinations'][0]['interface_id']==ids['receiver-interface']
     assert restored['route']['functional_intent']['destinations'][0]['function_id']==ids['receiver-function']
+
+
+@SQL
+def test_sql_new_route_records_basic_sensor_endpoint_as_hardware_io():
+    from backend.engineering.db import get_connection
+    from backend.engineering.project_context import current_project_id
+    from backend.engineering.routing.repository import create_route, get_route
+    client,ids=sql_sample()
+    original=get_route(ids['route'])
+    with get_connection() as connection:
+        connection.execute(
+            "UPDATE engineering_interfaces SET function_id=NULL WHERE project_id=%s AND id=%s",
+            (current_project_id(), ids['receiver-interface']),
+        )
+        connection.execute(
+            "UPDATE engineering_hardware_nodes SET device_type='SensorController' WHERE project_id=%s AND id=%s",
+            (current_project_id(), ids['receiver']),
+        )
+    created=create_route({
+        **{key: original[key] for key in (
+            'name', 'source', 'destinations', 'payload', 'route', 'timing', 'routing_policy',
+        )},
+        'name': 'Basic sensor I/O route',
+        'route': {key: value for key, value in original['route'].items() if key != 'functional_intent'},
+        'created_by': 'test',
+    })
+    intent=created['route']['functional_intent']['destinations'][0]
+    assert intent['function_id'] is None
+    assert intent['partner_type']=='hardware_io'
+    assert intent['hardware_node_id']==ids['receiver']
