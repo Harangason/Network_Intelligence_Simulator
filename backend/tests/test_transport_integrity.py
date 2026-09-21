@@ -14,6 +14,20 @@ from model_based_simulation import MessageCodec, SignalDefinition
 from universal_trace import generate_universal_events
 
 
+def test_e2e_projection_keeps_direct_delivery_and_unidentified_import_separate():
+    identified = {"transaction_id": "route:1", "event_id": "route:1", "route_id": "route",
+        "network": "bus", "technology": "can", "status": "transmitted", "time_s": .012,
+        "origin_release_time_s": .01, "segment_index": 0, "segment_count": 1,
+        "final_segment": True, "transmission_latency_ms": 2}
+    imported = {"route_id": "route", "network": "bus", "status": "transmitted", "time_s": .02}
+    result = analyze_runtime_trace({"model_simulation": {"frames": [identified, imported]}}, {})
+
+    assert len(result["e2e_transactions"]) == 1
+    transaction = result["e2e_transactions"][0]
+    assert transaction["transport_latency_ms"] == pytest.approx(2)
+    assert transaction["receiver_accept_time_s"] is None
+
+
 @pytest.fixture
 def gateway_config(monkeypatch):
     nodes = [{"id": key, "name": key, "device_type": kind, "logical_node_address": index + 1}
@@ -129,6 +143,13 @@ def test_canonical_requirements_and_both_physical_segments_reach_actual_trace(ga
         assert event["route_ref"] == event["canonical_route_id"] == "canonical-route"
     runtime = analyze_runtime_trace({"model_simulation": {"frames": events}}, config)
     assert len(runtime["routes"]) == 1 and len(runtime["networks"]) == 2
+    transactions = runtime["e2e_transactions"]
+    assert transactions
+    assert all(len(item["hops"]) == 2 for item in transactions)
+    assert all(item["transport_status"] == "DELIVERED" for item in transactions)
+    assert all(item["transport_latency_ms"] is not None for item in transactions)
+    assert all(item["receiver_status"] == "NOT_OBSERVED" and item["data_age_at_accept_ms"] is None
+               for item in transactions)
     assert runtime["routes"][0]["canonical_route_id"] == "canonical-route"
     assert runtime["routes"][0]["status"] == "PASS"
     assert runtime["routes"][0]["jitter_limit_ms"] == 5
@@ -209,6 +230,8 @@ def test_segment_failure_changes_final_delivery_without_fictitious_other_bus_tra
             for event in events if event["final_segment"])
     runtime = analyze_runtime_trace({"model_simulation": {"frames": events}}, config)
     assert runtime["routes"][0]["status"] == "FAIL"
+    assert all(item["transport_status"] != "DELIVERED" and item["physical_arrival_time_s"] is None
+               for item in runtime["e2e_transactions"])
     assert runtime["routes"][0]["drop_rate"] == 1
     assert runtime["routes"][0]["timeouts"] > 0
 

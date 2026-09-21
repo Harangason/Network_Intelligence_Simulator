@@ -20,6 +20,16 @@ from .models import ImplementationStatus, Layer, TechnologyCapability, Technolog
 LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
 
 
+def format_rate_bps(value: int) -> str:
+    rate = int(value)
+    for divisor, unit in ((1_000_000_000, "Gbit/s"), (1_000_000, "Mbit/s"), (1_000, "kbit/s")):
+        if rate >= divisor:
+            number = rate / divisor
+            rendered = f"{number:.3f}".rstrip("0").rstrip(".").replace(".", ",")
+            return f"{rendered} {unit}"
+    return f"{rate} bit/s"
+
+
 class TechnologyRegistry:
     def __init__(self) -> None:
         self._profiles: dict[str, dict[str, Any]] = {}
@@ -172,6 +182,42 @@ class TechnologyRegistry:
         findings = []
         for validator in resolved["validators"]:
             findings.extend(vars(item) for item in validator.validate(context))
+        return findings
+
+    def mechanisms(self, technology_id: str) -> dict[str, list[str]]:
+        return deepcopy(self.profile(technology_id).get("mechanisms") or {})
+
+    def validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        key = self.normalize_id(technology_id)
+        if key not in self._profiles:
+            return {"technology_id": key, "status": "UNKNOWN", "findings": [{
+                "stage": "TECHNOLOGY_PROFILE", "code": "TECHNOLOGY_PROFILE_MISSING",
+                "message": f"No technology profile is registered for {key}", "severity": "BLOCKER",
+            }]}
+        findings = self.validate_chain((key,), {"parameters": parameters})
+        return {"technology_id": key, "status": "INVALID" if findings else "VALID", "findings": findings}
+
+    def change_parameters(self, previous_technology: str, target_technology: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        previous = self.profile(previous_technology)
+        target = self.profile(target_technology)
+        previous_fields = set((previous.get("rate_model") or {}).get("fields") or ())
+        target_fields = set((target.get("rate_model") or {}).get("fields") or ())
+        retained = {key: value for key, value in parameters.items() if key not in previous_fields or key in target_fields}
+        invalidated = sorted(key for key in parameters if key in previous_fields and key not in target_fields)
+        validation = self.validate_parameters(target_technology, retained)
+        return {
+            "technology_id": self.normalize_id(target_technology), "parameters": retained,
+            "invalidated_fields": invalidated, "validation": validation,
+            "dependent_status": {name: "STALE" for name in ("capacity", "timing", "routing_feasibility", "simulation", "trace_expectations")},
+        }
+
+    def audit_bindings(self, bindings: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+        findings: list[dict[str, Any]] = []
+        for binding in bindings:
+            technology_id = binding.get("technology_profile_id") or binding.get("technology_id") or binding.get("technology")
+            result = self.validate_parameters(str(technology_id or ""), dict(binding.get("parameters") or {}))
+            for finding in result["findings"]:
+                findings.append({**finding, "binding_id": binding.get("binding_id") or binding.get("id"), "technology_id": result["technology_id"]})
         return findings
 
     def summary(self) -> dict[str, Any]:

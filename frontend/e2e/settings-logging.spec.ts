@@ -17,6 +17,15 @@ test('studio commands are removed and agent logging persists through settings', 
     await expect(header.getByRole('button', { name: 'Projekt aktualisieren', exact: true })).toHaveCount(0);
     await expect(header.getByRole('button', { name: /Loggen/ })).toHaveCount(0);
     await header.getByRole('link', { name: 'Einstellungen', exact: true }).click();
+    const returnLink = page.getByRole('link', { name: 'Zum Projekt' });
+    await expect(returnLink).toHaveAttribute('href', `/studio?mode=network&project=${project}`);
+    const systemInfo = page.getByRole('complementary', { name: 'Daten & Laufzeit' });
+    await expect(systemInfo).toBeVisible();
+    await expect.poll(() => systemInfo.evaluate((element) => {
+      const main = element.previousElementSibling;
+      if (!main) return false;
+      return element.getBoundingClientRect().top >= main.getBoundingClientRect().bottom;
+    })).toBe(true);
     const toggle = page.getByRole('switch', { name: /Agent-Ereignisse protokollieren/ });
     await expect(toggle).toBeEnabled();
     await expect(toggle).toBeChecked({ checked: initial });
@@ -28,6 +37,8 @@ test('studio commands are removed and agent logging persists through settings', 
     await expect(toggle).toBeChecked({ checked: !initial });
     const persisted = await page.request.get('/api/agent/diagnostics?agentLog=status');
     expect((await persisted.json()).enabled).toBe(!initial);
+    await returnLink.click();
+    await expect(page).toHaveURL(new RegExp(`/studio\\?mode=network&project=${project}$`));
   } finally {
     await page.request.post('/api/agent/diagnostics', {
       data: { action: 'agent-log', enabled: initial, projectId: project, runId: 'settings-test-cleanup' },

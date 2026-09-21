@@ -736,6 +736,14 @@ class EngineeringAgent:
             event('PROGRESS', status='VALIDATING',
                   text=f'Preflight über {checked} Workflow-Bereiche abgeschlossen; {warnings} Warnungen.',
                   workload={'completed': checked, 'total': checked})
+            if result.data.get('ready_for_simulation') is not True:
+                decision = str(result.data.get('preflight_status') or 'UNKNOWN')
+                status = 'INCOMPLETE'
+                text = (f'Der Preflight steht auf {decision}. Die Simulation benötigt eine ausdrückliche '
+                        'Freigabe der Warnungen oder die Behebung der Befunde.')
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             validation_complete = True
             if target_index == workflow_order.index('validation'):
                 text = 'Der Workflow-Preflight ist abgeschlossen.'

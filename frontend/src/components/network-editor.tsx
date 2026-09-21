@@ -78,7 +78,7 @@ const EVA_CLUSTER_ROW_GAP = 168;
 const EVA_DOMAIN_CLUSTER_PADDING = 32;
 const EVA_DOMAIN_CLUSTER_GAP = 180;
 const EVA_SYSTEMS_PER_FAMILY_ROW = 3;
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 1.5;
 const ZOOM_STEP = 0.1;
 const WIRE_ALIGNMENT_DEFAULT_OFFSET = 0;
@@ -2251,6 +2251,7 @@ export function NetworkEditor({
   const topologyRef = useRef(topology);
   const centralGatewayArchitectureRef = useRef(false);
   const workflowSelectionSignatureRef = useRef("");
+  const autoFitLayoutKeyRef = useRef("");
 
   useEffect(() => {
     if (!activeDragRef.current) topologyRef.current = topology;
@@ -3132,6 +3133,14 @@ export function NetworkEditor({
     layoutGuideWidth + CANVAS_EXTRA_SPACE,
     ...effectiveTopology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
+  useEffect(() => {
+    if (!surfaceWidth || !effectiveTopology.nodes.length || autoFitLayoutKeyRef.current === topologyLayoutKey) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      autoFitLayoutKeyRef.current = topologyLayoutKey;
+      fitCanvas();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [canvasWidth, effectiveTopology.nodes.length, surfaceHeight, surfaceWidth, topologyLayoutKey]);
   const layoutStatus = scene ? {
     className: "stable", label: layoutSaving ? "Ansicht wird gespeichert …" : "Gespeicherte Busansicht",
     semantics: "persisted-physical-buses", title: "Gemeinsame physische Busse aus dem gespeicherten Projektstand",
@@ -3629,7 +3638,7 @@ export function NetworkEditor({
                 <title>{bus.name} · {busProfile(bus.technology).label} · {bus.participantCount} Teilnehmer</title>
                 <path className="net-wire-hit net-bus-trunk-hit" d={bus.path} onPointerDown={event => beginBusDrag(event, bus)} />
                 <path className="net-bus-trunk" d={bus.displayPath ?? bus.path} stroke={busProfile(bus.technology).color} />
-                <text className="net-bus-label" onDoubleClick={onBusRename ? event => {event.stopPropagation(); openBusName(bus.id);} : undefined} onPointerDown={event => beginBusDrag(event, bus)} textAnchor="end" x={bus.label.x} y={bus.label.y} transform={`rotate(-90 ${bus.label.x} ${bus.label.y})`}>{bus.labelText ?? (bus.local ? `${busProfile(bus.technology).label} ${bus.name.match(/(?: |\_)(\d+(?:\.\d+)?)$/)?.[1] ?? bus.id.match(/-S(\d+)$/)?.[1] ?? ""}` : networkLabel(bus.name))}</text>
+                <text className="net-bus-label" onDoubleClick={onBusRename ? event => {event.stopPropagation(); openBusName(bus.id);} : undefined} onPointerDown={event => beginBusDrag(event, bus)} textAnchor="end" x={bus.label.x} y={bus.label.y} transform={`rotate(-90 ${bus.label.x} ${bus.label.y})`}>{bus.local ? `${busProfile(bus.technology).label} ${bus.name.match(/(?: |\_)(\d+(?:\.\d+)?)$/)?.[1] ?? bus.id.match(/-S(\d+)$/)?.[1] ?? ""}` : (bus.labelText ?? networkLabel(bus.name))}</text>
                 {bus.branches.map(branch => {
                   const edge = edgesByPortId.get(branch.portId)?.find(e => bus.edgeIds.includes(e.id));
                   return <g key={`${branch.nodeId}:${branch.portId}`} data-connection-id={edge?.id} data-branch-node-id={branch.nodeId} onPointerDown={event=>{beginBusDrag(event,bus,branch);if(edge && !deleting){setSelectedEdge(edge.id);setSelectedNode(null);}}} onDoubleClick={event=>{event.stopPropagation(); editBusRelationships(bus.id, branch.portId);}}

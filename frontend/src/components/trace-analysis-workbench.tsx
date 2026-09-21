@@ -9,6 +9,8 @@ import { engineeringContextHref } from "@/lib/agent/assistant-context";
 import { eventFromRecord, MAX_IMPORT_BYTES, type TraceEvent } from "@/lib/trace-records";
 import { ReasoningPanel } from "./reasoning-panel";
 import { queueEngineeringAgentTask } from '@/lib/agent-task-events';
+import { buildSequenceDiagram } from "@/lib/e2e-sequence";
+import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
 
 import { automaticProfile, availableColumns, displayTraceValue, TRACE_PROFILES, type TraceProfile } from "@/lib/trace-profiles";
 
@@ -339,7 +341,15 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
 }
 
 function SequenceView({ events, ...selection }: SelectionProps & { events: TraceEvent[] }) {
-  return <div className="panel trace-sequence">{events.map((event) => <div className="sequence-row" key={event.id}><EventTime event={event} {...selection} /><strong>{event.source}</strong><span>{"->"}</span><strong>{event.destination}</strong><em>{event.message}</em></div>)}{!events.length && <p>Keine Sequenzdaten verfügbar.</p>}</div>;
+  const model = buildSequenceDiagram(events.map(event => ({ ...event.original,
+    event_id: event.id, time_s: event.timestamp, time_status: event.timeKnown ? "known" : "unavailable",
+    source_name: event.source, destination_names: [event.destination], technology: event.technology,
+    route_name: event.message, status: event.status })), "OBSERVED");
+  const byId = new Map(events.map(event => [event.id, event]));
+  return <div className="panel trace-sequence"><E2ESequenceDiagram model={model} selectedId={selection.selected?.id} onSelect={item => {
+    const event = byId.get(item.id);
+    if (event) selection.onSelect(event);
+  }} /></div>;
 }
 
 function SignalView({ events, channels, onChannels, ...selection }: SelectionProps & { events: TraceEvent[]; channels: string[]; onChannels: (ids: string[]) => void }) {

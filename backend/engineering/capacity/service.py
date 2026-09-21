@@ -22,6 +22,7 @@ from ..workflow.service import WorkflowStatusService
 from ..addressing import LogicalNodeAddressAllocator
 from ..network_scene import short_bus_name
 from backend.simulator.numeric_acceleration import grouped_route_statistics
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from .calculators import (
     classify_load,
     can_frame_time_bound_ms,
@@ -1142,6 +1143,7 @@ class PreflightService:
                 "reliability",
                 "synchronization",
                 "addressing",
+                "technology",
             )
         }
 
@@ -1303,6 +1305,22 @@ class PreflightService:
                 add("network", "ERROR", "NETWORK_NODE_DISCONNECTED", f"Node {node.get('name') or node_id} ist nicht verbunden.")
 
         parameters = {**DEFAULT_PARAMETER_VALUES, **(state.get("parameters") or {})}
+        technology_id = str(parameters.get("technology") or "").strip()
+        if technology_id:
+            technology_profile = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(
+                technology_id,
+                (
+                    {"nominal_bitrate_bps": parameters.get("arbitration_bitrate", 500_000),
+                     "data_bitrate_bps": parameters.get("data_bitrate", parameters.get("bitrate"))}
+                    if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology_id) == "can_fd"
+                    else {"bitrate_bps": parameters.get("bitrate")}
+                ),
+            )
+            for issue in technology_profile["findings"]:
+                add("technology", str(issue.get("severity") or "ERROR"),
+                    str(issue.get("code") or "TECHNOLOGY_PARAMETER_INVALID"),
+                    str(issue.get("message") or "Technologieparameter sind ungueltig."),
+                    technology_id=technology_profile["technology_id"])
         if _number(parameters.get("bitrate"), 0.0) <= 0:
             add("parameters", "ERROR", "PARAMETER_BITRATE_MISSING", "Eine positive Bitrate ist erforderlich.")
         if _number(parameters.get("cycle_ms"), 0.0) <= 0:
@@ -1351,18 +1369,31 @@ class PreflightService:
         category_statuses: dict[str, str] = {}
         for category, checks in category_checks.items():
             category_statuses[category] = (
-                "ERROR" if any(item["severity"] == "ERROR" for item in checks)
+                "ERROR" if any(item["severity"] in {"ERROR", "BLOCKER"} for item in checks)
+                else "REVIEW" if any(item["severity"] == "REVIEW" for item in checks)
                 else "WARNING" if any(item["severity"] == "WARNING" for item in checks)
                 else "PASS"
             )
 
-        error_count = sum(item["severity"] == "ERROR" for item in findings)
+        error_count = sum(item["severity"] in {"ERROR", "BLOCKER"} for item in findings)
         warning_count = sum(item["severity"] == "WARNING" for item in findings)
-        status = "ERROR" if error_count else ("WARNING" if warning_count else "APPROVED")
+        review_count = sum(item["severity"] == "REVIEW" for item in findings)
+        decision_status = (
+            "BLOCKED" if error_count else
+            "REVIEW_REQUIRED" if review_count else
+            "READY_WITH_WARNINGS" if warning_count else "READY"
+        )
+        # Workflow snapshots retain their established status vocabulary.
+        status = "ERROR" if error_count or review_count else ("WARNING" if warning_count else "APPROVED")
+        warnings_allowed = (state.get("parameters") or {}).get("allow_simulation_with_warnings") is True
+        ready = decision_status == "READY" or (decision_status == "READY_WITH_WARNINGS" and warnings_allowed)
         results = {
-            "ready_for_simulation": error_count == 0,
+            "preflight_status": decision_status,
+            "ready_for_simulation": ready,
             "error_count": error_count,
             "warning_count": warning_count,
+            "review_count": review_count,
+            "warnings_allowed": warnings_allowed,
             "checked_steps": list(required),
             "capacity_snapshot_id": capacity.get("id") if capacity else None,
             "category_statuses": category_statuses,
@@ -1376,9 +1407,9 @@ class PreflightService:
             findings=findings,
             provenance={
                 "calculation_model": "WORKFLOW_PREFLIGHT",
-                "calculation_version": "1.0",
+                "calculation_version": "1.1",
                 "inputs": {"source_versions": state["versions"]},
-                "assumptions": {"warnings_are_non_blocking": True},
+                "assumptions": {"warnings_allowed": warnings_allowed},
                 "timestamp": _now(),
             },
             status=status,

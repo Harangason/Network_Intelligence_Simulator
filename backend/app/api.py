@@ -16,7 +16,7 @@ from .build_info import build_info
 from ..engineering.project_context import compact_context_project_id, normalize_context_project_id
 from ..engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
 from ..engineering.simulation import create_campaign_record, get_campaign_record, update_campaign_record
-from ..communication.technologies import DEFAULT_TECHNOLOGY_ONBOARDING
+from ..communication.technologies import DEFAULT_TECHNOLOGY_ONBOARDING, DEFAULT_TECHNOLOGY_REGISTRY as COMMUNICATION_TECHNOLOGY_REGISTRY
 
 
 api = Blueprint("api", __name__)
@@ -137,6 +137,26 @@ def research_technology_knowledge():
         return jsonify({"error": "technology or technology_id is required"}), 400
     value = payload.get("technology_id") or payload.get("technology")
     return jsonify(DEFAULT_TECHNOLOGY_ONBOARDING.research(value, triggers=payload.get("triggers") or ("unknown_protocol",)))
+
+
+@api.post("/technologies/validate-parameters")
+def validate_technology_parameters():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not (payload.get("technology") or payload.get("technology_id")):
+        return jsonify({"error": "technology or technology_id is required"}), 400
+    technology_id = payload.get("technology_id") or payload.get("technology")
+    result = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_parameters(technology_id, dict(payload.get("parameters") or {}))
+    return jsonify(result), 422 if result["status"] == "INVALID" else 200
+
+
+@api.post("/technologies/audit")
+def audit_technology_parameters():
+    payload = request.get_json(silent=True)
+    bindings = payload.get("bindings") if isinstance(payload, dict) else None
+    if not isinstance(bindings, list):
+        return jsonify({"error": "bindings must be a list"}), 400
+    findings = COMMUNICATION_TECHNOLOGY_REGISTRY.audit_bindings(bindings)
+    return jsonify({"status": "INVALID" if findings else "VALID", "findings": findings})
 
 
 @api.post("/technology-packs")

@@ -623,6 +623,7 @@ def _generate_universal_events(
             event = {
                 "event_id": f"{end_to_end_id}:{sequence}" + (f":segment:{segment_index}" if segment_count > 1 else ""),
                 "end_to_end_event_id": f"{end_to_end_id}:{sequence}",
+                "transaction_id": f"{end_to_end_id}:{sequence}",
                 "end_to_end_route_id": end_to_end_id,
                 "canonical_route_id": route["metadata"].get("canonical_route_id") or route["metadata"].get("routing_entry_id"),
                 "segment_index": segment_index, "segment_count": segment_count, "final_segment": segment_index == segment_count - 1,
@@ -721,6 +722,7 @@ def _generate_universal_events(
                     **event,
                     "event_id": event["event_id"] + ":duplicate",
                     "end_to_end_event_id": event["end_to_end_event_id"] + ":duplicate",
+                    "transaction_id": event["end_to_end_event_id"] + ":duplicate",
                     "sequence": sequence * 1_000_000 + 1,
                     "time_s": event_time + 0.000001,
                     "duplicate_of": sequence,
@@ -803,6 +805,7 @@ def _generate_universal_events(
             if key in event:
                 forwarded[key] = deepcopy(event[key])
         forwarded["event_id"] = str(event["end_to_end_event_id"]) + f":segment:{next_index}"
+        forwarded["transaction_id"] = event.get("transaction_id") or event["end_to_end_event_id"]
         forwarded["caused_by_event_id"] = event["event_id"]
         forwarded["scheduled_time_s"] = float(event["time_s"])
         forwarded["time_s"] = max(float(event["time_s"]), session_ready_at) + float(forwarded["configured_latency_ms"]) / 1000
@@ -855,7 +858,7 @@ def _write_csv(path: Path, events: list[dict[str, Any]]) -> Path:
         "configured_cycle_ms", "configured_latency_ms", "injected_jitter_ms", "release_mode", "release_basis",
         "deadline_ms",
         "event_id", "sequence", "transport_sequence_bytes", "route_id", "route_name", "route_ref", "route_refs",
-        "end_to_end_event_id", "end_to_end_route_id", "canonical_route_id", "segment_index", "segment_count",
+        "end_to_end_event_id", "transaction_id", "end_to_end_route_id", "canonical_route_id", "segment_index", "segment_count",
         "segment_id", "final_segment", "origin_sender_hardware", "origin_scheduled_time_s", "origin_release_time_s",
         "caused_by_event_id", "transmission_attempted", "golden_time_s",
         "traffic_type", "protocol_event", "session_id", "tcp_flags", "transport_ack_number",

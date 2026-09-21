@@ -36,6 +36,8 @@ import {
   type SignalKindFilter,
 } from "@/lib/simulation-signal-view";
 import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/lib/simulation-network-view";
+import { buildSequenceDiagram } from "@/lib/e2e-sequence";
+import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
 
 type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
 type ScenarioFault = {
@@ -484,81 +486,11 @@ function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | 
   return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list"><div className="runtime-route-heading"><span>Route</span><span>TX</span><span>RX</span><span>Takt</span><span>Frames</span><span>Status</span></div>{routes.slice(0, 12).map((route) => { const routeFrames = framesByRoute.get(route.route_id) ?? []; const dataFrames = routeFrames.filter((frame) => (frame.traffic_type ?? "DATA") === "DATA"); const presentation = runtimeRoutePresentation(route, dataFrames, topology); return <div className="runtime-route-row" key={route.route_id}><strong>{presentation.name}<small>{route.route_id}</small></strong><span><b>TX</b>{presentation.sender}</span><span><b>RX</b>{formatParticipants(presentation.receivers, 2)}</span><span>{route.configured_cycle_ms} ms</span><span>{dataFrames.filter((frame) => frame.time_s <= playhead + 0.000001).length} / {route.event_count}</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>; })}</div><div className="runtime-frame-list"><strong>Frame-Trace am Zeitzeiger</strong>{visibleFrames.slice(-20).reverse().map((frame, index) => <div key={`${frame.route_id}:${frame.time_s}:${index}`}><time>{frame.time_s.toFixed(4)} s</time><span>TX {frame.source_logical_address ?? "—"} · {frame.source_name ?? frame.sender}</span><span>RX {(frame.destination_logical_addresses ?? []).map((address, receiverIndex) => `${address ?? "—"} · ${frame.destination_names?.[receiverIndex] ?? frame.receivers?.[receiverIndex] ?? "unbekannt"}`).join(", ")}</span><span>{frame.route_name} · {frame.network}</span></div>)}</div></div>;
 }
 
-const SEQUENCE_EVENT_LABELS: Record<string, string> = {
-  TCP_SYN: "SYN",
-  TCP_SYN_ACK: "SYN + ACK",
-  TCP_ACK: "ACK · Session established",
-  SESSION_HELLO: "HELLO",
-  SESSION_HELLO_ACK: "HELLO ACK · Session established",
-  DATA: "DATA",
-  DATA_ACK: "DATA ACK",
-  HEARTBEAT: "ALIVE?",
-  HEARTBEAT_ACK: "ALIVE · Partner present",
-};
-
 function SequenceView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
-  const sequenceFrames = useMemo(() => (trace.frames ?? [])
-    .filter((frame) => frame.session_id && frame.protocol_event)
-    .sort((left, right) => left.time_s - right.time_s), [trace.frames]);
-  const sessionIds = useMemo(() => [...new Set(sequenceFrames.map((frame) => String(frame.session_id)))], [sequenceFrames]);
-  const [selectedSession, setSelectedSession] = useState(sessionIds[0] ?? "");
-  useEffect(() => {
-    if (!sessionIds.includes(selectedSession)) setSelectedSession(sessionIds[0] ?? "");
-  }, [selectedSession, sessionIds]);
-
-  if (!sequenceFrames.length) {
-    return <div className="simulation-empty-state"><strong>Keine IP-Session im Trace</strong><span>Das Sequenzdiagramm wird für geroutete IPv4/IPv6-Kommunikation erzeugt. Dafür müssen mindestens zwei IP-fähige Schnittstellen und eine freigegebene Route vorhanden sein.</span></div>;
-  }
-
-  const frames = sequenceFrames.filter((frame) => frame.session_id === selectedSession);
-  const firstForward = frames.find((frame) => ["TCP_SYN", "SESSION_HELLO", "DATA"].includes(String(frame.protocol_event))) ?? frames[0];
-  const clientName = firstForward.source_name ?? firstForward.sender;
-  const clientIp = firstForward.src_ip ?? "—";
-  const partnerName = firstForward.destination_names?.[0] ?? firstForward.receivers?.[0] ?? "Partner";
-  const partnerIp = firstForward.dst_ips?.[0] ?? "—";
-  const visibleFrames = frames.filter((frame) => frame.time_s <= playhead + 0.000001);
-  const shownFrames = visibleFrames.slice(-160);
-  const session = trace.restbus_summary?.sessions.find((item) => item.session_id === selectedSession);
-  const visibleKinds = visibleFrames.map((frame) => frame.protocol_event);
-  const handshakeComplete = visibleKinds.includes("TCP_ACK") || visibleKinds.includes("SESSION_HELLO_ACK");
-  const dataCount = visibleKinds.filter((kind) => kind === "DATA").length;
-  const ackCount = visibleKinds.filter((kind) => kind === "DATA_ACK").length;
-  const latestHeartbeat = visibleFrames.findLast((frame) => frame.protocol_event === "HEARTBEAT");
-  const latestHeartbeatAck = visibleFrames.findLast((frame) => frame.protocol_event === "HEARTBEAT_ACK");
-  const partnerState = !latestHeartbeat ? "WAITING" : latestHeartbeatAck && latestHeartbeatAck.time_s >= latestHeartbeat.time_s ? "ONLINE" : "CHECKING";
-  const protocol = `${firstForward.ip_version ? `IPv${firstForward.ip_version}` : "IP"} / ${String(firstForward.transport_protocol ?? "transport").toUpperCase()}`;
-
-  return <div className="sequence-workbench">
-    <header className="sequence-toolbar">
-      <div><span>RESTBUS SESSION · {protocol}</span><strong>{firstForward.route_name}</strong><small>{firstForward.network} · echte Kontroll- und Datenframes</small></div>
-      <label><span>Session</span><select aria-label="IP-Session auswählen" value={selectedSession} onChange={(event) => setSelectedSession(event.target.value)}>{sessionIds.map((id) => { const item = trace.restbus_summary?.sessions.find((candidate) => candidate.session_id === id); return <option key={id} value={id}>{item?.route_name ?? id}</option>; })}</select></label>
-    </header>
-    <div className="sequence-status-strip">
-      <div><span>Handshake</span><strong className={handshakeComplete ? "pass" : "pending"}>{handshakeComplete ? "ESTABLISHED" : "CONNECTING"}</strong></div>
-      <div><span>Daten bestätigt</span><strong>{ackCount} / {dataCount}</strong></div>
-      <div><span>Partnerstatus</span><strong className={partnerState === "ONLINE" ? "pass" : "pending"}>{partnerState}</strong></div>
-      <div><span>Heartbeat</span><strong>{session?.heartbeat_replies ?? 0} / {session?.heartbeat_checks ?? 0}</strong></div>
-    </div>
-    <div className="sequence-diagram" aria-label={`Sequenzdiagramm ${clientName} und ${partnerName}`}>
-      <div className="sequence-participants"><span /><article><strong>{clientName}</strong><small>{clientIp}</small></article><article><strong>{partnerName}</strong><small>{partnerIp}</small></article><span /></div>
-      <div className="sequence-events">
-        {shownFrames.map((frame, index) => {
-          const reverse = frame.src_ip ? frame.src_ip !== clientIp : (frame.source_name ?? frame.sender) !== clientName;
-          const source = frame.source_name ?? frame.sender;
-          const target = frame.destination_names?.[0] ?? frame.receivers?.[0] ?? "Partner";
-          return <div className="sequence-event-row" key={`${frame.session_id}:${frame.time_s}:${frame.protocol_event}:${index}`}>
-            <time>{frame.time_s.toFixed(4)} s</time>
-            <div className={`sequence-message ${reverse ? "reverse" : "forward"}`} title={`${source} → ${target}`}>
-              <span className="sequence-source">{source}</span><div className="sequence-arrow"><b>{SEQUENCE_EVENT_LABELS[String(frame.protocol_event)] ?? frame.protocol_event}</b><small>{frame.payload_bytes ?? 0} B · {frame.status}</small></div><span className="sequence-target">{target}</span>
-            </div>
-            <b className={frame.traffic_type === "CONTROL" ? "control" : "data"}>{frame.traffic_type}</b>
-          </div>;
-        })}
-        {!visibleFrames.length && <p>Noch keine Session-Ereignisse am aktuellen Zeitzeiger.</p>}
-        {visibleFrames.length > shownFrames.length && <p>{shownFrames.length} von {visibleFrames.length} Ereignissen am Zeitzeiger dargestellt.</p>}
-      </div>
-    </div>
-  </div>;
+  const model = useMemo(() => buildSequenceDiagram((trace.frames ?? [])
+    .filter(frame => frame.time_s <= playhead + 0.000001)
+    .map(frame => ({ ...frame, sender_hardware: frame.sender, receiver_hardware: frame.receivers })), "SIMULATED"), [trace.frames, playhead]);
+  return <E2ESequenceDiagram model={model} />;
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {

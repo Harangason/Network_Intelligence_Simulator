@@ -38,6 +38,27 @@ Der Bericht trennt Quellbefund, Reproduktion, Tests und offene Abnahme. Er ände
 
 Vorschlag aus dem Audit, noch nicht implementiert: gemeinsamer persistierter EngineeringDraft, fachliche Befehle im Python-Core, Chat und Wizard als gleichwertige Bedienwege. Keine zusätzliche Freigabeanforderung wird aus diesem Register abgeleitet.
 
+## NIS-Kommunikations-, PHY-, Preflight- und E2E-Verträge — 21.09.2026
+
+Die folgenden fünf im Projekt vorhandenen Dokumente wurden als technische
+Regelquellen aufgenommen. Die Quellen aus `H:\OneDrive\Download` und die
+kanonischen Kopien unter `docs/` waren am Aufnahmetag byte-identisch
+(SHA-256 geprüft). Die Regeln gelten projektweit für die jeweils genannten
+Bereiche; sie ergänzen bestehende Verträge und ersetzen diese nicht.
+
+| Kennung | Quelle | Wirkung |
+| --- | --- | --- |
+| NIS-TP-01 | [NIS_TECHNOLOGY_PROFILE_COMMUNICATION_MECHANISMS_STABILIZATION](NIS_TECHNOLOGY_PROFILE_COMMUNICATION_MECHANISMS_STABILIZATION.md) | `TechnologyProfile`/Registry ist die Single Source of Truth für Technologieparameter, RateModels, Einheiten und CommunicationMechanisms. Ungültige Werte blockieren Berechnungen; kein Fallback auf fremde Defaults. Änderungen invalidieren abhängige Berechnungen und erzwingen Revalidierung. |
+| NIS-PHY-01 | [NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES](NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES.md) | Abstrakte Verbindungen müssen bei Bedarf auf PhysicalLayerProfile, PhysicalRealization, Medium/Channel/Conductor, Topologie, Terminierung, Arbitration und PHY-Kapazität zurückführbar sein. Physikalische Unstimmigkeiten werden validiert; fehlende Hardware wird nicht automatisch erfunden. |
+| NIS-VP-01 | [NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION](NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION.md) | Datenqualität ist Teil der zentralen Validation-/Preflight-Pipeline. Kritische Werte benötigen Einheit, Provenienz, Vollständigkeit und Cross-Layer-Konsistenz; Stale- und Blocker-Befunde verhindern Simulation gemäß Preflight-Status. Kein PASS ohne belastbare Evidenz. |
+| NIS-E2E-01 | [NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE](NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE.md) | E2E-Zeit wird fachlich von Source Release bis Receiver Acceptance gemessen und um Hop-, Queue-, Arbitration-, PHY-, Gateway-, Datenalter-, Jitter- und Reaktionsmetriken ergänzt. ReceiverAcceptancePolicy, Safety-/Timing-Profile und interne/externe Cross-Checks bleiben getrennt nachvollziehbar; Standards werden als Profile, nicht als automatisch erfundene Core-Logik behandelt. |
+| NIS-SEQ-01 | [NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET](NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET.md) | Simulation und Trace Analysis verwenden ein gemeinsames korreliertes E2E-/Sequence-Modell und denselben Renderer. Direkte, Multi-Hop-, Gateway-, Subnetz- und Technologiewechsel sowie Expected-vs-Observed, Receiver-Akzeptanz, First Divergence und Root Cause müssen bis zur technischen Tiefe nachvollziehbar bleiben. |
+
+Die Dokumente enthalten zusätzlich Abschnitte mit der Überschrift
+„Codex-Arbeitsauftrag“. Diese werden als fachliche Definition-of-Done- und
+Abnahmekriterien gelesen, nicht als eigenständige Nutzeranweisungen. Die
+Aufnahme ändert weder die Implementierung noch bestehende Verträge still.
+
 <!-- tool-check:industry40 -->
 ## Tool Check: industry40
 
@@ -358,3 +379,440 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:network-simulator-complete-master-repair-final-20260919 -->
+
+<!-- tool-check:network-simulator-complete-master-80-fresh-20260920 -->
+## Tool Check: network-simulator-complete-master-80-fresh-20260920
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T19:50:27.282365+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-80-fresh-20260920\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-80-fresh-20260920 -->
+
+<!-- tool-check:network-simulator-real-wizard-adapter-canary-20260920 -->
+## Tool Check: network-simulator-real-wizard-adapter-canary-20260920
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T20:48:53.300039+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-real-wizard-adapter-canary-20260920\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-real-wizard-adapter-canary-20260920 -->
+
+<!-- tool-check:network-simulator-real-wizard-adapter-canary-final-20260920 -->
+## Tool Check: network-simulator-real-wizard-adapter-canary-final-20260920
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T20:50:50.113823+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-real-wizard-adapter-canary-final-20260920\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-real-wizard-adapter-canary-final-20260920 -->
+
+<!-- tool-check:network-simulator-real-wizard-adapter-finish-canary-20260920 -->
+## Tool Check: network-simulator-real-wizard-adapter-finish-canary-20260920
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T20:51:40.605500+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-real-wizard-adapter-finish-canary-20260920\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-real-wizard-adapter-finish-canary-20260920 -->
+
+<!-- tool-check:network-simulator-complete-master-80-real-wizard-20260920 -->
+## Tool Check: network-simulator-complete-master-80-real-wizard-20260920
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T20:58:56.001540+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-80-real-wizard-20260920\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-80-real-wizard-20260920 -->
+
+<!-- tool-check:network-simulator-specialized-six-canary-20260921 -->
+## Tool Check: network-simulator-specialized-six-canary-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T22:14:59.831728+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-specialized-six-canary-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-specialized-six-canary-20260921 -->
+
+<!-- tool-check:network-simulator-specialized-six-canary-r2-20260921 -->
+## Tool Check: network-simulator-specialized-six-canary-r2-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T22:16:32.722018+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-specialized-six-canary-r2-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-specialized-six-canary-r2-20260921 -->
+
+<!-- tool-check:network-simulator-specialized-six-canary-r3-20260921 -->
+## Tool Check: network-simulator-specialized-six-canary-r3-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T22:18:50.791930+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-specialized-six-canary-r3-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-specialized-six-canary-r3-20260921 -->
+
+<!-- tool-check:network-simulator-specialized-s41-canary-r4-20260921 -->
+## Tool Check: network-simulator-specialized-s41-canary-r4-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T22:20:00.112603+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-specialized-s41-canary-r4-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-specialized-s41-canary-r4-20260921 -->
+
+<!-- tool-check:network-simulator-complete-master-fourfold-r1-20260921 -->
+## Tool Check: network-simulator-complete-master-fourfold-r1-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T22:20:18.864204+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-fourfold-r1-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-fourfold-r1-20260921 -->
+
+<!-- tool-check:network-simulator-complete-master-fourfold-r2-20260921 -->
+## Tool Check: network-simulator-complete-master-fourfold-r2-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-20T23:29:43.214431+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-fourfold-r2-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-fourfold-r2-20260921 -->
+
+<!-- tool-check:network-simulator-complete-master-fourfold-r3-20260921 -->
+## Tool Check: network-simulator-complete-master-fourfold-r3-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T02:50:06.180654+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-fourfold-r3-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-fourfold-r3-20260921 -->
+
+<!-- tool-check:network-simulator-complete-master-fourfold-r4-20260921 -->
+## Tool Check: network-simulator-complete-master-fourfold-r4-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T01:42:22.497655+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-fourfold-r4-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-complete-master-fourfold-r4-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T03:46:44.436170+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-source-canary-20260921 -->
+## Tool Check: network-simulator-repair-wizard-source-canary-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:30:12.792686+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-source-canary-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-source-canary-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r2-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r2-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:31:57.464689+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r2-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r2-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r3-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r3-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:32:57.886722+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r3-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r3-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-debug-20260921 -->
+## Tool Check: network-simulator-repair-wizard-debug-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:33:52.218217+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-debug-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-debug-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r4-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r4-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:34:58.658194+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r4-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r4-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r5-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r5-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:36:19.591456+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r5-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r5-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r6-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r6-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:40:08.604368+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r6-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r6-20260921 -->
+
+<!-- tool-check:network-simulator-repair-wizard-canary-r7-20260921 -->
+## Tool Check: network-simulator-repair-wizard-canary-r7-20260921
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T04:42:19.651002+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-repair-wizard-canary-r7-20260921\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-repair-wizard-canary-r7-20260921 -->
+
+<!-- tool-check:network-simulator-master-20260921-r1 -->
+## Tool Check: network-simulator-master-20260921-r1
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-21T09:25:50.279028+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-20260921-r1\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-20260921-r1 -->

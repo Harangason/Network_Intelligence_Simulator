@@ -403,11 +403,17 @@ def _wizard_parameter_technology_ids(prompt: str) -> list[str]:
 
 def _parameter_defaults(technology_id: str) -> dict:
     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
-    return {
+    defaults = {
         field['key']: field.get('default')
         for field in SimulationService._parameter_schema(technology_id, profile)
         if 'default' in field
     }
+    # Workflow persistence keeps ``bitrate`` as the canonical calculation
+    # input. Multi-phase profiles expose explicit UI fields while mapping the
+    # data phase to that legacy-neutral calculation key.
+    if 'bitrate' not in defaults and 'data_bitrate' in defaults:
+        defaults['bitrate'] = defaults['data_bitrate']
+    return defaults
 
 
 def generate_parameters(arguments: dict) -> dict:

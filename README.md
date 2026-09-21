@@ -9,6 +9,24 @@ Der universelle Simulationskern unterstützt jede integrierte oder
 benutzerdefinierte Bus-Technologie. Für CAN und Ethernet stehen zusätzlich
 native Writer zur Verfügung.
 
+## Lizenz und Nutzung
+
+Diese Software ist proprietär und steht unter der [NIS Proprietary Software
+License](LICENSE). Ohne vorherige schriftliche Freigabe des Rechteinhabers ist
+insbesondere untersagt, die Software oder wesentliche Teile davon zu nutzen,
+zu kopieren, zu verändern, zu verbreiten, zu veröffentlichen, zu vermieten,
+zu verkaufen, als Dienst bereitzustellen oder in andere Produkte zu integrieren.
+
+Das öffentliche Vorliegen des Quelltextes oder seine Lesbarkeit in einem
+Repository stellt keine Nutzungserlaubnis und keine Freigabe für Forks,
+Weitergabe oder kommerzielle Verwendung dar. Anfragen für eine Nutzungslizenz
+oder sonstige Freigabe müssen vor der betreffenden Nutzung schriftlich an den
+Rechteinhaber gestellt werden. Bestandteile Dritter können eigenen
+Lizenzbedingungen unterliegen; diese werden durch die Projektlizenz nicht
+erweitert.
+
+SPDX-Kennung für dieses Projekt: `LicenseRef-NIS-Proprietary-1.0`
+
 ## Weboberfläche
 
 Das Projekt enthält eine lokale Flask-API und eine Next.js-Oberfläche. Die

@@ -70,6 +70,53 @@ def _participant_names(values: Any, names: dict[str, str]) -> list[str]:
     return sorted({names.get(str(item), str(item)) for item in items if item})
 
 
+def _e2e_transactions(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        if str(event.get("traffic_type") or "DATA").upper() != "DATA":
+            continue
+        transaction_id = event.get("transaction_id") or event.get("end_to_end_event_id")
+        if transaction_id:
+            grouped[str(transaction_id)].append(event)
+
+    transactions = []
+    for transaction_id, items in grouped.items():
+        hops = sorted(items, key=lambda item: int(item.get("segment_index") or 0))
+        first = hops[0]
+        final = next((item for item in reversed(hops) if item.get("final_segment", True)), None)
+        expected_count = max(int(item.get("segment_count") or 1) for item in hops)
+        complete = final is not None and len({int(item.get("segment_index") or 0) for item in hops}) == expected_count
+        release = first.get("origin_release_time_s")
+        delivered = complete and all(item.get("status") == "transmitted" for item in hops)
+        arrival = final.get("time_s") if delivered and final else None
+        latency = (max(0.0, (float(arrival) - float(release)) * 1000)
+                   if arrival is not None and release is not None else None)
+        transactions.append({
+            "transaction_id": transaction_id,
+            "route_id": str(first.get("end_to_end_route_id") or first.get("route_id") or ""),
+            "source_release_time_s": release,
+            "physical_arrival_time_s": arrival,
+            "transport_latency_ms": round(latency, 6) if latency is not None else None,
+            "receiver_accept_time_s": None,
+            "data_age_at_accept_ms": None,
+            "receiver_status": "NOT_OBSERVED",
+            "transport_status": "DELIVERED" if delivered else "CORRUPTED" if any(
+                item.get("status") == "corrupted" for item in hops) else "INCOMPLETE",
+            "hops": [{
+                "event_id": item.get("event_id"),
+                "segment_index": item.get("segment_index", 0),
+                "network_id": item.get("network"),
+                "technology": item.get("technology"),
+                "tx_start_s": item.get("tx_start_s"),
+                "tx_end_s": item.get("tx_end_s"),
+                "arrival_time_s": item.get("time_s") if item.get("status") == "transmitted" else None,
+                "queue_delay_ms": item.get("queue_delay_ms"),
+                "status": item.get("status"),
+            } for item in hops],
+        })
+    return sorted(transactions, key=lambda item: item["transaction_id"])
+
+
 def analyze_runtime_trace(
     result: dict[str, Any],
     config: dict[str, Any],
@@ -356,6 +403,7 @@ def analyze_runtime_trace(
         },
         "networks": network_metrics,
         "routes": route_metrics,
+        "e2e_transactions": _e2e_transactions(events),
         "queues": {
             "average_depth": round(
                 sum(item["average_queue_depth"] for item in network_metrics) / len(network_metrics), 6

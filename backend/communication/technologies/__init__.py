@@ -3,7 +3,7 @@
 import os
 
 from .catalog import MODEL_TYPES, technology_definitions
-from .core.registry import BindingResolver, GeneratorResolver, TechnologyRegistry
+from .core.registry import BindingResolver, GeneratorResolver, TechnologyRegistry, format_rate_bps
 from .onboarding import TechnologyOnboardingService
 
 
@@ -21,4 +21,5 @@ __all__ = [
     "MODEL_TYPES",
     "TechnologyRegistry",
     "TechnologyOnboardingService",
+    "format_rate_bps",
 ]

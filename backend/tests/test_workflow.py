@@ -1,5 +1,6 @@
 from contextlib import nullcontext
 import json
+import pytest
 
 from backend.engineering.capacity.calculators import (
     clock_drift_ms,
@@ -15,6 +16,7 @@ from backend.engineering.workflow.models import default_statuses, default_versio
 from backend.engineering.workflow import service as workflow_service_module
 from backend.engineering.workflow.service import (
     WorkflowStatusService,
+    WorkflowConflictError,
     is_topology_layout_only_change,
     normalize_engineering_wizard_settings,
 )
@@ -614,6 +616,38 @@ def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
 
     network_codes = {item["code"] for item in response["category_checks"]["network"]}
     assert "WORKFLOW_STEP_NOT_READY" in network_codes
+    assert response["preflight_status"] == "BLOCKED"
+    assert response["ready_for_simulation"] is False
+
+
+def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {"technology": "lin", "bitrate": 2_000_000},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    assert any(item["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE" for item in result["category_checks"]["technology"])
+    assert result["preflight_status"] == "BLOCKED"
+
+
+def test_simulation_snapshot_rejects_unapproved_preflight_warnings(monkeypatch):
+    service = WorkflowStatusService("analysis-project")
+    monkeypatch.setattr(service, "latest_analysis", lambda *_args, **_kwargs: {
+        "status": "WARNING", "results": {"preflight_status": "READY_WITH_WARNINGS", "ready_for_simulation": False},
+    })
+
+    with pytest.raises(WorkflowConflictError, match="Preflight erlaubt keine Simulation"):
+        service.create_simulation_snapshot({})
 
 
 def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):

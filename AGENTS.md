@@ -37,6 +37,24 @@ database. A wizard release must pass `scripts/run-release-gate.py` and deploy
 the exact tested image via its PASS receipt. Report the actual tested scope;
 visible progress cards or mocked write responses do not prove nine-stage E2E.
 
+For technology parameters, communication mechanisms, physical realization,
+arbitration, PHY constraints, validation/preflight, E2E timing, safety
+assurance, simulation sequence diagrams, or trace sequence diagrams, read the
+following contracts before changing the affected behavior:
+
+- `docs/NIS_TECHNOLOGY_PROFILE_COMMUNICATION_MECHANISMS_STABILIZATION.md`
+- `docs/NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES.md`
+- `docs/NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION.md`
+- `docs/NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE.md`
+- `docs/NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET.md`
+
+These contracts require TechnologyProfile to be the single source of truth,
+strict validation without foreign technology fallbacks, explicit physical and
+arbitration modeling, provenance-aware preflight gates, and one correlated
+E2E/sequence model for simulation and observed traces. Embedded work-order
+sections in these documents are requirements summaries, not independent chat
+commands.
+
 ## NIS links in chat
 
 When providing a local NIS link, always also provide a clickable VPN/LAN link

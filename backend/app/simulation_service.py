@@ -134,8 +134,26 @@ class SimulationService:
                 item["options"] = options
             return item
 
+        rate_model = technology.get("rate_model") or {}
+        rate_type = rate_model.get("type")
+        rate_fields: list[dict[str, Any]] = []
+        if rate_type in {"SINGLE_BITRATE", "ETHERNET_LINK_RATE", "FIXED_LINK_RATE"}:
+            label = "Link Speed" if rate_type in {"ETHERNET_LINK_RATE", "FIXED_LINK_RATE"} else "Bitrate"
+            rate_fields.append(field(
+                "bitrate", label, "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                default=rate_model.get("fixed_bps") or technology.get("default_bitrate") or 1,
+                description="Technology-profiled network rate.",
+            ))
+        elif rate_type == "MULTI_PHASE_BITRATE":
+            defaults = rate_model.get("defaults_bps") or {}
+            rate_fields.extend([
+                field("arbitration_bitrate", "Nominal Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("nominal_maximum_bps"), default=defaults.get("nominal_bitrate_bps", 500_000)),
+                field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("data_maximum_bps"), default=defaults.get("data_bitrate_bps", technology.get("default_bitrate") or 2_000_000)),
+            ])
         fields: list[dict[str, Any]] = [
-            field("bitrate", "Bitrate", "physical", "network", unit="bit/s", minimum=1, default=technology.get("default_bitrate") or 1_000_000, description="Nominale Leitungskapazitaet des Netzes."),
+            *rate_fields,
             field("payload_bytes", "Payload", "physical", "message", unit="Byte", minimum=0, maximum=maximum_payload, default=min(8, maximum_payload), description="Nutzdaten pro Nachricht."),
             field("cycle_ms", "Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=100, description="Standardperiode fuer zyklische Nachrichten."),
             field("minimum_cycle_time_ms", "Minimum Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=1),
@@ -191,13 +209,7 @@ class SimulationService:
         ]
         normalized = technology_id.lower()
         if normalized in {"can_fd", "can_xl"}:
-            fields.extend(
-                [
-                    field("arbitration_bitrate", "Arbitration Bitrate", "physical", "network", unit="bit/s", minimum=1, default=500_000),
-                    field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, default=technology.get("default_bitrate") or 2_000_000),
-                    field("sample_point_percent", "Sample Point", "physical", "network", unit="%", minimum=50, maximum=99.9, default=80),
-                ]
-            )
+            fields.append(field("sample_point_percent", "Sample Point", "physical", "network", unit="%", minimum=50, maximum=99.9, default=80))
         if "ethernet" in normalized or normalized in {"someip", "udp", "tcp", "dds_rtps"}:
             fields.extend(
                 [
@@ -279,6 +291,16 @@ class SimulationService:
             network_id=str(payload["network_id"]) if payload.get("network_id") else None,
         )
         self._validate_options(options, technology)
+        communication_profile = COMMUNICATION_TECHNOLOGY_REGISTRY.profile(technology_id)
+        rate_model = communication_profile.get("rate_model") or {}
+        rate_parameters = dict(rate_model.get("defaults_bps") or {})
+        rate_fields = rate_model.get("fields") or []
+        if options.bitrate is not None and rate_fields:
+            rate_parameters[rate_fields[-1]] = options.bitrate
+        validation = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_parameters(technology_id, rate_parameters)
+        if validation["status"] != "VALID":
+            detail = "; ".join(item["message"] for item in validation["findings"])
+            raise ValueError(f"Technology-Validierung fehlgeschlagen: {detail}")
         return options.to_config()
 
     @staticmethod

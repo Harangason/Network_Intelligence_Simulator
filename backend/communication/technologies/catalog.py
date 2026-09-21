@@ -10,6 +10,47 @@ from __future__ import annotations
 from typing import Any
 
 
+TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
+    "lin": {
+        "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1, "maximum_bps": 20_000, "typical_bps": [9_600, 19_200]},
+        "mechanisms": {"integrity": ["PID_PARITY", "LIN_CHECKSUM"], "addressing": ["FRAME_IDENTIFIER"], "diagnostics": ["LIN_DIAGNOSTIC_TRANSPORT"], "supervision": ["RESPONSE_TIMEOUT", "SCHEDULE_MONITORING"]},
+    },
+    "can": {
+        "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 10_000, "maximum_bps": 1_000_000},
+        "mechanisms": {"integrity": ["CAN_CRC"], "addressing": ["CAN_IDENTIFIER"], "supervision": ["ERROR_COUNTER", "BUS_OFF"]},
+    },
+    "can_fd": {
+        "rate_model": {"type": "MULTI_PHASE_BITRATE", "fields": ["nominal_bitrate_bps", "data_bitrate_bps"], "defaults_bps": {"nominal_bitrate_bps": 500_000, "data_bitrate_bps": 2_000_000}, "nominal_maximum_bps": 1_000_000, "data_maximum_bps": 8_000_000},
+        "mechanisms": {"integrity": ["CAN_FD_CRC"], "addressing": ["CAN_IDENTIFIER"], "supervision": ["ERROR_COUNTER", "ERROR_ACTIVE", "ERROR_PASSIVE", "BUS_OFF"]},
+    },
+    "ethernet": {
+        "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [10_000_000, 100_000_000, 1_000_000_000, 10_000_000_000]},
+        "mechanisms": {"integrity": ["ETHERNET_FCS"], "addressing": ["MAC_ADDRESS"], "address_resolution": ["ARP", "IPV6_NDP"]},
+    },
+    "ethercat": {
+        "rate_model": {"type": "FIXED_LINK_RATE", "fields": ["bitrate_bps"], "fixed_bps": 100_000_000},
+        "mechanisms": {"integrity": ["ETHERNET_FCS", "WORKING_COUNTER"], "addressing": ["AUTO_INCREMENT_ADDRESS", "CONFIGURED_STATION_ADDRESS"], "diagnostics": ["AL_STATUS", "COE"], "supervision": ["WORKING_COUNTER"]},
+    },
+    "profinet": {
+        "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [100_000_000, 1_000_000_000]},
+        "mechanisms": {"integrity": ["ETHERNET_FCS"], "addressing": ["MAC_ADDRESS", "STATION_NAME", "IP_ADDRESS"], "discovery": ["PROFINET_DCP"], "diagnostics": ["PROFINET_DIAGNOSTICS"]},
+    },
+    "modbus_rtu": {
+        "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1_200, "maximum_bps": 115_200},
+        "mechanisms": {"integrity": ["MODBUS_CRC16"], "addressing": ["SLAVE_ADDRESS"], "diagnostics": ["MODBUS_DIAGNOSTICS", "EXCEPTION_CODES"]},
+    },
+    "modbus_tcp": {
+        "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [10_000_000, 100_000_000, 1_000_000_000, 10_000_000_000]},
+        "mechanisms": {"integrity": ["ETHERNET_FCS", "TCP_CHECKSUM"], "addressing": ["IP_ADDRESS", "TCP_PORT_502", "UNIT_IDENTIFIER"]},
+    },
+    "j1939": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["J1939_ADDRESS_CLAIM"], "diagnostics": ["J1939_DM"]}},
+    "canopen": {"mechanisms": {"integrity": ["CAN_CRC"], "addressing": ["NODE_ID"], "diagnostics": ["CANOPEN_EMCY", "CANOPEN_SDO"], "supervision": ["HEARTBEAT", "NMT"]}},
+    "dds": {"mechanisms": {"discovery": ["DDS_PARTICIPANT_DISCOVERY", "DDS_ENDPOINT_DISCOVERY"], "supervision": ["LIVELINESS", "DEADLINE"]}},
+    "bacnet_ip": {"mechanisms": {"discovery": ["BACNET_WHO_IS_I_AM", "BACNET_WHO_HAS_I_HAVE"]}},
+    "nmea2000": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["NMEA2000_ADDRESS_CLAIM"]}},
+}
+
+
 MODEL_TYPES: tuple[dict[str, Any], ...] = (
     {"id": "generic_networking", "label": "Generische Kommunikationsarchitektur", "device_types": ["HardwareNode", "Gateway", "Sensor", "Actuator", "Switch", "Router"], "recommended_technologies": ["ethernet", "ip", "udp", "tcp", "generic_serial", "generic_can", "generic_ethernet", "custom_udp", "custom_tcp", "custom_binary", "custom_text", "custom_protocol"]},
     {"id": "automotive", "label": "Automotive / Vehicle", "device_types": ["ECU", "Gateway", "DomainController", "ZoneController", "Sensor", "Actuator"], "recommended_technologies": ["can", "can_fd", "can_xl", "lin", "flexray", "automotive_ethernet", "canopen", "j1939", "isobus", "someip", "doip", "uds", "xcp", "obd2", "tsn"]},
@@ -102,6 +143,10 @@ def _spec(
     overhead_bytes: int = 8,
     limitations: str = "Technology-specific conformance details require a vendor/profile extension.",
 ) -> dict[str, Any]:
+    semantics = TECHNOLOGY_SEMANTICS.get(technology_id, {})
+    rate_model = semantics.get("rate_model") or ({
+        "type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1,
+    } if bitrate else {"type": "INHERITED_OR_NOT_APPLICABLE", "fields": []})
     return {
         "id": technology_id,
         "label": label,
@@ -112,6 +157,12 @@ def _spec(
         "hardware_interface": hardware_interface,
         "default_stack": list(stack or (technology_id,)),
         "default_bitrate": bitrate,
+        "rate_model": rate_model,
+        "parameter_schema": {
+            field: {"type": "integer", "unit": "bit/s", "minimum": 1}
+            for field in rate_model.get("fields", [])
+        },
+        "mechanisms": semantics.get("mechanisms", {}),
         "max_payload_bytes": payload,
         "capabilities": _capabilities(*capabilities),
         "deterministic": deterministic,

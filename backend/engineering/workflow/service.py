@@ -1283,6 +1283,12 @@ class WorkflowStatusService:
         validation = self.latest_analysis("preflight")
         if not validation or validation["status"] not in {"COMPLETE", "APPROVED", "WARNING"}:
             raise WorkflowConflictError("Ein aktueller, erfolgreicher Preflight ist erforderlich.")
+        decision = (validation.get("results") or {}).get("preflight_status")
+        if decision is not None and (
+            decision not in {"READY", "READY_WITH_WARNINGS"}
+            or (validation.get("results") or {}).get("ready_for_simulation") is not True
+        ):
+            raise WorkflowConflictError(f"Der Preflight erlaubt keine Simulation ({decision}).")
         with get_connection() as connection:
             state = self._get_locked(connection)
             persisted_scope = normalize_simulation_scope((state.get("parameters") or {}).get("simulation_scope"))

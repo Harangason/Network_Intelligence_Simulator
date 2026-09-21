@@ -85,6 +85,34 @@ class TechnologyValidator:
         required = str(self.profile.get("hardware_interface") or "").lower()
         if interface_capabilities and required and required not in interface_capabilities:
             findings.append(ValidationFinding("HARDWARE_INTERFACE", "incompatible_interface", f"{required} is not provided by the selected hardware interface"))
+        parameters = dict(context.get("parameters") or {})
+        for field in ("bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"):
+            if field in context:
+                parameters[field] = context[field]
+        rate_model = self.profile.get("rate_model") or {}
+        rate_type = rate_model.get("type")
+        supplied_rate_fields = {field for field in parameters if field.endswith("bitrate_bps")}
+        allowed_fields = set(rate_model.get("fields") or ())
+        for field in sorted(supplied_rate_fields - allowed_fields):
+            findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_RATE_MODEL_MISMATCH", f"{field} is not valid for {self.technology_id}", "BLOCKER"))
+        if supplied_rate_fields:
+            for field in sorted(allowed_fields - supplied_rate_fields):
+                findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_PARAMETER_INVALID", f"{field} is required by {rate_type}", "BLOCKER"))
+        for field in supplied_rate_fields & allowed_fields:
+            value = parameters[field]
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
+                findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_UNIT_MISMATCH", f"{field} must be a positive numeric bit/s value", "BLOCKER"))
+                continue
+            maximum = rate_model.get("maximum_bps")
+            if field == "nominal_bitrate_bps":
+                maximum = rate_model.get("nominal_maximum_bps")
+            elif field == "data_bitrate_bps":
+                maximum = rate_model.get("data_maximum_bps")
+            allowed = rate_model.get("allowed_bps")
+            fixed = rate_model.get("fixed_bps")
+            invalid = (maximum is not None and value > maximum) or (allowed and value not in allowed) or (fixed is not None and value != fixed)
+            if invalid:
+                findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_PARAMETER_OUT_OF_RANGE", f"{field}={value} bit/s violates the {self.technology_id} profile", "BLOCKER"))
         return findings
 
 
@@ -94,7 +122,15 @@ class TechnologyTimingModel:
         self.profile = profile
 
     def transmission_time_us(self, payload_bytes: int, bitrate: int | None = None) -> float:
-        selected_bitrate = int(bitrate or self.profile.get("default_bitrate") or 1)
+        selected_bitrate = int(bitrate or self.profile.get("default_bitrate") or 0)
+        rate_model = self.profile.get("rate_model") or {}
+        rate_field = rate_model.get("fields", ["bitrate_bps"])
+        field = rate_field[-1] if rate_field else "bitrate_bps"
+        parameters = dict(rate_model.get("defaults_bps") or {})
+        parameters[field] = selected_bitrate
+        findings = TechnologyValidator(self.technology_id, self.profile).validate({"parameters": parameters})
+        if findings:
+            raise ValueError(findings[0].message)
         overhead = int(self.profile.get("overhead_bytes") or 0)
         return ((max(0, payload_bytes) + overhead) * 8 / selected_bitrate) * 1_000_000
 
