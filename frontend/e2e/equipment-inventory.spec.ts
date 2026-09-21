@@ -6,8 +6,7 @@ test('generic sensors expose separate measurement and connection choices without
   const dialog = page.locator('.engineering-agent-wizard-dialog');
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('Sensorfunktionen');
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill('3 Sensoren und ein RaspberryPi');
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('3 Sensoren und ein RaspberryPi');
   await dialog.getByTitle('Netzarchitektur', { exact: true }).click();
   await dialog.getByRole('radio', { name: /Variante 0/ }).check();
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
@@ -31,8 +30,7 @@ test('temperature purpose inventory permits review without a spurious controller
   const dialog = page.locator('.engineering-agent-wizard-dialog');
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('Temperaturregelung');
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill('2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi');
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.locator('.agent-equipment-list')).toContainText('Sensoren · 4 erkannt / 4 vorgegeben');
   await expect(dialog.getByRole('alert').filter({ hasText: 'Geräteumfang noch unvollständig' })).toHaveCount(0);
@@ -46,8 +44,8 @@ test('temperature purpose inventory permits review without a spurious controller
   for (const name of ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']) {
     await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   }
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await expect(dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true })).toHaveValue(/- Sensor-Messgrößen: \{"Temperatursensor1":"temperature","Temperatursensor2":"temperature","Temperatursensor3":"temperature","Temperatursensor4":"temperature"\}/);
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue(/- Sensor-Messgrößen: \{"Temperatursensor1":"temperature","Temperatursensor2":"temperature","Temperatursensor3":"temperature","Temperatursensor4":"temperature"\}/);
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
   await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
@@ -64,15 +62,14 @@ test('equipment inventory distinguishes requested sensors from identified device
   await expect(dialog.getByRole('heading', { name: 'Engineering-Auftrag erstellen' })).toBeVisible();
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('Sensorinventar prüfen');
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill('Ein kleines Projekt mit einem Raspberry Pi, drei Sensoren und drei Ventilen.');
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('Ein kleines Projekt mit einem Raspberry Pi, drei Sensoren und drei Ventilen.');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.locator('.agent-equipment-list')).toContainText('Sensoren · 0 erkannt / 3 vorgegeben');
   await expect(dialog.getByRole('alert').filter({ hasText: 'Geräteumfang noch unvollständig' })).toContainText('Sensoren: 0 erkannt, 3 vorgegeben');
   await expect(dialog.locator('.agent-questionnaire-nav')).toContainText('Anzahlen, erkannte Geräte, Anschlüsse, Busse und Controller-Zuordnung prüfen');
   await expect(dialog.locator('.agent-questionnaire-nav')).not.toContainText('Sollzahlen, Busse und Controller-Zuordnung bereit');
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill('Ein kleines Projekt mit einem Raspberry Pi, drei Temperatursensoren und drei Ventilen.');
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('Ein kleines Projekt mit einem Raspberry Pi, drei Temperatursensoren und drei Ventilen.');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.locator('.agent-equipment-list')).toContainText('Sensoren · 3 erkannt / 3 vorgegeben');
   await expect(dialog.getByRole('alert').filter({ hasText: 'Geräteumfang noch unvollständig' })).toHaveCount(0);

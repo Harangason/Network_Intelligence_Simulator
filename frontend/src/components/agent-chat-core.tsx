@@ -36,6 +36,7 @@ import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wiza
 import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement, selectSensorMeasurements } from '@/lib/agent/sensor-measurements';
 import { actuatorCommands, actuatorCommandChoice, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
+import { selectDeviceConnectionInTask } from '@/lib/agent/device-connections';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
@@ -1200,26 +1201,19 @@ export function EngineeringAgentWizard({
   const selectedActuatorCommands = actuatorCommands(commandSource);
   const unresolvedCommands = unresolvedActuatorCommands(connectionInventory, commandSource);
   function selectDeviceConnection(name: string, technology: string) {
-    const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
-    let connections: Record<string, string> = {};
-    try {
-      const parsed: unknown = marker ? JSON.parse(marker) : {};
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) connections = parsed as Record<string, string>;
-    } catch { /* Incomplete manual input is replaced by this explicit selection. */ }
-    if (technology) connections[name] = technology; else delete connections[name];
-    const withConnection = `${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`;
-    setTaskText(selectSensorMeasurements(withConnection, resolvedSensorMeasurements));
+    setTaskText(current => selectSensorMeasurements(
+      selectDeviceConnectionInTask(current, name, technology),
+      resolvedSensorMeasurements,
+    ));
   }
   function applyConnectionToOpenDevices(technology: string) {
-    const marker = taskText.match(/^- Geräteanschlüsse:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
-    let connections: Record<string, string> = {};
-    try {
-      const parsed: unknown = marker ? JSON.parse(marker) : {};
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) connections = parsed as Record<string, string>;
-    } catch { /* The reviewed bulk selection replaces an incomplete marker. */ }
-    unresolvedConnections.forEach((chain) => { connections[chain.hardware_name] = technology; });
-    const withConnections = `${taskText.replace(/\n?^- Geräteanschlüsse:[^\r\n]*$/gm, '').trim()}\n- Geräteanschlüsse: ${JSON.stringify(connections)}`;
-    setTaskText(selectSensorMeasurements(withConnections, resolvedSensorMeasurements));
+    setTaskText(current => {
+      const withConnections = unresolvedConnections.reduce(
+        (next, chain) => selectDeviceConnectionInTask(next, chain.hardware_name, technology),
+        current,
+      );
+      return selectSensorMeasurements(withConnections, resolvedSensorMeasurements);
+    });
   }
   const [newControllerName, setNewControllerName] = useState('');
   const [controllerAdditionError, setControllerAdditionError] = useState('');
@@ -2235,7 +2229,7 @@ export function EngineeringAgentWizard({
       return;
     }
     setStep((current) => {
-      if (questionnaireSteps[current]?.id === "project" && !projectReady) return current;
+      if (questionnaireSteps[current]?.id === "project" && (!projectReady || !taskReady)) return current;
       if (questionnaireSteps[current]?.id === "architecture" && !architectureReady) return current;
       return Math.min(current + 1, questionnaireSteps.length - 1);
     });
@@ -2469,7 +2463,7 @@ export function EngineeringAgentWizard({
   const activeStepId = visibleSteps[step]?.id ?? "status";
   const startBlockers = [
     ...(!projectReady ? [{ step: 'project', text: 'Bitte einen Projektnamen eingeben.' }] : []),
-    ...(!taskReady ? [{ step: 'task', text: 'Bitte die Projektbeschreibung ergänzen.' }] : []),
+    ...(!taskReady ? [{ step: 'project', text: 'Bitte die Projektbeschreibung ergänzen.' }] : []),
     ...(!architectureReady ? [{ step: 'architecture', text: 'Bitte die Architektur auswählen und vervollständigen.' }] : []),
     ...(!equipmentReady ? [{ step: 'equipment', text: intakeRequirement && equipmentValues.actuators === ''
       ? 'Die Anzahl der Ventile bzw. Aktoren ist noch offen.' : 'Die verbindlichen Geräteanzahlen fehlen oder sind ungültig.' }] : []),
@@ -2484,8 +2478,7 @@ export function EngineeringAgentWizard({
   ];
   const primaryDisabled = effectiveBusy
     || ((atLastStep || activeStepId === 'status') && startBlockers.length > 0)
-    || (activeStepId === "project" && !projectReady)
-    || (activeStepId === "task" && !taskReady)
+    || (activeStepId === "project" && (!projectReady || !taskReady))
     || (activeStepId === "architecture" && !architectureReady);
   const visibleQuestion = currentQuestion?.id === answeredQuestionKey ? null : currentQuestion;
   const persistedStatusRows = SCOPE_GROUP.options.map((option, index) => {
@@ -2762,7 +2755,7 @@ export function EngineeringAgentWizard({
           </label>
           <label className="agent-questionnaire-note">
             <span>Projektbeschreibung</span>
-            <textarea disabled={effectiveBusy} rows={5} value={taskText}
+            <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5} value={taskText}
               maxLength={intakeRequirement !== null ? 16000 : undefined}
               placeholder="Was soll dieses Projekt leisten?"
               onChange={(event) => {
@@ -2775,6 +2768,50 @@ export function EngineeringAgentWizard({
               }} />
             <small>Diese Beschreibung ist zugleich der Aufgabentext für den Agenten. Änderungen auf beiden Seiten werden gemeinsam übernommen.</small>
           </label>
+          <label className="agent-questionnaire-note">
+            <span>Weitere Hinweise</span>
+            <textarea
+              aria-label="Weitere Hinweise"
+              disabled={effectiveBusy}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Optional: besondere Protokolle, Safety, Timing oder Herstellerlogik ..."
+              rows={2}
+              value={notes}
+            />
+          </label>
+          <label className="agent-file-drop">
+            <input
+              accept={SUPPORTED_EVIDENCE_ACCEPT}
+              disabled={effectiveBusy}
+              multiple
+              onChange={(event) => {
+                void handleTaskFiles(event.target.files, "task");
+                event.currentTarget.value = "";
+              }}
+              type="file"
+            />
+            <svg aria-hidden="true" className="agent-file-drop-icon" viewBox="0 0 24 24">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" />
+            </svg>
+            <span>
+              <strong>Text, PDF, PowerPoint oder Bild hinzufügen</strong>
+              <small>Text/SVG wird direkt gelesen. PDF, Office und Bilder werden als Evidence in den Auftrag aufgenommen.</small>
+            </span>
+          </label>
+          {taskFiles.some((file) => file.source === "task") && (
+            <ul className="agent-file-list">
+              {taskFiles.filter((file) => file.source === "task").map((file) => (
+                <li key={`${file.name}-${file.size}`}>
+                  {file.previewDataUrl && <img alt="" className="agent-attachment-thumb" src={file.previewDataUrl} />}
+                  <span>
+                    <strong>{file.name}</strong>
+                    <span>{file.kind} · {formatFileSize(file.size)}</span>
+                    <small>Aufgaben-Anlage</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </fieldset>
       )}
       {activeGroup && (
@@ -2918,72 +2955,6 @@ export function EngineeringAgentWizard({
           )}
         </fieldset>
       )}
-      {activeStepId === "task" && (
-        <fieldset className="agent-choice-group">
-          <legend>Aufgabe</legend>
-          <label className="agent-questionnaire-note">
-            <span>Aufgabentext</span>
-            <textarea
-              disabled={busy}
-              onChange={(event) => {
-                const requirement = event.target.value;
-                setTaskText(requirement);
-                if (intakeRequirement !== null) {
-                  setIntakeRequirement(requirement);
-                  window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement }));
-                }
-              }}
-              maxLength={intakeRequirement !== null ? 16000 : undefined}
-              placeholder="Beschreibe das konkrete Ziel, z. B. arbeite bis zur Simulation ..."
-              rows={4}
-              value={taskText}
-            />
-          </label>
-          <label className="agent-questionnaire-note">
-            <span>Weitere Hinweise</span>
-            <textarea
-              disabled={busy}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="Optional: besondere Protokolle, Safety, Timing oder Herstellerlogik …"
-              rows={2}
-              value={notes}
-            />
-          </label>
-          <label className="agent-file-drop">
-            <input
-              accept={SUPPORTED_EVIDENCE_ACCEPT}
-              disabled={busy}
-              multiple
-              onChange={(event) => {
-                void handleTaskFiles(event.target.files, "task");
-                event.currentTarget.value = "";
-              }}
-              type="file"
-            />
-            <svg aria-hidden="true" className="agent-file-drop-icon" viewBox="0 0 24 24">
-              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14" />
-            </svg>
-            <span>
-              <strong>Text, PDF, PowerPoint oder Bild hinzufügen</strong>
-              <small>Text/SVG wird direkt gelesen. PDF, Office und Bilder werden als Evidence in den Auftrag aufgenommen.</small>
-            </span>
-          </label>
-          {taskFiles.length > 0 && (
-            <ul className="agent-file-list">
-              {taskFiles.map((file) => (
-                <li key={`${file.name}-${file.size}`}>
-                  {file.previewDataUrl && <img alt="" className="agent-attachment-thumb" src={file.previewDataUrl} />}
-                  <span>
-                    <strong>{file.name}</strong>
-                    <span>{file.kind} · {formatFileSize(file.size)}</span>
-                    <small>{file.source === "architecture" ? "Architektur-Evidence" : "Aufgaben-Anlage"}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </fieldset>
-      )}
       {activeStepId === "equipment" && (
         <fieldset className="agent-choice-group">
           <legend>Geräteumfang prüfen</legend>
@@ -3068,7 +3039,7 @@ export function EngineeringAgentWizard({
             <button type="button" disabled={effectiveBusy || !newControllerName.trim()} onClick={addRequestedController}>Controller ergänzen</button>
             {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
           </section>}
-          {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'task'))}>Anforderung korrigieren</button>}
+          {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'project'))}>Anforderung korrigieren</button>}
           {(deviceRows.length > 0) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
             <h3>Geräteanschlüsse festlegen</h3>
             <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Deine Auswahl wird sofort im Auftrag aktualisiert und gilt für einen Entwurf als Modellannahme, nicht als Nachweis realer Hardware.</p>
@@ -3480,10 +3451,8 @@ export function EngineeringAgentWizard({
           <button className="button secondary tiny" disabled={effectiveBusy || step === 0} onClick={() => setStep((current) => Math.max(current - 1, 0))} type="button">
             Zurück
           </button>
-          <span>{activeStepId === "task"
-            ? taskReady ? "Aufgabe bereit" : "Aufgabe fehlt"
-            : activeStepId === "project"
-              ? projectReady ? "Projektname bereit" : "Projektname fehlt"
+          <span>{activeStepId === "project"
+              ? !projectReady ? "Projektname fehlt" : taskReady ? "Projekt und Aufgabe bereit" : "Projektbeschreibung fehlt"
             : activeStepId === "equipment"
               ? equipmentReady && equipmentIdentityReady && !unresolvedConnections.length && equipmentOwnershipReady && equipmentClusterValidationReady && communicationSystemReady ? "Sollzahlen, Busse und Controller-Zuordnung bereit" : "Anzahlen, erkannte Geräte, Anschlüsse, Busse und Controller-Zuordnung prüfen"
             : activeStepId === "architecture"

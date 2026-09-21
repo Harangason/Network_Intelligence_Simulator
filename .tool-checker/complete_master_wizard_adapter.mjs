@@ -48,26 +48,61 @@ async function api(page, url) {
 
 async function fillVisibleRequiredControls(dialog) {
   let changed = false;
+  const detectedDomain = dialog.locator('.agent-domain-mismatch button, [role=alert] button').filter({ hasText: /übernehmen$/i }).first();
+  if (await detectedDomain.isVisible().catch(() => false) && !await detectedDomain.isDisabled()) {
+    const label = (await detectedDomain.innerText()).trim();
+    await detectedDomain.click();
+    choices.push({ control: 'domain-mismatch', value: label, source: 'SCRIPTED_TEST' });
+    changed = true;
+  }
+  const bulkConnections = dialog.getByRole('button', { name: /für alle offenen Anschlüsse übernehmen$/i }).first();
+  if (await bulkConnections.isVisible().catch(() => false) && !await bulkConnections.isDisabled()) {
+    const label = (await bulkConnections.innerText()).trim();
+    await bulkConnections.click();
+    choices.push({ control: 'open-device-connections', value: label, source: 'SCRIPTED_TEST' });
+    changed = true;
+    await dialog.page().waitForTimeout(300);
+  }
+  const textControls = dialog.locator('textarea:visible, input[type=text]:visible');
+  for (let index = 0; index < await textControls.count(); index++) {
+    const control = textControls.nth(index);
+    if (await control.isDisabled() || (await control.inputValue()).trim()) continue;
+    const name = await control.getAttribute('aria-label') || await control.getAttribute('name') || await control.getAttribute('placeholder') || 'text';
+    if (/hinweis|optional/i.test(name)) continue;
+    const value = /projektname|project.name/i.test(name) ? `Master ${scenario.test_id}` : scenario.input;
+    await control.fill(value);
+    choices.push({ control: name, value, source: 'SCRIPTED_TEST' });
+    changed = true;
+  }
   // Every selection can re-render the whole connection matrix. Resolve a fresh
   // locator after each write instead of retaining detached element handles.
   for (let attempt = 0; attempt < 100; attempt++) {
     const selects = dialog.locator('select:visible');
     let target = null;
+    let option = null;
     for (let index = 0; index < await selects.count(); index++) {
       const candidate = selects.nth(index);
-      if (!await candidate.isDisabled() && !await candidate.inputValue()) { target = candidate; break; }
+      if (await candidate.isDisabled()) continue;
+      const current = await candidate.locator('option:checked').first();
+      const currentValue = await candidate.inputValue();
+      const currentLabel = await current.textContent().catch(() => '');
+      const placeholder = !currentValue || await current.isDisabled().catch(() => false)
+        || /bitte|auswählen|select|offen/i.test(currentLabel || '');
+      if (!placeholder) continue;
+      const options = await candidate.locator('option').evaluateAll(rows => rows.map(row => ({
+        value: row.value, label: row.textContent?.trim() || '', disabled: row.disabled,
+      })));
+      const available = options.find(item => item.value && !item.disabled);
+      if (available) { target = candidate; option = available; break; }
     }
     if (!target) break;
-    const options = await target.locator('option').evaluateAll(rows => rows.map(row => ({
-      value: row.value, label: row.textContent?.trim() || '', disabled: row.disabled,
-    })));
-    const option = options.find(item => item.value && !item.disabled);
-    if (!option) break;
     const control = await target.getAttribute('aria-label') || await target.getAttribute('name') || 'select';
     await target.selectOption(option.value);
     choices.push({ control, value: option.value, label: option.label, source: 'SCRIPTED_TEST' });
     changed = true;
-    await dialog.page().waitForTimeout(50);
+    // Selection updates the task marker and reparses the complete inventory.
+    // Wait for the controlled select to settle before resolving the next row.
+    await dialog.page().waitForTimeout(300);
   }
   const radioGroups = await dialog.locator('input[type=radio]:visible').evaluateAll(rows => [...new Set(rows.map(row => row.getAttribute('name')).filter(Boolean))]);
   for (const name of radioGroups) {
@@ -212,6 +247,7 @@ try {
   };
   process.stdout.write(JSON.stringify({ status: 'PASSED', llm_calls: null, evidence, observations }));
 } catch (error) {
+  await save('scripted-decisions-error.json', { decision_source: 'SCRIPTED_TEST', choices, browserActions }, 'log');
   await save('adapter-error.txt', error?.stack || String(error), 'log');
   process.stdout.write(JSON.stringify({ status: 'FAILED', llm_calls: null, evidence, observations: {
     actions: [], tools: [], views: [], outputs: [], questions: [], checks: [], browser: browserActions,

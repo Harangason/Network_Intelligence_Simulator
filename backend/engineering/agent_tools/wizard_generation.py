@@ -611,6 +611,17 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         if kind == 'HardwareNetworkInterface':
             matches = [row for row in existing[kind]
                        if hardware_interface_identity(row) == hardware_interface_identity(data)]
+            if not matches:
+                same_named_port = [row for row in existing[kind]
+                    if row['name'].casefold() == name.casefold()
+                    and str(row.get('hardware_node_id')) == str(data.get('hardware_node_id'))]
+                incompatible = [row for row in same_named_port
+                    if _network_protocol(str(row.get('technology') or ''))
+                    != _network_protocol(str(data.get('technology') or ''))]
+                if incompatible:
+                    raise ValueError(
+                        f'Verbindungstyp des vorhandenen Anschlusses {name} passt nicht zum Auftrag.')
+                matches = same_named_port
         else:
             matches = [row for row in existing[kind] if row['name'].casefold() == name.casefold()
                        and (not parent or str(row.get(parent)) == str(data[parent]))]

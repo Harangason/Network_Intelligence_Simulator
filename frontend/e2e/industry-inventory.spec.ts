@@ -14,8 +14,7 @@ for (const scenario of cases) {
     const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
     await dialog.getByTitle('Projektname', { exact: true }).click();
     await dialog.locator('#engineering-project-name').fill(`Inventar ${scenario.id}`);
-    await dialog.getByTitle('Aufgabe', { exact: true }).click();
-    await dialog.getByRole('textbox', { name: 'Aufgabentext', exact: true }).fill(scenario.input);
+    await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill(scenario.input);
     await dialog.getByTitle('Geräteumfang', { exact: true }).click();
     for (const [key, count] of Object.entries(scenario.counts)) {
       if (count !== null) await expect(dialog.getByLabel(`${labels[key]}: verbindliche Anzahl`, { exact: true })).toHaveValue(String(count));

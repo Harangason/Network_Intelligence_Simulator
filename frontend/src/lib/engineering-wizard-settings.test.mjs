@@ -55,14 +55,14 @@ test("empty or invalid wizard settings fall back to complete safe defaults", () 
   assert.equal(WIZARD_PROCESS_GROUP.options.length, 3);
 });
 
-test("wizard pages start with project name and omit settings-owned choices", () => {
+test("wizard pages combine the task intake with the first project step", () => {
   assert.deepEqual(
     wizardQuestionnaireSteps("full").map((step) => step.id),
-    ["project", "technologies", "architecture", "task", "equipment"],
+    ["project", "technologies", "architecture", "equipment"],
   );
   assert.deepEqual(
     wizardQuestionnaireSteps("can").map((step) => step.id),
-    ["project", "technologies", "architecture", "parameters", "task", "equipment"],
+    ["project", "technologies", "architecture", "parameters", "equipment"],
   );
 });
 

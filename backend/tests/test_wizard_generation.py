@@ -56,6 +56,37 @@ def test_gateway_function_is_not_an_alternative_host_for_declared_domain_functio
     assert wizard_generation._declared_function_hosts(specification, function_refs) == ['embedded']
 
 
+def test_repeat_reuses_named_hardware_port_when_only_network_reference_changed():
+    authority = ToolAuthority(f'pytest-repeat-port-reuse-{uuid4()}')
+    original = '''- Industrie: Custom
+- Netzwerktechnologien: I2C (i2c)
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}
+- Geräteanschlüsse: {"RaspberryPi":"I2C","Druck":"I2C"}
+Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
+Ein RaspberryPi liest einen Drucksensor.
+'''
+
+    def apply_then_repeat():
+        proposal = wizard_generation.generate({'prompt': original})
+        validated = proposal_service.validate(proposal['proposal_id'])
+        assert validated['status'] == 'VALIDATED', validated['validation_result']
+        approved = proposal_service.review(proposal['proposal_id'], revision=validated['revision'],
+            decision='approve', actor='test-human', trace_id=str(uuid4()))
+        proposal_service.apply(approved['proposal_id'], actor='test-human', trace_id=str(uuid4()))
+        repeated = wizard_generation.generate({'prompt': original.replace(
+            '- Geräteanschlüsse: {"RaspberryPi":"I2C","Druck":"I2C"}',
+            '- Geräteanschlüsse: {"Druck":"I2C"}')})
+        return repeated
+
+    result = execute(authority, 'test_repeat_port_reuse', Permission.GENERATE_PROPOSAL, {},
+                     lambda _: apply_then_repeat())
+    assert result.success, result.findings
+    duplicate_ports = [change for change in result.data.get('changes') or []
+                       if change['object_type'] == 'HardwareNetworkInterface'
+                       and change.get('action', 'CREATE') == 'CREATE']
+    assert not duplicate_ports, duplicate_ports
+
+
 def test_generated_can_identifier_skips_persisted_and_pending_identifiers():
     existing = [{'message_id_hex': '0x100'}]
     pending = [

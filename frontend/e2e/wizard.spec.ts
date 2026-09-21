@@ -297,8 +297,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   const dialog = await openWizard(page, project);
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('E2E small');
-  await dialog.getByTitle('Aufgabe', { exact: true }).click();
-  await dialog.getByLabel('Aufgabentext', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Statuswerte werden an Anzeige und System übermittelt. Prüfe und arbeite bis Data Science & Intelligence.');
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Statuswerte werden an Anzeige und System übermittelt. Prüfe und arbeite bis Data Science & Intelligence.');
   await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   for (const [label, value] of [['Gateways', '1'], ['Controller', '2'], ['Sensoren', '1'], ['Aktoren', '1']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);
@@ -335,8 +334,7 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     const dialog = await openWizard(page, project);
     await dialog.getByTitle('Projektname', { exact: true }).click();
     await dialog.locator('#engineering-project-name').fill('Temperaturregelung');
-    await dialog.getByTitle('Aufgabe', { exact: true }).click();
-    await dialog.getByLabel('Aufgabentext', { exact: true }).fill(technology === 'I2C'
+    await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill(technology === 'I2C'
       ? '2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi'
       : `2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi. Embedded Systems. Alle Geräte kommunizieren über ${technology}. Prüfe und arbeite bis Data Science & Intelligence.`);
     await dialog.getByTitle('Netzarchitektur', { exact: true }).click();

@@ -71,7 +71,7 @@ export type EngineeringWizardSettings = {
 };
 
 export type WizardQuestionnaireStep = {
-  id: "project" | "technologies" | "architecture" | "parameters" | "task" | "equipment";
+  id: "project" | "technologies" | "architecture" | "parameters" | "equipment";
   label: string;
 };
 
@@ -123,7 +123,6 @@ export function wizardQuestionnaireSteps(mode: "full" | "can"): WizardQuestionna
     { id: "technologies", label: "Technologien" },
     { id: "architecture", label: "Netzarchitektur" },
     ...(mode === "can" ? [{ id: "parameters" as const, label: "Parameter" }] : []),
-    { id: "task", label: "Aufgabe" },
     { id: "equipment", label: "Geräteumfang" },
   ];
 }
