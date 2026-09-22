@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from hashlib import sha256
+import json
 from .dimensioning import _constraints, bus_schedule, effective_period, policy_for, transmission_contract, unique_streams
 from .transmission import profile
 from .evaluation import network_evaluation
@@ -1122,6 +1124,16 @@ class CapacityTimingService:
         return self.workflow.latest_analysis("capacity_timing", include_outdated=True)
 
 
+def preflight_warning_signature(findings: list[dict[str, Any]]) -> str:
+    warnings = [
+        {key: finding.get(key) for key in ('category', 'code', 'message', 'object_type', 'object_id')}
+        for finding in findings if finding.get('severity') == 'WARNING'
+    ]
+    payload = json.dumps(sorted(warnings, key=lambda item: json.dumps(item, sort_keys=True)),
+                         ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    return sha256(payload.encode('utf-8')).hexdigest()
+
+
 class PreflightService:
     def __init__(self, project_id: str = "default") -> None:
         self.project_id = project_id
@@ -1385,7 +1397,12 @@ class PreflightService:
         )
         # Workflow snapshots retain their established status vocabulary.
         status = "ERROR" if error_count or review_count else ("WARNING" if warning_count else "APPROVED")
-        warnings_allowed = (state.get("parameters") or {}).get("allow_simulation_with_warnings") is True
+        approval = (state.get("parameters") or {}).get("preflight_warning_approval") or {}
+        warnings_allowed = (
+            decision_status == "READY_WITH_WARNINGS"
+            and approval.get("signature") == preflight_warning_signature(findings)
+            and bool(approval.get("actor"))
+        )
         ready = decision_status == "READY" or (decision_status == "READY_WITH_WARNINGS" and warnings_allowed)
         results = {
             "preflight_status": decision_status,

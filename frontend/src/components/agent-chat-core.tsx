@@ -72,7 +72,9 @@ import {
 } from "@/lib/engineering-wizard-settings";
 import { topologyClusterKnowledgeSummary } from "@/lib/topology-cluster-knowledge";
 import {
+  approvePreflightWarnings,
   createOptimizationProposal,
+  getPreflightSnapshot,
   getWorkflow,
   getWorkflowSummary,
   setWorkflowContext,
@@ -1184,7 +1186,8 @@ export function EngineeringAgentWizard({
   const namedSensors = sensorInventory.filter(chain => !/^Sensor\d+$/.test(chain.hardware_name));
   const sensorRows = Array.from({ length: Math.min(1000, Math.max(equipmentCounts.sensors || 0, sensorInventory.length)) }, (_, index) => {
     const chain = namedSensors[index] ?? sensorInventory.find(item => item.hardware_name === `Sensor${index + 1}`);
-    return { name: chain?.hardware_name ?? `Sensor${index + 1}`, label: `Sensor ${index + 1}`, chain };
+    return { name: chain?.hardware_name ?? `Sensor${index + 1}`,
+      label: chain?.hardware_name ? `Sensor ${index + 1} · ${chain.hardware_name}` : `Sensor ${index + 1}`, chain };
   });
   const resolvedSensorMeasurements = Object.fromEntries(sensorRows.flatMap(({ name, chain }) => {
     const measurement = String(chain?.configuration?.sensor_measurement ?? sensorMeasurement(name, chain?.signal_name)?.id ?? '');
@@ -1290,6 +1293,8 @@ export function EngineeringAgentWizard({
   const [supplementOpen, setSupplementOpen] = useState(false);
   const [supplementText, setSupplementText] = useState("");
   const [supplementBusy, setSupplementBusy] = useState(false);
+  const [preflightWarningBusy, setPreflightWarningBusy] = useState(false);
+  const [preflightWarningSnapshot, setPreflightWarningSnapshot] = useState<Awaited<ReturnType<typeof getPreflightSnapshot>> | null>(null);
   const [performance, setPerformance] = useState<AgentPerformanceSample | null>(null);
   const [statusError, setStatusError] = useState("");
   const [statusRefreshError, setStatusRefreshError] = useState("");
@@ -2332,6 +2337,22 @@ export function EngineeringAgentWizard({
     }
   }
 
+  async function approveWarningsAndContinue() {
+    if (!preflightWarningSnapshot || preflightWarningBusy || !runId) return;
+    setPreflightWarningBusy(true);
+    setStatusError("");
+    try {
+      const result = await approvePreflightWarnings(preflightWarningSnapshot.id, "engineering-wizard-user");
+      if (!result.preflight.ready_for_simulation) throw new Error("Der Warnungsstand hat sich geändert. Bitte den Preflight erneut prüfen.");
+      setPreflightWarningSnapshot(null);
+      await retryPopupRun(false, "review");
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPreflightWarningBusy(false);
+    }
+  }
+
   async function retryPopupRun(automatic = false, reason: "recovery" | "review" = "recovery") {
     if (agentPending || !runId) return;
     setStatusError("");
@@ -2572,6 +2593,17 @@ export function EngineeringAgentWizard({
   const runMessage = execution?.state === "RUNNING" && executionStopped
     ? `Seit mehr als zwei Minuten liegt kein Laufstatus vor. Letzter Stand: ${execution.message}`
     : execution?.message || (lastAssistantText ? textFromParts(lastAssistantText.parts) : "");
+  const preflightWarningsPending = runPaused && runMessage.includes("READY_WITH_WARNINGS");
+  useEffect(() => {
+    if (!preflightWarningsPending) { setPreflightWarningSnapshot(null); return; }
+    let cancelled = false;
+    void getPreflightSnapshot().then(snapshot => {
+      if (!cancelled) setPreflightWarningSnapshot(snapshot);
+    }).catch(error => {
+      if (!cancelled) setStatusError(error instanceof Error ? error.message : String(error));
+    });
+    return () => { cancelled = true; };
+  }, [preflightWarningsPending, projectId, runId]);
   const approvableRoutingCount = routingReview.routes.filter(
     (route) => route.validation?.valid === true && String(route.approval_state).toUpperCase() !== "APPROVED",
   ).length;
@@ -3404,7 +3436,18 @@ export function EngineeringAgentWizard({
                       : currentRunMessages.length || workflowHasProgress
                         ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
                         : "Der Auftrag wird an den Agenten übergeben."}</small>
-                {runPaused && /Anschlusstechnik.*nicht eindeutig unterstützt/.test(runMessage || '') ? (
+                {preflightWarningsPending ? (
+                  <section aria-label="Preflight-Warnungen">
+                    <strong>Simulation mit Warnungen</strong>
+                    <ul>{preflightWarningSnapshot?.findings.filter(item => item.severity === "WARNING").map((item, index) => (
+                      <li key={`${item.code}:${index}`}>{item.message}</li>
+                    ))}</ul>
+                    <button className="button primary tiny" disabled={!preflightWarningSnapshot || preflightWarningBusy}
+                      onClick={() => void approveWarningsAndContinue()} type="button">
+                      {preflightWarningBusy ? "Freigabe wird geprüft ..." : "Warnungen freigeben und fortsetzen"}
+                    </button>
+                  </section>
+                ) : runPaused && /Anschlusstechnik.*nicht eindeutig unterstützt/.test(runMessage || '') ? (
                   <button className="button primary tiny" onClick={() => setSupplementOpen(true)} type="button">
                     Anschlüsse ergänzen
                   </button>

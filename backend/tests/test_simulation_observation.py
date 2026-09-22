@@ -168,6 +168,41 @@ def test_registry_generation_marks_only_a_new_duration_default(db_project, monke
     assert repeated.get("parameter_provenance") == generated.get("parameter_provenance")
 
 
+def test_dds_parameter_defaults_inherit_registered_ethernet_rate():
+    from backend.engineering.agent_tools.wizard_generation import _parameter_defaults
+
+    dds = _parameter_defaults("dds")
+    ethernet = _parameter_defaults("ethernet")
+
+    assert dds["bitrate"] == ethernet["bitrate"]
+    assert dds["history_kind"] == "KEEP_LAST"
+
+
+def test_mixed_robotics_defaults_are_complete_with_dds_as_primary(db_project, monkeypatch):
+    from backend.engineering.agent_tools import wizard_generation
+    from backend.engineering.workflow.service import WorkflowStatusService
+
+    workflow = WorkflowStatusService(db_project)
+    workflow.save_parameters({
+        "spatial_zoning": {"enabled": False},
+        "communication_sizing": {"enabled": False},
+    })
+    monkeypatch.setattr(
+        wizard_generation,
+        "_wizard_parameter_technology_ids",
+        lambda _: ["dds", "ethercat", "ethernet", "can_fd"],
+    )
+
+    generated = wizard_generation.generate_parameters({
+        "prompt": "- Projekt-Modelltyp: robotics_ros\nTechnologie-Defaults verwenden.",
+    })
+
+    assert generated["artifact_check"]["complete"]
+    assert generated["parameters"]["technology"] == "dds"
+    assert generated["parameters"]["bitrate"] > 0
+    assert set(generated["technology_ids"]) == {"dds", "ethercat", "ethernet", "can_fd"}
+
+
 def test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin(db_project, monkeypatch):
     from backend.app import create_app
     from backend.engineering import api

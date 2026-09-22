@@ -56,6 +56,16 @@ def test_gateway_function_is_not_an_alternative_host_for_declared_domain_functio
     assert wizard_generation._declared_function_hosts(specification, function_refs) == ['embedded']
 
 
+def test_explicit_function_assignments_preserve_each_confirmed_controller():
+    prompt = '- Funktionszuordnungen: {"EnvironmentPerception":"Edge Computer","MotionControl":"Robot"}'
+    assert wizard_generation._declared_function_assignments(prompt) == {
+        'environmentperception': 'edge computer',
+        'motioncontrol': 'robot',
+    }
+    with pytest.raises(ValueError, match='Ungültige Funktionszuordnungen'):
+        wizard_generation._declared_function_assignments('- Funktionszuordnungen: {"MotionControl":42}')
+
+
 def test_repeat_reuses_named_hardware_port_when_only_network_reference_changed():
     authority = ToolAuthority(f'pytest-repeat-port-reuse-{uuid4()}')
     original = '''- Industrie: Custom

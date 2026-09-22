@@ -194,7 +194,31 @@ class TechnologyRegistry:
                 "stage": "TECHNOLOGY_PROFILE", "code": "TECHNOLOGY_PROFILE_MISSING",
                 "message": f"No technology profile is registered for {key}", "severity": "BLOCKER",
             }]}
-        findings = self.validate_chain((key,), {"parameters": parameters})
+        profile = self._profiles[key]
+        stack = tuple(self.normalize_id(item) for item in (profile.get("default_stack") or (key,)))
+        rate_fields = {"bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"}
+        supplied_rate_fields = set(parameters) & rate_fields
+        stack_rate_fields = {
+            field
+            for stack_id in stack
+            for field in (self._profiles[stack_id].get("rate_model") or {}).get("fields", ())
+            if stack_id in self._profiles
+        }
+        findings = [{
+            "stage": "TECHNOLOGY_PARAMETERS",
+            "code": "TECHNOLOGY_RATE_MODEL_MISMATCH",
+            "message": f"{field} is not valid for {key} or its registered stack",
+            "severity": "BLOCKER",
+        } for field in sorted(supplied_rate_fields - stack_rate_fields)]
+        shared_parameters = {field: value for field, value in parameters.items() if field not in rate_fields}
+        for stack_id in stack:
+            allowed = set((self._profiles[stack_id].get("rate_model") or {}).get("fields") or ())
+            layer_parameters = {
+                **shared_parameters,
+                **{field: parameters[field] for field in supplied_rate_fields & allowed},
+            }
+            for validator in self._validators.get(stack_id, ()):
+                findings.extend(vars(item) for item in validator.validate({"parameters": layer_parameters}))
         return {"technology_id": key, "status": "INVALID" if findings else "VALID", "findings": findings}
 
     def change_parameters(self, previous_technology: str, target_technology: str, parameters: dict[str, Any]) -> dict[str, Any]:

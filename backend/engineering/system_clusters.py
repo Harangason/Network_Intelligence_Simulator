@@ -37,6 +37,7 @@ FAMILIES = (
 CONTROLLER_DEVICE_TYPES = {
     "ECU", "PLC", "RobotController", "EmbeddedController", "IndustrialPC",
     "FlightComputer", "BatteryManagementSystem", "EnergyController", "BuildingController",
+    "Gateway",
 }
 
 

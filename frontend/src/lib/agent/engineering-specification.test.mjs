@@ -7,6 +7,20 @@ test('device connection selection applies only to the named device', () => {
   assert.equal(spec.chains.find(c => c.hardware_name === 'Ventilaktor1').interface_type, 'GPIO');
   assert.equal(spec.chains.find(c => c.hardware_name === 'Ventilaktor2').interface_type, 'Other');
 });
+
+test('structured device owners distribute endpoints only to confirmed controllers', () => {
+  const result = extractEngineeringSpecification(`Controller: Control1
+Controller: Control2
+Sensor: Temperature1
+Sensor: Pressure2
+- Gerätezuordnungen: {"Temperature1":"Control1","Pressure2":"Control2"}`);
+  const byName = Object.fromEntries(result.chains.map(chain => [chain.hardware_name, chain]));
+
+  assert.equal(byName.Temperature1.configuration.functional_owner, 'Control1');
+  assert.equal(byName.Pressure2.configuration.functional_owner, 'Control2');
+  assert.equal(byName.Temperature1.configuration.functional_owner_source, 'explicit_user_statement');
+  assert.equal(result.chains.some(chain => chain.hardware_name === 'Gerätezuordnungen'), false);
+});
 test('temperature purpose phrases create the actual sensor inventory', () => {
   for (const sensors of ['4 Sensoren für Temperaturen', '4 Sensoren für Temperatur', '4 Sensoren die Temperatur messen', '4 temperature sensors']) {
     const spec = extractEngineeringSpecification(`2 Aktoren für Ventile, ${sensors}, und ein RaspberryPi`, { gateways: 0, ecus: 1, sensors: 4, actuators: 2 }, 'custom', true);
@@ -93,10 +107,82 @@ Erzeuge Segmentierung, Routing, Process Data, Capacity und Timing.`;
   assert.deepEqual(spec.communicationSystemCounts, { Ethernet: 1, ProfiNET: 2, EtherCAT: 1 });
 });
 
+test('S07-A counts grouped sensors once and keeps communication paths out of the device inventory', () => {
+  const task = `1 Robot Controller
+1 Edge Computer
+
+8 Sensoren:
+- 2 LiDAR
+- 2 Kameras
+- 2 Encoder
+- 1 IMU
+- 1 Abstandssensor
+
+6 Aktoren:
+- 4 Motor Drives
+- 2 Steering Actuators
+
+Kommunikation:
+- LiDAR/Kamera: Ethernet / DDS
+- Motor Drives: EtherCAT
+- IMU/Encoder: CAN-FD
+- Edge ↔ Robot Controller: 1-Gbit Ethernet`;
+  const spec = extractEngineeringSpecification(task, {}, 'robotics_ros', true);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'SensorController').length, 8);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'ActuatorController').length, 6);
+  assert.deepEqual(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name), ['Robot', 'Edge Computer']);
+  assert.ok(!spec.chains.some(chain => chain.hardware_name.includes('↔')));
+  const technologyByName = Object.fromEntries(spec.chains.map(chain => [chain.hardware_name, chain.interface_type]));
+  assert.equal(technologyByName.Robot, 'Ethernet');
+  assert.equal(technologyByName['Edge Computer'], 'Ethernet');
+  assert.equal(technologyByName.LiDAR1, 'Ethernet');
+  assert.equal(technologyByName.Kameras1, 'Ethernet');
+  assert.equal(technologyByName.Encoder1, 'CAN_FD');
+  assert.equal(technologyByName.IMU, 'CAN_FD');
+  assert.equal(technologyByName['Motor Drives1'], 'EtherCAT');
+  assert.equal(technologyByName['Steering Actuators1'], 'Other');
+  const chainByName = Object.fromEntries(spec.chains.map(chain => [chain.hardware_name, chain]));
+  assert.deepEqual(
+    [chainByName.Kameras1.data_complexity, chainByName.Kameras1.payload_element_type, chainByName.Kameras1.semantic.semantic_type],
+    ['IMAGE_STREAM', 'IMAGE', 'BYTE_ARRAY'],
+  );
+  assert.deepEqual(
+    [chainByName.LiDAR1.data_complexity, chainByName.LiDAR1.payload_element_type, chainByName.LiDAR1.semantic.semantic_type],
+    ['POINT_CLOUD', 'POINT_CLOUD', 'BYTE_ARRAY'],
+  );
+  assert.deepEqual(
+    [chainByName.IMU.data_complexity, chainByName.IMU.payload_element_type, chainByName.IMU.semantic.semantic_type],
+    ['MULTI_VALUE', 'ARRAY', 'BYTE_ARRAY'],
+  );
+});
+
 test('the engineering wizard applies the architecture inferred from the complete task', () => {
   const source = readFileSync(new URL('../../components/agent-chat-core.tsx', import.meta.url), 'utf8');
   assert.match(source, /setNetworkArchitecture\(extractNetworkArchitectureMode\(taskSource\)\)/);
   assert.doesNotMatch(source, /setNetworkArchitecture\(defaultNetworkArchitectureMode\(equipmentCounts\.gateways\)\)/);
+});
+
+test('every scalar wizard measurement has a complete conservative value domain', () => {
+  const measurements = ['Temperatur', 'Drehzahl', 'Drehmoment', 'Druck', 'Durchfluss', 'Strom', 'Spannung',
+    'Position', 'Winkel', 'Kraft', 'Luftfeuchtigkeit', 'Abstand', 'Beschleunigung'];
+  const task = `${measurements.length} Sensoren:\n${measurements.map(name => `- 1 ${name}sensor`).join('\n')}`;
+  const spec = extractEngineeringSpecification(task, {}, undefined, true);
+  const sensors = spec.chains.filter(chain => chain.device_type === 'SensorController');
+  assert.equal(sensors.length, measurements.length);
+  assert.ok(sensors.every(chain => Number.isFinite(chain.min_value) && Number.isFinite(chain.max_value)));
+  assert.ok(sensors.every(chain => chain.min_value < chain.max_value));
+});
+
+test('S20-B recognizes central coupling as the single gateway target', () => {
+  const task = `Umfang:
+- 100 Sensoren
+- 100 Aktoren
+- 50 Steuerungs-/Rechenknoten
+- 1 zentrale Kopplung
+- mehrere leistungsfähige Rechenknoten`;
+  const spec = extractEngineeringSpecification(task, {}, undefined, true);
+  assert.deepEqual(spec.targetCounts, { sensors: 100, actuators: 100, ecus: 50, gateways: 1, explicit: true });
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 1);
 });
 import { readFileSync } from 'node:fs';
 
@@ -237,6 +323,22 @@ test("domain evidence detects rail content independently from a conflicting wiza
   assert.equal(evidence.domain, "rail");
   assert.ok(evidence.confidence >= 0.7);
   assert.ok(evidence.markers.length >= 3);
+});
+
+test("domain evidence classifies the mobile robot before industrial and automotive transport hints", () => {
+  const input = `1 Robot Controller
+1 Edge Computer
+2 LiDAR und 2 Kameras
+LiDAR/Kamera: Ethernet / DDS
+Motor Drives: EtherCAT
+IMU/Encoder: CAN-FD`;
+
+  const evidence = engineeringDomainEvidence(input);
+  const specification = extractEngineeringSpecification(input);
+
+  assert.equal(evidence.domain, "robotics_ros");
+  assert.equal(specification.domain, "robotics_ros");
+  assert.equal(specification.modelType, "robotics_ros");
 });
 
 test("confirmed cluster graph preserves endpoint technology on local controller I/O", () => {

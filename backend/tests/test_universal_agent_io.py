@@ -20,6 +20,23 @@ def test_input_keeps_source_material_separate_and_never_accepts_authority():
         AgentInputEnvelope.model_validate({**envelope.model_dump(), 'permissions': ['ADMIN']})
 
 
+@pytest.mark.parametrize(('prompt', 'expected'), [
+    ('Verbinde ParkAssist mit DriverAssistance.', 'CONNECT_FUNCTIONS'),
+    ('Prüfe MotorRPM.', 'VALIDATE_SIGNAL'),
+    ('Analysiere den letzten Trace.', 'ANALYZE_TRACE'),
+    ('Erzeuge eine Architektur für 3 Sensoren, 4 Aktoren und einen Rechner.', 'CREATE_ARCHITECTURE'),
+])
+def test_s51_direct_goals_have_distinct_intents(prompt, expected):
+    context = AgentContext(active_project_id='p')
+    assert adapt_input(prompt, context, run_id='r').user_intent == expected
+
+
+def test_s51_signal_reference_is_not_taken_from_a_meta_prompt():
+    from backend.agent_core.orchestration.capability_intent import signal_inspection
+    assert signal_inspection('Prüfe MotorRPM.') == 'MotorRPM'
+    assert signal_inspection('Klassifiziere die Eingaben: Prüfe MotorRPM.') is None
+
+
 def test_typing_does_not_merge_same_name_and_id_overrides_name():
     graph = ModelGraphService({'hardware': [{'id': 'a', 'name': 'Motor', 'aliases': ['Links']},
                                           {'id': 'b', 'name': 'Motor'}]})

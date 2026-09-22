@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import json
+from datetime import datetime, timezone
 
 import psycopg
 from flask import Blueprint, Response, g, jsonify, request, make_response
@@ -1679,6 +1680,32 @@ def preflight_latest_route():
 @engineering_api.route("/preflight", methods=["POST"])
 def run_preflight_route():
     return jsonify(PreflightService(_project_id()).run())
+
+
+@engineering_api.route("/preflight/warnings/approve", methods=["POST"])
+def approve_preflight_warnings_route():
+    from .capacity.service import preflight_warning_signature
+
+    payload = _routing_payload()
+    snapshot_id = str(payload.get("snapshot_id") or "")
+    actor = str(payload.get("actor") or "").strip()
+    workflow = WorkflowStatusService(_project_id())
+    snapshot = workflow.latest_analysis("preflight")
+    if not actor or not snapshot or snapshot["id"] != snapshot_id:
+        raise EngineeringValidationError("Ein aktueller Preflight und ein Freigebender sind erforderlich.")
+    if (snapshot.get("results") or {}).get("preflight_status") != "READY_WITH_WARNINGS":
+        raise EngineeringValidationError("Nur aktuelle Preflight-Warnungen koennen freigegeben werden.")
+    approval = {
+        "signature": preflight_warning_signature(snapshot.get("findings") or []),
+        "actor": actor,
+        "approved_at": datetime.now(timezone.utc).isoformat(),
+        "snapshot_id": snapshot_id,
+    }
+    state = workflow.get()
+    workflow.save_parameters({**state["parameters"], "preflight_warning_approval": approval}, actor=actor)
+    _auto_recalculate_capacity(_project_id())
+    result = PreflightService(_project_id()).run()
+    return jsonify({"approval": approval, "preflight": result})
 
 
 @engineering_api.route("/workflow/refresh-project", methods=["POST"])

@@ -11,7 +11,7 @@ from backend.engineering.capacity.calculators import (
     utilization_percent,
 )
 from backend.engineering.capacity import service as capacity_service_module
-from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol
+from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol, preflight_warning_signature
 from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
 from backend.engineering.workflow import service as workflow_service_module
 from backend.engineering.workflow.service import (
@@ -648,6 +648,17 @@ def test_simulation_snapshot_rejects_unapproved_preflight_warnings(monkeypatch):
 
     with pytest.raises(WorkflowConflictError, match="Preflight erlaubt keine Simulation"):
         service.create_simulation_snapshot({})
+
+
+def test_preflight_warning_approval_signature_is_order_independent_and_content_bound():
+    first = {'severity': 'WARNING', 'category': 'capacity', 'code': 'COMMUNICATION_UNVERIFIED',
+             'message': 'Clock stretching missing', 'object_type': 'Network', 'object_id': 'i2c-1'}
+    second = {'severity': 'WARNING', 'category': 'routing', 'code': 'CUSTOM_PROTOCOL',
+              'message': 'PWM sizing missing', 'object_type': 'Network', 'object_id': 'pwm-1'}
+    signature = preflight_warning_signature([first, second])
+    assert signature == preflight_warning_signature([second, first])
+    assert signature != preflight_warning_signature([{**first, 'message': 'Clock stretching verified'}, second])
+    assert signature == preflight_warning_signature([second, {'severity': 'INFO', 'code': 'OTHER'}, first])
 
 
 def test_preflight_accepts_interface_owned_directly_by_hardware(monkeypatch):

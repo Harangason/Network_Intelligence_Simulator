@@ -37,6 +37,13 @@ def test_ethernet_link_speed_and_rate_formatting_are_canonical() -> None:
     assert format_rate_bps(1_000_000_000) == "1 Gbit/s"
 
 
+def test_dds_rate_is_validated_by_its_registered_ethernet_stack() -> None:
+    assert REGISTRY.validate_parameters("dds", {"bitrate_bps": 1_000_000_000})["status"] == "VALID"
+    invalid = REGISTRY.validate_parameters("dds", {"nominal_bitrate_bps": 500_000})
+    assert invalid["status"] == "INVALID"
+    assert codes(invalid) == {"TECHNOLOGY_RATE_MODEL_MISMATCH"}
+
+
 def test_unknown_profile_blocks_instead_of_using_foreign_default() -> None:
     result = REGISTRY.validate_parameters("unobtainium_bus", {"bitrate_bps": 2_000_000})
     assert result["status"] == "UNKNOWN"

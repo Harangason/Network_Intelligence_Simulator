@@ -51,7 +51,7 @@ def main():
         model[resource]={'status':code,'data':json.loads(body)}
     save('model.json',model,'model')
     refs=['request.json','events.json','history.json','after.json','model.json']
-    observations={'actions':[{'name':n,'status':'PASSED','evidence':refs} for n in case['required_actions'] if n!='Ergebnis im Browser prüfen'],
+    observations={'actions':[],
         'tools':[{'name':'NIS HTTP API','status':'PASSED','evidence':refs}],
         'outputs':[{'name':'Originalantwort und persistierter Modellzustand','status':'PASSED','evidence':refs}],
         'checks':[], 'model_after':model,'claimed_complete':False,'findings':[]}

@@ -19,7 +19,14 @@ def signal_inspection(prompt):
     if match and not re.fullmatch(r'prüfen|pruefen|check|validate', match[1], re.I):
         return match[1].strip('.')
     match = re.match(r'\s*(?:prüfe|pruefe|validate|check)\s+([\w.-]+)\s*:', prompt, re.I)
-    return match[1] if match and re.search(r'\brpm\b|\bbit\b|Auflösung|Encoding', prompt, re.I) else None
+    if match and re.search(r'\brpm\b|\bbit\b|Auflösung|Encoding', prompt, re.I):
+        return match[1]
+    match = re.fullmatch(r'\s*(?:prüfe|pruefe|validiere|validate|check)\s+(?:das\s+Signal\s+)?([\w.-]+?)\s*[.!?]?\s*', prompt, re.I)
+    return match[1] if match else None
+
+
+def explicit_trace_analysis(prompt):
+    return bool(re.fullmatch(r'\s*(?:analysiere|untersuche|analyze|analyse)\s+(?:den\s+letzten|die\s+letzte|the\s+latest|den|die|das|the)\s+(?:trace|trace-session|tracesession)\s*[.!?]?\s*', prompt, re.I))
 
 
 def finding_assessment(prompt):

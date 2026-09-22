@@ -66,7 +66,7 @@ if (scenario.browser_required) {
         const button = page.getByRole('button', { name: label, exact: true }).last();
         const visible = await button.isVisible().catch(() => false);
         if (visible) { await button.hover(); await button.focus(); }
-        browserActions.push({ target: label, purpose: 'Wizard capability entry inspect', precondition: 'Engineering assistant loaded', expected_effect: 'Focusable registered wizard action', actual_effect: visible ? 'Visible, hoverable and keyboard-focusable' : 'Mapping verified by focused registry test; entry not open in initial viewport', url: page.url(), status: 'PASSED' });
+        browserActions.push({ target: label, purpose: 'Wizard capability entry inspect', precondition: 'Engineering assistant loaded', expected_effect: 'Focusable registered wizard action', actual_effect: visible ? 'Visible, hoverable and keyboard-focusable' : 'Entry not visible in the inspected view', url: page.url(), status: visible ? 'PASSED' : 'BLOCKED' });
       }
       const shot = path.join(evidenceDir, 'capability-wizards.png');
       await page.screenshot({ path: shot, fullPage: true });
@@ -91,22 +91,15 @@ if (scenario.browser_required) {
 
 const pytestPassed = probe.status === 0;
 const refs = [probeLog, ...evidence.filter(item => item.kind === 'screenshot').map(item => item.ref)];
-const checks = [
-  ['expected_model_changes', scenario.expected_model_changes],
-  ['expected_calculations', scenario.expected_calculations],
-  ['expected_validations', scenario.expected_validations],
-  ['expected_visualizations', scenario.expected_visualizations],
-  ['completion_criteria', scenario.completion_criteria],
-].flatMap(([category, names]) => (names || []).map(name => ({ category, name, status: pytestPassed ? 'PASSED' : 'FAILED', evidence: refs })));
-checks.push(...(scenario.failure_conditions || []).map(name => ({ category: 'failure_conditions', name, observed: false, status: 'PASSED', evidence: refs })));
-const globalTools = ['NIS isolated runtime', 'Browser', 'Engineering Agent', 'MCP', 'Core validators'];
-const globalViews = ['Projects', 'Engineering', 'Routing', 'Network', 'Capacity', 'Validation', 'Simulation', 'Trace', 'Intelligence'];
 const observations = {
-  actions: (scenario.required_actions || []).map(name => ({ name, status: pytestPassed ? 'PASSED' : 'FAILED', evidence: refs })),
-  tools: [...new Set([...globalTools, ...(scenario.required_tools || [])])].map(name => ({ name, status: pytestPassed ? 'PASSED' : 'FAILED', evidence: refs })),
-  views: [...new Set([...globalViews, ...(scenario.required_views || [])])].map(name => observedViews.find(view => view.name === name) || ({ name, status: pytestPassed ? 'PASSED' : 'FAILED', evidence: refs })),
-  outputs: ['Fresh evidence per case', 'Repair work packages', 'Full final regression', '80-case quality-gate report'].map(name => ({ name, status: 'PASSED', evidence: refs })),
-  questions: (scenario.expected_questions || []).map(name => ({ name, text: name, status: 'PASSED', evidence: refs })), checks, browser: browserActions,
+  actions: [],
+  tools: [
+    ...(scenario.browser_required ? [{ name: 'Browser', status: 'PASSED', evidence: refs }] : []),
+    { name: 'Core validators', status: pytestPassed ? 'PASSED' : 'FAILED', evidence: [probeLog] },
+  ],
+  views: observedViews,
+  outputs: [{ name: 'Fresh evidence per case', status: 'PASSED', evidence: refs }],
+  questions: [], checks: [], browser: browserActions,
   findings: pytestPassed ? [] : [{ code: `TC_${scenario.test_id}_FOCUSED_PROBE_FAILED`, category: 'TOOL_BUG', blocking: true, detail: `Focused pytest exited ${probe.status}` }],
   claimed_complete: false,
 };

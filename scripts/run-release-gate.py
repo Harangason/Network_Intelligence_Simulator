@@ -118,10 +118,11 @@ def main():
             app_port = reservation.getsockname()[1]
         # Record an explicit host port. Docker's "::13500" dynamic publication
         # selects a different port after restart, invalidating browser recovery.
+        local_ai_base_url = os.environ.get('NIS_E2E_LOCAL_AI_BASE_URL', 'http://127.0.0.1:1/v1').strip()
         control('run', '-d', '--name', names['app'], '--network', names['network'], '--label', 'networkis.test=disposable',
                 '-e', 'DATABASE_URL', '-e', 'NETWORKIS_ALLOW_NON_CANONICAL_ROOT=1', '-e', 'NUMERIC_ACCELERATOR=cpu',
                 '-e', 'SIMULATOR_RUNTIME_ROOT=/app/backend/runtime', '-e', 'SIMULATION_EXECUTOR=thread',
-                '-e', 'AI_PROVIDER=hybrid-demand', '-e', 'CLOUD_ESCALATION=never', '-e', 'LOCAL_AI_BASE_URL=http://127.0.0.1:1/v1',
+                '-e', 'AI_PROVIDER=hybrid-demand', '-e', 'CLOUD_ESCALATION=never', '-e', f'LOCAL_AI_BASE_URL={local_ai_base_url}',
                 '-p', f'127.0.0.1:{app_port}:13500', '--mount', 'type=volume,source='+names['runtime']+',target=/app/backend/runtime', image_id)
         created.append(('container', names['app']))
         port = json.loads(control('inspect', names['app']))[0]['NetworkSettings']['Ports']['13500/tcp'][0]['HostPort']

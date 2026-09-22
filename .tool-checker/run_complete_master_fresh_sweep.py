@@ -30,7 +30,7 @@ NORMALIZED_SOURCE = Path(os.environ.get(
 NORMALIZED_EXECUTABLE = RUN_ROOT / "complete-master-80.sweep.normalized.json"
 SKILL = Path(os.environ.get(
     "TOOL_CHECKER_SKILL",
-    "F:/CodexOrdner/plugins/cache/plugins-cli/tool-checker/1.0.0+codex.20260920184515/skills/tool-checker",
+    "F:/CodexOrdner/plugins/cache/plugins-cli/tool-checker/1.0.0+codex.20260921055224/skills/tool-checker",
 ))
 PYTHON = Path(sys.executable)
 ENV = {
@@ -89,28 +89,44 @@ def setup() -> list[dict]:
         "uses_llm": False,
         "mutating": False,
     }
+    config["adapters"]["complete-master-reuse"] = {
+        "argv": ["node", str(HERE / "complete_master_reuse_adapter.mjs")],
+        "uses_llm": True,
+        "mutating": True,
+    }
+    config["adapters"]["complete-master-reuse-readonly"] = {
+        "argv": ["node", str(HERE / "complete_master_reuse_adapter.mjs")],
+        "uses_llm": True,
+        "mutating": False,
+    }
     (STATE / "config.json").write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
 
     manifest = json.loads(NORMALIZED_SOURCE.read_text(encoding="utf-8"))
+    aggregate_outputs = [
+        value for value in manifest.get("required_outputs", [])
+        if value != "Fresh evidence per case"
+    ]
+    manifest["suite_required_outputs"] = aggregate_outputs
+    manifest["required_outputs"] = ["Fresh evidence per case"]
     prefix = os.environ.get("TOOL_CHECKER_PROJECT_PREFIX", "fresh80")
+    pool_cases = [f"S{number:02d}-{variant}" for number in range(1, 21) for variant in ("A", "B")]
+    reuse_cases = [f"S{number}" for number in range(21, 61)]
+    reuse_project = dict(zip(reuse_cases, pool_cases, strict=True))
     for case in manifest["test_cases"]:
         bare = {key: value for key, value in case.items() if key != "execution_plan"}
         real_wizard = re.fullmatch(r"S(?:0[1-9]|1[0-9]|20)-[AB]", case["test_id"]) is not None
-        if case["test_id"] in {"S41", "S48", "S51", "S53", "S55", "S59"}:
-            adapter = "complete-master-specialized"
-            step_id = "focused-contract-probe"
-            step_label = "Fallspezifischen Wizard- oder Agentenvertrag mit gezielter Evidence prüfen"
-            channel = "browser" if case.get("browser_required") else "mcp"
-        elif real_wizard:
+        if real_wizard:
             adapter = "complete-master-real-wizard" if case.get("mutating", True) else "complete-master-real-wizard-readonly"
             step_id = "fresh-real-wizard"
             step_label = "Originalauftrag im echten Haupt-Wizard ausführen"
             channel = "browser"
         else:
-            adapter = "complete-master-fresh-http" if case.get("mutating", True) else "complete-master-fresh-http-readonly"
-            step_id = "fresh-agent-http"
-            step_label = "Fallspezifischen Agenten-Intake ausführen; spezialisierte Browser-Evidence bleibt separat erforderlich"
-            channel = "mcp"
+            adapter = "complete-master-reuse" if case.get("mutating", True) else "complete-master-reuse-readonly"
+            step_id = "reuse-real-project"
+            step_label = "Fallspezifischen Agenten-, Wizard-, MCP- oder Trace-Vertrag im Wizard-Projekt ausführen"
+            channel = "browser" if case.get("browser_required") else "mcp"
+            bare["source_project_case"] = reuse_project[case["test_id"]]
+        project_case = case["test_id"] if real_wizard else reuse_project[case["test_id"]]
         case["execution_plan"] = [{
             "step_id": step_id,
             "step_label": step_label,
@@ -120,7 +136,7 @@ def setup() -> list[dict]:
             "phase": "engineering_execution",
             "timeout": 600,
             "base_url": BASE_URL,
-            "project_id": f"nis-e2e-final-examples-{prefix}-{case['test_id'].lower()}",
+            "project_id": f"nis-e2e-final-examples-{prefix}-{project_case.lower()}",
             "case": bare,
         }]
     NORMALIZED_EXECUTABLE.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -144,7 +160,9 @@ def preflight(case: dict, project_id: str) -> tuple[Path, Path]:
         "application": {"status": "PASSED", "evidence": get_json(project_id, "/api/ready")},
         "project": {"status": "PASSED", "evidence": project_id},
         "permissions": {"status": "PASSED", "evidence": "User requested a complete fresh run."},
-        "test_data": {"status": "PASSED", "evidence": "Fresh project and current normalized contract."},
+        "test_data": {"status": "PASSED", "evidence": (
+            f"Wizard-created pool project from {case.get('source_project_case') or case['test_id']} and current normalized contract."
+        )},
         "available_skills": list(dict.fromkeys(plan["context"]["required_skills"] + plan["context"]["test"]["required_skills"])),
         "available_tools": list(dict.fromkeys(plan["context"]["required_tools"] + plan["context"]["test"]["required_tools"])),
         "available_views": list(dict.fromkeys(plan["context"]["required_views"] + plan["context"]["test"]["required_views"])),

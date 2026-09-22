@@ -58,6 +58,8 @@ export type ExtractedEngineeringChain = {
   hardware_name: string;
   hardware_description: string;
   device_type: string;
+  data_complexity?: string;
+  payload_element_type?: string;
   function_name: string;
   function_description: string;
   interface_name: string;
@@ -794,9 +796,13 @@ export function extractEngineeringTargetCounts(text: string): EngineeringTargetC
     requestedCount(body, "ecu(?:s)?", "funktions|zentrale|typische|weitere"),
     inventoryCount(body, inventoryVocabulary.roles.ecus.nouns, modifiers, new RegExp(inventoryVocabulary.roles.ecus.generic)),
   ) + additionalCompute;
+  const centralCoupling = sensors > 0 || actuators > 0 || ecus > 0
+    ? requestedCount(body, "(?:zentrale|zentralen|zentrales|zentraler)\\s+(?:kopplung|koppelstelle)(?:en)?")
+    : 0;
   const gateways = Math.max(
     requestedCount(body, "gateway(?:s)?", modifiers + "|einziges|einzigen"),
     requestedCount(body, "(?:uebergeordnete|übergeordnete)\\s+kommunikationsanbindung(?:en)?"),
+    centralCoupling,
   );
   return {
     sensors,
@@ -1367,6 +1373,7 @@ function hardwareName(label: string) {
   const name = exampleName && exampleName !== rawName && /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|actuator|aktuator|aktor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/iu.test(exampleName)
     ? exampleName
     : rawName;
+  if (/[↔→←]|<->|<-|->/.test(name)) return "";
   const key = normalized(name);
   if (!key || GENERIC_HARDWARE_LABELS.has(key)) return "";
   if (PROSE_HARDWARE_LABEL_PATTERN.test(key)) return "";
@@ -1395,6 +1402,13 @@ function naturalLanguageHardwareNames(line: string) {
     .map((match) => cleanLabel(match[1] ?? ""))
     .filter(Boolean);
   return [...new Map(names.map((name) => [normalized(name), name])).values()];
+}
+
+function singularControllerHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
+  const match = line.match(/^\s*(?:[-*]\s*)?1\s+([\p{L}][\p{L}\s-]*(?:Controller|Computer))\s*$/iu);
+  if (!match) return [];
+  const name = cleanLabel(match[1]);
+  return [{ name, declaredType: /computer$/i.test(name) ? 'IndustrialPC' : deviceType(name) }];
 }
 
 /** Explicit role-first declarations keep identifiers that have no role suffix. */
@@ -1462,6 +1476,30 @@ function groupedHardwareNames(lines: string[]): HardwareOccurrence[] {
   return result;
 }
 
+function explicitCommunicationAssignments(text: string, names: string[]): Record<string, string> {
+  const assignments: Record<string, string> = {};
+  const conflicts = new Set<string>();
+  const key = (value: string) => normalized(normalizeHardwareName(value)).replace(/\d+$/, '').replace(/s$/, '');
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*[-*]\s+(.+?)\s*:\s*(.+)\s*$/u);
+    if (!match) continue;
+    const systems = extractCommunicationSystems(match[2]).filter(system => !['DDS', 'SOME_IP', 'MQTT', 'OPCUA'].includes(system));
+    if (systems.length !== 1) continue;
+    const participants = match[1].split(/\s*(?:\/|↔|<->|→|->)\s*/u).map(key).filter(Boolean);
+    for (const name of names) {
+      const hardwareKey = key(name);
+      const shortControllerName = /\b(?:Computer|Controller)$/iu.test(name) ? hardwareKey.split(' ')[0] : '';
+      const uniqueShortName = shortControllerName && names.filter(candidate => key(candidate).split(' ')[0] === shortControllerName).length === 1;
+      if (!participants.includes(hardwareKey) && !(uniqueShortName && participants.includes(shortControllerName))) continue;
+      const canonicalKey = normalizeHardwareName(name).toLocaleLowerCase('de');
+      if (assignments[canonicalKey] && assignments[canonicalKey] !== systems[0]) conflicts.add(canonicalKey);
+      assignments[canonicalKey] = systems[0];
+    }
+  }
+  for (const name of conflicts) delete assignments[name];
+  return assignments;
+}
+
 function explicitFunctionalOwner(name: string, controllers: string[], text: string): string | undefined {
   const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const endpoint = escape(name);
@@ -1487,6 +1525,7 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
   if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?safety\s+controller$/.test(key)) names.push('SafetyController');
   if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?sicherheitssteuerung$/.test(key)) names.push('Sicherheitssteuerung');
   if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?uebergeordnete\s+kommunikationsanbindung$/.test(key)) names.push('SystemGateway');
+  if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?zentrale\s+(?:kopplung|koppelstelle)$/.test(key)) names.push('SystemGateway');
   const numberedHeading = /^\s*#{1,6}\s*\d+[.)]?\s*/.test(line);
   const centralGatewayCount = numberedHeading ? null : key.match(new RegExp(
     `^${COUNT_TOKEN}\\s+(?:zentrale[rsnm]?\\s+)?gateway(?:s)?\\s*[/+-]?\\s*edge\\s+controller$`,
@@ -1727,13 +1766,13 @@ function domainFrom(text: string) {
     if (/automotive|fahrzeug/.test(explicitIndustry)) return "automotive";
   }
   const key = normalized(text);
+  if (/robotics|robotik|roboter|robot.*controller|\bros\b|manipulator|motion planner/.test(key)) return "robotics_ros";
   if (/industrial|plc|profinet|ethercat|sicherheitssystem|sicherheitssteuerung/.test(key)) return "industrial_automation";
   if (/aerospace|arinc|avionik/.test(key)) return "aerospace";
   if (/\brail\b|bahn|zug|train/.test(key)) return "rail";
   if (/marine|schiff|ship|vessel|maritim/.test(key)) return "marine";
   if (/building automation|gebaeude|gebäude|knx|bacnet|hlk/.test(key)) return "building_automation";
   if (/\benergy\b|energie|microgrid|wechselrichter|schaltanlage|transformator/.test(key)) return "energy";
-  if (/robotics|robotik|\bros\b|manipulator|motion planner/.test(key)) return "robotics_ros";
   if (/generic networking|router|switch|firewall|loadbalancer|vpn/.test(key)) return "generic_networking";
   if (/automotive|fahrzeug|ecu|can fd|kamera|camera|radar|lidar|umfeld/.test(key)) return "automotive";
   if (/\bembedded\b|\bi2c\b|\bspi\b|\buart\b|\bpcie\b|\busb\b/.test(key)) return "embedded_systems";
@@ -1748,7 +1787,7 @@ const DOMAIN_EVIDENCE_RULES: Array<{ domain: string; markers: RegExp[] }> = [
   { domain: "energy", markers: [/microgrid/i, /wechselrichter/i, /schaltanlage/i, /transformator/i, /gridcontrol/i] },
   { domain: "marine", markers: [/vessel/i, /schiff/i, /marine/i, /nmea/i] },
   { domain: "building_automation", markers: [/\bknx\b/i, /bacnet/i, /gebaeude/i, /gebäude/i, /buildingautomation/i] },
-  { domain: "robotics_ros", markers: [/\bros2?\b/i, /robotik/i, /manipulator/i, /motionplanner/i] },
+  { domain: "robotics_ros", markers: [/\bros2?\b/i, /robotik/i, /roboter/i, /robot\s*controller/i, /\bdds\b/i, /manipulator/i, /motionplanner/i] },
 ];
 
 /** Detect strong domain evidence without allowing a wizard header to decide the result. */
@@ -1858,8 +1897,14 @@ function generatedPhysicalDefaults(name: string) {
   if (key.includes("druck")) return { min: 0, max: 250, unit: "bar" };
   if (key.includes("durchfluss") || key.includes("flow")) return { min: 0, max: 1000, unit: "l/min" };
   if (key.includes("drehzahl")) return { min: 0, max: 8000, unit: "rpm" };
+  if (key.includes("drehmoment")) return { min: -10000, max: 10000, unit: "Nm" };
   if (key.includes("strom")) return { min: -200, max: 200, unit: "A" };
+  if (key.includes("spannung")) return { min: 0, max: 1000, unit: "V" };
   if (key.includes("winkel")) return { min: -180, max: 180, unit: "deg" };
+  if (key.includes("kraft")) return { min: -100000, max: 100000, unit: "N" };
+  if (key.includes("luftfeuchtigkeit")) return { min: 0, max: 100, unit: "%" };
+  if (key.includes("abstand")) return { min: 0, max: 1000, unit: "m" };
+  if (key.includes("beschleunigung")) return { min: -200, max: 200, unit: "m/s²" };
   if (key.includes("geschwindigkeit") || key.includes("speed")) {
     return { min: 0, max: 300, unit: "km/h" };
   }
@@ -1887,6 +1932,19 @@ function explicitDeviceConnections(text: string): Record<string, string> {
   }));
 }
 
+function explicitDeviceOwners(text: string): Record<string, string> {
+  const raw = text.match(/^- Gerätezuordnungen:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
+  if (!raw) return {};
+  let values: Record<string, string>;
+  try { values = JSON.parse(raw); } catch { return {}; }
+  if (!values || Array.isArray(values) || typeof values !== 'object'
+      || Object.values(values).some(value => typeof value !== 'string')) return {};
+  return Object.fromEntries(Object.entries(values).map(([name, owner]) => [
+    normalizeHardwareName(name).toLocaleLowerCase('de'),
+    normalizeHardwareName(owner),
+  ]));
+}
+
 export function extractEngineeringSpecification(
   text: string,
   overrides: Partial<EngineeringHardwareCounts> = {},
@@ -1900,12 +1958,15 @@ export function extractEngineeringSpecification(
   const measurements = sensorMeasurementSelections(text);
   const lines = specificationBody(text).replace(/^- Sensor-Messgrößen:[^\r\n]*$/gm, '').split(/\r?\n/);
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
+  const grouped = groupedHardwareNames(lines);
+  const groupedLineIndexes = new Set(grouped.map((item) => item.index));
   const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
-    const headingName = hardwareName(headingLabel(line));
-    const names = [headingName, ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line, confirmedCounts.actuators, text)].filter(Boolean);
-    const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item }))];
+    if (groupedLineIndexes.has(index)) return [];
+    const singularControllers = singularControllerHardwareNames(line);
+    const names = singularControllers.length ? [] : [hardwareName(headingLabel(line)), ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line, confirmedCounts.actuators, text)].filter(Boolean);
+    const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item })), ...singularControllers.map(item => ({ index, ...item }))];
     return [...new Map(candidates.map(item => [normalized(normalizeHardwareName(item.name)), item])).values()];
-  }), ...groupedHardwareNames(lines)].sort((left, right) => left.index - right.index);
+  }), ...grouped].sort((left, right) => left.index - right.index);
   const contexts = new Map<string, { name: string; lines: string[]; declaredType?: string; declaredInterface?: string }>();
   occurrences.forEach((occurrence, occurrenceIndex) => {
     const nextIndex = occurrences[occurrenceIndex + 1]?.index ?? lines.length;
@@ -1936,7 +1997,11 @@ export function extractEngineeringSpecification(
   const interfaceType = unconfiguredPi ? 'Other' : protocolFrom(text.replace(/^- Geräteanschlüsse:[^\r\n]*$/gm, ''), (exampleRequested || legacyConfirmed) && domain === 'automotive' ? 'CAN' : 'Other');
   const communicationSystemCounts = extractCommunicationSystemCounts(text);
   const networkArchitecture = extractNetworkArchitectureMode(text);
-  const deviceConnections = explicitDeviceConnections(text);
+  const deviceConnections = {
+    ...explicitCommunicationAssignments(text, [...contexts.values()].map(entry => entry.name)),
+    ...explicitDeviceConnections(text),
+  };
+  const deviceOwners = explicitDeviceOwners(text);
   const safetyProfile = /\bfsoe\b/i.test(text) ? 'FSoE' : undefined;
   const safetyCycleMs = numeric(text.match(/\bSafety\s*Cycle\s*:\s*(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1]);
   const deviceSpecificationRaw = text.match(/^- Geräte-Spezifikationen:\s*(\{[^\r\n]*\})\s*$/m)?.[1];
@@ -1954,24 +2019,33 @@ export function extractEngineeringSpecification(
     const hardwareName = normalizeHardwareName(entry.name);
     const context = [deviceSpecifications[hardwareName], ...entry.lines.map((line) => cleanLabel(line))].filter(Boolean).join("; ");
     const declaredType = entry.declaredType ?? deviceType(entry.name);
+    const selectedOwner = deviceOwners[hardwareName.toLocaleLowerCase('de')];
+    const confirmedOwner = selectedOwner && declaredControllers.some(owner => normalized(owner) === normalized(selectedOwner))
+      ? declaredControllers.find(owner => normalized(owner) === normalized(selectedOwner)) : undefined;
     const functionalOwner = ['SensorController', 'ActuatorController'].includes(declaredType)
-      ? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
+      ? confirmedOwner ?? explicitFunctionalOwner(entry.name, declaredControllers, lines.join('\n')) : undefined;
     const countedTemperature = hardwareName.match(/^Temperatursensor(\d+)$/);
     const explicitMeasurementId = Object.entries(measurements)
       .find(([name]) => normalized(normalizeHardwareName(name)) === normalized(hardwareName))?.[1];
     const measurement = declaredType === 'SensorController' ? SENSOR_MEASUREMENTS.find(item =>
-      item.id === explicitMeasurementId || (!explicitMeasurementId && item.id === 'safety_state' && item.match.test(hardwareName))) : undefined;
+      item.id === explicitMeasurementId || (!explicitMeasurementId && item.match.test(`${hardwareName} ${context}`))) : undefined;
     const safetyEndpoint = /safety|sicher/.test(normalized(`${hardwareName} ${context}`));
     const safetyParticipant = safetyEndpoint || Boolean(safetyProfile && safetyCycleMs);
-    const signal = measurement ? `${measurement.label}_${identifier(hardwareName)}` : countedTemperature ? `Temperatur${countedTemperature[1]}`
+    const derivedSignal = signalName(hardwareName, context);
+    const complexMeasurement = measurement && derivedSignal !== 'ObjektErkannt' && 'dataComplexity' in measurement ? measurement : undefined;
+    const modeledMeasurement = measurement && (!('dataComplexity' in measurement) || complexMeasurement) ? measurement : undefined;
+    const measurementDefinesIdentity = Boolean(modeledMeasurement
+      && (explicitMeasurementId || modeledMeasurement.id === 'safety_state' || 'dataComplexity' in modeledMeasurement));
+    const signal = measurementDefinesIdentity ? `${modeledMeasurement!.label}_${identifier(hardwareName)}` : countedTemperature ? `Temperatur${countedTemperature[1]}`
       : declaredType === 'ActuatorController' && safetyEndpoint ? 'SafetyCommand'
-        : hardwareName === 'RaspberryPi' ? 'RaspberryPiStatus' : signalName(hardwareName, context);
-    const defaults = generatedPhysicalDefaults(measurement?.label ?? signal);
-    const unit = measurement?.unit ?? unitFrom(context) ?? defaults.unit;
+        : hardwareName === 'RaspberryPi' ? 'RaspberryPiStatus' : derivedSignal;
+    const defaults = generatedPhysicalDefaults(modeledMeasurement?.label ?? signal);
+    const unit = modeledMeasurement?.unit ?? unitFrom(context) ?? defaults.unit;
     const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
     const cycleMs = numeric(context.match(/(?:^|[,;\s])(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1])
-      ?? (safetyParticipant ? safetyCycleMs : undefined) ?? 10;
+      ?? (safetyParticipant ? safetyCycleMs : undefined)
+      ?? (complexMeasurement && 'defaultCycleMs' in complexMeasurement ? complexMeasurement.defaultCycleMs : undefined) ?? 10;
     const objectDetectionSignal = signal === "ObjektErkannt";
     const minValue = range.min ?? (objectDetectionSignal ? 0 : defaults.min);
     const maxValue = range.max ?? (objectDetectionSignal ? 1 : defaults.max);
@@ -1987,7 +2061,7 @@ export function extractEngineeringSpecification(
       ? "Ethernet"
       : contextualInterfaceType);
     const dataType = (minValue ?? 0) < 0 ? "signed" : "unsigned";
-    const lengthBits = generatedArchitectureBitLength({
+    const lengthBits = complexMeasurement && 'payloadBytes' in complexMeasurement ? complexMeasurement.payloadBytes * 8 : generatedArchitectureBitLength({
       signalName: signal,
       hardwareName,
       interfaceType: chainInterfaceType,
@@ -1999,14 +2073,26 @@ export function extractEngineeringSpecification(
       unit,
       dataType,
     });
-    const architectureMetadata = signalArchitectureMetadata({ signalName: signal, hardwareName,
+    const baseArchitectureMetadata = signalArchitectureMetadata({ signalName: signal, hardwareName,
       interfaceType: chainInterfaceType, cycleMs, dataType, lengthBits, startBit: 0,
       byteOrder: 'little_endian', factor, offset: 0, unit, minValue, maxValue });
+    const architectureMetadata = complexMeasurement ? {
+      ...baseArchitectureMetadata,
+      semantic: { ...baseArchitectureMetadata.semantic, semantic_type: complexMeasurement.semanticType,
+        unit: 'not_applicable', assumptions: ['Payloadgröße und Zyklus sind bestätigungspflichtige Modellannahmen.'] },
+      data: { payload_bytes: complexMeasurement.payloadBytes },
+      configuration: { ...baseArchitectureMetadata.configuration, data_complexity: complexMeasurement.dataComplexity,
+        encoding_type: 'raw' },
+      quality: { ...baseArchitectureMetadata.quality, value_domain_complete: true },
+    } : baseArchitectureMetadata;
     return {
       hardware_name: hardwareName,
       hardware_description: context.slice(0, 1000),
       device_type: declaredType,
-      function_name: measurement ? `${hardwareId}_${measurement.label}Erfassung` : functionName(hardwareName, entry.lines, entry.name),
+      ...(complexMeasurement ? { data_complexity: complexMeasurement.dataComplexity,
+        payload_element_type: complexMeasurement.elementType } : {}),
+      function_name: modeledMeasurement && (explicitMeasurementId || modeledMeasurement.id === 'safety_state')
+        ? `${hardwareId}_${modeledMeasurement.label}Erfassung` : functionName(hardwareName, entry.lines, entry.name),
       function_description: `Aus Nutzerspezifikation abgeleitete Funktion. ${context}`.slice(0, 1000),
       interface_name: `${hardwareId}_${chainInterfaceType}`,
       interface_type: chainInterfaceType,
@@ -2028,7 +2114,7 @@ export function extractEngineeringSpecification(
       max_value: maxValue,
       ...architectureMetadata,
       configuration: { ...architectureMetadata.configuration,
-        ...(measurement ? { sensor_measurement: measurement.id,
+        ...(modeledMeasurement ? { sensor_measurement: modeledMeasurement.id,
           measurement_source: explicitMeasurementId ? 'explicit_user_selection' : 'semantic_device_role' } : {}),
         ...(safetyProfile && safetyParticipant ? { safety_profile: safetyProfile,
           safety_cycle_ms: cycleMs, safety_source: 'explicit_user_specification' } : {}),

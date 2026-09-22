@@ -226,6 +226,14 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
     }
     const execution = workflow.context.agent_execution;
     const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
+    if (execution?.state === 'BLOCKED' && execution.message?.includes('READY_WITH_WARNINGS')) {
+      const warnings = dialog.getByRole('region', { name: 'Preflight-Warnungen' });
+      await expect(warnings.getByRole('listitem').first()).toBeVisible();
+      await warnings.getByRole('button', { name: 'Warnungen freigeben und fortsetzen' }).click();
+      await expect.poll(async () => (await readProject(page, project, '/api/engineering/workflow?view=summary')).context.agent_execution?.updated_at,
+        { timeout: 60_000 }).not.toBe(execution.updated_at);
+      continue;
+    }
     if (['BLOCKED', 'FAILED', 'INCOMPLETE'].includes(execution?.state) && execution.recoverable !== true) {
       const conversation = await readProject(page, project, '/api/engineering/agent/conversation');
       const id = conversation.data?.active_proposal;

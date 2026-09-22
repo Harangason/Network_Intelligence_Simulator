@@ -2,7 +2,7 @@ import asyncio
 
 from backend.agent_core.api.tool_contract import ToolResult
 from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
+from backend.agent_core.core.engineering_agent import EngineeringAgent, simulation_preflight_block_reason
 
 
 class Client:
@@ -19,6 +19,17 @@ class Client:
     async def call(self, name, arguments=None):
         self.calls.append((name, arguments))
         return ToolResult(data={})
+
+
+def test_simulation_preflight_requires_explicit_warning_approval():
+    assert simulation_preflight_block_reason({'preflight_status': 'READY', 'ready_for_simulation': True}) is None
+    assert simulation_preflight_block_reason({
+        'preflight_status': 'READY_WITH_WARNINGS', 'ready_for_simulation': False,
+    }) == ('Der Preflight steht auf READY_WITH_WARNINGS. Die Simulation benötigt eine ausdrückliche '
+           'Freigabe der Warnungen oder die Behebung der Befunde.')
+    assert simulation_preflight_block_reason({
+        'preflight_status': 'BLOCKED', 'ready_for_simulation': False,
+    }).startswith('Der Preflight steht auf BLOCKED.')
 
 
 def test_blocked_wizard_reports_validation_cause_in_result_and_finding():

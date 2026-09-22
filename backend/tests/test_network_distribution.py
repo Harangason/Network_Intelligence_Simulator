@@ -206,6 +206,14 @@ def test_airbag_cluster_survives_gateway_direct_routing_and_unknowns_stay_unassi
     assert owners["unknown"]["basis"] == "unassigned"
 
 
+def test_gateway_is_an_explicit_system_owner_for_its_own_routes():
+    owners = system_owners([
+        {"id": "gateway", "name": "System", "device_type": "Gateway"},
+    ], {})
+
+    assert owners["gateway"] == {"id": "gateway", "name": "System", "basis": "explicit"}
+
+
 def test_direct_physical_parent_replaces_stale_inferred_owner():
     items = [
         {"id": "motor", "name": "Motorsteuerung", "device_type": "ECU"},

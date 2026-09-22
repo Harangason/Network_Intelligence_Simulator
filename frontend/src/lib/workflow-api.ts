@@ -568,6 +568,18 @@ export const runPreflight = () =>
     category_checks: PreflightResults["category_checks"];
   }>("/preflight", { method: "POST", body: "{}" });
 
+export const getPreflightSnapshot = () => request<{
+  id: string;
+  findings: AnalysisFinding[];
+  results: { preflight_status?: string; warning_count?: number };
+}>("/preflight");
+
+export const approvePreflightWarnings = (snapshotId: string, actor: string) => request<{
+  preflight: { preflight_status: string; ready_for_simulation: boolean; warning_count: number };
+}>("/preflight/warnings/approve", {
+  method: "POST", body: JSON.stringify({ snapshot_id: snapshotId, actor }),
+});
+
 export const optimizeCapacity = () =>
   request<{ proposals: Array<Record<string, unknown>> }>("/capacity/optimize", {
     method: "POST",

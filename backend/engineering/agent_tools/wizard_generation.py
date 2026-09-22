@@ -116,6 +116,17 @@ def _declared_function_hosts(specification: dict, function_refs: dict[str, str |
     ]
 
 
+def _declared_function_assignments(prompt: str) -> dict[str, str]:
+    raw = re.search(r'^- Funktionszuordnungen:\s*(\{[^\r\n]*\})\s*$', prompt, re.M)
+    if not raw:
+        return {}
+    values = json.loads(raw.group(1))
+    if (not isinstance(values, dict) or any(not isinstance(name, str) or not isinstance(host, str)
+            or not name.strip() or not host.strip() for name, host in values.items())):
+        raise ValueError('Ungültige Funktionszuordnungen.')
+    return {name.casefold(): host.casefold() for name, host in values.items()}
+
+
 def _confirmed_actuator_commands(prompt: str) -> dict:
     # The questionnaire wraps its free-form notes in "Weitere Hinweise".
     # Accept that wrapper without changing any user-specified encoding.
@@ -401,7 +412,7 @@ def _wizard_parameter_technology_ids(prompt: str) -> list[str]:
     return resolved
 
 
-def _parameter_defaults(technology_id: str) -> dict:
+def _direct_parameter_defaults(technology_id: str) -> dict:
     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
     defaults = {
         field['key']: field.get('default')
@@ -413,6 +424,28 @@ def _parameter_defaults(technology_id: str) -> dict:
     # data phase to that legacy-neutral calculation key.
     if 'bitrate' not in defaults and 'data_bitrate' in defaults:
         defaults['bitrate'] = defaults['data_bitrate']
+    return defaults
+
+
+def _parameter_defaults(technology_id: str) -> dict:
+    profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+    defaults = _direct_parameter_defaults(technology_id)
+    if 'bitrate' in defaults:
+        return defaults
+
+    # Application and industry profiles such as DDS inherit their physical
+    # rate from the explicitly registered stack instead of a foreign fallback.
+    for stack_id in profile.get('default_stack') or ():
+        normalized = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(stack_id)
+        if normalized == technology_id:
+            continue
+        try:
+            stack_defaults = _direct_parameter_defaults(normalized)
+        except KeyError:
+            continue
+        if 'bitrate' in stack_defaults:
+            defaults['bitrate'] = stack_defaults['bitrate']
+            break
     return defaults
 
 
@@ -706,7 +739,8 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         profile = DeviceClassificationRegistry().resolve_profile(
             name=chain['hardware_name'], device_type=chain['device_type'],
             device_class=chain.get('device_class'),
-            device_typing='Main Controller' if local_main_controller else chain.get('device_typing'))
+            device_typing='Main Controller' if local_main_controller else chain.get('device_typing'),
+            data_complexity=chain.get('data_complexity'))
         hw = ensure('HardwareNode', chain['hardware_name'], {
             'device_type': chain['device_type'], 'device_class': profile.device_class,
             'device_typing': profile.device_typing, 'data_complexity': profile.data_complexity,
@@ -758,7 +792,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 'semantic', 'data', 'communication', 'quality') if key in chain},
             'protocol_bindings': [{
                 'model_type': 'PayloadElement',
-                'element_type': 'SIGNAL',
+                'element_type': chain.get('payload_element_type', 'SIGNAL'),
                 'semantic_ref': chain.get('signal_name'),
                 'data_type': chain.get('data_type'),
                 'size': chain.get('length_bits'),
@@ -781,14 +815,19 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                                    if change['object_type'] == 'Function')
     missing_functions = [name for name in declared_functions if name.casefold() not in existing_function_names]
     function_hosts = _declared_function_hosts(spec, function_refs)
+    function_assignments = _declared_function_assignments(arguments['prompt'])
     if missing_functions:
-        if len(function_hosts) != 1:
+        unresolved = [name for name in missing_functions if name.casefold() not in function_assignments]
+        if unresolved and len(function_hosts) != 1:
             raise ValueError('Funktionszuordnung fehlt für: ' + ', '.join(missing_functions)
                              + '. Bitte den ausführenden Controller je Funktion festlegen.')
         for name in missing_functions:
-            ensure('Function', name, {'hardware_node_id': hardware_refs[function_hosts[0]],
+            host = function_assignments.get(name.casefold()) or function_hosts[0]
+            if host not in function_hosts:
+                raise ValueError(f'Funktionszuordnung {name}: Controller {host!r} fehlt oder ist kein ausführbarer Controller.')
+            ensure('Function', name, {'hardware_node_id': hardware_refs[host],
                 'domain': spec['domain'],
-                'description': 'Explizit benannte Nutzerfunktion; Ausführung auf dem einzigen Funktionscontroller. '
+                'description': 'Explizit benannte Nutzerfunktion; Ausführung auf dem bestätigten Funktionscontroller. '
                                'Ein-/Ausgangszuordnung und funktionale Anforderungen separat prüfen.'}, 'hardware_node_id')
 
     # The selected cluster technology is the ECU/Gateway backbone. Controllers

@@ -42,7 +42,8 @@ test('changing an existing sensor measurement keeps identity and connection but 
   assert.equal(sensor.unit, 'Nm');
   assert.equal(sensor.interface_type, 'I2C');
   assert.match(sensor.function_name, /DrehmomentErfassung$/);
-  assert.equal(sensor.min_value, undefined);
+  assert.equal(sensor.min_value, -10000);
+  assert.equal(sensor.max_value, 10000);
   assert.equal(changed.chains.filter(c => c.device_type === 'SensorController').length, 3);
   assert.equal(changed.chains.find(c => c.hardware_name === 'Temperatursensor2').unit, 'degC');
 });

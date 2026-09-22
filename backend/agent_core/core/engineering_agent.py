@@ -27,6 +27,14 @@ def reasoning_workload_progress(step: int, max_steps: int) -> dict[str, int]:
     return {"completed": min(max(0, int(step)) + 1, total), "total": total}
 
 
+def simulation_preflight_block_reason(preflight: dict) -> str | None:
+    if preflight.get('ready_for_simulation') is True:
+        return None
+    decision = str(preflight.get('preflight_status') or 'UNKNOWN')
+    return (f'Der Preflight steht auf {decision}. Die Simulation benötigt eine ausdrückliche '
+            'Freigabe der Warnungen oder die Behebung der Befunde.')
+
+
 def requests_model_change(prompt: str) -> bool:
     """Conservative intent boundary; model prose cannot grant itself a write."""
     # Explanations about editing are read requests, unlike "Kannst du ... anlegen?".
@@ -144,7 +152,7 @@ class EngineeringAgent:
             status = 'ANSWERED' if items else 'INCOMPLETE'
             event('RESULT', status=status, text=text, data=result.data)
             return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
-        if not context.wizard_request and context.requested_mode == 'ANALYZE_TRACE':
+        if not context.wizard_request and context.input_envelope.user_intent == 'ANALYZE_TRACE':
             jobs = {ref['id'] for ref in context.selected_object_refs if ref.get('object_type') == 'SimulationRun' and ref.get('id')}
             if len(jobs) != 1:
                 event('RESULT', status='INCOMPLETE', text='Bitte den zu analysierenden Simulationslauf in der Trace-Ansicht auswählen. Eine Lauf-ID wird nicht geraten.')
@@ -736,11 +744,10 @@ class EngineeringAgent:
             event('PROGRESS', status='VALIDATING',
                   text=f'Preflight über {checked} Workflow-Bereiche abgeschlossen; {warnings} Warnungen.',
                   workload={'completed': checked, 'total': checked})
-            if result.data.get('ready_for_simulation') is not True:
-                decision = str(result.data.get('preflight_status') or 'UNKNOWN')
+            block_reason = simulation_preflight_block_reason(result.data)
+            if block_reason:
                 status = 'INCOMPLETE'
-                text = (f'Der Preflight steht auf {decision}. Die Simulation benötigt eine ausdrückliche '
-                        'Freigabe der Warnungen oder die Behebung der Befunde.')
+                text = block_reason
                 event('RESULT', status=status, text=text)
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                         'context': context.model_dump(), 'trace': traces, 'proposals': []}
