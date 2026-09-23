@@ -1,5 +1,7 @@
-from backend.engineering.capacity.dimensioning import bus_schedule, dimension_communications, policy_for, unique_streams
+import pytest
+
 from backend.engineering.capacity.calculators import estimate_frame
+from backend.engineering.capacity.dimensioning import bus_schedule, dimension_communications, policy_for, unique_streams
 
 
 def stream(index, period=20, protocol="LIN", **extra):

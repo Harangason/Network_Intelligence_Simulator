@@ -511,6 +511,7 @@ export function AgentChatCore({
                     richText={message.role === "assistant"}
                     onAnswer={status === "ready" ? answer => { followBottomRef.current = true; void sendMessage({ text: answer.type === 'SKIP_QUESTION' ? 'Optionale Frage übersprungen.' : answer.type === 'FINDING_ACTION' ? 'Maßnahme zum Finding angefordert.' : 'Auswahl bestätigt.' }, { body: { input: answer } }); } : undefined}
                     onRetry={status === 'ready' ? () => { void regenerate({ body: { input: { type: 'RESUME' } } }); } : undefined}
+                    onStartCapability={status === 'ready' ? prompt => submit(prompt, []) : undefined}
                   />
                 ))}
               </div>
@@ -1011,6 +1012,7 @@ function ClusterUnassignedReview({
   onAssign,
   onOpenLeaf,
   ownerSelections,
+  renderDeviceControls,
   warningFor,
 }: {
   busy: boolean;
@@ -1021,6 +1023,7 @@ function ClusterUnassignedReview({
   onAssign: (owners: Record<string, string>) => void;
   onOpenLeaf: (name: string, target: string) => void;
   ownerSelections: Record<string, string>;
+  renderDeviceControls: (name: string) => React.ReactNode;
   warningFor: (name: string) => string;
 }) {
   const [selections, setSelections] = useState<string[]>([]);
@@ -1071,6 +1074,7 @@ function ClusterUnassignedReview({
             type="checkbox"
           />
           <span title={`${equipmentTermMeaning(leaf.name).english} / ${equipmentTermMeaning(leaf.name).german}`}>{leaf.name}<small>{leaf.reason}</small><small>EN: {equipmentTermMeaning(leaf.name).english} · DE: {equipmentTermMeaning(leaf.name).german}</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span>
+          {renderDeviceControls(leaf.name)}
           <button
             aria-label={`${leaf.name}: Controller-Zuordnung öffnen`}
             className="agent-unassigned-owner-button"
@@ -1169,7 +1173,7 @@ export function EngineeringAgentWizard({
     setNetworkArchitecture(extractNetworkArchitectureMode(taskSource));
   }, [taskSource]);
   const plannedEquipment = useMemo(
-    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain, true),
+    () => extractEngineeringSpecification(taskSource, equipmentCounts, previewDomain),
     [equipmentCounts.actuators, equipmentCounts.ecus, equipmentCounts.gateways, equipmentCounts.sensors, previewDomain, taskSource],
   );
   const plannedInventory = new Map(plannedEquipment.chains.map(chain => [chain.hardware_name, chain.device_type]));
@@ -1200,6 +1204,7 @@ export function EngineeringAgentWizard({
     ...sensorRows.map(row => ({ ...row, sensor: true })),
     ...connectionInventory.filter(chain => chain.device_type === 'ActuatorController').map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, measurementLabel: '', chain, sensor: false })),
   ];
+  const deviceRowByName = new Map(deviceRows.map((row) => [row.name, row]));
   const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
   const commandSource = `${taskSource}\n${notes}`;
   const selectedActuatorCommands = actuatorCommands(commandSource);
@@ -1666,6 +1671,13 @@ export function EngineeringAgentWizard({
       };
     }),
   }), [technologyChoices]);
+  const recommendedTechnologyOptions = technologyGroup.options.filter((option) => {
+    const technology = technologyChoices.find((item) => item.id === option.id);
+    return (technology?.implementation_status ?? 'IMPLEMENTED') === 'IMPLEMENTED'
+      || recognizedEquipment.communicationSystems.some((system) => technology && technologyMatchesRecognizedSystem(technology, system))
+      || selectedTechnologies.includes(option.id);
+  });
+  const additionalTechnologyOptions = technologyGroup.options.filter((option) => !recommendedTechnologyOptions.includes(option));
   const selectedDeviceConnectionTypes = useMemo(() => [...new Set(allTechnologies
     .filter((technology) => selectedTechnologies.includes(technology.id))
     .map((technology) => canonicalCommunicationSystem(`${technology.id} ${technology.family} ${technology.label ?? ""}`))
@@ -2484,6 +2496,52 @@ export function EngineeringAgentWizard({
 
   const activeGroup = activeGroupForStep();
   const activeStepId = visibleSteps[step]?.id ?? "status";
+  const clusterLocationByDevice = new Map<string, string>();
+  for (const assignment of equipmentClusterAssignments) {
+    for (const controller of assignment.tree ?? []) {
+      clusterLocationByDevice.set(controller.name, assignment.cluster_id);
+      for (const leaf of [...controller.sensors, ...controller.actuators]) clusterLocationByDevice.set(leaf.name, assignment.cluster_id);
+    }
+    for (const leaf of assignment.unassigned ?? []) clusterLocationByDevice.set(leaf.name, assignment.cluster_id);
+  }
+  const openDeviceNames = [...new Set([
+    ...unresolvedSensorMeasurements.map((row) => row.name),
+    ...unresolvedCommands,
+    ...unresolvedConnections.map((chain) => chain.hardware_name),
+  ])];
+  const unclusteredDeviceRows = deviceRows.filter((row) => !clusterLocationByDevice.has(row.name));
+  const renderDeviceControls = (name: string) => {
+    const row = deviceRowByName.get(name);
+    if (!row) return null;
+    const { chain, sensor, measurementLabel } = row;
+    const templateCommandHint = /Schaltausgang/i.test(name)
+      ? 'Generischer binärer Schaltausgang (0/1). Welches Bauteil er schaltet, ist nicht angegeben.'
+      : /Stellglied/i.test(name)
+        ? 'Generisches Stellglied (0–100 %). Die physische Wirkung ist nicht angegeben.'
+        : 'Simulationsannahme; Wirkung und Kodierung des Ausgangs sind fachlich zu prüfen.';
+    return <div className="agent-device-controls">
+      {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={measurementLabel} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
+        <option value="" disabled>Bitte auswählen</option>
+        {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label} ({item.unit})</option>)}
+      </select></label>}
+      {chain?.device_type === 'ActuatorController' && <label className="agent-device-choice"><span>Stellbefehl</span><select aria-label={`${name}: Stellbefehl`} disabled={effectiveBusy}
+        value={actuatorCommandChoice(selectedActuatorCommands[name]) || (unresolvedCommands.includes(name) ? '' : 'TEMPLATE')}
+        onChange={event => {
+          setTaskText(selectActuatorCommand(taskText, name, event.target.value, commandSource));
+          setNotes(notes.replace(/\n?^- (?:Weitere Hinweise:\s*-\s*)?Aktor-Befehle:[^\r\n]*$/gm, '').trim());
+        }}>
+        <option value="" disabled>Bitte auswählen</option>
+        <option value="OPEN_CLOSE">Auf/Zu: 0 = zu, 1 = auf (1 Bit)</option>
+        <option value="POSITION">Stellposition: 0–100 %, 0,1 % (10 Bit)</option>
+        <option value="CUSTOM" disabled>Eigene Kodierung aus dem Auftrag</option>
+        <option value="TEMPLATE" disabled>Generischer Ausgang aus der Simulationsvorlage</option>
+      </select>{!unresolvedCommands.includes(name) && !actuatorCommandChoice(selectedActuatorCommands[name]) && <small>{templateCommandHint}</small>}</label>}
+      <label className="agent-device-choice"><span>Verbindungstyp</span><select aria-label={`${name}: Anschluss`} disabled={effectiveBusy || (sensor && !chain)} value={!chain || chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(name, event.target.value)}>
+        <option value="">Bitte auswählen</option>
+        {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'IO_LINK', 'GPIO', 'PWM', 'ADC', 'DAC', ...selectedDeviceConnectionTypes, ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
+      </select></label>
+    </div>;
+  };
   const startBlockers = [
     ...(!projectReady ? [{ step: 'project', text: 'Bitte einen Projektnamen eingeben.' }] : []),
     ...(!taskReady ? [{ step: 'project', text: 'Bitte die Projektbeschreibung ergänzen.' }] : []),
@@ -2852,7 +2910,7 @@ export function EngineeringAgentWizard({
         <fieldset className="agent-choice-group">
           <legend>{activeGroup.label}</legend>
           <div className="agent-choice-grid">
-            {activeGroup.options.map((option) => {
+            {(activeGroup.id === 'technologies' ? recommendedTechnologyOptions : activeGroup.options).map((option) => {
               const checked = selectedFor(activeGroup).includes(option.id);
               return (
                 <label className={`agent-choice ${checked ? "selected" : ""}`} key={option.id}>
@@ -2870,6 +2928,14 @@ export function EngineeringAgentWizard({
               );
             })}
           </div>
+          {activeGroup.id === 'technologies' && additionalTechnologyOptions.length > 0 && <details className="agent-advanced-technologies">
+            <summary>Weitere experimentelle Technologien ({additionalTechnologyOptions.length})</summary>
+            <p>Nur wählen, wenn diese Technologie ausdrücklich zum Auftrag gehört. Für experimentelle Profile kann die Ausführung gesperrt sein.</p>
+            <div className="agent-choice-grid">{additionalTechnologyOptions.map((option) => <label className="agent-choice" key={option.id}>
+              <input checked={selectedTechnologies.includes(option.id)} disabled={busy} onChange={() => toggle(activeGroup, option.id)} type="checkbox" />
+              <span><strong>{option.label}</strong><small>{option.detail}</small></span>
+            </label>)}</div>
+          </details>}
         </fieldset>
       )}
       {activeStepId === "parameters" && (
@@ -3021,6 +3087,33 @@ export function EngineeringAgentWizard({
           {domainMismatchAccepted && (
             <p className="agent-domain-override"><strong>Bewusste Abweichung:</strong> {selectedDomain?.label ?? selectedIndustry} wird trotz erkannter {detectedDomainOption?.label ?? detectedDomain.domain}-Evidence verwendet.</p>
           )}
+          {openDeviceNames.length > 0 && <section className="agent-cluster-review agent-open-device-summary" aria-label="Offene Geräteangaben">
+            <h3>Offene Geräteangaben · {openDeviceNames.length}</h3>
+            <p>Diese Angaben müssen geklärt werden. Öffne das Gerät im Cluster und lege Messgröße, Stellbefehl oder Anschluss dort fest.</p>
+            <ul>{openDeviceNames.map((name) => {
+              const clusterId = clusterLocationByDevice.get(name);
+              const missing = [
+                unresolvedSensorMeasurements.some((row) => row.name === name) && 'Messgröße',
+                unresolvedCommands.includes(name) && 'Stellbefehl',
+                unresolvedConnections.some((chain) => chain.hardware_name === name) && 'Anschluss',
+              ].filter(Boolean).join(', ');
+              return <li key={name}><span>{name}: {missing}</span>{clusterId && <button className="button secondary tiny" type="button" onClick={() => {
+                setActiveEquipmentClusterId(clusterId);
+                window.setTimeout(() => {
+                  const element = document.getElementById(`cluster-participant-${encodeURIComponent(clusterId)}-${encodeURIComponent(name)}`);
+                  const branch = element?.closest('details');
+                  if (branch) branch.open = true;
+                  element?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                  element?.focus({ preventScroll: true });
+                }, 0);
+              }}>Im Cluster öffnen</button>}</li>;
+            })}</ul>
+            {unresolvedConnections.length > 0 && selectedDeviceConnectionTypes.length === 1 && <button className="button secondary" type="button" disabled={effectiveBusy}
+              onClick={() => applyConnectionToOpenDevices(selectedDeviceConnectionTypes[0])}>
+              {selectedDeviceConnectionTypes[0]} für alle offenen Anschlüsse übernehmen
+            </button>}
+          </section>}
+          <p className="agent-equipment-count-help">Konkrete Geräte sind einzeln mit Funktion erkannt. „Soll laut Text“ zählt auch pauschale Angaben. Die verbindliche Zahl muss zu den konkret benannten Geräten passen; eine Differenz bleibt zur Klärung offen.</p>
           <table className="agent-equipment-table">
             <thead><tr><th>Gerätetyp</th><th>Anzahl</th></tr></thead>
             <tbody>{EQUIPMENT_CATEGORIES.map(({ key, label }) => (
@@ -3028,8 +3121,8 @@ export function EngineeringAgentWizard({
                 <th scope="row">{label}</th>
                 <td>
                   <div className="agent-count-stack">
-                    <span><small>Erkannt</small><b>{identifiedCounts[key]}</b></span>
-                    {recognizedEquipment.targetCounts[key] !== identifiedCounts[key] && <span><small>Im Text genannt</small><b>{recognizedEquipment.targetCounts[key]}</b></span>}
+                    <span><small>Konkrete Geräte</small><b>{identifiedCounts[key]}</b></span>
+                    {recognizedEquipment.targetCounts[key] !== identifiedCounts[key] && <span><small>Soll laut Text</small><b>{recognizedEquipment.targetCounts[key]}</b></span>}
                     <label>
                       <small>Verbindlich</small>
                       <input aria-label={`${label}: verbindliche Anzahl`} type="number" min="0" max="1000" step="1"
@@ -3074,44 +3167,9 @@ export function EngineeringAgentWizard({
             {controllerAdditionError && <p role="alert">{controllerAdditionError}</p>}
           </section>}
           {!equipmentIdentityReady && <button className="button secondary" type="button" disabled={effectiveBusy} onClick={() => setStep(questionnaireSteps.findIndex(item => item.id === 'project'))}>Anforderung korrigieren</button>}
-          {(deviceRows.length > 0) && <section className="agent-cluster-review" aria-label="Geräteanschlüsse festlegen">
-            <h3>Geräteanschlüsse festlegen</h3>
-            <p>Wähle für jeden Sensor zuerst die Messgröße und dann den Verbindungstyp. Bereits erkannte Messgrößen sind vorausgewählt. Die Verbindung wird unabhängig davon festgelegt. Deine Auswahl wird sofort im Auftrag aktualisiert und gilt für einen Entwurf als Modellannahme, nicht als Nachweis realer Hardware.</p>
-            {unresolvedConnections.length > 0 && selectedDeviceConnectionTypes.length === 1 && <button className="button secondary" type="button" disabled={effectiveBusy}
-              onClick={() => applyConnectionToOpenDevices(selectedDeviceConnectionTypes[0])}>
-              {selectedDeviceConnectionTypes[0]} für alle offenen Anschlüsse übernehmen
-            </button>}
-            {deviceRows.map(({ name, label, measurementLabel, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
-              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={measurementLabel} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
-                <option value="" disabled>Bitte auswählen</option>
-                {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </select></label>}
-              {chain?.device_type === 'ActuatorController' && <label className="agent-device-choice"><span>Stellbefehl</span><select aria-label={`${name}: Stellbefehl`} disabled={effectiveBusy}
-                value={actuatorCommandChoice(selectedActuatorCommands[name]) || (unresolvedCommands.includes(name) ? '' : 'TEMPLATE')}
-                onChange={event => {
-                  setTaskText(selectActuatorCommand(taskText, name, event.target.value, commandSource));
-                  setNotes(notes.replace(/\n?^- (?:Weitere Hinweise:\s*-\s*)?Aktor-Befehle:[^\r\n]*$/gm, '').trim());
-                }}>
-                <option value="" disabled>Bitte auswählen</option>
-                <option value="OPEN_CLOSE">Auf/Zu: 0 = zu, 1 = auf (1 Bit)</option>
-                <option value="POSITION">Stellposition: 0–100 %, 0,1 % (10 Bit)</option>
-                <option value="CUSTOM" disabled>Eigene Kodierung aus dem Auftrag</option>
-                <option value="TEMPLATE" disabled>Explizite Simulationsvorlage</option>
-              </select></label>}
-              <label className="agent-device-choice"><span>Verbindungstyp</span><select aria-label={`${name}: Anschluss`} disabled={effectiveBusy || (sensor && !chain)} value={!chain || chain.interface_type === 'Other' ? '' : chain.interface_type} onChange={event => selectDeviceConnection(name, event.target.value)}>
-                <option value="">Bitte auswählen</option>
-                {[...new Set(['I2C', 'SPI', 'UART', 'ModbusRTU', 'ModbusTCP', 'IO_LINK', 'GPIO', 'PWM', 'ADC', 'DAC', ...selectedDeviceConnectionTypes, ...(chain?.interface_type && chain.interface_type !== 'Other' ? [chain.interface_type] : [])])].map(technology => <option key={technology} value={technology}>{technology}</option>)}
-              </select></label>
-            </div>)}
-            {unresolvedConnections.length > 0 && <p role="alert">Noch offen: {unresolvedConnections.map(chain => chain.hardware_name).join(', ')}</p>}
-            {unresolvedSensorMeasurements.length > 0 && <p role="alert">Messgröße fehlt: {unresolvedSensorMeasurements.map(row => row.name).join(', ')}.</p>}
-            {unresolvedCommands.length > 0 && <p role="alert">Stellbefehl fehlt: {unresolvedCommands.join(', ')}. Die Auswahl gilt nur für den jeweiligen Aktor.</p>}
-            <div className="agent-device-connection-actions">
-              <span>{primaryDisabled ? "Vervollständige die markierten Angaben, bevor der Auftrag startet." : "Alle Anschlüsse sind im Auftrag übernommen."}</span>
-              <button className="button primary" type="button" disabled={primaryDisabled} onClick={handlePrimary}>
-                {submitting ? "Wird übernommen ..." : "Anschlüsse übernehmen und Auftrag starten"}
-              </button>
-            </div>
+          {unclusteredDeviceRows.length > 0 && <section className="agent-cluster-review" aria-label="Geräte ohne Cluster">
+            <h3>Geräte ohne Cluster · {unclusteredDeviceRows.length}</h3>
+            {unclusteredDeviceRows.map((row) => <div className="agent-device-connection" key={row.name}><span>{row.label}</span>{renderDeviceControls(row.name)}</div>)}
           </section>}
           {intakeRequirement && equipmentValues.actuators === '' && <p role="alert">Ventile oder Aktoren sind genannt, ihre Anzahl ist noch offen. Bitte die verbindliche Anzahl ergänzen.</p>}
           {!communicationSystemReady && <p role="alert">Die Anzahl der Kommunikationssysteme muss je Technologie zwischen 0 und 1000 liegen.</p>}
@@ -3204,6 +3262,7 @@ export function EngineeringAgentWizard({
                       {controllerTree.length ? controllerTree.map((controller) => (
                         <details key={`${cluster.id}:${controller.name}`} open>
                           <summary id={participantId(controller.name)}><strong>{controller.name}</strong><span>Controller · {controller.interfaceType}</span>{warningFor(controller.name) && <small className="agent-participant-warning">⚠ {warningFor(controller.name)}</small>}</summary>
+                          {renderDeviceControls(controller.name)}
                           <div className="agent-assignment-review agent-assignment-review-group">
                             <span><strong>Gruppenzuordnung</strong><small>Controller mit allen Teilnehmern</small></span>
                             <div className="agent-assignment-segmented" role="group" aria-label={`${controller.name}: Gruppenzuordnung bewerten`}>
@@ -3213,8 +3272,8 @@ export function EngineeringAgentWizard({
                           </div>
                           {!!controller.functions?.length && <section className="agent-controller-functions"><strong>Funktionen · {controller.functions.length}</strong><small>Editierbare Entwurfsvorgaben; Anzeigeziele unten einzeln aktivieren.</small><ul>{controller.functions.map(fn => <li key={fn.name}><span>{fn.name}<small>{fn.signals.join(" · ")}</small></span></li>)}</ul></section>}
                           <div>
-                            <section><strong>Sensoren · {controller.sensors.length}</strong><ul>{controller.sensors.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
-                            <section><strong>Aktoren · {controller.actuators.length}</strong><ul>{controller.actuators.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span><span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                            <section><strong>Sensoren · {controller.sensors.length}</strong><ul>{controller.sensors.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span>{renderDeviceControls(leaf.name)}<span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
+                            <section><strong>Aktoren · {controller.actuators.length}</strong><ul>{controller.actuators.map((leaf) => <li key={leaf.name} id={participantId(leaf.name)} tabIndex={-1} data-warning={Boolean(warningFor(leaf.name)) || undefined} title={leaf.reason}><span>{leaf.name}<small>{leaf.interfaceType} · {Math.round(leaf.confidence * 100)} %</small>{warningFor(leaf.name) && <small className="agent-participant-warning">⚠ {warningFor(leaf.name)}</small>}</span>{renderDeviceControls(leaf.name)}<span className="agent-assignment-review"><button className={verdicts[leaf.name] !== false ? "active" : ""} disabled={effectiveBusy} onClick={() => updateEquipmentCluster(cluster.id, { verdicts: { ...verdicts, [leaf.name]: true } })} type="button">Trifft zu</button><button className={verdicts[leaf.name] === false ? "rejected" : ""} disabled={effectiveBusy} onClick={() => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name: leaf.name, target: ownerSelections[leaf.name] || controller.name })} type="button">Trifft nicht zu</button></span></li>)}</ul></section>
                           </div>
                         </details>
                       )) : <p>Kein Controller in diesem Systemzweig erkannt.</p>}
@@ -3239,6 +3298,7 @@ export function EngineeringAgentWizard({
                         }}
                         onOpenLeaf={(name, target) => setClusterReviewDialog({ kind: "leaf", clusterId: cluster.id, name, target })}
                         ownerSelections={ownerSelections}
+                        renderDeviceControls={renderDeviceControls}
                       />
                     )}
                     {(assignment?.hmi_routes?.length ?? 0) > 0 && (
@@ -3291,15 +3351,6 @@ export function EngineeringAgentWizard({
               })()}
             </section>
           )}
-          <div className="agent-equipment-list">
-            {EQUIPMENT_CATEGORIES.map(({ key, label, type }) => (
-              <details key={key}><summary>{label} · {identifiedCounts[key]} erkannt / {equipmentCounts[key]} vorgegeben</summary>
-                <ul>{plannedEquipment.chains.filter((chain) => type === "Controller" ? isEngineeringControllerDevice(chain.device_type) : chain.device_type === type)
-                  .sort((a, b) => a.hardware_name.localeCompare(b.hardware_name, "de"))
-                  .map((chain, index) => <li key={`${chain.device_type}:${chain.hardware_name}:${index}`}>{chain.hardware_name}</li>)}</ul>
-              </details>
-            ))}
-          </div>
         </fieldset>
       )}
       {phase === 'questionnaire' && activeStepId === 'status' && !submittedContext && (
@@ -4272,6 +4323,7 @@ function MessagePart({
   richText = false,
   onAnswer,
   onRetry,
+  onStartCapability,
 }: {
   hideText?: boolean;
   part: EngineeringAgentUIMessage["parts"][number];
@@ -4279,6 +4331,7 @@ function MessagePart({
   richText?: boolean;
   onAnswer?: (answer: AgentInput) => void;
   onRetry?: () => void;
+  onStartCapability?: (prompt: string) => void;
 }) {
   const runtimePart = part as unknown as {
     errorText?: string;
@@ -4294,7 +4347,7 @@ function MessagePart({
     return richText ? <AgentMessageText text={text} /> : <p className="eng-agent-text">{text}</p>;
   }
   if (part.type === "data-engineering") {
-    return <EngineeringAgentEventCard event={part.data} projectId={projectId} onAnswer={onAnswer} onRetry={onRetry} />;
+    return <EngineeringAgentEventCard event={part.data} projectId={projectId} onAnswer={onAnswer} onRetry={onRetry} onStartCapability={onStartCapability} />;
   }
   if (part.type === 'data-attachment') {
     return <details className="eng-agent-attachment-source"><summary>Dokument: {part.data.name}{part.data.truncated ? ' · Auszug' : ''}</summary><pre>{part.data.text}</pre></details>;

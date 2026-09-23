@@ -909,7 +909,33 @@ class EngineeringAgent:
 
         # Signal counts are interpreted and checked by the existing Python
         # workload planner behind MCP, not by the language model.
-        signal_request = bool(re.search(r"\d+.*signal|signal.*\d+", prompt, re.I)) and requests_model_change(prompt)
+        # Distinguish a request for one named signal from a catalog workload.
+        # Bit width/state counts ("1 Bit", "zwei Zustände") are not workload
+        # target counts. The catalog planner only accepts measurable package
+        # targets and otherwise leaks an irrelevant positive-target exception.
+        named_signal_request = (
+            requests_model_change(prompt)
+            and bool(re.search(r"\b(?:signal|variable|messwert)\b", prompt, re.I))
+            and bool(re.search(r"\b(?:vom?|von der|am)\b.{0,24}\b[\w.-]+\b", prompt, re.I))
+            and not bool(re.search(r"\b\d+\s+(?:signale|signals)\b", prompt, re.I))
+        )
+        signal_request = (bool(re.search(r"\d+.*signal|signal.*\d+", prompt, re.I))
+                          and not named_signal_request and requests_model_change(prompt))
+        if named_signal_request and not confirmed_wizard and not context.current_workload:
+            # A canonical signal cannot be created without a message and a
+            # concrete encoding. Ask for those model facts instead of routing
+            # a single named signal into the catalog workload subsystem.
+            text = ('Ich kann das Signal als prüfbaren Vorschlag anlegen. Dafür fehlen noch '
+                    'die zugehörige Nachricht (inklusive Anschluss/Transport) und die Kodierung: '
+                    'Rohwert für „aus“ und „ein“, Startbit sowie Byte-Reihenfolge. '
+                    'Bitte nenne eine vorhandene Nachricht oder bestätige, dass dafür eine neue '
+                    'Nachricht angelegt werden soll; ohne diese Angaben erfinde ich keine Bindung oder Rohwerte.')
+            event('FINDING', severity='OPEN', title='Signalangaben vervollständigen', text=text,
+                  metadata={'missing_fields': ['message_id', 'raw_values', 'start_bit', 'byte_order'],
+                            'requested_signal': prompt})
+            event('RESULT', status='INCOMPLETE', text=text)
+            return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
         if context.current_workload or (signal_request and not confirmed_wizard):
             workload_id = context.current_workload
             if not workload_id:
@@ -971,6 +997,20 @@ class EngineeringAgent:
             if directory.success and isinstance(directory.data.get('capabilities'), list):
                 messages.insert(len(messages) - 1, {'role': 'system', 'content': 'Verifizierter Fähigkeitenkatalog. Nutze prepare_assistant_action für passende Bedienabläufe und inspect_communication_repair für die aktuelle Architektur. '
                     + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps', 'execution') if k in item} for item in directory.data['capabilities']], ensure_ascii=False)})
+            if change_requested:
+                messages.insert(len(messages) - 1, {'role': 'system', 'content':
+                    'Für jeden natürlichsprachlichen Engineering-Änderungsauftrag arbeite fachobjektübergreifend: '
+                    'erkenne betroffene Hardware, Funktionen, Interfaces, Messages, Signals und vorhandene Routen; '
+                    'lies zuerst die kanonischen Modellfakten und nutze bestätigte Identitäten statt Namen als IDs. '
+                    'Erzeuge einen gemeinsamen validierten Proposal und behaupte keine Übernahme vor menschlicher Freigabe. '
+                    'Wenn eine notwendige Bindung oder ein technischer Wert fehlt, frage genau danach und nenne betroffene Objekte. '
+                    'Eine Formulierung wie „alle 30 Sekunden abfragen“ beschreibt einen Anfragezyklus; rechne 30 Sekunden '
+                    'explizit in 30000 ms um und prüfe vorhandene '
+                    'Request-/Response-Messages und modellierte Trigger. Leite daraus nicht stillschweigend eine zyklische '
+                    'Statusnachricht ab und behandle einen Busrequest nicht als externe Anwendungseingabe. '
+                    'Bewahre Signalbedeutungen und Eigentümer; erfinde weder Positionssignale noch Empfänger, Ports, '
+                    'Technologien, Rohwertkodierungen oder Gatewayfähigkeiten. Kommunikative Änderungsabsicht erst dann '
+                    'als bereit melden, wenn Modellbindung, Übertragungsmodus und Validierung im Vorschlag sichtbar sind.'})
             tools = await self.client.tools()
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)

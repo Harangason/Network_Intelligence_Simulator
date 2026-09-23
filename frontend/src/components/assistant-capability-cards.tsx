@@ -8,12 +8,12 @@ type Action = Record<string, unknown>;
 const paths = new Set(['/studio', '/studio/engineering', '/studio/routing', '/studio/capacity',
   '/studio/validation', '/studio/simulation', '/studio/results', '/studio/trace-analysis', '/studio/intelligence']);
 
-export function AssistantCapabilityCards({ actions, projectId }: { actions: Action[]; projectId: string }) {
+export function AssistantCapabilityCards({ actions, projectId, onStart }: { actions: Action[]; projectId: string; onStart?: (prompt: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const cards = actions.filter(item => item.type === 'CAPABILITY' && typeof item.capability_id === 'string');
   if (!cards.length) return null;
-  async function open(action: Action) {
+  async function open(action: Action, runInChat = false) {
     if (busy) return;
     setBusy(true); setError('');
     try {
@@ -29,6 +29,17 @@ export function AssistantCapabilityCards({ actions, projectId }: { actions: Acti
         throw new Error('Dieser Ablauf ist momentan nicht verfügbar.');
       if (readActiveProjectId() !== projectId || result.data.project_id !== projectId)
         throw new Error('Das Projekt wurde während der Anfrage gewechselt.');
+      if (runInChat && onStart) {
+        const execution = item.execution && typeof item.execution === 'object'
+          ? item.execution as Record<string, unknown> : {};
+        const executionMode = String(execution.mode ?? 'ANALYSIS_ONLY');
+        const prompt = `Führe „${item.label}“ agentisch im aktuellen Projekt aus. Ziel: ${item.description}\n` +
+          `Arbeitsmodus: ${executionMode}. Das ist ein Ausführungsauftrag, keine Bitte um Navigation: Gib keine Fähigkeitskachel oder Seitenverknüpfung zurück. ` +
+          `Prüfe zuerst den aktuellen Modellstand, nutze die passenden Engineering-Werkzeuge und zeige Befunde, Rückfragen sowie validierte Ergebnisse hier im Chat. ` +
+          `Bei Änderungen erstelle einen prüfbaren Vorschlag und warte auf meine Freigabe; behaupte keine Übernahme vorher.`;
+        onStart(prompt);
+        return;
+      }
       const query = new URLSearchParams();
       if (item.resource) query.set('resource', item.resource);
       if (item.launch === 'create') query.set('create', '1');
@@ -57,7 +68,10 @@ export function AssistantCapabilityCards({ actions, projectId }: { actions: Acti
     finally { setBusy(false); }
   }
   return <><div className="assistant-capability-cards" aria-label="Fähigkeiten">
-    {cards.map(action => <button type="button" key={String(action.capability_id)} disabled={busy}
-      onClick={() => void open(action)}><strong>{String(action.label)}</strong><span>{String(action.description ?? '')}</span></button>)}
+    {cards.map(action => <article key={String(action.capability_id)}>
+      <strong>{String(action.label)}</strong><span>{String(action.description ?? '')}</span>
+      {onStart && <button type="button" disabled={busy} onClick={() => void open(action, true)}>Im Chat starten</button>}
+      <button type="button" className="secondary" disabled={busy} onClick={() => void open(action)}>Arbeitsbereich öffnen</button>
+    </article>)}
   </div>{error && <p role="alert">{error}</p>}</>;
 }

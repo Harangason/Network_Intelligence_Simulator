@@ -28,7 +28,10 @@ def test_reviewed_split_reaches_snapshot_and_reduces_real_queue(monkeypatch):
     monkeypatch.setattr(simulation, 'load_engineering_simulation_model', lambda _: deepcopy(model))
     topology = {'nodes': [{'id': n, 'engineeringId': n, 'ports': [{'id': n+str(i), 'hardwareInterfaceId': n+'-hw', 'bus': 'can_fd', 'physicalNetworkId': 'shared'} for i in range(2)]} for n in ('a','b','c')],
         'edges': [{'id': f'e{i}', 'routingEntryId': f'r{i}', 'source': source, 'target': target, 'sourcePort': source+str(i), 'targetPort': target+str(i), 'bus': 'can_fd', 'physicalNetworkId': 'shared'} for i,(source,target) in enumerate([('a','b'),('c','a')])]}
-    monkeypatch.setattr('backend.engineering.workflow.service.WorkflowStatusService.get', lambda _: {'topology': deepcopy(topology), 'parameters': {'technology': 'can_fd', 'bitrate': 100000}})
+    monkeypatch.setattr('backend.engineering.workflow.service.WorkflowStatusService.get', lambda _: {
+        'topology': deepcopy(topology),
+        'parameters': {'technology': 'can_fd', 'bitrate': 100000, 'data_bitrate': 2000000},
+    })
     def execute():
         frozen = simulation.prepare_workflow_simulation_config({'duration_s': .04, 'seed': 0}, 'qa')
         profile = normalize_hardware_config(frozen)

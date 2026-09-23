@@ -1420,7 +1420,7 @@ function singularControllerHardwareNames(line: string): Array<{ name: string; de
 function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
   const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
-  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
+  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|steuern|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
   const result: Array<{ name: string; declaredType: string }> = [];
   for (const match of line.matchAll(roles)) {
     const prefix = line.slice(0, match.index);
@@ -1912,6 +1912,10 @@ function generatedPhysicalDefaults(name: string) {
   if (key.includes("spannung")) return { min: 0, max: 1000, unit: "V" };
   if (key.includes("winkel")) return { min: -180, max: 180, unit: "deg" };
   if (key.includes("kraft")) return { min: -100000, max: 100000, unit: "N" };
+  if (key.includes("federweg")) return { min: -300, max: 300, unit: "mm" };
+  if (key.includes("radlast")) return { min: 0, max: 100000, unit: "N" };
+  if (key.includes("reifenverschleiß")) return { min: 0, max: 100, unit: "%" };
+  if (key.includes("drehrate")) return { min: -1000, max: 1000, unit: "deg/s" };
   if (key.includes("luftfeuchtigkeit")) return { min: 0, max: 100, unit: "%" };
   if (key.includes("co2") || key.includes("kohlendioxid")) return { min: 0, max: 10000, unit: "ppm" };
   if (key.includes("präsenz") || key.includes("praesenz")) return { min: 0, max: 1, unit: "state" };

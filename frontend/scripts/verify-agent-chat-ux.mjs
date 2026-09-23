@@ -76,9 +76,11 @@ try {
  const lightColor=await a.locator('.agent-widget-panel').evaluate(el=>getComputedStyle(el).backgroundColor);assert.notEqual(lightColor,darkColor);assert.equal(await a.locator('.agent-widget-panel textarea[aria-label]').evaluate(el=>getComputedStyle(el).backgroundColor),lightColor);
  await a.screenshot({path:out+'chat-ux-light.png'});
  report.checks.push('Open/close keeps conversation; keyboard resize bounded; mobile full-height drawer; dark/light theme-token palettes');
- const href=await a.getByRole('link',{name:'Im Workspace öffnen',exact:true}).last().getAttribute('href');assert.ok(href.includes('/studio/agent?'));
+ const href=await a.getByRole('link',{name:'Ausführliche Auswertung öffnen',exact:true}).last().getAttribute('href');assert.ok(href.includes('/studio/agent?'));
  await b.goto(new URL(href,base).href);await b.getByRole('heading',{name:'Engineering Assistant',exact:true}).waitFor();
- report.checks.push('Workspace navigation keeps project and conversation');
+ const back=await b.getByRole('link',{name:'← Zurück zum geöffneten Projekt',exact:true}).getAttribute('href');assert.ok(back.includes('/studio/'));
+ assert.equal(new URL(back,base).searchParams.get('project'),project);
+ report.checks.push('Workspace navigation keeps project and offers a direct return to the source view');
  assert.deepEqual(report.errors,[]);
  await fs.writeFile(out+'chat-ux-browser-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 } catch(error){console.error(error);process.exitCode=1;const failedPage=browsers[0]?.contexts()[0]?.pages()[0];if(failedPage){await failedPage.screenshot({path:out+'chat-ux-failure.png'});await fs.writeFile(out+'chat-ux-failure.html',await failedPage.content());}await fs.writeFile(out+'chat-ux-browser-failure.json',JSON.stringify({...report,failure:String(error)},null,2));}

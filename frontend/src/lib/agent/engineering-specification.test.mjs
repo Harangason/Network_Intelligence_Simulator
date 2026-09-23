@@ -926,6 +926,16 @@ test("recognized physical sensors receive complete conservative defaults when th
   assert.equal(pressure.semantic.semantic_type, "NUMERIC");
 });
 
+test("a fixed wizard device count does not silently add optional ADAS hardware", () => {
+  const specification = `- Generierungsmodus: EXAMPLE_PROJECT
+Industrie: Automotive
+- Fahrerassistenzsteuergeraet
+- Hardware-Sollwerte: {"gateways":0,"ecus":1,"sensors":1,"actuators":0}`;
+  const result = extractEngineeringSpecification(specification, { gateways: 0, ecus: 1, sensors: 1, actuators: 0 }, 'automotive');
+  assert.equal(result.chains.filter((chain) => chain.device_type === 'SensorController').length, 1);
+  assert.equal(result.chains.filter((chain) => isEngineeringControllerDevice(chain.device_type)).length, 1);
+});
+
 test("confirmed single-bus and explicit example projects inherit their project technology", () => {
   const confirmed = extractEngineeringSpecification(`- Industrie: Embedded Systems
 - Netzwerktechnologien: ADC (adc)

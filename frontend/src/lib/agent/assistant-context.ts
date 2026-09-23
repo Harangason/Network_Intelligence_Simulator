@@ -16,7 +16,7 @@ export function readAssistantContext() {
   }
   return { active_view: window.location.pathname, selected_object_refs: refs };
 }
-export function engineeringContextHref(ref: Record<string, string>, projectId: string) {
+export function engineeringContextHref(ref: Record<string, string>, projectId: string, returnTo?: string) {
   const routes: Record<string, string> = { Routing: "/studio/routing", Route: "/studio/routing", Simulation: "/studio/simulation", Trace: "/studio/trace-analysis", Workspace: "/studio/agent", Capacity: '/studio/capacity' };
   const resources: Record<string, string> = { HardwareNode: "hardware-nodes", HardwareNetworkInterface: "hardware-interfaces", Function: "functions", Interface: "interfaces", Message: "messages", Signal: "signals" };
   const type = ref.object_type ?? ref.type;
@@ -24,5 +24,12 @@ export function engineeringContextHref(ref: Record<string, string>, projectId: s
   const params = new URLSearchParams({ project: projectId });
   if (resources[type]) params.set("resource", resources[type]);
   if (ref.id) params.set(type === 'Workspace' ? 'response' : type === 'Route' || type === 'Routing' ? 'route' : "object", ref.id);
+  if (type === 'Workspace' && returnTo?.startsWith('/studio/') && !returnTo.startsWith('//') && !returnTo.includes('\\')) {
+    const target = new URL(returnTo, 'http://nis.local');
+    if (target.origin === 'http://nis.local') {
+      target.searchParams.set('project', projectId);
+      params.set('back_to', `${target.pathname}${target.search}${target.hash}`);
+    }
+  }
   return `${routes[type] ?? "/studio/engineering"}?${params}`;
 }

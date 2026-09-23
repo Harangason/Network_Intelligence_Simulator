@@ -35,13 +35,15 @@ try {
     await input.fill(text);await chat.getByRole('button',{name:'Senden',exact:true}).click();
   }
   await ask('kennst du den reparatur agenten');
-  await chat.locator('.assistant-capability-cards button').filter({hasText:'Reparatur-Agent'}).waitFor();
+  await chat.locator('.assistant-capability-cards article').filter({hasText:'Reparatur-Agent'}).waitFor();
   assert.match(await chat.innerText(),/bisherigen Funktionspartner/);
   await chat.getByRole('button',{name:'Fähigkeiten und Wizards',exact:true}).click();
-  await page.waitForFunction(()=>document.querySelectorAll('.agent-widget .assistant-capability-cards button').length===21);
+  await page.waitForFunction(()=>document.querySelectorAll('.agent-widget .assistant-capability-cards article').length===20);
   await page.screenshot({path:'../backend/runtime/assistant-capabilities-ui.png'});
   assert.ok(calls.every(p=>p===project));
-  await chat.locator('.assistant-capability-cards button').filter({has:page.getByText('Signal anlegen',{exact:true})}).click();
+  const signalCard=chat.locator('.assistant-capability-cards article').filter({has:page.getByText('Signal anlegen',{exact:true})});
+  await signalCard.getByRole('button',{name:'Im Chat starten',exact:true}).waitFor();
+  await signalCard.getByRole('button',{name:'Arbeitsbereich öffnen',exact:true}).click();
   await page.locator('.eng-object-wizard').waitFor();
   assert.match(await page.locator('.eng-object-wizard').innerText(),/Signale anlegen/);
   assert.equal(new URL(page.url()).searchParams.get('project'),project);

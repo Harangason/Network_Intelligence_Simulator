@@ -123,6 +123,21 @@ def _is_structured_wizard_request(messages) -> bool:
     return False
 
 
+def _is_status_question(messages) -> bool:
+    """Identify factual NIS/project status requests for conservative sampling."""
+    for message in reversed(messages):
+        if message.get('role') != 'user':
+            continue
+        content = str(message.get('content') or '')
+        asks_status = re.search(
+            r'\b(?:status|systemstatus|nis[- ]?status|stand|fortschritt|bereit(?:schaft)?|readiness|zustand)\b', content, re.I)
+        asks_to_change = re.search(
+            r'\b(?:erzeug|erstell|anleg|lege|änder|aender|lösch|loesch|verbinde|installier|deploy|create|add|update|delete)\w*\b',
+            content, re.I)
+        return bool(asks_status and not asks_to_change)
+    return False
+
+
 def _is_semantic_fast_request(messages) -> bool:
     """Route bounded semantic classification work to the VRAM-sized model."""
     bounded_project_intake = any(
@@ -183,6 +198,7 @@ class LocalEngineeringReasoner:
 
     async def next(self, messages, context, tools):
         from backend.engineering.spatial_architecture import REASONING_RULES
+        status_question = _is_status_question(messages)
         system = (
             "Du bist der Engineering-Agent des Network Simulator. Antworte auf Deutsch. "
             "Verwende ausschließlich die bereitgestellten MCP-Werkzeuge für Modelldaten und Fachlogik. "
@@ -220,6 +236,14 @@ class LocalEngineeringReasoner:
               "20/50 ms sind keine pauschale Bremsfreigabe. Trace-Herkunft und Diagnosekanal beachten; OBD-CAN belegt keine LIN-Fristen. "
             + " Kontext: "+_context_for_reasoning(context)
         )
+        if status_question:
+            system += (
+                " Statusauskunft: Nutze aktuelle Projekt-/Workflow- und Preflight-Werkzeuge als Belege. "
+                "Nenne den konkreten Schritt und Status, offene Fehler/Warnungen sowie den nächsten nötigen Schritt. "
+                "Trenne Workflowfortschritt, Modell-/Preflight-Bereitschaft, Simulationsergebnis und Laufzeitverfügbarkeit. "
+                "Behaupte keinen Systemdienst-, ECU- oder Netzwerk-Livezustand, wenn dazu kein aktueller Mess-/Healthbefund "
+                "vorliegt; benenne dann knapp die Datenlücke. Werte und Zeitstempel nur aus Werkzeugdaten übernehmen."
+            )
         spatial_planning = any(re.search(r'raumcluster|raumarchitektur|zonal|einbauort|rotor|räumlich|raeumlich',
                                         str(m.get('content', '')), re.I) for m in messages if m.get('role') == 'user')
         use_fast_model = (_is_structured_wizard_request(messages) or _is_semantic_fast_request(messages)) and not spatial_planning
@@ -242,7 +266,13 @@ class LocalEngineeringReasoner:
             "think": False,
             "stream": False,
             "keep_alive": self.fast_keep_alive if use_fast_model else self.keep_alive,
-            "options": {"temperature": 0.2, "num_predict": 1600, "num_ctx": self.context_tokens},
+            "options": {
+                "temperature": 0.1 if status_question else 0.2,
+                "top_k": 20 if status_question else 40,
+                "top_p": 0.9 if status_question else 0.95,
+                "num_predict": 1600,
+                "num_ctx": self.context_tokens,
+            },
         }
         response = await self.client.post(self.chat_url, json=payload)
         # The compact classifier is an optimization, not a single point of

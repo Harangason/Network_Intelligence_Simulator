@@ -7,6 +7,24 @@ test('PT100 is recognized as a temperature sensor', () => {
   assert.equal(sensorMeasurement('PT100')?.id, 'temperature');
 });
 
+test('vehicle sensor names resolve to physical quantities without interpreting travel as a journey', () => {
+  for (const [name, id, unit] of [
+    ['FrontLeftSuspensionTravel', 'suspension_travel', 'mm'],
+    ['FrontRightWheelLoad', 'wheel_load', 'N'],
+    ['RearLeftTireWear', 'tire_wear', '%'],
+    ['YawRate', 'angular_rate', 'deg/s'],
+  ]) {
+    assert.equal(sensorMeasurement(name)?.id, id);
+    const result = extractEngineeringSpecification(`1 Sensor: ${name}`, {}, 'automotive');
+    assert.equal(result.chains.find(chain => chain.device_type === 'SensorController')?.unit, unit, name);
+  }
+});
+
+test('a count sentence does not invent a sensor called erfassen', () => {
+  const result = extractEngineeringSpecification('Die 100 Sensoren erfassen typische fahrzeugrelevante Größen, zum Beispiel:\n- FrontLeftSuspensionTravel', {}, 'automotive');
+  assert.equal(result.chains.some(chain => chain.hardware_name.toLowerCase() === 'erfassen'), false);
+});
+
 test('building and process sensors retain their own measured quantities', () => {
   for (const [name, id, unit, min, max] of [
     ['CO2', 'co2', 'ppm', 0, 10000],

@@ -853,7 +853,8 @@ def test_capacity_prefers_reviewed_topology_segment_over_logical_network(monkeyp
         "statuses": {step: "COMPLETE" for step in default_statuses()},
         "parameters": {
             "technology": "can_fd",
-            "bitrate": 2_000_000,
+            "bitrate": 500_000,
+            "data_bitrate": 2_000_000,
             "cycle_ms": 10,
             "payload_bytes": 8,
             "target_bus_load_percent": 90,

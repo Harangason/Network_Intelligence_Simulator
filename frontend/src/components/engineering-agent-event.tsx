@@ -22,7 +22,8 @@ function LazyDetails({ title, children }: { title: string; children: () => React
 
 function ContextLinks({ refs, projectId }: { refs: Record<string, string>[]; projectId: string }) {
   const links = (items: Record<string, string>[]) => items.map((ref, i) => {
-    const href = engineeringContextHref(ref, projectId);
+    const returnTo = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : undefined;
+    const href = engineeringContextHref(ref, projectId, returnTo);
     return href ? <a key={i} href={href}>{ref.name ?? ref.label ?? ref.object_type}{ref.id && !ref.name ? ` · ${ref.id.slice(0, 8)}` : ""}</a> : <span key={i}>{ref.name ?? ref.object_type}</span>;
   });
   return <nav className="engineering-context-links" aria-label="Betroffene Modellobjekte">{links(refs.slice(0, 3))}{refs.length > 3 && <LazyDetails title={`${refs.length - 3} weitere Objekte`}>{() => links(refs.slice(3))}</LazyDetails>}</nav>;
@@ -261,7 +262,7 @@ export function ProjectDraftWorkspace({ projectId, draftId }: { projectId: strin
     {proposal && <ProposalReview key={`${projectId}:${proposal.proposal_id}`} initial={proposal} projectId={projectId} />}</>;
 }
 
-export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; wizardReview?: boolean }) {
+export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, onStartCapability, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; onStartCapability?: (prompt: string) => void; wizardReview?: boolean }) {
   const [draftProposal, setDraftProposal] = useState<EngineeringProposal | null>(null);
   useEffect(() => setDraftProposal(null), [projectId, event.id]);
   event = useGoalResponse(event, projectId);
@@ -285,11 +286,11 @@ export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry,
     <ContextLinks refs={event.context_refs ?? []} projectId={projectId} />
     {event.type === 'ERROR' && <button type="button" disabled={!onRetry} onClick={onRetry}>Erneut versuchen</button>}
     {['BACKGROUND_PAUSED', 'OUTPUT_PENDING'].includes(event.status ?? '') && <button type="button" disabled={!onAnswer} onClick={() => onAnswer?.({type: 'RESUME'})}>Auftrag fortsetzen</button>}
-    {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Im Workspace öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
+    {(event.type === 'RESULT' || text.length > 700 || Boolean(event.metadata?.detail_id)) && <ContextLinks refs={[{ object_type: 'Workspace', name: 'Ausführliche Auswertung öffnen', ...(event.metadata?.detail_id ? {id:String(event.metadata.detail_id)} : {}) }]} projectId={projectId} />}
     <ContextLinks refs={(event.actions ?? []).filter(action => action.type === 'NAVIGATE' && typeof action.object_type === 'string').map(action => ({object_type:String(action.object_type),id:String(action.object_id ?? ''),name:String(action.label ?? 'Objekt öffnen')}))} projectId={projectId} />
     {event.metadata?.details != null && <LazyDetails title="Technische Details">{() => <Value value={event.metadata?.details} />}</LazyDetails>}
     {typeof event.metadata?.project_draft_id === 'string' && <ProjectDraftEditor projectId={projectId} draftId={event.metadata.project_draft_id} onProposal={setDraftProposal} />}
     {draftProposal && <ProposalReview key={`${projectId}:${draftProposal.proposal_id}`} initial={draftProposal} projectId={projectId} />}
-    <AssistantCapabilityCards actions={event.actions ?? []} projectId={projectId} />
+    <AssistantCapabilityCards actions={event.actions ?? []} projectId={projectId} onStart={onStartCapability} />
   </section>;
 }

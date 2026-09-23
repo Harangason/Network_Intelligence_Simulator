@@ -19,6 +19,10 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         names.update({'prepare_project_request', 'resolve_generation_rules', 'inspect_generation_experience'})
     if re.search(r'projekt|project|entwurf|draft', prompt, re.I):
         focused.update({'inspect_project_draft', 'update_project_draft', 'plan_project_model', 'create_project_from_draft'})
+    if (re.search(r'\b(?:status|systemstatus|nis[- ]?status|stand|fortschritt|readiness|bereitschaft|zustand)\b', prompt, re.I)
+            and not re.search(r'\b(?:erzeug|erstell|anleg|lege|änder|aender|lösch|loesch|verbinde|create|add|update|delete)\w*\b', prompt, re.I)):
+        names.update({'inspect_findings', 'inspect_model_situation', 'validate_simulation_preflight',
+                      'get_simulation_status', 'get_simulation_results'})
     if re.search(r'anleg|erstell|erzeug|hinzufüg|create|generate|add', prompt, re.I):
         focused.update({'describe_model_object_fields', 'create_objects_via_proposal', 'resolve_generation_rules', 'inspect_generation_experience'})
     if re.search(r'zuordn|verschieb|hierarch|assign|move', prompt, re.I):
@@ -28,6 +32,15 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     if re.search(r'verbind|connect|anschluss|controller|port|gesamtplan', prompt, re.I):
         names.update({'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal',
             'inspect_model_situation', 'inspect_port_decision', 'inspect_controller_capacity'})
+    # Communication intent may be expressed without protocol vocabulary:
+    # "poll actuator positions every 30 seconds" still requires resolving
+    # canonical producers, signals, messages, and the current physical path.
+    if re.search(r'abfrag|abfrage|poll|request|alle\s+\d+\s*(?:s|sek(?:unden?)?|ms|min(?:uten?)?)\b|zykl|stellgliedposition|aktuatorposition|istposition', prompt, re.I):
+        names.update({'inspect_model_situation', 'inspect_communication_feasibility',
+            'inspect_communication_capability', 'inspect_signal_definition',
+            'inspect_message', 'inspect_hardware', 'resolve_generation_rules',
+            'calculate_message_size', 'calculate_bus_load', 'validate_message',
+            'ask_engineering_question'})
     if re.search(r'repar|neue.*(?:weg|route|architektur)|funktionspartner', prompt, re.I):
         names.update({'inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'})
     if re.search(r'dublett|duplicat|struktur.*transfer|structure.*transfer', prompt, re.I):
@@ -39,8 +52,8 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
     if re.search(r'\b(ändere|aendere|bearbeite|aktualisiere|update|modify)\b', prompt, re.I):
         names.add('update_object_via_proposal')
     groups = [
-        (r"signal|semantik|semantics|encoding", {"inspect_signal","generate_signals","validate_signal","classify_signal_semantics","calculate_signal_bit_length","resolve_signal_emulator","generate_signal_behavior_proposal","find_similar_signals"}),
-        (r"nachricht|message|pack", {"generate_messages","pack_function_messages","validate_message","calculate_message_size","calculate_bus_load","allocate_message_identifier"}),
+        (r"signal|semantik|semantics|encoding|position|stellglied|aktuator", {"inspect_signal","generate_signals","validate_signal","classify_signal_semantics","calculate_signal_bit_length","resolve_signal_emulator","generate_signal_behavior_proposal","find_similar_signals","inspect_signal_definition"}),
+        (r"nachricht|message|pack|abfrag|request|abfrage", {"generate_messages","pack_function_messages","validate_message","calculate_message_size","calculate_bus_load","allocate_message_identifier","inspect_message"}),
         (r"route|routing|pfad", {"find_route_candidates","generate_routing","validate_route","rank_routes","inspect_route"}),
         (r"hardware|ecu|funktion|function|interface|schnittstelle|gerät|kamera|camera|wahrnehm", {"inspect_hardware","generate_functions","generate_hardware_interfaces","generate_function_interfaces","map_function_to_hardware","classify_device","get_device_capabilities","expand_requirement","generate_status_models","generate_data_objects"}),
         (r"netz|network|kapaz|capacity|bus|can|lin|flexray|ethernet|profinet|ethercat|modbus", {"inspect_network","calculate_capacity","calculate_bus_load","find_available_capacity","create_network_proposal","assign_network_to_interface","calculate_message_size","resolve_generation_rules"}),
@@ -67,4 +80,4 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         focused.update({'generate_fault_proposals', 'plan_fault_activation'})
         names.update(focused)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture'} | focused, tool["name"] not in reasoning_names))[:24]
+    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture', 'inspect_model_situation', 'inspect_communication_feasibility', 'ask_engineering_question'} | focused, tool["name"] not in reasoning_names))[:24]

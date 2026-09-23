@@ -1337,16 +1337,20 @@ class PreflightService:
                     object_type="PhysicalRealization", object_id=str(realization.get("id") or realization.get("connection_id") or ""),
                     technology_id=physical_result["technology_id"])
 
-        parameters = {**DEFAULT_PARAMETER_VALUES, **(state.get("parameters") or {})}
+        stored_parameters = state.get("parameters") or {}
+        parameters = {**DEFAULT_PARAMETER_VALUES, **stored_parameters}
         technology_id = str(parameters.get("technology") or "").strip()
         if technology_id:
+            # Profile validation must inspect persisted values, not project/UI
+            # defaults: defaults are not evidence that this binding is configured.
             technology_profile = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(
                 technology_id,
                 (
-                    {"nominal_bitrate_bps": parameters.get("arbitration_bitrate", 500_000),
-                     "data_bitrate_bps": parameters.get("data_bitrate", parameters.get("bitrate"))}
+                    {"nominal_bitrate_bps": stored_parameters.get(
+                         "arbitration_bitrate", stored_parameters.get("bitrate")),
+                     "data_bitrate_bps": stored_parameters.get("data_bitrate")}
                     if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology_id) == "can_fd"
-                    else {"bitrate_bps": parameters.get("bitrate")}
+                    else {"bitrate_bps": stored_parameters.get("bitrate")}
                 ),
             )
             for issue in technology_profile["findings"]:

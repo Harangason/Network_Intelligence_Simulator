@@ -112,6 +112,28 @@ def test_agent_keeps_navigation_action_success_instead_of_blocked(directory):
     assert result['events'][-1]['actions'][0]['capability_id'] == 'signal'
 
 
+def test_named_single_signal_request_returns_specific_missing_facts_not_workload_error():
+    class Client:
+        async def call(self, name, arguments=None):
+            if name == 'inspect_project':
+                return ToolResult(data={'context': {}, 'active_step': None})
+            raise AssertionError(f'unexpected tool call: {name}')
+        async def tools(self):
+            return []
+
+    prompt = 'Lege mir ein Signal an vom PLC1 ventilator_notaus, 1Bit, Init, aus, ein'
+    result = asyncio.run(EngineeringAgent(Client()).run(
+        prompt, AgentContext(active_project_id='project-a')))
+
+    assert result['status'] == 'INCOMPLETE'
+    assert 'zugehörige Nachricht' in result['text']
+    assert 'Rohwert' in result['text']
+    assert 'Gesamtzielmenge' not in result['text']
+    finding = next(event for event in result['events'] if event['type'] == 'FINDING')
+    assert finding['metadata']['missing_fields'] == [
+        'message_id', 'raw_values', 'start_bit', 'byte_order']
+
+
 def test_repair_and_navigation_tools_survive_large_tool_selection():
     tools = [{'name': name} for name in TOOLS]
     names = {t['name'] for t in select_tools('Reparatur neue Hardwarearchitektur Signal Nachricht CAN Bus Routing Simulation Trace Fehler', tools)}
