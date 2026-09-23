@@ -4,7 +4,7 @@ import pytest
 
 from backend.app import create_app
 from backend.app.simulation_service import SimulationService
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY, format_rate_bps
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY, TechnologyRegistry, format_rate_bps
 
 
 REGISTRY = DEFAULT_TECHNOLOGY_REGISTRY
@@ -48,6 +48,17 @@ def test_unknown_profile_blocks_instead_of_using_foreign_default() -> None:
     result = REGISTRY.validate_parameters("unobtainium_bus", {"bitrate_bps": 2_000_000})
     assert result["status"] == "UNKNOWN"
     assert codes(result) == {"TECHNOLOGY_PROFILE_MISSING"}
+
+
+def test_registered_profile_with_missing_stack_layer_is_not_silently_valid() -> None:
+    custom = TechnologyRegistry()
+    custom.register_defaults([{
+        "id": "custom_stack", "layer": "APPLICATION", "implementation_status": "PLANNED",
+        "default_stack": ["missing_phy", "custom_stack"], "rate_model": {"fields": []},
+    }])
+    result = custom.validate_parameters("custom_stack", {})
+    assert result["status"] == "INVALID"
+    assert codes(result) == {"TECHNOLOGY_STACK_PROFILE_MISSING"}
 
 
 def test_can_fd_to_lin_invalidates_phase_fields_and_marks_dependents_stale() -> None:

@@ -60,6 +60,17 @@ def test_missing_can_identifiers_never_claim_a_verified_schedule():
     assert result['networks'] == [], 'Missing identifiers do not justify an invented timing repair.'
 
 
+def test_direct_gpio_line_is_not_split_as_a_shared_bus():
+    data = fixture()
+    row = deepcopy(data['capacity']['results']['routes'][0])
+    row.update(protocol='GPIO', average_load_percent=80, peak_load_percent=92,
+               burst_load_percent=120, segment_transmission_latency_ms=20)
+    data['capacity']['results']['routes'] = [row]
+    result = plan(data)
+    assert result['networks'] == []
+    assert result['schedule_assessments'][0]['timing_status'] == 'UNVERIFIED'
+
+
 @pytest.mark.parametrize('protocol', sorted(set(PROTOCOL_CAPACITY) - {'LIN', 'CAN', 'CAN_FD'}))
 def test_protocols_without_complete_scheduler_remain_unverified(protocol):
     data = fixture()

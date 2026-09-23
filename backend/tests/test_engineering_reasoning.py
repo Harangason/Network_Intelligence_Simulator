@@ -59,6 +59,22 @@ def test_dense_bounded_fault_window_keeps_all_observations_for_confirmation():
     assert "fault:0:GATEWAY_DROP" in result.confirmed_causes
 
 
+def test_normal_signal_samples_do_not_exhaust_fault_evidence_budget():
+    events = [frame(sequence=index, time_s=1 + index * .001, scheduled_time_s=1 + index * .001,
+                    signals=[{"signal_id": f"normal-{signal}", "value": 1, "quality": "GOOD"}
+                             for signal in range(6)])
+              for index in range(351)]
+    events[200]["status"] = "dropped"
+    events[200]["faults"] = ["MESSAGE_LOSS"]
+    fault = {"type": "MESSAGE_LOSS", "start_s": 1.2, "end_s": 1.21,
+             "target": {"id": "route"}}
+    result = analyze(events, context=context(faults=[fault]))
+    assert "EVIDENCE_BUDGET" not in {gap["code"] for gap in result.data_gaps}
+    assert result.completion_status == "COMPLETE"
+    assert "fault:0:MESSAGE_LOSS" in result.confirmed_causes
+    assert not any(ref.source_type == "SignalSeries" for ref in result.evidence_refs)
+
+
 @pytest.mark.parametrize("change,expected", [({"snapshot_available": False}, "MISSING_SIMULATION_SNAPSHOT"), ({"data_gaps": [{"code": "MISSING_DECODE", "message": "No decoder"}]}, "MISSING_DECODE")])
 def test_missing_data_blocks_confirmation(change, expected):
     result = analyze([frame()], context=context(**change))

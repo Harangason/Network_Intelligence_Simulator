@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -166,6 +167,38 @@ class TechnologyCapability:
 
     def to_dict(self) -> dict[str, bool]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class TechnologyProfile:
+    id: str
+    layer: Layer
+    implementation_status: ImplementationStatus
+    rate_model: dict[str, Any]
+    mechanisms: dict[str, list[str]]
+    physical_layer_profile_id: str | None
+    medium_access_model: str | None
+    arbitration_model_id: str | None
+    definition: dict[str, Any] = field(repr=False)
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> TechnologyProfile:
+        definition = deepcopy(raw)
+        identifier = _required(definition.get("id"), "id")
+        layer = Layer(definition["layer"])
+        status = ImplementationStatus(definition["implementation_status"])
+        rate_model = definition.get("rate_model") or {}
+        if not isinstance(rate_model, dict):
+            raise ValueError("rate_model must be an object")
+        mechanisms = definition.get("mechanisms") or {}
+        if not isinstance(mechanisms, dict):
+            raise ValueError("mechanisms must be an object")
+        return cls(identifier, layer, status, deepcopy(rate_model), deepcopy(mechanisms),
+                   definition.get("physical_layer_profile_id"), definition.get("medium_access_model"),
+                   definition.get("arbitration_model_id"), definition)
+
+    def to_dict(self) -> dict[str, Any]:
+        return deepcopy(self.definition)
 
 
 @dataclass(frozen=True)

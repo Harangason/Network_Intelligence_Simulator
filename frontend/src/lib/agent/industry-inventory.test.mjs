@@ -25,18 +25,27 @@ test('qualified inventory quantities never become named gateway or controller ha
     ['100 Sensoren\n100 Aktoren\n50 Funktionscontroller\n- genau 1 zentrales Gateway\n- 1 zentrales Gateway', 'genau 1 zentrales'],
     ['100 Sensoren\n100 Aktoren\n50 Controller\n- 1 Central Gateway', '1 Central'],
     ['20 Sensoren\n12 Aktoren\n- 4 lokale Controller\n- 1 zentrales Gateway', '4 lokale'],
+    ['100 Sensoren\n100 Aktoren\n50 Funktionscontroller\n- genau 1 zentrales Gateway', 'Funktions'],
   ]) {
     const spec = extractEngineeringSpecification(input, {}, 'custom');
     assert.equal(spec.targetCounts.gateways, 1, input);
     assert.ok(spec.chains.filter(chain => chain.device_type === 'Gateway').length <= 1, input);
     assert.ok(!spec.chains.some(chain => chain.hardware_name === unwanted), input);
+    assert.ok(!spec.chains.some(chain => chain.hardware_name === `50 ${unwanted}`), input);
   }
   for (const id of ['S19-A', 'S20-A']) {
     const input = fixture.cases.find(scenario => scenario.id === id)?.input;
     assert.ok(input, id);
     const spec = extractEngineeringSpecification(input, {}, 'custom');
-    assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 1, id);
+    assert.ok(spec.chains.filter(chain => chain.device_type === 'Gateway').length <= 1, id);
+    assert.ok(!spec.chains.some(chain => ['gemischte PLC', 'Edge', 'System'].includes(chain.hardware_name)), id);
   }
+});
+
+test('a gateway role description does not invent a device identity', () => {
+  const spec = extractEngineeringSpecification('1 zentrales Gateway\n- Gateway verbindet notwendige Segmente', {}, 'custom');
+  assert.equal(spec.targetCounts.gateways, 1);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 0);
 });
 
 test('an abstract coupling and technology names do not declare gateway hardware', () => {

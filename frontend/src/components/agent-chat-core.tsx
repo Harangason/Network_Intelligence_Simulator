@@ -1187,7 +1187,8 @@ export function EngineeringAgentWizard({
   const sensorRows = Array.from({ length: Math.min(1000, Math.max(equipmentCounts.sensors || 0, sensorInventory.length)) }, (_, index) => {
     const chain = namedSensors[index] ?? sensorInventory.find(item => item.hardware_name === `Sensor${index + 1}`);
     return { name: chain?.hardware_name ?? `Sensor${index + 1}`,
-      label: chain?.hardware_name ? `Sensor ${index + 1} · ${chain.hardware_name}` : `Sensor ${index + 1}`, chain };
+      label: chain?.hardware_name ? `Sensor ${index + 1} · ${chain.hardware_name}` : `Sensor ${index + 1}`,
+      measurementLabel: `Sensor ${index + 1}: Messgröße`, chain };
   });
   const resolvedSensorMeasurements = Object.fromEntries(sensorRows.flatMap(({ name, chain }) => {
     const measurement = String(chain?.configuration?.sensor_measurement ?? sensorMeasurement(name, chain?.signal_name)?.id ?? '');
@@ -1195,9 +1196,9 @@ export function EngineeringAgentWizard({
   }));
   const unresolvedSensorMeasurements = sensorRows.filter(({ name }) => !resolvedSensorMeasurements[name]);
   const deviceRows = [
-    ...connectionInventory.filter(chain => !['SensorController', 'ActuatorController'].includes(chain.device_type)).map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
+    ...connectionInventory.filter(chain => !['SensorController', 'ActuatorController'].includes(chain.device_type)).map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, measurementLabel: '', chain, sensor: false })),
     ...sensorRows.map(row => ({ ...row, sensor: true })),
-    ...connectionInventory.filter(chain => chain.device_type === 'ActuatorController').map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, chain, sensor: false })),
+    ...connectionInventory.filter(chain => chain.device_type === 'ActuatorController').map(chain => ({ name: chain.hardware_name, label: chain.hardware_name, measurementLabel: '', chain, sensor: false })),
   ];
   const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
   const commandSource = `${taskSource}\n${notes}`;
@@ -3080,8 +3081,8 @@ export function EngineeringAgentWizard({
               onClick={() => applyConnectionToOpenDevices(selectedDeviceConnectionTypes[0])}>
               {selectedDeviceConnectionTypes[0]} für alle offenen Anschlüsse übernehmen
             </button>}
-            {deviceRows.map(({ name, label, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
-              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={`${label}: Messgröße`} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
+            {deviceRows.map(({ name, label, measurementLabel, chain, sensor }) => <div className="agent-device-connection" key={name}><span>{label}</span>
+              {sensor && <label className="agent-device-choice"><span>Messgröße</span><select aria-label={measurementLabel} disabled={effectiveBusy} value={resolvedSensorMeasurements[name] ?? ''} onChange={event => setTaskText(selectSensorMeasurement(taskText, name, event.target.value))}>
                 <option value="" disabled>Bitte auswählen</option>
                 {SENSOR_MEASUREMENTS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </select></label>}

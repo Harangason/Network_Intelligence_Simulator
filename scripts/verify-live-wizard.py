@@ -83,6 +83,7 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
             '- Kommunikationssystem-Sollwerte: ' + json.dumps([{'id': 'can_fd', 'count': args.initial_can_fd_segments}])
             + '\n- Hardware-Sollwerte:')
     resource_decisions = []
+    warning_approvals = []
     wizard_context = {'scope_ids': sorted(expected_steps), 'project_name': 'Isolated HTTP acceptance',
                       'mode': 'full', 'process_ids': ['defaults', 'review_gate', 'approve_after_allow']}
     if args.prompt_file:
@@ -123,6 +124,16 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
                             proposals = [proposal]
                             break
                 if execution.get('state') == 'READY_TO_CONTINUE':
+                    break
+                if execution.get('state') == 'BLOCKED' and 'READY_WITH_WARNINGS' in execution.get('message', ''):
+                    preflight = request('/api/engineering/preflight')
+                    assert preflight['results']['preflight_status'] == 'READY_WITH_WARNINGS', preflight['results']
+                    assert preflight['id'] not in warning_approvals, 'The same warning snapshot blocked continuation twice.'
+                    approval = request('/api/engineering/preflight/warnings/approve', {
+                        'snapshot_id': preflight['id'], 'actor': 'isolated-http-acceptance',
+                    })
+                    assert approval['preflight']['ready_for_simulation'], approval['preflight']
+                    warning_approvals.append(preflight['id'])
                     break
                 assert execution.get('state') not in {'BLOCKED', 'FAILED', 'INCOMPLETE'}, {
                     'statuses': workflow['statuses'], 'execution': execution, 'events': events[-5:]}
@@ -207,6 +218,7 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
               'request_sha256': hashlib.sha256(prompt.encode()).hexdigest(),
               'network_scene': scene_summary,
               'assessment': assessment,
+              'warning_approvals': warning_approvals,
               'resource_decisions': resource_decisions,
               'applied': applied, 'trace_window_count': trace['count'], 'http': evidence,
               'browser_url': args.base_url + '/studio/results?project=' + project,

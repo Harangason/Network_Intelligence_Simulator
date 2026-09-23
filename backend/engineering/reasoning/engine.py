@@ -44,6 +44,10 @@ class EngineeringReasoningEngine:
                 evidence.add(identifier)
             return identifier
 
+        def signal_ref(signal_id, timestamp, sample_context):
+            return ref("SignalSeries", f"{sample_context['event_id']}:{signal_id}", timestamp,
+                [{"object_type": "Signal", "id": signal_id}], sample_context["metrics"])
+
         def observe(kind, timestamp, text, refs, objects=None, metrics=None, suffix="", classification="OBSERVED_EFFECT"):
             identifier = f"{refs[0]}:{kind}:{suffix}"
             if identifier in observed:
@@ -136,7 +140,7 @@ class EngineeringReasoningEngine:
                 golden = number(sample.get("golden_value"))
                 sample_metrics = {key: sample[key] for key in ("signal_id", "signal", "value", "actual_value", "golden_value", "minimum", "maximum", "state", "quality", "faults", "source_dependencies") if key in sample}
                 sample_metrics.update(event_id=eid, route_id=event.get("route_id"), network=event.get("network"), subtype="")
-                sr = ref("SignalSeries", f"{eid}:{sid}", timestamp, [{"object_type": "Signal", "id": sid}], sample_metrics)
+                sample_context = {"event_id": eid, "metrics": sample_metrics}
                 samples = signals[sid]
                 reasons = []
                 if value is None:
@@ -153,13 +157,15 @@ class EngineeringReasoningEngine:
                 if value is not None and golden is not None and abs(value-golden) > number(sample.get("noise_limit"), float("inf")):
                     reasons.append("NOISE_BURST")
                 if samples:
-                    before_t, before, before_ref = samples[-1]
+                    before_t, before, before_context = samples[-1]
                     before_value = number(before.get("actual_value", before.get("value")))
                     if value is not None and before_value is not None and timestamp > before_t and abs(value-before_value)/(timestamp-before_t) > number(sample.get("max_rate_per_s"), float("inf")):
                         reasons.append("RATE_OF_CHANGE")
                     if sample.get("state") != before.get("state") and sample.get("state") is not None:
                         transitions = (context.get("state_models") or {}).get(sid, {}).get("transitions")
                         valid = None if transitions is None else any(t.get("from") == before.get("state") and t.get("to") == sample.get("state") for t in transitions)
+                        before_ref = signal_ref(sid, before_t, before_context)
+                        sr = signal_ref(sid, timestamp, sample_context)
                         observe("STATE_CHANGE", timestamp, f"Zustand {before.get('state')} → {sample.get('state')}", [before_ref, sr], [{"object_type": "Signal", "id": sid}, *objects],
                                 {**sample_metrics, "transition_valid": valid}, suffix=sid)
                         if valid is False:
@@ -171,9 +177,10 @@ class EngineeringReasoningEngine:
                     if all(v == value for v in previous_values) and any(number(s[1].get("golden_value")) != golden for s in samples[-2:]):
                         reasons.append("STUCK_VALUE")
                 for reason in reasons:
+                    sr = signal_ref(sid, timestamp, sample_context)
                     observe("SIGNAL_ANOMALY", timestamp, f"{sid}: {reason}", [sr, r], [{"object_type": "Signal", "id": sid}, *objects],
                             {**sample_metrics, "subtype": reason}, suffix=f"{sid}:{reason}")
-                samples.append((timestamp, sample, sr))
+                samples.append((timestamp, sample, sample_context))
 
         # Reuse the canonical runtime calculator, constrained to this window.
         if ordered:
@@ -322,13 +329,14 @@ class EngineeringReasoningEngine:
 
         # Unvalidated explicit dependencies remain candidates.
         for sid, samples in signals.items():
-            for timestamp, sample, sr in samples:
+            for timestamp, sample, sample_context in samples:
                 dependencies = sample.get("source_dependencies") or (context.get("dependencies") or {}).get(sid) or []
                 for dependency in dependencies:
                     source = str(dependency.get("signal_id") or dependency.get("source") or "") if isinstance(dependency, dict) else str(dependency)
                     upstream = [o for o in result.observations if o.type == "SIGNAL_ANOMALY" and any(r["id"] == source for r in o.affected_objects) and o.timestamp <= timestamp]
                     downstream = [o for o in result.observations if o.type in {"SIGNAL_ANOMALY", "STATE_CHANGE"} and any(r["id"] == sid for r in o.affected_objects) and o.timestamp == timestamp]
                     if upstream and downstream:
+                        sr = signal_ref(sid, timestamp, sample_context)
                         result.downstream_effects.append({"source_signal": source, "destination_signal": sid, "timestamp": timestamp,
                             "classification": "SECONDARY_EFFECT_CANDIDATE", "evidence_refs": [*upstream[0].evidence_refs, sr],
                             "relation": "EXPLICIT_DEPENDENCY", "causality_proven": False})

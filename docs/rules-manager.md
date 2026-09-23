@@ -331,7 +331,7 @@ This task registration does not replace project contracts or confer new permissi
 - Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
 - Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
 - Status: ACTIVE
-- Last Ingest: 2026-09-23T03:53:49.457874+00:00
+- Last Ingest: 2026-09-23T10:58:56.399274+00:00
 - Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-complete-master-80-fresh-20260918\manifest.json
 
 Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
@@ -1500,3 +1500,136 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:network-simulator-master-targeted-image15-s09-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-image15-s09-r2-20260923 -->
+## Tool Check: network-simulator-master-targeted-image15-s09-r2-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T09:36:45.807915+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-image15-s09-r2-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-image15-s09-r2-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-image17-20260923 -->
+## Tool Check: network-simulator-master-targeted-image17-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T09:40:04.656270+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-image17-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-image17-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-image17-architecture-r2-20260923 -->
+## Tool Check: network-simulator-master-targeted-image17-architecture-r2-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T09:47:21.025410+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-image17-architecture-r2-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-image17-architecture-r2-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-variant-safety-20260923 -->
+## Tool Check: network-simulator-master-targeted-variant-safety-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T09:54:00.021507+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-variant-safety-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-variant-safety-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-s20-r2-20260923 -->
+## Tool Check: network-simulator-master-targeted-s20-r2-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T10:03:51.149859+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-s20-r2-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-s20-r2-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-reuse-fresh-20260923 -->
+## Tool Check: network-simulator-master-targeted-reuse-fresh-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T10:11:38.842796+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-reuse-fresh-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-reuse-fresh-20260923 -->
+
+<!-- tool-check:network-simulator-master-targeted-reuse-r2-20260923 -->
+## Tool Check: network-simulator-master-targeted-reuse-r2-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\docs\NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_80_CHECKS.md
+- Source Hash: ea52cb731a9ff87ffcda1c8bf3c792c375ef63d9fead1628d6945c9bedb4807e
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T10:14:59.122110+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\network-simulator-master-targeted-reuse-r2-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:network-simulator-master-targeted-reuse-r2-20260923 -->

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from hashlib import sha256
 import json
-from .dimensioning import _constraints, bus_schedule, effective_period, policy_for, transmission_contract, unique_streams
+from .dimensioning import DIRECT_SIGNAL_PROTOCOLS, _constraints, bus_schedule, effective_period, policy_for, transmission_contract, unique_streams
 from .transmission import profile
 from .evaluation import network_evaluation
 from datetime import datetime, timezone
@@ -424,7 +424,7 @@ class CapacityTimingService:
                 "data_freshness_limit",
             )
             estimated_jitter = route_queue_ms * 0.25 + gateway_queue_ms * 0.25 + sync_precision_ms
-            load_status = classify_load(max(average, peak, burst), thresholds)
+            load_status = "UNVERIFIED" if estimate.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else classify_load(max(average, peak, burst), thresholds)
             latency_status = "FAIL" if max_latency and end_to_end > max_latency else "PASS"
             jitter_status = "FAIL" if jitter_limit and estimated_jitter > jitter_limit else "PASS"
             breakdown = {
@@ -455,6 +455,7 @@ class CapacityTimingService:
                 "physical_network_ids": segment_network_ids,
                 "route_segment_count": segment_count,
                 "protocol": estimate.protocol,
+                "capacity_applicable": estimate.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
                 "bitrate": _number(route_parameters.get("bitrate"), 1_000_000.0),
                 "payload_bytes": payload_bytes,
                 "cycle_ms": cycle_ms,
@@ -500,13 +501,14 @@ class CapacityTimingService:
                     "route_segment_index": index + 1,
                     "route_segment_count": segment_count,
                     "protocol": segment_frame.protocol,
+                    "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
                     "bitrate": _number(segment_data["parameters"].get("bitrate"), 1_000_000.0),
                     "frame_bits": segment_frame.frame_bits,
                     "calculation_model": segment_frame.calculation_model,
                     "average_load_percent": round(segment_data["average"], 4),
                     "peak_load_percent": round(segment_data["peak"], 4),
                     "burst_load_percent": round(segment_data["burst"], 4),
-                    "status": classify_load(max(segment_data["average"], segment_data["peak"], segment_data["burst"]), thresholds),
+                    "status": "UNVERIFIED" if segment_frame.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else classify_load(max(segment_data["average"], segment_data["peak"], segment_data["burst"]), thresholds),
                     "segment_transmission_latency_ms": round(segment_data["transmission_ms"], 6),
                     "frame_time_bound_ms": can_frame_time_bound_ms(segment_frame.protocol, payload_bytes, segment_data["parameters"]),
                     "segment_queueing_latency_ms": round(segment_data["queue_ms"], 6),
@@ -543,6 +545,7 @@ class CapacityTimingService:
                 burst = max((item["burst_load_percent"] for item in port_metrics), default=0)
             governing_load = max(average, peak, burst)
             schedule = bus_schedule(items, policy_for(parameters))
+            direct_signal = str(items[0]["protocol"]).upper() in DIRECT_SIGNAL_PROTOCOLS
             network_metrics.append(
                 {
                     "network_id": network_id,
@@ -553,7 +556,8 @@ class CapacityTimingService:
                     "communication_schedule": schedule,
                     "timing_verified": schedule["status"] == "FEASIBLE_UNDER_ASSUMPTIONS",
                     "response_time_bound_ms": max(schedule.get("responses", {}).values(), default=None) if schedule["status"] == "FEASIBLE_UNDER_ASSUMPTIONS" else None,
-                    "load_basis": "BUSIEST_FULL_DUPLEX_PORT" if port_metrics else "SHARED_BUS",
+                    "load_basis": "DIRECT_SIGNAL_LINE" if direct_signal else "BUSIEST_FULL_DUPLEX_PORT" if port_metrics else "SHARED_BUS",
+                    "capacity_applicable": not direct_signal,
                     "port_metrics": port_metrics,
                     "bitrate": items[0]["bitrate"],
                     "average_load_percent": round(average, 4),
@@ -564,8 +568,8 @@ class CapacityTimingService:
                     "capacity_margin_percent": round(100.0 - governing_load, 4),
                     "target_bus_load_percent": target_bus_load,
                     "target_margin_percent": round(target_bus_load - governing_load, 4),
-                    "target_status": "PASS" if governing_load <= target_bus_load else "EXCEEDED",
-                    "status": "OVERLOAD" if average >= 100 else ("CRITICAL" if classify_load(governing_load, thresholds) == "OVERLOAD" else classify_load(governing_load, thresholds)),
+                    "target_status": "NOT_APPLICABLE" if direct_signal else "PASS" if governing_load <= target_bus_load else "EXCEEDED",
+                    "status": "UNVERIFIED" if direct_signal else "OVERLOAD" if average >= 100 else ("CRITICAL" if classify_load(governing_load, thresholds) == "OVERLOAD" else classify_load(governing_load, thresholds)),
                     "worst_end_to_end_latency_ms": round(statistics["worst_end_to_end_latency_ms"], 6),
                     "top_contributors": [
                         {"route_id": item["route_id"], "name": item["name"], "load_percent": item["average_load_percent"]}
@@ -951,7 +955,7 @@ class CapacityTimingService:
                 "unit": "%",
             }
             for item in network_metrics
-            if item["status"] != "NORMAL"
+            if item["status"] in {"WARNING", "CRITICAL", "OVERLOAD"}
         )
         bottlenecks.extend(
             {
@@ -976,22 +980,22 @@ class CapacityTimingService:
                 "signal_count": len(signal_metrics),
                 "load_status_counts": load_counts,
                 "max_peak_load_percent": max(
-                    (item["peak_load_percent"] for item in network_metrics), default=0.0
+                    (item["peak_load_percent"] for item in network_metrics if item["capacity_applicable"]), default=0.0
                 ),
                 "max_burst_load_percent": max(
-                    (item["burst_load_percent"] for item in network_metrics), default=0.0
+                    (item["burst_load_percent"] for item in network_metrics if item["capacity_applicable"]), default=0.0
                 ),
                 "target_bus_load_percent": target_bus_load,
                 "minimum_capacity_reserve_percent": min(
-                    (item["capacity_reserve_percent"] for item in network_metrics), default=100.0
+                    (item["capacity_reserve_percent"] for item in network_metrics if item["capacity_applicable"]), default=100.0
                 ),
                 "minimum_capacity_margin_percent": min(
-                    (item["capacity_margin_percent"] for item in network_metrics), default=100.0
+                    (item["capacity_margin_percent"] for item in network_metrics if item["capacity_applicable"]), default=100.0
                 ),
                 "worst_end_to_end_latency_ms": max(
                     (item["end_to_end_latency_ms"] for item in logical_route_metrics), default=0.0
                 ),
-                "highest_load_network": network_metrics[0]["network_id"] if network_metrics else None,
+                "highest_load_network": next((item["network_id"] for item in network_metrics if item["capacity_applicable"]), None),
                 "status": worst_status,
             },
             "networks": network_metrics,
@@ -1156,6 +1160,7 @@ class PreflightService:
                 "synchronization",
                 "addressing",
                 "technology",
+                "physical",
             )
         }
 
@@ -1315,6 +1320,22 @@ class PreflightService:
         for node_id, node in node_by_id.items():
             if node_id not in connected_ids:
                 add("network", "ERROR", "NETWORK_NODE_DISCONNECTED", f"Node {node.get('name') or node_id} ist nicht verbunden.")
+
+        physical_realizations = list((state.get("parameters") or {}).get("physical_realizations") or [])
+        for edge in edges:
+            if isinstance(edge, dict) and isinstance(edge.get("physicalRealization"), dict):
+                physical_realizations.append({**edge["physicalRealization"],
+                    "connection_id": edge.get("id"), "technology_id": edge.get("bus")})
+        for realization in physical_realizations:
+            if not isinstance(realization, dict):
+                add("physical", "ERROR", "PHYSICAL_REALIZATION_INVALID", "Physische Realisierung muss ein Objekt sein.")
+                continue
+            physical_result = DEFAULT_TECHNOLOGY_REGISTRY.validate_physical_realization(realization)
+            for issue in physical_result["findings"]:
+                add("physical", "ERROR" if issue["severity"] == "BLOCKER" else issue["severity"],
+                    issue["code"], issue["message"],
+                    object_type="PhysicalRealization", object_id=str(realization.get("id") or realization.get("connection_id") or ""),
+                    technology_id=physical_result["technology_id"])
 
         parameters = {**DEFAULT_PARAMETER_VALUES, **(state.get("parameters") or {})}
         technology_id = str(parameters.get("technology") or "").strip()

@@ -41,6 +41,22 @@ from .runtime_analysis import RuntimeBusLoadMonitor
 DEFAULT_WORKFLOW_EVENT_LIMIT = 100_000
 
 
+def _validate_explicit_physical_realizations(config: dict[str, Any]) -> None:
+    realizations = list(config.get("physical_realizations") or [])
+    realizations.extend((config.get("parameters") or {}).get("physical_realizations") or [])
+    for edge in (config.get("topology") or {}).get("edges") or []:
+        if isinstance(edge, dict) and isinstance(edge.get("physicalRealization"), dict):
+            realizations.append({**edge["physicalRealization"],
+                "connection_id": edge.get("id"), "technology_id": edge.get("bus")})
+    for realization in realizations:
+        if not isinstance(realization, dict):
+            raise ValueError("Physische Realisierung muss ein Objekt sein.")
+        result = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_physical_realization(realization)
+        if result["status"] != "VALID":
+            detail = "; ".join(item["code"] for item in result["findings"])
+            raise ValueError(f"Physical-Realization-Validierung fehlgeschlagen: {detail}")
+
+
 def _workflow_event_limit() -> int:
     raw = os.environ.get("WORKFLOW_EVENT_LIMIT", str(DEFAULT_WORKFLOW_EVENT_LIMIT)).strip()
     try:
@@ -256,6 +272,7 @@ class SimulationService:
                     requested_events = DEFAULT_WORKFLOW_EVENT_LIMIT
                 config["max_events"] = min(max(1, requested_events), _workflow_event_limit())
             config["output_dir"] = str(output_dir)
+            _validate_explicit_physical_realizations(config)
             return config
 
         technology_id = str(payload.get("technology") or "can_fd")
@@ -301,7 +318,11 @@ class SimulationService:
         if validation["status"] != "VALID":
             detail = "; ".join(item["message"] for item in validation["findings"])
             raise ValueError(f"Technology-Validierung fehlgeschlagen: {detail}")
-        return options.to_config()
+        config = options.to_config()
+        if payload.get("physical_realizations") is not None:
+            config["physical_realizations"] = copy.deepcopy(payload["physical_realizations"])
+        _validate_explicit_physical_realizations(config)
+        return config
 
     @staticmethod
     def _validate_options(

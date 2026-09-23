@@ -14,7 +14,8 @@ from .components import (
     TechnologyTransportGenerator,
     TechnologyValidator,
 )
-from .models import ImplementationStatus, Layer, TechnologyCapability, TechnologyStack, TransportRequirement
+from .models import ImplementationStatus, Layer, TechnologyCapability, TechnologyProfile, TechnologyStack, TransportRequirement
+from .physical import physical_profile, validate_physical_realization
 
 
 LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
@@ -32,7 +33,7 @@ def format_rate_bps(value: int) -> str:
 
 class TechnologyRegistry:
     def __init__(self) -> None:
-        self._profiles: dict[str, dict[str, Any]] = {}
+        self._profiles: dict[str, TechnologyProfile] = {}
         self._aliases: dict[str, str] = {}
         self._bindings: dict[str, Any] = {}
         self._generators: dict[str, Any] = {}
@@ -52,6 +53,7 @@ class TechnologyRegistry:
             "modbusrtu": "modbus_rtu", "opcua": "opc_ua", "profinet": "profinet",
             "arinc": "arinc429", "milstd_1553": "mil_std_1553", "dds_rtps": "dds",
             "ros_2": "ros2", "ros2_dds": "ros2", "sps": "plc",
+            "rs_485": "rs485", "rs_422": "rs422",
         }
         token = aliases.get(token, token)
         return self._aliases.get(token, token)
@@ -70,14 +72,14 @@ class TechnologyRegistry:
                 if owner and owner != key:
                     raise ValueError(f"technology alias already registered: {alias_key}")
                 pending_aliases[alias_key] = key
-        self._profiles[key] = {"id": key, **deepcopy(profile)}
+        self._profiles[key] = TechnologyProfile.from_dict({**deepcopy(profile), "id": key})
         self._aliases.update(pending_aliases)
 
     def register_generated_profile(self, profile: dict[str, Any]) -> None:
         """Register or update a validated generated pack without touching built-ins."""
         technology_id = self.normalize_id(profile.get("id"))
         existing = self._profiles.get(technology_id)
-        if existing and existing.get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
+        if existing and existing.to_dict().get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
             raise ValueError(f"generated pack cannot replace built-in technology: {technology_id}")
         if profile.get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
             raise ValueError("generated profile origin is missing")
@@ -138,10 +140,10 @@ class TechnologyRegistry:
         key = self.normalize_id(technology_id)
         if key not in self._profiles:
             raise KeyError(f"unknown technology: {key}")
-        return deepcopy(self._profiles[key])
+        return self._profiles[key].to_dict()
 
     def profiles(self) -> list[dict[str, Any]]:
-        return [deepcopy(self._profiles[key]) for key in sorted(self._profiles)]
+        return [self._profiles[key].to_dict() for key in sorted(self._profiles)]
 
     def resolve_stack(self, stack: str | Iterable[str]) -> dict[str, Any]:
         ids = tuple(self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack))
@@ -187,6 +189,20 @@ class TechnologyRegistry:
     def mechanisms(self, technology_id: str) -> dict[str, list[str]]:
         return deepcopy(self.profile(technology_id).get("mechanisms") or {})
 
+    def physical_profile(self, technology_id: str):
+        self.profile(technology_id)
+        return physical_profile(self.normalize_id(technology_id))
+
+    def validate_physical_realization(self, realization: dict[str, Any]) -> dict[str, Any]:
+        technology_id = self.normalize_id(realization.get("technology_id") or realization.get("technology"))
+        if technology_id not in self._profiles:
+            return {"realization_id": realization.get("id"), "technology_id": technology_id,
+                    "physical_layer_profile_id": None, "status": "INVALID", "findings": [{
+                        "severity": "BLOCKER", "code": "TECHNOLOGY_PROFILE_MISSING",
+                        "message": f"No technology profile is registered for {technology_id}",
+                    }]}
+        return validate_physical_realization({**realization, "technology_id": technology_id})
+
     def validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
         key = self.normalize_id(technology_id)
         if key not in self._profiles:
@@ -194,15 +210,21 @@ class TechnologyRegistry:
                 "stage": "TECHNOLOGY_PROFILE", "code": "TECHNOLOGY_PROFILE_MISSING",
                 "message": f"No technology profile is registered for {key}", "severity": "BLOCKER",
             }]}
-        profile = self._profiles[key]
+        profile = self._profiles[key].to_dict()
         stack = tuple(self.normalize_id(item) for item in (profile.get("default_stack") or (key,)))
+        missing_stack = sorted(set(stack) - self._profiles.keys())
+        if missing_stack:
+            return {"technology_id": key, "status": "INVALID", "findings": [{
+                "stage": "TECHNOLOGY_PROFILE", "code": "TECHNOLOGY_STACK_PROFILE_MISSING",
+                "message": f"Registered stack layer is missing: {stack_id}", "severity": "BLOCKER",
+            } for stack_id in missing_stack]}
         rate_fields = {"bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"}
         supplied_rate_fields = set(parameters) & rate_fields
         stack_rate_fields = {
             field
             for stack_id in stack
-            for field in (self._profiles[stack_id].get("rate_model") or {}).get("fields", ())
             if stack_id in self._profiles
+            for field in self._profiles[stack_id].rate_model.get("fields", ())
         }
         findings = [{
             "stage": "TECHNOLOGY_PARAMETERS",
@@ -212,7 +234,7 @@ class TechnologyRegistry:
         } for field in sorted(supplied_rate_fields - stack_rate_fields)]
         shared_parameters = {field: value for field, value in parameters.items() if field not in rate_fields}
         for stack_id in stack:
-            allowed = set((self._profiles[stack_id].get("rate_model") or {}).get("fields") or ())
+            allowed = set(self._profiles[stack_id].rate_model.get("fields") or ()) if stack_id in self._profiles else set()
             layer_parameters = {
                 **shared_parameters,
                 **{field: parameters[field] for field in supplied_rate_fields & allowed},

@@ -640,6 +640,7 @@ const GENERIC_INLINE_HARDWARE_LABELS = new Set([
   "gateway",
   "plc",
   "controller",
+  "funktionscontroller",
   "steuergeraet",
 ]);
 
@@ -657,6 +658,7 @@ const GENERIC_HARDWARE_LABELS = new Set([
   "gateways",
   "plc",
   "controller",
+  "funktionscontroller",
   "steuergeraet",
   "funktion",
   "funktions",
@@ -1366,7 +1368,7 @@ function isCountedHardwareGroup(value: string) {
     .filter(modifier => !['io link', 'can fd', 'ethernet', 'real time'].includes(modifier))
     .join('|');
   return new RegExp(
-    `^(?:genau\\s+)?${COUNT_TOKEN}\\s+(?:(?:${genericModifiers}|funktions|typische|weitere|einziges|einzigen)\\s+){0,3}(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|controller(?:s)?|plc(?:s)?|sps|steuerger(?:a|ä|ae)t(?:e)?|gateway(?:s)?)$`,
+    `^(?:genau\\s+)?${COUNT_TOKEN}\\s+(?:(?:${genericModifiers}|funktions|typische|weitere|einziges|einzigen)\\s+){0,3}(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|funktionscontroller(?:s)?|controller(?:s)?|plc(?:s)?|sps|steuerger(?:a|ä|ae)t(?:e)?|gateway(?:s)?)$`,
   ).test(key);
 }
 
@@ -1594,12 +1596,6 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
   if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {
     names.push("Motorstromsensor");
   }
-  if (/\bgateway\b/.test(key) && /\b(?:verbindet|koppelt|vermittelt|uebertraegt|ueberbrueckt)\b/.test(key)) {
-    names.push("System-Gateway");
-  }
-  if (/\bsteuerung\b/.test(key) && /\bmit (?:einem? )?uebergeordneten? netzwerk verbunden\b/.test(key)) {
-    names.push("System-Gateway");
-  }
   return names;
 }
 
@@ -1673,7 +1669,7 @@ export function extractCommunicationSystems(text: string) {
   if (/\buart\b/.test(key)) systems.push("UART");
   if (/\busb\b/.test(key)) systems.push("USB");
   if (/\bpcie\b/.test(key)) systems.push("PCIe");
-  if (/\brs485\b/.test(key)) systems.push("RS485");
+  if (/\brs\s*485\b/.test(key)) systems.push("RS485");
   if (/\brs232\b/.test(key)) systems.push("RS232");
   if (/\bopc ua\b/.test(key)) systems.push("OPCUA");
   if (/\bmqtt\b/.test(key)) systems.push("MQTT");
@@ -1707,7 +1703,7 @@ export function canonicalCommunicationSystem(value: string) {
   if (/\buart\b/.test(key)) return "UART";
   if (/\busb\b/.test(key)) return "USB";
   if (/\bpcie\b/.test(key)) return "PCIe";
-  if (/\brs485\b/.test(key)) return "RS485";
+  if (/\brs\s*485\b/.test(key)) return "RS485";
   if (/\brs232\b/.test(key)) return "RS232";
   if (/\bopc ua\b/.test(key) || compact === "opcua") return "OPCUA";
   if (/\bmqtt\b/.test(key)) return "MQTT";
@@ -1722,7 +1718,7 @@ export function canonicalCommunicationSystem(value: string) {
   return "";
 }
 
-const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua|adc|dac|gpio|pwm)";
+const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|io\\s*link|iolink|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua|adc|dac|gpio|pwm)";
 
 function looksLikeBitrateSuffix(value: string) {
   return /^\s*(?:k?bit|m?bit|kbps|mbps|baud|bd|ms|byte|bytes|b)\b/i.test(value);
@@ -1730,12 +1726,19 @@ function looksLikeBitrateSuffix(value: string) {
 
 export function extractCommunicationSystemCounts(text: string): Record<string, number> {
   const counts: Record<string, number> = {};
+  const ethernetSegments: Record<string, number> = {};
   const countBeforePattern = new RegExp(`\\b${COUNT_TOKEN}\\s*(?:x\\s*)?${COMMUNICATION_SYSTEM_PATTERN}\\b`, "gi");
   const countAfterPattern = new RegExp(`\\b${COMMUNICATION_SYSTEM_PATTERN}\\b\\s*(?:bus(?:se)?|netz(?:e)?|segmente?|anzahl)?\\s*(?::|=|-)?\\s*${COUNT_TOKEN}\\b`, "gi");
+  const qualifiedEthernetSegments = new RegExp(`\\b${COUNT_TOKEN}\\s+(industrial\\s+ethernet|ethernet\\s+backbone)\\s+segmente?\\b`, "gi");
 
   specificationBody(text).split(/\r?\n/).forEach((line) => {
     const source = normalized(line.replace(/^\s*#{1,6}\s+/, "").replace(/^\s*\d+[.)]\s+/, ""));
+    for (const match of source.matchAll(qualifiedEthernetSegments)) {
+      const category = match[2].startsWith("industrial") ? "industrial" : "backbone";
+      ethernetSegments[category] = Math.max(ethernetSegments[category] ?? 0, countValue(match[1] ?? ""));
+    }
     for (const match of source.matchAll(countBeforePattern)) {
+      if (/(?:\brs|\barinc|\bstd)\s*$/.test(source.slice(0, match.index ?? 0))) continue;
       const system = canonicalCommunicationSystem(match[0].replace(match[1] ?? "", ""));
       const value = countValue(match[1] ?? "");
       if (system && value > 0) counts[system] = Math.max(counts[system] ?? 0, value);
@@ -1747,6 +1750,10 @@ export function extractCommunicationSystemCounts(text: string): Record<string, n
       if (system && value > 0) counts[system] = Math.max(counts[system] ?? 0, value);
     }
   });
+
+  if (Object.keys(ethernetSegments).length) {
+    counts.Ethernet = Math.max(counts.Ethernet ?? 0, Object.values(ethernetSegments).reduce((sum, count) => sum + count, 0));
+  }
 
   for (const system of extractCommunicationSystems(text)) {
     counts[system] ??= 1;
@@ -1970,6 +1977,7 @@ export function extractEngineeringSpecification(
   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
   const occurrences = [...lines.flatMap((line, index): HardwareOccurrence[] => {
     if (groupedLineIndexes.has(index)) return [];
+    if (/^\s*[-*]?\s*(?:gemischte|mixed)\s+(?:PLC|SPS)[-–,]/i.test(line)) return [];
     const singularControllers = singularControllerHardwareNames(line);
     const names = singularControllers.length ? [] : [hardwareName(headingLabel(line)), ...inlineHardwareNames(line), ...naturalLanguageHardwareNames(line), ...impliedHardwareNames(line, confirmedCounts.actuators, text)].filter(Boolean);
     const candidates = [...names.map(name => ({ index, name })), ...declaredHardwareNames(line).map(item => ({ index, ...item })), ...singularControllers.map(item => ({ index, ...item }))];
@@ -1989,6 +1997,7 @@ export function extractEngineeringSpecification(
     existing.lines.push(...lines.slice(occurrence.index, Math.max(occurrence.index + 1, contextEnd)));
     contexts.set(key, existing);
   });
+
   // Explicit choices can resolve count-only Sensor1… slots without inventing a function.
   for (const name of Object.keys(measurements)) {
     const key = normalized(normalizeHardwareName(name));

@@ -142,6 +142,8 @@ export type CapacityNetwork = {
     response_time_bound_ms?: number | null;
   protocol: string;
   route_count: number;
+  capacity_applicable?: boolean;
+  load_basis?: string;
   average_load_percent: number;
   peak_load_percent: number;
   burst_load_percent: number;
@@ -151,13 +153,14 @@ export type CapacityNetwork = {
   capacity_margin_percent?: number;
   target_bus_load_percent?: number;
   target_margin_percent?: number;
-  target_status?: "PASS" | "EXCEEDED";
+  target_status?: "PASS" | "EXCEEDED" | "NOT_APPLICABLE";
   worst_end_to_end_latency_ms: number;
   top_contributors?: Array<{ route_id: string; name: string; load_percent: number }>;
-  status: "NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD";
+  status: "NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD" | "UNVERIFIED";
 };
 
 export type CapacityRoute = {
+  capacity_applicable?: boolean;
   timing_verified?: boolean;
   response_time_bound_ms?: number | null;
   jitter_bound_ms?: number | null;
@@ -577,7 +580,7 @@ export const getPreflightSnapshot = () => request<{
 export const approvePreflightWarnings = (snapshotId: string, actor: string) => request<{
   preflight: { preflight_status: string; ready_for_simulation: boolean; warning_count: number };
 }>("/preflight/warnings/approve", {
-  method: "POST", body: JSON.stringify({ snapshot_id: snapshotId, actor }),
+  method: "POST", body: JSON.stringify({ snapshot_id: snapshotId, actor }), signal: AbortSignal.timeout(180000),
 });
 
 export const optimizeCapacity = () =>

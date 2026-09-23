@@ -94,6 +94,15 @@ def test_local_interfaces_report_actionable_evidence_gaps_instead_of_generic_war
         assert "Port-/Technologieanalyse" not in result["reasons"][0]
 
 
+def test_direct_signal_line_is_not_declared_an_overloaded_packet_bus():
+    for protocol in ("GPIO", "PWM"):
+        row = stream(0, period=0.01, protocol=protocol)
+        result = bus_schedule([row], policy_for(PARAMETERS))
+        assert result["nominal_load_percent"] >= 100
+        assert result["status"] == "UNVERIFIED"
+        assert "direkte Signalleitung" in result["reasons"][0]
+
+
 def test_history_is_rechecked_not_inherited():
     baseline = dimension_communications([stream(i) for i in range(8)], PARAMETERS)
     history = [{**baseline["networks"][0], "selected_floor_ms": 20, "snapshot_id": "old"}]

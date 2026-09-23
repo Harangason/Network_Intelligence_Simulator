@@ -15,13 +15,18 @@ export type SequenceEvent = {
   transportLatencyMs: number | null;
   queueDelayMs: number | null;
   payloadBytes: number | null;
+  eventKind: "TRANSPORT" | "RECEIVER";
+  receiverStatus: "ACCEPTED" | "REJECTED" | null;
+  receiverAcceptTimeS: number | null;
+  e2eLatencyMs: number | null;
+  dataAgeAtAcceptMs: number | null;
 };
 
 export type SequenceDiagramModel = {
   source: SequenceSource;
   participants: string[];
   events: SequenceEvent[];
-  transactions: Array<{ id: string; eventIds: string[]; technologies: string[]; complete: boolean }>;
+  transactions: Array<{ id: string; eventIds: string[]; technologies: string[]; complete: boolean; receiverStatus: "ACCEPTED" | "REJECTED" | "NOT_OBSERVED" }>;
   correlatedCount: number;
   uncorrelatedCount: number;
 };
@@ -43,6 +48,17 @@ export function buildSequenceDiagram(records: Record<string, unknown>[], source:
     const releaseTimeS = numberOrNull(record.origin_release_time_s);
     const final = record.final_segment === true || record.final_segment === "True" || record.final_segment === "true";
     const status = name(record.status, "observed");
+    const kind = String(record.event_type ?? "").toUpperCase();
+    const action = String(record.receiver_action ?? "").toUpperCase();
+    const receiverStatus = String(record.receiver_status ?? "").toUpperCase();
+    const accepted = receiverStatus === "ACCEPTED" || action === "ACCEPT" || kind === "RECEIVER_ACCEPTANCE";
+    const rejected = receiverStatus === "REJECTED" || action === "REJECT" || kind === "RECEIVER_REJECTION";
+    const eventKind = kind === "RECEIVER_ACCEPTANCE" || kind === "RECEIVER_REJECTION" ? "RECEIVER" : "TRANSPORT";
+    const acceptTime = accepted ? numberOrNull(record.receiver_accept_time_s) ??
+      (kind === "RECEIVER_ACCEPTANCE" ? timeS : null) : null;
+    const generationTime = numberOrNull(record.data_generation_time_s);
+    const validAcceptTime = acceptTime !== null && releaseTimeS !== null && acceptTime >= releaseTimeS &&
+      (eventKind === "RECEIVER" || timeS === null || acceptTime >= timeS) ? acceptTime : null;
     return {
       id: name(record.event_id, `${source}:${index}`),
       transactionId: record.transaction_id || record.end_to_end_event_id ?
@@ -56,10 +72,16 @@ export function buildSequenceDiagram(records: Record<string, unknown>[], source:
       segmentIndex: numberOrNull(record.segment_index),
       segmentCount: numberOrNull(record.segment_count),
       releaseTimeS,
-      transportLatencyMs: final && status === "transmitted" && timeS !== null && releaseTimeS !== null
-        ? Math.max(0, (timeS - releaseTimeS) * 1000) : null,
+      transportLatencyMs: final && status === "transmitted" && timeS !== null && releaseTimeS !== null && timeS >= releaseTimeS
+        ? (timeS - releaseTimeS) * 1000 : null,
       queueDelayMs: numberOrNull(record.queue_delay_ms),
       payloadBytes: numberOrNull(record.payload_bytes),
+      eventKind,
+      receiverStatus: rejected ? "REJECTED" : accepted && validAcceptTime !== null ? "ACCEPTED" : null,
+      receiverAcceptTimeS: validAcceptTime,
+      e2eLatencyMs: validAcceptTime !== null && releaseTimeS !== null ? (validAcceptTime - releaseTimeS) * 1000 : null,
+      dataAgeAtAcceptMs: validAcceptTime !== null && generationTime !== null && validAcceptTime >= generationTime
+        ? (validAcceptTime - generationTime) * 1000 : null,
     };
   }).sort((left, right) => (left.timeS ?? Infinity) - (right.timeS ?? Infinity));
   const participants = [...new Set(events.flatMap(event => [event.source, event.destination]))];
@@ -69,9 +91,19 @@ export function buildSequenceDiagram(records: Record<string, unknown>[], source:
     grouped.set(event.transactionId, [...(grouped.get(event.transactionId) ?? []), event]);
   }
   const transactions = [...grouped].map(([id, items]) => ({
-    id, eventIds: items.map(item => item.id), technologies: [...new Set(items.map(item => item.technology))],
-    complete: items.some(item => item.transportLatencyMs !== null) &&
-      items.every(item => item.status === "transmitted"),
+    id, eventIds: items.map(item => item.id),
+    technologies: [...new Set(items.filter(item => item.eventKind === "TRANSPORT").map(item => item.technology))],
+    complete: (() => {
+      const hops = items.filter(item => item.eventKind === "TRANSPORT");
+      const count = hops[0]?.segmentCount;
+      return count !== null && count !== undefined && count > 0 &&
+        hops.every(item => item.status === "transmitted" && item.segmentCount === count) &&
+        new Set(hops.map(item => item.segmentIndex)).size === count &&
+        Array.from({ length: count }, (_, index) => index).every(index => hops.some(item => item.segmentIndex === index)) &&
+        hops.some(item => item.transportLatencyMs !== null);
+    })(),
+    receiverStatus: items.some(item => item.receiverStatus === "REJECTED") ? "REJECTED" as const :
+      items.some(item => item.receiverStatus === "ACCEPTED") ? "ACCEPTED" as const : "NOT_OBSERVED" as const,
   }));
   return { source, participants, events, transactions,
     correlatedCount: events.filter(event => event.transactionId !== null).length,

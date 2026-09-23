@@ -403,6 +403,15 @@ async function supplyScriptedInventory(dialog) {
   const table = dialog.locator('.agent-equipment-table').first();
   if (!await table.isVisible().catch(() => false)) return false;
   inventoryAssumptionsApplied = true;
+  const architectureNeedsGateway = /^V[1-4](?:\b|\s|$)/.test(scenario.architecture_variant || '')
+    || /KI 2\+3|Hybrid/i.test(scenario.architecture_variant || '');
+  if (architectureNeedsGateway && !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)) {
+    const gatewayCount = table.locator('tbody tr').filter({ hasText: /Gateway/i }).locator('input[type=number]').first();
+    if (await gatewayCount.count() && await gatewayCount.isEnabled() && Number(await gatewayCount.inputValue()) === 0) {
+      await gatewayCount.fill('1');
+      choices.push({ control: 'Gateway-Anzahl aus Master-Architektur', value: 1, source: 'SCRIPTED_TEST' });
+    }
+  }
   const counts = await table.locator('tbody tr').evaluateAll(rows => rows.map(row => ({
     label: row.querySelector('th')?.textContent?.trim() || '',
     recognized: Number(row.querySelector('.agent-count-stack span b')?.textContent || 0),
@@ -500,20 +509,31 @@ async function fillVisibleRequiredControls(dialog) {
   changed = await supplyScriptedFunctionAssignments(dialog) || changed;
   changed = await supplyScriptedDeviceChoices(dialog) || changed;
   const architecture = dialog.locator('.agent-architecture-group');
-  if (await architecture.isVisible().catch(() => false)
-      && !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)
-      && /\bgateway\b|übergeordnet|uebergeordnet|zentrale\s+kopplung/i.test(scenario.input)) {
-    const gatewayChoice = architecture.locator('label.agent-architecture-choice').filter({ hasText: 'Variante 2 · Controller-vermittelt' });
-    const radio = gatewayChoice.locator('input[type=radio]');
+  if (await architecture.isVisible().catch(() => false)) {
+    const requiredVariant = String(scenario.architecture_variant || '');
+    const exactVariant = requiredVariant.match(/^V([0-4])$/)?.[1];
+    const requestedLabel = exactVariant != null ? `Variante ${exactVariant} ·`
+      : /KI 2\+3|^Hybrid$/i.test(requiredVariant) && !/^V4/i.test(requiredVariant) ? 'KI-Kombination ·'
+        : /^V4/i.test(requiredVariant) ? 'Variante 4 ·'
+          : /^V0\/V2$/i.test(requiredVariant) ? /\bgateway\b|übergeordnet|uebergeordnet/i.test(scenario.input) ? 'Variante 2 ·' : 'Variante 0 ·'
+            : !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)
+              && /\bgateway\b|übergeordnet|uebergeordnet|zentrale\s+kopplung/i.test(scenario.input) ? 'Variante 2 ·' : '';
+    const selectedChoice = architecture.locator('label.agent-architecture-choice').filter({ hasText: requestedLabel }).first();
+    const radio = requestedLabel ? selectedChoice.locator('input[type=radio]') : architecture.locator('input[type=radio]:checked');
     if (await radio.count() && !await radio.isChecked()) {
       await radio.check();
-      choices.push({ control: 'Netzarchitektur', value: 'ecu_gateway', source: 'SCRIPTED_TEST' });
+      choices.push({ control: 'Netzarchitektur', value: requestedLabel, source: 'SCRIPTED_TEST' });
       changed = true;
+      if (/^V4\s*\+\s*KI\s*2\+3$/i.test(requiredVariant)) productIssues.push({
+        code: 'TC_COMPOSITE_ARCHITECTURE_NOT_SELECTED',
+        detail: 'Die Master-Vorgabe V4 + KI 2+3 verlangt segmentierte Gateway-Busse und direkte KI-Teilnehmer; der Wizard bietet nur eine der beiden Varianten je Auftrag an.',
+      });
     }
   }
   const technologyGroup = dialog.locator('fieldset.agent-choice-group').filter({ hasText: 'Netzwerktechnologien' });
   if (await technologyGroup.isVisible().catch(() => false)
-      && /übergeordnet|uebergeordnet|zentral(?:es|e)?\s+gateway|zentral\s+beobachtbar/i.test(scenario.input)
+      && (/übergeordnet|uebergeordnet|zentral(?:es|e)?\s+gateway|zentral\s+beobachtbar/i.test(scenario.input)
+        || /KI\s*2\+3|Hybrid/i.test(scenario.architecture_variant || ''))
       && !/\b(?:Ethernet|CAN|I2C|SPI|UART|EtherCAT|ProfiNET|Modbus|IO.Link)\b/i.test(scenario.input)) {
     const ethernet = technologyGroup.locator('label.agent-choice').filter({ hasText: 'Generic Ethernet' }).locator('input[type=checkbox]');
     if (await ethernet.count() && !await ethernet.isChecked()) {
@@ -725,16 +745,33 @@ async function completeRun(page, dialog) {
       if (!proposalId || reviewed.includes(proposalId)) { await page.waitForTimeout(1000); continue; }
       const approval = dialog.getByRole('button', { name: /^(Freigeben, übernehmen & fortfahren|Übernehmen & fortfahren)$/ });
       await approval.waitFor({ state: 'visible', timeout: 60_000 });
+      const reviewResponse = page.waitForResponse(response => {
+        try {
+          const url = new URL(response.url());
+          return url.pathname === `/api/engineering/agent/proposals/${proposalId}/approve-apply`;
+        } catch { return false; }
+      }, { timeout: 180_000 });
       try {
         await approval.click({ timeout: 30_000 });
       } catch (error) {
         const persisted = await api(page, `/api/engineering/agent/proposals/${encodeURIComponent(proposalId)}?view=status`);
         if (persisted.data?.status !== 'APPLIED') {
+          void reviewResponse.catch(() => {});
           throw new Error(`Wizard review click not confirmed for ${proposalId}; persisted status ${persisted.data?.status || 'UNKNOWN'}: ${error.message}`);
         }
+        void reviewResponse.catch(() => {});
+        reviewed.push(proposalId);
+        browserActions.push({ target: proposalId, purpose: 'Sichtbaren Vorschlag im Wizard als Testentscheidung freigeben', precondition: 'REVIEW_REQUIRED', expected_effect: 'Proposal applied and workflow continues', actual_effect: 'Persisted APPLIED after lost click response', url: page.url(), status: 'PASSED' });
+        await page.waitForTimeout(750);
+        continue;
+      }
+      const response = await reviewResponse;
+      const result = await response.json();
+      if (!response.ok() || result.data?.status !== 'APPLIED') {
+        throw new Error(`Wizard review not applied for ${proposalId}: HTTP ${response.status()} ${result.findings?.[0]?.message || result.error || result.data?.status || 'unknown error'}`);
       }
       reviewed.push(proposalId);
-      browserActions.push({ target: proposalId, purpose: 'Sichtbaren Vorschlag im Wizard als Testentscheidung freigeben', precondition: 'REVIEW_REQUIRED', expected_effect: 'Proposal applied and workflow continues', actual_effect: 'Approval clicked', url: page.url(), status: 'PASSED' });
+      browserActions.push({ target: proposalId, purpose: 'Sichtbaren Vorschlag im Wizard als Testentscheidung freigeben', precondition: 'REVIEW_REQUIRED', expected_effect: 'Proposal applied and workflow continues', actual_effect: `HTTP ${response.status()}, persisted ${result.data.status}`, url: page.url(), status: 'PASSED' });
       await page.waitForTimeout(750);
       continue;
     }
@@ -909,7 +946,15 @@ try {
     && Number(network.invalid?.nodes || 0) === 0
     && Number(network.invalid?.edges || 0) === 0
     && Number(routing.counts?.invalid || 0) === 0;
-  const calculationOk = capacity.ok && !['FAILED', 'ERROR', 'BLOCKED'].includes(String(capacity.data?.status || '').toUpperCase());
+  const deterministicDemand = /\b(?:Safety\s*Cycle|deterministisch\w*|Sicherheits(?:reaktions|zeit|timing)\w*)\b/i.test(scenario.input);
+  const unverifiedTiming = deterministicDemand && Array.isArray(capacity.data?.findings)
+    && capacity.data.findings.some(item => item.code === 'COMMUNICATION_UNVERIFIED');
+  if (unverifiedTiming) productIssues.push({
+    code: 'TC_DETERMINISTIC_TIMING_UNPROVEN',
+    detail: 'Der Auftrag fordert einen Safety-/Determinismusnachweis, die Capacity-Berechnung meldet aber COMMUNICATION_UNVERIFIED für mindestens einen Kommunikationspfad.',
+  });
+  const calculationOk = capacity.ok && !unverifiedTiming
+    && !['FAILED', 'ERROR', 'BLOCKED'].includes(String(capacity.data?.status || '').toUpperCase());
   const preflightBlockers = Array.isArray(preflight.data?.findings)
     ? preflight.data.findings.filter(item => item?.blocking === true || String(item?.severity || '').toUpperCase() === 'ERROR') : [];
   const validationOk = preflight.ok

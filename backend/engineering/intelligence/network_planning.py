@@ -348,6 +348,12 @@ def plan_network_distribution(
                 'new_resources_required': 0, 'decision': 'UNRESOLVED_CAPACITY_CONSTRAINT',
                 'selected_protocol': 'MIXED', 'technology_candidates': [], 'segments': []})
             continue
+        if canonical_protocol(rows[0].get('protocol')) in {'GPIO', 'PWM'}:
+            plan['unresolved'].append(
+                f'{network_id}: direkte Signalleitung; eine Aufteilung nach Buslast ist nicht anwendbar. '
+                'Abtast-, Erfassungs- und Aktuierungsgrenzen am physischen Anschluss prüfen.'
+            )
+            continue
         if (before <= target and current_check["status"] != "FAIL"
                 and _within_hardware_load_limits(rows, physical_interfaces)):
             continue

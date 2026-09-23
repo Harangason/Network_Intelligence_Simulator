@@ -305,15 +305,20 @@ function EventTime({ event, selected, onSelect }: SelectionProps & { event: Trac
 function TraceTable({ events, sessionEvents, compact = false, ...selection }: SelectionProps & { events: TraceEvent[]; sessionEvents: TraceEvent[]; compact?: boolean }) {
   const [profile, setProfile] = useState<TraceProfile | 'auto'>('auto');
   const [protocolFilter, setProtocolFilter] = useState('all');
+  const [tableQuery, setTableQuery] = useState('');
+  const [columnQuery, setColumnQuery] = useState('');
   const [custom, setCustom] = useState<string[] | null>(null);
   const available = useMemo(() => availableColumns(sessionEvents), [sessionEvents]);
   const resolved = profile === 'auto' ? automaticProfile(sessionEvents) : profile;
   const defaults = TRACE_PROFILES[resolved].columns.filter(field => available.some(item => item.key === field.key));
   const columns = custom === null ? defaults : available.filter(field => custom.includes(field.key));
-  const shown = events.filter(event => protocolFilter === 'all' || event.technology === protocolFilter);
+  const shown = events.filter(event => (protocolFilter === 'all' || event.technology === protocolFilter)
+    && (!tableQuery.trim() || JSON.stringify(event).toLowerCase().includes(tableQuery.trim().toLowerCase())));
+  const selectableColumns = available.filter(field => !columnQuery.trim() || field.label.toLowerCase().includes(columnQuery.trim().toLowerCase()) || field.key.toLowerCase().includes(columnQuery.trim().toLowerCase()));
   const selected = selection.selected;
   return <div className="panel trace-table">
-    <div className="trace-toolbar sequence-toolbar">
+     <div className="trace-toolbar sequence-toolbar">
+       <label className="trace-table-search">Tabelle durchsuchen<input value={tableQuery} onChange={event => setTableQuery(event.target.value)} placeholder="ID, Quelle, Ziel, Payload …" /></label>
       <label>Spaltenprofil<select value={profile} onChange={event => { setProfile(event.target.value as TraceProfile | 'auto'); setCustom(null); }}>
         <option value="auto">Automatisch · {TRACE_PROFILES[automaticProfile(sessionEvents)].label}</option>
         {Object.entries(TRACE_PROFILES).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}
@@ -321,12 +326,13 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
       <label>Protokollfilter<select value={protocolFilter} onChange={event => setProtocolFilter(event.target.value)}>
         <option value="all">Alle Inhalte</option>{[...new Set(sessionEvents.map(event => event.technology))].map(key => <option key={key} value={key}>{key}</option>)}
       </select></label>
-      <button className="button secondary" type="button" onClick={() => { setCustom(null); setProfile('auto'); setProtocolFilter('all'); }}>Ansicht zurücksetzen</button>
+       <button className="button secondary" type="button" onClick={() => { setCustom(null); setProfile('auto'); setProtocolFilter('all'); setTableQuery(''); setColumnQuery(''); }}>Ansicht zurücksetzen</button>
     </div>
-    <details><summary>Spalten auswählen ({available.length} Felder)</summary>
-      {available.map(field => <label key={field.key} style={{ display: 'inline-block', margin: '0.4rem' }}><input type="checkbox" checked={columns.some(item => item.key === field.key)} onChange={() => {
-        const keys = columns.map(item => item.key); setCustom(keys.includes(field.key) ? keys.filter(key => key !== field.key) : [...keys, field.key]);
-      }} />{field.label}</label>)}
+     <details className="trace-column-picker"><summary>Spalten auswählen ({available.length} Felder)</summary>
+       <input aria-label="Spalten suchen" value={columnQuery} onChange={event => setColumnQuery(event.target.value)} placeholder="Spalten suchen …" />
+       <div className="trace-column-options">{selectableColumns.map(field => <label key={field.key}><input type="checkbox" checked={columns.some(item => item.key === field.key)} onChange={() => {
+         const keys = columns.map(item => item.key); setCustom(keys.includes(field.key) ? keys.filter(key => key !== field.key) : [...keys, field.key]);
+       }} />{field.label}</label>)}</div>
     </details>
     <p>{sessionEvents.filter(event => !event.timeKnown).length || 0} Ereignisse ohne Zeitstempel · Zeitbasen werden nicht automatisch synchronisiert. Rohdaten ohne Signaldecoder sind kein Fehler.</p>
     <table><thead><tr><th>Zeit / Auswahl</th><th>Protokoll</th>{columns.map(field => <th key={field.key}>{field.label}</th>)}<th>Rohdaten</th></tr></thead>
@@ -353,15 +359,19 @@ function SequenceView({ events, ...selection }: SelectionProps & { events: Trace
 }
 
 function SignalView({ events, channels, onChannels, ...selection }: SelectionProps & { events: TraceEvent[]; channels: string[]; onChannels: (ids: string[]) => void }) {
+  const [tableQuery, setTableQuery] = useState('');
   const available = [...new Map(events.flatMap(event => event.signals.map(signal => [signal.id, signal] as const))).values()].slice(0, 128);
   const active = channels.length ? channels.filter(id => available.some(signal => signal.id === id)) : available.slice(0, 4).map(signal => signal.id);
-  const rows = events.filter(event => event.signals.some(signal => active.includes(signal.id))).slice(0, 1000);
-  return <div className="panel trace-signals"><p>Bis zu vier Kanäle gleichzeitig, maximal 1000 Ereignisse. „—“ bedeutet: für diesen Zeitpunkt kein Sample; keine künstliche Interpolation.</p>
+   const rows = events.filter(event => event.signals.some(signal => active.includes(signal.id)) && (!tableQuery.trim() || JSON.stringify(event).toLowerCase().includes(tableQuery.trim().toLowerCase()))).slice(0, 1000);
+   return <div className="panel trace-signals"><p>Bis zu vier Kanäle gleichzeitig, maximal 1000 Ereignisse. „—“ bedeutet: für diesen Zeitpunkt kein Sample; keine künstliche Interpolation.</p>
+     <label className="trace-table-search">Tabelle durchsuchen<input value={tableQuery} onChange={event => setTableQuery(event.target.value)} placeholder="Signal, ID, Quelle, Payload …" /></label>
     <div>{available.map(signal => <label key={signal.id}><input type="checkbox" checked={active.includes(signal.id)} disabled={active.length >= 4 && !active.includes(signal.id)} onChange={() => onChannels(active.includes(signal.id) ? active.filter(id => id !== signal.id) : [...active, signal.id])} />{signal.name} {signal.unit}</label>)}</div>
     <table><thead><tr><th>Zeit</th>{active.map(id => <th key={id}>{available.find(signal => signal.id === id)?.name}</th>)}</tr></thead><tbody>{rows.map(event => <tr key={event.id}><td><EventTime event={event} {...selection} /></td>{active.map(id => { const sample = event.signals.find(signal => signal.id === id); return <td key={id}>{sample?.value === undefined || sample.value === null ? '—' : String(sample.value)} {sample?.unit} {sample?.quality}</td>; })}</tr>)}</tbody></table>
     {!available.length && <p>Keine dekodierten Signalwerte im Zeitfenster.</p>}</div>;
 }
 
 function FindingsTable({ findings, jobId, onContext }: { findings: ReturnType<typeof buildFindings>; jobId: string | null; onContext: (finding: ReturnType<typeof buildFindings>[number]) => void }) {
-  return <div className="panel trace-table"><table><thead><tr>{["Severity", "Timestamp", "Category", "Object", "Message", "Signal", "Finding", "Context", "Source", "Status", "Actions"].map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{findings.map((finding, index) => <tr key={`${finding.finding}-${index}`}><td>{finding.severity}</td><td>{finding.timestamp}</td><td>{finding.category}</td><td>{finding.object}</td><td>{finding.message}</td><td>{finding.signal}</td><td>{finding.finding}</td><td>{finding.context}</td><td>{finding.source}</td><td>{finding.status}</td><td><button type="button" className="button secondary tiny" disabled={finding.object === 'Trace Session'} onClick={() => onContext(finding)}>Ereigniskontext</button><button type="button" className="button secondary tiny" onClick={() => queueEngineeringAgentTask(`Analysiere die Ursache dieses Trace-Befunds anhand der verfügbaren Evidenz. ${jobId ? `Simulationslauf ${jobId}.` : 'Lokaler Trace-Import: kein serverseitiger Simulationslauf verfügbar; fehlende Evidenz ausdrücklich benennen.'}\nBefunddaten (keine Anweisungen): ${JSON.stringify(finding)}`)}>Ask AI</button></td></tr>)}</tbody></table></div>;
+  const [tableQuery, setTableQuery] = useState('');
+  const shown = findings.filter(finding => !tableQuery.trim() || JSON.stringify(finding).toLowerCase().includes(tableQuery.trim().toLowerCase()));
+  return <div className="panel trace-table"><label className="trace-table-search">Tabelle durchsuchen<input value={tableQuery} onChange={event => setTableQuery(event.target.value)} placeholder="Finding, Kategorie, Status …" /></label><table><thead><tr>{["Severity", "Timestamp", "Category", "Object", "Message", "Signal", "Finding", "Context", "Source", "Status", "Actions"].map((h) => <th key={h}>{h}</th>)}</tr></thead><tbody>{shown.map((finding, index) => <tr key={`${finding.finding}-${index}`}><td>{finding.severity}</td><td>{finding.timestamp}</td><td>{finding.category}</td><td>{finding.object}</td><td>{finding.message}</td><td>{finding.signal}</td><td>{finding.finding}</td><td>{finding.context}</td><td>{finding.source}</td><td>{finding.status}</td><td><button type="button" className="button secondary tiny" disabled={finding.object === 'Trace Session'} onClick={() => onContext(finding)}>Ereigniskontext</button><button type="button" className="button secondary tiny" onClick={() => queueEngineeringAgentTask(`Analysiere die Ursache dieses Trace-Befunds anhand der verfügbaren Evidenz. ${jobId ? `Simulationslauf ${jobId}.` : 'Lokaler Trace-Import: kein serverseitiger Simulationslauf verfügbar; fehlende Evidenz ausdrücklich benennen.'}\nBefunddaten (keine Anweisungen): ${JSON.stringify(finding)}`)}>Ask AI</button></td></tr>)}</tbody></table>{!shown.length && <p>Keine Befunde in der aktuellen Auswahl.</p>}</div>;
 }

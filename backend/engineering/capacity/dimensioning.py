@@ -16,6 +16,7 @@ from math import ceil, floor, isfinite, lcm
 from .transmission import profile
 
 VERSION = "communication-sizing-v2"
+DIRECT_SIGNAL_PROTOCOLS = frozenset({"GPIO", "PWM"})
 DEFAULT_POLICY = {
     "enabled": True, "minimum_interval_ms": 20.0,
     "maximum_generated_period_ms": 50.0,
@@ -127,7 +128,7 @@ def bus_schedule(rows, policy):
     nominal = sum(number(row.get("segment_transmission_latency_ms")) / periods[row["stream_id"]] * 100 for row in rows)
     result = {"status": "UNVERIFIED", "nominal_load_percent": round(nominal, 6), "responses": {}, "slots": [], "reasons": [],
               "assumptions": ["Vollständiger modellierter Verkehr", "Keine zusätzlichen Busfehler oder Retransmissions-Bursts", "Serialisierte Übertragungen"]}
-    if nominal >= 100:
+    if nominal >= 100 and protocol not in DIRECT_SIGNAL_PROTOCOLS:
         return {**result, "status": "OVERLOAD", "reasons": ["Nominaler Bedarf erreicht oder überschreitet 100 %."]}
     if protocol == "LIN":
         base = number(policy["lin_timebase_ms"])

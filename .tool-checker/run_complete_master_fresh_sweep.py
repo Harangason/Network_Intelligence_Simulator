@@ -198,7 +198,7 @@ def main() -> None:
             if state["status"] in {"COMPLETE", "FAILED", "BLOCKED", "CANCELLED"}:
                 print(f"{case_id} {state['status']}", flush=True)
                 break
-            time.sleep(1)
+            time.sleep(5)
 
 
 if __name__ == "__main__":

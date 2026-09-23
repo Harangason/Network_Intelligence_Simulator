@@ -47,14 +47,14 @@ Die Positionen sollen zyklisch geregelt werden.`;
   assert.ok(!spec.chains.some(chain => chain.hardware_name === '1'));
 });
 
-test('S04-B materializes untyped fans, the shared controller, and the required upstream bridge', () => {
+test('S04-B materializes untyped fans and the shared controller without inventing a gateway', () => {
   const task = `Vier Temperatursensoren und drei Lüfter
 sollen durch eine gemeinsame Steuerung geregelt werden.
 
 Die Steuerung muss außerdem mit einem übergeordneten Netzwerk verbunden sein.`;
   const spec = extractEngineeringSpecification(task, {}, 'custom', true);
 
-  assert.deepEqual(spec.targetCounts, { sensors: 4, actuators: 3, ecus: 1, gateways: 1, explicit: true });
+  assert.deepEqual(spec.targetCounts, { sensors: 4, actuators: 3, ecus: 1, gateways: 0, explicit: true });
   assert.deepEqual(
     spec.chains.filter(chain => chain.device_type === 'SensorController').map(chain => chain.hardware_name),
     ['Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4'],
@@ -67,7 +67,7 @@ Die Steuerung muss außerdem mit einem übergeordneten Netzwerk verbunden sein.`
     spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name),
     ['Steuerung'],
   );
-  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name), ['System']);
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name), []);
 });
 
 test('S06-A materializes counted PLC controllers and the central edge gateway', () => {
@@ -639,6 +639,22 @@ test("German and English actuator quantities and named actuators are recognized"
   }
   const result = extractEngineeringSpecification("- Bremsaktuator\n- Fensteraktor\n- DoorActuator");
   assert.equal(result.chains.filter((chain) => chain.device_type === "ActuatorController").length, 3);
+});
+
+test("separate industrial and backbone Ethernet segments are both counted", () => {
+  const text = [
+    "Netzwerke:",
+    "- 15 lokale Low-Speed-Segmente: LIN / RS-485 / IO-Link nach Geräteeignung",
+    "- 10 CAN-FD-Segmente",
+    "- 5 Industrial-Ethernet-Segmente",
+    "- 5 Ethernet-Backbone-Segmente",
+  ].join("\n");
+  const counts = extractCommunicationSystemCounts(text);
+  assert.equal(counts.CAN_FD, 10);
+  assert.equal(counts.Ethernet, 10);
+  assert.equal(counts.IO_LINK, 1);
+  assert.equal(counts.RS485, 1);
+  assert.equal(counts.LIN, 1);
 });
 
 test("counted hardware sections preserve the named S01-A devices", () => {

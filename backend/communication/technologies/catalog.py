@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .core.physical import physical_profile
+
 
 TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
     "lin": {
@@ -144,6 +146,7 @@ def _spec(
     limitations: str = "Technology-specific conformance details require a vendor/profile extension.",
 ) -> dict[str, Any]:
     semantics = TECHNOLOGY_SEMANTICS.get(technology_id, {})
+    physical = physical_profile(technology_id)
     rate_model = semantics.get("rate_model") or ({
         "type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1,
     } if bitrate else {"type": "INHERITED_OR_NOT_APPLICABLE", "fields": []})
@@ -163,6 +166,9 @@ def _spec(
             for field in rate_model.get("fields", [])
         },
         "mechanisms": semantics.get("mechanisms", {}),
+        "physical_layer_profile_id": physical.id if physical else None,
+        "medium_access_model": physical.access_model.value if physical else None,
+        "arbitration_model_id": physical.arbitration.id if physical and physical.arbitration else None,
         "max_payload_bytes": payload,
         "capabilities": _capabilities(*capabilities),
         "deterministic": deterministic,
