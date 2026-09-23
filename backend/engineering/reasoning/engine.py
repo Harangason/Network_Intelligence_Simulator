@@ -5,7 +5,7 @@ from .contracts import (SimulationReasoningResult, EvidenceRef, Observation, Hyp
                         CausalLink, ReasoningCompletionEvaluator)
 from .correlation import number, event_time, event_id, object_refs, signal_samples, route_context, correlate_time
 
-MAX_OBSERVATIONS = 500
+MAX_OBSERVATIONS = 1999
 
 
 class EngineeringReasoningEngine:
@@ -49,7 +49,7 @@ class EngineeringReasoningEngine:
             if identifier in observed:
                 return next(o for o in result.observations if o.id == identifier)
             if len(result.observations) >= MAX_OBSERVATIONS:
-                gap("OBSERVATION_BUDGET", "Mehr als 500 Befunde: ein engeres Zeitfenster ist erforderlich.")
+                gap("OBSERVATION_BUDGET", f"Mehr als {MAX_OBSERVATIONS} Befunde: ein engeres Zeitfenster ist erforderlich.")
                 return None
             observation = Observation(id=identifier, type=kind, timestamp=timestamp, description=text,
                 evidence_refs=refs, affected_objects=objects or [], metrics=metrics or {}, classification=classification)

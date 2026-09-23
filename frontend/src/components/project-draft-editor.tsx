@@ -7,7 +7,7 @@ import { ACTUATOR_COMMANDS, actuatorCommandChoice, actuatorCommandLabel } from '
 import styles from './project-draft-editor.module.css';
 
 type Device = { id: string; name: string; role: string; technology: string | null; owner_id: string | null; command?: Record<string, unknown> | null; purpose?: string | null; known_kind?: boolean };
-type Draft = { source_format?: string; draft_id: string; revision: number; original_requirement: string; sources?: { text: string }[]; industry: string | null; allow_simulation_defaults?: boolean; model_proposal_id?: string; devices: Device[]; issues: { id: string; message: string }[] };
+type Draft = { source_format?: string; draft_id: string; revision: number; original_requirement: string; sources?: { text: string }[]; industry: string | null; allow_simulation_defaults?: boolean; model_proposal_id?: string; pending_model_confirmation?: { revision: number; model_revision: string }; model_confirmation?: { revision: number; model_revision: string; accepted: boolean }; devices: Device[]; issues: { id: string; message: string }[] };
 const operationId = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
 
 export type ProjectDraftStatus = { draftId: string; revision: number; ready: boolean };
@@ -24,6 +24,7 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
   const [projectName, setProjectName] = useState('');
   const epoch = useRef(0);
   const pending = useRef<{ signature: string; operation: string } | null>(null);
+  const confirmOperation = useRef<string | null>(null);
   const url = '/api/engineering/agent/project-draft';
   const structured = draft?.source_format === 'WIZARD_V2';
   const ready = !!draft && !busy && !dirty && !addition.trim() && !draft.issues.length && (structured || !!draft.allow_simulation_defaults);
@@ -32,7 +33,7 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
   }, [draftId, draft?.revision, ready, onStateChange]);
   useEffect(() => {
     const controller = new AbortController();
-    epoch.current += 1; pending.current = null;
+    epoch.current += 1; pending.current = null; confirmOperation.current = null;
     setDraft(null); setError(''); setAddition(''); setSaved(''); setBusy(false); setDirty(false);
     setRemovedDeviceIds([]);
     setConflictDraft(null); setRetainedInput('');
@@ -96,7 +97,7 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
   async function plan() {
     if (!draft || busy || dirty) return;
     const requestEpoch = epoch.current;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setSaved('');
     try {
       if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
       const session = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' }).then(response => response.json());
@@ -106,9 +107,44 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
         body: JSON.stringify({ draft_id: draft.draft_id, revision: draft.revision }) });
       const result = await response.json();
       if (epoch.current !== requestEpoch || readActiveProjectId() !== projectId) return;
-      if (!response.ok || !result.success || !result.data.proposal_id) throw new Error(result.findings?.[0]?.message ?? 'Modellvorschlag konnte nicht erstellt werden.');
+      if (!response.ok || !result.success) throw new Error(result.findings?.[0]?.message ?? 'Modellvorschlag konnte nicht erstellt werden.');
+      if (result.data?.status === 'MODEL_CONFIRMATION_REQUIRED') {
+        setDraft(current => current && ({ ...current, pending_model_confirmation: {
+          revision: current.revision, model_revision: result.data.model_revision,
+        }, model_confirmation: undefined }));
+        setSaved(result.data.rationale || 'Der gültige Modellstand ist unverändert. Für eine Modelländerung die fachlichen Vorgaben präzisieren.');
+        return;
+      }
+      if (!result.data?.proposal_id) throw new Error('Die Planung lieferte weder einen Modellvorschlag noch einen Bestätigungsstatus.');
       onProposal?.(result.data);
     } catch (cause) { if (epoch.current === requestEpoch) setError(cause instanceof Error ? cause.message : 'Planung fehlgeschlagen.'); }
+    finally { if (epoch.current === requestEpoch) setBusy(false); }
+  }
+  async function confirmCurrentModel() {
+    if (!draft?.pending_model_confirmation || busy || dirty) return;
+    const requestEpoch = epoch.current;
+    setBusy(true); setError(''); setSaved('');
+    try {
+      if (readActiveProjectId() !== projectId) throw new Error('Das aktive Projekt wurde gewechselt.');
+      confirmOperation.current ??= operationId();
+      const sessionResponse = await fetch('/api/engineering/agent/review-session', { cache: 'no-store' });
+      if (!sessionResponse.ok) throw new Error('Bestätigungssitzung konnte nicht geöffnet werden.');
+      const session = await sessionResponse.json();
+      if (epoch.current !== requestEpoch || readActiveProjectId() !== projectId) return;
+      const response = await fetch(url + '/confirm-model', { method: 'POST', headers: {
+        'Content-Type': 'application/json', 'X-Project-ID': projectId,
+        'X-Human-Review': 'confirmed', 'X-Review-CSRF': session.csrf_token,
+      }, body: JSON.stringify({ draft_id: draft.draft_id, revision: draft.revision,
+        operation_id: confirmOperation.current }) });
+      const result = await response.json();
+      if (epoch.current !== requestEpoch || readActiveProjectId() !== projectId) return;
+      if (!response.ok || !result.success || result.data?.status !== 'MODEL_CONFIRMED'
+          || result.data?.receipt?.accepted !== true) {
+        throw new Error(result.findings?.[0]?.message ?? 'Der Modellstand konnte nicht bestätigt werden.');
+      }
+      setDraft(result.data.draft); confirmOperation.current = null;
+      setSaved('Aktueller gültiger Modellstand bestätigt. Keine Modellobjekte geändert.');
+    } catch (cause) { if (epoch.current === requestEpoch) setError(cause instanceof Error ? cause.message : 'Modellbestätigung fehlgeschlagen.'); }
     finally { if (epoch.current === requestEpoch) setBusy(false); }
   }
   async function createProject() {
@@ -193,6 +229,10 @@ export function ProjectDraftEditor({ projectId, draftId, onProposal, onStateChan
       <button type="button" className="button secondary" disabled={busy || dirty || !addition.trim()} onClick={() => void save('AMEND')}>Ergänzung speichern</button>
       <details><summary>Offene Angaben ({draft.issues.length})</summary><ul>{draft.issues.map(issue => <li key={issue.id}>{issue.message}</li>)}</ul></details>
       {onProposal && <button type="button" className="button primary" disabled={busy || dirty || !!addition.trim()} onClick={() => void plan()}>Modellvorschlag erstellen</button>}
+      {draft.pending_model_confirmation && <button type="button" className="button secondary"
+        disabled={busy || dirty || !!addition.trim()} onClick={() => void confirmCurrentModel()}>
+        Aktuellen gültigen Stand bestätigen
+      </button>}
       <details><summary>Als neues Projekt verwenden</summary>
         <label>Neuer Projektname<input disabled={busy} value={projectName} maxLength={120} onChange={event => setProjectName(event.target.value)} /></label>
         <button type="button" className="button secondary" disabled={busy || dirty || !!addition.trim() || !projectName.trim()} onClick={() => void createProject()}>Neues Projekt anlegen und öffnen</button>

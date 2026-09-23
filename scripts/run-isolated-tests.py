@@ -57,7 +57,7 @@ def main():
         environment.update(DATABASE_URL=url, ENGINEERING_TEST_DATABASE_URL=url, NUMERIC_ACCELERATOR="cpu")
         with tempfile.TemporaryDirectory(prefix="nis-pytest-") as output:
             print(json.dumps({"database": database, "container": name, "isolated": True}), flush=True)
-            command = [sys.executable, "-m", "pytest", *(tests or ["backend/tests"]), "-p", "no:cacheprovider", "--basetemp", output]
+            command = [sys.executable, "-E", "-m", "pytest", *(tests or ["backend/tests"]), "-p", "no:cacheprovider", "--basetemp", output]
             return subprocess.run(command, cwd=ROOT, env=environment).returncode
     finally:
         if started:

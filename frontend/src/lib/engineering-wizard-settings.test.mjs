@@ -48,7 +48,7 @@ test("empty or invalid wizard settings fall back to complete safe defaults", () 
     process_ids: ["unknown"],
   });
 
-  assert.equal(settings.model_type, "automotive");
+  assert.equal(settings.model_type, "custom");
   assert.deepEqual(settings.scope_ids, DEFAULT_ENGINEERING_WIZARD_SETTINGS.scope_ids);
   assert.deepEqual(settings.process_ids, DEFAULT_ENGINEERING_WIZARD_SETTINGS.process_ids);
   assert.equal(WIZARD_SCOPE_GROUP.options.length, 9);

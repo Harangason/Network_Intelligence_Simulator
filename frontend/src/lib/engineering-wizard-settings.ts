@@ -77,7 +77,7 @@ export type WizardQuestionnaireStep = {
 
 export const DEFAULT_ENGINEERING_WIZARD_SETTINGS: EngineeringWizardSettings = {
   project_name: "",
-  model_type: "automotive",
+  model_type: "custom",
   scope_ids: WIZARD_SCOPE_GROUP.options.map((option) => option.id),
   process_ids: WIZARD_PROCESS_GROUP.options.map((option) => option.id),
   bus_participant_limits: DEFAULT_BUS_PARTICIPANT_LIMITS,

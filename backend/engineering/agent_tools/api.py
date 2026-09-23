@@ -177,6 +177,25 @@ def plan_project_draft():
     return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
 
 
+@agent_api.post('/project-draft/confirm-model')
+def confirm_project_draft_model():
+    from . import project_draft as drafts
+    from pydantic import BaseModel, ConfigDict, Field
+    class ConfirmRequest(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+        draft_id: str = Field(min_length=1, max_length=80)
+        revision: int = Field(ge=1)
+        operation_id: str = Field(min_length=8, max_length=120)
+    if not _human_intent():
+        return jsonify({'error': 'Die Modellbestätigung muss ausdrücklich angefordert werden.'}), 403
+    def confirm(arguments):
+        payload = ConfirmRequest.model_validate({k: v for k, v in arguments.items() if not k.startswith('_')})
+        return drafts.confirm_model(payload.model_dump())
+    result = execute(ToolAuthority(_project(), 'local-human'), 'confirm_project_draft_model',
+                     Permission.GENERATE_PROPOSAL, request.get_json(silent=True) or {}, confirm)
+    return jsonify(result.model_dump(mode='json')), 200 if result.success else 409
+
+
 @agent_api.post('/project-draft/workflow-request')
 def prepare_draft_workflow():
     definition = TOOLS['prepare_draft_workflow']

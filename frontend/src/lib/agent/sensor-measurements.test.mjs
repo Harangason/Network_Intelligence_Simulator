@@ -7,6 +7,23 @@ test('PT100 is recognized as a temperature sensor', () => {
   assert.equal(sensorMeasurement('PT100')?.id, 'temperature');
 });
 
+test('building and process sensors retain their own measured quantities', () => {
+  for (const [name, id, unit, min, max] of [
+    ['CO2', 'co2', 'ppm', 0, 10000],
+    ['Präsenz', 'presence', 'state', 0, 1],
+    ['pH', 'ph', 'pH', 0, 14],
+    ['Leitfähigkeit', 'conductivity', 'uS/cm', 0, 200000],
+    ['Füllstand', 'fill_level', '%', 0, 100],
+  ]) {
+    assert.equal(sensorMeasurement(name)?.id, id);
+    const selected = selectSensorMeasurement('1 Sensor', 'Sensor1', id);
+    const sensor = extractEngineeringSpecification(selected).chains.find(chain => chain.hardware_name === 'Sensor1');
+    assert.equal(sensor?.unit, unit, name);
+    assert.equal(sensor?.min_value, min, name);
+    assert.equal(sensor?.max_value, max, name);
+  }
+});
+
 test('flow and IO-Link survive the S02 sensor wording', () => {
   assert.equal(sensorMeasurement('Durchfluss 0–100 l/min')?.id, 'flow');
   const result = extractEngineeringSpecification(`1 PLC

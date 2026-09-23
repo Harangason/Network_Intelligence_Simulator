@@ -17,6 +17,11 @@ export const SENSOR_MEASUREMENTS = [
   { id: 'angle', label: 'Winkel', unit: 'deg', match: /winkel|angle/i },
   { id: 'force', label: 'Kraft', unit: 'N', match: /kraft|force/i },
   { id: 'humidity', label: 'Luftfeuchtigkeit', unit: '%', match: /feucht|humidity/i },
+  { id: 'co2', label: 'CO2-Konzentration', unit: 'ppm', match: /\bco2\b|kohlendioxid/i },
+  { id: 'presence', label: 'Präsenz', unit: 'state', match: /präsenz|praesenz|presence|anwesenheit/i },
+  { id: 'ph', label: 'pH-Wert', unit: 'pH', match: /(?:^|[^a-z])ph(?:[^a-z]|$)|ph.wert/i },
+  { id: 'conductivity', label: 'Leitfähigkeit', unit: 'uS/cm', match: /leitfähigkeit|leitfaehigkeit|conductivity/i },
+  { id: 'fill_level', label: 'Füllstand', unit: '%', match: /füllstand|fuellstand|fill.level/i },
   { id: 'distance', label: 'Abstand', unit: 'm', match: /abstand|distance/i },
   { id: 'acceleration', label: 'Beschleunigung', unit: 'm/s²', match: /beschleunigung|acceleration/i },
 ] as const;

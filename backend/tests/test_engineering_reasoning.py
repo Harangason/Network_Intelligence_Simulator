@@ -46,6 +46,19 @@ def test_queue_hypothesis_rejected_if_queue_is_zero():
     assert result.conclusion.startswith("ROOT_CAUSE_UNCONFIRMED")
 
 
+def test_dense_bounded_fault_window_keeps_all_observations_for_confirmation():
+    events = [frame(sequence=index, time_s=1 + index * .001, status="dropped",
+                    faults=["GATEWAY_DROP"], configured_latency_ms=1)
+              for index in range(130)]
+    fault = {"type": "GATEWAY_DROP", "start_s": 1, "end_s": 1.2,
+             "target": {"id": "gateway"}}
+    result = analyze(events, context=context(faults=[fault], trusted_simulation=True))
+    assert len(result.observations) > 500
+    assert "OBSERVATION_BUDGET" not in {gap["code"] for gap in result.data_gaps}
+    assert result.completion_status == "COMPLETE"
+    assert "fault:0:GATEWAY_DROP" in result.confirmed_causes
+
+
 @pytest.mark.parametrize("change,expected", [({"snapshot_available": False}, "MISSING_SIMULATION_SNAPSHOT"), ({"data_gaps": [{"code": "MISSING_DECODE", "message": "No decoder"}]}, "MISSING_DECODE")])
 def test_missing_data_blocks_confirmation(change, expected):
     result = analyze([frame()], context=context(**change))

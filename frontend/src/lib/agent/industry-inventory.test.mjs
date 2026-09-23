@@ -20,6 +20,25 @@ test('typed groups add, repeated totals and network assignments do not duplicate
   assert.equal(extractEngineeringTargetCounts('1 Gateway\n1 Gateway mit Ethernet').gateways, 1);
 });
 
+test('qualified inventory quantities never become named gateway or controller hardware', () => {
+  for (const [input, unwanted] of [
+    ['100 Sensoren\n100 Aktoren\n50 Funktionscontroller\n- genau 1 zentrales Gateway\n- 1 zentrales Gateway', 'genau 1 zentrales'],
+    ['100 Sensoren\n100 Aktoren\n50 Controller\n- 1 Central Gateway', '1 Central'],
+    ['20 Sensoren\n12 Aktoren\n- 4 lokale Controller\n- 1 zentrales Gateway', '4 lokale'],
+  ]) {
+    const spec = extractEngineeringSpecification(input, {}, 'custom');
+    assert.equal(spec.targetCounts.gateways, 1, input);
+    assert.ok(spec.chains.filter(chain => chain.device_type === 'Gateway').length <= 1, input);
+    assert.ok(!spec.chains.some(chain => chain.hardware_name === unwanted), input);
+  }
+  for (const id of ['S19-A', 'S20-A']) {
+    const input = fixture.cases.find(scenario => scenario.id === id)?.input;
+    assert.ok(input, id);
+    const spec = extractEngineeringSpecification(input, {}, 'custom');
+    assert.equal(spec.chains.filter(chain => chain.device_type === 'Gateway').length, 1, id);
+  }
+});
+
 test('an abstract coupling and technology names do not declare gateway hardware', () => {
   assert.equal(extractEngineeringTargetCounts('1 zentrale Kopplung\nCAN-FD und Ethernet').gateways, 0);
 });

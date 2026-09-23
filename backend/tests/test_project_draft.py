@@ -6,6 +6,55 @@ from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
 
 
+def test_no_delta_model_confirmation_is_explicit_revision_bound_and_idempotent(monkeypatch):
+    from backend.engineering.agent_tools import project_draft, wizard_generation, model
+    from backend.engineering.workflow.service import WorkflowStatusService
+
+    authority = ToolAuthority('confirm-' + uuid4().hex)
+    created = execute(authority, 'draft_create', Permission.GENERATE_PROPOSAL,
+                      {'action': 'CREATE', 'operation_id': uuid4().hex,
+                       'requirement': 'Ein Raspberry Pi mit einem Temperatursensor'}, command)
+    assert created.success, created.findings
+    draft = created.data['draft']
+    monkeypatch.setattr(project_draft, 'planning_prompt', lambda _: 'confirmed prompt')
+    monkeypatch.setattr(wizard_generation, 'generate', lambda *_args, **_kwargs: {
+        'status': 'MODEL_CONFIRMATION_REQUIRED', 'model_revision': 'model-r1',
+    })
+    revision = ['model-r1']
+    monkeypatch.setattr(model, 'model_revision', lambda: revision[0])
+    monkeypatch.setattr(WorkflowStatusService, 'get', lambda _self: {
+        'artifact_checks': {'engineering_model': {'complete': True}},
+    })
+    identity = {'draft_id': draft['draft_id'], 'revision': draft['revision']}
+    planned = execute(authority, 'draft_plan', Permission.GENERATE_PROPOSAL, identity,
+                      project_draft.plan_model)
+    assert planned.success and planned.data['status'] == 'MODEL_CONFIRMATION_REQUIRED'
+    assert execute(authority, 'draft_read', Permission.READ_MODEL, {}, inspect).data[
+        'pending_model_confirmation']['model_revision'] == 'model-r1'
+
+    operation = {**identity, 'operation_id': uuid4().hex}
+    revision[0] = 'model-r2'
+    stale = execute(authority, 'draft_confirm', Permission.GENERATE_PROPOSAL,
+                    operation, project_draft.confirm_model)
+    assert not stale.success
+    revision[0] = 'model-r1'
+    confirmed = execute(authority, 'draft_confirm', Permission.GENERATE_PROPOSAL,
+                        operation, project_draft.confirm_model)
+    assert confirmed.success, confirmed.findings
+    assert confirmed.data['status'] == 'MODEL_CONFIRMED'
+    assert confirmed.data['receipt']['accepted'] is True
+    repeated = execute(authority, 'draft_confirm', Permission.GENERATE_PROPOSAL,
+                       operation, project_draft.confirm_model)
+    assert repeated.success and repeated.data['receipt'] == confirmed.data['receipt']
+    revised = execute(authority, 'draft_amend', Permission.GENERATE_PROPOSAL,
+                      {'action': 'AMEND', 'revision': draft['revision'], 'operation_id': uuid4().hex,
+                       'requirement': 'Weitere Temperaturmessung hinzufügen.'}, command)
+    assert revised.success, revised.findings
+    assert 'model_confirmation' not in revised.data['draft']
+    assert not execute(authority, 'draft_confirm', Permission.GENERATE_PROPOSAL,
+                       operation, project_draft.confirm_model).success
+
+
 def test_real_project_does_not_invent_sensor_kinds_or_transports():
     draft = parse_requirement('Ich möchte ein Projekt mit drei Sensoren.', 'custom')
     assert [d['name'] for d in draft['devices']] == ['Sensor1', 'Sensor2', 'Sensor3']

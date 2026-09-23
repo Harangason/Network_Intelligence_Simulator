@@ -342,6 +342,8 @@ def command(arguments):
     if old and old.get('source_format') == 'WIZARD_V2':
         from .structured_project_draft import amend
         draft = amend(old, request)
+        draft.pop('pending_model_confirmation', None)
+        draft.pop('model_confirmation', None)
         result = {'draft': draft, 'receipt': {'operation_id': request.operation_id, 'revision': draft['revision'], 'accepted': True}}
         state['engineering_draft'] = draft
         operations[request.operation_id] = {'signature': signature, 'result': deepcopy(result)}
@@ -392,6 +394,8 @@ def command(arguments):
             device.get('confirmed_fields', {}).pop('owner_id', None)
     draft['allow_simulation_defaults'] = (request.allow_simulation_defaults if request.allow_simulation_defaults is not None
                                          else (old or {}).get('allow_simulation_defaults', False))
+    draft.pop('pending_model_confirmation', None)
+    draft.pop('model_confirmation', None)
     draft = resolve_devices(draft, request.devices)
     draft['status'] = 'NEEDS_DECISION' if draft['issues'] else 'READY_TO_PLAN'
     result = {'draft': draft, 'receipt': {'operation_id': request.operation_id, 'revision': draft['revision'], 'accepted': True}}
@@ -478,12 +482,46 @@ def plan_model(arguments):
         'source': 'engineering_draft', 'draft_id': draft['draft_id'], 'revision': draft['revision'],
         'requirement': draft['original_requirement'], 'requirements': [source['text'] for source in draft['sources']], 'adapter_version': 2}])
     if not result.get('proposal_id'):
+        if result.get('status') == 'MODEL_CONFIRMATION_REQUIRED':
+            draft['pending_model_confirmation'] = {
+                'draft_id': draft['draft_id'], 'revision': draft['revision'],
+                'model_revision': result['model_revision'],
+            }
+            draft.pop('model_confirmation', None)
+            state['engineering_draft'] = draft
+            conversation.write(state)
         return result
     proposal = proposal_service.validate(result['proposal_id'])
     draft['model_proposal_id'] = proposal['proposal_id']
     state['engineering_draft'] = draft
     conversation.write(state)
     return proposal
+
+
+def confirm_model(arguments):
+    """Record a human no-delta decision without changing canonical objects."""
+    from . import model
+    from ..workflow.service import WorkflowStatusService
+    state = conversation.read()
+    draft = migrate_draft(state.get('engineering_draft'))
+    if not draft or draft['draft_id'] != arguments['draft_id'] or draft['revision'] != arguments['revision']:
+        raise ConcurrentUpdateError('Der Entwurf wurde inzwischen geändert. Aktuellen Stand laden.')
+    previous = draft.get('model_confirmation') or {}
+    if previous.get('operation_id') == arguments['operation_id']:
+        return {'status': 'MODEL_CONFIRMED', 'draft': draft, 'receipt': previous}
+    pending = draft.get('pending_model_confirmation') or {}
+    if pending != {'draft_id': draft['draft_id'], 'revision': draft['revision'],
+                   'model_revision': model.model_revision()}:
+        raise ConcurrentUpdateError('Der Modellstand oder die Entwurfsrevision hat sich geändert. Erneut prüfen.')
+    workflow = WorkflowStatusService(current_project_id()).get()
+    if not (workflow.get('artifact_checks', {}).get('engineering_model') or {}).get('complete'):
+        raise ConcurrentUpdateError('Das Engineering-Modell ist nicht mehr vollständig. Erneut prüfen.')
+    receipt = {**pending, 'operation_id': arguments['operation_id'], 'accepted': True}
+    draft['model_confirmation'] = receipt
+    draft.pop('pending_model_confirmation', None)
+    state['engineering_draft'] = draft
+    conversation.write(state)
+    return {'status': 'MODEL_CONFIRMED', 'draft': draft, 'receipt': receipt}
 
 
 def workflow_request(arguments):

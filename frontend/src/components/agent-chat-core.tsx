@@ -1098,7 +1098,7 @@ export function EngineeringAgentWizard({
   const [domains, setDomains] = useState<TechnologyDomain[]>(STATIC_INDUSTRY_DOMAINS);
   const [step, setStep] = useState(0);
   const [projectName, setProjectName] = useState("");
-  const [selectedIndustry, setSelectedIndustry] = useState("automotive");
+  const [selectedIndustry, setSelectedIndustry] = useState("custom");
   const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
   const manualTechnologyScopeRef = useRef('');
   const [networkArchitecture, setNetworkArchitecture] = useState<NetworkArchitectureId | "">("sensor_ecu_actuator");
@@ -1330,7 +1330,8 @@ export function EngineeringAgentWizard({
         if (!active) return;
         const nextDomains = catalog.domains.length ? catalog.domains : STATIC_INDUSTRY_DOMAINS;
         setDomains(nextDomains);
-        setSelectedIndustry((current) => nextDomains.some((domain) => domain.id === current) ? current : nextDomains[0]?.id ?? "automotive");
+        setSelectedIndustry((current) => nextDomains.some((domain) => domain.id === current)
+          ? current : nextDomains.find((domain) => domain.id === 'custom')?.id ?? nextDomains[0]?.id ?? 'custom');
       })
       .catch(() => undefined);
     return () => {

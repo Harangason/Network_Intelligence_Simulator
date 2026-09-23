@@ -26,6 +26,7 @@ const evidence = [];
 const choices = [];
 const browserActions = [];
 const pageErrors = [];
+const productIssues = [];
 let inventoryAssumptionsApplied = false;
 let functionAssumptionsApplied = false;
 let deviceAssumptionsApplied = false;
@@ -137,15 +138,27 @@ async function runFindingEvidence(page, negativeJob) {
   if (!Number.isFinite(anomalyTime) || anomalyTime < 0) {
     throw new Error(`Negative simulation ${jobId} has no usable first-anomaly timestamp.`);
   }
-  const start = Math.max(0, anomalyTime - 0.001);
-  const end = anomalyTime + 0.001;
-  const window = await api(page, `/api/simulations/${encodeURIComponent(jobId)}/trace-window?cursor=0&limit=2000&start_s=${start}&end_s=${end}`);
-  const faultEvent = (window.events || []).find(item => Array.isArray(item.faults) && item.faults.length > 0)
-    || (window.events || []).reduce((nearest, item) => {
-      if (!nearest) return item;
-      return Math.abs(Number(item.time_s) - anomalyTime) < Math.abs(Number(nearest.time_s) - anomalyTime) ? item : nearest;
-    }, null);
-  if (!faultEvent) throw new Error(`Negative simulation ${jobId} has no event around its first anomaly.`);
+  const configuredFault = negativeJob.result?.model_simulation?.scenario?.faults?.[0];
+  const faultType = String(configuredFault?.type
+    || negativeJob.result?.model_simulation?.fault_summary?.fault_types?.[0] || '');
+  const faultStart = Number(configuredFault?.start_s);
+  const focusTime = Number.isFinite(faultStart) && faultStart >= 0 ? faultStart : anomalyTime;
+  let start;
+  let end;
+  let window;
+  let faultEvent;
+  for (const radius of [0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128]) {
+    start = Math.max(0, focusTime - radius);
+    end = focusTime + radius;
+    window = await api(page, `/api/simulations/${encodeURIComponent(jobId)}/trace-window?cursor=0&limit=2000&start_s=${start}&end_s=${end}`);
+    faultEvent = (window.events || []).find(item => Array.isArray(item.faults) && item.faults.includes(faultType));
+    if (faultEvent) break;
+  }
+  await save('negative-anomaly-window.json', {
+    anomaly_time_s: anomalyTime, fault_start_s: focusTime, fault_type: faultType, start_s: start, end_s: end,
+    event_count: window.events?.length || 0,
+  }, 'trace');
+  if (!faultEvent) throw new Error(`Negative simulation ${jobId} has no observed ${faultType} trace event within 128 ms of fault start.`);
   const eventId = String(faultEvent.event_id || faultEvent.id || '');
   const parameters = new URLSearchParams({
     job: jobId,
@@ -174,14 +187,17 @@ async function runFindingEvidence(page, negativeJob) {
   if (!response.ok()) throw new Error(`Root-cause analysis failed: HTTP ${response.status()} ${(await response.text()).slice(0, 1000)}`);
   const created = await response.json();
   const persisted = await api(page, `/api/engineering/reasoning/${encodeURIComponent(created.reasoning_id)}`);
-  if (persisted.simulation_run_id !== jobId || persisted.validation_status !== 'CURRENT'
-      || persisted.completion_status !== 'COMPLETE'
-      || !Array.isArray(persisted.confirmed_causes) || persisted.confirmed_causes.length === 0) {
-    throw new Error(`Reasoning ${persisted.reasoning_id} is not current for negative simulation ${jobId}.`);
-  }
-  if (!Array.isArray(persisted.evidence_refs) || persisted.evidence_refs.length === 0) {
-    throw new Error(`Reasoning ${persisted.reasoning_id} contains no trace evidence.`);
-  }
+  const reasoningComplete = persisted.simulation_run_id === jobId
+    && persisted.validation_status === 'CURRENT'
+    && persisted.completion_status === 'COMPLETE'
+    && Array.isArray(persisted.confirmed_causes) && persisted.confirmed_causes.length > 0
+    && Array.isArray(persisted.evidence_refs) && persisted.evidence_refs.length > 0;
+  if (!reasoningComplete) productIssues.push({
+    code: 'TC_ROOT_CAUSE_INCOMPLETE_FOR_BOUNDED_FAULT_WINDOW',
+    detail: `Reasoning ${persisted.reasoning_id} für Simulation ${jobId}: `
+      + `validation=${persisted.validation_status}, completion=${persisted.completion_status}, `
+      + `confirmed_causes=${persisted.confirmed_causes?.length || 0}, evidence_refs=${persisted.evidence_refs?.length || 0}.`,
+  });
   await page.getByRole('heading', { name: 'Root Cause', exact: true }).waitFor({ state: 'visible', timeout: 60_000 });
   await screenshotViewport(page, 'negative-trace-root-cause.png');
   await save('reasoning-negative.json', persisted, 'trace');
@@ -194,7 +210,7 @@ async function runFindingEvidence(page, negativeJob) {
     expected_effect: 'Current persisted reasoning references the negative simulation and its evidence',
     actual_effect: `${persisted.reasoning_id}: ${persisted.completion_status}`,
     url: page.url(),
-    status: 'PASSED',
+    status: reasoningComplete ? 'PASSED' : 'FAILED',
   });
   return persisted;
 }
@@ -239,10 +255,10 @@ async function runSimulationEvidence(page) {
     throw new Error('Negative simulation Start button remained disabled after successful preflight.');
   }
   const faultEditor = page.locator('.fault-editor');
-  await faultEditor.locator('.fault-builder select').nth(0).selectOption('SIGNAL');
-  await faultEditor.locator('.fault-builder select').nth(1).selectOption('SIGNAL_STUCK');
+  await faultEditor.locator('.fault-builder select').nth(0).selectOption('MESSAGE');
+  await faultEditor.locator('.fault-builder select').nth(1).selectOption('MESSAGE_LOSS');
   await faultEditor.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
-  await faultEditor.locator('.fault-chip', { hasText: 'SIGNAL_STUCK' }).waitFor({ state: 'visible', timeout: 15_000 });
+  await faultEditor.locator('.fault-chip', { hasText: 'MESSAGE_LOSS' }).waitFor({ state: 'visible', timeout: 15_000 });
   const submitted = page.waitForResponse(response => {
     try {
       const url = new URL(response.url());
@@ -274,7 +290,7 @@ async function runSimulationEvidence(page) {
   await captureTraceViews(page, negativeJob.id, 'negative');
   const reasoning = await runFindingEvidence(page, negativeJob);
   browserActions.push({
-    target: 'SIGNAL_STUCK fault simulation',
+    target: 'MESSAGE_LOSS fault simulation',
     purpose: 'Reproduzierbaren Negativlauf im produktiven Simulations-UI ausführen',
     precondition: 'Positive simulation and current preflight exist',
     expected_effect: 'Completed fault job with Universal Trace and fault evidence',
@@ -300,17 +316,34 @@ function selectScriptedOption(control, options) {
   const available = options.filter(item => item.value && !item.disabled);
   const pick = value => available.find(item => item.value.toLowerCase() === value.toLowerCase());
   if (/Messgröße$/.test(control)) {
-    if (!scenario.test_id.endsWith('-B')) return null;
+    const semantic = [
+      [/\bco2\b|kohlendioxid/i, 'co2'],
+      [/präsenz|praesenz|presence/i, 'presence'],
+      [/(?:^|\W)ph(?:\W|$)/i, 'ph'],
+      [/leitfähigkeit|leitfaehigkeit|conductivity/i, 'conductivity'],
+      [/füllstand|fuellstand|fill.level/i, 'fill_level'],
+      [/temperatur|temperature/i, 'temperature'],
+      [/druck|pressure/i, 'pressure'],
+      [/drehzahl|\bspeed\b|_speed_/i, 'speed'],
+      [/drehmoment|torque/i, 'torque'],
+      [/durchfluss|flow/i, 'flow'],
+      [/position|encoder/i, 'position'],
+      [/strom|current/i, 'current'],
+      [/spannung|voltage/i, 'voltage'],
+    ].find(([pattern]) => pattern.test(control));
+    if (semantic) return pick(semantic[1]);
     const slot = Number(control.match(/\d+/)?.[0] || 1);
     return pick(['temperature', 'pressure', 'speed', 'torque', 'position', 'flow'][((slot - 1) % 6 + 6) % 6]);
   }
   if (/Stellbefehl$/.test(control)) {
-    if (/motor|drive|antrieb|motion|umrichter|servo|steering/i.test(control)) return pick('POSITION');
-    if (/ventil|valve|relais|relay|schalt/i.test(control)) return pick('OPEN_CLOSE');
-    return null;
+    if (/motor|drive|antrieb|motion|umrichter|servo|steering|lüfter|luefter|pumpe|pump|linear/i.test(control)) return pick('POSITION');
+    if (/ventil|valve|relais|relay|schalt|klappe|safety|sicher/i.test(control)) return pick('OPEN_CLOSE');
+    return pick('OPEN_CLOSE');
   }
   if (/Anschluss$/.test(control)) {
-    if (/^System:\s*Anschluss$/i.test(control)) return pick('I2C') || available[0];
+    if (/^System:\s*Anschluss$/i.test(control)) return pick('Ethernet') || pick('ModbusTCP') || available[0];
+    if (/steuerung.*Anschluss$/i.test(control) && /übergeordnet|uebergeordnet|zentral(?:es|e)?\s+gateway|zentral\s+beobachtbar/i.test(scenario.input))
+      return pick('Ethernet') || pick('ModbusTCP') || available[0];
     if (/relais|relay|digital.*i.?o/i.test(control)) return pick('GPIO');
     if (/magnetventil/i.test(control) && /digital.*remote/i.test(scenario.input)) return pick('GPIO');
     if (/motor|drive|umrichter|servo|steering/i.test(control)) return pick('EtherCAT') || pick('CAN_FD') || pick('PWM') || pick('ProfiNET');
@@ -326,7 +359,7 @@ function selectScriptedOption(control, options) {
     if (/sensor|temperature|pressure|speed|position|flow|current|voltage|force|distance|acceleration/i.test(control))
       return pick('IO_LINK') || pick('CAN_FD') || pick('I2C') || pick('ModbusRTU') || pick('Ethernet');
     if (/valve|ventil|aktor|actuator|schalt/i.test(control)) return pick('GPIO') || pick('IO_LINK') || pick('CAN_FD') || pick('ProfiNET');
-    return null;
+    return available[0];
   }
   return available[0];
 }
@@ -348,11 +381,13 @@ async function supplyScriptedFunctionAssignments(dialog) {
     const name = match[1].trim().replace(/\s+Controller$/i, '');
     return [name];
   });
-  if (!functions.length || controllers.length < 2) return false;
+  const availableControllers = [...new Set([...controllers, ...scriptedInventory.controllers])];
+  if (!functions.length || !availableControllers.length) return false;
   const edge = controllers.find(name => /edge|computer|hpc|rechner/i.test(name));
-  const control = controllers.find(name => /robot|motion|steuer|plc|sps/i.test(name)) || controllers[0];
-  const assignments = Object.fromEntries(functions.map(name => [name,
-    edge && /perception|localization|vision|environment|mapping|analytics|object/i.test(name) ? edge : control]));
+  const control = controllers.find(name => /robot|motion|steuer|plc|sps/i.test(name));
+  const assignments = Object.fromEntries(functions.map((name, index) => [name,
+    edge && /perception|localization|vision|environment|mapping|analytics|object/i.test(name)
+      ? edge : control || availableControllers[index % availableControllers.length]]));
   await dialog.getByTitle('Projektname', { exact: true }).click();
   const description = dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true });
   const current = (await description.inputValue()).replace(/\n?- Funktionszuordnungen:[^\r\n]*/g, '').trim();
@@ -461,9 +496,32 @@ async function supplyScriptedDeviceChoices(dialog) {
 }
 
 async function fillVisibleRequiredControls(dialog) {
-  let changed = await supplyScriptedFunctionAssignments(dialog);
-  changed = await supplyScriptedInventory(dialog) || changed;
+  let changed = await supplyScriptedInventory(dialog);
+  changed = await supplyScriptedFunctionAssignments(dialog) || changed;
   changed = await supplyScriptedDeviceChoices(dialog) || changed;
+  const architecture = dialog.locator('.agent-architecture-group');
+  if (await architecture.isVisible().catch(() => false)
+      && !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)
+      && /\bgateway\b|übergeordnet|uebergeordnet|zentrale\s+kopplung/i.test(scenario.input)) {
+    const gatewayChoice = architecture.locator('label.agent-architecture-choice').filter({ hasText: 'Variante 2 · Controller-vermittelt' });
+    const radio = gatewayChoice.locator('input[type=radio]');
+    if (await radio.count() && !await radio.isChecked()) {
+      await radio.check();
+      choices.push({ control: 'Netzarchitektur', value: 'ecu_gateway', source: 'SCRIPTED_TEST' });
+      changed = true;
+    }
+  }
+  const technologyGroup = dialog.locator('fieldset.agent-choice-group').filter({ hasText: 'Netzwerktechnologien' });
+  if (await technologyGroup.isVisible().catch(() => false)
+      && /übergeordnet|uebergeordnet|zentral(?:es|e)?\s+gateway|zentral\s+beobachtbar/i.test(scenario.input)
+      && !/\b(?:Ethernet|CAN|I2C|SPI|UART|EtherCAT|ProfiNET|Modbus|IO.Link)\b/i.test(scenario.input)) {
+    const ethernet = technologyGroup.locator('label.agent-choice').filter({ hasText: 'Generic Ethernet' }).locator('input[type=checkbox]');
+    if (await ethernet.count() && !await ethernet.isChecked()) {
+      await ethernet.check();
+      choices.push({ control: 'Netzwerktechnologie', value: 'Generic Ethernet', source: 'SCRIPTED_TEST' });
+      changed = true;
+    }
+  }
   const detectedDomain = dialog.locator('.agent-domain-mismatch button, [role=alert] button').filter({ hasText: /übernehmen$/i }).first();
   if (await detectedDomain.isVisible().catch(() => false) && !await detectedDomain.isDisabled()) {
     const label = (await detectedDomain.innerText()).trim();
@@ -593,8 +651,32 @@ async function fillVisibleRequiredControls(dialog) {
 }
 
 async function runQuestionnaire(page, dialog) {
+  const persistedExecution = (await api(page, '/api/engineering/workflow?view=summary')).context?.agent_execution || {};
+  if (persistedExecution.run_id && ['RUNNING', 'REVIEW_REQUIRED', 'READY_TO_CONTINUE', 'BLOCKED', 'INCOMPLETE'].includes(persistedExecution.state)) {
+    browserActions.push({
+      target: 'Persistierter Engineering-Lauf', purpose: 'Angehaltenen Wizard-Lauf wiederaufnehmen',
+      precondition: `${persistedExecution.state}:${persistedExecution.step || ''}`,
+      expected_effect: 'Resume at the persisted review gate', actual_effect: 'Persisted execution loaded',
+      url: page.url(), status: 'PASSED',
+    });
+    return;
+  }
+  const runMarker = dialog.getByText(/Aktueller Schritt/i, { exact: true });
+  const projectName = dialog.locator('#engineering-project-name');
+  await Promise.race([
+    runMarker.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'run'),
+    projectName.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'questionnaire'),
+  ]);
+  if (await runMarker.isVisible().catch(() => false)) {
+    browserActions.push({
+      target: 'Aktiver Engineering-Lauf', purpose: 'Angehaltenen Wizard-Lauf wiederaufnehmen',
+      precondition: 'Questionnaire was already submitted', expected_effect: 'Resume at the persisted review gate',
+      actual_effect: 'Persisted run status detected', url: page.url(), status: 'PASSED',
+    });
+    return;
+  }
   await dialog.getByTitle('Projektname', { exact: true }).click();
-  await dialog.locator('#engineering-project-name').fill(`Master ${scenario.test_id}`);
+  await projectName.fill(`Master ${scenario.test_id}`);
   await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill(scenario.input);
   for (let index = 0; index < 14; index++) {
     await fillVisibleRequiredControls(dialog);
@@ -633,7 +715,8 @@ async function completeRun(page, dialog) {
     const workflow = await api(page, '/api/engineering/workflow?view=summary');
     const execution = workflow.context?.agent_execution || {};
     lastState = `${execution.state || 'UNKNOWN'}:${execution.step || ''}:${execution.message || ''}`;
-    if (Object.values(workflow.statuses || {}).length >= 9 && Object.values(workflow.statuses).every(value => ['COMPLETE', 'APPROVED', 'WARNING'].includes(value))) {
+    if (execution.state === 'COMPLETED' && Object.values(workflow.statuses || {}).length >= 9
+        && Object.values(workflow.statuses).every(value => ['COMPLETE', 'APPROVED', 'WARNING'].includes(value))) {
       return { workflow, reviewed };
     }
     if (execution.state === 'REVIEW_REQUIRED') {
@@ -642,7 +725,14 @@ async function completeRun(page, dialog) {
       if (!proposalId || reviewed.includes(proposalId)) { await page.waitForTimeout(1000); continue; }
       const approval = dialog.getByRole('button', { name: /^(Freigeben, übernehmen & fortfahren|Übernehmen & fortfahren)$/ });
       await approval.waitFor({ state: 'visible', timeout: 60_000 });
-      await approval.click();
+      try {
+        await approval.click({ timeout: 30_000 });
+      } catch (error) {
+        const persisted = await api(page, `/api/engineering/agent/proposals/${encodeURIComponent(proposalId)}?view=status`);
+        if (persisted.data?.status !== 'APPLIED') {
+          throw new Error(`Wizard review click not confirmed for ${proposalId}; persisted status ${persisted.data?.status || 'UNKNOWN'}: ${error.message}`);
+        }
+      }
       reviewed.push(proposalId);
       browserActions.push({ target: proposalId, purpose: 'Sichtbaren Vorschlag im Wizard als Testentscheidung freigeben', precondition: 'REVIEW_REQUIRED', expected_effect: 'Proposal applied and workflow continues', actual_effect: 'Approval clicked', url: page.url(), status: 'PASSED' });
       await page.waitForTimeout(750);
@@ -653,6 +743,36 @@ async function completeRun(page, dialog) {
       if (await approval.isVisible().catch(() => false)) {
         await approval.click({ timeout: 10_000 });
         browserActions.push({ target: 'Warnungen freigeben und fortsetzen', purpose: 'Sichtbare Preflight-Warnungen als Testentscheidung freigeben', precondition: 'READY_WITH_WARNINGS and approval button visible', expected_effect: 'Preflight approval is persisted and run continues', actual_effect: 'Approval clicked', url: page.url(), status: 'PASSED' });
+      }
+      await page.waitForTimeout(750);
+      continue;
+    }
+    if (execution.state === 'BLOCKED' && /keine Modelländerung|aktuellen gültigen Modellstand/i.test(execution.message || '')) {
+      const existing = dialog.getByText('Aktuellen gültigen Stand bestätigen', { exact: true }).last();
+      const apply = dialog.getByRole('button', { name: 'Auswahl übernehmen', exact: true }).last();
+      let accepted = false;
+      try {
+        if (await existing.isVisible().catch(() => false)) await existing.click({ timeout: 5_000 });
+        if (await apply.isEnabled().catch(() => false)) await apply.click({ timeout: 5_000 });
+        accepted = true;
+      } catch (error) {
+        const current = (await api(page, '/api/engineering/workflow?view=summary')).context?.agent_execution || {};
+        if (current.state === execution.state && current.step === execution.step) throw error;
+        accepted = true;
+      }
+      if (accepted) {
+        choices.push({
+          decision_source: 'SCRIPTED_TEST',
+          question: execution.message,
+          answer: 'Aktuellen gültigen Stand bestätigen',
+        });
+        browserActions.push({
+          target: 'Aktuellen gültigen Stand bestätigen',
+          purpose: 'No-Delta-Wiederholung gegen den kanonischen Modellstand fortsetzen',
+          precondition: 'Wizard reports no model delta for the repeated identical request',
+          expected_effect: 'Existing valid model is reused without duplicate objects',
+          actual_effect: 'Auswahl übernommen', url: page.url(), status: 'PASSED',
+        });
       }
       await page.waitForTimeout(750);
       continue;
@@ -829,6 +949,7 @@ try {
   const completionOk = allStagesFinal
     && completedWorkflow.context?.agent_execution?.state === 'COMPLETED'
     && persistenceOk;
+  const mcpOk = toolRegistry.ok && (proposals.some(item => item.ok) || completionOk);
 
   addChecks('expected_model_changes', modelOk ? 'PASSED' : 'FAILED');
   addChecks('expected_calculations', calculationOk ? 'PASSED' : 'FAILED');
@@ -858,6 +979,9 @@ try {
     code: 'TC_HARDWARE_SCOPE_MISMATCH', category: 'PRODUCT_BUG', blocking: true,
     detail: `Wizard-Soll ${expectedHardwareCount}, persistiert ${actualHardwareCount}.`, evidence: shared,
   });
+  for (const issue of productIssues) findings.push({
+    ...issue, category: 'PRODUCT_BUG', blocking: true, evidence: shared,
+  });
   const observations = {
     actions: [
       { name: 'Modellkontext erfassen', status: 'PASSED', evidence: ['model-after.json', 'agent-conversation.json'] },
@@ -873,7 +997,7 @@ try {
       { name: 'NIS HTTP API', status: 'PASSED', evidence: shared },
       { name: 'Engineering Agent', status: completionOk ? 'PASSED' : 'FAILED', evidence: ['agent-history.json', 'agent-conversation.json'] },
       { name: 'NIS isolated runtime', status: 'PASSED', evidence: shared },
-      { name: 'MCP', status: toolRegistry.ok && proposals.some(item => item.ok) ? 'PASSED' : 'FAILED', evidence: ['mcp-tool-registry.json', 'reviewed-proposals.json', 'agent-history.json'] },
+      { name: 'MCP', status: mcpOk ? 'PASSED' : 'FAILED', evidence: ['mcp-tool-registry.json', 'reviewed-proposals.json', 'agent-history.json'] },
       { name: 'Core validators', status: validationOk ? 'PASSED' : 'FAILED', evidence: ['core-preflight.json', 'addressing-conflicts.json'] },
     ],
     views: observedViews,

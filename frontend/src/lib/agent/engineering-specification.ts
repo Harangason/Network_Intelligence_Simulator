@@ -1362,8 +1362,11 @@ function headingLabel(line: string) {
 
 function isCountedHardwareGroup(value: string) {
   const key = normalized(value);
+  const genericModifiers = inventoryVocabulary.modifiers.split('|')
+    .filter(modifier => !['io link', 'can fd', 'ethernet', 'real time'].includes(modifier))
+    .join('|');
   return new RegExp(
-    `^${COUNT_TOKEN}\\s+(?:(?:technische|physikalische|logische|fahrzeugrelevante|funktions|zentrale|zentralen|zentrales|zentraler|typische|weitere|einziges|einzigen)\\s+){0,2}(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|controller(?:s)?|plc(?:s)?|sps|steuerger(?:a|ä|ae)t(?:e)?|gateway(?:s)?)$`,
+    `^(?:genau\\s+)?${COUNT_TOKEN}\\s+(?:(?:${genericModifiers}|funktions|typische|weitere|einziges|einzigen)\\s+){0,3}(?:sensor(?:en|s)?|actuator(?:s)?|aktuator(?:en)?|aktor(?:en)?|ecu(?:s)?|controller(?:s)?|plc(?:s)?|sps|steuerger(?:a|ä|ae)t(?:e)?|gateway(?:s)?)$`,
   ).test(key);
 }
 
@@ -1903,6 +1906,11 @@ function generatedPhysicalDefaults(name: string) {
   if (key.includes("winkel")) return { min: -180, max: 180, unit: "deg" };
   if (key.includes("kraft")) return { min: -100000, max: 100000, unit: "N" };
   if (key.includes("luftfeuchtigkeit")) return { min: 0, max: 100, unit: "%" };
+  if (key.includes("co2") || key.includes("kohlendioxid")) return { min: 0, max: 10000, unit: "ppm" };
+  if (key.includes("präsenz") || key.includes("praesenz")) return { min: 0, max: 1, unit: "state" };
+  if (/\bph wert\b/.test(key)) return { min: 0, max: 14, unit: "pH" };
+  if (key.includes("leitfähigkeit") || key.includes("leitfaehigkeit")) return { min: 0, max: 200000, unit: "uS/cm" };
+  if (key.includes("füllstand") || key.includes("fuellstand")) return { min: 0, max: 100, unit: "%" };
   if (key.includes("abstand")) return { min: 0, max: 1000, unit: "m" };
   if (key.includes("beschleunigung")) return { min: -200, max: 200, unit: "m/s²" };
   if (key.includes("geschwindigkeit") || key.includes("speed")) {
