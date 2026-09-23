@@ -222,7 +222,10 @@ def bus_schedule(rows, policy):
             protocol,
             f"Für {protocol or 'dieses Protokoll'} ist noch kein deterministisches Scheduling-Modell hinterlegt.",
         )
-        return {**result, "status": "UNVERIFIED", "reasons": [reason]}
+        # The generic frame estimator is not a trustworthy I2C bus-load model:
+        # address, ACK/NACK, transfer shape and clock stretching affect wire time.
+        # Do not expose its nominal number as if it were a measured bus capacity.
+        return {**result, "nominal_load_percent": None, "status": "UNVERIFIED", "reasons": [reason]}
     result["status"] = "CONSTRAINT_VIOLATION" if result["reasons"] else "FEASIBLE_UNDER_ASSUMPTIONS"
     return result
 
@@ -233,7 +236,12 @@ def dimension_communications(rows, parameters, history=None):
     groups = defaultdict(list)
     for row in streams:
         groups[row["network_id"]].append(row)
+    protocol_inventory = {}
+    for row in streams:
+        protocol = str(row.get("protocol") or "UNKNOWN").upper()
+        protocol_inventory[protocol] = protocol_inventory.get(protocol, 0) + 1
     result = {"version": VERSION, "policy": policy, "networks": [], "changes": [], "history_matches": [],
+              "protocol_inventory": dict(sorted(protocol_inventory.items())),
               "status": "DISABLED" if not policy["enabled"] else "NO_CHANGES", "requires_functional_review": True}
     if not policy["enabled"]:
         return result
@@ -267,7 +275,7 @@ def dimension_communications(rows, parameters, history=None):
                     and check["nominal_load_percent"] <= policy["target_load_percent"] + 1e-7
                     and check.get("slot_load_percent", 0) <= policy["maximum_slot_load_percent"] + 1e-7)
             reasons = list(check.get("reasons", []))
-            if check.get("nominal_load_percent", 0) > policy["target_load_percent"]:
+            if number(check.get("nominal_load_percent")) > policy["target_load_percent"]:
                 reasons.append("Ziel-Buslast überschritten.")
             if check.get("slot_load_percent", 0) > policy["maximum_slot_load_percent"]:
                 reasons.append("Reservierte LIN-Slots lassen zu wenig Reserve.")
@@ -349,7 +357,9 @@ def dimension_communications(rows, parameters, history=None):
             updated = [{**row, "cycle_ms": row["cycle_ms"] if row.get("message_id") in blocked_messages else proposals.get(row.get("message_id"), row["cycle_ms"])} for row in groups[entry["network_id"]]]
             check = bus_schedule(updated, policy)
             entry["schedule"] = check
-            if check["status"] != "FEASIBLE_UNDER_ASSUMPTIONS" or check.get("nominal_load_percent", 0) > policy["target_load_percent"] or check.get("slot_load_percent", 0) > policy["maximum_slot_load_percent"]:
+            if (check["status"] != "FEASIBLE_UNDER_ASSUMPTIONS"
+                    or number(check.get("nominal_load_percent")) > policy["target_load_percent"]
+                    or number(check.get("slot_load_percent")) > policy["maximum_slot_load_percent"]):
                 entry.update(status="UNRESOLVED", explanation="Zugehörige Nachricht auf einem anderen Bus noch ungeklärt.")
                 changed = True
         if not changed:

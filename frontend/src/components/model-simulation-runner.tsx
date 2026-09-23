@@ -36,7 +36,7 @@ import {
   type SignalKindFilter,
 } from "@/lib/simulation-signal-view";
 import { formatParticipants, runtimeNetworkPresentation, runtimeRoutePresentation, technologyLabel } from "@/lib/simulation-network-view";
-import { buildSequenceDiagram } from "@/lib/e2e-sequence";
+import { sequenceModelForEventIds, type SequenceDiagramModel } from "@/lib/e2e-sequence";
 import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
 
 type SimulationView = "network" | "sequence" | "signals" | "load" | "events";
@@ -436,7 +436,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
         <SimulationTimeline duration={maximumTime} playhead={playhead} playing={playing} onChange={setPlayhead} />
         {!modelTrace && <div className="simulation-empty-state"><strong>{job ? "Simulation wird verarbeitet" : "Noch kein Lauf gestartet"}</strong><span>Nach dem Start erscheinen Signalwerte, Buslast und Ereignisse auf derselben Zeitachse.</span></div>}
         {modelTrace && view === "network" && <NetworkView job={job} trace={modelTrace} playhead={playhead} topology={workflow?.topology} />}
-        {modelTrace && view === "sequence" && <SequenceView trace={modelTrace} playhead={playhead} />}
+        {modelTrace && view === "sequence" && <SequenceView trace={modelTrace} model={job?.result?.runtime_metrics?.sequence_model} playhead={playhead} />}
         {modelTrace && view === "signals" && <SignalsView trace={modelTrace} playhead={playhead} />}
         {modelTrace && view === "load" && <BusLoadView metrics={job?.result?.runtime_metrics?.networks ?? []} playhead={playhead} projectId={projectIdForLinks} topology={workflow?.topology} trace={modelTrace} />}
         {modelTrace && view === "events" && <EventsView trace={modelTrace} playhead={playhead} />}
@@ -486,11 +486,10 @@ function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | 
   return <div className="network-runtime-view"><div className="network-runtime-nodes"><article><span>AKTIVE PFADE</span><strong>{activeRoutes.size}</strong><small>bis {playhead.toFixed(3)} s</small></article><div className="runtime-link-line" /><article className="gateway-runtime-node"><span>SIMULATED LOAD</span><strong>{currentLoad.toFixed(1)} %</strong><small>{visibleFrames.length} Frames · {networks.length} Netze</small></article><div className="runtime-link-line" /><article><span>ZUGESTELLT</span><strong>{delivered}</strong><small>{visibleFrames.length - delivered} verworfen</small></article></div><div className="runtime-route-list"><div className="runtime-route-heading"><span>Route</span><span>TX</span><span>RX</span><span>Takt</span><span>Frames</span><span>Status</span></div>{routes.slice(0, 12).map((route) => { const routeFrames = framesByRoute.get(route.route_id) ?? []; const dataFrames = routeFrames.filter((frame) => (frame.traffic_type ?? "DATA") === "DATA"); const presentation = runtimeRoutePresentation(route, dataFrames, topology); return <div className="runtime-route-row" key={route.route_id}><strong>{presentation.name}<small>{route.route_id}</small></strong><span><b>TX</b>{presentation.sender}</span><span><b>RX</b>{formatParticipants(presentation.receivers, 2)}</span><span>{route.configured_cycle_ms} ms</span><span>{dataFrames.filter((frame) => frame.time_s <= playhead + 0.000001).length} / {route.event_count}</span><b className={route.status === "PASS" ? "pass" : "fail"}>{route.status}</b></div>; })}</div><div className="runtime-frame-list"><strong>Frame-Trace am Zeitzeiger</strong>{visibleFrames.slice(-20).reverse().map((frame, index) => <div key={`${frame.route_id}:${frame.time_s}:${index}`}><time>{frame.time_s.toFixed(4)} s</time><span>TX {frame.source_logical_address ?? "—"} · {frame.source_name ?? frame.sender}</span><span>RX {(frame.destination_logical_addresses ?? []).map((address, receiverIndex) => `${address ?? "—"} · ${frame.destination_names?.[receiverIndex] ?? frame.receivers?.[receiverIndex] ?? "unbekannt"}`).join(", ")}</span><span>{frame.route_name} · {frame.network}</span></div>)}</div></div>;
 }
 
-function SequenceView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {
-  const model = useMemo(() => buildSequenceDiagram((trace.frames ?? [])
-    .filter(frame => frame.time_s <= playhead + 0.000001)
-    .map(frame => ({ ...frame, sender_hardware: frame.sender, receiver_hardware: frame.receivers })), "SIMULATED"), [trace.frames, playhead]);
-  return <E2ESequenceDiagram model={model} />;
+function SequenceView({ trace, model: sourceModel, playhead }: { trace: ModelSimulationTrace; model?: SequenceDiagramModel; playhead: number }) {
+  const model = useMemo(() => sourceModel ? sequenceModelForEventIds(sourceModel, new Set((trace.frames ?? [])
+    .filter(frame => frame.time_s <= playhead + 0.000001).map(frame => String(frame.event_id ?? "")))) : null, [sourceModel, trace.frames, playhead]);
+  return model ? <E2ESequenceDiagram model={model} /> : <div className="panel trace-sequence"><p>Das gemeinsame Sequenzmodell steht für diesen Simulationslauf nicht zur Verfügung.</p></div>;
 }
 
 function SignalsView({ trace, playhead }: { trace: ModelSimulationTrace; playhead: number }) {

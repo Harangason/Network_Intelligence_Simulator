@@ -40,7 +40,8 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
             'inspect_communication_capability', 'inspect_signal_definition',
             'inspect_message', 'inspect_hardware', 'resolve_generation_rules',
             'calculate_message_size', 'calculate_bus_load', 'validate_message',
-            'ask_engineering_question'})
+            'generate_functions', 'generate_messages', 'generate_signals', 'generate_routing',
+            'calculate_capacity', 'validate_simulation_preflight', 'ask_engineering_question'})
     if re.search(r'repar|neue.*(?:weg|route|architektur)|funktionspartner', prompt, re.I):
         names.update({'inspect_communication_repair', 'prepare_communication_repair', 'continue_communication_repair'})
     if re.search(r'dublett|duplicat|struktur.*transfer|structure.*transfer', prompt, re.I):

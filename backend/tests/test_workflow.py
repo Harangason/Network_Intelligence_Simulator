@@ -640,6 +640,29 @@ def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
     assert result["preflight_status"] == "BLOCKED"
 
 
+@pytest.mark.parametrize("technology", ["lin", "can_fd", "ethernet"])
+def test_preflight_does_not_treat_default_rates_as_configured(monkeypatch, technology):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {"technology": technology},
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    findings = result["category_checks"]["technology"]
+    assert any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
+    assert result["preflight_status"] == "BLOCKED"
+    assert result["ready_for_simulation"] is False
+
+
 def test_simulation_snapshot_rejects_unapproved_preflight_warnings(monkeypatch):
     service = WorkflowStatusService("analysis-project")
     monkeypatch.setattr(service, "latest_analysis", lambda *_args, **_kwargs: {

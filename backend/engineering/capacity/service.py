@@ -1347,10 +1347,13 @@ class PreflightService:
                 technology_id,
                 (
                     {"nominal_bitrate_bps": stored_parameters.get(
-                         "arbitration_bitrate", stored_parameters.get("bitrate")),
-                     "data_bitrate_bps": stored_parameters.get("data_bitrate")}
+                         "nominal_bitrate_bps", stored_parameters.get(
+                             "arbitration_bitrate", stored_parameters.get("bitrate"))),
+                     "data_bitrate_bps": stored_parameters.get(
+                         "data_bitrate_bps", stored_parameters.get("data_bitrate"))}
                     if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology_id) == "can_fd"
-                    else {"bitrate_bps": stored_parameters.get("bitrate")}
+                    else {"bitrate_bps": stored_parameters.get(
+                         "bitrate_bps", stored_parameters.get("bitrate"))}
                 ),
             )
             for issue in technology_profile["findings"]:
@@ -1358,6 +1361,22 @@ class PreflightService:
                     str(issue.get("code") or "TECHNOLOGY_PARAMETER_INVALID"),
                     str(issue.get("message") or "Technologieparameter sind ungueltig."),
                     technology_id=technology_profile["technology_id"])
+            if technology_profile["status"] != "UNKNOWN":
+                rate_fields = (DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+                               .get("rate_model", {}).get("fields", []))
+                configured_rates = {
+                    "bitrate_bps": stored_parameters.get("bitrate_bps", stored_parameters.get("bitrate")),
+                    "nominal_bitrate_bps": stored_parameters.get(
+                        "nominal_bitrate_bps", stored_parameters.get(
+                            "arbitration_bitrate", stored_parameters.get("bitrate"))),
+                    "data_bitrate_bps": stored_parameters.get(
+                        "data_bitrate_bps", stored_parameters.get("data_bitrate")),
+                }
+                for field in rate_fields:
+                    if configured_rates.get(field) is None:
+                        add("technology", "BLOCKER", "TECHNOLOGY_PARAMETER_INVALID",
+                            f"{field} fehlt; das Technologieprofil {technology_id} benoetigt diesen Wert in bit/s.",
+                            technology_id=technology_profile["technology_id"])
         if _number(parameters.get("bitrate"), 0.0) <= 0:
             add("parameters", "ERROR", "PARAMETER_BITRATE_MISSING", "Eine positive Bitrate ist erforderlich.")
         if _number(parameters.get("cycle_ms"), 0.0) <= 0:

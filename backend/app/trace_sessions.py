@@ -112,6 +112,12 @@ def session_window(session_id, **options):
         raise ValueError('Ungültiger Trace-Speicherort.')
     metadata = json.loads((folder / 'metadata.json').read_text(encoding='utf8'))
     page = read_trace_window(folder / 'events.jsonl', **options)
-    return {**metadata, **page, 'imported_events': len(page['events']), 'truncated': metadata['partial']}
+    from .e2e_assurance import build_sequence_model
+    sequence_events = [{**event, 'time_s': event.get('timestamp'), 'source_name': event.get('source'),
+                        'destination_names': [event.get('destination')] if event.get('destination') else []}
+                       for event in page['events']]
+    return {**metadata, **page,
+            'sequence_model': build_sequence_model(sequence_events, source='OBSERVED'),
+            'imported_events': len(page['events']), 'truncated': metadata['partial']}
 
 

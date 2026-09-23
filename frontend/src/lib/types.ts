@@ -1,3 +1,5 @@
+import type { SequenceDiagramModel } from "./e2e-sequence";
+
 export type Technology = {
   id: string;
   kind: string;
@@ -240,6 +242,7 @@ export type RuntimeMetrics = {
   };
   networks?: RuntimeNetworkMetric[];
   routes?: RuntimeRouteMetric[];
+  sequence_model?: SequenceDiagramModel;
   gateways?: Array<{
     gateway_id: string;
     event_count: number;

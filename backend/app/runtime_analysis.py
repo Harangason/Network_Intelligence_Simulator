@@ -7,7 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from .e2e_assurance import build_e2e_transactions
+from .e2e_assurance import build_e2e_transactions, build_sequence_model
 
 
 def _number(value: Any, default: float = 0.0) -> float:
@@ -359,6 +359,7 @@ def analyze_runtime_trace(
         "networks": network_metrics,
         "routes": route_metrics,
         "e2e_transactions": build_e2e_transactions(events, route_requirements),
+        "sequence_model": build_sequence_model(events, route_requirements, source="SIMULATED"),
         "queues": {
             "average_depth": round(
                 sum(item["average_queue_depth"] for item in network_metrics) / len(network_metrics), 6

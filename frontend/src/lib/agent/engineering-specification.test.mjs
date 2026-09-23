@@ -233,7 +233,13 @@ test("confirmed graph may exceed targets declared as minimum scope for system co
   );
 });
 
-import { applyConfirmedClusterGraph, canonicalCommunicationSystem, defaultNetworkArchitectureMode, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringControllerDevice, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+import { applyConfirmedClusterGraph, canonicalCommunicationSystem, defaultNetworkArchitectureMode, normalizeHardwareName, engineeringDomainEvidence, expandEngineeringSignalModel, extractCommunicationSystemCounts, extractCommunicationSystems, extractEngineeringSpecification, extractEngineeringTargetCounts, extractNetworkArchitectureMode, isEngineeringAnalysisWorkRequest, isEngineeringControllerDevice, isEngineeringReviewRequest, isStructuredEngineeringSpecification, packEngineeringChains } from "./engineering-specification.ts";
+
+test("technology selection ignores negated transports and keeps the positively named bus", () => {
+  assert.deepEqual(extractCommunicationSystems("Das Projekt nutzt I2C-Verbindungen, nicht CAN."), ["I2C"]);
+  assert.deepEqual(extractCommunicationSystems("CAN is not used; sensors communicate over I2C."), ["I2C"]);
+  assert.deepEqual(extractCommunicationSystems("Use CAN, but not LIN."), ["CAN"]);
+});
 
 test("catalog technology identifiers resolve to device connection types", () => {
   assert.equal(canonicalCommunicationSystem("ethercat industrial_automation"), "EtherCAT");

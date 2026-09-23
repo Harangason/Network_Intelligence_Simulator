@@ -181,3 +181,102 @@ def build_e2e_transactions(
             ) for item in hops],
         ).to_dict())
     return transactions
+
+
+def build_sequence_model(
+    events: list[dict[str, Any]],
+    routes: dict[str, dict[str, Any]] | None = None,
+    *,
+    source: str,
+) -> dict[str, Any]:
+    """Build the shared presentation contract from the canonical E2E model.
+
+    Timing, correlation, completeness, and receiver acceptance are taken from
+    ``build_e2e_transactions``. This function only adds the event fields the
+    sequence renderer needs; it does not infer delivery from a nearby frame.
+    """
+    transactions = build_e2e_transactions(events, routes)
+    by_id = {str(item["transaction_id"]): item for item in transactions}
+    participants: set[str] = set()
+    sequence_events: list[dict[str, Any]] = []
+    correlated = 0
+    for index, record in enumerate(events):
+        if not isinstance(record, dict):
+            continue
+        transaction_id = record.get("transaction_id") or record.get("end_to_end_event_id")
+        transaction_id = str(transaction_id) if transaction_id else None
+        transaction = by_id.get(transaction_id or "")
+        sender = record.get("source_name") or record.get("sender_hardware") or record.get("sender") or record.get("source") or "Unbekannt"
+        receivers = record.get("destination_names") or record.get("receiver_hardware") or record.get("receivers") or record.get("destination") or []
+        if not isinstance(receivers, list):
+            receivers = [receivers]
+        destination = ", ".join(str(item) for item in receivers if item) or "Unbekannt"
+        participants.update((str(sender), destination))
+        if transaction_id:
+            correlated += 1
+        kind = str(record.get("event_type") or "").upper()
+        is_receiver = kind in {"RECEIVER_ACCEPTANCE", "RECEIVER_REJECTION"}
+        time_value = record.get("time_s", record.get("timestamp"))
+        try:
+            time_s = float(time_value) if time_value is not None and not isinstance(time_value, bool) else None
+        except (TypeError, ValueError):
+            time_s = None
+        time_status = str(record.get("time_status") or "").lower()
+        if time_status in {"unavailable", "invalid", "unknown"}:
+            time_s = None
+        status = str(record.get("status") or "observed")
+        receiver_status = transaction.get("receiver_status") if transaction else "NOT_OBSERVED"
+        accept_time = transaction.get("receiver_accept_time_s") if transaction else None
+        sequence_events.append({
+            "id": str(record.get("event_id") or f"{source}:{index}"),
+            "transactionId": transaction_id,
+            "timeS": time_s,
+            "source": str(sender),
+            "destination": destination,
+            "technology": str(record.get("technology") or record.get("bus") or record.get("channel") or "Unbekannt"),
+            "route": str(record.get("route_name") or record.get("route_id") or record.get("message") or "Unbekannt"),
+            "status": status,
+            "segmentIndex": record.get("segment_index"),
+            "segmentCount": record.get("segment_count"),
+            "releaseTimeS": transaction.get("source_release_time_s") if transaction else record.get("origin_release_time_s"),
+            "transportLatencyMs": transaction.get("transport_latency_ms") if transaction else None,
+            "queueDelayMs": record.get("queue_delay_ms"),
+            "payloadBytes": record.get("payload_bytes"),
+            "eventKind": "RECEIVER" if is_receiver else "TRANSPORT",
+            "receiverStatus": receiver_status if is_receiver else None,
+            "receiverAcceptTimeS": accept_time if is_receiver else None,
+            "e2eLatencyMs": transaction.get("e2e_latency_ms") if transaction else None,
+            "dataAgeAtAcceptMs": transaction.get("data_age_at_accept_ms") if transaction else None,
+        })
+    sequence_events.sort(key=lambda item: item["timeS"] if item["timeS"] is not None else float("inf"))
+    event_ids_by_transaction: dict[str, list[str]] = defaultdict(list)
+    technologies_by_transaction: dict[str, set[str]] = defaultdict(set)
+    for event in sequence_events:
+        transaction_id = event["transactionId"]
+        if not transaction_id:
+            continue
+        event_ids_by_transaction[transaction_id].append(event["id"])
+        if event["eventKind"] == "TRANSPORT":
+            technologies_by_transaction[transaction_id].add(event["technology"])
+    sequence_transactions = [{
+        "id": item["transaction_id"],
+        "eventIds": event_ids_by_transaction.get(item["transaction_id"], []),
+        "technologies": sorted(technologies_by_transaction.get(item["transaction_id"], set())),
+        "complete": item["transport_status"] == "DELIVERED",
+        "receiverStatus": item["receiver_status"],
+        "e2eLatencyMs": item["e2e_latency_ms"],
+        "dataAgeAtAcceptMs": item["data_age_at_accept_ms"],
+        "deadlineStatus": item["deadline_status"],
+        "freshnessStatus": item["freshness_status"],
+        "requirementStatus": item["requirement_status"],
+        "evidenceEventIds": item["evidence_event_ids"],
+        "findings": item["findings"],
+    } for item in transactions]
+    return {
+        "source": source,
+        "participants": sorted(participants),
+        "events": sequence_events,
+        "transactions": sequence_transactions,
+        "correlatedCount": correlated,
+        "uncorrelatedCount": len(sequence_events) - correlated,
+    }

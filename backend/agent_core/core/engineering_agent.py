@@ -349,8 +349,9 @@ class EngineeringAgent:
                           metadata={'project_id': result.data['project_id']})
                     return {'run_id': run_id, 'status': 'ANSWERED', 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
                 introduction = (items[0]['description'] + '\n\nAblauf: ' + ' → '.join(items[0]['steps']) if capability else
-                    'Ich kenne die folgenden Wizards und Fachagenten. Wähle eine Kachel, um den Ablauf zu öffnen. '
-                    'Modelländerungen erfolgen erst im jeweiligen Arbeitsablauf.')
+                    'Ich kann diese Engineering-Aufträge direkt hier im Chat prüfen und ausführen. '
+                    'Beschreibe das Ziel, zum Beispiel „Prüfe die Netzlast“ oder „Lege ein Signal an“. '
+                    'Vor Modelländerungen zeige ich den validierten Vorschlag und frage nach deiner Freigabe.')
                 for offset in range(0, len(items), 12):
                     event('RESULT', status='ANSWERED', text=introduction if offset == 0 else 'Weitere Fähigkeiten',
                           actions=[item['action'] for item in items[offset:offset + 12]],
@@ -992,6 +993,7 @@ class EngineeringAgent:
             status = "READY_FOR_REVIEW" if proposals and all(p["status"]=="VALIDATED" for p in proposals.values()) else "INCOMPLETE"
             text = "Der Funktionsvorschlag ist zur Prüfung bereit." if status=="READY_FOR_REVIEW" else "Der Vorschlag benötigt weitere Angaben oder Korrekturen."
         else:
+            change_requested = requests_model_change(prompt)
             messages = [*(history or [])[-12:], {"role":"user","content":prompt}]
             directory = await call('inspect_assistant_capabilities')
             if directory.success and isinstance(directory.data.get('capabilities'), list):
@@ -1015,7 +1017,6 @@ class EngineeringAgent:
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
-            change_requested = requests_model_change(prompt)
             evidence_retries = 0
             failed_calls = {}
             completed_calls = set()

@@ -80,20 +80,17 @@ test("generic and custom projects do not invent transport technologies", () => {
   assert.deepEqual(defaultWizardTechnologyIds({ id: "generic", label: "Generic", technologies }), []);
 });
 
-test("registered domain defaults remain ordered and exclude unsupported technologies", () => {
+test("industry does not select transport technologies without explicit bus evidence", () => {
   const technologies = [
     technology("lin"),
     technology("someip", "NOT_SUPPORTED"),
     technology("can_fd"),
     technology("automotive_ethernet"),
   ];
-  assert.deepEqual(
-    defaultWizardTechnologyIds({ id: "automotive", label: "Automotive", technologies }),
-    ["can_fd", "automotive_ethernet", "lin"],
-  );
+  assert.deepEqual(defaultWizardTechnologyIds({ id: "automotive", label: "Automotive", technologies }), []);
 });
 
-test("a registered domain without a preference list retains executable catalog defaults", () => {
+test("technical device domain also leaves transport selection open without bus evidence", () => {
   const technologies = [
     technology("i2c"),
     technology("spi"),
@@ -102,8 +99,5 @@ test("a registered domain without a preference list retains executable catalog d
     technology("gpio"),
     technology("pwm"),
   ];
-  assert.deepEqual(
-    defaultWizardTechnologyIds({ id: "embedded_systems", label: "Embedded", technologies }),
-    ["i2c", "spi", "uart", "gpio"],
-  );
+  assert.deepEqual(defaultWizardTechnologyIds({ id: "embedded_systems", label: "Embedded", technologies }), []);
 });

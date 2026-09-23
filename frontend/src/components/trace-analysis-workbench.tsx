@@ -9,7 +9,7 @@ import { engineeringContextHref } from "@/lib/agent/assistant-context";
 import { eventFromRecord, MAX_IMPORT_BYTES, type TraceEvent } from "@/lib/trace-records";
 import { ReasoningPanel } from "./reasoning-panel";
 import { queueEngineeringAgentTask } from '@/lib/agent-task-events';
-import { buildSequenceDiagram } from "@/lib/e2e-sequence";
+import { sequenceModelForEventIds, type SequenceDiagramModel } from "@/lib/e2e-sequence";
 import { E2ESequenceDiagram } from "./e2e-sequence-diagram";
 
 import { automaticProfile, availableColumns, displayTraceValue, TRACE_PROFILES, type TraceProfile } from "@/lib/trace-profiles";
@@ -87,6 +87,7 @@ export function TraceAnalysisWorkbench() {
   const [sessionDetailsOpen, setSessionDetailsOpen] = useState(false);
   const loadGeneration = useRef(0);
   const [signalChannels, setSignalChannels] = useState<string[]>([]);
+  const [sequenceModel, setSequenceModel] = useState<SequenceDiagramModel | null>(null);
 
   useEffect(() => { void listSimulations().then(setJobs).catch(() => setJobs([])); }, []);
   useEffect(() => {
@@ -122,6 +123,7 @@ export function TraceAnalysisWorkbench() {
       if (!response.ok) throw new Error(result.error ?? `Trace-Abruf fehlgeschlagen (${response.status}).`);
       if (generation !== loadGeneration.current) return;
       const loaded = (result.events as Record<string, unknown>[]).map(eventFromRecord);
+      setSequenceModel(result.sequence_model ?? null);
       setEvents(loaded); setCurrentCursor(cursor);
       setSelectedEvent(search.get("event") ? loaded.find(item => item.id === search.get("event")) ?? null : range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
       setTraceJob(jobId); setNextCursor(result.next_cursor); setSourceName(`Simulation ${jobId} · Trace-Fenster`);
@@ -276,7 +278,7 @@ export function TraceAnalysisWorkbench() {
           </div>
           {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Universeller Trace-Import: {ACCEPTED}. Binärformate werden anhand ihrer Dateisignatur erkannt. Vorschau bis 500 MiB und 2000 Ereignisse. ASC/BLF: CAN und CAN FD; PCAP/PCAPNG: Rohpakete; MDF/MF4: skalare Messkanäle. PCAPNG: eine Schnittstelle pro Datei. Rohbytes benötigen für Signalwerte eine passende Decoder-Datenbank.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
           {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
-          {view === "sequence" && <SequenceView events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
+          {view === "sequence" && <SequenceView events={filtered} model={sequenceModel} selected={selectedEvent} onSelect={selectEvent} />}
           {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={selectEvent} channels={signalChannels} onChannels={setSignalChannels} />}
           {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} compact />}
           {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
@@ -346,12 +348,10 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
   </div>;
 }
 
-function SequenceView({ events, ...selection }: SelectionProps & { events: TraceEvent[] }) {
-  const model = buildSequenceDiagram(events.map(event => ({ ...event.original,
-    event_id: event.id, time_s: event.timestamp, time_status: event.timeKnown ? "known" : "unavailable",
-    source_name: event.source, destination_names: [event.destination], technology: event.technology,
-    route_name: event.message, status: event.status })), "OBSERVED");
+function SequenceView({ events, model: sourceModel, ...selection }: SelectionProps & { events: TraceEvent[]; model: SequenceDiagramModel | null }) {
+  const model = sourceModel ? sequenceModelForEventIds(sourceModel, new Set(events.map(event => event.id))) : null;
   const byId = new Map(events.map(event => [event.id, event]));
+  if (!model) return <div className="panel trace-sequence"><p>Das gemeinsame Sequenzmodell ist für dieses Trace-Fenster nicht verfügbar.</p></div>;
   return <div className="panel trace-sequence"><E2ESequenceDiagram model={model} selectedId={selection.selected?.id} onSelect={item => {
     const event = byId.get(item.id);
     if (event) selection.onSelect(event);

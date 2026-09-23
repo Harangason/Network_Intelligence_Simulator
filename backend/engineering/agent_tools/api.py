@@ -532,7 +532,16 @@ def chat():
         reasoner = LocalEngineeringReasoner()
         try:
             async with EngineeringMCPClient(create_server(ToolAuthority(project_id, progress_callback=goal_progress))) as client:
-                result = await EngineeringAgent(client,reasoner=reasoner).run(started.data['prompt'],context,emit=emit,history=history)
+                from backend.agent_core.runtime import EngineeringAssistantService
+                def persist_workload(workload):
+                    saved = execute(authority, 'persist_engineering_runtime_workload', Permission.READ_MODEL, {},
+                        lambda _: conversation.save_runtime_workload(run_id, workload))
+                    if not saved.success:
+                        raise RuntimeError('Engineering-Workload konnte nicht dauerhaft gespeichert werden.')
+                runtime = EngineeringAssistantService(client, reasoner=reasoner, agent_factory=EngineeringAgent,
+                    persist=persist_workload)
+                saved_state = conversation.snapshot(project_id)
+                result = await runtime.execute(started.data['prompt'],context,emit=emit,history=history,saved_state=saved_state)
                 emit({"type":"CONTEXT","context":result["context"],"status":result["status"]})
                 return result
         finally:
@@ -579,12 +588,15 @@ def chat():
         except Exception as error:
             import logging
             logging.getLogger(__name__).exception('Agent conversation failed (%s)', run_id)
-            message = agent_failure_message(error)
-            if isinstance(error, asyncio.TimeoutError):
-                message = "Das Zeitlimit des Hintergrundlaufs wurde erreicht. Der letzte Projektstand bleibt erhalten."
+            from backend.agent_core.runtime.recovery import RecoveryManager
+            failure = RecoveryManager().classify(error)
+            message = failure['message']
             if tracker:
                 tracker.failed(message)
-            terminal({"type":"ERROR","status":"BLOCKED","text":message,"metadata":{"run_id":run_id},"actions":[{"type":"RETRY","label":"Erneut versuchen"}]})
+            terminal({"type":"ERROR","status":failure['status'],"text":message,
+                "metadata":{"run_id":run_id,"failure_code":failure['code'],"failure_category":failure['category'],
+                            "retryable":failure['retryable']},
+                "actions":[{"type":"RETRY","label":"Gespeicherten Auftrag fortsetzen"}] if failure['retryable'] else []})
         finally:
             cancellation.close()
             heartbeat_stop.set()

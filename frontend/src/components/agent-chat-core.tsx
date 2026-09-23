@@ -1324,8 +1324,10 @@ export function EngineeringAgentWizard({
   const technologyChoices = useMemo(() => {
     const executable = (technology: Technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED");
     if (mode === "can") return allTechnologies.filter((technology) => executable(technology) && isCanTechnology(technology.id, technology.family));
-    const choices = [...(selectedDomain?.technologies ?? []), ...allTechnologies.filter(technology =>
-      recognizedEquipment.communicationSystems.some(system => technologyMatchesRecognizedSystem(technology, system)))];
+    const domainChoices = (selectedDomain?.technologies ?? []).filter(technology => technology.implementation_status !== "EXPERIMENTAL");
+    const explicitlyRequestedChoices = allTechnologies.filter(technology =>
+      recognizedEquipment.communicationSystems.some(system => technologyMatchesRecognizedSystem(technology, system)));
+    const choices = [...domainChoices, ...explicitlyRequestedChoices];
     return [...new Map(choices.filter(executable).map(technology => [technology.id, technology])).values()];
   }, [allTechnologies, mode, selectedDomain, recognizedEquipment.communicationSystems]);
 

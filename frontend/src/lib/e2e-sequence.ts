@@ -26,10 +26,26 @@ export type SequenceDiagramModel = {
   source: SequenceSource;
   participants: string[];
   events: SequenceEvent[];
-  transactions: Array<{ id: string; eventIds: string[]; technologies: string[]; complete: boolean; receiverStatus: "ACCEPTED" | "REJECTED" | "NOT_OBSERVED" }>;
+  transactions: Array<{ id: string; eventIds: string[]; technologies: string[]; complete: boolean; receiverStatus: "ACCEPTED" | "REJECTED" | "NOT_OBSERVED" | "UNVERIFIED"; e2eLatencyMs?: number | null; dataAgeAtAcceptMs?: number | null; deadlineStatus?: string; freshnessStatus?: string; requirementStatus?: string; evidenceEventIds?: string[]; findings?: string[] }>;
   correlatedCount: number;
   uncorrelatedCount: number;
 };
+
+/** API sequence models are authoritative; this only narrows visible rows for the current view. */
+export function sequenceModelForEventIds(model: SequenceDiagramModel, eventIds: Set<string>): SequenceDiagramModel {
+  const events = model.events.filter(event => eventIds.has(event.id));
+  const visible = new Set(events.map(event => event.id));
+  return {
+    ...model,
+    events,
+    transactions: model.transactions.map(transaction => ({
+      ...transaction,
+      eventIds: transaction.eventIds.filter(id => visible.has(id)),
+    })).filter(transaction => transaction.eventIds.length > 0),
+    correlatedCount: events.filter(event => event.transactionId !== null).length,
+    uncorrelatedCount: events.filter(event => event.transactionId === null).length,
+  };
+}
 
 function numberOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;

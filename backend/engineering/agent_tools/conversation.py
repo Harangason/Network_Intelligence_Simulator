@@ -47,6 +47,31 @@ def write(state):
     return state
 
 
+def save_runtime_workload(run_id, workload):
+    """Persist the resolved engineering workload under its owning conversation turn."""
+    state = read()
+    if state.get('run_id') != run_id:
+        raise ConcurrentUpdateError('Der Engineering-Auftrag gehört nicht mehr zum aktuellen Gesprächslauf.')
+    items = state.setdefault('engineering_workloads', {})
+    workload_id = str(workload['workload_id'])
+    existing = items.get(workload_id) or {}
+    items[workload_id] = {**existing, **deepcopy(workload), 'owner_run_id': run_id,
+                          'updated_at': datetime.now(timezone.utc).isoformat()}
+    state['active_engineering_workload_id'] = workload_id
+    # Keep enough recent durable context for follow-ups while bounding the row.
+    if len(items) > 40:
+        preserve = {workload_id}
+        if workload.get('follow_up_of'):
+            preserve.add(str(workload['follow_up_of']))
+        for key in list(items):
+            if len(items) <= 40:
+                break
+            if key not in preserve:
+                items.pop(key, None)
+    write(state)
+    return items[workload_id]
+
+
 def inspect():
     state = read()
     revision = model_revision()

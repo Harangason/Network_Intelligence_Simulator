@@ -590,18 +590,19 @@ export const optimizeCapacity = () =>
     });
 
 export type CommunicationSizingPlan = {
-  source_token: string; status: string; history_matches: string[];
+  source_token: string; status: string; history_matches: string[]; protocol_inventory?: Record<string, number>;
   policy: Record<string, unknown>;
   changes: Array<{message_id: string; name: string; before_ms: number; after_ms: number; evaluation?: string}>;
   networks: Array<{network_id: string; network_name: string; protocol: string; status: string; explanation: string;
     selected_floor_ms?: number; effective_periods_ms?: number[]; schedule?: {nominal_load_percent?: number; slot_load_percent?: number; assumptions?: string[]};
     attempts: Array<{floor_ms: number; fits: boolean; load_percent?: number; slot_load_percent?: number; reasons: string[]}>}>;
 };
-export const dimensionCommunications = (policy?: Record<string, unknown>) =>
-  request<CommunicationSizingPlan>("/capacity/dimension", {method: "POST", body: JSON.stringify({policy})});
-export const applyCommunicationSizing = (plan: CommunicationSizingPlan) =>
+export const dimensionCommunications = (policy?: Record<string, unknown>, projectId = readActiveProjectId()) =>
+  request<CommunicationSizingPlan>("/capacity/dimension", {method: "POST", body: JSON.stringify({policy, project_id: projectId}), headers: {"X-Project-ID": projectId}});
+export const applyCommunicationSizing = (plan: CommunicationSizingPlan, projectId = readActiveProjectId()) =>
   request<{changed_messages: number; changed_routes: number; valid_routes: number; invalid_routes: string[]}>("/capacity/dimension/apply", {
-    method: "POST", body: JSON.stringify({source_token: plan.source_token, policy: plan.policy, approve_valid: true}),
+    method: "POST", body: JSON.stringify({source_token: plan.source_token, policy: plan.policy, approve_valid: true, project_id: projectId}),
+    headers: {"X-Project-ID": projectId},
   });
 
 export const getPreflight = () => request<AnalysisSnapshot>("/preflight");

@@ -7,13 +7,12 @@ import { projectIntakeKey } from '@/lib/agent/project-intake';
 type Action = Record<string, unknown>;
 const paths = new Set(['/studio', '/studio/engineering', '/studio/routing', '/studio/capacity',
   '/studio/validation', '/studio/simulation', '/studio/results', '/studio/trace-analysis', '/studio/intelligence']);
-
 export function AssistantCapabilityCards({ actions, projectId, onStart }: { actions: Action[]; projectId: string; onStart?: (prompt: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const cards = actions.filter(item => item.type === 'CAPABILITY' && typeof item.capability_id === 'string');
   if (!cards.length) return null;
-  async function open(action: Action, runInChat = false) {
+  async function open(action: Action, runInChat: boolean) {
     if (busy) return;
     setBusy(true); setError('');
     try {
@@ -29,14 +28,11 @@ export function AssistantCapabilityCards({ actions, projectId, onStart }: { acti
         throw new Error('Dieser Ablauf ist momentan nicht verfügbar.');
       if (readActiveProjectId() !== projectId || result.data.project_id !== projectId)
         throw new Error('Das Projekt wurde während der Anfrage gewechselt.');
-      if (runInChat && onStart) {
-        const execution = item.execution && typeof item.execution === 'object'
-          ? item.execution as Record<string, unknown> : {};
-        const executionMode = String(execution.mode ?? 'ANALYSIS_ONLY');
-        const prompt = `Führe „${item.label}“ agentisch im aktuellen Projekt aus. Ziel: ${item.description}\n` +
-          `Arbeitsmodus: ${executionMode}. Das ist ein Ausführungsauftrag, keine Bitte um Navigation: Gib keine Fähigkeitskachel oder Seitenverknüpfung zurück. ` +
-          `Prüfe zuerst den aktuellen Modellstand, nutze die passenden Engineering-Werkzeuge und zeige Befunde, Rückfragen sowie validierte Ergebnisse hier im Chat. ` +
-          `Bei Änderungen erstelle einen prüfbaren Vorschlag und warte auf meine Freigabe; behaupte keine Übernahme vorher.`;
+      if (runInChat) {
+        if (!onStart) throw new Error('Der Chat ist nicht bereit, diesen Auftrag zu starten.');
+        const prompt = `Führe „${item.label}“ für das aktuelle Projekt aus. Ziel: ${item.description} ` +
+          'Prüfe den aktuellen Modellstand, arbeite mit den verfügbaren Engineering-Fähigkeiten und zeige Befunde, Entscheidungen und nachgewiesene Ergebnisse hier im Chat. ' +
+          'Änderungen erst nach validiertem Vorschlag und ausdrücklicher Freigabe übernehmen.';
         onStart(prompt);
         return;
       }
@@ -59,9 +55,7 @@ export function AssistantCapabilityCards({ actions, projectId, onStart }: { acti
       }
       if (item.id === 'project' && !action.draft_id && typeof action.requirement === 'string' && action.requirement.trim()) {
         if (action.requirement.length > 16000) throw new Error('Die Projektanforderung ist zu lang.');
-        window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({
-          projectId, requirement: action.requirement,
-        }));
+        window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: action.requirement }));
       }
       window.location.assign(withProjectParam(`${item.path}?${query}`, projectId));
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Ablauf konnte nicht geöffnet werden.'); }
@@ -70,8 +64,8 @@ export function AssistantCapabilityCards({ actions, projectId, onStart }: { acti
   return <><div className="assistant-capability-cards" aria-label="Fähigkeiten">
     {cards.map(action => <article key={String(action.capability_id)}>
       <strong>{String(action.label)}</strong><span>{String(action.description ?? '')}</span>
-      {onStart && <button type="button" disabled={busy} onClick={() => void open(action, true)}>Im Chat starten</button>}
-      <button type="button" className="secondary" disabled={busy} onClick={() => void open(action)}>Arbeitsbereich öffnen</button>
+      {onStart && <button type="button" disabled={busy} onClick={() => void open(action, true)}>Auftrag im Chat starten</button>}
+      <button type="button" className="secondary" disabled={busy} onClick={() => void open(action, false)}>{action.label === 'Im Wizard bearbeiten' ? 'Im Wizard bearbeiten' : 'Arbeitsbereich öffnen'}</button>
     </article>)}
   </div>{error && <p role="alert">{error}</p>}</>;
 }

@@ -1652,32 +1652,42 @@ function withoutPlanningLimits(text: string) {
 export function extractCommunicationSystems(text: string) {
   const key = normalized(withoutPlanningLimits(text));
   const systems: string[] = [];
-  if (/\blin\b/.test(key)) systems.push("LIN");
-  if (/\bcan fd\b|\bcanfd\b/.test(key)) systems.push("CAN_FD");
-  else if (/\bcan\b/.test(key)) systems.push("CAN");
-  if (/\bautomotive ethernet\b|\bethernet\b/.test(key)) systems.push("Ethernet");
-  if (/\bsome ip\b|\bsomeip\b/.test(key)) systems.push("SOME_IP");
-  if (/\barinc 429\b|\barinc429\b/.test(key)) systems.push("ARINC");
-  if (/\bmil std 1553\b|\bmilstd1553\b/.test(key)) systems.push("MIL_STD_1553");
-  if (/\bethercat\b/.test(key)) systems.push("EtherCAT");
-  if (/\bprofinet\b/.test(key)) systems.push("ProfiNET");
-  if (/\bio\s*link\b/.test(key)) systems.push("IO_LINK");
-  if (/\bmodbus tcp\b/.test(key)) systems.push("ModbusTCP");
-  if (/\bmodbus rtu\b|\bmodbusrtu\b/.test(key)) systems.push("ModbusRTU");
-  if (/\bspi\b/.test(key)) systems.push("SPI");
-  if (/\bi2c\b/.test(key)) systems.push("I2C");
-  if (/\buart\b/.test(key)) systems.push("UART");
-  if (/\busb\b/.test(key)) systems.push("USB");
-  if (/\bpcie\b/.test(key)) systems.push("PCIe");
-  if (/\brs\s*485\b/.test(key)) systems.push("RS485");
-  if (/\brs232\b/.test(key)) systems.push("RS232");
-  if (/\bopc ua\b/.test(key)) systems.push("OPCUA");
-  if (/\bmqtt\b/.test(key)) systems.push("MQTT");
-  if (/\bwifi\b|wi-fi/.test(key)) systems.push("WiFi");
-  if (/\bble\b|bluetooth low energy/.test(key)) systems.push("BLE");
-  if (/\bdds\b/.test(key)) systems.push("DDS");
+  const confirmedMention = (pattern: string) => [...key.matchAll(new RegExp(pattern, "g"))].some((match) => {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+    const before = key.slice(Math.max(0, start - 48), start);
+    const after = key.slice(end, end + 40);
+    const negatedBefore = /\b(?:not|no|don't|doesn't|kein(?:e|en|er|es|em)?|nicht|ohne|weder|neither|statt|instead\s+of|rather\s+than|excluding|except)\s+(?:(?!\b(?:but|aber|sondern)\b)[\p{L}\p{N}_-]+\s*){0,3}$/u.test(before);
+    const negatedAfter = /^\s*(?:(?:is|are|was|were|wird|werden|ist|sind|sei|seien)\s+)?(?:not|never|nicht|kein(?:e|en|er|es|em)?|excluded|unsupported|unused)\b/u.test(after);
+    return !negatedBefore && !negatedAfter;
+  });
+
+  if (confirmedMention("\\blin\\b")) systems.push("LIN");
+  if (confirmedMention("\\bcan fd\\b|\\bcanfd\\b")) systems.push("CAN_FD");
+  else if (confirmedMention("\\bcan\\b")) systems.push("CAN");
+  if (confirmedMention("\\bautomotive ethernet\\b|\\bethernet\\b")) systems.push("Ethernet");
+  if (confirmedMention("\\bsome ip\\b|\\bsomeip\\b")) systems.push("SOME_IP");
+  if (confirmedMention("\\barinc 429\\b|\\barinc429\\b")) systems.push("ARINC");
+  if (confirmedMention("\\bmil std 1553\\b|\\bmilstd1553\\b")) systems.push("MIL_STD_1553");
+  if (confirmedMention("\\bethercat\\b")) systems.push("EtherCAT");
+  if (confirmedMention("\\bprofinet\\b")) systems.push("ProfiNET");
+  if (confirmedMention("\\bio\\s*link\\b")) systems.push("IO_LINK");
+  if (confirmedMention("\\bmodbus tcp\\b")) systems.push("ModbusTCP");
+  if (confirmedMention("\\bmodbus rtu\\b|\\bmodbusrtu\\b")) systems.push("ModbusRTU");
+  if (confirmedMention("\\bspi\\b")) systems.push("SPI");
+  if (confirmedMention("\\bi2c\\b")) systems.push("I2C");
+  if (confirmedMention("\\buart\\b")) systems.push("UART");
+  if (confirmedMention("\\busb\\b")) systems.push("USB");
+  if (confirmedMention("\\bpcie\\b")) systems.push("PCIe");
+  if (confirmedMention("\\brs\\s*485\\b")) systems.push("RS485");
+  if (confirmedMention("\\brs232\\b")) systems.push("RS232");
+  if (confirmedMention("\\bopc ua\\b")) systems.push("OPCUA");
+  if (confirmedMention("\\bmqtt\\b")) systems.push("MQTT");
+  if (confirmedMention("\\bwifi\\b|wi-fi")) systems.push("WiFi");
+  if (confirmedMention("\\bble\\b|bluetooth low energy")) systems.push("BLE");
+  if (confirmedMention("\\bdds\\b")) systems.push("DDS");
   for (const technology of ['adc', 'dac', 'gpio', 'pwm']) {
-    if (new RegExp(`\\b${technology}\\b`).test(key)) systems.push(technology.toUpperCase());
+    if (confirmedMention(`\\b${technology}\\b`)) systems.push(technology.toUpperCase());
   }
   return [...new Set(systems)];
 }

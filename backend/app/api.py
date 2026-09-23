@@ -309,6 +309,8 @@ def trace_window(job_id: str):
                                   start_s=float(request.args.get('start_s', 0)),
                                   end_s=float(request.args.get('end_s', 1e15)),
                                   query=request.args.get('q', ''))
+        from .e2e_assurance import build_sequence_model
+        result['sequence_model'] = build_sequence_model(result['events'], source='SIMULATED')
         return jsonify({**result, 'job_id': job_id, 'project_id': project_id})
     except (ValueError, UnicodeError) as error:
         return jsonify({'error': str(error)}), 400
