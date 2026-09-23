@@ -2251,7 +2251,7 @@ export function NetworkEditor({
   const topologyRef = useRef(topology);
   const centralGatewayArchitectureRef = useRef(false);
   const workflowSelectionSignatureRef = useRef("");
-  const autoFitLayoutKeyRef = useRef("");
+  const initialCanvasViewReadyRef = useRef(false);
 
   useEffect(() => {
     if (!activeDragRef.current) topologyRef.current = topology;
@@ -2995,7 +2995,7 @@ export function NetworkEditor({
   function overlayPosition(clientX: number, clientY: number) {
     if (typeof window === "undefined") return { x: clientX + 14, y: clientY + 14 };
     return {
-      x: Math.max(12, Math.min(clientX + 14, window.innerWidth - 360)),
+      x: Math.max(12, Math.min(clientX + 14, window.innerWidth - 500)),
       y: Math.max(12, Math.min(clientY + 14, window.innerHeight - 260)),
     };
   }
@@ -3134,13 +3134,11 @@ export function NetworkEditor({
     ...effectiveTopology.nodes.map((node) => node.x + nodeWidth(node) + CANVAS_EXTRA_SPACE),
   );
   useEffect(() => {
-    if (!surfaceWidth || !effectiveTopology.nodes.length || autoFitLayoutKeyRef.current === topologyLayoutKey) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      autoFitLayoutKeyRef.current = topologyLayoutKey;
-      fitCanvas();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [canvasWidth, effectiveTopology.nodes.length, surfaceHeight, surfaceWidth, topologyLayoutKey]);
+    if (!surfaceWidth || !effectiveTopology.nodes.length || initialCanvasViewReadyRef.current) return;
+    initialCanvasViewReadyRef.current = true;
+    setZoom(1);
+    surfaceRef.current?.scrollTo({ left: 0, top: 0 });
+  }, [effectiveTopology.nodes.length, surfaceWidth]);
   const layoutStatus = scene ? {
     className: "stable", label: layoutSaving ? "Ansicht wird gespeichert …" : "Gespeicherte Busansicht",
     semantics: "persisted-physical-buses", title: "Gemeinsame physische Busse aus dem gespeicherten Projektstand",

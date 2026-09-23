@@ -4,6 +4,7 @@ import asyncio
 from pathlib import Path
 
 from backend.agent_core.context.agent_context import AgentContext
+from backend.agent_core.runtime.context_resolver import ContextResolver
 from backend.agent_core.runtime.goal_resolver import GoalResolver, GoalType
 from backend.agent_core.runtime.service import EngineeringAssistantService
 
@@ -26,6 +27,45 @@ def test_goal_resolver_preserves_large_confirmed_wizard_request():
     goal = GoalResolver().resolve(prompt, {'active_project_id': 'project-a'})
     assert goal.original_request == prompt
     assert len(goal.requested_objects) > 100
+
+
+def test_durable_wizard_target_wins_over_terms_in_full_request_and_followup():
+    resolver = GoalResolver()
+    wizard_request = {
+        'version': 2,
+        'target': 'engineering_model',
+        'prompt': 'Bestätigter Gesamtauftrag mit Trace analysieren, Simulation und Kapazität prüfen.',
+    }
+    full_prompt = wizard_request['prompt']
+    initial = resolver.resolve(full_prompt, {
+        'active_project_id': 'project-a', 'wizard_request': wizard_request,
+    })
+    continued = resolver.resolve('Nach der Freigabe fortfahren.', {
+        'active_project_id': 'project-a', 'wizard_request': wizard_request,
+    })
+
+    assert initial.goal_type == GoalType.CREATE_PROJECT
+    assert continued.goal_type == GoalType.CREATE_PROJECT
+
+
+def test_wizard_results_analysis_target_selects_analysis_capability():
+    goal = GoalResolver().resolve('Nach der Freigabe fortfahren.', {
+        'active_project_id': 'project-a',
+        'wizard_request': {'version': 2, 'target': 'results_analysis'},
+    })
+
+    assert goal.goal_type == GoalType.ANALYZE_TRACE
+
+
+def test_context_resolver_carries_durable_wizard_target_to_goal_resolution():
+    descriptor = {'version': 2, 'target': 'engineering_model', 'revision': 'saved-revision'}
+    resolved = ContextResolver().resolve(AgentContext(
+        active_project_id='project-a', wizard_request=descriptor,
+    ))
+
+    assert resolved['wizard_request'] == descriptor
+    goal = GoalResolver().resolve('Nach der Freigabe fortfahren.', resolved)
+    assert goal.goal_type == GoalType.CREATE_PROJECT
 
 
 def test_goal_resolver_extracts_periodic_acquisition_and_excludes_negated_bus():

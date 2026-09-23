@@ -180,12 +180,15 @@ def _requirement_value(
     return min(values) if values else None
 
 
-def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], network_ids: list[str], *, resolver: PhysicalRouteResolver | None = None) -> list[dict[str, Any]]:
+def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], network_ids: list[str], *,
+                             resolver: PhysicalRouteResolver | None = None,
+                             hardware: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Use physical ports when available; label provisional logical estimates."""
     segments = []
     for destination in route.get("destinations") or []:
         try:
-            segments.extend(resolver.resolve(route, destination) if resolver is not None else physical_route_segments(route, destination, topology))
+            segments.extend(resolver.resolve(route, destination, preserve_ethernet_hops=True)
+                            if resolver is not None else physical_route_segments(route, destination, topology))
         except EngineeringValidationError:
             # Capacity is also used while constructing an unfinished topology.
             # Snapshot creation remains strict and rejects this provisional path.
@@ -198,10 +201,21 @@ def _capacity_route_segments(route: dict[str, Any], topology: dict[str, Any], ne
         segments = [{"source": {**source, **next((item for item in endpoints if item.get("network_id") == network_id), {}),
             "network_id": network_id}, "target": (route.get("destinations") or [{}])[0],
             "physical_path_resolved": False} for network_id in network_ids]
+    hardware = hardware or {}
+    for segment in segments:
+        for endpoint in (segment.get("source") or {}, segment.get("target") or {}):
+            node = hardware.get(str(endpoint.get("node_id") or ""), {})
+            information = node.get("hardware_information") or {}
+            endpoint["node_kind"] = endpoint.get("node_kind") or node.get("hardware_type") or node.get("kind")
+            endpoint["switching_delay_ms"] = information.get("switching_delay_ms",
+                information.get("forwarding_delay_ms", endpoint.get("switching_delay_ms")))
     unique = {}
     for segment in segments:
         network_id = str(segment["source"].get("network_id") or network_ids[0])
-        unique.setdefault(network_id, {**segment, "network_id": network_id,
+        segment_protocol = str(segment["source"].get("protocol") or "").upper()
+        segment_edges = tuple(sorted(str(item) for item in segment.get("topology_edge_ids") or []))
+        key = (network_id, segment_edges) if segment_protocol in {"ETHERNET", "AUTOMOTIVE_ETHERNET"} else (network_id, ())
+        unique.setdefault(key, {**segment, "network_id": network_id,
             "physical_path_resolved": bool(segment.get("topology_edge_ids"))})
     return list(unique.values())
 
@@ -234,7 +248,7 @@ def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: lis
 
 
 class CapacityTimingService:
-    CALCULATION_VERSION = "3.1"
+    CALCULATION_VERSION = "3.2"
 
     def __init__(self, project_id: str = "default") -> None:
         self.workflow = WorkflowStatusService(project_id)
@@ -333,7 +347,8 @@ class CapacityTimingService:
             segment_network_ids = topology_networks.get(str(route.get("id") or "")) or _route_segment_network_ids(
                 source, route_path, destinations, network_id
             )
-            segment_specs = _capacity_route_segments(route, state.get("topology") or {}, segment_network_ids, resolver=route_resolver)
+            segment_specs = _capacity_route_segments(route, state.get("topology") or {}, segment_network_ids,
+                resolver=route_resolver, hardware=hardware)
             segment_network_ids = [segment["network_id"] for segment in segment_specs]
             segment_count = len(segment_specs)
             payload_bytes = _payload_bytes(route, messages, default_payload)
@@ -589,14 +604,32 @@ class CapacityTimingService:
                 by_route_message[(route_id, stream.get("message_id"))].append(stream)
         for metric in [*logical_route_metrics, *route_metrics]:
             physical = by_route_message[(metric["route_id"], metric.get("message_id"))]
-            verified = bool(physical) and all(schedules[item["network_id"]]["status"] == "FEASIBLE_UNDER_ASSUMPTIONS" for item in physical)
+            switch_delays = {}
+            switch_delay_missing = False
+            for item in physical:
+                for endpoint in (item.get("physical_source") or {}, item.get("physical_target") or {}):
+                    if "switch" not in str(endpoint.get("node_kind") or "").lower():
+                        continue
+                    raw_delay = endpoint.get("switching_delay_ms")
+                    if raw_delay is None or _number(raw_delay, -1) < 0:
+                        switch_delay_missing = True
+                    else:
+                        node_id = str(endpoint.get("node_id") or "")
+                        switch_delays[node_id] = max(switch_delays.get(node_id, 0.0), _number(raw_delay))
+            verified = (bool(physical)
+                and all(schedules[item["network_id"]]["status"] == "FEASIBLE_UNDER_ASSUMPTIONS" for item in physical)
+                and not switch_delay_missing)
             metric["timing_verified"] = verified
+            metric["switch_processing_delay_ms"] = round(sum(switch_delays.values()), 6)
+            if switch_delay_missing:
+                metric["e2e_timing_gap"] = "Switch-Verarbeitungsgrenze fehlt; pro Port bleibt nur der Ethernet-Transportnachweis."
             metric["response_time_bound_ms"] = None
             if verified:
                 bound = sum(schedules[item["network_id"]]["responses"][item["stream_id"]]
                             + (item["cycle_ms"] if item["protocol"] == "LIN" and item.get("route_segment_index", 1) > 1 else 0)
                             for item in physical)
                 bound += max((item.get("fixed_path_delay_ms", 0) for item in physical), default=0)
+                bound += sum(switch_delays.values())
                 metric["response_time_bound_ms"] = round(bound, 6)
                 metric["end_to_end_latency_ms"] = round(bound, 6)
                 metric["latency_status"] = "FAIL" if metric.get("max_latency_ms") and bound > metric["max_latency_ms"] else "PASS"
@@ -737,6 +770,11 @@ class CapacityTimingService:
                     }
                 )
         for route in logical_route_metrics:
+            if route.get("e2e_timing_gap") and any(_number(route.get(key), 0) > 0 for key in ("max_latency_ms", "timeout_ms", "freshness_ms", "jitter_budget_ms")):
+                findings.append({"severity": "WARNING", "code": "ETHERNET_SWITCH_DELAY_UNVERIFIED",
+                    "object_type": "RoutingEntry", "object_id": route["route_id"],
+                    "message": route["e2e_timing_gap"],
+                    "recommendation": "Eine bestätigte switching_delay_ms-Grenze am Switch-Hardwareprofil hinterlegen und Capacity/Preflight erneut ausführen."})
             if not route.get("timing_verified") and route["requirement_status"] != "FAIL":
                 continue
             max_latency = _number(route.get("max_latency_ms"), 0.0)

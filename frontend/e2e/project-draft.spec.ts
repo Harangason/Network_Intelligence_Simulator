@@ -248,7 +248,7 @@ test('new project is created from the saved draft without moving the original pr
   expect(targetDraft.devices).toEqual(originalDraft.devices);
 });
 
-test('the wizard executes the same saved draft through the real review workflow @project-draft', async ({ page }) => {
+test('the saved inline draft produces and applies a real model proposal @project-draft', async ({ page }) => {
   const compact = '20260915000000000-' + randomUUID().replaceAll('-', '').slice(0, 8);
   const project = 'network-project-' + compact;
   await page.goto(`/studio/agent?project=${compact}`);
@@ -262,16 +262,13 @@ test('the wizard executes the same saved draft through the real review workflow 
   await editor.getByRole('combobox', { name: 'Technische Parameter', exact: true }).selectOption('defaults');
   await editor.getByRole('button', { name: 'Angaben speichern', exact: true }).click();
   await expect(editor.getByRole('status')).toContainText('Revision 2 gespeichert');
-  await page.getByRole('button', { name: /Im Wizard bearbeiten/ }).click();
-  const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('region', { name: 'Gespeicherter Projektentwurf' })).toContainText('Revision 2');
-  await dialog.getByRole('textbox', { name: 'Projektname', exact: true }).fill('Gemeinsamer Entwurf');
-  const scopes = dialog.getByRole('group', { name: 'Workflowumfang', exact: true }).getByRole('checkbox');
-  await expect(scopes).toHaveCount(9);
-  for (let index = 1; index < 9; index++) await scopes.nth(index).uncheck();
-  await dialog.getByRole('button', { name: 'Auftrag starten', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Freigeben, übernehmen & fortfahren', exact: true }).click();
+  await expect(editor).toContainText('Revision 2');
+  await expect(page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' })).toHaveCount(0);
+  await editor.getByRole('button', { name: 'Modellvorschlag erstellen', exact: true }).click();
+  const proposal = page.getByRole('region', { name: 'Engineering-Vorschlag' });
+  await expect(proposal).toContainText('Freigabe offen');
+  await proposal.getByRole('button', { name: 'Vorschlag freigeben', exact: true }).click();
+  await proposal.getByRole('button', { name: 'Ins Modell übernehmen', exact: true }).click();
   await expect.poll(async () => {
     const response = await page.request.get('/api/engineering/hardware-nodes', { headers: { 'X-Project-ID': project } });
     expect(response.ok()).toBe(true);
@@ -279,33 +276,7 @@ test('the wizard executes the same saved draft through the real review workflow 
     const nodes = Array.isArray(payload) ? payload : payload.items ?? payload.data ?? [];
     return nodes.map((node: { name: string }) => node.name).sort();
   }).toEqual(['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3'].sort());
-  await dialog.getByRole('button', { name: 'Ergänzen', exact: true }).click();
-  const supplement = dialog.getByRole('region', { name: 'Engineering-Auftrag ergänzen' });
-  const revised = supplement.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await revised.getByRole('textbox', { name: 'Anforderung ergänzen', exact: true }).fill('Vier Temperatursensoren statt drei.');
-  await revised.getByRole('button', { name: 'Ergänzung speichern', exact: true }).click();
-  await expect(revised).toContainText('Revision 3');
-  await expect(revised).toContainText('5 Geräte');
-  const fourth = revised.getByRole('group', { name: 'Temperatursensor4 · SENSOR', exact: true });
-  await fourth.getByRole('textbox', { name: 'Anschlusstechnologie', exact: true }).fill('ethernet');
-  await fourth.getByRole('combobox', { name: 'Verarbeitender Controller', exact: true }).selectOption({ label: 'RaspberryPi' });
-  await revised.getByRole('button', { name: 'Angaben speichern', exact: true }).click();
-  await expect(revised.getByRole('status')).toContainText('Revision 4 gespeichert');
-  const before = await page.request.get('/api/engineering/workflow?summary=1', { headers: { 'X-Project-ID': project } });
-  const oldWorkflow = await before.json();
-  await supplement.getByRole('button', { name: 'Gespeicherten Entwurf im Auftrag übernehmen', exact: true }).click();
-  await dialog.getByRole('button', { name: 'Freigeben, übernehmen & fortfahren', exact: true }).click();
-  await expect.poll(async () => {
-    const response = await page.request.get('/api/engineering/hardware-nodes', { headers: { 'X-Project-ID': project } });
-    const payload = await response.json();
-    const nodes = Array.isArray(payload) ? payload : payload.items ?? payload.data ?? [];
-    return nodes.map((node: { name: string }) => node.name).sort();
-  }).toEqual(['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4'].sort());
-  const after = await page.request.get('/api/engineering/workflow?summary=1', { headers: { 'X-Project-ID': project } });
-  const newWorkflow = await after.json();
-  const oldContext = oldWorkflow.data?.context ?? oldWorkflow.context;
-  const newContext = newWorkflow.data?.context ?? newWorkflow.context;
-  expect(newContext.wizard_request.run_id).toBe(oldContext.wizard_request.run_id);
-  expect(newContext.wizard_request.revision).not.toBe(oldContext.wizard_request.revision);
-  expect(newContext.agent_wizard_status.engineering_draft_ref.revision).toBe(4);
+  await page.reload();
+  await expect(editor).toContainText('Revision 2');
+  await expect(page.getByText(/Modellobjekte bestätigt/)).toBeVisible();
 });

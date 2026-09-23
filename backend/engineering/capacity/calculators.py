@@ -32,6 +32,8 @@ def _positive(value: Any, default: float) -> float:
 def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]) -> FrameEstimate:
     """Estimate serialized size and transmit time without claiming exact controller behavior."""
     normalized = str(protocol or "CUSTOM").upper().replace("-", "_").replace(" ", "_")
+    if normalized == "AUTOMOTIVE_ETHERNET":
+        normalized = "ETHERNET"
     payload = max(0, int(payload_bytes))
     bitrate = _positive(parameters.get("bitrate"), 1_000_000.0)
 

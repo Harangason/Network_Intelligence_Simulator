@@ -21,15 +21,17 @@ def fixture():
     return prompt, graph
 
 
-def test_every_message_has_a_purpose_and_consumer_before_routing():
+def test_unconfirmed_controller_status_remains_a_review_finding_before_routing():
     prompt, graph = fixture()
     plan = communication_plan(prompt, graph)
     expected = {'sensor': ['ecu'], 'actuator': ['ecu'], 'command': ['actuator'],
-                'ecu': ['diag'], 'gateway': ['diag'], 'diag': ['gateway']}
+                'ecu': [], 'gateway': [], 'diag': []}
     assert {key: config['transport_unit']['consumer_refs'] for key, config in plan.items()} == expected
     for key, config in plan.items():
         graph['Message'][key]['configuration'] = config
-    assert contract_findings(graph) == []
+    findings = contract_findings(graph)
+    assert len(findings) == 3
+    assert {finding['code'] for finding in findings} == {'COMMUNICATION_CONTRACT_INVALID'}
     assert communication_plan(prompt, graph) == plan
 
 
@@ -46,7 +48,7 @@ def display_fixture(enabled):
 def test_hmi_switches_change_only_selected_output_consumers_and_preserve_local_io():
     prompt, graph = display_fixture(True)
     plan = communication_plan(prompt, graph)
-    assert plan['ecu']['transport_unit']['consumer_refs'] == ['diag', 'hmi']
+    assert plan['ecu']['transport_unit']['consumer_refs'] == ['hmi']
     assert plan['command']['transport_unit']['consumer_refs'] == ['actuator']
     assert plan['sensor']['transport_unit']['consumer_refs'] == ['ecu']
     assert plan['actuator']['transport_unit']['consumer_refs'] == ['ecu']
@@ -54,7 +56,7 @@ def test_hmi_switches_change_only_selected_output_consumers_and_preserve_local_i
         graph['Message'][key]['configuration'] = config
     off, _ = display_fixture(False)
     off_plan = communication_plan(off, graph)
-    assert off_plan['ecu']['transport_unit']['consumer_refs'] == ['diag']
+    assert off_plan['ecu']['transport_unit']['consumer_refs'] == []
     assert graph['Signal']['status']['name'] == 'MotorStatus'
     assert off_plan['ecu']['hmi_routing_selection'] == [{'target_ref': 'hmi', 'enabled': False}]
     for key, config in off_plan.items():
@@ -89,7 +91,14 @@ def test_routing_generator_obeys_switch_even_with_a_stale_display_consumer(monke
     from backend.engineering.agent_tools import wizard_generation as generation
     prompt, graph = display_fixture(enabled)
     graph['Message'] = {'ecu': {**graph['Message']['ecu'], 'configuration': {
-        'transport_unit': {'consumer_refs': ['diag', 'hmi']}}}}
+        'transport_unit': {'consumer_refs': ['diag', 'hmi']},
+        'communication_contract': {
+            'version': 1,
+            'role': 'DEVICE_STATUS',
+            'basis': 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller',
+            'producer_ref': 'ecu',
+            'consumer_refs': ['diag', 'hmi'],
+        }}}}
     clusters = json.loads(prompt.split(': ', 1)[1])
     clusters[0]['controllers'] = [{'ecu': 'Motor'}]
     prompt = '- Systemcluster-Graph: ' + json.dumps(clusters)
@@ -105,8 +114,12 @@ def test_routing_generator_obeys_switch_even_with_a_stale_display_consumer(monke
             calls.append((source_node_id, destination_node_id, message_id))
             return {'source': {'protocol': 'CAN_FD'}, 'destinations': [{'protocol': 'CAN_FD'}]}
     monkeypatch.setattr(generation, 'RoutingGenerationService', Routes)
-    generation.generate_routing({'prompt': prompt})
-    assert ('ecu', 'diag', 'ecu') in calls
+    if enabled:
+        generation.generate_routing({'prompt': prompt})
+    else:
+        with pytest.raises(ValueError, match='keine prüfbaren Routen'):
+            generation.generate_routing({'prompt': prompt})
+    assert ('ecu', 'diag', 'ecu') not in calls
     assert (('ecu', 'hmi', 'ecu') in calls) is enabled
 
 
@@ -118,6 +131,56 @@ def test_user_consumers_are_preserved_and_missing_receiver_blocks_model_review()
     graph['Message']['ecu']['configuration'] = plan['ecu']
     graph['Message']['ecu']['configuration']['transport_unit']['consumer_refs'] = []
     assert contract_findings(graph)[0]['code'] == 'COMMUNICATION_CONTRACT_INVALID'
+
+
+def test_controller_status_does_not_default_to_diagnosis_and_old_generated_fallback_is_removed():
+    prompt, graph = fixture()
+    graph['Message']['ecu']['configuration'] = {
+        'transport_unit': {'consumer_refs': ['diag']},
+        'communication_contract': {
+            'version': 1,
+            'role': 'DEVICE_STATUS',
+            'basis': 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller',
+            'producer_ref': 'ecu',
+            'consumer_refs': ['diag'],
+        },
+    }
+
+    config = communication_plan(prompt, graph)['ecu']
+
+    assert config['transport_unit']['consumer_refs'] == []
+    assert config['communication_contract']['role'] == 'UNRESOLVED'
+    assert 'muss vor der Modellfreigabe ergänzt werden' in config['communication_contract']['basis']
+
+
+def test_retiring_generated_diagnostic_default_preserves_other_explicit_consumers():
+    prompt, graph = fixture()
+    graph['Message']['ecu']['configuration'] = {
+        'transport_unit': {'consumer_refs': ['diag', 'gateway']},
+        'communication_contract': {
+            'version': 1,
+            'role': 'DEVICE_STATUS',
+            'basis': 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller',
+            'producer_ref': 'ecu',
+            'consumer_refs': ['diag', 'gateway'],
+        },
+    }
+
+    config = communication_plan(prompt, graph)['ecu']
+
+    assert config['transport_unit']['consumer_refs'] == ['gateway']
+    assert config['communication_contract']['role'] == 'EXPLICIT'
+
+
+def test_confirmed_function_route_is_the_only_controller_monitor_source():
+    prompt, graph = fixture()
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['functional_routes'] = [{'source': 'Motor', 'target': 'Diagnose'}]
+
+    config = communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)['ecu']
+
+    assert config['transport_unit']['consumer_refs'] == ['diag']
+    assert config['communication_contract']['role'] == 'DEVICE_STATUS'
 
 
 def test_single_controller_keeps_an_explicit_unresolved_review_finding():

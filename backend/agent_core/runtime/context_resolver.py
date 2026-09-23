@@ -17,6 +17,9 @@ class ContextResolver:
         return {
             "active_project_id": getattr(context, "active_project_id", None),
             "active_view": getattr(context, "active_view", "model"),
+            # This descriptor is loaded from the durable conversation/workflow
+            # state. It is classification context only; it grants no authority.
+            "wizard_request": getattr(context, "wizard_request", None),
             "project_domain": getattr(context, "project_domain", "custom"),
             "selected_object_refs": selected,
             "active_workload": active_workload or {},

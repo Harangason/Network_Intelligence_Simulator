@@ -8,7 +8,7 @@ from copy import deepcopy
 import json
 import re
 
-VERSION = 1
+VERSION = 2
 KINDS = ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface', 'Message', 'Signal')
 
 
@@ -66,6 +66,13 @@ def communication_plan(prompt, graph):
     controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController',
                         'EmbeddedController', 'RobotController', 'FlightComputer',
                         'BatteryManagementSystem', 'EnergyController', 'BuildingController'}
+    legacy_monitors = sorted(nodes, key=lambda key: (
+        0 if str(nodes[key]['name']).casefold() in {'diagnose', 'diagnostics'} else
+        1 if nodes[key].get('device_type') == 'Gateway' else 2,
+        str(nodes[key]['name']).casefold(),
+    ))
+    legacy_default_monitor = next((key for key in legacy_monitors
+                                   if nodes[key].get('device_type') in controller_types), None)
     owners, displays, internal_status = {}, {}, set()
     for cluster in clusters:
         controllers = cluster.get('controllers') or []
@@ -90,13 +97,6 @@ def communication_plan(prompt, graph):
             source, target = names.get(str(route.get('source', '')).casefold()), names.get(str(route.get('target', '')).casefold())
             if source and target and source != target:
                 displays.setdefault(source, set()).add(target)
-    # Stable, visible simulation default. Prefer a dedicated diagnostic device.
-    monitors = sorted(nodes, key=lambda key: (
-        0 if str(nodes[key]['name']).casefold() in {'diagnose', 'diagnostics'} else
-        1 if nodes[key].get('device_type') == 'Gateway' else 2,
-        str(nodes[key]['name']).casefold(),
-    ))
-    monitors = [key for key in monitors if nodes[key].get('device_type') in controller_types]
     result = {}
     for identifier, message in graph['Message'].items():
         interface = graph['Interface'].get(str(message.get('interface_id')), {})
@@ -107,6 +107,14 @@ def communication_plan(prompt, graph):
         config = deepcopy(message.get('configuration') or {})
         transport = config.setdefault('transport_unit', {})
         targets = set(map(str, transport.get('consumer_refs') or []))
+        previous = config.get('communication_contract') or {}
+        # Version 1 silently selected a diagnostic ECU, gateway, or arbitrary
+        # controller as monitor. Those generated defaults are not user intent.
+        # Drop them from the new review proposal while retaining truly explicit
+        # recipients and leaving the destination unresolved for review.
+        if previous.get('version') == 1 and previous.get('basis') == 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller':
+            if legacy_default_monitor:
+                targets.discard(str(legacy_default_monitor))
         if targets:
             role, basis = 'EXPLICIT', 'Bestehende explizite Empfängerzuordnung'
         elif producer in owners:
@@ -114,15 +122,18 @@ def communication_plan(prompt, graph):
             role = 'FEEDBACK' if nodes[producer].get('device_type') == 'ActuatorController' else 'MEASUREMENT'
             basis = 'Bestätigte Gerätezuordnung im Systemcluster'
         elif nodes[producer].get('device_type') in controller_types or producer in internal_status:
-            target = None if producer in internal_status else next((key for key in monitors if key != producer), None)
-            if target:
-                targets.add(target)
             targets.update(displays.get(producer, set()))
             # Approved automotive functional dependency: exhaust treatment
             # reports to engine control as well as diagnostic/display users.
             if str(nodes[producer]['name']).casefold() == 'abgasnachbehandlung' and 'motorsteuerung' in names:
                 targets.add(names['motorsteuerung'])
-            role, basis = ('INTERNAL_STATE', 'Betriebszustand bleibt im Controller') if producer in internal_status and not targets else ('DEVICE_STATUS', 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller')
+            role, basis = (
+                ('INTERNAL_STATE', 'Betriebszustand bleibt im Controller')
+                if producer in internal_status and not targets else
+                ('DEVICE_STATUS', 'Bestätigte Status-Empfänger aus System- oder HMI-Routen')
+                if targets else
+                ('UNRESOLVED', 'Status-Empfänger ist fachlich nicht bestätigt; Empfänger im Review festlegen')
+            )
         else:
             role, basis = 'UNRESOLVED', 'Kein bestätigter Empfänger'
         selected_displays = []
@@ -141,7 +152,6 @@ def communication_plan(prompt, graph):
         if not targets and role != 'INTERNAL_STATE':
             role, basis = 'UNRESOLVED', 'Status-Empfänger muss vor der Modellfreigabe ergänzt werden.'
         # Preserve the original role when a previously planned message is read.
-        previous = config.get('communication_contract') or {}
         if previous.get('version') == VERSION:
             role, basis = previous['role'], previous['basis']
         transport.update(producer_ref=producer, consumer_refs=sorted(targets))

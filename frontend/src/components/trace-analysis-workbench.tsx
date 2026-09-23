@@ -309,15 +309,32 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
   const [protocolFilter, setProtocolFilter] = useState('all');
   const [tableQuery, setTableQuery] = useState('');
   const [columnQuery, setColumnQuery] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [custom, setCustom] = useState<string[] | null>(null);
   const available = useMemo(() => availableColumns(sessionEvents), [sessionEvents]);
   const resolved = profile === 'auto' ? automaticProfile(sessionEvents) : profile;
   const defaults = TRACE_PROFILES[resolved].columns.filter(field => available.some(item => item.key === field.key));
   const columns = custom === null ? defaults : available.filter(field => custom.includes(field.key));
+  const valueForColumn = (event: TraceEvent, key: string) => {
+    if (key === '__time') return event.timeKnown ? `${event.timestamp}` : 'Zeit unbekannt';
+    if (key === '__protocol') return event.technology;
+    if (key === '__payload') return event.payload ?? '';
+    const field = available.find(item => item.key === key);
+    return field ? String(displayTraceValue(field.read(event))) : '';
+  };
+  const matchesColumnFilter = (event: TraceEvent, key: string) => {
+    const query = columnFilters[key]?.trim().toLowerCase();
+    return !query || valueForColumn(event, key).toLowerCase().includes(query);
+  };
   const shown = events.filter(event => (protocolFilter === 'all' || event.technology === protocolFilter)
-    && (!tableQuery.trim() || JSON.stringify(event).toLowerCase().includes(tableQuery.trim().toLowerCase())));
+    && (!tableQuery.trim() || JSON.stringify(event).toLowerCase().includes(tableQuery.trim().toLowerCase()))
+    && matchesColumnFilter(event, '__time')
+    && matchesColumnFilter(event, '__protocol')
+    && columns.every(field => matchesColumnFilter(event, field.key))
+    && matchesColumnFilter(event, '__payload'));
   const selectableColumns = available.filter(field => !columnQuery.trim() || field.label.toLowerCase().includes(columnQuery.trim().toLowerCase()) || field.key.toLowerCase().includes(columnQuery.trim().toLowerCase()));
   const selected = selection.selected;
+  const setColumnFilter = (key: string, value: string) => setColumnFilters(current => ({ ...current, [key]: value }));
   return <div className="panel trace-table">
      <div className="trace-toolbar sequence-toolbar">
        <label className="trace-table-search">Tabelle durchsuchen<input value={tableQuery} onChange={event => setTableQuery(event.target.value)} placeholder="ID, Quelle, Ziel, Payload …" /></label>
@@ -328,7 +345,7 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
       <label>Protokollfilter<select value={protocolFilter} onChange={event => setProtocolFilter(event.target.value)}>
         <option value="all">Alle Inhalte</option>{[...new Set(sessionEvents.map(event => event.technology))].map(key => <option key={key} value={key}>{key}</option>)}
       </select></label>
-       <button className="button secondary" type="button" onClick={() => { setCustom(null); setProfile('auto'); setProtocolFilter('all'); setTableQuery(''); setColumnQuery(''); }}>Ansicht zurücksetzen</button>
+       <button className="button secondary" type="button" onClick={() => { setCustom(null); setProfile('auto'); setProtocolFilter('all'); setTableQuery(''); setColumnQuery(''); setColumnFilters({}); }}>Ansicht zurücksetzen</button>
     </div>
      <details className="trace-column-picker"><summary>Spalten auswählen ({available.length} Felder)</summary>
        <input aria-label="Spalten suchen" value={columnQuery} onChange={event => setColumnQuery(event.target.value)} placeholder="Spalten suchen …" />
@@ -337,7 +354,15 @@ function TraceTable({ events, sessionEvents, compact = false, ...selection }: Se
        }} />{field.label}</label>)}</div>
     </details>
     <p>{sessionEvents.filter(event => !event.timeKnown).length || 0} Ereignisse ohne Zeitstempel · Zeitbasen werden nicht automatisch synchronisiert. Rohdaten ohne Signaldecoder sind kein Fehler.</p>
-    <table><thead><tr><th>Zeit / Auswahl</th><th>Protokoll</th>{columns.map(field => <th key={field.key}>{field.label}</th>)}<th>Rohdaten</th></tr></thead>
+    <table><thead>
+      <tr><th>Zeit / Auswahl</th><th>Protokoll</th>{columns.map(field => <th key={field.key}>{field.label}</th>)}<th>Rohdaten</th></tr>
+      <tr className="trace-column-filters">
+        <th><input aria-label="Filter Zeit / Auswahl" value={columnFilters.__time ?? ''} onChange={event => setColumnFilter('__time', event.target.value)} placeholder="Filtern …" /></th>
+        <th><input aria-label="Filter Protokoll" value={columnFilters.__protocol ?? ''} onChange={event => setColumnFilter('__protocol', event.target.value)} placeholder="Filtern …" /></th>
+        {columns.map(field => <th key={`filter-${field.key}`}><input aria-label={`Filter ${field.label}`} value={columnFilters[field.key] ?? ''} onChange={event => setColumnFilter(field.key, event.target.value)} placeholder="Filtern …" /></th>)}
+        <th><input aria-label="Filter Rohdaten" value={columnFilters.__payload ?? ''} onChange={event => setColumnFilter('__payload', event.target.value)} placeholder="Filtern …" /></th>
+      </tr>
+    </thead>
       <tbody>{shown.map(event => <tr key={event.id}><td><EventTime event={event} {...selection} /></td><td>{event.technology}</td>{columns.map(field => <td key={field.key}>{displayTraceValue(field.read(event))}</td>)}<td>{event.payload ? `${event.payload.slice(0, compact ? 24 : 96)}${event.payload.length > (compact ? 24 : 96) ? ' …' : ''}` : '—'}</td></tr>)}</tbody>
     </table>
     {!shown.length && <p>Keine Ereignisse in der aktuellen Auswahl.</p>}

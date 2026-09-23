@@ -7,6 +7,7 @@ import {
   createSimulation,
   createSimulationFaultProposals,
   getCatalog,
+  getSimulation,
   listSimulationFaultProposals,
   reviewSimulationFaultProposal,
   saveSimulationScenario,
@@ -59,6 +60,10 @@ const FAULT_TYPES = {
   NETWORK: ["NETWORK_OVERLOAD", "BUS_OFF", "LINK_DOWN", "GATEWAY_DELAY", "GATEWAY_DROP", "QUEUE_OVERFLOW", "CONGESTION", "TEMPORARY_DISCONNECT"],
 } as const;
 
+function simulationSessionKey(projectId: string) {
+  return `nis.active-simulation.${projectId}`;
+}
+
 export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);
@@ -82,9 +87,55 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   const [faultMagnitude, setFaultMagnitude] = useState(5);
   const [proposals, setProposals] = useState<FaultProposal[]>([]);
   const [proposalMagnitude, setProposalMagnitude] = useState<Record<string, number>>({});
+  const [proposalReviewState, setProposalReviewState] = useState<Record<string, { busy: boolean; message: string; error?: boolean }>>({});
   const [view, setView] = useState<SimulationView>("signals");
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [restoredProjectId, setRestoredProjectId] = useState("");
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
+  const [restoreError, setRestoreError] = useState("");
+  const [resetPromptOpen, setResetPromptOpen] = useState(false);
+
+  useEffect(() => {
+    const projectId = workflow?.project_id;
+    if (!projectId) return;
+    let active = true;
+    setRestoredProjectId("");
+    setRestoreError("");
+    setJob(null);
+    setSnapshot(null);
+    const savedJobId = window.sessionStorage.getItem(simulationSessionKey(projectId));
+    if (!savedJobId) {
+      setRestoredProjectId(projectId);
+      return () => { active = false; };
+    }
+    void getSimulation(savedJobId).then((savedJob) => {
+      if (!active) return;
+      setJob(savedJob);
+      setRestoredProjectId(projectId);
+    }).catch((caught) => {
+      if (active) setRestoreError(caught instanceof Error ? caught.message : "Simulationslauf nicht erreichbar.");
+    });
+    return () => { active = false; };
+  }, [restoreAttempt, workflow?.project_id]);
+
+  useEffect(() => {
+    const projectId = workflow?.project_id;
+    if (!projectId || restoredProjectId !== projectId) return;
+    const key = simulationSessionKey(projectId);
+    if (job) window.sessionStorage.setItem(key, job.id);
+    else window.sessionStorage.removeItem(key);
+  }, [job, restoredProjectId, workflow?.project_id]);
+
+  useEffect(() => {
+    if (!job) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [job]);
 
   const loadWorkflow = useCallback(async () => {
     try {
@@ -188,7 +239,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!workflow || !valid) return;
+    if (!workflow || !valid || restoredProjectId !== workflow.project_id) return;
     setBusy(true);
     setError("");
     setPlayhead(0);
@@ -287,6 +338,16 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
   }
 
   function reset() {
+    if (job) {
+      setResetPromptOpen(true);
+      return;
+    }
+    clearSimulationView();
+  }
+
+  function clearSimulationView() {
+    if (workflow?.project_id) window.sessionStorage.removeItem(simulationSessionKey(workflow.project_id));
+    setResetPromptOpen(false);
     setPlaying(false);
     setPlayhead(0);
     setJob(null);
@@ -325,23 +386,39 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
 
   async function reviewProposal(proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") {
     if (!workflow) return;
-    const magnitude = proposalMagnitude[proposal.proposal_id];
-    const reviewed = await reviewSimulationFaultProposal(
-      workflow.project_id,
-      proposal.proposal_id,
-      action,
-      action === "EDIT" && Number.isFinite(magnitude) ? { configuration: { ...proposal.configuration, magnitude } } : undefined,
-    );
-    setProposals((current) => current.map((item) => item.proposal_id === reviewed.proposal_id ? reviewed : item));
-    if (action === "ACCEPT") {
-      setFaults((current) => current.some((item) => item.proposal_id === proposal.proposal_id) ? current : [...current, {
-        id: crypto.randomUUID(), scope: proposal.fault_scope, type: proposal.fault_type,
-        target: proposal.target, start_s: Number(proposal.configuration.start_s ?? 0.25),
-        end_s: Number(proposal.configuration.end_s ?? duration * 0.75),
-        magnitude: Number(proposal.configuration.magnitude ?? 5), source: "ai", approved: true,
-        proposal_id: proposal.proposal_id,
-      }]);
-      setMode("AI_GENERATED_FAULT");
+    const proposalId = proposal.proposal_id;
+    const magnitude = proposalMagnitude[proposalId] ?? Number(proposal.configuration.magnitude ?? 5);
+    if (action === "EDIT" && (!Number.isFinite(magnitude) || magnitude < 0)) {
+      setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, error: true, message: "Bitte eine gültige Magnitude ab 0 eingeben." } }));
+      return;
+    }
+    setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: true, message: "Wird gespeichert …" } }));
+    try {
+      const reviewed = await reviewSimulationFaultProposal(
+        workflow.project_id,
+        proposalId,
+        action,
+        action === "EDIT" ? { configuration: { ...proposal.configuration, magnitude } } : undefined,
+      );
+      setProposals((current) => current.map((item) => item.proposal_id === reviewed.proposal_id ? reviewed : item));
+      if (action === "EDIT") {
+        setProposalMagnitude((current) => ({ ...current, [proposalId]: Number(reviewed.configuration.magnitude ?? magnitude) }));
+        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: `Änderung gespeichert · Magnitude ${Number(reviewed.configuration.magnitude ?? magnitude)}` } }));
+      } else {
+        setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, message: action === "ACCEPT" ? "Vorschlag übernommen." : "Vorschlag abgelehnt." } }));
+      }
+      if (action === "ACCEPT") {
+        setFaults((current) => current.some((item) => item.proposal_id === proposalId) ? current : [...current, {
+          id: crypto.randomUUID(), scope: proposal.fault_scope, type: proposal.fault_type,
+          target: proposal.target, start_s: Number(reviewed.configuration.start_s ?? 0.25),
+          end_s: Number(reviewed.configuration.end_s ?? duration * 0.75),
+          magnitude: Number(reviewed.configuration.magnitude ?? 5), source: "ai", approved: true,
+          proposal_id: proposalId,
+        }]);
+        setMode("AI_GENERATED_FAULT");
+      }
+    } catch (caught) {
+      setProposalReviewState((current) => ({ ...current, [proposalId]: { busy: false, error: true, message: caught instanceof Error ? caught.message : "Änderung konnte nicht gespeichert werden." } }));
     }
   }
 
@@ -399,13 +476,37 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
         </div>
         <div className="simulation-transport-controls">
           <button className="button secondary" disabled={!valid || busy || formats.length === 0 || !scopeValid || !workflow} onClick={() => void saveScenarioAs()} type="button">Speichern unter</button>
-          <button className="button primary" disabled={!valid || busy || Boolean(job) || formats.length === 0 || !scopeValid} type="submit">Start</button>
+          <button className="button primary" disabled={!valid || busy || Boolean(job) || restoredProjectId !== workflow?.project_id || formats.length === 0 || !scopeValid} type="submit">Start</button>
           <button className="button secondary" disabled={!job?.result?.model_simulation} onClick={() => setPlaying((current) => !current)} type="button">{playing ? "Pause" : "Weiter"}</button>
           <button className="button secondary" disabled={!running} onClick={() => void stop()} type="button">Stop</button>
-          <button className="button secondary" disabled={!job} onClick={reset} type="button">Reset</button>
+          <button className="button secondary" disabled={!job || running || busy} onClick={reset} type="button">Reset</button>
         </div>
       </form>
       {savedScenarioNotice && <div className="notice success">{savedScenarioNotice}</div>}
+      {restoreError && <div className="notice error" role="alert">Der gespeicherte Simulationslauf konnte nicht geladen werden: {restoreError} <button className="button secondary tiny" onClick={() => setRestoreAttempt((attempt) => attempt + 1)} type="button">Erneut laden</button></div>}
+      {workflow?.project_id && restoredProjectId !== workflow.project_id && !restoreError && <div className="notice" role="status">Der letzte Simulationslauf dieser Sitzung wird wiederhergestellt …</div>}
+      {resetPromptOpen && job && (
+        <div className="project-dialog-backdrop">
+          <section aria-labelledby="simulation-reset-title" aria-modal="true" className="project-dialog simulation-reset-dialog" role="alertdialog">
+            <div>
+              <p className="eyebrow">Simulations-Trace</p>
+              <h2 id="simulation-reset-title">Trace vor dem Zurücksetzen sichern?</h2>
+              <p>Der Lauf bleibt bis zum Zurücksetzen in dieser Sitzung erhalten. Lade gewünschte Artefakte jetzt herunter. Danach wird die Ansicht geleert; du kannst den Lauf bis dahin durch Navigation oder Neuladen wieder öffnen.</p>
+            </div>
+            {!!job.artifact_downloads?.length && (
+              <div className="simulation-reset-artifacts" aria-label="Trace-Artefakte herunterladen">
+                {job.artifact_downloads.map((artifact) => (
+                  <a className="button secondary" download={artifact.name} href={artifact.url} key={artifact.index}>{artifact.name} herunterladen</a>
+                ))}
+              </div>
+            )}
+            <div className="project-dialog-actions">
+              <button className="button secondary" onClick={() => setResetPromptOpen(false)} type="button">Zurück zum Trace</button>
+              <button className="button primary" onClick={clearSimulationView} type="button">Ansicht zurücksetzen</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <section className="panel simulation-scope-panel">
         <div className="compact-heading"><div><p className="eyebrow">Geprüfter Simulationsumfang</p><h2>{simulationScope.include_all ? "Gesamtes aktives Modell" : `${simulationScope.message_ids.length} Nachrichten und ${simulationScope.signal_ids.length} Signale ausgewählt`}</h2></div><Link className="button secondary" href={withProjectParam("/studio/validation", projectIdForLinks)}>Umfang im Preflight ändern</Link></div>
@@ -428,7 +529,7 @@ export function ModelSimulationRunner({ initialProjectId = "" }: { initialProjec
           <div className="fault-chip-list">{faults.map((fault) => <button className="fault-chip" key={fault.id} title="Fehler entfernen" type="button" onClick={() => setFaults((current) => current.filter((item) => item.id !== fault.id))}><strong>{fault.type}</strong><span>{fault.scope} · {fault.source === "ai" ? "KI geprüft" : "Nutzer"}</span><b>×</b></button>)}{!faults.length && <span className="empty-inline">Keine Fehler aktiv. Der Lauf bildet den Golden Trace.</span>}</div>
       </section>
 
-      <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} onMagnitude={(id, value) => setProposalMagnitude((current) => ({ ...current, [id]: value }))} onReview={reviewProposal} />
+      <FaultProposalReview proposals={proposals.filter((proposal) => proposal.status !== "REJECTED" && proposal.status !== "SUPERSEDED")} magnitudes={proposalMagnitude} reviewState={proposalReviewState} onMagnitude={(id, value) => { setProposalMagnitude((current) => ({ ...current, [id]: value })); setProposalReviewState((current) => ({ ...current, [id]: { busy: false, message: "Nicht gespeicherte Änderung" } })); }} onReview={reviewProposal} />
       {error && <div className="notice error">{error}</div>}
 
       <div className="simulation-view-tabs" role="tablist">{(["network", "sequence", "signals", "load", "events"] as SimulationView[]).map((item) => <button aria-selected={view === item} className={view === item ? "active" : ""} key={item} onClick={() => setView(item)} role="tab" type="button">{{ network: "NETWORK / ECU", sequence: "SEQUENCE", signals: "SIGNALS", load: "BUS LOAD", events: "EVENTS" }[item]}</button>)}</div>
@@ -461,9 +562,9 @@ function SimulationTimeline({ duration, playhead, playing, onChange }: { duratio
   return <div className="simulation-timeline"><span>{playing ? "RUNNING" : "PAUSED"}</span><input aria-label="Simulationszeit" max={Math.max(duration, 0.001)} min="0" step="0.001" type="range" value={Math.min(playhead, duration)} onChange={(event) => onChange(Number(event.target.value))} /><strong>{playhead.toFixed(3)} / {duration.toFixed(3)} s</strong></div>;
 }
 
-function FaultProposalReview({ proposals, magnitudes, onMagnitude, onReview }: { proposals: FaultProposal[]; magnitudes: Record<string, number>; onMagnitude: (id: string, value: number) => void; onReview: (proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") => Promise<void> }) {
+function FaultProposalReview({ proposals, magnitudes, reviewState, onMagnitude, onReview }: { proposals: FaultProposal[]; magnitudes: Record<string, number>; reviewState: Record<string, { busy: boolean; message: string; error?: boolean }>; onMagnitude: (id: string, value: number) => void; onReview: (proposal: FaultProposal, action: "ACCEPT" | "EDIT" | "REJECT") => Promise<void> }) {
   if (!proposals.length) return null;
-  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Review gate</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{proposal.fault_scope}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Magnitude</span><input type="number" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" onClick={() => void onReview(proposal, "EDIT")} type="button">Ändern</button><button className="button secondary" onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div></article>)}</div></section>;
+  return <section className="panel fault-proposal-review"><div className="compact-heading"><div><p className="eyebrow">Review gate</p><h2>KI-Fehlervorschläge</h2></div><span>Keine automatische Aktivierung</span></div><div className="fault-proposal-grid">{proposals.map((proposal) => { const state = reviewState[proposal.proposal_id]; return <article key={proposal.proposal_id} className={proposal.status === "APPROVED" ? "approved" : ""}><div><span>{proposal.fault_scope}</span><strong>{proposal.title}</strong><p>{proposal.rationale}</p></div><label><span>Magnitude</span><input type="number" min="0" step="any" value={magnitudes[proposal.proposal_id] ?? Number(proposal.configuration.magnitude ?? 5)} onChange={(event) => onMagnitude(proposal.proposal_id, Number(event.target.value))} /></label><div className="proposal-actions"><button className="button primary" disabled={state?.busy || proposal.status === "APPROVED"} onClick={() => void onReview(proposal, "ACCEPT")} type="button">Übernehmen</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "EDIT")} type="button">{state?.busy ? "Speichert …" : "Ändern"}</button><button className="button secondary" disabled={state?.busy} onClick={() => void onReview(proposal, "REJECT")} type="button">Ablehnen</button></div>{state?.message && <p className={state.error ? "proposal-feedback error" : "proposal-feedback"} role="status">{state.message}</p>}</article>; })}</div></section>;
 }
 
 function NetworkView({ job, trace, playhead, topology }: { job: SimulationJob | null; trace: ModelSimulationTrace; playhead: number; topology?: Partial<NetworkTopology> }) {

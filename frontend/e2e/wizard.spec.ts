@@ -251,8 +251,12 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
         if (latest.context.agent_execution?.updated_at === execution.updated_at && await button.evaluateAll(buttons => buttons.some(button => !(button as HTMLButtonElement).disabled && button.getClientRects().length > 0 && getComputedStyle(button).visibility !== "hidden"))) throw error;
         continue;
       }
-      await expect.poll(async () => (await readProject(page, project, '/api/engineering/workflow?view=summary')).context.agent_execution?.updated_at,
-        { timeout: 60_000 }).not.toBe(execution.updated_at);
+      await expect.poll(async () => {
+        const latest = await readProject(page, project, '/api/engineering/workflow?view=summary');
+        return latest.context.agent_execution?.updated_at !== execution.updated_at
+          || latest.context.agent_execution?.state === 'RUNNING'
+          || latest.statuses?.[execution.step] === 'IN_PROGRESS';
+      }, { timeout: 60_000 }).toBe(true);
       continue;
     }
     const candidate = await readProject(page, project, `/api/engineering/agent/proposals/${proposalId}`);

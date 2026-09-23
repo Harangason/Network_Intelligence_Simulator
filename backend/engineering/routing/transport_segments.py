@@ -32,7 +32,8 @@ class PhysicalRouteResolver:
                 self.route_edges[route_id].append(edge)
         self.port_networks = None
 
-    def resolve(self, route: dict[str, Any], destination: dict[str, Any]) -> list[dict[str, Any]]:
+    def resolve(self, route: dict[str, Any], destination: dict[str, Any], *,
+                preserve_ethernet_hops: bool = False) -> list[dict[str, Any]]:
         """Use route-linked edges; never relocate receivers onto the source bus."""
         nodes, by_hardware = self.nodes, self.by_hardware
         source = route.get("source") or {}
@@ -81,6 +82,8 @@ class PhysicalRouteResolver:
                 "interface_id": original.get("interface_id") or port.get("engineeringId") or hardware_interface or str(port_id),
                 "hardware_interface_id": hardware_interface or None, "port_id": hardware_interface or str(port_id),
                 "physical_port_ref": str(port_id),
+                "node_kind": node.get("kind"),
+                "switching_delay_ms": node.get("switching_delay_ms", node.get("switchingDelayMs")),
                 "network_id": networks.get(str(port_id)) or edge.get("physicalNetworkId") or original.get("network_id"),
                 "network_name": edge.get("physicalNetworkName") or port.get("physicalNetworkName") or original.get("network_name"),
                 "protocol": BUS_PROTOCOLS.get(str(edge.get("bus")), str(edge.get("bus") or original.get("protocol") or "CUSTOM").upper())}
@@ -90,8 +93,12 @@ class PhysicalRouteResolver:
             segment = {"source": endpoint(left, edge.get("sourcePort") if forward else edge.get("targetPort"), edge),
                 "target": endpoint(right, edge.get("targetPort") if forward else edge.get("sourcePort"), edge),
                 "topology_edge_ids": [str(edge.get("id"))]}
-            # Several linked edges on one shared bus describe a single transmission.
-            if segments and segments[-1]["source"]["network_id"] == segment["source"]["network_id"]:
+            # Several linked edges on one shared bus describe a single
+            # transmission. Switched Ethernet serializes at every egress port,
+            # so capacity analysis can request its individual physical hops.
+            ethernet_hop = str(segment["source"].get("protocol") or "").upper() in {"ETHERNET", "AUTOMOTIVE_ETHERNET"}
+            if (segments and segments[-1]["source"]["network_id"] == segment["source"]["network_id"]
+                    and not (preserve_ethernet_hops and ethernet_hop)):
                 segments[-1]["target"] = segment["target"]
                 segments[-1]["topology_edge_ids"].extend(segment["topology_edge_ids"])
             else:

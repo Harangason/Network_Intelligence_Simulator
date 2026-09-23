@@ -150,6 +150,21 @@ _OUTCOMES: dict[GoalType, list[str]] = {
     GoalType.STATUS_QUERY: ["current_model_status_reported", "metrics_with_units_and_provenance"],
 }
 
+# A durable wizard target identifies the stage the user accepted. Prompt text
+# often contains requirements for every stage, so lexical matches in that text
+# must not redirect the runtime to an unrelated capability.
+_WIZARD_TARGET_GOALS: dict[str, GoalType] = {
+    "engineering_model": GoalType.CREATE_PROJECT,
+    "routing": GoalType.CONNECT_OBJECTS,
+    "network_editor": GoalType.CREATE_NETWORK,
+    "parameters": GoalType.CHANGE_CONFIGURATION,
+    "capacity_timing": GoalType.CALCULATE_CAPACITY,
+    "validation": GoalType.VALIDATE_MODEL,
+    "simulation": GoalType.RUN_SIMULATION,
+    "results_analysis": GoalType.ANALYZE_TRACE,
+    "data_science_intelligence": GoalType.GENERAL_ENGINEERING,
+}
+
 
 class GoalResolver:
     """Resolve common engineering requests without making engineering decisions."""
@@ -162,9 +177,18 @@ class GoalResolver:
         previous = active_workload or {}
         asked = _ACTION.search(source) is not None
         question = bool(re.match(r"\s*(?:wie|was|welche|warum|wieso|ist|sind|zeige|erkläre|erklaere|kann|how|what|which|why|show|explain|is|are)\b", text))
+        wizard_request = context.get("wizard_request")
+        wizard_target = (wizard_request.get("target") if isinstance(wizard_request, dict)
+                         and wizard_request.get("version") == 2 else None)
+        if wizard_target in _WIZARD_TARGET_GOALS:
+            kind = _WIZARD_TARGET_GOALS[wizard_target]
+        else:
+            kind = None
         periodic = bool(re.search(r"\b(?:alle\s+)?\d+(?:[.,]\d+)?\s*(?:s|sek(?:unden?)?|ms|min(?:uten?)?)\b", text)
                         and re.search(r"\b(?:abfrag|abfrage|poll|erfass|erhebung|acquisition|sample)\w*\b", text))
-        if periodic and re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc)\b", text):
+        if kind is not None:
+            pass
+        elif periodic and re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc)\b", text):
             kind = GoalType.PERIODIC_ACQUISITION
         elif re.search(r"\b(?:trace|trace-session|golden\s+trace)\b", text) and re.search(r"\b(?:analys|untersuch|compare|vergleich|ursach|root)\w*\b", text):
             kind = GoalType.ANALYZE_TRACE

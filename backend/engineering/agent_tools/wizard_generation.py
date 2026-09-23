@@ -50,7 +50,7 @@ _TOPOLOGY_BUS_BY_PROTOCOL = {
 }
 
 MODEL_GENERATOR_VERSION = 'wizard-model-v22-generation-rules'
-ROUTING_GENERATOR_VERSION = 'wizard-routing-v10-preserve-local-technology'
+ROUTING_GENERATOR_VERSION = 'wizard-routing-v11-confirmed-recipients-only'
 
 _CONTROLLER_DEVICE_TYPES = {
     'ECU', 'PLC', 'RobotController', 'EmbeddedController', 'IndustrialPC',
@@ -1046,8 +1046,8 @@ def generate_communication_contract(arguments: dict) -> dict:
             return proposal_service.envelope(row)
     return proposal_service.create('WIZARD_ENGINEERING_MODEL', changes,
         f'Kommunikationsplan vervollständigen: {len(changes)} Nachrichten erhalten explizite Empfänger und einen Kommunikationszweck.',
-        assumptions=['Gerätestatus wird von Diagnose, sonst Gateway bzw. einem anderen Controller überwacht. Bestehende explizite Empfänger bleiben erhalten.'],
-        evidence=[{'source': 'wizard-communication-contract', 'version': 1, 'plan_sha256': fingerprint}])
+        assumptions=['Status- und Diagnoseempfänger werden nur aus bestätigten System- oder HMI-Routen übernommen. Ohne bestätigte fachliche Empfänger bleibt der Status ungeklärt und benötigt Review. Bestehende explizite Empfänger bleiben erhalten.'],
+        evidence=[{'source': 'wizard-communication-contract', 'version': 2, 'plan_sha256': fingerprint}])
 
 
 def generate_routing(arguments: dict) -> dict:
@@ -1122,10 +1122,32 @@ def generate_routing(arguments: dict) -> dict:
         return [message for interface in interfaces_by_node.get(node_id, [])
                 for message in messages_by_interface.get(str(interface['id']), [])
                 if str(message.get('direction') or 'tx').casefold() in {'tx', 'bidirectional'}
-                and (not consumers(message) or destination_id in consumers(message))]
+                and (
+                    destination_id in consumers(message)
+                    if old_monitor_default(message)
+                    else not consumers(message) or destination_id in consumers(message)
+                )]
+
+    def old_monitor_default(message: dict) -> bool:
+        contract = ((message.get('configuration') or {}).get('communication_contract') or {})
+        return contract.get('version') == 1 and contract.get('basis') == 'Statusüberwachung: Diagnose, sonst Gateway, sonst Controller'
 
     def consumers(message: dict) -> set[str]:
-        return {str(ref) for ref in ((message.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') or []}
+        refs = {str(ref) for ref in ((message.get('configuration') or {}).get('transport_unit') or {}).get('consumer_refs') or []}
+        if old_monitor_default(message):
+            # Retire the single consumer selected by the old implicit-monitor
+            # policy. Other recipients remain explicit, and confirmed HMI
+            # selections are independently reconstructed from the cluster graph.
+            monitor_candidates = sorted(nodes, key=lambda key: (
+                0 if str(key.get('name', '')).casefold() in {'diagnose', 'diagnostics'} else
+                1 if key.get('device_type') == 'Gateway' else 2,
+                str(key.get('name', '')).casefold(),
+            ))
+            default_monitor = next((str(item['id']) for item in monitor_candidates
+                                    if item.get('device_type') in _CONTROLLER_DEVICE_TYPES), None)
+            if default_monitor:
+                refs.discard(str(default_monitor))
+        return refs
 
     def local_tx_message(source_id: str, destination_id: str):
         source_ports = hardware_interfaces_by_node.get(source_id, [])

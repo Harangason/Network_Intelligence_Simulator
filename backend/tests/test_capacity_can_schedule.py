@@ -79,8 +79,12 @@ def test_protocols_without_complete_scheduler_remain_unverified(protocol):
     data['capacity']['results']['routes'] = [row]
     check = plan(data)['schedule_assessments'][0]
     assert check['protocol'] == protocol
-    assert check['timing_status'] == 'UNVERIFIED'
-    assert check['communication_schedule']['status'] == 'UNVERIFIED'
+    if protocol in {'ETHERNET', 'AUTOMOTIVE_ETHERNET'}:
+        assert check['timing_status'] == 'UNVERIFIED'
+        assert check['communication_schedule']['status'] == 'PROFILE_INCOMPLETE'
+    else:
+        assert check['timing_status'] == 'UNVERIFIED'
+        assert check['communication_schedule']['status'] == 'UNVERIFIED'
 
 
 @pytest.mark.parametrize('protocol', ['CAN', 'CAN_FD'])
@@ -92,6 +96,21 @@ def test_complete_can_frame_has_a_checked_single_bus_response_bound(protocol):
     check = plan(data)['schedule_assessments'][0]
     assert check['timing_status'] == 'VERIFIED_UNDER_ASSUMPTIONS'
     assert check['communication_schedule']['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS'
+
+
+def test_complete_ethernet_port_has_a_checked_fifo_response_bound():
+    data = fixture()
+    row = deepcopy(data['capacity']['results']['routes'][0])
+    row.update(protocol='ETHERNET', bitrate=100_000_000, segment_transmission_latency_ms=.01,
+               queue_policy='FIFO', load_basis='BUSIEST_FULL_DUPLEX_PORT',
+               calculation_model='ETHERNET_WIRE_ESTIMATE')
+    data['capacity']['results']['routes'] = [row]
+
+    result = plan(data)
+    check = result['schedule_assessments'][0]
+
+    assert check['timing_status'] == 'VERIFIED_UNDER_ASSUMPTIONS'
+    assert check['communication_schedule']['model'] == 'ETHERNET_FULL_DUPLEX_FIFO_RESPONSE_BOUND_V1'
 
 
 def test_mixed_physical_protocols_never_certify_only_the_lin_subset():

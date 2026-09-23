@@ -2,7 +2,7 @@ import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
 for (const entry of ['workspace', 'sidebar']) {
-test(`natural small project request from ${entry} reaches editable wizard through the real agent @project-intake`, async ({ page }) => {
+test(`natural small project request from ${entry} creates a persistent editable project draft @project-intake`, async ({ page }) => {
   const compact = '20260914000000000-' + randomUUID().replaceAll('-', '').slice(0, 8);
   const project = 'network-project-' + compact;
   const requirement = 'ich möchte ein kleines Projekt: ich habe drei sensoren die temperatur messen und ein respary pi und aktoren die ventile steuern';
@@ -10,30 +10,23 @@ test(`natural small project request from ${entry} reaches editable wizard throug
   if (entry === 'sidebar') await page.getByTitle('AI Assistant öffnen', { exact: true }).click();
   await page.getByRole('textbox', { name: 'Nachricht an den Engineering-Assistenten' }).fill(requirement);
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
-  const action = page.getByRole('button', { name: /Im Wizard bearbeiten/ });
-  await expect(action).toBeVisible();
-  await page.getByRole('region', { name: 'Gespeicherter Projektentwurf' }).getByText(/Offene Angaben \(/).click();
-  await expect(page.getByText(/Wie viele Ventile/).first()).toBeVisible();
+  const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' }).last();
+  await expect(editor).toContainText('4 Geräte');
+  await editor.getByText(/Offene Angaben \(/).click();
+  await expect(editor.getByText(/Wie viele Ventile/)).toBeVisible();
   // Persisted responses must retain the requirement, not only the streamed card.
   await page.reload();
   if (entry === 'sidebar' && await page.getByTitle('AI Assistant öffnen', { exact: true }).isVisible())
     await page.getByTitle('AI Assistant öffnen', { exact: true }).click();
-  await expect(action).toBeVisible();
-  await action.click();
-  await expect(page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' })).toBeVisible();
-  const description = page.getByRole('textbox', { name: 'Projektbeschreibung', exact: false });
-  await expect(description).toHaveValue(requirement);
-  const editor = page.getByRole('dialog').getByRole('region', { name: 'Gespeicherter Projektentwurf' });
   await expect(editor).toContainText('4 Geräte');
-  await editor.getByText(/Offene Angaben \(/).click();
-  await expect(editor.getByText(/Wie viele Ventile/)).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Auftrag starten', exact: true })).toBeDisabled();
+  await expect(page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' })).toHaveCount(0);
   await editor.getByRole('textbox', { name: 'Anforderung ergänzen', exact: true }).fill('Zwei Ventile, zunächst manuell schalten.');
   await editor.getByRole('button', { name: 'Ergänzung speichern', exact: true }).click();
   await expect(editor.getByRole('status')).toContainText('Revision 2 gespeichert');
   await expect(editor).toContainText('6 Geräte');
   await page.reload();
-  await expect(description).toHaveValue(requirement + '\n\nZwei Ventile, zunächst manuell schalten.');
+  if (entry === 'sidebar' && await page.getByTitle('AI Assistant öffnen', { exact: true }).isVisible())
+    await page.getByTitle('AI Assistant öffnen', { exact: true }).click();
   await expect(editor).toContainText('Revision 2');
   await expect(editor).toContainText('6 Geräte');
   expect(new URL(page.url()).searchParams.get('project')).toBe(compact);

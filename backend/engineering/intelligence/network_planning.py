@@ -174,6 +174,12 @@ def _schedule_check(rows: list[dict[str, Any]], parameters: dict[str, Any]) -> d
                   'FAIL' if checked['status'] in {'OVERLOAD', 'MODEL_INCONSISTENT', 'CONSTRAINT_VIOLATION'}
                   else 'UNVERIFIED')
         return {'status': status, 'communication_schedule': checked}
+    if protocols == {'ETHERNET'}:
+        checked = bus_schedule(unique_streams(rows), policy_for(parameters))
+        status = ('PASS' if checked['status'] == 'FEASIBLE_UNDER_ASSUMPTIONS' else
+                  'FAIL' if checked['status'] in {'OVERLOAD', 'MODEL_INCONSISTENT', 'CONSTRAINT_VIOLATION'}
+                  else 'UNVERIFIED')
+        return {'status': status, 'communication_schedule': checked}
     legacy = lin_schedule_check(rows)
     # A batch estimate or a protocol without a schedule model is not a complete
     # timing proof. Keep a failed LIN estimate binding, expose missing evidence.
