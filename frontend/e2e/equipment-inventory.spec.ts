@@ -22,6 +22,8 @@ test('generic sensors expose separate measurement and connection choices without
   for (const name of ['Sensor1', 'Sensor3']) await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   await expect(dialog.getByRole('row', { name: /Sensoren Konkrete Geräte 3 Verbindlich 3/ })).toBeVisible();
   await expect(dialog.getByRole('region', { name: 'Intelligente Systemcluster' }).getByRole('listitem').filter({ hasText: 'Sensor2' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+  await dialog.getByLabel('RaspberryPi: Anschluss', { exact: true }).selectOption('I2C');
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeEnabled();
 });
 

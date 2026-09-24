@@ -69,7 +69,11 @@ def collect_assignment_suggestions(
     domain: str = "",
 ) -> dict[str, Any]:
     """Rank exact reviewed endpoint/controller evidence for the current graph."""
-    candidate_by_key = {_normalized(name): name for name in candidate_controllers if _normalized(name)}
+    candidate_by_key: dict[str, list[str]] = defaultdict(list)
+    for name in candidate_controllers:
+        key = _normalized(name)
+        if key and name not in candidate_by_key[key]:
+            candidate_by_key[key].append(name)
     scores: dict[tuple[str, str], int] = defaultdict(int)
     evidence_counts: dict[tuple[str, str], int] = defaultdict(int)
     projects: dict[tuple[str, str], set[str]] = defaultdict(set)
@@ -105,13 +109,19 @@ def collect_assignment_suggestions(
         if not ranked or ranked[0][0] <= 0:
             continue
         score, controller_key = ranked[0]
+        # Family normalization intentionally removes instance numbers for
+        # retrieval. It must never turn several numbered controllers into one
+        # silently selected owner just because the last candidate overwrote
+        # the others in a dictionary.
+        if len(candidate_by_key[controller_key]) != 1:
+            continue
         runner_up = ranked[1][0] if len(ranked) > 1 else 0
         if score <= runner_up:
             continue
         evidence_key = (endpoint_key, controller_key)
         suggestions.append({
             "endpoint_name": endpoint_name,
-            "controller_name": candidate_by_key[controller_key],
+            "controller_name": candidate_by_key[controller_key][0],
             "confidence": min(0.99, 0.82 + min(score, 12) * 0.0125),
             "reason": "Projektübergreifend bestätigte Controller-Zuordnung (RAG).",
             "evidence_count": evidence_counts[evidence_key],

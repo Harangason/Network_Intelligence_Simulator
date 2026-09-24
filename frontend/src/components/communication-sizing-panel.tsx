@@ -93,6 +93,12 @@ export function CommunicationSizingPanel() {
         {plan.networks.map(network => <details key={network.network_id} style={{padding: "12px 0", borderBottom: "1px solid var(--border, #293746)"}}>
           <summary><strong>{network.network_name}</strong> · {network.protocol} · Zyklen: {network.effective_periods_ms?.join(" / ") || "offen"} ms · {percent(network.schedule?.nominal_load_percent)}</summary>
           <p>{network.explanation}</p>
+          {network.schedule?.hardware_review_proposal && <div className="notice warning">
+            <p><strong>Hardwareprofil-Vorschlag zur Prüfung</strong> · {network.schedule.hardware_review_proposal.source}. Geräteprofil und Zeitfreigabe sind noch nicht bestätigt.</p>
+            {network.schedule.hardware_review_proposal.endpoint_candidates.length > 0 && <p>Mögliche Endpunkte: {network.schedule.hardware_review_proposal.endpoint_candidates.join(", ")}. Master und Gerätezuordnung fachlich bestätigen.</p>}
+            <ul>{network.schedule.hardware_review_proposal.fields.map(field => <li key={field.key}>{field.label}: {field.value ?? "offen"}{field.candidate != null ? ` · Profilkandidat ${field.candidate.toLocaleString("de-DE")} (ungeprüft)` : ""}{field.state === "CONFLICT" ? " · widersprüchliche Angaben" : ""}</li>)}</ul>
+            <p>Die Werte am jeweiligen Hardware Interface bestätigen. Bis dahin bleibt der Reaktionszeitnachweis gesperrt.</p>
+          </div>}
           {network.protocol === "LIN" && network.schedule?.slot_load_percent != null && <p>Reservierte LIN-Sendeplätze: {percent(network.schedule.slot_load_percent)}</p>}
           <table className="eng-table"><thead><tr><th>Zyklus-Untergrenze</th><th>Busbedarf</th>{network.protocol === "LIN" && <th>LIN-Slots</th>}<th>Bewertung</th></tr></thead><tbody>
             {network.attempts.map(attempt => <tr key={attempt.floor_ms}><td>{attempt.floor_ms} ms</td><td>{percent(attempt.load_percent)}</td>{network.protocol === "LIN" && <td>{percent(attempt.slot_load_percent)}</td>}<td>{attempt.fits ? "Geeignet unter den Modellannahmen" : attempt.reasons.join(" · ") || "Weiterer Nachweis erforderlich"}</td></tr>)}

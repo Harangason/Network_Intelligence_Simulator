@@ -578,7 +578,13 @@ function NetworkDetail({ id, network, routes, sourceVersions }: { id: string; ne
   const contributors = network.top_contributors ?? routes.slice(0, 5).map((route) => ({ route_id: route.route_id, name: route.name, load_percent: route.average_load_percent }));
   return (
     <section aria-label={`Netzdetails ${capacityNetworkName(network)}`} className="network-capacity-detail" id={id}>
-      <div><p className="eyebrow">Netzdetails</p><h3>{capacityNetworkName(network)}</h3><span>{network.protocol} · {network.bitrate ? `${network.bitrate.toLocaleString("de-DE")} bit/s` : "historischer Snapshot"}</span></div>
+      <div><p className="eyebrow">Netzdetails</p><h3>{capacityNetworkName(network)}</h3><span>{network.protocol} · {network.capacity_applicable === false ? "direkte Signalleitung" : network.bitrate ? `${network.bitrate.toLocaleString("de-DE")} bit/s` : "Bitrate offen"}</span></div>
+      {network.communication_schedule?.hardware_review_proposal && <div className="notice warning">
+        <strong>Hardwareprofil-Vorschlag zur Prüfung · {network.communication_schedule.hardware_review_proposal.source}</strong>
+        <p>Geräteprofil und Reaktionszeit sind nicht bestätigt. Mögliche Endpunkte: {network.communication_schedule.hardware_review_proposal.endpoint_candidates.join(", ") || "offen"}.</p>
+        <ul>{network.communication_schedule.hardware_review_proposal.fields.map(field => <li key={field.key}>{field.label}: {field.value ?? "offen"}{field.candidate != null ? ` · Profilkandidat ${field.candidate.toLocaleString("de-DE")} (ungeprüft)` : ""}{field.state === "CONFLICT" ? " · widersprüchliche Angaben" : ""}</li>)}</ul>
+        <p>Master, Gerät und Zeitgrenzen am Hardware Interface bestätigen; die Zeitfreigabe bleibt bis dahin gesperrt.</p>
+      </div>}
       <dl className="overview-list"><div><dt>Burst</dt><dd>{network.capacity_applicable === false ? "n/a" : `${network.burst_load_percent.toFixed(2)} %`}</dd></div><div><dt>Margin</dt><dd>{network.capacity_applicable === false ? "n/a" : `${(network.capacity_margin_percent ?? 100 - network.burst_load_percent).toFixed(2)} %`}</dd></div><div><dt>Routen</dt><dd>{routes.length}</dd></div></dl>
       {network.evaluation && <div className="capacity-evaluation" aria-label="Getrennte Netzbewertung">
         <dl className="overview-list">

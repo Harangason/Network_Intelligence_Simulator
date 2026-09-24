@@ -1,5 +1,6 @@
 """The captured complete wizard graph, without post-generation fixture repairs."""
 import json
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -37,7 +38,29 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs()
     routing = call('generate_full_routing', lambda: wizard_generation.generate_routing({'prompt': prompt}))
     checked_routing = call('validate_full_routing', lambda: proposal_service.validate(routing['proposal_id']))
     assert checked_routing['validation_result']['valid'], json.dumps(checked_routing['validation_result'], default=str)
-    assert len(routing['changes']) == 838
+    from collections import Counter
+    hardware_types = {str(item['id']): item['device_type'] for item in hardware}
+    graph_line = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])$', prompt, re.M)
+    assert graph_line is not None
+    graph = json.loads(graph_line.group(1))
+    assert sum(bool(route.get('signals')) for cluster in graph
+               for route in cluster.get('hmi_routes') or []) == 15
+    route_roles = Counter()
+    for change in routing['changes']:
+        route = change['data']
+        source_role = hardware_types.get(str((route.get('source') or {}).get('node_id')), '?')
+        for destination in route.get('destinations') or []:
+            route_roles[(source_role, hardware_types.get(str(destination.get('node_id')), '?'))] += 1
+    # The captured graph explicitly enables only 15 HMI deliveries; its
+    # excluded signals must not revive older implicit monitoring recipients.
+    # Check each communication role so a smaller count cannot hide missing
+    # sensor values, actuator commands, or actuator feedback.
+    assert route_roles == Counter({
+        ('SensorController', 'ECU'): 250,
+        ('ECU', 'ActuatorController'): 250,
+        ('ActuatorController', 'ECU'): 250,
+        ('ECU', 'ECU'): 16,
+    })
     assert before == call('unchanged_source_revision', model.model_revision)
     resumed = call('resume_same_routing', lambda: wizard_generation.generate_routing({
         'prompt': prompt + '\nFortsetzung des bestätigten Wizard-Auftrags:\nBitte weiter prüfen.'}))

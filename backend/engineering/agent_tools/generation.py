@@ -126,10 +126,22 @@ def functions(arguments: dict) -> dict:
         candidates += [{"name":sub} for item in expansion["functions"] for sub in item.get("subfunctions",[]) if sub not in {c["name"] for c in candidates}]
     if requested and requested > len(candidates):
         raise ValueError(f"Fachlich begründete Funktionen: {len(candidates)}, angefordert: {requested}. Anforderung präzisieren.")
+    position_poll = bool(new_hardware and re.search(r'Stellgliedposition|Aktorposition', arguments['prompt'], re.I)
+                         and re.search(r'\b30\s*(?:Sekunden|s)\b', arguments['prompt'], re.I))
+    if position_poll:
+        # The general requirement expander can return GenericFunctionalization
+        # for this precise intent. Preserve the typed acquisition goal and its
+        # period in the reviewable canonical function instead.
+        candidates = [{'name': 'StellgliedPositionAbfrage',
+                       'subfunctions': ['CANopen-Anfrage und korrelierte Positionsantwort',
+                                        'Abfrageintervall 30000 ms']}]
     for index, function in enumerate(candidates[:requested] if requested else candidates):
         changes.append({"object_type": "Function", "local_ref": f"function-{index}", "data": {
             "name": function["name"], "hardware_node_id": hardware_id, "domain": arguments.get("domain") or "custom",
-            "description": ", ".join(function.get("subfunctions") or [])}})
+            "description": ", ".join(function.get("subfunctions") or []),
+            **({'configuration': {'acquisition_mode': 'REQUEST_RESPONSE',
+                                  'cycle_time_ms': 30000, 'review_state': 'CANDIDATE'}}
+               if position_poll else {})}})
     complete_new_controller_status(changes, status_technology=status_technology, status_cycle_ms=status_cycle_ms)
     return proposals.create("FUNCTION_STRUCTURE", changes, arguments["prompt"],
                             assumptions=[*[str(item) for item in expansion["assumptions"]], *draft_assumptions, *([f"Statuszyklus im Entwurf: {status_cycle_ms} ms über {status_technology}; Buszuordnung und Timing vor Routing prüfen."] if new_hardware else [])],

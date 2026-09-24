@@ -25,6 +25,10 @@ def test_explicit_new_acquisition_ecu_uses_reviewable_project_evidence(monkeypat
     assert status['data']['cycle_ms'] == 10
     assert any('30-Sekunden-Abfragezyklus ist davon unabhängig' in note for note in result['assumptions'])
     assert any('vor Übernahme prüfen' in note for note in result['assumptions'])
+    function = next(change['data'] for change in result['changes'] if change['object_type'] == 'Function')
+    assert function['name'] == 'StellgliedPositionAbfrage'
+    assert function['configuration']['cycle_time_ms'] == 30000
+    assert function['configuration']['acquisition_mode'] == 'REQUEST_RESPONSE'
 
 
 def test_canopen_position_poll_draft_pairs_existing_devices_without_inventing_encoding(monkeypatch):

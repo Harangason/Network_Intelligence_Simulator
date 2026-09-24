@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from engineering.models import EngineeringValidationError
-from engineering.workloads.handlers import (
+from backend.engineering.models import EngineeringValidationError
+from backend.engineering.workloads.handlers import (
     MOTION_SIGNAL_CATALOG,
     SignalGenerationWorkloadHandler,
     THERMAL_SIGNAL_CATALOG,
@@ -11,9 +11,9 @@ from engineering.workloads.handlers import (
     suggest_candidate_repair,
     validate_signal_definition,
 )
-from engineering.workloads.models import evaluate_workload_completion, parse_workload_request
-from engineering.workloads.service import EngineeringWorkloadOrchestrator
-from engineering.routing.generation import is_gateway_fanout_interface
+from backend.engineering.workloads.models import evaluate_workload_completion, parse_workload_request
+from backend.engineering.workloads.service import EngineeringWorkloadOrchestrator
+from backend.engineering.routing.generation import is_gateway_fanout_interface
 
 
 SOURCE = "00000000-0000-0000-0000-000000000001"

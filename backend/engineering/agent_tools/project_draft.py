@@ -171,6 +171,8 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
                 add(name, role, group['source'], known_kind=group['known_kind'])
                 devices[name.casefold()].update(technology=group['technology'],
                     connection_candidates=group['connection_candidates'], purpose=group['name'] if group['known_kind'] else None)
+                if group.get('technologies'):
+                    devices[name.casefold()]['technologies'] = group['technologies']
     scope = quantities(requirement)
     for key, role, stem in [('sensors', 'SENSOR', 'Sensor'), ('actuators', 'ACTUATOR', 'Aktor'),
                             ('ecus', 'CONTROLLER', 'Controller'), ('gateways', 'GATEWAY', 'Gateway')]:

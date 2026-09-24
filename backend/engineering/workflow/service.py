@@ -518,7 +518,10 @@ class WorkflowStatusService:
         invalid_nodes = 0
         for node_id, node in node_map.items():
             ports = node.get("ports") if isinstance(node.get("ports"), list) else []
-            if not node.get("name") or not node.get("kind") or not node.get("engineeringId") or not ports:
+            # An explicitly modelled device can be physically isolated until
+            # its network binding is confirmed.  The generator preserves such
+            # devices in the scene; lacking a port alone is not malformed.
+            if not node.get("name") or not node.get("kind") or not node.get("engineeringId"):
                 invalid_nodes += 1
             for port in ports:
                 if isinstance(port, dict) and port.get("id"):

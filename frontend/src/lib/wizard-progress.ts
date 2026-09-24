@@ -29,7 +29,7 @@ export function wizardAnalysisHeading({
       : "Engineering-Auftrag wird verarbeitet";
   }
   if (routingReviewPending || modelReviewPending) return "Analyse bereit zur Freigabe";
-  if (executionState === "READY_TO_CONTINUE") return "Modell übernommen · Fortsetzung bereit";
+  if (executionState === "READY_TO_CONTINUE") return "Fortsetzung bereit";
   if (runPaused) return "Auftrag angehalten";
   return "Analyseübersicht";
 }

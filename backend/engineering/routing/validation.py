@@ -73,6 +73,7 @@ INTERFACE_PROTOCOLS = {
     "PCIe": {"PCIE"},
     "Other": set(PROTOCOL_CAPACITY),
 }
+DIRECT_SIGNAL_PROTOCOLS = frozenset({"GPIO", "PWM"})
 
 
 def physical_route_technology(value):
@@ -524,7 +525,7 @@ class RoutingValidator:
             warn("PAYLOAD_UNSPECIFIED", "Die Route hat noch keinen konkreten Payload.")
 
         protocol = str(source.get("protocol") or "CUSTOM").upper()
-        if protocol not in PROTOCOL_CAPACITY:
+        if protocol not in PROTOCOL_CAPACITY and protocol not in DIRECT_SIGNAL_PROTOCOLS:
             warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
         if source.get("port_id") and any(not destination.get("port_id") for destination in destinations):
             error("DESTINATION_PHYSICAL_PORT_MISSING", "Empfänger besitzt keinen nachgewiesenen Anschluss für diesen Transport.")
@@ -648,10 +649,12 @@ class RoutingValidator:
         segment_protocols = {str(segment.get('protocol') or '').upper() for segment in transport_segments if segment.get('protocol')}
         segment_protocols.update(str(item.get('protocol') or protocol).upper() for item in [source, *destinations])
         for segment_protocol in sorted(segment_protocols):
+            if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
+                continue
             _, max_payload = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])
             if frame_payload_bytes > max_payload:
                 error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
-        bitrate, _ = PROTOCOL_CAPACITY.get(protocol, PROTOCOL_CAPACITY['CUSTOM'])
+        bitrate = None if protocol in DIRECT_SIGNAL_PROTOCOLS else PROTOCOL_CAPACITY.get(protocol, PROTOCOL_CAPACITY['CUSTOM'])[0]
 
         hop_count = max(1, len(path.get("hops", [])) - 1)
         gateway_count = len(gateways)
@@ -682,7 +685,7 @@ class RoutingValidator:
                 warn(code, f"{label} {min(limits):g} ms liegt unter Zyklus plus zulässigem Jitter "
                     f"({cycle_ms:g} + {float(jitter or 0):g} ms). Der bestehende Grenzwert bleibt verbindlich; "
                     "Sendeplan oder Anforderung müssen fachlich geprüft werden.")
-        route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits else 0.0
+        route_load = (payload_bits / (cycle_ms / 1000.0) / bitrate * 100) if payload_bits and bitrate else None
         segment_loads = {}
         # Canonical physical technology wins over an endpoint's application
         # protocol when both describe the same bus.
@@ -691,6 +694,8 @@ class RoutingValidator:
             if not network or item.get('error'):
                 continue
             segment_protocol = str(item.get('protocol') or protocol).upper()
+            if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
+                continue
             segment_bitrate = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])[0]
             segment_loads[network] = payload_bits / (cycle_ms / 1000.0) / segment_bitrate * 100
         segment_count = len(segment_loads) or 1
@@ -698,9 +703,9 @@ class RoutingValidator:
         # multicast bus. Detailed capacity/schedule evaluation remains separate.
         expected_load = sum(segment_loads.values()) if segment_loads else route_load
         peak_segment_load = max(segment_loads.values(), default=route_load)
-        if peak_segment_load > 90:
+        if peak_segment_load is not None and peak_segment_load > 90:
             error("BUS_LOAD_CRITICAL", f"Erwartete zusätzliche Buslast {peak_segment_load:.1f} % auf einem Abschnitt ist kritisch.")
-        elif peak_segment_load > 75:
+        elif peak_segment_load is not None and peak_segment_load > 75:
             warn("BUS_LOAD_HIGH", f"Erwartete zusätzliche Buslast {peak_segment_load:.1f} % auf einem Abschnitt ist hoch.")
 
         if source_node_id and destination_node_ids:
@@ -718,9 +723,9 @@ class RoutingValidator:
                 {
                     "type": "LOAD",
                     "payload_bytes": payload_bytes,
-                    "route_load_percent": round(expected_load, 3),
+                    "route_load_percent": round(expected_load, 3) if expected_load is not None else None,
                     "physical_segment_count": segment_count,
-                    "peak_segment_load_percent": round(peak_segment_load, 3),
+                    "peak_segment_load_percent": round(peak_segment_load, 3) if peak_segment_load is not None else None,
                     "network_load_percent": {network: round(load, 3) for network, load in sorted(segment_loads.items())},
                 },
                 {
@@ -738,7 +743,7 @@ class RoutingValidator:
             "metrics": {
                 "payload_bytes": payload_bytes,
                 "estimated_latency_ms": estimated_latency_ms,
-                "route_load_percent": round(expected_load, 3),
+                "route_load_percent": round(expected_load, 3) if expected_load is not None else None,
                 "physical_segment_count": segment_count,
                 "hop_count": hop_count,
                 "gateway_count": gateway_count,

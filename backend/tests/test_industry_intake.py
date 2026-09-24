@@ -29,7 +29,12 @@ def test_chat_draft_preserves_full_scope_without_inventing_connections(case):
         assert all(device['technology'] is None for device in draft['devices'])
     for device in draft['devices']:
         if device['technology']:
-            assert device['connection_candidates'] == [device['technology']]
+            confirmed = device.get('technologies') or [device['technology']]
+            assert device['connection_candidates'] == confirmed
+            assert device['technology'] in confirmed
+    if case['id'] == 'S04-A':
+        gateway = next(device for device in draft['devices'] if device['role'] == 'GATEWAY')
+        assert gateway['technologies'] == ['LIN', 'Ethernet']
 
 
 @pytest.mark.parametrize('prompt', [

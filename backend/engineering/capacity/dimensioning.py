@@ -18,6 +18,40 @@ from .transmission import profile
 
 VERSION = "communication-sizing-v3"
 DIRECT_SIGNAL_PROTOCOLS = frozenset({"GPIO", "PWM"})
+LOCAL_EVIDENCE_FIELDS = {
+    "I2C": (("master_node_id", "Bestätigter I2C-Master"), ("slave_address", "Slave-Adresse des Geräts"),
+            ("clock_stretch_limit_us", "Clock-Stretching-Grenze (µs)"), ("transfer_bits_bound", "Transferumfang einschließlich Adresse und ACK (Bit)"),
+            ("bitrate_bps", "Bestätigter I2C-Takt (bit/s)")),
+    "SPI": (("master_node_id", "Bestätigter SPI-Master"), ("chip_select", "Chip-Select je Gerät"),
+            ("transfer_bits_bound", "Transfergrenze (Bit)"), ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
+    "PWM": (("pwm_frequency_hz", "PWM-Frequenz (Hz)"), ("update_bound_ms", "Aktualisierungsgrenze (ms)"),
+            ("capture_bound_ms", "Erfassungsgrenze (ms)")),
+    "GPIO": (("sample_bound_ms", "Abtastgrenze (ms)"), ("debounce_bound_ms", "Entprellgrenze (ms)"),
+             ("edge_detection_bound_ms", "Flankenerkennungsgrenze (ms)")),
+}
+
+
+def local_evidence_proposal(protocol, rows):
+    """Offer review fields from the canonical technology profile, never a timing approval."""
+    profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(protocol.lower())
+    candidate_rate = profile.get("default_bitrate") if protocol in {"I2C", "SPI"} else None
+    endpoints = sorted({str(endpoint.get("node_id")) for row in rows
+                        for endpoint in (row.get("physical_source") or {}, row.get("physical_target") or {})
+                        if endpoint.get("node_id")})
+    fields = []
+    for row in rows:
+        evidence = row.get("local_timing_evidence") or {}
+        owner = str(row.get("name") or row.get("stream_id") or "Gerät")
+        for key, label in LOCAL_EVIDENCE_FIELDS[protocol]:
+            value = evidence.get(key)
+            fields.append({"key": f"{row.get('stream_id')}:{key}", "label": f"{owner} · {label}",
+                           "value": str(value) if value is not None else None,
+                           "state": "CONFIRMED" if evidence.get("confirmed") and evidence.get("source") and value is not None else "REVIEW_REQUIRED",
+                           "candidate": candidate_rate if key == "bitrate_bps" and value is None else None})
+    hardware_status = "EVIDENCE_CONFIRMED" if fields and all(field["state"] == "CONFIRMED" for field in fields) else "UNCONFIRMED"
+    return {"status": "REVIEW_REQUIRED", "source": f"TechnologyProfile:{profile['id']}",
+            "hardware_profile_status": hardware_status, "endpoint_candidates": endpoints,
+            "fields": fields, "release_gate": "TIMING_BLOCKED_UNTIL_DEVICE_EVIDENCE_CONFIRMED"}
 DEFAULT_POLICY = {
     "enabled": True, "minimum_interval_ms": 20.0,
     "maximum_generated_period_ms": 50.0,
@@ -232,7 +266,9 @@ def bus_schedule(rows, policy):
         # The generic frame estimator is not a trustworthy I2C bus-load model:
         # address, ACK/NACK, transfer shape and clock stretching affect wire time.
         # Do not expose its nominal number as if it were a measured bus capacity.
-        return {**result, "nominal_load_percent": None, "status": "UNVERIFIED", "reasons": [reason]}
+        review = local_evidence_proposal(protocol, rows) if protocol in LOCAL_EVIDENCE_FIELDS else None
+        return {**result, "nominal_load_percent": None, "status": "UNVERIFIED", "reasons": [reason],
+                **({"hardware_review_proposal": review} if review else {})}
     result["status"] = "CONSTRAINT_VIOLATION" if result["reasons"] else "FEASIBLE_UNDER_ASSUMPTIONS"
     return result
 
@@ -389,8 +425,10 @@ def dimension_communications(rows, parameters, history=None):
                              "load_percent": check.get("nominal_load_percent"), "slot_load_percent": check.get("slot_load_percent"), "reasons": reasons})
             if fits and chosen is None:
                 chosen = (candidate, check, period_floor)
+        current_schedule = bus_schedule(current, policy)
         entry = {"network_id": network_id, "network_name": current[0].get("network_name") or network_id,
                  "protocol": current[0].get("protocol"), "fingerprint": fingerprint, "attempts": attempts,
+                 "schedule": current_schedule,
                  "status": "UNRESOLVED", "explanation": "Keine geprüfte Zyklusvariante erfüllt die bestätigten Grenzen. Technologieparameter und Frame-Kodierung blieben unverändert; einen Serialisierungsengpass lösen Zyklusänderungen allein nicht."}
         if chosen:
             candidate, check, selected_floor = chosen

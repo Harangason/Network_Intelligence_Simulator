@@ -96,6 +96,23 @@ def test_local_interfaces_report_actionable_evidence_gaps_instead_of_generic_war
         assert "Port-/Technologieanalyse" not in result["reasons"][0]
 
 
+def test_local_interface_review_proposals_use_profiles_without_approving_timing():
+    for protocol in ("I2C", "SPI", "GPIO", "PWM"):
+        row = stream(0, protocol=protocol, physical_source={"node_id": "controller"},
+                     physical_target={"node_id": "device"})
+        result = bus_schedule([row], policy_for(PARAMETERS))
+        review = result["hardware_review_proposal"]
+        assert result["status"] == "UNVERIFIED"
+        assert review["source"] == f"TechnologyProfile:{protocol.lower()}"
+        assert review["hardware_profile_status"] == "UNCONFIRMED"
+        assert review["endpoint_candidates"] == ["controller", "device"]
+        assert all(field["value"] is None for field in review["fields"])
+        assert all(field["candidate"] is None for field in review["fields"] if field["key"] != "bitrate_bps")
+        assert review["release_gate"] == "TIMING_BLOCKED_UNTIL_DEVICE_EVIDENCE_CONFIRMED"
+        network = dimension_communications([row], PARAMETERS)["networks"][0]
+        assert network["schedule"]["hardware_review_proposal"] == review
+
+
 def test_direct_signal_line_has_no_packet_bus_load_claim():
     for protocol in ("GPIO", "PWM"):
         row = stream(0, period=0.01, protocol=protocol)

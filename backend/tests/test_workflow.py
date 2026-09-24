@@ -79,6 +79,30 @@ def test_topology_artifact_accepts_unsynchronized_generated_segment_identity():
     assert result["invalid"] == {"nodes": 0, "edges": 0}
 
 
+def test_topology_artifact_keeps_explicitly_isolated_hardware_valid():
+    topology = {
+        "nodes": [
+            {"id": "source", "name": "Source", "kind": "sensor", "engineeringId": "hardware-source",
+             "ports": [{"id": "source-port", "hardwareInterfaceId": "hwi-source"}]},
+            {"id": "target", "name": "Target", "kind": "ecu", "engineeringId": "hardware-target",
+             "ports": [{"id": "target-port", "hardwareInterfaceId": "hwi-target"}]},
+            {"id": "unbound", "name": "Unbound Controller", "kind": "ecu", "engineeringId": "hardware-unbound",
+             "ports": []},
+        ],
+        "edges": [{
+            "id": "edge", "source": "source", "sourcePort": "source-port",
+            "target": "target", "targetPort": "target-port",
+            "engineeringSegmentId": "confirmed-segment", "origin": "ROUTING_TABLE",
+        }],
+    }
+
+    result = WorkflowStatusService._topology_artifact_check(topology)
+
+    assert result["complete"] is True
+    assert result["invalid"] == {"nodes": 0, "edges": 0}
+    assert topology["nodes"][2]["ports"] == []
+
+
 def test_engineering_change_marks_existing_dependent_results_outdated():
     state = {
         "versions": default_versions(),

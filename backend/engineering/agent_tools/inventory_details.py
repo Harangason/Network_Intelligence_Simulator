@@ -83,10 +83,18 @@ def details(text):
         name = re.split(r'\s+(?:über|ueber|via|mit)\s+|,', label, maxsplit=1, flags=re.I)[0].strip()
         generic = bool(re.fullmatch(r'(?:weitere\s+|zusätzliche\s+)?(?:Sensoren|Aktoren|Actuators?|Controllers?|Funktionscontroller)', name, re.I))
         if generic and match: declared[role] = quantity
-        technologies = [canonical for pattern, canonical in TECHNOLOGIES if re.search(r'(?<!\w)' + pattern + r'(?!\w)', label, re.I)]
+        technology_hits = [(hit.start(), canonical) for pattern, canonical in TECHNOLOGIES
+                           if (hit := re.search(r'(?<!\w)' + pattern + r'(?!\w)', label, re.I))]
+        technologies = list(dict.fromkeys(canonical for _, canonical in sorted(technology_hits)))
+        explicit_multi_port = (role in {'CONTROLLER', 'GATEWAY'} and len(technologies) > 1
+                               and re.search(r'\bports?\b', label, re.I)
+                               and re.search(r'\b(?:und|and)\b', label, re.I)
+                               and not re.search(r'\b(?:oder|or)\b', label, re.I))
         group = {'role': role, 'count': quantity, 'name': name, 'source': raw,
-                 'known_kind': not generic, 'technology': technologies[0] if len(technologies) == 1 else None,
+                 'known_kind': not generic, 'technology': technologies[0] if len(technologies) == 1 or explicit_multi_port else None,
                  'connection_candidates': technologies, 'quantified': bool(match)}
+        if explicit_multi_port:
+            group['technologies'] = technologies
         if section: pending.append(group)
         elif not generic: groups.append(group)
     flush()

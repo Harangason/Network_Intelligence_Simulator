@@ -6,6 +6,20 @@ from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
 
 
+def test_explicit_gateway_lin_and_ethernet_ports_are_kept_as_two_connections():
+    draft = parse_requirement(
+        '1 Controller\n4 Temperatursensoren über LIN\n3 Lüfteraktoren über LIN\n'
+        '1 Gateway mit LIN- und Ethernet-Port\n\nLIN: 19,2 kbit/s\nEthernet: 100 Mbit/s',
+        'custom',
+    )
+    gateway = next(device for device in draft['devices'] if device['role'] == 'GATEWAY')
+
+    assert gateway['technology'] == 'LIN'
+    assert gateway['technologies'] == ['LIN', 'Ethernet']
+    assert not any(issue['code'] == 'CONNECTION_REQUIRED' and issue.get('device') == gateway['name']
+                   for issue in draft['issues'])
+
+
 def test_no_delta_model_confirmation_is_explicit_revision_bound_and_idempotent(monkeypatch):
     from backend.engineering.agent_tools import project_draft, wizard_generation, model
     from backend.engineering.workflow.service import WorkflowStatusService

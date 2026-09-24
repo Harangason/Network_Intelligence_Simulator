@@ -113,6 +113,9 @@ def test_wizard_generation_keeps_local_routes_and_omits_switched_off_global_cons
     if switch_kind == 'Message':
         graph['Message']['ecu']['configuration']['routing'] = {'enabled': False}
     else:
+        # The communication fixture disables ECU forwarding by default.
+        # Enable the frame here so this variant isolates the signal switch.
+        graph['Message']['ecu']['configuration']['routing'] = {'enabled': True}
         graph['Signal'] = {'private': {'name': 'PrivateState', 'message_id': 'ecu',
                                      'configuration': {'routing': {'enabled': False}}}}
     monkeypatch.setattr(generation.model, 'objects', lambda kind: [{**row, 'id': key} for key, row in graph.get(kind, {}).items()])

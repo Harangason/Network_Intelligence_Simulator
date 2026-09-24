@@ -101,14 +101,19 @@ function configuredFaultCount(summary, scenario) {
 
 async function waitForSimulation(page, jobId) {
   const started = Date.now();
-  while (Date.now() - started < 5 * 60_000) {
+  // The case contract already budgets larger models. Keep polling the same
+  // persisted job within that bounded budget instead of declaring a slow
+  // but still-running fault simulation failed at an unrelated fixed limit.
+  const timeoutMs = Math.max(5 * 60_000, Math.min(20 * 60_000,
+    Number(scenario.overall_timeout || 0) * (2 / 3) * 1000));
+  while (Date.now() - started < timeoutMs) {
     const response = await apiMaybe(page, `/api/simulations/${encodeURIComponent(jobId)}`);
     if (!response.ok) throw new Error(`Simulation ${jobId}: HTTP ${response.status}`);
     const job = response.data;
     if (['completed', 'failed', 'canceled'].includes(String(job?.status || ''))) return job;
     await page.waitForTimeout(700);
   }
-  throw new Error(`Simulation ${jobId} did not finish within five minutes.`);
+  throw new Error(`Simulation ${jobId} did not finish within ${Math.round(timeoutMs / 60_000)} minutes.`);
 }
 
 async function captureTraceViews(page, jobId, prefix) {
@@ -403,8 +408,7 @@ async function supplyScriptedInventory(dialog) {
   const table = dialog.locator('.agent-equipment-table').first();
   if (!await table.isVisible().catch(() => false)) return false;
   inventoryAssumptionsApplied = true;
-  const architectureNeedsGateway = /^V4(?:\b|\s|$)/.test(scenario.architecture_variant || '')
-    || /KI 2\+3|Hybrid/i.test(scenario.architecture_variant || '');
+  const architectureNeedsGateway = /^V4(?:\b|\s|$)/.test(scenario.architecture_variant || '');
   if (architectureNeedsGateway && !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)) {
     const gatewayCount = table.locator('tbody tr').filter({ hasText: /Gateway/i }).locator('input[type=number]').first();
     if (await gatewayCount.count() && await gatewayCount.isEnabled() && Number(await gatewayCount.inputValue()) === 0) {
@@ -467,6 +471,7 @@ async function supplyScriptedDeviceChoices(dialog) {
     const clusterIds = await clusterSelector.locator('option').evaluateAll(rows => rows.map(row => row.value).filter(Boolean));
     for (const clusterId of clusterIds) {
       await clusterSelector.selectOption(clusterId);
+      await dialog.page().waitForTimeout(80);
       await collectDeviceControls();
     }
     await clusterSelector.selectOption(original);
@@ -522,6 +527,12 @@ async function supplyScriptedDeviceChoices(dialog) {
 }
 
 async function fillVisibleRequiredControls(dialog) {
+  const detectedIndustry = dialog.getByRole('button', { name: 'Robotics / ROS 2 übernehmen', exact: true });
+  if (await detectedIndustry.isVisible().catch(() => false)) {
+    await detectedIndustry.click();
+    choices.push({ control: 'Industrieangabe mit erkannter Anlage abgleichen', value: 'Robotics / ROS 2', source: 'SCRIPTED_TEST' });
+    await dialog.page().waitForTimeout(200);
+  }
   // Device controls live below collapsed cluster branches. The prior adapter
   // only scanned :visible controls and therefore reported an empty unresolved
   // select list even while the wizard listed open devices.
@@ -535,6 +546,7 @@ async function fillVisibleRequiredControls(dialog) {
   // accepting the visible proposals so their confirmed selections survive.
   changed = await supplyScriptedDeviceChoices(dialog) || changed;
   const deviceProposalButton = dialog.getByRole('button', { name: 'Geprüfte Entwurfsvorschläge übernehmen', exact: true });
+  await dialog.page().waitForTimeout(120);
   if (await deviceProposalButton.isVisible().catch(() => false) && await deviceProposalButton.isEnabled()) {
     await dialog.locator('.agent-device-proposals details').evaluate(element => { element.open = true; });
     const proposed = await dialog.locator('.agent-device-proposals').innerText();
@@ -746,6 +758,14 @@ async function runQuestionnaire(page, dialog) {
     const next = dialog.locator('.eng-agent-questionnaire-head').getByRole('button');
     await next.waitFor({ state: 'visible', timeout: 30_000 });
     if (await next.isDisabled()) {
+      await save('questionnaire-blocked-state.json', {
+        activeTitle,
+        text: (await dialog.innerText()).slice(0, 12000),
+        controls: await dialog.locator('select').evaluateAll(rows => rows.map(row => ({
+          label: row.getAttribute('aria-label'), value: row.value, disabled: row.disabled,
+          options: [...row.options].map(option => ({ value: option.value, text: option.textContent?.trim() })),
+        }))),
+      }, 'browser');
       const changed = await fillVisibleRequiredControls(dialog);
       if (activeTitle && await dialog.locator('.agent-questionnaire-steps button.active').getAttribute('title') !== activeTitle) {
         await dialog.getByTitle(activeTitle, { exact: true }).click();
@@ -765,7 +785,26 @@ async function runQuestionnaire(page, dialog) {
       }
     }
     const label = (await next.innerText()).trim();
-    await next.click();
+    // Async questionnaire parsing can invalidate a previously enabled Next
+    // button between the readiness check and Playwright's stability check.
+    // Re-apply visible required decisions, then retry the same step. Never
+    // force-click a disabled control or skip its validation.
+    let clicked = false;
+    for (let retry = 0; retry < 3; retry++) {
+      try {
+        await next.click({ timeout: 10_000 });
+        clicked = true;
+        break;
+      } catch (error) {
+        if (retry === 2) throw error;
+        await fillVisibleRequiredControls(dialog);
+        if (activeTitle && await dialog.locator('.agent-questionnaire-steps button.active').getAttribute('title') !== activeTitle) {
+          await dialog.getByTitle(activeTitle, { exact: true }).click();
+        }
+      }
+    }
+    if (!clicked) throw new Error(`Questionnaire step ${index + 1} could not be submitted.`);
+    if (label !== 'Übernehmen') await page.waitForTimeout(220);
     browserActions.push({ target: label, purpose: 'Haupt-Wizard schrittweise ausführen', precondition: `Questionnaire step ${index + 1} valid`, expected_effect: label === 'Übernehmen' ? 'Engineering run starts' : 'Next questionnaire step', actual_effect: 'Button accepted', url: page.url(), status: 'PASSED' });
     if (label === 'Übernehmen') return;
   }

@@ -67,6 +67,21 @@ const OBJECT_TYPE_RESOURCE: Partial<Record<string, EngineeringResource>> = Objec
   RESOURCES.map((item) => [RESOURCE_TO_OBJECT_TYPE[item], item]),
 ) as Partial<Record<string, EngineeringResource>>;
 const ENGINEERING_PAGE_SIZE = 50;
+const LOCAL_TIMING_FIELDS: Record<string, Array<{key: string; label: string; numeric?: boolean}>> = {
+  I2C: [{key: "master_node_id", label: "I2C-Master"}, {key: "slave_address", label: "Slave-Adresse"},
+    {key: "clock_stretch_limit_us", label: "Clock-Stretching-Grenze (µs)", numeric: true},
+    {key: "transfer_bits_bound", label: "Transferumfang inkl. Adresse/ACK (Bit)", numeric: true},
+    {key: "bitrate_bps", label: "Bestätigter I2C-Takt (bit/s)", numeric: true}],
+  SPI: [{key: "master_node_id", label: "SPI-Master"}, {key: "chip_select", label: "Chip-Select"},
+    {key: "transfer_bits_bound", label: "Transfergrenze (Bit)", numeric: true},
+    {key: "bitrate_bps", label: "Bestätigter SPI-Takt (bit/s)", numeric: true}],
+  PWM: [{key: "pwm_frequency_hz", label: "PWM-Frequenz (Hz)", numeric: true},
+    {key: "update_bound_ms", label: "Aktualisierungsgrenze (ms)", numeric: true},
+    {key: "capture_bound_ms", label: "Erfassungsgrenze (ms)", numeric: true}],
+  GPIO: [{key: "sample_bound_ms", label: "Abtastgrenze (ms)", numeric: true},
+    {key: "debounce_bound_ms", label: "Entprellgrenze (ms)", numeric: true},
+    {key: "edge_detection_bound_ms", label: "Flankenerkennungsgrenze (ms)", numeric: true}],
+};
 
 const HARDWARE_PRESETS = [
   { label: "ECU", deviceType: "ECU" },
@@ -3448,6 +3463,22 @@ function EditObjectForm({
       payload.target_load_limit = optionalNumber(form, "edit_target_load_limit");
       payload.warning_load_limit = optionalNumber(form, "edit_warning_load_limit");
       payload.hard_load_limit = optionalNumber(form, "edit_hard_load_limit");
+      if (isHardwareNetworkInterface(item) && LOCAL_TIMING_FIELDS[item.technology.toUpperCase()]) {
+        const previous = (item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>;
+        const values = Object.fromEntries(LOCAL_TIMING_FIELDS[item.technology.toUpperCase()].map(field => {
+          const raw = String(form.get(`edit_local_${field.key}`) ?? "").trim();
+          return [field.key, raw ? field.numeric ? Number(raw) : raw : null];
+        }));
+        const confirmed = form.get("edit_local_confirmed") === "on";
+        const source = String(form.get("edit_local_source") ?? "").trim();
+        if (confirmed && (!source || Object.values(values).some(value => value === null || value === ""))) {
+          setFormError("Für die Bestätigung sind alle Gerätewerte und eine Nachweisquelle erforderlich.");
+          setSubmitting(false);
+          return;
+        }
+        payload.capabilities = {...item.capabilities, local_timing_evidence: {...previous, ...values,
+          source, confirmed}};
+      }
     }
     if (resource === "interfaces") payload.interface_type = form.get("edit_interface_type");
     if (resource === "messages") {
@@ -3602,6 +3633,19 @@ function EditObjectForm({
           <div className="field"><label htmlFor="edit_runtime_load">Runtime Last (%)</label><input defaultValue={item.runtime_load ?? ""} id="edit_runtime_load" min="0" name="edit_runtime_load" step="any" type="number" /></div>
           <div className="field"><label htmlFor="edit_status">Status</label><select defaultValue={item.status} id="edit_status" name="edit_status">{["CONFIGURED", "UNMAPPED", "ACTIVE", "OUTDATED", "OVERLOADED", "ERROR"].map((value) => <option key={value}>{value}</option>)}</select></div>
         </div>
+        {LOCAL_TIMING_FIELDS[item.technology.toUpperCase()] && <fieldset>
+          <legend>Gerätespezifische Zeitdaten · {item.technology}</legend>
+          <p>Profilkandidaten aus der Kapazitätsanalyse erst mit Geräteunterlagen prüfen. Diese Angaben allein sind noch kein Zeitnachweis.</p>
+          <div className="form-grid three">{LOCAL_TIMING_FIELDS[item.technology.toUpperCase()].map(field => <div className="field" key={field.key}>
+            <label htmlFor={`edit_local_${field.key}`}>{field.label}</label>
+            <input id={`edit_local_${field.key}`} name={`edit_local_${field.key}`} type={field.numeric ? "number" : "text"}
+              min={field.numeric ? "0" : undefined} step={field.numeric ? "any" : undefined}
+              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")} />
+          </div>)}</div>
+          <div className="field"><label htmlFor="edit_local_source">Nachweisquelle</label><input id="edit_local_source" name="edit_local_source" type="text"
+            defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>).source ?? "")} /></div>
+          <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input defaultChecked={Boolean(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>).confirmed)} name="edit_local_confirmed" type="checkbox" /></label>
+        </fieldset>}
         </>
       )}
 

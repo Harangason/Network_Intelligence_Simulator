@@ -129,6 +129,7 @@ export type PreflightResults = {
 };
 
 export type CapacityNetwork = {
+  communication_schedule?: {status: string; reasons?: string[]; hardware_review_proposal?: HardwareReviewProposal};
   evaluation?: {
     payload: { status: string; signal_count: number; errors: number; open: number };
     capacity: { status: string; load_percent: number; basis: string };
@@ -158,6 +159,9 @@ export type CapacityNetwork = {
   top_contributors?: Array<{ route_id: string; name: string; load_percent: number }>;
   status: "NORMAL" | "WARNING" | "CRITICAL" | "OVERLOAD" | "UNVERIFIED";
 };
+
+export type HardwareReviewProposal = {status: string; source: string; hardware_profile_status: string; endpoint_candidates: string[];
+  release_gate: string; fields: Array<{key: string; label: string; value: string | null; state: string; candidate: number | null}>};
 
 export type CapacityRoute = {
   capacity_applicable?: boolean;
@@ -594,7 +598,8 @@ export type CommunicationSizingPlan = {
   policy: Record<string, unknown>;
   changes: Array<{message_id: string; name: string; before_ms: number; after_ms: number; evaluation?: string}>;
   networks: Array<{network_id: string; network_name: string; protocol: string; status: string; explanation: string;
-    selected_floor_ms?: number; effective_periods_ms?: number[]; schedule?: {nominal_load_percent?: number; slot_load_percent?: number; assumptions?: string[]};
+    selected_floor_ms?: number; effective_periods_ms?: number[]; schedule?: {nominal_load_percent?: number; slot_load_percent?: number; assumptions?: string[];
+      hardware_review_proposal?: HardwareReviewProposal};
     attempts: Array<{floor_ms: number; fits: boolean; load_percent?: number; slot_load_percent?: number; reasons: string[]}>}>;
 };
 export const dimensionCommunications = (policy?: Record<string, unknown>, projectId = readActiveProjectId()) =>

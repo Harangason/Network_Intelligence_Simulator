@@ -1,6 +1,20 @@
 from backend.engineering.assignment_learning import collect_assignment_suggestions
 
 
+def test_numbered_controller_family_does_not_select_last_candidate():
+    rows = [{"project_id": "previous", "context": {"agent_wizard_status": {
+        "system_cluster_assignments": [{"selected": True, "tree": [{
+            "name": "TC_Control_003", "sensors": [{"name": "TC_Temperature_001"}], "actuators": [],
+        }]}],
+    }}}]
+    result = collect_assignment_suggestions(
+        rows, [{"name": "TC_Temperature_001"}],
+        ["TC_Control_001", "TC_Control_002", "TC_Control_003"], "custom",
+    )
+
+    assert result["suggestions"] == []
+
+
 def test_previous_wizard_graph_is_retrieved_for_a_new_project():
     rows = [{
         "project_id": "previous-project",

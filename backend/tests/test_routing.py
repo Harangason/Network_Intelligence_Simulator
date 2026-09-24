@@ -121,6 +121,20 @@ class UnmappedValidator(FakeValidator):
         return False, destination_node_ids
 
 
+@pytest.mark.parametrize("protocol", ["GPIO", "PWM"])
+def test_direct_signal_route_has_no_fictitious_packet_capacity(protocol):
+    route = route_payload(
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": protocol, "network_id": "line"},
+        destinations=[{"node_id": TARGET, "interface_id": TARGET_INTERFACE, "protocol": protocol, "network_id": "line"}],
+    )
+    result = FakeValidator(source_type=protocol, target_type=protocol).validate(route)
+    assert "CUSTOM_PROTOCOL" not in {item["code"] for item in result["warnings"]}
+    assert result["metrics"]["route_load_percent"] is None
+    load = next(item for item in result["evidence"] if item["type"] == "LOAD")
+    assert load["peak_segment_load_percent"] is None
+    assert load["network_load_percent"] == {}
+
+
 @pytest.mark.parametrize('has_signals', [False, True])
 def test_generated_command_requires_canonical_signal_definition(has_signals):
     validator = FakeValidator(message_bindings={MESSAGE: {'configuration': {

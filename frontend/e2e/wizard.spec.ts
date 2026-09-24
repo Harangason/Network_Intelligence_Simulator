@@ -117,7 +117,7 @@ async function verifySignalContracts(page: Page, project: string, expected: Reco
   expect(contracts, 'Every original signal and its explicit encoding must survive generation.').toEqual(expected);
 }
 
-async function verifyArtifacts(page: Page, project: string, minimumSignals: number, internalController?: string) {
+async function verifyArtifacts(page: Page, project: string, minimumCanonicalSignals: number, internalController?: string) {
   const workflow = await readProject(page, project, '/api/engineering/workflow?view=summary');
   expect(Object.keys(workflow.statuses).sort()).toEqual([...steps].sort());
   for (const step of steps) expect(done.has(workflow.statuses[step]), `${step}: ${workflow.statuses[step]}`).toBeTruthy();
@@ -133,21 +133,28 @@ async function verifyArtifacts(page: Page, project: string, minimumSignals: numb
   expect(assessment.scope_coverage.complete).toBe(true);
   expect(assessment.conformance).toBe('PASS');
   expect(assessment.failed_route_count).toBe(0);
-  expect(assessment.observed_signal_count).toBeGreaterThanOrEqual(minimumSignals);
   const signals = await allObjects(page, project, 'signals');
+  expect(signals.length, 'The full canonical signal inventory must survive generation.').toBeGreaterThanOrEqual(minimumCanonicalSignals);
   const excluded = assessment.scope_coverage.transport_exclusions ?? [];
+  const messages = await allObjects(page, project, 'messages');
+  for (const item of excluded) {
+    const message = messages.find(row => row.id === item.message_id);
+    expect(message, `Excluded message ${item.message_id} must exist.`).toBeTruthy();
+    expect(message.configuration.routing.enabled).toBe(false);
+    const contract = message.configuration.communication_contract;
+    expect(contract.consumer_refs).toEqual([]);
+    expect(item.reason_code).toBe(contract.role === 'INTERNAL_STATE'
+      ? 'INTERNAL_STATE_NOT_ROUTED' : 'EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED');
+  }
   if (internalController) {
     const nodes = await allObjects(page, project, 'hardware-nodes');
     const controller = nodes.find(item => item.name === internalController);
-    const messages = await allObjects(page, project, 'messages');
     expect(excluded.length).toBeGreaterThan(0);
     for (const item of excluded) {
       const message = messages.find(row => row.id === item.message_id);
-      expect(item.reason_code).toBe('EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED');
-      expect(message.configuration.routing.enabled).toBe(false);
-      expect(message.configuration.communication_contract).toMatchObject({ role: 'INTERNAL_STATE', scope: 'FUNCTION_OUTPUT', producer_ref: controller.id, consumer_refs: [] });
+      expect(message.configuration.communication_contract).toMatchObject({ role: 'INTERNAL_STATE', scope: 'INTERNAL', producer_ref: controller.id, consumer_refs: [] });
     }
-  } else expect(excluded).toHaveLength(0);
+  }
   const excludedSignals = new Set(excluded.flatMap((item: { signal_ids: string[] }) => item.signal_ids));
   expect(assessment.observed_signal_count, 'ALL must observe every canonical signal with a transport obligation.').toBe(signals.length - excludedSignals.size);
   for (const key of ['missing_observed_signal_ids', 'missing_observed_route_ids', 'missing_observed_network_ids']) expect(assessment[key]).toEqual([]);
@@ -309,7 +316,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   const dialog = await openWizard(page, project);
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('E2E small');
-  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Statuswerte werden an Anzeige und System übermittelt. Prüfe und arbeite bis Data Science & Intelligence.');
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern. Prüfe und arbeite bis Data Science & Intelligence.');
   await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   for (const [label, value] of [['Gateways', '1'], ['Controller', '2'], ['Sensoren', '1'], ['Aktoren', '1']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);
@@ -329,6 +336,8 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   const continuity = await completeThroughWizard(page, project, true,
     ['System', 'Motorsteuerung', 'Anzeige', 'MotorTemperature', 'MotorValve']);
   const artifacts = await verifyArtifacts(page, project, 5);
+  expect(artifacts.assessment.observed_signal_count).toBeGreaterThanOrEqual(3);
+  expect(artifacts.assessment.scope_coverage.transport_exclusions).toHaveLength(3);
   const finished = page.waitForResponse(response => response.url().includes(`/runs/${continuity.runId}/finish`)
     && response.request().method() === 'POST');
   await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();
@@ -416,6 +425,10 @@ test('exact confirmed 50/250/250 request completes through real wizard review @l
   expect(hardware.filter(item => item.device_type === 'ActuatorController')).toHaveLength(250);
   expect(hardware.filter(item => item.device_type === 'ECU').length).toBeGreaterThanOrEqual(50);
   const artifacts = await verifyArtifacts(page, project, 1404);
+  const excludedSignalIds = new Set(artifacts.assessment.scope_coverage.transport_exclusions
+    .flatMap((item: { signal_ids: string[] }) => item.signal_ids));
+  expect(excludedSignalIds.size).toBe(235);
+  expect(artifacts.assessment.observed_signal_count).toBe(1169);
   await verifySignalContracts(page, project, baseline.signals);
   expect(artifacts.job).toBe(continuity.restartedJobId);
   expect(errors).toEqual([]);

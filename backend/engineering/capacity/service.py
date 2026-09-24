@@ -93,6 +93,8 @@ def parameters_for_protocol(
         value = effective_configuration.get(key)
         if _number(value, 0) > 0:
             resolved[key] = value
+    if isinstance(effective_configuration.get("local_timing_evidence"), dict):
+        resolved["local_timing_evidence"] = effective_configuration["local_timing_evidence"]
     return resolved
 
 
@@ -389,7 +391,7 @@ class CapacityTimingService:
                     "queue_ms": queue_ms * (2 if ethernet else 1),
                     "transmission_ms": frame.transmission_time_s * 1000 * (2 if ethernet else 1),
                     "ethernet": ethernet})
-                if frame.is_generic_estimate:
+                if frame.is_generic_estimate and segment_protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS:
                     generic_models.add(segment_protocol.upper())
             estimate = estimates[0]["frame"]
             route_parameters = estimates[0]["parameters"]
@@ -517,7 +519,8 @@ class CapacityTimingService:
                     "route_segment_count": segment_count,
                     "protocol": segment_frame.protocol,
                     "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
-                    "bitrate": _number(segment_data["parameters"].get("bitrate"), 1_000_000.0),
+                    "bitrate": None if segment_frame.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else _number(segment_data["parameters"].get("bitrate"), 1_000_000.0),
+                    "local_timing_evidence": {key: value for key, value in (segment_data["parameters"].get("local_timing_evidence") or {}).items()},
                     "frame_bits": segment_frame.frame_bits,
                     "calculation_model": segment_frame.calculation_model,
                     "average_load_percent": round(segment_data["average"], 4),

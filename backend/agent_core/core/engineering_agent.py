@@ -855,7 +855,7 @@ class EngineeringAgent:
             snapshots = project.data.get('simulation_snapshots') or []
             current_snapshot = next((item for item in snapshots
                                      if not item.get('is_outdated') and str(item.get('status') or '').upper()
-                                     in {'READY', 'RUNNING'}), None)
+                                     in {'READY', 'RUNNING', 'COMPLETED'}), None)
             if current_snapshot is None:
                 from backend.engineering.simulation_observation import wizard_observation_request
                 snapshot_result = await call('create_simulation_snapshot', {'metadata_only': True, 'configuration': {
@@ -913,9 +913,20 @@ class EngineeringAgent:
                           workload={'completed': attempt, 'total': 240})
                 await asyncio.sleep(0.25)
             job_status = str((job or {}).get('status') or '').lower()
+            if job_status not in {'completed', 'failed', 'canceled'}:
+                # Large simulations can outlive one bounded agent turn. Keep
+                # the persisted snapshot/job and let the next confirmed
+                # continuation observe that same job instead of treating a
+                # still-running simulation as a terminal failure.
+                status = 'READY_TO_CONTINUE'
+                text = (f'Die Simulation {job_id} läuft weiter. Der bestätigte Auftrag kann '
+                        'mit derselben Job-ID fortgesetzt werden; Ergebnisse sind noch nicht freigegeben.')
+                event('RESULT', status=status, text=text)
+                return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             if job_status != 'completed':
                 status = 'INCOMPLETE'
-                detail = str((job or {}).get('error') or ('Zeitfenster überschritten' if job_status not in {'failed', 'canceled'} else job_status))
+                detail = str((job or {}).get('error') or job_status)
                 text = f'Der Simulationslauf wurde nicht erfolgreich abgeschlossen: {detail}.'
                 event('RESULT', status=status, text=text)
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
