@@ -1,7 +1,7 @@
 """One explicit communication plan for model review and route generation.
 
 Device ownership defines measurements, commands and feedback. Controller status
-has a declared monitoring destination, not an incidental HMI preview selection.
+without a confirmed external destination stays internal to its producer.
 All defaults remain part of the model proposal and require its review.
 """
 from copy import deepcopy
@@ -73,19 +73,12 @@ def communication_plan(prompt, graph):
     ))
     legacy_default_monitor = next((key for key in legacy_monitors
                                    if nodes[key].get('device_type') in controller_types), None)
-    owners, displays, internal_status = {}, {}, set()
+    owners, displays = {}, {}
     for cluster in clusters:
         controllers = cluster.get('controllers') or []
-        has_external_routes = bool(cluster.get('hmi_routes') or cluster.get('functional_routes'))
         for controller in controllers:
             owner = names.get(str(controller.get('ecu', '')).casefold())
             endpoints = [*(controller.get('sensors') or []), *(controller.get('actuators') or [])]
-            other_monitors = [key for key, node in nodes.items()
-                              if key != owner and node.get('device_type') in controller_types]
-            local_closed_loop = (len(controllers) == 1 and bool(endpoints)
-                                 and not has_external_routes and not other_monitors)
-            if owner and (cluster.get('controller_status_scope') == 'INTERNAL' or local_closed_loop):
-                internal_status.add(owner)
             for endpoint in endpoints:
                 identifier = names.get(str(endpoint).casefold())
                 if not identifier or not owner:
@@ -121,7 +114,7 @@ def communication_plan(prompt, graph):
             targets.add(owners[producer])
             role = 'FEEDBACK' if nodes[producer].get('device_type') == 'ActuatorController' else 'MEASUREMENT'
             basis = 'Bestätigte Gerätezuordnung im Systemcluster'
-        elif nodes[producer].get('device_type') in controller_types or producer in internal_status:
+        elif nodes[producer].get('device_type') in controller_types:
             targets.update(displays.get(producer, set()))
             # Approved automotive functional dependency: exhaust treatment
             # reports to engine control as well as diagnostic/display users.
@@ -129,10 +122,8 @@ def communication_plan(prompt, graph):
                 targets.add(names['motorsteuerung'])
             role, basis = (
                 ('INTERNAL_STATE', 'Betriebszustand bleibt im Controller')
-                if producer in internal_status and not targets else
+                if not targets else
                 ('DEVICE_STATUS', 'Bestätigte Status-Empfänger aus System- oder HMI-Routen')
-                if targets else
-                ('UNRESOLVED', 'Status-Empfänger ist fachlich nicht bestätigt; Empfänger im Review festlegen')
             )
         else:
             role, basis = 'UNRESOLVED', 'Kein bestätigter Empfänger'
@@ -149,17 +140,20 @@ def communication_plan(prompt, graph):
             config['hmi_routing_selection'] = selected_displays
         if producer in targets or any(key not in nodes for key in targets):
             raise ValueError(f'Kommunikationsplanung: {message["name"]} benötigt einen gültigen externen Empfänger.')
+        if not targets and nodes[producer].get('device_type') in controller_types:
+            role, basis = 'INTERNAL_STATE', 'Betriebszustand bleibt im Controller; externer Export benötigt eine bestätigte Empfängerzuordnung'
         if not targets and role != 'INTERNAL_STATE':
             role, basis = 'UNRESOLVED', 'Status-Empfänger muss vor der Modellfreigabe ergänzt werden.'
         # Preserve the original role when a previously planned message is read.
-        if previous.get('version') == VERSION:
+        if (previous.get('version') == VERSION and previous.get('role') != 'UNRESOLVED'
+                and sorted(previous.get('consumer_refs') or []) == sorted(targets)):
             role, basis = previous['role'], previous['basis']
         transport.update(producer_ref=producer, consumer_refs=sorted(targets))
         config['communication_contract'] = {'version': VERSION, 'role': role, 'basis': basis,
             'producer_ref': producer, 'consumer_refs': sorted(targets)}
         if role == 'INTERNAL_STATE' and not targets:
             config['routing'] = {**config.get('routing', {}), 'enabled': False}
-            config['communication_contract']['scope'] = 'FUNCTION_OUTPUT'
+            config['communication_contract']['scope'] = 'INTERNAL'
         if previous.get('scope'):
             config['communication_contract']['scope'] = previous['scope']
         result[identifier] = config

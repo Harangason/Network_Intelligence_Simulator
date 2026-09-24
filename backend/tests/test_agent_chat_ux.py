@@ -11,6 +11,7 @@ from backend.agent_core.context.agent_context import AgentContext
 from backend.agent_core.core.engineering_agent import EngineeringAgent, reasoning_workload_progress
 from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _is_semantic_fast_request, _is_structured_wizard_request, _no_think_messages
 from backend.agent_core.api.mcp_client import EngineeringMCPClient
+from backend.agent_core.api.tool_contract import ToolResult
 from backend.engineering.agent_tools.runtime import ToolAuthority, execute
 from backend.agent_core.api.tool_contract import Permission
 from backend.engineering.agent_tools import conversation, proposal_service
@@ -28,6 +29,90 @@ def test_large_tool_output_cannot_evict_the_user_query():
     assert len(prepared[1]['content']) < 5000
     assert json.loads(prepared[1]['content'])['truncated'] is True
     assert original[1]['content'] == content
+
+
+def test_problem_inventory_reads_facts_before_optional_ai_explanation():
+    from backend.agent_core.orchestration.capability_intent import problem_report_question
+
+    assert problem_report_question('Zeige mir die Probleme') == 'LIST'
+    assert problem_report_question('Warum?', 'Zeige mir die Probleme') == 'EXPLAIN'
+    assert problem_report_question('Repariere die Probleme') is None
+
+    class FactsClient:
+        def __init__(self):
+            self.calls = []
+
+        async def call(self, name, arguments=None):
+            self.calls.append(name)
+            assert name == 'inspect_findings'
+            return ToolResult(data={
+                'status': 'WARNING',
+                'findings': [{'code': 'MISSING_SCHEDULE', 'severity': 'WARNING', 'status': 'OPEN',
+                              'category': 'Timing', 'problem': 'I2C-Zeitnachweis fehlt.',
+                              'detected_cause': 'Clock-Stretching-Grenze fehlt.',
+                              'recommendation': 'Grenze festlegen und erneut prüfen.'}],
+                'results': {'assessment_mode': 'DIAGNOSTIC'},
+                'provenance': {'calculation_service': 'IntelligenceService',
+                               'timestamp': '2026-09-24T12:00:00Z'},
+            })
+
+    class ExplainOnlyReasoner:
+        def __init__(self):
+            self.explanations = []
+
+        async def next(self, *_args):
+            raise AssertionError('Befundfragen dürfen keine Toolplanung durch das Modell starten')
+
+        async def explain_findings(self, question, findings, provenance):
+            self.explanations.append((question, findings, provenance))
+            return 'Die Grenze ist für den Zeitnachweis erforderlich.'
+
+    client, reasoner = FactsClient(), ExplainOnlyReasoner()
+    first = asyncio.run(EngineeringAgent(client, reasoner=reasoner).run(
+        'Zeige mir die Probleme', AgentContext(active_project_id='findings-project')))
+    assert client.calls == ['inspect_findings']
+    assert not reasoner.explanations
+    assert first['status'] == 'ANSWERED'
+    assert any(event.get('type') == 'FINDING' and 'I2C-Zeitnachweis' in event.get('text', '')
+               for event in first['events'])
+    assert 'diagnostisch' in first['text']
+
+    second = asyncio.run(EngineeringAgent(client, reasoner=reasoner).run(
+        'Warum?', AgentContext(active_project_id='findings-project',
+                               current_requirement='Warum?'),
+        history=[{'role': 'user', 'content': 'Zeige mir die Probleme'},
+                 {'role': 'assistant', 'content': first['text']}]))
+    assert client.calls == ['inspect_findings', 'inspect_findings']
+    assert second['status'] == 'ANSWERED'
+    assert 'KI-Einordnung' in second['text']
+    assert reasoner.explanations[0][1][0]['detected_cause'] == 'Clock-Stretching-Grenze fehlt.'
+
+
+def test_local_finding_explanation_uses_bounded_facts_without_tool_planning(monkeypatch):
+    monkeypatch.setenv('LOCAL_AI_MODEL', 'qwen3.8:27b')
+    captured = {}
+
+    def respond(request):
+        captured.update(json.loads(request.content))
+        return httpx.Response(200, json={'message': {'content': 'Der I2C-Nachweis benötigt eine Grenze.'}})
+
+    async def invoke():
+        reasoner = LocalEngineeringReasoner()
+        await reasoner.client.aclose()
+        reasoner.client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        try:
+            return await reasoner.explain_findings('Warum?', [
+                {'code': 'MISSING_SCHEDULE', 'problem': 'I2C-Zeitnachweis fehlt.',
+                 'detected_cause': 'Clock-Stretching-Grenze fehlt.'}],
+                {'source': 'IntelligenceService', 'calculated_at': '2026-09-24T12:00:00Z'})
+        finally:
+            await reasoner.close()
+
+    assert 'I2C' in asyncio.run(invoke())
+    assert captured['model'] == 'qwen3.8:27b'
+    assert 'tools' not in captured
+    assert captured['options']['num_predict'] <= 420
+    assert 'Clock-Stretching-Grenze fehlt.' in captured['messages'][1]['content']
 from backend.simulator_engineering_mcp.server import create_server
 
 

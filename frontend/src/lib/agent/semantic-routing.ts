@@ -228,11 +228,13 @@ export function semanticRoutePlans(
   const endpoints = [...sensors, ...actuators];
   const processors = chains.filter((chain) => !endpoints.includes(chain) && !gateways.includes(chain));
   const plans: SemanticRoutePlan[] = [];
+  const segmentedGateway = architecture === "gateway_ecu_segments" || architecture === "gateway_segments_hybrid_ai";
+  const directCandidates = architecture === "hybrid_ai" || architecture === "gateway_segments_hybrid_ai";
   const sharedSegments = processorSegments(
     architecture === "gateway_direct" || architecture === "hybrid_ai"
       ? [...endpoints, ...processors]
       : processors,
-    architecture === "gateway_ecu_segments" ? participantLimits : undefined,
+    segmentedGateway ? participantLimits : undefined,
   );
   const segmentByParticipant = new Map(
     sharedSegments.flatMap((segment) => segment.processors.map((participant) => [
@@ -259,7 +261,7 @@ export function semanticRoutePlans(
       const processor = semanticProcessorForSensor(endpoint, processors)
         ?? (actuator && processors.length ? processors[endpointIndex % processors.length] : undefined);
       const gateway = gatewayForProcessor(endpoint, gateways);
-      const directInHybrid = architecture === "hybrid_ai"
+      const directInHybrid = directCandidates
         && (canonicalInterfaceKey(endpoint.interface_type) === "ethernet" || !processor);
       if (actuator && processor) {
         if (processor) plans.push({ source: processor, destinations: [endpoint] });
@@ -272,7 +274,7 @@ export function semanticRoutePlans(
     }
     if (architecture === "sensor_ecu_actuator") {
       // Pure local control loop: endpoint <-> ECU only, no Gateway/BCM route layer.
-    } else if (architecture === "gateway_ecu_segments") {
+    } else if (segmentedGateway) {
       for (const segment of sharedSegments) {
         const gateway = gatewayForProcessor(segment.processors[0], gateways);
         if (gateway && segment.processors.length) {

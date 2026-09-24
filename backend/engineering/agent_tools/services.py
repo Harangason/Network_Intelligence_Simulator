@@ -331,6 +331,8 @@ def _simulation(a, action):
 def register_tools():
     if TOOLS:
         return
+    from .hardware_request import prepare_hardware_request
+    register("prepare_hardware_request", "Einfachen einzelnen ECU-/Controller-/PLC-Auftrag ohne Technikannahmen als validierten Hardwarevorschlag vorbereiten; bestehende identische Anforderung wiederverwenden.", P.GENERATE_PROPOSAL, prepare_hardware_request, prompt=PROMPT)
     register("inspect_project", "Aktiven Workflow und Projektstand lesen.", P.READ_MODEL, _inspect_project)
     register("inspect_spatial_architecture", "Raumcluster, Einbauorte, Quellen, offene Zuordnungen und lokale Buskonflikte branchenübergreifend prüfen; query grenzt Gerätedetails ein.", P.READ_MODEL, _spatial_architecture, query=(str, ''))
     register("inspect_object", "Kanonisches Objekt lesen. object_id muss eine vorhandene UUID aus search_model sein, niemals ein Name. Für allgemeine Begriffsfragen keinen Objektabruf verwenden.", P.READ_MODEL, lambda a: get_object(a["object_type"], a["object_id"]), object_type=(CanonicalObjectType, ...), object_id=(str, Field(pattern=r'^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')))

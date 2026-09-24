@@ -40,6 +40,7 @@ from backend.app.simulation_service import SimulationService
 
 _TOPOLOGY_BUS_BY_PROTOCOL = {
     'CAN': 'can',
+    'CANOPEN': 'can',
     'CAN_FD': 'can_fd',
     'CAN_XL': 'can_xl',
     'LIN': 'lin',
@@ -177,10 +178,14 @@ def _check_existing_amendment_semantics(prompt: str, specification: dict, existi
         return json.loads(raw[1]) if raw else []
     old_clusters = {item.get('bus_name'): item for item in clusters(previous_prompt)}
     supported = {'cluster_id', 'label', 'network_id', 'network_label', 'bus_name', 'controllers',
-                 'unassigned', 'hmi_routes', 'warnings'}
+                 'unassigned', 'hmi_routes', 'warnings', 'controller_status_scope', 'functional_routes'}
+    communication_fields = {'controller_status_scope', 'functional_routes'}
     for cluster in clusters(current_prompt):
         old = old_clusters.get(cluster.get('bus_name'), {})
         for field, value in cluster.items():
+            if field in communication_fields and existing_names and old.get(field) != value:
+                raise ValueError(f"Netzwerk {cluster.get('bus_name')}: geänderte Empfänger oder Statuszuordnung "
+                    "benötigen nach Modellübernahme einen explizit geprüften Kommunikations- und Routingvorschlag.")
             if field not in supported and old.get(field) != value:
                 raise ValueError(f"Netzwerk {cluster.get('bus_name')}: Parameter {field} = {value!r} "
                     "wird durch die Modellanlage nicht geändert. Dafür ist ein explizit geprüfter Netzwerkparameter-Vorschlag erforderlich.")
@@ -322,6 +327,7 @@ def _network_protocol(interface_type: str) -> str:
     key = re.sub(r'[^A-Z0-9]+', '_', str(interface_type or '').upper()).strip('_')
     aliases = {
         'CANFD': 'CAN_FD',
+        'CANOPEN': 'CAN',
         'FLEXRAY': 'FLEXRAY',
         'AUTOMOTIVE_ETHERNET': 'ETHERNET',
         'SOMEIP': 'SOME_IP',
@@ -449,6 +455,32 @@ def _parameter_defaults(technology_id: str) -> dict:
     return defaults
 
 
+def _explicit_technology_bitrates(prompt: str, technology_ids: list[str]) -> dict[str, int]:
+    """Read rates explicitly attached to a technology heading in the user task."""
+    rates: dict[str, int] = {}
+    pattern = re.compile(
+        r'^\s*(LIN|Ethernet)\s*:\s*(?:\r?\n\s*)?'
+        r'(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\b', re.M,
+    )
+    for match in pattern.finditer(prompt):
+        technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(match.group(1))
+        if technology_id not in technology_ids:
+            continue
+        bitrate = round(float(match.group(2).replace(',', '.')) * (1000 if match.group(3).lower() == 'k' else 1_000_000))
+        profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+        rate_model = profile.get('rate_model') or {}
+        allowed = rate_model.get('allowed_bps')
+        if (allowed and bitrate not in allowed or
+                rate_model.get('fixed_bps') and bitrate != rate_model['fixed_bps'] or
+                rate_model.get('minimum_bps') and bitrate < rate_model['minimum_bps'] or
+                rate_model.get('maximum_bps') and bitrate > rate_model['maximum_bps']):
+            raise ValueError(f'{match.group(1)}: {bitrate} bit/s ist laut TechnologyProfile nicht zulässig.')
+        if technology_id in rates and rates[technology_id] != bitrate:
+            raise ValueError(f'{match.group(1)}: widersprüchliche explizite Bitraten im Auftrag.')
+        rates[technology_id] = bitrate
+    return rates
+
+
 def generate_parameters(arguments: dict) -> dict:
     """Persist confirmed registry defaults without delegating tool choice to an LLM."""
     prompt = effective_wizard_prompt(arguments['prompt'])
@@ -472,22 +504,31 @@ def generate_parameters(arguments: dict) -> dict:
     industry = (domain_match.group(1).strip() if domain_match else '') or str(
         (state.get('parameters') or {}).get('industry') or 'generic_networking'
     )
+    explicit_rates = _explicit_technology_bitrates(prompt, technology_ids)
+    technology_defaults = {technology_id: {
+        **_parameter_defaults(technology_id),
+        **({'bitrate': explicit_rates[technology_id]} if technology_id in explicit_rates else {}),
+    } for technology_id in technology_ids}
     primary = technology_ids[0]
-    primary_defaults = _parameter_defaults(primary)
+    primary_defaults = technology_defaults[primary]
     existing = state.get('parameters') or {}
     parameters = {
         **primary_defaults,
         **existing,
+        **({'bitrate': explicit_rates[primary]} if primary in explicit_rates else {}),
         'industry': industry,
         'technology': primary,
         'formats': list(existing.get('formats') or ['universal-jsonl', 'universal-csv']),
-        'technology_defaults': {
-            technology_id: _parameter_defaults(technology_id)
-            for technology_id in technology_ids
-        },
-        'defaults_source': 'technology-registry',
+        'technology_defaults': technology_defaults,
+        'defaults_source': 'technology-registry-with-explicit-user-rates' if explicit_rates else 'technology-registry',
+        'explicit_technology_bitrates': explicit_rates,
         'spatial_architecture': architecture_from(existing, prompt),
     }
+    if primary in explicit_rates:
+        parameters['parameter_provenance'] = {
+            **(existing.get('parameter_provenance') or {}),
+            'bitrate': {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': explicit_rates[primary]},
+        }
     if 'duration_s' not in existing and 'duration_s' in primary_defaults:
         parameters['parameter_provenance'] = {
             **(existing.get('parameter_provenance') or {}),
@@ -600,6 +641,23 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             if chain['device_type'] == 'Gateway' and backbones:
                 technology, network = next((pair for pair in backbones if pair[0] == chain['interface_type']), backbones[0])
                 chain.update(interface_type=technology, transport_network_ref=network)
+    # An explicitly selected controller and gateway interface of the same
+    # technology form a reviewable upstream physical membership even when no
+    # external message receiver has been confirmed. Keep status traffic local.
+    gateways = [chain for chain in spec['chains'] if chain['device_type'] == 'Gateway']
+    gateway_names = {str(chain['hardware_name']).casefold() for chain in gateways}
+    if len(gateway_names) == 1 and not any(chain.get('transport_network_ref') for chain in gateways) and architecture != 'sensor_ecu_actuator':
+        gateway = gateways[0]
+        matching_controllers = [chain for chain in spec['chains']
+            if chain['device_type'] not in {'Gateway', 'SensorController', 'ActuatorController'}
+            and chain['interface_type'] == gateway['interface_type']
+            and not chain.get('transport_network_ref')]
+        if matching_controllers:
+            technology = _network_protocol(gateway['interface_type'])
+            network_ref = f'{_semantic_slug(str(gateway["hardware_name"]))}-backbone-{_semantic_slug(technology)}-S01'
+            for chain in [*gateways, *matching_controllers]:
+                chain['transport_network_ref'] = network_ref
+                chain['transport_network_name'] = network_ref
     changes, refs = [], {}
 
     def hardware_interface_identity(data):
@@ -944,12 +1002,14 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                             'configuration': {
                                 'model_type': 'TransportUnit',
                                 'technology_binding': technology_contract,
+                                'cycle_source': 'ACTUATOR_STATUS_CANDIDATE_REQUIRES_REVIEW',
                                 'transport_unit': {
                                     'transport_unit_type': technology_contract['transport_unit_type'],
                                     'producer_ref': hw,
                                     'consumer_refs': actuator_refs,
                                     'payload_size': dlc,
-                                    'timing': {'cycle_ms': cycle_ms},
+                                    'timing': {'cycle_ms': cycle_ms,
+                                               'cycle_source': 'ACTUATOR_STATUS_CANDIDATE_REQUIRES_REVIEW'},
                                     'status': 'PROPOSED',
                                     'provenance': {
                                         'source': 'wizard',
@@ -1015,9 +1075,10 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
         f"Engineering-Modell aus bestätigten Wizard-Vorgaben: {len(changes)} vorgeschlagene Änderungen. "
         "Noch keine Änderungen am kanonischen Modell; Freigabe und Übernahme sind erforderlich.",
         assumptions=['Technische Defaults und ergänzte Geräte stammen aus den Wizard-Branchenkatalogen und müssen geprüft werden.',
-                     'Lokale Messwerte und Stellbefehle erhalten ihre bestätigten Empfänger. Im lokalen Regelkreis bleibt Controllerstatus ohne ausdrücklich gewählte Ausgabe intern und wird nicht gesendet. Andere Architekturvarianten verwenden Diagnose, Gateway oder einen anderen Controller als Status-Empfänger; diese Simulationsvorgabe ist Bestandteil der Modellfreigabe.',
+                     'Lokale Messwerte und Stellbefehle erhalten ihre bestätigten Empfänger. Controllerstatus ohne bestätigten Empfänger bleibt als konkreter Review-Befund offen; eine Gateway-Verbindung allein bestätigt keinen Empfänger.',
                      'Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.',
                      'Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).',
+                     'Zykluswerte generierter lokaler Stellbefehle sind Entwurfskandidaten aus den Aktorstatuszyklen. Der Statuszyklus bestätigt keine Befehlsrate; diese getrennt prüfen.',
                      'Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe.'],
         evidence=[*(source_evidence or []), {'source': 'wizard-specification-generator', **proposal_identity, 'target_counts': spec['targetCounts'],
                    'communication_system_counts': spec['communicationSystemCounts'],
@@ -1331,7 +1392,7 @@ def _confirmed_segment_memberships(prompt: str) -> dict[str, list[tuple[str, str
     separate local I/O segments by ``_confirmed_local_io_memberships``.
     """
     architecture = re.search(r'^- Netzarchitektur-ID:\s*([^\r\n]+)', prompt, re.M)
-    if not architecture or architecture.group(1).strip().casefold() != 'gateway_ecu_segments':
+    if not architecture or architecture.group(1).strip().casefold() not in {'gateway_ecu_segments', 'gateway_segments_hybrid_ai'}:
         return {}
     raw = re.search(r'^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$', prompt, re.M)
     if not raw:
@@ -1683,16 +1744,28 @@ def generate_network_topology(arguments: dict) -> dict:
         segments[(left, right, bus, network)] = preserved
     # Do not fabricate wiring from spelling similarity or protocol alone.
     # Isolated hardware remains visibly isolated until a binding is specified.
-    # A controller's declared message port exists independently of consumers.
-    # Keep such ports visible even when the routing model has no receiver yet.
+    # A shared canonical network binding is physical membership even when no
+    # approved route currently uses the interface (for example a gateway
+    # backbone with only internal status traffic). A single unused binding
+    # does not establish physical wiring by itself.
     declared_network_names = {str(n['id']): str(n.get('name') or n['id']) for n in model.networks()}
     message_ports = {str(message.get('hardware_interface_id') or '') for message in model.objects('Message')}
     saved_ports = {str(port.get('hardwareInterfaceId') or '') for node in existing_nodes.values() for port in node.get('ports') or []}
+    bound_members = {}
+    for interface in interfaces:
+        network_id = str(interface.get('network_ref') or '')
+        if network_id:
+            bound_members.setdefault((_topology_bus(interface.get('technology')), network_id), set()).add(
+                str(interface.get('hardware_node_id') or ''))
     for interface in interfaces:
         node_id = str(interface.get('hardware_node_id') or '')
         network_id = str(interface.get('network_ref') or '')
-        if node_id in node_data and network_id and str(interface['id']) in message_ports | saved_ports:
-            ensure_port(node_id, _topology_bus(interface.get('technology')), network_id,
+        bus = _topology_bus(interface.get('technology'))
+        if node_id in node_data and network_id and (
+            len(bound_members.get((bus, network_id), ())) > 1
+            or str(interface['id']) in message_ports | saved_ports
+        ):
+            ensure_port(node_id, bus, network_id,
                         declared_network_names.get(network_id, network_id))
     # A shared canonical network is explicit physical membership, even without
     # traffic. Connect its components; never cross networks by name similarity.

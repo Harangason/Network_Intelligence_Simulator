@@ -28,6 +28,14 @@ export function actuatorCommandLabel(role: string, name: string, purpose = ''): 
   return /ventil|valve/i.test(`${name} ${purpose}`) ? 'Ventilbefehl' : 'Aktorbefehl';
 }
 
+export function proposedActuatorCommand(name: string): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
+  if (/ventil|valve|relais|relay|schalt/i.test(name))
+    return { choice: 'OPEN_CLOSE', reason: 'Schaltendes Stellglied; binärer Entwurf, Kodierung prüfen' };
+  if (/motor|drive|servo|linear|antrieb|motion|lüfter|luefter|fan|steering/i.test(name))
+    return { choice: 'POSITION', reason: 'Stellendes Gerät; 0–100-%-Entwurf, Bereich und Auflösung prüfen' };
+  return null;
+}
+
 export function unresolvedActuatorCommands(chains: ExtractedEngineeringChain[], text: string): string[] {
   const commands = actuatorCommands(text);
   return [...new Set(chains.filter(chain => chain.device_type === 'ActuatorController'

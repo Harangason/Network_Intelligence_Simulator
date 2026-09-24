@@ -20,6 +20,35 @@ from backend.engineering.agent_tools import run_status
 import pytest
 
 
+def test_canopen_retains_application_capability_over_physical_can():
+    from backend.engineering.models import INTERFACE_TYPES, validate_choice
+    from backend.engineering.agent_tools.validation import _network_supports_interface
+    from backend.engineering.routing.generation import INTERFACE_TO_PROTOCOL
+    from backend.engineering.routing.validation import INTERFACE_PROTOCOLS, physical_route_technology
+    from backend.engineering.physical_ports import technology_id
+    assert validate_choice('CANopen', INTERFACE_TYPES, 'technology') == 'CANopen'
+    contract = wizard_generation._technology_contract('CANopen')
+    assert contract['technology_id'] == 'canopen'
+    assert contract['capabilities']['supports_request_response'] is True
+    assert wizard_generation._network_protocol('CANopen') == 'CAN'
+    assert wizard_generation._topology_bus('CANopen') == 'can'
+    assert _network_supports_interface('CAN', 'CANopen')
+    assert not _network_supports_interface('LIN', 'CANopen')
+    assert INTERFACE_TO_PROTOCOL['CANopen'] == 'CAN'
+    assert INTERFACE_PROTOCOLS['CANopen'] == {'CAN'}
+    assert technology_id('CANopen') == technology_id('CAN')
+    assert physical_route_technology('CANopen') == physical_route_technology('CAN') == 'CAN'
+
+
+def test_explicit_s04_rates_preserve_each_technology_and_reject_invalid_values():
+    prompt = 'LIN:\n19,2 kbit/s\nSensoren 500 ms\nEthernet:\n100 Mbit/s\n'
+    assert wizard_generation._explicit_technology_bitrates(prompt, ['lin', 'ethernet']) == {
+        'lin': 19_200, 'ethernet': 100_000_000,
+    }
+    with pytest.raises(ValueError, match='TechnologyProfile'):
+        wizard_generation._explicit_technology_bitrates('LIN:\n2 Mbit/s', ['lin'])
+
+
 def test_gateway_free_v0_identifies_only_the_controller_as_main_controller():
     controller = {'device_type': 'EmbeddedController'}
     sensor = {'device_type': 'SensorController'}
@@ -195,7 +224,7 @@ Erzeuge ein Netzwerk mit einem Gateway, einer Motorsteuerung, einem Temperaturse
         routing = wizard_generation.generate_routing({'prompt': prompt})
         routing = proposal_service.validate(routing['proposal_id'])
         assert routing['status'] == 'VALIDATED', routing['validation_result']
-        assert len(routing['changes']) == 5  # Local I/O plus ECU and gateway status.
+        assert len(routing['changes']) == 3  # Local I/O; status without a recipient stays internal.
         approved_routing = proposal_service.review(routing['proposal_id'], revision=routing['revision'],
             decision='approve', actor='test-human', trace_id=str(uuid4()))
         proposal_service.apply(approved_routing['proposal_id'], actor='test-human', trace_id=str(uuid4()))
@@ -249,7 +278,7 @@ def test_confirmed_backbones_are_routable_before_topology_creation(display_techn
         route = wizard_generation.generate_routing({'prompt': prompt})
         route = proposal_service.validate(route['proposal_id'])
         assert route['status'] == 'VALIDATED', route['validation_result']
-        assert len(route['changes']) >= 3
+        assert len(route['changes']) == 1  # Only the confirmed Motorsteuerung-to-Anzeige route.
         assert any(change['data']['route']['gateways'] for change in route['changes'])
 
     result = execute(authority, 'test_backbone_ports', Permission.GENERATE_PROPOSAL, {}, lambda _: check())
@@ -360,6 +389,7 @@ def test_engineering_proposal_adds_local_controller_tx_message_for_actuator(
     assert local_port['data']['network_ref'] == f'Antriebsstrang-IO-abgasnachbehandlung-{local_type.casefold()}-S01'
     assert local_message['data'].get('message_id_hex') == expected_identifier
     assert local_message['data']['configuration']['transport_unit']['consumer_refs'] == ['$' + actuator['local_ref']]
+    assert local_message['data']['configuration']['cycle_source'] == 'ACTUATOR_STATUS_CANDIDATE_REQUIRES_REVIEW'
     assert backbone_message['data']['interface_id'] != local_message['data']['interface_id']
     assert backbone_message['data']['hardware_interface_id'] != local_message['data']['hardware_interface_id']
     confirmed_owner = by_ref[actuator['data']['identity']['system_owner_id']]
@@ -949,11 +979,12 @@ Erzeuge drei PLCs mit PROFINET- und EtherCAT-Segmenten an einem Ethernet-Backbon
     assert not repeated_creates, repeated_creates
 
 
-def test_v4_physical_memberships_split_explicit_controller_buses():
-    prompt = '''- Netzarchitektur-ID: gateway_ecu_segments
+@pytest.mark.parametrize('architecture', ['gateway_ecu_segments', 'gateway_segments_hybrid_ai'])
+def test_v4_physical_memberships_split_explicit_controller_buses(architecture):
+    prompt = '''- Netzarchitektur-ID: ARCHITECTURE
 - Geräteanschlüsse: {"PLC1":"ProfiNET","PLC2":"ProfiNET","PLC3":"EtherCAT"}
 - Systemcluster-Graph: [{"network_id":"detected:ethernet","bus_name":"Maschine_Motion","controllers":[{"ecu":"PLC1"},{"ecu":"PLC2"},{"ecu":"PLC3"}]}]
-'''
+'''.replace('ARCHITECTURE', architecture)
 
     memberships = wizard_generation._confirmed_segment_memberships(prompt)
 

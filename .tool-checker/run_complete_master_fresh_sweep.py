@@ -22,7 +22,7 @@ SOURCE = ROOT / "docs" / "NETWORK_SIMULATOR_COMPLETE_MASTER_TEST_SUITE_S01_S60_8
 BASE_URL = os.environ.get("TOOL_CHECKER_BASE_URL", "http://127.0.0.1:55634").rstrip("/")
 RUN_NAME = os.environ.get("TOOL_CHECKER_RUN_NAME", "complete-master-80-fresh-20260918")
 RUN_ROOT = HERE / "runs" / RUN_NAME
-EVIDENCE_ROOT = RUN_ROOT / "sweep-evidence"
+EVIDENCE_ROOT = Path(os.environ.get("TOOL_CHECKER_EVIDENCE_ROOT", RUN_ROOT / "sweep-evidence"))
 NORMALIZED_SOURCE = Path(os.environ.get(
     "TOOL_CHECKER_NORMALIZED_SOURCE",
     HERE / "runs" / "complete-master-80-fresh-20260918" / "complete-master-80.normalized.json",

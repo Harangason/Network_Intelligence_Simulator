@@ -31,6 +31,9 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
   const [createError, setCreateError] = useState("");
   const [query, setQuery] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ projectId: string; name: string } | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState("");
   const deleteBusy = useRef(false);
   const pendingProject = useRef<string | null>(null);
   const createBusy = useRef(false);
@@ -84,6 +87,27 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Projekt konnte nicht gelöscht werden.'); }
     finally { deleteBusy.current = false; setDeleting(null); }
   }
+  async function rename(project: Project) {
+    if (!editing || editing.projectId !== project.project_id || renaming) return;
+    const name = editing.name.trim();
+    if (!name) { setRenameError("Bitte einen Projektnamen eingeben."); return; }
+    if (name === project.name) { setEditing(null); setRenameError(""); return; }
+    setRenaming(true); setRenameError("");
+    try {
+      const response = await fetch("/api/engineering/projects/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Project-ID": project.project_id },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Projektname konnte nicht gespeichert werden.");
+      setProjects(current => current.map(item => item.project_id === project.project_id ? { ...item, name: result.name } : item));
+      setEditing(null);
+      void load();
+    } catch (caught) {
+      setRenameError(caught instanceof Error ? caught.message : "Projektname konnte nicht gespeichert werden.");
+    } finally { setRenaming(false); }
+  }
   const filtered = projects.filter(project => `${project.name} ${project.description} ${project.project_id}`.toLocaleLowerCase("de").includes(term));
   return <section className={styles.gallery} aria-labelledby="projects-title">
     <header className={styles.header}>
@@ -112,10 +136,26 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
         <span className={styles.status} data-status={project.statuses[project.active_step]}>{trace ? "Trace-Analyse öffnen" : statusNames[project.statuses[project.active_step]] ?? "Projekt öffnen"}</span>
         <div className={styles.cardBottom}><time dateTime={project.updated_at}>Geändert {new Date(project.updated_at).toLocaleDateString("de-DE")}</time><span title={project.project_id}>{project.project_id.replace(/^network-project-/, "")}</span></div>
         </Link>
-        <button className={styles.deleteButton} type="button" aria-label={`Projekt ${project.name || project.project_id} löschen`} disabled={deleting !== null} onClick={() => void remove(project)}>
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v7M14 10v7" /></svg>
-          {deleting === project.project_id ? 'Wird gelöscht …' : 'Löschen'}
-        </button>
+        {editing?.projectId === project.project_id && <form className={styles.renameForm} onSubmit={event => { event.preventDefault(); void rename(project); }}>
+          <label htmlFor={`project-name-${project.project_id}`}>Projektname ändern</label>
+          <input id={`project-name-${project.project_id}`} maxLength={120} value={editing.name}
+            onChange={event => { setEditing({ projectId: project.project_id, name: event.target.value }); setRenameError(""); }} disabled={renaming} required />
+          {renameError && <span role="alert" className={styles.error}>{renameError}</span>}
+          <div className={styles.renameActions}>
+            <button className="button secondary" type="button" disabled={renaming} onClick={() => { setEditing(null); setRenameError(""); }}>Abbrechen</button>
+            <button className="button primary" type="submit" disabled={renaming || !editing.name.trim()}>{renaming ? "Speichert …" : "Speichern"}</button>
+          </div>
+        </form>}
+        <div className={styles.cardActions}>
+          {editing?.projectId !== project.project_id && <button className={styles.renameButton} type="button" aria-label={`Projekt ${project.name || project.project_id} umbenennen`}
+            disabled={deleting !== null || renaming} onClick={() => { setEditing({ projectId: project.project_id, name: project.name }); setRenameError(""); }}>
+            Umbenennen
+          </button>}
+          <button className={styles.deleteButton} type="button" aria-label={`Projekt ${project.name || project.project_id} löschen`} disabled={deleting !== null || renaming} onClick={() => void remove(project)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v7M14 10v7" /></svg>
+            {deleting === project.project_id ? 'Wird gelöscht …' : 'Löschen'}
+          </button>
+        </div>
       </article>)}
     </div>
     {loading && <p role="status">Projekte werden geladen …</p>}

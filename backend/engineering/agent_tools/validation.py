@@ -8,6 +8,17 @@ from ..device_classification import DeviceClassificationRegistry
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 
 
+def _network_supports_interface(network_technology, interface_technology):
+    registry = DEFAULT_TECHNOLOGY_REGISTRY
+    network_id = registry.normalize_id(network_technology)
+    interface_id = registry.normalize_id(interface_technology)
+    if network_id == interface_id:
+        return True
+    profile = registry.profile(interface_id)
+    stack = tuple(profile.get('default_stack') or ())
+    return profile.get('layer') == 'APPLICATION' and bool(stack) and stack[0] == network_id
+
+
 def validate_effective_model(changes):
     graph = {kind: {str(row['id']): row for row in objects(kind)} for kind in ENTITY_SPECS}
     touched, findings = {}, []
@@ -103,10 +114,7 @@ def validate_effective_model(changes):
                 affected_ports.add(identifier)
                 if item.get('network_ref'):
                     network = declared.get(str(item['network_ref']))
-                    if network is None or (
-                        DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(network['technology'])
-                        != DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item['technology'])
-                    ):
+                    if network is None or not _network_supports_interface(network['technology'], item['technology']):
                         raise ValueError('Netzwerk fehlt oder verwendet eine andere Technologie.')
         except (ValueError, KeyError, TypeError) as error:
             findings.append({'severity': 'ERROR', 'index': index, 'message': str(error)})

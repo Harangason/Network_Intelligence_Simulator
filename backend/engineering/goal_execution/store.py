@@ -2,6 +2,8 @@
 from psycopg.types.json import Jsonb
 from ..db import get_connection, mark_model_changed
 from ..project_context import current_project_id
+from ..models import EngineeringValidationError
+from ..repository import NotFoundError
 from ..agent_tools.model import json_safe
 from .models import CommunicationCapability, CommunicationController, PhysicalPort, NetworkConnection
 
@@ -30,11 +32,13 @@ def save_resource(kind, body):
 
 
 def get_goal(workload_id):
+    if not isinstance(workload_id, str) or not workload_id.strip():
+        raise EngineeringValidationError('workload_id muss eine nicht-leere Zeichenfolge sein.')
     with get_connection() as conn:
         row = conn.execute('SELECT body FROM engineering_execution_goals WHERE project_id=%s AND workload_id=%s FOR UPDATE',
                            (current_project_id(), workload_id)).fetchone()
     if not row:
-        raise LookupError('Ausführungsauftrag im aktiven Projekt nicht gefunden.')
+        raise NotFoundError('Ausführungsauftrag im aktiven Projekt nicht gefunden.')
     return row['body']
 
 

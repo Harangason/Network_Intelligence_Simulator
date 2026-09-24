@@ -6,6 +6,8 @@ class CompletionEvaluator:
     TERMINAL_COMPLETE = {"COMPLETE", "COMPLETED"}
 
     def evaluate(self, goal: dict, events: list[dict], *, failure: dict | None = None) -> dict:
+        failure = failure or next((event.get('metadata', {}).get('failure') for event in reversed(events)
+                                   if event.get('metadata', {}).get('failure')), None)
         if failure:
             return {"status": "BLOCKED_WITH_EXPLICIT_CAUSE", "completed": False,
                     "missing_outcomes": list(goal.get("required_outcomes") or []), "failure": failure}
@@ -33,6 +35,8 @@ class CompletionEvaluator:
         elif goal.get("goal_type") in {"STATUS_QUERY", "EXPLAIN", "DIAGNOSE", "ANALYZE_TRACE", "MEASURE_E2E", "VALIDATE_MODEL", "CALCULATE_CAPACITY", "CALCULATE_TIMING", "COMPARE"} and result.get("status") in {"ANSWERED", "SUCCESS", "PASS"}:
             # Read-only analysis goals complete only with a final structured result.
             status = "COMPLETED" if result.get("metadata", {}).get("details") is not None or result.get("metadata", {}).get("evidence_refs") else "INCOMPLETE"
+        elif result.get("status") == 'WAITING_FOR_ENGINEERING_DECISION':
+            status = 'WAITING_FOR_ENGINEERING_DECISION'
         elif result.get("status") in {"NOT_SUPPORTED", "NOT_SUPPORTED_WITH_CAPABILITY_GAP"}:
             status = "NOT_SUPPORTED_WITH_CAPABILITY_GAP"
         elif result.get("status") in {"BLOCKED", "FAILED", "ERROR", "INCOMPLETE", "OPEN"}:

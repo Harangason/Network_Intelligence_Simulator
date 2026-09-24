@@ -19,10 +19,11 @@ def build_manifest(root=ROOT):
         "backend/requirements.txt", "backend/requirements.lock", "backend/pyproject.toml", "backend/uv.lock",
         "frontend/package.json", "frontend/package-lock.json",
     ))
-    excluded = {".venv", "node_modules", "runtime", "test-output", "tests", "__pycache__", "generated"}
+    excluded = {".venv", "node_modules", "test-output", "tests", "__pycache__", "generated"}
     hashes = {}
     for path in sorted(paths):
-        if not path.is_file() or excluded.intersection(path.relative_to(root).parts):
+        relative_parts = path.relative_to(root).parts
+        if not path.is_file() or excluded.intersection(relative_parts) or relative_parts[:2] == ("backend", "runtime"):
             continue
         if path.suffix in {".pyc", ".tsbuildinfo"}:
             continue

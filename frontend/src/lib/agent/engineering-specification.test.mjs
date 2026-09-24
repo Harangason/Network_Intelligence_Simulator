@@ -70,6 +70,55 @@ Die Steuerung muss außerdem mit einem übergeordneten Netzwerk verbunden sein.`
   assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'Gateway').map(chain => chain.hardware_name), []);
 });
 
+test('a BACnet/IP path to a gateway is not parsed as another hardware node', () => {
+  const spec = extractEngineeringSpecification(`4 Zone Controller
+12 Aktoren:
+- Ventile
+- Klappen
+- Lüfter
+Kommunikation:
+- BACnet MS/TP lokal
+- BACnet/IP zum Gateway
+1 Building Gateway`, {}, 'building_automation', true);
+  assert.equal(spec.chains.some(chain => chain.hardware_name === 'BACnet/IP zum'), false);
+});
+
+test('structured actuator command selections do not add an actuator', () => {
+  const spec = extractEngineeringSpecification(`1 Controller
+1 Aktor:
+- Lüfter
+- Aktor-Befehle: {"Lüfter":{"length_bits":10,"max_value":100,"semantic":{"meaning":"Angeforderte Stellposition"}}}`,
+  {}, 'custom', true);
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'ActuatorController')
+    .map(chain => chain.hardware_name), ['Lüfter']);
+});
+
+test('S04-A keeps explicit LIN sensor and fan-status cycles on the generated devices', () => {
+  const specification = extractEngineeringSpecification(`1 Controller
+4 Temperatursensoren über LIN
+3 Lüfteraktoren über LIN
+1 Gateway mit LIN- und Ethernet-Port
+
+LIN:
+19,2 kbit/s
+Sensoren 500 ms
+Lüfterstatus 250 ms
+
+Ethernet:
+100 Mbit/s
+
+Funktionen:
+ZoneTemperatureAcquire
+FanControl
+ThermalStatus`);
+  const sensors = specification.chains.filter(chain => chain.device_type === 'SensorController');
+  const fans = specification.chains.filter(chain => chain.device_type === 'ActuatorController');
+  assert.equal(sensors.length, 4);
+  assert.equal(fans.length, 3);
+  assert.ok(sensors.every(chain => chain.cycle_ms === 500 && chain.configuration?.cycle_source === 'explicit_user_specification'));
+  assert.ok(fans.every(chain => chain.cycle_ms === 250 && chain.configuration?.cycle_source === 'explicit_user_specification'));
+});
+
 test('S06-A materializes counted PLC controllers and the central edge gateway', () => {
   const task = `3 PLC/Controller
 12 Sensoren:
@@ -239,6 +288,8 @@ test("technology selection ignores negated transports and keeps the positively n
   assert.deepEqual(extractCommunicationSystems("Das Projekt nutzt I2C-Verbindungen, nicht CAN."), ["I2C"]);
   assert.deepEqual(extractCommunicationSystems("CAN is not used; sensors communicate over I2C."), ["I2C"]);
   assert.deepEqual(extractCommunicationSystems("Use CAN, but not LIN."), ["CAN"]);
+  assert.deepEqual(extractCommunicationSystems("Use Ethernet, but not CANopen."), ["Ethernet"]);
+  assert.deepEqual(extractCommunicationSystems("Use CANopen and Ethernet. LIN is excluded."), ["CANopen", "Ethernet"]);
 });
 
 test("catalog technology identifiers resolve to device connection types", () => {
@@ -527,6 +578,8 @@ test("wizard architecture ids are extracted without ambiguity", () => {
   assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: gateway_ecu_segments"), "gateway_ecu_segments");
   assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: gateway_direct"), "gateway_direct");
   assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: hybrid_ai"), "hybrid_ai");
+  assert.equal(extractNetworkArchitectureMode("- Netzarchitektur-ID: gateway_segments_hybrid_ai"), "gateway_segments_hybrid_ai");
+  assert.equal(extractNetworkArchitectureMode("Variante 4 + KI 2+3"), "gateway_segments_hybrid_ai");
   assert.equal(extractNetworkArchitectureMode("Variante 0 Sensor ECU Aktor"), "sensor_ecu_actuator");
   assert.equal(extractNetworkArchitectureMode("am Gateway haengen ueber eine Leitung bis zu 6 ECU"), "gateway_ecu_segments");
   assert.equal(extractNetworkArchitectureMode("Kombination aus Variante 2 und 3"), "hybrid_ai");
@@ -544,6 +597,7 @@ test("wizard variant numbers never become hardware quantities", () => {
     ["gateway_ecu_segments", "Variante 4 · Gateway-Segmente"],
     ["gateway_direct", "Variante 3 · Gateway-direkt"],
     ["hybrid_ai", "KI-Kombination · Variante 2 + 3"],
+    ["gateway_segments_hybrid_ai", "Variante 4 + KI 2+3 · Segmente und direkte Teilnehmer"],
   ]) {
     const wrapped = `Strukturierte Vorgaben fuer den Engineering-Agenten:
 - Netzarchitektur-ID: ${id}
@@ -731,6 +785,8 @@ Gateway:
 CANopen ↔ Ethernet
 Ethernet 1 Gbit/s`;
   const result = extractEngineeringSpecification(requirement);
+  assert.deepEqual(result.communicationSystems, ["CANopen", "Ethernet"]);
+  assert.equal(result.domain, "embedded_systems");
   assert.deepEqual(
     result.chains.filter((chain) => chain.device_type === "SensorController").map((chain) => chain.hardware_name),
     ["Positionssensor1", "Positionssensor2"],
@@ -739,7 +795,7 @@ Ethernet 1 Gbit/s`;
     result.chains.filter((chain) => chain.device_type === "ActuatorController").map((chain) => chain.hardware_name),
     ["Servoantrieb1", "Servoantrieb2"],
   );
-  assert.ok(result.chains.filter((chain) => /Positionssensor|Servoantrieb/.test(chain.hardware_name)).every((chain) => chain.interface_type === "CAN"));
+  assert.ok(result.chains.filter((chain) => /Positionssensor|Servoantrieb/.test(chain.hardware_name)).every((chain) => chain.interface_type === "CANopen"));
   assert.equal(result.chains.filter((chain) => chain.device_type === "EmbeddedController").length, 1);
   assert.equal(result.chains.filter((chain) => chain.device_type === "Gateway").length, 1);
 });

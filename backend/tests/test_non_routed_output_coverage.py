@@ -37,6 +37,35 @@ def test_only_complete_unused_function_output_is_excluded_with_traceable_reason(
     assert model == before
 
 
+def test_confirmed_internal_controller_status_has_no_bus_transport_obligation():
+    model = inventory()
+    model['messages'][1]['configuration'] = {
+        'routing': {'enabled': False},
+        'communication_contract': {'scope': 'INTERNAL', 'role': 'INTERNAL_STATE', 'consumer_refs': []},
+        'transport_unit': {'consumer_refs': [], 'provenance': {'generator': 'wizard-generation'}},
+    }
+    coverage = simulation_coverage(**model, transports=[{'message_ids': ['local']}])
+    assert coverage['complete']
+    assert coverage['excluded_message_ids'] == ['output']
+    assert coverage['excluded_signal_ids'] == ['error', 'state']
+    assert coverage['transport_exclusions'][0]['reason_code'] == 'INTERNAL_STATE_NOT_ROUTED'
+    assert 'keine funktionale Beobachtung' in coverage['transport_exclusions'][0]['reason']
+
+
+def test_internal_status_with_declared_export_still_requires_confirmed_transport():
+    model = inventory()
+    model['messages'][1]['configuration'] = {
+        'routing': {'enabled': False},
+        'communication_contract': {'scope': 'INTERNAL', 'role': 'INTERNAL_STATE', 'consumer_refs': []},
+        'transport_unit': {'consumer_refs': [], 'provenance': {'generator': 'wizard-generation'}},
+    }
+    coverage = simulation_coverage(**model, transports=[{'message_ids': ['local']}],
+                                   declared_transports=[{'payload': {'message_id': 'output'}, 'status': 'DRAFT'}])
+    assert not coverage['complete']
+    assert coverage['missing_message_ids'] == ['output']
+    assert coverage['missing_signal_ids'] == ['error', 'state']
+
+
 @pytest.mark.parametrize("config", [
     {}, {"routing": {"enabled": False}},
     *[{"routing": {"enabled": value}, "communication_contract": {"scope": "FUNCTION_OUTPUT"}}

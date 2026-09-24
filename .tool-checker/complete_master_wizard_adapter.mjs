@@ -403,7 +403,7 @@ async function supplyScriptedInventory(dialog) {
   const table = dialog.locator('.agent-equipment-table').first();
   if (!await table.isVisible().catch(() => false)) return false;
   inventoryAssumptionsApplied = true;
-  const architectureNeedsGateway = /^V[1-4](?:\b|\s|$)/.test(scenario.architecture_variant || '')
+  const architectureNeedsGateway = /^V4(?:\b|\s|$)/.test(scenario.architecture_variant || '')
     || /KI 2\+3|Hybrid/i.test(scenario.architecture_variant || '');
   if (architectureNeedsGateway && !/\bohne\s+(?:ein(?:en|em)?\s+)?gateway\b/i.test(scenario.input)) {
     const gatewayCount = table.locator('tbody tr').filter({ hasText: /Gateway/i }).locator('input[type=number]').first();
@@ -446,16 +446,33 @@ async function supplyScriptedInventory(dialog) {
 
 async function supplyScriptedDeviceChoices(dialog) {
   if (deviceAssumptionsApplied) return false;
-  const section = dialog.getByRole('region', { name: 'Geräteanschlüsse festlegen' });
-  if (!await section.isVisible().catch(() => false)) return false;
-  const unresolved = await section.locator('select').evaluateAll(rows => rows.flatMap(row => {
-    if (row.disabled) return [];
-    const selected = row.selectedOptions[0];
-    const placeholder = !row.value || selected?.disabled || /bitte|auswählen|select|offen/i.test(selected?.textContent || '');
-    if (!placeholder) return [];
-    return [{ control: row.getAttribute('aria-label') || row.getAttribute('name') || 'select',
-      options: [...row.options].map(option => ({ value: option.value, label: option.textContent?.trim() || '', disabled: option.disabled })) }];
-  }));
+  const unresolvedByControl = new Map();
+  const collectDeviceControls = async () => {
+    await dialog.locator('.agent-equipment-clusters article.agent-cluster-review details:not([open])')
+      .evaluateAll(rows => rows.forEach(row => { row.open = true; }));
+    const rows = await dialog.locator('.agent-device-controls select').evaluateAll(selects => selects.flatMap(row => {
+      if (row.disabled) return [];
+      const selected = row.selectedOptions[0];
+      const placeholder = !row.value || selected?.disabled || /bitte|auswählen|select|offen/i.test(selected?.textContent || '');
+      if (!placeholder) return [];
+      return [{ control: row.getAttribute('aria-label') || row.getAttribute('name') || 'select',
+        options: [...row.options].map(option => ({ value: option.value, label: option.textContent?.trim() || '', disabled: option.disabled })) }];
+    }));
+    rows.forEach(row => unresolvedByControl.set(row.control, row));
+  };
+  await collectDeviceControls();
+  const clusterSelector = dialog.locator('.agent-cluster-selector select');
+  if (await clusterSelector.isVisible().catch(() => false)) {
+    const original = await clusterSelector.inputValue();
+    const clusterIds = await clusterSelector.locator('option').evaluateAll(rows => rows.map(row => row.value).filter(Boolean));
+    for (const clusterId of clusterIds) {
+      await clusterSelector.selectOption(clusterId);
+      await collectDeviceControls();
+    }
+    await clusterSelector.selectOption(original);
+  }
+  const unresolved = [...unresolvedByControl.values()];
+  if (!unresolved.length) return false;
   const measurements = {};
   const commands = {};
   const connections = {};
@@ -505,14 +522,33 @@ async function supplyScriptedDeviceChoices(dialog) {
 }
 
 async function fillVisibleRequiredControls(dialog) {
+  // Device controls live below collapsed cluster branches. The prior adapter
+  // only scanned :visible controls and therefore reported an empty unresolved
+  // select list even while the wizard listed open devices.
+  const collapsedDeviceBranches = dialog.locator('.agent-equipment-clusters article.agent-cluster-review details:not([open])');
+  for (let index = 0; index < await collapsedDeviceBranches.count(); index++) {
+    await collapsedDeviceBranches.nth(index).evaluate(element => { element.open = true; });
+  }
   let changed = await supplyScriptedInventory(dialog);
   changed = await supplyScriptedFunctionAssignments(dialog) || changed;
+  // Updating the description reparses the device inventory. Do it before
+  // accepting the visible proposals so their confirmed selections survive.
   changed = await supplyScriptedDeviceChoices(dialog) || changed;
+  const deviceProposalButton = dialog.getByRole('button', { name: 'Geprüfte Entwurfsvorschläge übernehmen', exact: true });
+  if (await deviceProposalButton.isVisible().catch(() => false) && await deviceProposalButton.isEnabled()) {
+    await dialog.locator('.agent-device-proposals details').evaluate(element => { element.open = true; });
+    const proposed = await dialog.locator('.agent-device-proposals').innerText();
+    await deviceProposalButton.click();
+    choices.push({ control: 'Geprüfte Entwurfsvorschläge übernehmen', value: proposed,
+      source: 'SCRIPTED_TEST', rationale: 'Sichtbare Produktvorschläge als Testentscheidung bestätigt' });
+    changed = true;
+  }
   const architecture = dialog.locator('.agent-architecture-group');
   if (await architecture.isVisible().catch(() => false)) {
     const requiredVariant = String(scenario.architecture_variant || '');
     const exactVariant = requiredVariant.match(/^V([0-4])$/)?.[1];
-    const requestedLabel = exactVariant != null ? `Variante ${exactVariant} ·`
+    const requestedLabel = /^V4\s*\+\s*KI\s*2\+3$/i.test(requiredVariant) ? 'Variante 4 + KI 2+3 ·'
+      : exactVariant != null ? `Variante ${exactVariant} ·`
       : /KI 2\+3|^Hybrid$/i.test(requiredVariant) && !/^V4/i.test(requiredVariant) ? 'KI-Kombination ·'
         : /^V4/i.test(requiredVariant) ? 'Variante 4 ·'
           : /^V0\/V2$/i.test(requiredVariant) ? /\bgateway\b|übergeordnet|uebergeordnet/i.test(scenario.input) ? 'Variante 2 ·' : 'Variante 0 ·'
@@ -524,10 +560,6 @@ async function fillVisibleRequiredControls(dialog) {
       await radio.check();
       choices.push({ control: 'Netzarchitektur', value: requestedLabel, source: 'SCRIPTED_TEST' });
       changed = true;
-      if (/^V4\s*\+\s*KI\s*2\+3$/i.test(requiredVariant)) productIssues.push({
-        code: 'TC_COMPOSITE_ARCHITECTURE_NOT_SELECTED',
-        detail: 'Die Master-Vorgabe V4 + KI 2+3 verlangt segmentierte Gateway-Busse und direkte KI-Teilnehmer; der Wizard bietet nur eine der beiden Varianten je Auftrag an.',
-      });
     }
   }
   const technologyGroup = dialog.locator('fieldset.agent-choice-group').filter({ hasText: 'Netzwerktechnologien' });
@@ -597,8 +629,9 @@ async function fillVisibleRequiredControls(dialog) {
       await dialog.page().waitForTimeout(300);
     }
   }
-  const textControls = dialog.locator('textarea:visible, input[type=text]:visible');
-  for (let index = 0; index < await textControls.count(); index++) {
+  for (let index = 0; index < 30; index++) {
+    const textControls = dialog.locator('textarea:visible, input[type=text]:visible');
+    if (index >= await textControls.count()) break;
     const control = textControls.nth(index);
     if (await control.isDisabled() || (await control.inputValue()).trim()) continue;
     const name = await control.getAttribute('aria-label') || await control.getAttribute('name') || await control.getAttribute('placeholder') || 'text';
@@ -699,12 +732,24 @@ async function runQuestionnaire(page, dialog) {
   await projectName.fill(`Master ${scenario.test_id}`);
   await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill(scenario.input);
   for (let index = 0; index < 14; index++) {
+    const activeStep = dialog.locator('.agent-questionnaire-steps button.active');
+    const activeTitle = await activeStep.getAttribute('title');
     await fillVisibleRequiredControls(dialog);
+    // Helper routines temporarily open Project/Equipment to add explicit test
+    // decisions. Return to the actual questionnaire step before clicking Next;
+    // otherwise an Equipment helper can jump straight to Übernehmen and skip
+    // Technology and Architecture review entirely.
+    if (activeTitle && await dialog.locator('.agent-questionnaire-steps button.active').getAttribute('title') !== activeTitle) {
+      await dialog.getByTitle(activeTitle, { exact: true }).click();
+    }
     await screenshot(page, `wizard-questionnaire-${String(index + 1).padStart(2, '0')}.png`);
     const next = dialog.locator('.eng-agent-questionnaire-head').getByRole('button');
     await next.waitFor({ state: 'visible', timeout: 30_000 });
     if (await next.isDisabled()) {
       const changed = await fillVisibleRequiredControls(dialog);
+      if (activeTitle && await dialog.locator('.agent-questionnaire-steps button.active').getAttribute('title') !== activeTitle) {
+        await dialog.getByTitle(activeTitle, { exact: true }).click();
+      }
       if (!changed || await next.isDisabled()) {
         const text = await dialog.innerText();
         const unresolvedControls = await dialog.locator('select:visible').evaluateAll(rows => rows.flatMap(row => {
@@ -731,6 +776,7 @@ async function completeRun(page, dialog) {
   const reviewed = [];
   const started = Date.now();
   let lastState = '';
+  let s03CommunicationAmended = false;
   while (Date.now() - started < 20 * 60_000) {
     const workflow = await api(page, '/api/engineering/workflow?view=summary');
     const execution = workflow.context?.agent_execution || {};
@@ -814,6 +860,34 @@ async function completeRun(page, dialog) {
       await page.waitForTimeout(750);
       continue;
     }
+    if (scenario.test_id === 'S03-A' && !s03CommunicationAmended
+        && execution.state === 'BLOCKED' && execution.step === 'engineering_model'
+        && /Empfänger fehlen|Kommunikationsplan/.test(execution.message || '')) {
+      const graph = [{
+        cluster_id: 'family:control', label: 'Regelung', network_id: 'ethernet',
+        network_label: 'generic_networking · ethernet', bus_name: 'Regelung',
+        controllers: [{ ecu: 'Embedded', sensors: ['Positionssensor1', 'Positionssensor2'],
+          actuators: ['Servoantrieb1', 'Servoantrieb2'] }],
+        unassigned: [], hmi_routes: [],
+        functional_routes: [{ source: 'Ethernet', target: 'Embedded' }],
+        controller_status_scope: 'INTERNAL', warnings: [],
+      }];
+      const amendment = `- Systemcluster-Graph: ${JSON.stringify(graph)}`;
+      await dialog.getByRole('button', { name: 'Ergänzen', exact: true }).click();
+      const supplement = dialog.getByRole('region', { name: 'Engineering-Auftrag ergänzen' });
+      await supplement.getByRole('textbox', { name: 'Ergänzung zur Analyse' }).fill(amendment);
+      await screenshot(page, 's03-communication-amendment-before.png');
+      await supplement.getByRole('button', { name: 'Ergänzung analysieren' }).click();
+      s03CommunicationAmended = true;
+      choices.push({ control: 'S03-A-Kommunikationsentscheidung', value: graph,
+        source: 'SCRIPTED_TEST', rationale: 'Controllerstatus intern; Gateway-Diagnose an den benannten Embedded Controller.' });
+      browserActions.push({ target: 'Ergänzung analysieren', purpose: 'Fehlende Empfänger durch explizite Testentscheidung ergänzen',
+        precondition: execution.message, expected_effect: 'Neue Auftragsrevision mit prüfbarem Modellvorschlag',
+        actual_effect: 'AMEND über Wizard abgeschickt', url: page.url(), status: 'PASSED',
+        evidence: ['s03-communication-amendment-before.png'] });
+      await page.waitForTimeout(750);
+      continue;
+    }
     if (execution.state === 'READY_TO_CONTINUE' || (execution.state === 'BLOCKED' && execution.recoverable === true)) {
       const continuation = dialog.getByRole('button', { name: 'Auftrag fortsetzen', exact: true });
       const continuationVisible = await continuation.isVisible({ timeout: 2_000 }).catch(() => false);
@@ -854,6 +928,7 @@ try {
   await dialog.waitFor({ state: 'visible', timeout: 60_000 });
   await runQuestionnaire(page, dialog);
   const completed = await completeRun(page, dialog);
+  await save('wizard-positive-complete-workflow.json', completed.workflow, 'backend');
   await screenshot(page, 'wizard-complete.png');
   const finish = dialog.getByRole('button', { name: 'Fertig stellen', exact: true });
   await finish.waitFor({ state: 'visible', timeout: 30_000 });
@@ -884,6 +959,7 @@ try {
   }
 
   const fullWorkflow = await api(page, '/api/engineering/workflow');
+  await save('workflow-after-fault-simulation.json', fullWorkflow, 'backend');
   const model = { model_revision: fullWorkflow.versions, workflow: fullWorkflow };
   for (const resource of ['hardware-nodes', 'functions', 'interfaces', 'messages', 'signals']) model[resource] = await api(page, `/api/engineering/${resource}?limit=1000`);
   await save('model-after.json', model, 'model');
@@ -920,7 +996,8 @@ try {
   await save('browser-actions.json', browserActions);
   await save('browser-errors.json', pageErrors, 'log');
   const shared = [
-    'wizard-complete.png', 'wizard-finished.png', 'model-after.json', 'scripted-decisions.json', 'browser-actions.json',
+    'wizard-complete.png', 'wizard-finished.png', 'wizard-positive-complete-workflow.json',
+    'workflow-after-fault-simulation.json', 'model-after.json', 'scripted-decisions.json', 'browser-actions.json',
     'agent-history.json', 'agent-conversation.json', 'mcp-tool-registry.json', 'reviewed-proposals.json',
     'core-preflight.json', 'capacity-timing.json', 'addressing-conflicts.json', 'persistence-reload.json',
     'simulation-positive.json', 'simulation-positive-trace-window.json',

@@ -35,8 +35,8 @@ import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement, selectSensorMeasurements } from '@/lib/agent/sensor-measurements';
-import { actuatorCommands, actuatorCommandChoice, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
-import { selectDeviceConnectionInTask } from '@/lib/agent/device-connections';
+import { actuatorCommands, actuatorCommandChoice, proposedActuatorCommand, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
+import { proposedDeviceConnection, selectDeviceConnectionInTask } from '@/lib/agent/device-connections';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
   buildEquipmentClusters,
@@ -66,6 +66,7 @@ import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
 import {
   defaultWizardTechnologyIds,
   normalizeEngineeringWizardSettings,
+  unscopedWizardBusTechnologies,
   wizardQuestionnaireSteps,
   WIZARD_PROCESS_GROUP as PROCESS_GROUP,
   WIZARD_SCOPE_GROUP as SCOPE_GROUP,
@@ -646,7 +647,7 @@ const STATIC_INDUSTRY_DOMAINS: TechnologyDomain[] = [
   { id: "custom", label: "Custom / Proprietary", technologies: [] },
 ];
 
-type NetworkArchitectureId = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai";
+type NetworkArchitectureId = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai" | "gateway_segments_hybrid_ai";
 
 type NetworkArchitectureOption = {
   id: NetworkArchitectureId;
@@ -698,6 +699,13 @@ const NETWORK_ARCHITECTURES: NetworkArchitectureOption[] = [
     detail: "Die KI entscheidet je Teilnehmer zwischen lokaler Controller-Zuordnung und direkter Gateway-Anbindung.",
     diagram: "lokal → Controller ─┐\n                    ├─ Gateway\ndirekt ─────────────┘",
     rules: "Kombination aus Variante 2 und 3: lokale, echtzeit- oder regelungskritische Teilnehmer über den fachlichen Controller; systemweite, zentrale oder hochbandbreitige Teilnehmer direkt über das Gateway.",
+  },
+  {
+    id: "gateway_segments_hybrid_ai",
+    label: "Variante 4 + KI 2+3 · Segmente und direkte Teilnehmer",
+    detail: "Controller teilen sich begrenzte Gateway-Segmente; geeignete Teilnehmer können nach fachlicher Prüfung direkt am Gateway liegen.",
+    diagram: "lokal → Controller ─ Segment ─┐\ndirekt ────────────────────────┴─ Gateway",
+    rules: "Kombinierter prüfbarer Entwurf: Controller auf Gateway-Bussegmente gemäß Teilnehmergrenze verteilen. Lokale, zeitkritische Teilnehmer bleiben am zuständigen Controller; ausdrücklich begründete systemweite oder hochbandbreitige Teilnehmer dürfen direkt ans Gateway. Jede direkte Zuordnung und jeder Anschluss benötigt Prüfung vor Übernahme.",
   },
 ];
 
@@ -1286,6 +1294,12 @@ export function EngineeringAgentWizard({
   });
   const [phase, setPhase] = useState<"questionnaire" | "status">("questionnaire");
   const [wizardPreferencesReady, setWizardPreferencesReady] = useState(false);
+  const projectNameEditRevisionRef = useRef(0);
+  const projectNameDirtyRef = useRef(false);
+  const projectNameSaveTimerRef = useRef<number | null>(null);
+  const projectNameWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const [projectNameSaveStatus, setProjectNameSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [projectNameSaveError, setProjectNameSaveError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submittedAt, setSubmittedAt] = useState(0);
   const [runId, setRunId] = useState("");
@@ -1324,12 +1338,15 @@ export function EngineeringAgentWizard({
   const technologyChoices = useMemo(() => {
     const executable = (technology: Technology) => !["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED");
     if (mode === "can") return allTechnologies.filter((technology) => executable(technology) && isCanTechnology(technology.id, technology.family));
+    if (!recognizedEquipment.communicationSystems.length) {
+      return unscopedWizardBusTechnologies(domains).filter(executable);
+    }
     const domainChoices = (selectedDomain?.technologies ?? []).filter(technology => technology.implementation_status !== "EXPERIMENTAL");
     const explicitlyRequestedChoices = allTechnologies.filter(technology =>
       recognizedEquipment.communicationSystems.some(system => technologyMatchesRecognizedSystem(technology, system)));
     const choices = [...domainChoices, ...explicitlyRequestedChoices];
     return [...new Map(choices.filter(executable).map(technology => [technology.id, technology])).values()];
-  }, [allTechnologies, mode, selectedDomain, recognizedEquipment.communicationSystems]);
+  }, [allTechnologies, domains, mode, selectedDomain, recognizedEquipment.communicationSystems]);
 
   useEffect(() => {
     let active = true;
@@ -1624,6 +1641,71 @@ export function EngineeringAgentWizard({
     }).catch(() => undefined);
   }, [answeredQuestionKey, currentQuestion, phase, projectId, runId, workflow]);
 
+  const persistProjectName = useCallback(async (name: string, editRevision: number) => {
+    if (projectNameSaveTimerRef.current !== null) {
+      window.clearTimeout(projectNameSaveTimerRef.current);
+      projectNameSaveTimerRef.current = null;
+    }
+    const normalizedName = name.trim().slice(0, 120);
+    const write = projectNameWriteQueueRef.current.catch(() => undefined).then(async () => {
+      if (readActiveProjectId() !== projectId) throw new Error("Das Projekt wurde gewechselt. Der Projektname wurde nicht in ein anderes Projekt geschrieben.");
+      const latestWorkflow = await getWorkflowSummary(projectId, { fresh: true });
+      const settings = normalizeEngineeringWizardSettings(latestWorkflow.context.engineering_wizard_settings);
+      await setWorkflowContext({
+        engineering_wizard_settings: { ...settings, project_name: normalizedName },
+      }, projectId);
+    });
+    projectNameWriteQueueRef.current = write.then(() => undefined, () => undefined);
+    try {
+      await write;
+      if (projectNameEditRevisionRef.current === editRevision) {
+        projectNameDirtyRef.current = false;
+        setProjectNameSaveStatus("saved");
+        setProjectNameSaveError("");
+      }
+    } catch (error) {
+      if (projectNameEditRevisionRef.current === editRevision) {
+        setProjectNameSaveStatus("error");
+        setProjectNameSaveError(error instanceof Error ? error.message : "Projektname konnte nicht gespeichert werden.");
+      }
+      throw error;
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (phase !== "questionnaire" || !wizardPreferencesReady || !projectNameDirtyRef.current) return;
+    const editRevision = projectNameEditRevisionRef.current;
+    projectNameSaveTimerRef.current = window.setTimeout(() => {
+      projectNameSaveTimerRef.current = null;
+      void persistProjectName(projectName, editRevision).catch(() => undefined);
+    }, 300);
+    return () => {
+      if (projectNameSaveTimerRef.current !== null) {
+        window.clearTimeout(projectNameSaveTimerRef.current);
+        projectNameSaveTimerRef.current = null;
+      }
+    };
+  }, [phase, projectName, wizardPreferencesReady, persistProjectName]);
+
+  function changeProjectName(value: string) {
+    projectNameEditRevisionRef.current += 1;
+    projectNameDirtyRef.current = true;
+    setProjectName(value);
+    setProjectNameSaveStatus("saving");
+    setProjectNameSaveError("");
+  }
+
+  async function navigateQuestionnaireStep(index: number) {
+    if (index > step && questionnaireSteps[step]?.id === "project" && projectReady) {
+      try {
+        await persistProjectName(projectName, projectNameEditRevisionRef.current);
+      } catch {
+        return;
+      }
+    }
+    setStep(index);
+  }
+
   useEffect(() => {
     if (phase !== "status" || !submittedAt || currentRunMessages.length || missingResponseLogRef.current || !runId) return;
     const remaining = Math.max(0, 15000 - (Date.now() - submittedAt));
@@ -1673,7 +1755,9 @@ export function EngineeringAgentWizard({
       };
     }),
   }), [technologyChoices]);
+  const showAllUnqualifiedBusOptions = mode !== "can" && recognizedEquipment.communicationSystems.length === 0;
   const recommendedTechnologyOptions = technologyGroup.options.filter((option) => {
+    if (showAllUnqualifiedBusOptions) return true;
     const technology = technologyChoices.find((item) => item.id === option.id);
     return (technology?.implementation_status ?? 'IMPLEMENTED') === 'IMPLEMENTED'
       || recognizedEquipment.communicationSystems.some((system) => technology && technologyMatchesRecognizedSystem(technology, system))
@@ -2216,6 +2300,11 @@ export function EngineeringAgentWizard({
 
   async function submitLinkedDraft() {
     if (draftStartRef.current || effectiveBusy || !linkedDraftStatus?.ready || !projectName.trim() || !scope.length) return;
+    try {
+      await persistProjectName(projectName, projectNameEditRevisionRef.current);
+    } catch {
+      return;
+    }
     draftStartRef.current = true;
     setSubmitting(true); setStatusError('');
     const nextRunId = crypto.randomUUID();
@@ -2244,14 +2333,21 @@ export function EngineeringAgentWizard({
     } finally { draftStartRef.current = false; setSubmitting(false); }
   }
 
-  function handlePrimary() {
+  async function handlePrimary() {
     if (atLastStep || (phase === 'questionnaire' && step === questionnaireSteps.length)) {
       void submitQuestionnaire();
       return;
     }
+    if (questionnaireSteps[step]?.id === "project") {
+      if (!projectReady || !taskReady) return;
+      try {
+        await persistProjectName(projectName, projectNameEditRevisionRef.current);
+      } catch {
+        return;
+      }
+    }
+    if (questionnaireSteps[step]?.id === "architecture" && !architectureReady) return;
     setStep((current) => {
-      if (questionnaireSteps[current]?.id === "project" && (!projectReady || !taskReady)) return current;
-      if (questionnaireSteps[current]?.id === "architecture" && !architectureReady) return current;
       return Math.min(current + 1, questionnaireSteps.length - 1);
     });
   }
@@ -2511,6 +2607,24 @@ export function EngineeringAgentWizard({
     ...unresolvedCommands,
     ...unresolvedConnections.map((chain) => chain.hardware_name),
   ])];
+  const connectionProposals = unresolvedConnections.flatMap(chain => {
+    const proposal = proposedDeviceConnection(chain.hardware_name, selectedDeviceConnectionTypes);
+    return proposal ? [{ name: chain.hardware_name, ...proposal }] : [];
+  });
+  const commandProposals = unresolvedCommands.flatMap(name => {
+    const proposal = proposedActuatorCommand(name);
+    return proposal ? [{ name, ...proposal }] : [];
+  });
+  const acceptDeviceProposals = () => {
+    setTaskText(current => {
+      let next = current;
+      for (const proposal of connectionProposals)
+        next = selectDeviceConnectionInTask(next, proposal.name, proposal.technology);
+      for (const proposal of commandProposals)
+        next = selectActuatorCommand(next, proposal.name, proposal.choice, next);
+      return selectSensorMeasurements(next, resolvedSensorMeasurements);
+    });
+  };
   const unclusteredDeviceRows = deviceRows.filter((row) => !clusterLocationByDevice.has(row.name));
   const renderDeviceControls = (name: string) => {
     const row = deviceRowByName.get(name);
@@ -2785,7 +2899,7 @@ export function EngineeringAgentWizard({
   if (linkedDraftId && phase === 'questionnaire') return <section className="eng-agent-questionnaire" aria-label="Geführte Agent-Rückfrage">
     <h3>Gespeicherten Projektentwurf ausführen</h3>
     <p>Chat und Wizard verwenden denselben Entwurf. Speichere die Angaben, bevor du den gewünschten Workflow startest.</p>
-    <label>Projektname<input value={projectName} maxLength={120} disabled={effectiveBusy} onChange={event => setProjectName(event.target.value)} /></label>
+    <label>Projektname<input value={projectName} maxLength={120} disabled={effectiveBusy} onChange={event => changeProjectName(event.target.value)} /></label>
     <ProjectDraftEditor projectId={projectId} draftId={linkedDraftId} onStateChange={setLinkedDraftStatus} />
     <fieldset disabled={effectiveBusy}><legend>Workflowumfang</legend>
       {SCOPE_GROUP.options.map(option => <label key={option.id}><input type="checkbox" checked={scope.includes(option.id)}
@@ -2824,7 +2938,7 @@ export function EngineeringAgentWizard({
             }
             key={item.id}
             title={item.label}
-            onClick={() => setStep(index)}
+            onClick={() => void navigateQuestionnaireStep(index)}
             type="button"
           >
             {index + 1}
@@ -2841,11 +2955,16 @@ export function EngineeringAgentWizard({
               disabled={effectiveBusy}
               id="engineering-project-name"
               maxLength={120}
-              onChange={(event) => setProjectName(event.target.value)}
+              onChange={(event) => changeProjectName(event.target.value)}
               placeholder="z. B. NIS Restbussimulation"
               value={projectName}
             />
-            <small>Die lesbare Bezeichnung wird im Projektkontext gespeichert. Die technische Projekt-ID bleibt unverändert.</small>
+            <small aria-live="polite">
+              {projectNameSaveStatus === "saving" ? "Projektname wird im Projektkontext gespeichert …"
+                : projectNameSaveStatus === "saved" ? "Projektname im Projektkontext übernommen. Die technische Projekt-ID bleibt unverändert."
+                  : projectNameSaveStatus === "error" ? `Projektname konnte nicht gespeichert werden: ${projectNameSaveError}`
+                    : "Die lesbare Bezeichnung wird im Projektkontext gespeichert. Die technische Projekt-ID bleibt unverändert."}
+            </small>
           </label>
           <label className="agent-questionnaire-note">
             <span>Projektbeschreibung</span>
@@ -3043,7 +3162,7 @@ export function EngineeringAgentWizard({
               ))}
             </ul>
           )}
-          {networkArchitecture === "hybrid_ai" && (
+          {(networkArchitecture === "hybrid_ai" || networkArchitecture === "gateway_segments_hybrid_ai") && (
             <label className="agent-questionnaire-note">
               <span>KI-Leitplanke</span>
               <textarea
@@ -3092,6 +3211,14 @@ export function EngineeringAgentWizard({
           {openDeviceNames.length > 0 && <section className="agent-cluster-review agent-open-device-summary" aria-label="Offene Geräteangaben">
             <h3>Offene Geräteangaben · {openDeviceNames.length}</h3>
             <p>Diese Angaben müssen geklärt werden. Öffne das Gerät im Cluster und lege Messgröße, Stellbefehl oder Anschluss dort fest.</p>
+            {(connectionProposals.length > 0 || commandProposals.length > 0) && <div className="agent-device-proposals">
+              <p>NIS schlägt {connectionProposals.length} Anschlüsse und {commandProposals.length} Stellbefehle aus Gerätefunktion und gewählten Netzen vor. Prüfe die Zuordnung und die Kodierung vor der Bestätigung. Offene Angaben ohne belastbaren Vorschlag bleiben gesperrt.</p>
+              <details><summary>Alle Entwurfsvorschläge anzeigen</summary><ul>
+                {connectionProposals.map(proposal => <li key={`connection:${proposal.name}`}>{proposal.name}: {proposal.technology} · {proposal.reason}</li>)}
+                {commandProposals.map(proposal => <li key={`command:${proposal.name}`}>{proposal.name}: {proposal.choice} · {proposal.reason}</li>)}
+              </ul></details>
+              <button className="button secondary" type="button" disabled={effectiveBusy} onClick={acceptDeviceProposals}>Geprüfte Entwurfsvorschläge übernehmen</button>
+            </div>}
             <ul>{openDeviceNames.map((name) => {
               const clusterId = clusterLocationByDevice.get(name);
               const missing = [
@@ -3792,7 +3919,7 @@ function plannedNetworkConnectionCount(args: {
     .filter((assignment) => assignment.selected)
     .reduce((sum, assignment) => sum + Math.max(0, Number(assignment.devices) || 0), 0);
   if (args.architectureId === "hybrid_ai") return Math.max(selectedClusterDevices, participantConnections);
-  if (args.architectureId === "gateway_ecu_segments") {
+  if (args.architectureId === "gateway_ecu_segments" || args.architectureId === "gateway_segments_hybrid_ai") {
     const ecuSegments = args.clusterAssignments.filter(cluster => cluster.selected).reduce((sum, cluster) => sum + Math.ceil((cluster.tree?.length ?? cluster.counts.ecus ?? 0) / busBranchCapacity(args.participantLimits ?? DEFAULT_BUS_PARTICIPANT_LIMITS, cluster.network_id)), 0);
     return args.equipmentCounts.sensors + args.equipmentCounts.actuators + ecuSegments;
   }

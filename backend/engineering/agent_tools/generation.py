@@ -8,12 +8,74 @@ from ..message_packing import SignalCandidate, pack_signals
 from ..signal_audit import required_signal_bits
 from ..device_classification import DeviceClassificationRegistry
 from ..device_communication import complete_new_controller_status
-from ..repository import get_object
+from ..repository import get_object, list_objects
 from . import proposal_service as proposals
 
 
 def expand(arguments: dict) -> dict:
     return expand_requirement(arguments["prompt"], domain=arguments.get("domain"))
+
+
+def _reviewable_new_ecu_defaults(prompt: str) -> tuple[dict, str, float, list[str]] | None:
+    """Use project evidence for an explicitly requested, unnamed acquisition ECU."""
+    if not re.search(r"\b(?:neue?|eine)\s+ECU\b", prompt, re.I) or not re.search(
+        r"Stellglied|Aktor|actuator", prompt, re.I
+    ):
+        return None
+    nodes = {str(node['id']): node for node in list_objects('HardwareNode', limit=1000)}
+    interfaces = list_objects('Interface', limit=1000)
+    actuator_ids = {node_id for node_id, node in nodes.items()
+                    if node.get('device_type') == 'ActuatorController'}
+    technologies = {str(port.get('interface_type')) for port in interfaces
+                    if str(port.get('hardware_node_id')) in actuator_ids and port.get('interface_type')}
+    if len(technologies) != 1:
+        return None
+    technology = technologies.pop()
+    controller_ids = {node_id for node_id, node in nodes.items()
+                      if node.get('device_type') in {'ECU', 'EmbeddedController'}}
+    controller_interfaces = {str(port['id']) for port in interfaces
+                             if str(port.get('hardware_node_id')) in controller_ids
+                             and port.get('interface_type') == technology}
+    cycles = {float(message['cycle_ms']) for message in list_objects('Message', limit=1000)
+              if str(message.get('interface_id')) in controller_interfaces
+              and message.get('cycle_ms') and not (message.get('configuration') or {}).get('generation_role') == 'COMMAND'}
+    if len(cycles) != 1:
+        return None
+    cycle = cycles.pop()
+    return ({'name': 'StellgliedAbfrageECU', 'device_type': 'ECU'}, technology, cycle, [
+        'Entwurfsname StellgliedAbfrageECU aus dem Auftrag abgeleitet; vor Übernahme prüfen.',
+        f'Anschluss {technology} aus den vorhandenen Stellgliedanschlüssen abgeleitet; vor Übernahme prüfen.',
+        f'Statuszyklus {cycle:g} ms aus dem vorhandenen Controller auf {technology} abgeleitet; vor Übernahme prüfen. '
+        'Der angeforderte 30-Sekunden-Abfragezyklus ist davon unabhängig.'
+    ])
+
+
+def _position_poll_draft(prompt: str, technology: str) -> tuple[list[str], dict | None]:
+    """Describe the approved candidate pairs without inventing CANopen object entries."""
+    if technology.casefold() != 'canopen' or not re.search(r'\b30\s*(?:Sekunden|s)\b', prompt, re.I):
+        return [], None
+    nodes = list_objects('HardwareNode', limit=1000)
+    sensors = {match.group(1): node['name'] for node in nodes
+               if node.get('device_type') == 'SensorController'
+               if (match := re.fullmatch(r'Positionssensor\s*(\d+)', str(node.get('name') or ''), re.I))}
+    actuators = {match.group(1): node['name'] for node in nodes
+                 if node.get('device_type') == 'ActuatorController'
+                 if (match := re.fullmatch(r'Servoantrieb\s*(\d+)', str(node.get('name') or ''), re.I))}
+    keys = sorted(sensors.keys() & actuators.keys(), key=int)
+    if not keys:
+        return [], None
+    pairs = [{'sensor': sensors[key], 'actuator': actuators[key]} for key in keys]
+    notes = [f'Prüfbare Zuordnung: {pair["sensor"]} ↔ {pair["actuator"]}; fachlich bestätigen.' for pair in pairs]
+    notes += [
+        'Prüfbarer Kommunikationsentwurf: alle 30000 ms CANopen-Anfrage durch die neue ECU; '
+        'je zugeordnetem Stellglied eine korrelierte Antwort mit der aktuellen Position. '
+        'Anfrage und Antwort sind gemeinsam auf dem CAN-Bus zu dimensionieren.',
+        'CANopen-Objektverzeichnis, Nutzdatenkodierung, Antwortzeit und Fehlerverhalten sind nicht bestätigt. '
+        'Vor einer ausführbaren Kommunikation und Timing-Freigabe fachlich ergänzen.',
+    ]
+    return notes, {'source': 'project_position_poll_draft', 'technology': 'CANopen',
+                   'interval_ms': 30000, 'mode': 'REQUEST_RESPONSE', 'pairs': pairs,
+                   'review_state': 'CANDIDATE', 'object_dictionary': None, 'encoding': None}
 
 
 def functions(arguments: dict) -> dict:
@@ -23,11 +85,24 @@ def functions(arguments: dict) -> dict:
     new_hardware = arguments.get('new_hardware')
     status_technology = arguments.get('status_technology')
     status_cycle_ms = arguments.get('status_cycle_ms')
+    draft_assumptions = []
+    draft_evidence = []
     if hardware_id and new_hardware:
         raise ValueError('Vorhandene Hardware oder neue Hardware wählen, nicht beides.')
     if hardware_id:
         get_object("HardwareNode", hardware_id)
     else:
+        if not new_hardware or not status_technology or status_cycle_ms is None:
+            draft = _reviewable_new_ecu_defaults(arguments['prompt'])
+            if draft:
+                suggested_hardware, suggested_technology, suggested_cycle, draft_assumptions = draft
+                new_hardware = new_hardware or suggested_hardware
+                status_technology = status_technology or suggested_technology
+                status_cycle_ms = status_cycle_ms if status_cycle_ms is not None else suggested_cycle
+                poll_notes, poll_evidence = _position_poll_draft(arguments['prompt'], status_technology)
+                draft_assumptions.extend(poll_notes)
+                if poll_evidence:
+                    draft_evidence.append(poll_evidence)
         if not isinstance(new_hardware, dict) or not new_hardware.get('name') or not new_hardware.get('device_type'):
             raise ValueError('Welcher Controller führt die Funktionen aus? Vorhandene hardware_id wählen oder Name und Gerätetyp für neue Hardware bestätigen.')
         if not status_technology or status_cycle_ms is None:
@@ -57,8 +132,8 @@ def functions(arguments: dict) -> dict:
             "description": ", ".join(function.get("subfunctions") or [])}})
     complete_new_controller_status(changes, status_technology=status_technology, status_cycle_ms=status_cycle_ms)
     return proposals.create("FUNCTION_STRUCTURE", changes, arguments["prompt"],
-                            assumptions=[*[str(item) for item in expansion["assumptions"]], *([f"Gewählter Statuszyklus: {status_cycle_ms} ms über {status_technology}; Buszuordnung und Timing vor Routing prüfen."] if new_hardware else [])],
-                            evidence=[{"source": "requirement_expansion", "interpretation": expansion["interpretation"]}])
+                            assumptions=[*[str(item) for item in expansion["assumptions"]], *draft_assumptions, *([f"Statuszyklus im Entwurf: {status_cycle_ms} ms über {status_technology}; Buszuordnung und Timing vor Routing prüfen."] if new_hardware else [])],
+                            evidence=[{"source": "requirement_expansion", "interpretation": expansion["interpretation"]}, *draft_evidence])
 
 
 def interfaces(arguments: dict, *, physical: bool = False) -> dict:

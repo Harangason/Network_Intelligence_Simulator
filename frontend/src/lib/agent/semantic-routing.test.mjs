@@ -163,6 +163,18 @@ test("der KI-Hybrid kombiniert ECU-vermittelte und direkte Gateway-Pfade", () =>
   );
 });
 
+test("V4 plus KI-Hybrid erhält begrenzte Gateway-Segmente und direkte Sensorpfade", () => {
+  const specification = extractEngineeringSpecification(`${SAMPLE}\n- 100 Aktoren\n`);
+  const plans = semanticRoutePlans(specification.chains, "gateway_segments_hybrid_ai", {can_fd:7, can:7, automotive_ethernet:7, lin:7});
+  const gatewaySegments = plans.filter((plan) => plan.source.device_type === "Gateway");
+  const directSensors = plans.filter((plan) => plan.source.device_type === "SensorController"
+    && plan.destinations[0]?.device_type === "Gateway");
+  assert.ok(gatewaySegments.length >= Math.ceil(50 / 6));
+  assert.equal(gatewaySegments.every((plan) => plan.destinations.length <= 6), true);
+  assert.equal(gatewaySegments.reduce((sum, plan) => sum + plan.destinations.length, 0), 50);
+  assert.ok(directSensors.length > 0);
+});
+
 test("Variante 1 gruppiert ihre ECU-Gateway-Pfade ebenfalls nach Fachsegment", () => {
   const specification = extractEngineeringSpecification(SAMPLE);
   const plans = semanticRoutePlans(specification.chains, "eva");

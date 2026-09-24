@@ -179,8 +179,8 @@ def repair_preview(_):
 def structure_preview(arguments):
     from ..structure_transfer import analyze_ecu_transfer
     from .specialist import review_or_report
-    result = analyze_ecu_transfer({'source_hardware_id': arguments['source_hardware_id'],
-                                 'target_hardware_ids': arguments['target_hardware_ids']})
+    result = analyze_ecu_transfer({'source_hardware_id': arguments.get('source_hardware_id'),
+                                 'target_hardware_ids': arguments.get('target_hardware_ids')})
     result['agent_review'] = review_or_report('ECU-Strukturtransfer: Quellstruktur und jedes Ziel auf fachliche Eignung prüfen',
         [{'id': target['proposal_id'], **target} for target in result['targets']])
     return result

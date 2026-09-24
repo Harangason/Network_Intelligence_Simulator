@@ -1633,3 +1633,117 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:network-simulator-master-targeted-reuse-r2-20260923 -->
+
+<!-- tool-check:nis-ea-three-run-20260923 -->
+## Tool Check: nis-ea-three-run-20260923
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260923\complete-suite-95.json
+- Source Hash: 07bbedb5ebfc25eca600064a1864affb4e3da6941e1aadd4963075e0b870d6f1
+- Status: ACTIVE
+- Last Ingest: 2026-09-23T22:25:33.907306+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-three-run-20260923\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-ea-three-run-20260923 -->
+
+<!-- tool-check:nis-ea-two-run-20260924 -->
+## Tool Check: nis-ea-two-run-20260924
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-two-runs\complete-suite-95.json
+- Source Hash: 6a21db37dc2a6906cb4338378d482d9105b08e5b5351b3c38ddaa1f7b1095445
+- Status: ACTIVE
+- Last Ingest: 2026-09-24T04:27:17.850732+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-two-run-20260924\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-ea-two-run-20260924 -->
+
+<!-- tool-check:smoke-consistency-20260924 -->
+## Tool Check: smoke-consistency-20260924
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\reports\smoke-consistency-20260924\suite-source.json
+- Source Hash: 45d382c7975967dbdb01811e2e9cb4da7d86a714568d69da59412a80a63e7859
+- Status: ACTIVE
+- Last Ingest: 2026-09-24T07:21:33.376258+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\smoke-consistency-20260924\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:smoke-consistency-20260924 -->
+
+<!-- tool-check:nis-ea-single-run-20260924 -->
+## Tool Check: nis-ea-single-run-20260924
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\combined-source.md
+- Source Hash: 0a862deeae79099b57b74d4be896568961814763fcb2d3f7d370157b497af836
+- Status: ACTIVE
+- Last Ingest: 2026-09-24T11:09:06.672587+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-single-run-20260924\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-ea-single-run-20260924 -->
+
+<!-- tool-check:nis-ea-independent-run1-20260924 -->
+## Tool Check: nis-ea-independent-run1-20260924
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\complete-suite-95.json
+- Source Hash: b181553a0a060310e790fe4cd7d31e5f274815e3545d0df104830f3ef4aa058d
+- Status: ACTIVE
+- Last Ingest: 2026-09-24T14:13:03.232615+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-independent-run1-20260924\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-ea-independent-run1-20260924 -->
+
+<!-- tool-check:nis-ea-independent-run1-20260924-exec -->
+## Tool Check: nis-ea-independent-run1-20260924-exec
+
+- Category: Tool Check
+- Skill: tool-checker
+- Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\combined-source.md
+- Source Hash: 0a862deeae79099b57b74d4be896568961814763fcb2d3f7d370157b497af836
+- Status: ACTIVE
+- Last Ingest: 2026-09-24T14:16:38.507893+00:00
+- Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-independent-run1-20260924-exec\manifest.json
+
+Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
+Perform UI checks with the available browser skill and actual browser tools.
+PASS requires stored evidence and verified completion criteria.
+Default presentation: PROGRESS. Percentage, status and step counters come from runtime events.
+Progress rendering never invokes an LLM. Full local logs are shown only on request.
+This task registration does not replace project contracts or confer new permissions.
+<!-- /tool-check:nis-ea-independent-run1-20260924-exec -->

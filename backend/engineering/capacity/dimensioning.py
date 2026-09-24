@@ -387,12 +387,11 @@ def dimension_communications(rows, parameters, history=None):
                 reasons.append("Reservierte LIN-Slots lassen zu wenig Reserve.")
             attempts.append({"floor_ms": period_floor, "status": check["status"], "fits": fits,
                              "load_percent": check.get("nominal_load_percent"), "slot_load_percent": check.get("slot_load_percent"), "reasons": reasons})
-            if fits:
+            if fits and chosen is None:
                 chosen = (candidate, check, period_floor)
-                break
         entry = {"network_id": network_id, "network_name": current[0].get("network_name") or network_id,
                  "protocol": current[0].get("protocol"), "fingerprint": fingerprint, "attempts": attempts,
-                 "status": "UNRESOLVED", "explanation": "Kein zulässiger Zyklus gefunden; Packing, Bitrate, Busaufteilung oder Anforderungen prüfen."}
+                 "status": "UNRESOLVED", "explanation": "Keine geprüfte Zyklusvariante erfüllt die bestätigten Grenzen. Technologieparameter und Frame-Kodierung blieben unverändert; einen Serialisierungsengpass lösen Zyklusänderungen allein nicht."}
         if chosen:
             candidate, check, selected_floor = chosen
             entry.update(status=check["status"], schedule=check, selected_floor_ms=selected_floor,

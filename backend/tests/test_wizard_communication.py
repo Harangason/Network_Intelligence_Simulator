@@ -21,7 +21,7 @@ def fixture():
     return prompt, graph
 
 
-def test_unconfirmed_controller_status_remains_a_review_finding_before_routing():
+def test_unrequested_controller_status_stays_internal_before_routing():
     prompt, graph = fixture()
     plan = communication_plan(prompt, graph)
     expected = {'sensor': ['ecu'], 'actuator': ['ecu'], 'command': ['actuator'],
@@ -30,8 +30,9 @@ def test_unconfirmed_controller_status_remains_a_review_finding_before_routing()
     for key, config in plan.items():
         graph['Message'][key]['configuration'] = config
     findings = contract_findings(graph)
-    assert len(findings) == 3
-    assert {finding['code'] for finding in findings} == {'COMMUNICATION_CONTRACT_INVALID'}
+    assert findings == []
+    assert all(plan[key]['communication_contract']['role'] == 'INTERNAL_STATE'
+               and plan[key]['routing']['enabled'] is False for key in ('ecu', 'gateway', 'diag'))
     assert communication_plan(prompt, graph) == plan
 
 
@@ -149,8 +150,8 @@ def test_controller_status_does_not_default_to_diagnosis_and_old_generated_fallb
     config = communication_plan(prompt, graph)['ecu']
 
     assert config['transport_unit']['consumer_refs'] == []
-    assert config['communication_contract']['role'] == 'UNRESOLVED'
-    assert 'muss vor der Modellfreigabe ergänzt werden' in config['communication_contract']['basis']
+    assert config['communication_contract']['role'] == 'INTERNAL_STATE'
+    assert config['routing']['enabled'] is False
 
 
 def test_retiring_generated_diagnostic_default_preserves_other_explicit_consumers():
@@ -183,15 +184,15 @@ def test_confirmed_function_route_is_the_only_controller_monitor_source():
     assert config['communication_contract']['role'] == 'DEVICE_STATUS'
 
 
-def test_single_controller_keeps_an_explicit_unresolved_review_finding():
+def test_single_controller_without_external_recipient_keeps_status_internal():
     prompt, graph = fixture()
     graph['HardwareNode'] = {'ecu': graph['HardwareNode']['ecu']}
     graph['Message'] = {'ecu': graph['Message']['ecu']}
     prompt = '- Systemcluster-Graph: [{"controllers":[{"ecu":"Motor"}]}]'
     plan = communication_plan(prompt, graph)
     graph['Message']['ecu']['configuration'] = plan['ecu']
-    assert plan['ecu']['communication_contract']['role'] == 'UNRESOLVED'
-    assert contract_findings(graph)
+    assert plan['ecu']['communication_contract']['role'] == 'INTERNAL_STATE'
+    assert contract_findings(graph) == []
 
 
 def test_single_local_regulation_keeps_unrequested_controller_status_internal():
@@ -211,7 +212,7 @@ def test_single_local_regulation_keeps_unrequested_controller_status_internal():
     plan = communication_plan(prompt, graph)
 
     assert plan['ecu']['communication_contract']['role'] == 'INTERNAL_STATE'
-    assert plan['ecu']['communication_contract']['scope'] == 'FUNCTION_OUTPUT'
+    assert plan['ecu']['communication_contract']['scope'] == 'INTERNAL'
     assert plan['ecu']['routing']['enabled'] is False
     assert plan['sensor']['transport_unit']['consumer_refs'] == ['ecu']
     assert plan['actuator']['transport_unit']['consumer_refs'] == ['ecu']
@@ -228,7 +229,7 @@ def test_confirmed_local_status_excludes_only_controller_output_from_transport()
     prompt = '- Systemcluster-Graph: ' + json.dumps([{'controller_status_scope': 'INTERNAL',
         'controllers': [{'ecu': 'Motor', 'sensors': ['Temperatur'], 'actuators': ['Ventil']}]}])
     plan = communication_plan(prompt, graph)
-    assert plan['ecu']['communication_contract']['scope'] == 'FUNCTION_OUTPUT'
+    assert plan['ecu']['communication_contract']['scope'] == 'INTERNAL'
     assert plan['ecu']['routing']['enabled'] is False
     assert plan['sensor']['transport_unit']['consumer_refs'] == ['ecu']
     assert plan['actuator']['transport_unit']['consumer_refs'] == ['ecu']

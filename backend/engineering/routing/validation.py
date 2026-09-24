@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 
 from ..db import get_connection
 from ..project_context import current_project_id
+from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 
 PROTOCOL_CAPACITY = {
     "CAN": (500_000, 8),
@@ -46,6 +47,7 @@ PROTOCOL_CAPACITY = {
 
 INTERFACE_PROTOCOLS = {
     "CAN": {"CAN"},
+    "CANopen": {"CAN"},
     "CAN_FD": {"CAN", "CAN_FD"},
     "CAN_XL": {"CAN", "CAN_FD", "CAN_XL"},
     "LIN": {"LIN"},
@@ -71,6 +73,17 @@ INTERFACE_PROTOCOLS = {
     "PCIe": {"PCIE"},
     "Other": set(PROTOCOL_CAPACITY),
 }
+
+
+def physical_route_technology(value):
+    """Resolve an application interface to the physical layer in its profile."""
+    registry = DEFAULT_TECHNOLOGY_REGISTRY
+    identifier = registry.normalize_id(str(value or ''))
+    profile = registry.profile(identifier)
+    stack = tuple(profile.get('default_stack') or ())
+    if profile.get('layer') == 'APPLICATION' and stack and stack[0].upper() in PROTOCOL_CAPACITY:
+        return stack[0].upper()
+    return str(value or '')
 
 
 def detect_routing_loop(hops: list[Any]) -> list[str]:
@@ -227,7 +240,8 @@ class RoutingValidator:
         for port in ports:
             network = str(port.get('network_ref') or '')
             if network:
-                by_node.setdefault(str(port['hardware_node_id']), {}).setdefault(network, set()).add(str(port['technology']))
+                by_node.setdefault(str(port['hardware_node_id']), {}).setdefault(network, set()).add(
+                    physical_route_technology(port['technology']))
         declared = {(str(item.get('source_node_id')), str(item.get('target_node_id'))): str(item.get('network_id') or '')
                     for item in path.get('transport_segments') or [] if isinstance(item, dict)}
         destination_networks = {str(item.get('node_id')): str(item.get('network_id') or '') for item in destinations}

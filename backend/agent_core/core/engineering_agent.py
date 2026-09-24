@@ -131,13 +131,15 @@ class EngineeringAgent:
                 proposals[result.data["proposal_id"]] = result.data
                 return result.data
             return proposal
+        previous_requirement = next((str(item.get('content') or '') for item in reversed(history or [])
+                                     if item.get('role') == 'user'), '')
         answer = bool(context.answered_questions)
         if not answer:
             context = context.model_copy(update={"current_requirement": prompt})
         if context.current_workload and not str(context.current_workload).startswith('goal-') and not re.search(r"weiter|fort|status|prüf|pruef|continue|resume",prompt,re.I):
             context.current_workload = None
         event("PROGRESS", status="RECEIVED", text="Auftrag aufgenommen.")
-        from ..orchestration.capability_intent import connectivity_question, signal_inspection, finding_assessment
+        from ..orchestration.capability_intent import connectivity_question, signal_inspection, finding_assessment, problem_report_question
         assessment = finding_assessment(prompt) if not context.wizard_request else None
         if assessment:
             result = await call('inspect_saved_finding', {'code': assessment[0], 'reference': assessment[1]})
@@ -152,6 +154,68 @@ class EngineeringAgent:
             status = 'ANSWERED' if items else 'INCOMPLETE'
             event('RESULT', status=status, text=text, data=result.data)
             return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        problem_mode = problem_report_question(prompt, previous_requirement) if not context.wizard_request and not answer else None
+        if problem_mode:
+            event('PROGRESS', status='IN_PROGRESS', text='Aktuelle Projektbefunde aus den Fachdiensten lesen.')
+            result = await call('inspect_findings')
+            if not result.success or not isinstance(result.data, dict):
+                text = 'Die aktuellen Projektbefunde konnten nicht gelesen werden. Die Werkzeugbefunde zeigen die Ursache.'
+                event('RESULT', status='INCOMPLETE', text=text)
+                return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            data = result.data
+            issues = [item for item in data.get('findings', []) if isinstance(item, dict)]
+            open_issues = [item for item in issues if str(item.get('status') or 'OPEN').upper() != 'APPROVED']
+            shown = open_issues[:30]
+            for item in shown:
+                cause = str(item.get('detected_cause') or '').strip()
+                recommendation = str(item.get('recommendation') or '').strip()
+                detail = str(item.get('problem') or item.get('message') or item.get('code') or 'Unbenannter Befund')
+                if cause:
+                    detail += '\nUrsache: ' + cause
+                if recommendation:
+                    detail += '\nNächster Schritt: ' + recommendation
+                event('FINDING', title=str(item.get('category') or 'Projektbefund')[:300],
+                      severity=str(item.get('severity') or 'WARNING'), text=detail[:30000],
+                      metadata={'code': item.get('code'), 'object_type': item.get('object_type'),
+                                'object_id': item.get('object_id'), 'source_trace_id': result.trace_id})
+            provenance = data.get('provenance') or {}
+            evidence = {'source': provenance.get('calculation_service') or 'IntelligenceService',
+                        'calculated_at': provenance.get('timestamp'),
+                        'assessment_mode': (data.get('results') or {}).get('assessment_mode'),
+                        'open_count': len(open_issues), 'shown_count': len(shown),
+                        'approved_count': len(issues) - len(open_issues),
+                        'source_trace_id': result.trace_id}
+            counts = {severity: sum(str(item.get('severity') or '').upper() == severity for item in open_issues)
+                      for severity in ('ERROR', 'WARNING', 'INFO')}
+            text = (f"{len(open_issues)} offene Projektbefunde: {counts['ERROR']} Fehler, "
+                    f"{counts['WARNING']} Warnungen, {counts['INFO']} Hinweise.")
+            if len(open_issues) > len(shown):
+                text += f' {len(shown)} davon sind hier einzeln aufgeführt; die vollständige Liste steht in Data Science & Intelligence.'
+            if evidence['assessment_mode'] == 'DIAGNOSTIC':
+                text += ' Die Bewertung ist diagnostisch; aktuelle Simulations- oder Prüfnachweise fehlen teilweise.'
+            status = 'ANSWERED'
+            if problem_mode == 'EXPLAIN' and shown:
+                if self.reasoner:
+                    event('PROGRESS', status='PLANNING', text='Lokale KI erklärt die bereits ermittelten Befunde.')
+                    try:
+                        explanation = await asyncio.wait_for(
+                            self.reasoner.explain_findings(prompt, shown, evidence),
+                            timeout=min(_local_planning_timeout_seconds(), 180),
+                        )
+                        if explanation.strip():
+                            text += '\n\nKI-Einordnung: ' + explanation.strip()[:3500]
+                        else:
+                            status = 'INCOMPLETE'
+                    except (TimeoutError, RuntimeError, AttributeError, ValueError):
+                        status = 'INCOMPLETE'
+                else:
+                    status = 'INCOMPLETE'
+                if status == 'INCOMPLETE':
+                    text += '\n\nDie KI-Einordnung ist derzeit nicht verfügbar. Die Fachbefunde oben bleiben gültig.'
+            event('RESULT', status=status, text=text, data=evidence)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': []}
         if not context.wizard_request and context.input_envelope.user_intent == 'ANALYZE_TRACE':
             jobs = {ref['id'] for ref in context.selected_object_refs if ref.get('object_type') == 'SimulationRun' and ref.get('id')}
             if len(jobs) != 1:
@@ -604,6 +668,29 @@ class EngineeringAgent:
                 event('RESULT', status=status, text=text)
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                         'context': context.model_dump(), 'trace': traces, 'proposals': []}
+            safety_unverified = re.search(r'\bFSoE\b', prompt, re.I) and any(
+                str(item.get('code') or '') == 'COMMUNICATION_UNVERIFIED'
+                for item in result.data.get('findings') or [] if isinstance(item, dict)
+            )
+            if safety_unverified:
+                required = ['Worst-Case-Geräteverzögerungen', 'FSoE-Watchdog/Timeout',
+                            'bestätigte EtherCAT-Topologie und Master-Zeitplan',
+                            'zulässige Ende-zu-Ende-Reaktionszeit']
+                text = ('Der 4-ms-Safety-Zyklus allein belegt keine deterministische Reaktionszeit. '
+                        'Bitte ergänze die Worst-Case-Geräteverzögerungen, den FSoE-Watchdog/Timeout, '
+                        'die bestätigte EtherCAT-Topologie mit Master-Zeitplan und die zulässige '
+                        'Ende-zu-Ende-Reaktionszeit. Bis dahin bleibt die Safety-Freigabe gesperrt.')
+                event('FINDING', severity='ERROR', text=text,
+                      metadata={'code': 'SAFETY_TIMING_INPUT_REQUIRED', 'required_inputs': required})
+                event('SINGLE_SELECT', text=text,
+                      question_id=f"wizard-safety-timing:{(context.wizard_request or {}).get('revision') or run_id}",
+                      metadata={'required_inputs': required},
+                      options=[{'id': 'amend_safety_timing', 'label': 'Zeitangaben über Ergänzen liefern',
+                                'description': 'Den aktuellen Auftrag mit den vier konkreten Angaben ergänzen.'},
+                               {'id': 'hold_safety_release', 'label': 'Safety-Freigabe aussetzen',
+                                'description': 'Der Prüfstand bleibt sichtbar, ohne deterministische Freigabe.'}])
+                return {'run_id': run_id, 'status': 'BLOCKED', 'text': text, 'events': events,
+                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
             overview = (result.data.get('results') or {}).get('overview') or {}
             route_count = int(overview.get('route_count') or 0)
             message_count = len((result.data.get('results') or {}).get('messages') or [])
@@ -619,7 +706,7 @@ class EngineeringAgent:
                     str(item.get('network_id') or '') for item in capacity_networks if isinstance(item, dict)
                 }
                 confirmed_gateway_segments = bool(re.search(
-                    r'^- Netzarchitektur-ID:\s*gateway_ecu_segments\s*$', prompt, re.I | re.M
+                    r'^- Netzarchitektur-ID:\s*(?:gateway_ecu_segments|gateway_segments_hybrid_ai)\s*$', prompt, re.I | re.M
                 ))
                 segment_rule_missing = confirmed_gateway_segments and not any(
                     re.search(r'-S\d+$', network_id, re.I) for network_id in physical_segment_ids
@@ -885,6 +972,36 @@ class EngineeringAgent:
             return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': []}
 
+        from ..runtime.hardware_intent import simple_hardware_intent
+        if not context.wizard_request and not answer and not context.current_workload and simple_hardware_intent(prompt):
+            result = await call('prepare_hardware_request', {'prompt': prompt})
+            status = 'INCOMPLETE'
+            text = 'Der Hardwarevorschlag konnte nicht vorbereitet werden. Die Befunde zeigen die Ursache.'
+            if result.success:
+                for finding in result.data.get('findings', []):
+                    event('FINDING', severity=finding['severity'], text=finding['message'], metadata={'code': finding['code']})
+                proposal = result.data.get('proposal')
+                if result.data.get('status') == 'WAITING_FOR_ENGINEERING_DECISION':
+                    status = 'WAITING_FOR_ENGINEERING_DECISION'
+                    text = result.data['findings'][0]['message']
+                elif proposal:
+                    proposals[proposal['proposal_id']] = proposal
+                    if proposal.get('status') in {'VALIDATED', 'APPROVED'}:
+                        status = 'READY_FOR_REVIEW'
+                        text = 'Die angeforderte Hardware ist als validierter Vorschlag vorbereitet. Bitte prüfen und übernehmen.'
+                        event('APPROVAL', proposal=proposal, text=text)
+                    else:
+                        text = 'Der Hardwarevorschlag ist noch nicht gültig. Die Validierungsbefunde müssen geklärt werden.'
+                        event('FINDING', severity='ERROR', text=text, data=proposal.get('validation_result'))
+                elif result.data.get('reused_objects'):
+                    status = 'INCOMPLETE'
+                    text = 'Die Hardware für diese Anforderung existiert bereits und wurde wiederverwendet. Es wurde kein Duplikat angelegt.'
+                    if result.data.get('findings'):
+                        text += ' Die Datenerfassung ist noch nicht konfiguriert.'
+            event('RESULT', status=status, text=text, data=result.data)
+            return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(),
+                    'trace': traces, 'proposals': list(proposals.values())}
+
         # Explicit structured decisions precede the existing proposal pipeline.
         if re.search(r'kamera|camera', prompt, re.I) and re.search(r'umfeld|umgebung|überwach|ueberwach|erkenn|vision|360', prompt, re.I) and not re.search(r'^\s*(zeige|liste|welche|inspect)|\d+\s+(?:Funktion(?:en)?|functions?|Signal(?:e)?|signals?)\b', prompt, re.I):
             from ..orchestration.camera_dialog import next_camera_decision
@@ -973,6 +1090,26 @@ class EngineeringAgent:
             text = ("Alle Zielzahlen und Prüfkriterien sind erfüllt. Die Vorschläge warten auf deine Freigabe."
                     if status == "READY_FOR_REVIEW" else "Der Auftrag ist vollständig übernommen."
                     if status == "COMPLETED" else "Der Auftrag ist noch offen. Die Findings zeigen die fehlenden Voraussetzungen.")
+        elif (not answer and requests_model_change(prompt)
+              and re.search(r'\b(?:eine|neue?)\s+ECU\b', prompt, re.I)
+              and re.search(r'Stellglied|Aktor|actuator', prompt, re.I)
+              and re.search(r'\babfrag\w*\b', prompt, re.I)):
+            result = await call('generate_functions', {'prompt': prompt, 'domain': context.project_domain})
+            if result.success and isinstance(result.data, dict) and result.data.get('proposal_id'):
+                await validate_proposal(result.data)
+            for proposal in proposals.values():
+                event('APPROVAL', proposal=proposal, text=proposal['rationale'])
+            if proposals:
+                text = ('Der ECU-Entwurf liegt zur Prüfung vor. Anschluss und Statuszyklus sind als Annahmen markiert. '
+                        'Die 30-Sekunden-Abfrage benötigt danach noch einen eigenen Kommunikations- und Timingnachweis.')
+                status = 'READY_FOR_REVIEW' if all(p['status'] == 'VALIDATED' for p in proposals.values()) else 'INCOMPLETE'
+            else:
+                text = ('Der ECU-Entwurf konnte nicht validiert werden. Die Werkzeugbefunde zeigen, '
+                        'welche Projektangaben oder Verbindungen fehlen.')
+                status = 'INCOMPLETE'
+            event('RESULT', status=status, text=text)
+            return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
+                    'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
         elif not answer and re.search(r"erzeug|erstell|benötig|benoetig|entwerf|modelli|generate|create", prompt, re.I) and re.search(r"funktion|function", prompt, re.I) and not re.search(r"vollständig|komplett|gesamte|complete|full", prompt, re.I):
             selected = next((ref for ref in context.selected_object_refs if ref.get("object_type")=="HardwareNode"), {})
             if not selected.get('id'):
@@ -1018,6 +1155,7 @@ class EngineeringAgent:
             allowed = select_tools(prompt,tools)
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
             evidence_retries = 0
+            planning_timeouts = 0
             failed_calls = {}
             completed_calls = set()
             stalled = False
@@ -1027,12 +1165,27 @@ class EngineeringAgent:
                 for step in range(self.max_steps):
                     remaining = deadline - asyncio.get_running_loop().time()
                     if remaining <= 0:
-                        text = 'Das Analysezeitbudget ist erreicht. Die bisherigen Werkzeugbefunde bleiben erhalten; bitte den Prüfbereich eingrenzen.'
+                        from ..runtime.recovery import RecoveryManager
+                        failure = RecoveryManager().classify(TimeoutError())
+                        event('FINDING', severity='ERROR', text=failure['message'], metadata={'failure': failure})
+                        status, text = failure['status'], failure['message']
                         break
                     try:
-                        decision = await asyncio.wait_for(self.reasoner.next(messages, context, allowed), timeout=min(45, remaining))
+                        decision = await asyncio.wait_for(self.reasoner.next(messages, context, allowed),
+                                                          timeout=min(_local_planning_timeout_seconds(), remaining))
                     except TimeoutError:
-                        text = 'Die Agentenplanung hat ihr Zeitlimit erreicht. Die bisherigen Werkzeugbefunde bleiben erhalten; die Analyse ist unvollständig.'
+                        # Retry planning only: no previously executed tool is replayed.
+                        # The original overall budget and maximum steps remain binding.
+                        planning_timeouts += 1
+                        if planning_timeouts == 1 and step + 1 < self.max_steps and asyncio.get_running_loop().time() < deadline:
+                            event('PROGRESS', status='PLANNING', text='Die Planung hat nicht rechtzeitig geantwortet. Ein Wiederholungsversuch setzt mit den gespeicherten Werkzeugbefunden fort.',
+                                  metadata={'recovery_code': 'PLANNING_RETRY', 'attempt': 1})
+                            continue
+                        from ..runtime.recovery import RecoveryManager
+                        failure = RecoveryManager().classify(TimeoutError())
+                        event('FINDING', severity='ERROR', text=failure['message'], metadata={'failure': failure})
+                        status = failure['status']
+                        text = failure['message']
                         break
                     if not decision.get("calls"):
                         reviewed_changes = bool(proposals) and all(p.get('status') == 'VALIDATED' and p.get('changes') for p in proposals.values())

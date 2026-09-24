@@ -1,0 +1,45 @@
+{
+  "phase": "FULL_TEST",
+  "build_id": "760546b8c65a",
+  "findings": [
+    {
+      "id": "AUDIT-01",
+      "priority": "P1",
+      "status": "OPEN",
+      "classification": "CONTRACT_AND_ACCEPTANCE_MISMATCH",
+      "summary": "The captured large request and native small Automotive browser journey cannot pass model review because generated controller/status messages lack confirmed consumers.",
+      "evidence": ["backend.xml", "workflow-large.log", "browser.json", "browser/wizard-new-small-wizard-tr-c83d1-rvives-reload-restart-small/error-context.md"],
+      "cause": "Communication design rule 14 forbids the old automatic diagnostic/gateway monitoring consumer. wizard_communication.communication_plan now leaves those recipients UNRESOLVED and contract_findings rejects them; legacy positive fixtures still assume full validation. The native small browser case supplies prose but no confirmed per-message display/functional destinations.",
+      "impact": "10 backend failures, 4 fixture setup errors, 2 browser failures, large HTTP acceptance failure. Small HTTP with explicit routes and both nonautomotive browser scenarios pass.",
+      "required_resolution": "Reconcile the unchanged captured acceptance requirement with explicit reviewed status recipients or an explicit local-output decision; preserve the original scenario as a negative/review-gate regression. Do not invent receivers or weaken validation to turn this green."
+    },
+    {
+      "id": "AUDIT-02",
+      "priority": "P2",
+      "status": "OPEN",
+      "classification": "PRODUCT_BUG",
+      "summary": "Expected invalid-input and missing-resource cases escape as HTTP 500.",
+      "cause": "ValueError from record_hardware_fact is not mapped, get_goal raises generic LookupError, structure_preview indexes missing request fields before the domain validator, and plan_zoning indexes absent topology nodes/edges.",
+      "impact": "6 method bindings fail dispatch smoke.",
+      "evidence": ["http-smoke.json", "service-backend.log"],
+      "required_resolution": "Use existing domain validation/not-found errors, retain conflict responses and rollback, and reject missing topology explicitly."
+    },
+    {
+      "id": "AUDIT-03",
+      "priority": "P2",
+      "status": "OPEN",
+      "classification": "PRODUCT_BUG",
+      "summary": "Browsing storage directories on a new project returns 503 before its first simulation has created the default runs directory.",
+      "cause": "TraceStorage.directories calls scandir on a lazily-created default project output directory.",
+      "evidence": ["http-smoke.json"],
+      "required_resolution": "Represent an absent unused default folder as an empty listing without hiding explicit unavailable custom storage or permission errors."
+    }
+  ],
+  "limits": [
+    "No deployment or production-stack tests.",
+    "Development test image built from current source with existing runtime dependencies; no release PASS.",
+    "Local-model quality and optional large-result benchmark were explicitly skipped by existing suite; no LLM-quality acceptance claimed.",
+    "68 existing browser cases include 40 inventory checks, not 40 complete nine-stage projects.",
+    "774 Python syntax checks and targeted contract/source review are not an exhaustive proof of every possible code path."
+  ]
+}

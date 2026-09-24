@@ -141,6 +141,28 @@ def test_restart_recovers_execution_and_unexpired_conversation_lease(request_cas
     assert workflow['context']['agent_execution']['owner_turn_id'] == result.data['run_id']
 
 
+def test_restart_releases_lease_after_ready_checkpoint(request_case, monkeypatch):
+    accepted = start(request_case)
+    authority, context, _, _ = request_case
+
+    def mark_ready():
+        service = WorkflowStatusService(authority.project_id)
+        execution = service.get(summary=True)['context']['agent_execution']
+        service.set_context({'agent_execution': {**execution, 'state': 'READY_TO_CONTINUE'}}, summary=True)
+    invoke(authority, mark_ready)
+    before = invoke(authority, conversation.read).data
+    assert before['run_id'] == accepted['run_id']
+
+    monkeypatch.setattr('backend.engineering.agent_tools.run_status.SERVER_INSTANCE_ID', 'new-ready-worker')
+    assert recover_interrupted_wizard_runs(authority.project_id) == 0
+    ready = invoke(authority, lambda: WorkflowStatusService(authority.project_id).get(summary=True)).data
+    assert ready['context']['agent_execution']['state'] == 'READY_TO_CONTINUE'
+    assert invoke(authority, conversation.read).data['run_id'] is None
+    result = invoke(authority, lambda: conversation.begin('', context,
+        wizard_command=continuation(request_case, accepted)))
+    assert result.success, result.findings
+
+
 def test_expired_question_rejects_stale_answer_without_blocking_resume(request_case):
     accepted = start(request_case)
     authority, context, _, _ = request_case

@@ -84,9 +84,37 @@ def recover_interrupted_wizard_runs(project_id: str | None = None) -> int:
             """ + project_filter + " RETURNING project_id, context->'agent_execution'->>'run_id' AS wizard_run_id",
             tuple(parameters),
         ).fetchall()
+        # A restart can also interrupt the conversation after an artifact was
+        # committed as READY_TO_CONTINUE or REVIEW_REQUIRED, but before the
+        # agent turn released its lease. Keep that checkpoint and release the
+        # dead process's lease so the next explicit continuation can start.
+        checkpoint_patch = json.dumps({
+            "server_pid": current_pid,
+            "server_instance_id": SERVER_INSTANCE_ID,
+            "updated_at": _now(),
+        })
+        checkpoint_rows = connection.execute(
+            """
+            UPDATE engineering_workflow_projects
+            SET context = jsonb_set(
+                    context, '{agent_execution}',
+                    (context -> 'agent_execution') || %s::jsonb, true
+                ), updated_at = now()
+            WHERE context -> 'agent_execution' ->> 'state'
+                  IN ('READY_TO_CONTINUE', 'REVIEW_REQUIRED', 'BLOCKED')
+              AND (COALESCE(context -> 'agent_execution' ->> 'server_pid', '') <> %s
+                   OR COALESCE(context -> 'agent_execution' ->> 'server_instance_id', '') <> %s)
+              AND EXISTS (
+                    SELECT 1 FROM engineering_agent_conversations AS conversation
+                    WHERE conversation.project_id = engineering_workflow_projects.project_id
+                      AND conversation.state ->> 'run_id' IS NOT NULL
+                )
+            """ + project_filter + " RETURNING project_id, context->'agent_execution'->>'run_id' AS wizard_run_id",
+            (checkpoint_patch, str(current_pid), SERVER_INSTANCE_ID, *parameters[3:]),
+        ).fetchall()
         # Recovery transfers both halves of ownership in the same transaction.
         # A dead conversation lease must not reject the first resumed command.
-        for row in rows:
+        for row in [*rows, *checkpoint_rows]:
             conversation = connection.execute(
                 'SELECT state FROM engineering_agent_conversations WHERE project_id=%s FOR UPDATE',
                 (row['project_id'],),

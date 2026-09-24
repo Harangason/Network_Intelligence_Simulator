@@ -13,6 +13,9 @@ from .naming import new_bus_name, ethernet_context, is_ethernet
 
 def technology_id(value):
     normalized = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(str(value or ''))
+    if normalized == 'canopen':
+        profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(normalized)
+        return str(profile['default_stack'][0])
     return 'ethernet' if normalized == 'automotive_ethernet' else normalized
 
 

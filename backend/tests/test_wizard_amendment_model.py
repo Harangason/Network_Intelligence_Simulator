@@ -128,6 +128,23 @@ def test_explicit_network_parameter_amendment_is_not_silently_ignored(applied_mo
     assert call(model.model_revision) == before
 
 
+@pytest.mark.parametrize('field,value', [
+    ('controller_status_scope', 'INTERNAL'),
+    ('functional_routes', [{'source': 'Motorsteuerung', 'target': 'Anzeige'}]),
+])
+def test_unapplied_model_can_amend_communication_decisions_but_applied_model_requires_review(
+        monkeypatch, field, value):
+    graph = deepcopy(GRAPH)
+    graph[0][field] = value
+    prompt = PROMPT + '\n\nBestaetigte Ergaenzung des Nutzers:\n- Systemcluster-Graph: ' + json.dumps(graph)
+    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _: {'chains': []})
+    wizard_generation._check_existing_amendment_semantics(
+        prompt, {'chains': []}, {'HardwareNode': []}, {})
+    with pytest.raises(ValueError, match='Kommunikations- und Routingvorschlag'):
+        wizard_generation._check_existing_amendment_semantics(
+            prompt, {'chains': []}, {'HardwareNode': [{'name': 'Motorsteuerung'}]}, {})
+
+
 @pytest.mark.parametrize('field,new_value', [('cycle_ms', 5), ('length_bits', 12), ('factor', 0.5),
                                           ('transport_network_ref', 'AnotherNetwork')])
 def test_existing_signal_technical_amendment_is_a_concrete_conflict(monkeypatch, field, new_value):

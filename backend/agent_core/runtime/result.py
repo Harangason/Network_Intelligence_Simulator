@@ -34,4 +34,5 @@ class ResultComposer:
             missing_outcomes=completion.get("missing_outcomes", []),
             evidence_refs=completion.get("evidence_refs", []),
             capability_id=str((workload.get("capability") or {}).get("capability_id") or ""),
-            findings=list(result_event.get("findings") or []))
+            findings=[*list(result_event.get("findings") or []),
+                      *[item for item in events if item.get('type') == 'FINDING']])

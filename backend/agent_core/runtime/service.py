@@ -32,7 +32,11 @@ class EngineeringAssistantService:
 
     async def execute(self, prompt: str, context: Any, *, emit=None, history=None, saved_state=None) -> dict:
         resolved_context = self.context_resolver.resolve(context, saved_state)
+        from .hardware_intent import resume_hardware_request
+        prompt, resumed_id = resume_hardware_request(prompt, resolved_context)
         goal = self.goal_resolver.resolve(prompt, resolved_context, resolved_context.get("active_workload"))
+        if resumed_id:
+            goal = goal.model_copy(update={'goal_id': resumed_id})
         workload_model = EngineeringWorkload(workload_id=goal.goal_id, goal=goal,
             project_id=str(goal.project_context.get("project_id") or "unknown"), status=WorkloadStatus.PLANNING,
             result={"request_revision": getattr(context, "project_draft_revision", None), "follow_up_of": goal.follow_up_of})
@@ -72,6 +76,10 @@ class EngineeringAssistantService:
                     agent = EngineeringAgent(self.client, reasoner=self.reasoner)
                 result = await agent.run(prompt, context, emit=runtime_emit, history=history)
             runtime_result = self.result_composer.compose(goal, workload, result.get("events", []))
+            failure = next((event.get('metadata', {}).get('failure') for event in reversed(result.get('events', []))
+                            if event.get('metadata', {}).get('failure')), None)
+            if failure:
+                workload_model.failure = failure
             status_text = {
                 "COMPLETED": "Engineering-Ziel abgeschlossen; die angeforderten Ergebnisse sind durch aktuelle Modelldaten oder Prüfevidenz belegt.",
                 "READY_FOR_REVIEW": "Der Änderungsvorschlag ist vorbereitet. Deine Freigabe ist noch erforderlich; bis dahin bleibt das kanonische Modell unverändert.",
@@ -90,6 +98,7 @@ class EngineeringAssistantService:
             workload_model.status = WorkloadStatus(runtime_result.status)
             workload_model.evidence = runtime_result.evidence_refs
             workload_model.result = {"status": result.get("status"), "event_ids": [item.get("id") for item in result.get("events", [])],
+                "request_revision": getattr(context, "project_draft_revision", None), "follow_up_of": goal.follow_up_of,
                 "completion": runtime_result.model_dump(mode="json")}
             self.workloads.save(workload_model)
             result["runtime"] = runtime_result.model_dump(mode="json") | {"capability": capability}

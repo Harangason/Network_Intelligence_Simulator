@@ -154,15 +154,22 @@ class TraceStorage:
         path = self.resolve(value) if value else self.root_for(project_id)
         try:
             entries = []
-            with os.scandir(path) as iterator:
-                for entry in iterator:
-                    if entry.name.startswith(".") or entry.is_symlink() or not entry.is_dir():
-                        continue
-                    entries.append({"name": entry.name, "path": self.display_path(Path(entry.path))})
-                    if len(entries) >= 201:
-                        break
+            try:
+                with os.scandir(path) as iterator:
+                    for entry in iterator:
+                        if entry.name.startswith(".") or entry.is_symlink() or not entry.is_dir():
+                            continue
+                        entries.append({"name": entry.name, "path": self.display_path(Path(entry.path))})
+                        if len(entries) >= 201:
+                            break
+            except FileNotFoundError:
+                default = project_folder(project_id) / 'runs' if self.project_defaults else self.default_root
+                if value or path != default:
+                    raise
+                # A fresh project's default output is created by its first run.
+                # Browsing it is an empty read, not an unavailable custom mount.
             parent = path.parent
-            if self.container and not any(parent.is_relative_to(root) for root in self._roots()):
+            if not parent.is_dir() or (self.container and not any(parent.is_relative_to(root) for root in self._roots())):
                 parent = None
             return {"path": self.display_path(path), "parent": self.display_path(parent) if parent and parent != path else None,
                     "directories": sorted(entries[:200], key=lambda item: item["name"].casefold()), "truncated": len(entries) > 200}

@@ -2,6 +2,25 @@
 import re
 
 
+def problem_report_question(prompt: str, previous_requirement: str = '') -> str | None:
+    """Route read-only project findings without involving model tool planning."""
+    text = prompt.strip()
+    if len(text) > 500 or re.search(r'\b(?:trace|traces|fehlerszenario|simulation|simulationslauf)\b', text, re.I):
+        return None
+    if re.search(r'\b(?:beheb\w*|reparier\w*|änd\w*|aender\w*|erstell\w*|anleg\w*|lösch\w*|loesch\w*|implementier\w*)\b', text, re.I):
+        return None
+    subject = r'(?:problem\w*|fehler\w*|warnung\w*|befund\w*|issue\w*)'
+    if re.search(subject, text, re.I):
+        if re.match(r'^\s*(?:bitte\s+)?(?:zeige|zeig|liste|list|nenn|welche|was\s+sind|gibt\s+es|show)\b', text, re.I):
+            return 'LIST'
+        if re.match(r'^\s*(?:bitte\s+)?(?:erklär\w*|erklaer\w*|warum|wieso|weshalb|was\s+bedeut\w*|explain|why)\b', text, re.I):
+            return 'EXPLAIN'
+    if (re.fullmatch(r'\s*(?:warum|wieso|weshalb|erklär(?:e)?\s+(?:das|sie|die\s+befunde)|erklaer(?:e)?\s+(?:das|sie))\s*[?.!]?\s*', text, re.I)
+            and problem_report_question(previous_requirement) in {'LIST', 'EXPLAIN'}):
+        return 'EXPLAIN'
+    return None
+
+
 def connectivity_question(prompt):
     match = re.fullmatch(r'\s*(?:wie sind|how are)\s+(.+?)\s+(?:und|and)\s+(.+?)\s+(?:aktuell\s+|currently\s+)?(?:angebunden|verbunden|connected)\s*[?.!]?\s*', prompt, re.I)
     return tuple(part.strip(' \"') for part in match.groups()) if match else None

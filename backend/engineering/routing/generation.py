@@ -17,6 +17,7 @@ from .timing import generated_timing
 
 INTERFACE_TO_PROTOCOL = {
     "CAN": "CAN",
+    "CANopen": "CAN",
     "CAN_FD": "CAN_FD",
     "LIN": "LIN",
     "FlexRay": "FLEXRAY",

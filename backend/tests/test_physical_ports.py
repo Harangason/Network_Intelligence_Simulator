@@ -211,6 +211,41 @@ def test_topology_refresh_reuses_reviewed_networks_ports_and_layout_without_wiza
     assert next(edge for edge in refreshed['edges'] if edge['id'] == 'e1')['routingEntryIds'] == ['route-0', 'route-2']
 
 
+def test_network_topology_connects_gateway_with_confirmed_bus_without_gateway_message(monkeypatch):
+    from backend.engineering.agent_tools import wizard_generation
+
+    hardware = [
+        {'id': 'controller', 'name': 'Controller', 'device_type': 'ECU'},
+        {'id': 'sensor', 'name': 'Sensor', 'device_type': 'SensorController'},
+        {'id': 'gateway', 'name': 'Gateway', 'device_type': 'Gateway'},
+    ]
+    interfaces = [
+        {'id': f'{node}-can', 'name': f'{node} CAN', 'hardware_node_id': node,
+         'technology': 'CAN_FD', 'network_ref': 'confirmed-can', 'channel_index': 1}
+        for node in ('controller', 'sensor', 'gateway')
+    ]
+    routes = [{
+        'id': 'sensor-to-controller', 'approval_state': 'APPROVED', 'validation': {'valid': True},
+        'source': {'node_id': 'sensor', 'protocol': 'CAN_FD', 'network_id': 'confirmed-can'},
+        'destinations': [{'node_id': 'controller', 'protocol': 'CAN_FD', 'network_id': 'confirmed-can'}],
+        'route': {'hops': [{'node_id': 'sensor'}, {'node_id': 'controller'}]},
+    }]
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda kind: hardware if kind == 'HardwareNode'
+                        else interfaces if kind == 'HardwareNetworkInterface' else [])
+    monkeypatch.setattr(wizard_generation.model, 'routes', lambda: routes)
+    monkeypatch.setattr(wizard_generation.model, 'networks', lambda: [{'id': 'confirmed-can', 'name': 'Confirmed CAN', 'technology': 'CAN_FD'}])
+    monkeypatch.setattr(wizard_generation, 'WorkflowStatusService', lambda _: type('Workflow', (), {'get': lambda _: {'topology': {}}})())
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda **_: [])
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create', lambda kind, changes, *_, **__: {'changes': changes})
+
+    result = wizard_generation.generate_network_topology({'prompt': 'Bestätigte CAN-Topologie.'})
+    topology = next(change['data']['topology'] for change in result['changes']
+                    if change['object_type'] == 'NetworkTopology')
+    gateway = next(node for node in topology['nodes'] if node['engineeringId'] == 'gateway')
+    assert any(port.get('hardwareInterfaceId') == 'gateway-can' for port in gateway['ports'])
+    assert any(gateway['id'] in (edge['source'], edge['target']) for edge in topology['edges'])
+
+
 def test_physical_channel_proposal_validates_applies_and_reloads_with_persisted_ids():
     from backend.agent_core.api.tool_contract import Permission
     from backend.engineering.agent_tools import model, proposal_service

@@ -14,7 +14,7 @@ class Capability:
 
 CAPABILITIES: dict[GoalType, Capability] = {
     GoalType.CREATE_PROJECT: Capability("project.create", ("prepare_project_request", "generate_wizard_model", "create_objects_via_proposal"), "Erstellen und prüfen eines Projektmodellentwurfs"),
-    GoalType.CREATE_HARDWARE: Capability("hardware.create", ("create_objects_via_proposal", "classify_device", "get_device_capabilities"), "Hardwareklassifikation und geprüfter Modellvorschlag"),
+    GoalType.CREATE_HARDWARE: Capability("hardware.create", ("prepare_hardware_request", "create_objects_via_proposal", "classify_device", "get_device_capabilities"), "Hardwareklassifikation und geprüfter Modellvorschlag"),
     GoalType.CREATE_FUNCTION: Capability("function.create", ("generate_functions", "map_function_to_hardware", "create_objects_via_proposal"), "Funktionen erstellen und ihrer bestätigten Hardware zuordnen"),
     GoalType.CREATE_SIGNAL: Capability("signal.create", ("generate_signals", "validate_signal", "create_objects_via_proposal"), "Signal anlegen und explizite Kodierung validieren"),
     GoalType.CREATE_NETWORK: Capability("network.create", ("create_network_proposal", "resolve_generation_rules", "validate_simulation_preflight"), "Technologiegebundenes Netz planen und validieren"),
@@ -43,6 +43,9 @@ class CapabilityRegistry:
         capability = CAPABILITIES[goal_type]
         names = {item if isinstance(item, str) else item.get("name") for item in available_tools}
         available = [name for name in capability.tools if name in names]
+        executable = bool(available)
+        if goal_type == GoalType.CREATE_HARDWARE:
+            executable = bool({'prepare_hardware_request', 'create_objects_via_proposal'} & names)
         return {"capability_id": capability.id, "purpose": capability.purpose,
                 "required_tools": list(capability.tools), "available_tools": available,
-                "available": bool(available), "missing_tools": [name for name in capability.tools if name not in names]}
+                "available": executable, "missing_tools": [name for name in capability.tools if name not in names]}

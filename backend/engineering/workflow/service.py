@@ -897,6 +897,11 @@ class WorkflowStatusService:
             ):
                 cleaned.pop("agent_wizard_status", None)
             merged = {**state["context"], **cleaned, "active_project": self.project_id}
+            raw_wizard_settings = context.get('engineering_wizard_settings')
+            if (isinstance(raw_wizard_settings, dict)
+                    and isinstance(raw_wizard_settings.get('project_name'), str)
+                    and raw_wizard_settings['project_name'].strip()):
+                merged['project_name'] = cleaned['engineering_wizard_settings']['project_name']
             connection.execute(
                 """
                 UPDATE engineering_workflow_projects
@@ -906,6 +911,36 @@ class WorkflowStatusService:
                 (active_step or state["active_step"], _json(merged), self.project_id),
             )
         return self.get(summary=summary)
+
+    def rename_project(self, name: str) -> dict[str, str]:
+        if not isinstance(name, str):
+            raise EngineeringValidationError('Projektname muss Text sein.')
+        normalized = name.strip()
+        if not normalized or len(normalized) > 120 or any(ord(char) < 32 or ord(char) == 127 for char in normalized):
+            raise EngineeringValidationError('Projektname muss 1 bis 120 Zeichen ohne Steuerzeichen enthalten.')
+        with get_connection() as connection:
+            row = connection.execute(
+                'SELECT context, parameters FROM engineering_workflow_projects WHERE project_id = %s FOR UPDATE',
+                (self.project_id,),
+            ).fetchone()
+            if row is None:
+                raise EngineeringValidationError('Projekt nicht gefunden.')
+            context = row['context'] or {}
+            current_settings = context.get('engineering_wizard_settings')
+            if isinstance(current_settings, dict):
+                settings = {**current_settings, 'project_name': normalized}
+            else:
+                industry = (row['parameters'] or {}).get('industry')
+                settings = normalize_engineering_wizard_settings({
+                    'project_name': normalized,
+                    'model_type': industry if isinstance(industry, str) else 'custom',
+                })
+            updated = {**context, 'project_name': normalized, 'engineering_wizard_settings': settings}
+            connection.execute(
+                'UPDATE engineering_workflow_projects SET context = %s::jsonb, updated_at = now() WHERE project_id = %s',
+                (_json(updated), self.project_id),
+            )
+        return {'project_id': self.project_id, 'name': normalized}
 
     def save_parameters(self, parameters: dict[str, Any], actor: str | None = None) -> dict[str, Any]:
         if isinstance(parameters, dict) and 'spatial_architecture' in parameters:

@@ -128,8 +128,15 @@ def inspect_communication_resources_route():
 @engineering_api.route('/communication-resources/<kind>', methods=['PUT'])
 def record_communication_hardware_fact_route(kind):
     from .goal_execution.resources import record_hardware_fact
-    payload = request.get_json(silent=True) or {}
-    return jsonify(record_hardware_fact(kind, payload.get('resource') or {}, payload.get('expected_revision')))
+    payload = _routing_payload()
+    resource = payload.get('resource', {})
+    if not isinstance(resource, dict):
+        raise EngineeringValidationError('resource muss ein JSON-Objekt sein.')
+    try:
+        result = record_hardware_fact(kind, resource, payload.get('expected_revision'))
+    except ValueError as error:
+        raise EngineeringValidationError(str(error)) from error
+    return jsonify(result)
 
 
 @engineering_api.route('/execution-goals/<workload_id>', methods=['GET'])
@@ -1407,6 +1414,12 @@ def list_projects_route():
                     "next_offset": offset + len(rows) if offset + len(rows) < total else None})
 
 
+@engineering_api.route("/projects/rename", methods=["POST"])
+def rename_project_route():
+    payload = _routing_payload()
+    return jsonify(WorkflowStatusService(normalize_project_id(_project_id())).rename_project(payload.get('name')))
+
+
 @engineering_api.route("/projects/export", methods=["GET"])
 def export_project_route():
     source = normalize_project_id(_project_id())
@@ -1503,6 +1516,11 @@ def calculate_capacity_route():
 def capacity_scenario_route():
     payload = _routing_payload()
     overrides = payload.get("overrides") if isinstance(payload.get("overrides"), dict) else payload
+    scenario_fields = {"burst_factor"}
+    attempted = sorted(set(overrides) - scenario_fields)
+    if attempted:
+        return jsonify({"error": "What-if-Szenarien dürfen nur den Stressfaktor variieren. Technologie-, Link-, Frame- und Schedulingparameter bleiben fest.",
+                        "rejected_parameters": attempted}), 400
     return jsonify(CapacityTimingService(_project_id()).calculate(overrides, persist=False))
 
 

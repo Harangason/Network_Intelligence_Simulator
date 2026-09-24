@@ -67,6 +67,39 @@ def test_corrupt_settings_fail_closed(storage):
     assert storage.settings_path.read_text() == "{invalid"
 
 
+def test_unused_default_directory_is_empty_without_creating_it(storage):
+    result = storage.directories('new-project')
+    assert result['path'] == str(storage.default_root)
+    assert result['directories'] == [] and not result['truncated']
+    assert not storage.default_root.exists()
+    with pytest.raises(StorageUnavailable):
+        storage.directories('new-project', str(storage.default_root))
+
+
+def test_missing_custom_directory_is_still_unavailable(storage, tmp_path):
+    selected = tmp_path / 'external'
+    storage.save('p', str(selected))
+    selected.rmdir()
+    with pytest.raises(StorageUnavailable):
+        storage.directories('p')
+
+
+def test_unused_project_default_does_not_offer_a_missing_parent(tmp_path, monkeypatch):
+    monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path / 'saved'))
+    service = TraceStorage(settings_path=tmp_path / 'settings.json', container=False)
+    result = service.directories('new-project')
+    assert result['directories'] == [] and result['parent'] is None
+    assert not (tmp_path / 'saved').exists()
+
+
+def test_directory_permission_failure_is_not_reported_as_empty(storage, monkeypatch):
+    def denied(*_args):
+        raise PermissionError('denied')
+    monkeypatch.setattr('backend.app.trace_storage.os.scandir', denied)
+    with pytest.raises(StorageUnavailable):
+        storage.directories('new-project')
+
+
 def test_docker_mapping_browse_and_escape_protection(tmp_path):
     mount = tmp_path / "mounted"
     mount.mkdir()

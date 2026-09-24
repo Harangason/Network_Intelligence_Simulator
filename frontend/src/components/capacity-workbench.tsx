@@ -49,9 +49,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
   const [view, setView] = useState<View>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [scenarioBitrate, setScenarioBitrate] = useState("");
   const [scenarioBurst, setScenarioBurst] = useState("1.5");
-  const [scenarioQueuePolicy, setScenarioQueuePolicy] = useState("FIFO");
   const [scenario, setScenario] = useState<CapacityResults | null>(null);
   const [scenarioImpact, setScenarioImpact] = useState<CapacityImpact | null>(null);
   const [scenarioOverrides, setScenarioOverrides] = useState<Record<string, unknown>>({});
@@ -72,7 +70,8 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
       setFindings(snapshot.findings);
       setStatus(snapshot.status);
       setOutdated(snapshot.is_outdated);
-      setOutdatedReason(snapshot.outdated_reason ?? "");
+      setOutdatedReason(snapshot.is_outdated ? snapshot.outdated_reason ?? "" : "");
+      setProposals([]);
       setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Capacity-Daten nicht verfügbar.");
@@ -89,6 +88,8 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
       setFindings(response.findings);
       setStatus(response.status);
       setOutdated(false);
+      setOutdatedReason("");
+      setProposals([]);
       setScenario(null);
       setScenarioImpact(null);
       notifyWorkflowChanged();
@@ -103,8 +104,7 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
     setBusy(true);
     setError("");
     try {
-      const overrides: Record<string, unknown> = { burst_factor: Number(scenarioBurst), queue_policy: scenarioQueuePolicy };
-      if (scenarioBitrate) overrides.bitrate = Number(scenarioBitrate);
+      const overrides: Record<string, unknown> = { burst_factor: Number(scenarioBurst) };
       const response = await calculateCapacityScenario(overrides);
       setScenario(response.results);
       setScenarioImpact(response.impact ?? null);
@@ -195,14 +195,9 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
 
       <div className="analysis-scenario-row">
         <label>
-          <span>Alternative Bitrate (bit/s)</span>
-          <input inputMode="numeric" onChange={(event) => setScenarioBitrate(event.target.value)} placeholder="aktuellen Wert verwenden" value={scenarioBitrate} />
-        </label>
-        <label>
           <span>Stress-Faktor für Szenario</span>
           <input min="1" onChange={(event) => setScenarioBurst(event.target.value)} step="0.05" type="number" value={scenarioBurst} />
         </label>
-        <label><span>Queue Policy</span><select onChange={(event) => setScenarioQueuePolicy(event.target.value)} value={scenarioQueuePolicy}><option>FIFO</option><option>STRICT_PRIORITY</option><option>WRR</option><option>TAS</option><option>CBS</option></select></label>
         {scenario && <button className="text-command" onClick={() => setScenario(null)} type="button">Vergleich schließen</button>}
       </div>
 
@@ -360,13 +355,18 @@ function buildCapacityWarningInfo(
     }
   }
   for (const bottleneck of results.bottlenecks) {
+    const severity = String(bottleneck.severity ?? "").toUpperCase();
+    if (!["WARNING", "CRITICAL", "OVERLOAD", "ERROR", "FAIL"].includes(severity)) continue;
     const component = String(bottleneck.component ?? bottleneck.name ?? "Bottleneck");
-    const reason = `${component}: ${String(bottleneck.reason ?? "Engpass erkannt")}.`;
+    const reason = component === "network_transmission_ms"
+      ? `Übertragungszeit im Netz: ${String(bottleneck.reason ?? "Frame-Serialisierung ist der größte Latenzanteil")}. Zyklusvarianten können Last und Warteschlangen beeinflussen, aber nicht die Serialisierungszeit eines Frames. Technologieprofil, Linkrate und Frame-Kodierung bleiben fest; prüfe eine fachlich bestätigte Routen- oder Nachrichtenänderung.`
+      : `${component}: ${String(bottleneck.reason ?? "Engpass erkannt")}.`;
     addWarning(info, /gateway|bcm/i.test(component) ? "gateways" : "critical", reason);
     addWarning(info, "recommendations", reason);
   }
 
   for (const route of results.critical_paths) {
+    if (route.status === "NORMAL" && route.latency_status !== "FAIL" && route.jitter_status !== "FAIL" && route.requirement_status !== "FAIL") continue;
     addWarning(info, "critical", `${route.name}: ${route.status}, Burst ${route.burst_load_percent.toFixed(2)} %.`);
   }
   if (effectiveStatus === "WARNING" || effectiveStatus === "ERROR") {

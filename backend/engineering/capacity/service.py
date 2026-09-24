@@ -248,7 +248,7 @@ def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: lis
 
 
 class CapacityTimingService:
-    CALCULATION_VERSION = "3.2"
+    CALCULATION_VERSION = "3.3"
 
     def __init__(self, project_id: str = "default") -> None:
         self.workflow = WorkflowStatusService(project_id)
@@ -1163,7 +1163,18 @@ class CapacityTimingService:
         return response
 
     def latest(self) -> dict[str, Any] | None:
-        return self.workflow.latest_analysis("capacity_timing", include_outdated=True)
+        snapshot = self.workflow.latest_analysis("capacity_timing", include_outdated=True)
+        if snapshot is None:
+            return None
+        provenance = snapshot.get("provenance") if isinstance(snapshot.get("provenance"), dict) else {}
+        calculation_version = str(provenance.get("calculation_version") or "")
+        if calculation_version != self.CALCULATION_VERSION:
+            previous = snapshot.get("outdated_reason")
+            reason = (f"Capacity-Berechnungsversion {calculation_version or 'unbekannt'} ist veraltet; "
+                      f"erforderlich ist Version {self.CALCULATION_VERSION}. Capacity & Timing neu berechnen.")
+            return {**snapshot, "is_outdated": True, "status": "OUTDATED",
+                    "outdated_reason": f"{previous} {reason}".strip() if previous else reason}
+        return snapshot
 
 
 def preflight_warning_signature(findings: list[dict[str, Any]]) -> str:
@@ -1433,6 +1444,24 @@ class PreflightService:
         if queue_size <= 0:
             add("parameters", "ERROR", "PARAMETER_QUEUE_INVALID", "Queue Size muss groesser als null sein.")
 
+        capacity_provenance = capacity.get("provenance") if isinstance((capacity or {}).get("provenance"), dict) else {}
+        capacity_version = str(capacity_provenance.get("calculation_version") or "")
+        if capacity and capacity_version != CapacityTimingService.CALCULATION_VERSION:
+            add(
+                "capacity",
+                "ERROR",
+                "CAPACITY_CALCULATION_VERSION_OUTDATED",
+                f"Capacity-Snapshot {capacity.get('id')} verwendet Berechnungsversion "
+                f"{capacity_version or 'unbekannt'}; erforderlich ist Version "
+                f"{CapacityTimingService.CALCULATION_VERSION}. Capacity & Timing muss neu berechnet werden.",
+                "Capacity & Timing mit dem aktuellen Technologie-Scheduling neu berechnen und danach den Preflight erneut ausführen.",
+                object_type="CapacitySnapshot",
+                object_id=str(capacity.get("id") or ""),
+            )
+            capacity_is_current = False
+        else:
+            capacity_is_current = bool(capacity)
+
         if not capacity:
             add(
                 "capacity",
@@ -1441,7 +1470,7 @@ class PreflightService:
                 "Capacity & Timing muss mit aktuellen Quelldaten berechnet werden.",
                 step="capacity_timing",
             )
-        else:
+        elif capacity_is_current:
             for item in capacity.get("findings") or []:
                 code = str(item.get("code") or "CAPACITY_FINDING")
                 category = (
@@ -1494,7 +1523,7 @@ class PreflightService:
             "review_count": review_count,
             "warnings_allowed": warnings_allowed,
             "checked_steps": list(required),
-            "capacity_snapshot_id": capacity.get("id") if capacity else None,
+            "capacity_snapshot_id": capacity.get("id") if capacity_is_current else None,
             "category_statuses": category_statuses,
             "category_checks": category_checks,
             "scope_coverage": coverage,

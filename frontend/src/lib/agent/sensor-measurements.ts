@@ -7,7 +7,7 @@ export const SENSOR_MEASUREMENTS = [
     dataComplexity: 'MULTI_VALUE', semanticType: 'BYTE_ARRAY', elementType: 'ARRAY', payloadBytes: 24, defaultCycleMs: 10 },
   { id: 'safety_state', label: 'Sicherheitszustand', unit: 'code', match: /sicherheit|safety/i },
   { id: 'temperature', label: 'Temperatur', unit: 'degC', match: /temperatur|temperature|pt100/i },
-  { id: 'speed', label: 'Drehzahl', unit: 'rpm', match: /drehzahl|rotationalspeed/i },
+  { id: 'speed', label: 'Drehzahl', unit: 'rpm', match: /drehzahl|rotationalspeed|(?:^|[_\s-])speed(?:$|[_\s-])/i },
   { id: 'torque', label: 'Drehmoment', unit: 'Nm', match: /drehmoment|torque/i },
   { id: 'pressure', label: 'Druck', unit: 'bar', match: /druck|pressure/i },
   { id: 'flow', label: 'Durchfluss', unit: 'l/min', match: /durchfluss|flow/i },

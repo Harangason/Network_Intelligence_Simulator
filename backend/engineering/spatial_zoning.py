@@ -74,7 +74,10 @@ def zone_findings(topology, hardware=(), *, prompt='', driving_side=None, parame
 
 
 def plan_zoning(state, objects, routes, driving_side=None):
-    topology = deepcopy(state['topology'])
+    topology = deepcopy(state.get('topology'))
+    if (not isinstance(topology, dict) or not isinstance(topology.get('nodes'), list)
+            or not isinstance(topology.get('edges'), list)):
+        raise EngineeringValidationError('Vor der räumlichen Zonierung muss eine gültige Netzwerktopologie vorliegen.')
     prompt = (state.get('context', {}).get('wizard_request') or {}).get('prompt', '')
     policy = {'enabled': True, 'version': VERSION, 'driving_side': driving_side,
               'local_bus_types': sorted(LOCAL_BUSES), 'unknown_location': 'separate_unresolved'}

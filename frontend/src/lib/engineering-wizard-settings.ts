@@ -1,6 +1,6 @@
 import { DEFAULT_BUS_PARTICIPANT_LIMITS, normalizeBusLimits } from "./bus-settings.ts";
 import { WORKFLOW_STEP_DEFINITIONS } from "../features/workflow/definition.ts";
-import type { TechnologyDomain } from "./types.ts";
+import type { Technology, TechnologyDomain } from "./types.ts";
 
 export type WizardChoiceOption = {
   id: string;
@@ -45,6 +45,20 @@ export function defaultWizardTechnologyIds(_domain?: TechnologyDomain): string[]
   // Industry selects vocabulary and device templates, not a physical bus.
   // The wizard only preselects transport technologies found positively in the task.
   return [];
+}
+
+export function unscopedWizardBusTechnologies(domains: TechnologyDomain[]): Technology[] {
+  const technologies = new Map<string, Technology>();
+  for (const domain of domains) {
+    for (const technology of domain.technologies) {
+      const layer = technology.layer?.toUpperCase();
+      if (technology.kind && technology.kind !== "network") continue;
+      if (layer && layer !== "DATA_LINK") continue;
+      if (["PLANNED", "NOT_SUPPORTED"].includes(technology.implementation_status ?? "IMPLEMENTED")) continue;
+      technologies.set(technology.id, technology);
+    }
+  }
+  return [...technologies.values()];
 }
 
 export type EngineeringWizardSettings = {

@@ -5,6 +5,7 @@ import {
   DEFAULT_ENGINEERING_WIZARD_SETTINGS,
   defaultWizardTechnologyIds,
   normalizeEngineeringWizardSettings,
+  unscopedWizardBusTechnologies,
   wizardQuestionnaireSteps,
   WIZARD_PROCESS_GROUP,
   WIZARD_SCOPE_GROUP,
@@ -100,4 +101,23 @@ test("technical device domain also leaves transport selection open without bus e
     technology("pwm"),
   ];
   assert.deepEqual(defaultWizardTechnologyIds({ id: "embedded_systems", label: "Embedded", technologies }), []);
+});
+
+test("unqualified technology step lists available data-link buses across industries without selecting them", () => {
+  const domains = [
+    { id: "automotive", technologies: [
+      { id: "can", kind: "network", layer: "DATA_LINK", implementation_status: "IMPLEMENTED" },
+      { id: "can_xl", kind: "network", layer: "DATA_LINK", implementation_status: "EXPERIMENTAL" },
+      { id: "ip", kind: "protocol", layer: "NETWORK", implementation_status: "IMPLEMENTED" },
+    ] },
+    { id: "embedded_systems", technologies: [
+      { id: "i2c", kind: "network", layer: "DATA_LINK", implementation_status: "PARTIAL" },
+      { id: "gpio", kind: "network", layer: "PHYSICAL", implementation_status: "IMPLEMENTED" },
+      { id: "can", kind: "network", layer: "DATA_LINK", implementation_status: "IMPLEMENTED" },
+      { id: "future_bus", kind: "network", layer: "DATA_LINK", implementation_status: "PLANNED" },
+    ] },
+  ];
+
+  assert.deepEqual(unscopedWizardBusTechnologies(domains).map(({ id }) => id), ["can", "can_xl", "i2c"]);
+  assert.deepEqual(defaultWizardTechnologyIds(domains[1]), []);
 });

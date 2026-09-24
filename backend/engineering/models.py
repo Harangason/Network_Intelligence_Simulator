@@ -61,6 +61,7 @@ ADDRESS_STATUSES = ("UNASSIGNED", "PROPOSED", "ASSIGNED", "CONFLICT", "RESERVED"
 
 INTERFACE_TYPES = (
     "CAN",
+    "CANopen",
     "CAN_FD",
     "CAN_XL",
     "LIN",

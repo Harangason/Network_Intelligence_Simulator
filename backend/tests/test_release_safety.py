@@ -12,6 +12,23 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_release_manifest_tracks_agent_runtime_code_but_not_runtime_data(tmp_path):
+    spec = importlib.util.spec_from_file_location('build_info', ROOT / 'scripts/write-build-info.py')
+    build_info = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build_info)
+    agent_code = tmp_path / 'backend/agent_core/runtime/goal_resolver.py'
+    agent_code.parent.mkdir(parents=True)
+    agent_code.write_text('version = 1\n')
+    runtime_data = tmp_path / 'backend/runtime/state.py'
+    runtime_data.parent.mkdir(parents=True)
+    runtime_data.write_text('version = 1\n')
+    initial = build_info.build_manifest(tmp_path)['source_sha256']
+    runtime_data.write_text('version = 2\n')
+    assert build_info.build_manifest(tmp_path)['source_sha256'] == initial
+    agent_code.write_text('version = 2\n')
+    assert build_info.build_manifest(tmp_path)['source_sha256'] != initial
+
+
 def test_runtime_lock_rejects_unlocked_transitives_and_version_drift():
     spec = importlib.util.spec_from_file_location('runtime_lock', ROOT / 'scripts/verify-runtime-lock.py')
     lock = importlib.util.module_from_spec(spec)

@@ -55,9 +55,12 @@ def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, st
             continue
         local_role = role in {"MEASUREMENT", "FEEDBACK", "COMMAND"}
         local_generator = generator == "wizard-local-actuator-command"
+        internal_state = (role == "INTERNAL_STATE" and contract.get("scope") in {"INTERNAL", "FUNCTION_OUTPUT"}
+                          and not contract.get("consumer_refs") and not transport.get("consumer_refs"))
+        unused_output = contract.get("scope") == "FUNCTION_OUTPUT" and not local_role and not local_generator
         if (str(message.get("id")) not in linked
                 and routing.get("enabled") is False
-                and contract.get("scope") == "FUNCTION_OUTPUT" and not local_role and not local_generator):
+                and (internal_state or unused_output)):
             excluded.add(str(message["id"]))
     return excluded
 
@@ -97,11 +100,15 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
             excluded_signals = excluded_children[message_id]
             required_messages.discard(message_id)
             required_signals.difference_update(excluded_signals)
+            internal_state = next((message for message in messages if str(message.get("id")) == message_id), None)
+            contract = ((internal_state or {}).get("configuration") or {}).get("communication_contract") or {}
+            is_internal = contract.get("role") == "INTERNAL_STATE" and contract.get("scope") in {"INTERNAL", "FUNCTION_OUTPUT"}
             transport_exclusions.append({"message_id": message_id, "message_name": message_names[message_id],
                 "signal_ids": sorted(excluded_signals),
-                "reason_code": "EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED",
-                "reason": "Der vollständige Funktionsausgang ist ausdrücklich nicht geroutet und besitzt keine aktuelle Transportabsicht. "
-                          "Vom Transportscope ausgenommen; keine funktionale Beobachtung oder Timing-Freigabe nachgewiesen."})
+                "reason_code": "INTERNAL_STATE_NOT_ROUTED" if is_internal else "EXPLICIT_FUNCTION_OUTPUT_NOT_ROUTED",
+                "reason": ("Der Controllerstatus bleibt ohne bestätigten Empfänger intern. " if is_internal else
+                           "Der vollständige Funktionsausgang ist ausdrücklich nicht geroutet und besitzt keine aktuelle Transportabsicht. ")
+                          + "Vom Transportscope ausgenommen; keine funktionale Beobachtung oder Timing-Freigabe nachgewiesen."})
 
     covered_messages, covered_signals = set(), set()
     for row in active_rows(transports):

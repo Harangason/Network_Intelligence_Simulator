@@ -76,7 +76,7 @@ export function CommunicationSizingPanel() {
 
   return <details className="panel communication-sizing-panel">
     <summary><strong>Kommunikation automatisch dimensionieren</strong></summary>
-    <p>{protocols.length ? `Erkannte Technologien in ${projectId}: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich.</p>
+    <p>{protocols.length ? `Erkannte Technologien in ${projectId}: ${protocols.join(", ")}.` : "Die Dimensionierung verwendet ausschließlich die physischen Verbindungen und Anforderungen des aktiven Projekts."} Bestätigte Fristen, Datenalter und gesperrte Zyklen bleiben verbindlich. Die Planung vergleicht alle zulässigen Zyklusvarianten und ändert weder Technologieparameter noch Frame-Kodierungen.</p>
     {hasI2c && <p className="notice warning">I2C ist im Projekt vorhanden. Der Zeitnachweis bleibt offen, bis Master, Slave-Adresse, Clock-Stretching-Grenze und Transferumfang modelliert sind. LIN-Slots und CAN-Arbitrierung werden dafür nicht angesetzt.</p>}
     <div className="analysis-scenario-row">
       <label>Mindest-Sendeabstand (ms)<input type="number" min="1" disabled={busy} value={minimum} onChange={e => edit(setMinimum, e.target.value)} /></label>
@@ -87,7 +87,7 @@ export function CommunicationSizingPanel() {
     <button type="button" className="button primary" disabled={busy} onClick={() => void calculate()}>{busy ? "Prüft …" : "Zyklusvarianten für dieses Projekt prüfen"}</button>
     {message && <p role="status">{message}</p>}
     {plan && <>
-      <p><strong>{plan.changes.length} Nachrichtenänderungen</strong> · {plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen. Jede Variante wurde mit den aktuellen Anforderungen neu geprüft.</p>
+      <p><strong>{plan.changes.length} Nachrichtenänderungen</strong> · {plan.history_matches.length} passende Erfahrungen aus früheren Dimensionierungen. Alle zulässigen Varianten werden mit den aktuellen Anforderungen verglichen; Linkrate, Technologie, Payload und Kodierung bleiben fest.</p>
       {plan.status === "PARTIAL" && <p className="notice warning">Einige Netze benötigen weitere Maßnahmen. Änderungen werden nur für vollständig geprüfte Netze angeboten; offene Zeitnachweise bleiben unverändert.</p>}
       <div style={{maxHeight: 520, overflow: "auto"}}>
         {plan.networks.map(network => <details key={network.network_id} style={{padding: "12px 0", borderBottom: "1px solid var(--border, #293746)"}}>

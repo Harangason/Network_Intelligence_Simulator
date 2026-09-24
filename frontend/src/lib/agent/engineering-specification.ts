@@ -272,7 +272,7 @@ export function expandEngineeringSignalModel(chains: ExtractedEngineeringChain[]
   });
 }
 
-export type NetworkArchitectureMode = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai";
+export type NetworkArchitectureMode = "sensor_ecu_actuator" | "eva" | "ecu_gateway" | "gateway_ecu_segments" | "gateway_direct" | "hybrid_ai" | "gateway_segments_hybrid_ai";
 
 export type EngineeringHardwareCounts = {
   sensors: number;
@@ -697,9 +697,10 @@ const COUNT_WORDS: Record<string, number> = {
 const COUNT_TOKEN = "(\\d+|ein|eine|einem|einen|einer|eins|zwei|drei|vier|fuenf|funf|sechs|sieben|acht|neun|zehn)";
 
 export function extractNetworkArchitectureMode(text: string): NetworkArchitectureMode {
-  const explicit = text.match(/Netzarchitektur-ID:\s*(sensor_ecu_actuator|eva|ecu_gateway|gateway_ecu_segments|gateway_direct|hybrid_ai)\b/i)?.[1]
+  const explicit = text.match(/Netzarchitektur-ID:\s*(sensor_ecu_actuator|eva|ecu_gateway|gateway_segments_hybrid_ai|gateway_ecu_segments|gateway_direct|hybrid_ai)\b/i)?.[1]
     ?.toLowerCase() as NetworkArchitectureMode | undefined;
   if (explicit) return explicit;
+  if (/Variante\s*4\s*(?:\+|und)\s*KI\s*2\s*\+\s*3|Gateway-Segmente\s*(?:\+|und)\s*KI-Kombination/i.test(text)) return "gateway_segments_hybrid_ai";
   if (/Variante\s*0|Sensor\s*[-–>]+\s*ECU\s*[-–>]+\s*Aktor|Sensor\s+ECU\s+Aktor/i.test(text)) return "sensor_ecu_actuator";
   if (/Variante\s*4|Gateway-Segmente|Gateway.*(?:bis\s+zu\s+)?6\s+ECU|6\s+ECU.*Gateway/i.test(text)) return "gateway_ecu_segments";
   if (/KI-Kombination|Kombination\s+aus\s+Variante\s*2\s*(?:\+|und)\s*3/i.test(text)) return "hybrid_ai";
@@ -1374,6 +1375,9 @@ function isCountedHardwareGroup(value: string) {
 
 function hardwareName(label: string) {
   const rawName = cleanLabel(label);
+  // A transport path such as "BACnet/IP zum Gateway" describes a link, not
+  // another physical gateway. The trailing role word must not create hardware.
+  if (/^(?:bacnet\/ip|bacnet\s+ms\/tp)\s+(?:zum|to)\s+gateway$/i.test(rawName)) return "";
   const exampleName = rawName.replace(/^(?:beispiel|beispielsweise)\s+/i, "").trim();
   const name = exampleName && exampleName !== rawName && /\b[\p{L}\d][\p{L}\d_-]*(?:sensor|actuator|aktuator|aktor|ecu|gateway|plc|controller|steuergeraet|steuergerät)\b/iu.test(exampleName)
     ? exampleName
@@ -1620,7 +1624,7 @@ function protocolFrom(text: string, fallback = 'CAN') {
   const key = normalized(text);
   if (/\blin\b/.test(key)) return "LIN";
   if (key.includes("can fd") || key.includes("canfd")) return "CAN_FD";
-  if (key.includes("canopen")) return "CAN";
+  if (key.includes("canopen")) return "CANopen";
   if (/\bcan\b/.test(key)) return "CAN";
   if (/\bsome ip\b|\bsomeip\b/.test(key)) return "Ethernet";
   if (key.includes("arinc 429") || key.includes("arinc429")) return "ARINC";
@@ -1663,6 +1667,7 @@ export function extractCommunicationSystems(text: string) {
   });
 
   if (confirmedMention("\\blin\\b")) systems.push("LIN");
+  if (confirmedMention("\\bcanopen\\b")) systems.push("CANopen");
   if (confirmedMention("\\bcan fd\\b|\\bcanfd\\b")) systems.push("CAN_FD");
   else if (confirmedMention("\\bcan\\b")) systems.push("CAN");
   if (confirmedMention("\\bautomotive ethernet\\b|\\bethernet\\b")) systems.push("Ethernet");
@@ -1728,7 +1733,7 @@ export function canonicalCommunicationSystem(value: string) {
   return "";
 }
 
-const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|io\\s*link|iolink|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua|adc|dac|gpio|pwm)";
+const COMMUNICATION_SYSTEM_PATTERN = "(?:automotive\\s+ethernet|ethernet|some\\s*ip|someip|can\\s*fd|canfd|canopen|can|lin|arinc\\s*429|arinc429|mil\\s*std\\s*1553|milstd1553|ethercat|profinet|modbus\\s*rtu|modbusrtu|modbus\\s*tcp|io\\s*link|iolink|spi|i2c|uart|usb|pcie|rs485|rs232|opc\\s*ua|adc|dac|gpio|pwm)";
 
 function looksLikeBitrateSuffix(value: string) {
   return /^\s*(?:k?bit|m?bit|kbps|mbps|baud|bd|ms|byte|bytes|b)\b/i.test(value);
@@ -1834,6 +1839,19 @@ function numeric(value: string | undefined) {
   if (!value) return undefined;
   const result = Number(value.replace(",", "."));
   return Number.isFinite(result) ? result : undefined;
+}
+
+function declaredGroupCycleMs(text: string, deviceType: string, hardwareName: string): number | undefined {
+  const labels = deviceType === 'SensorController'
+    ? ['Sensoren', 'Sensors']
+    : deviceType === 'ActuatorController' && /lüfter|luefter|fan/i.test(hardwareName)
+      ? ['Lüfterstatus', 'Luefterstatus', 'FanStatus'] : [];
+  for (const label of labels) {
+    const match = text.match(new RegExp(`^\\s*(?:[-*]\\s*)?${label}\\s*:?\\s*(\\d+(?:[,.]\\d+)?)\\s*ms\\b`, 'mi'));
+    const cycle = numeric(match?.[1]);
+    if (cycle !== undefined) return cycle;
+  }
+  return undefined;
 }
 
 function rangeFrom(text: string) {
@@ -1985,7 +2003,9 @@ export function extractEngineeringSpecification(
   const legacyConfirmed = !explicitMode && /per Wizard-Uebernehmen bestaetigt/.test(text);
   const exampleRequested = engineeringGenerationMode(text) === 'EXAMPLE_PROJECT';
   const measurements = sensorMeasurementSelections(text);
-  const lines = specificationBody(text).replace(/^- Sensor-Messgrößen:[^\r\n]*$/gm, '').split(/\r?\n/);
+  // Structured review selections are metadata, not natural-language hardware
+  // inventory. Their JSON numbers and role names must not create extra nodes.
+  const lines = specificationBody(text).replace(/^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*$/gm, '').split(/\r?\n/);
   const confirmedCounts = { ...confirmedHardwareCounts(text), ...overrides };
   const grouped = groupedHardwareNames(lines);
   const groupedLineIndexes = new Set(grouped.map((item) => item.index));
@@ -2074,7 +2094,9 @@ export function extractEngineeringSpecification(
     const unit = modeledMeasurement?.unit ?? unitFrom(context) ?? defaults.unit;
     const factor = factorFrom(context, unit);
     const range = rangeFrom(context);
-    const cycleMs = numeric(context.match(/(?:^|[,;\s])(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1])
+    const explicitCycleMs = numeric(context.match(/(?:^|[,;\s])(\d+(?:[,.]\d+)?)\s*ms\b/i)?.[1])
+      ?? declaredGroupCycleMs(text, declaredType, hardwareName);
+    const cycleMs = explicitCycleMs
       ?? (safetyParticipant ? safetyCycleMs : undefined)
       ?? (complexMeasurement && 'defaultCycleMs' in complexMeasurement ? complexMeasurement.defaultCycleMs : undefined) ?? 10;
     const objectDetectionSignal = signal === "ObjektErkannt";
@@ -2145,6 +2167,7 @@ export function extractEngineeringSpecification(
       max_value: maxValue,
       ...architectureMetadata,
       configuration: { ...architectureMetadata.configuration,
+        ...(explicitCycleMs !== undefined ? { cycle_source: 'explicit_user_specification' } : {}),
         ...(modeledMeasurement ? { sensor_measurement: modeledMeasurement.id,
           measurement_source: explicitMeasurementId ? 'explicit_user_selection' : 'semantic_device_role' } : {}),
         ...(safetyProfile && safetyParticipant ? { safety_profile: safetyProfile,
