@@ -559,6 +559,9 @@ def test_camera_dialog_to_approved_model():
             proposal = result['proposals'][0]
             break
     assert proposal and proposal['status'] == 'VALIDATED', proposal
+    assert proposal['validation_result']['capacity_status'] == 'UNVERIFIED'
+    assert any(item.get('code') == 'CAPACITY_UNVERIFIED' and item['severity'] == 'OPEN'
+               for item in proposal['validation_result']['findings'])
     approved = run(authority, lambda: proposal_service.review(proposal['proposal_id'], revision=proposal['revision'], decision='approve', actor='human-test', trace_id=str(uuid4())))
     assert approved.success, approved
     applied = run(authority, lambda: proposal_service.apply(proposal['proposal_id'], actor='human-test', trace_id=str(uuid4())))
@@ -659,6 +662,8 @@ def test_human_edit_creates_new_validated_revision_and_survives_reload():
     revised = client.post(path+'/revise',headers=headers,json=payload)
     assert revised.status_code == 200, revised.json
     assert revised.json['data']['status'] == 'VALIDATED'
+    assert revised.json['data']['validation_result']['validation_scope'] == 'MODEL_STRUCTURE'
+    assert revised.json['data']['validation_result']['capacity_status'] == 'UNVERIFIED'
     assert revised.json['data']['proposal_id'] != proposal['proposal_id']
     assert client.get(path,headers=headers).json['data']['proposal_id'] == revised.json['data']['proposal_id']
     assert client.post(path+'/review',headers=headers,json={'revision':proposal['revision'],'decision':'approve'}).status_code == 409

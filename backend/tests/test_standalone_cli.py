@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from bus_technologies import BUILTIN_TECHNOLOGIES
@@ -97,10 +98,19 @@ class StandaloneSimulationOptionsTests(unittest.TestCase):
         self.assertEqual(options.payload_bytes, 4)
         self.assertEqual(options.output_dir, Path("flight_test"))
 
+    def test_interactive_rate_without_profile_default_requires_input(self) -> None:
+        answers = iter(["", "250000"])
+        output: list[str] = []
+        cli = InteractiveStandaloneCli(input_function=lambda _: next(answers),
+                                       output_function=output.append)
+        self.assertEqual(cli._integer("Bitrate", None, 1, 1_000_000), 250_000)
+        self.assertTrue(any("ausdrückliche Bitrate" in line for line in output))
+
     def test_runner_writes_universal_trace_for_non_can_bus(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             options = StandaloneSimulationOptions(
                 technology="modbus_rtu",
+                bitrate=19_200,
                 industry="industrial_automation",
                 output_dir=Path(temp_dir),
                 formats=("universal-jsonl", "universal-csv"),
@@ -110,11 +120,17 @@ class StandaloneSimulationOptionsTests(unittest.TestCase):
                 payload_bytes=8,
             )
 
+            # A configured rate alone cannot supply the missing Modbus RTU model.
+            with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                StandaloneCliRunner().run(options)
+            self.assertFalse((Path(temp_dir) / "traces" / "universal_trace.jsonl").exists())
+
+            options = replace(options, technology="lin", industry="automotive")
             result = StandaloneCliRunner().run(options)
 
             self.assertEqual(result["status"], "completed")
             self.assertGreater(result["trace"]["events"], 0)
-            self.assertEqual(result["trace"]["technologies"], ["modbus_rtu"])
+            self.assertEqual(result["trace"]["technologies"], ["lin"])
             self.assertTrue((Path(temp_dir) / "traces" / "universal_trace.jsonl").is_file())
             self.assertTrue((Path(temp_dir) / "traces" / "universal_trace.csv").is_file())
 

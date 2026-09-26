@@ -216,6 +216,21 @@ def test_late_heartbeat_cannot_undo_terminal_outcome(request_case, status, expec
     assert state['context']['agent_execution']['message'] == 'saved outcome'
 
 
+def test_preflight_evidence_block_is_resumable_with_findings(request_case):
+    accepted = start(request_case)
+    authority = request_case[0]
+    tracker = WizardExecutionTracker(authority.project_id, request_case[2]['run_id'], owner_turn_id=accepted['run_id'])
+    findings = [{'code': 'COMMUNICATION_UNVERIFIED', 'severity': 'REVIEW',
+                 'message': 'I2C-Zeitnachweis fehlt.'}]
+    tracker.finished({'status': 'INCOMPLETE', 'text': 'Nachweis ergänzen.',
+                      'recoverable': True, 'blocking_findings': findings})
+    state = invoke(authority, lambda: WorkflowStatusService(authority.project_id).get(summary=True)).data
+    execution = state['context']['agent_execution']
+    assert execution['state'] == 'BLOCKED'
+    assert execution['recoverable'] is True
+    assert execution['blocking_findings'] == findings
+
+
 def test_old_worker_cannot_overwrite_resumed_owner(request_case):
     first = start(request_case)
     release(request_case, first)

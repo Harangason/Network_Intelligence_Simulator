@@ -28,7 +28,8 @@ RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci -
 
 COPY . /app
 
-RUN python /app/scripts/write-build-info.py
+ARG NIS_BUILD_COMMIT_ID
+RUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py
 
 RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build
 

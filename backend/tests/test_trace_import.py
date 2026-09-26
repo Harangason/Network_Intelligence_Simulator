@@ -114,7 +114,7 @@ def test_http_upload_and_errors():
     app.register_blueprint(trace_import_api, url_prefix='/api')
     client = app.test_client()
     result = client.post('/api/trace-import?filename=x.json', data=b'[{"time_s":0}]', content_type='application/octet-stream')
-    assert result.status_code == 200
+    assert result.status_code == 200, result.get_json()
     assert result.json['events'][0]['timestamp'] == 0
     assert client.post('/api/trace-import?filename=x.pcap', data=b'bad').status_code == 422
     assert client.post('/api/trace-import?filename=x.json', environ_overrides={'CONTENT_LENGTH': str(MAX_BYTES + 1), 'wsgi.input': io.BytesIO(b'x')}).status_code == 413

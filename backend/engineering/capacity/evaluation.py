@@ -28,13 +28,15 @@ def network_evaluation(network, streams, signal_checks):
     status = "FAIL" if any(item["status"] == "FAIL" for item in functional) else (
         "PASS" if functional and all(item["status"] == "PASS" for item in functional) else "UNVERIFIED")
     capacity_applicable = network.get("capacity_applicable", True)
+    capacity_verified = network.get("capacity_verified", False)
     return {"payload": {"status": "FAIL" if payload_errors else "UNVERIFIED" if payload_open or not signals else "PASS",
                         "signal_count": len(signals), "errors": payload_errors, "open": payload_open},
-        "capacity": {"status": "UNVERIFIED" if not capacity_applicable else "OVERLOAD" if network["average_load_percent"] >= 100 else "PASS",
-                     "load_percent": network["average_load_percent"],
+        "capacity": {"status": "NOT_APPLICABLE" if not capacity_applicable else "UNVERIFIED" if not capacity_verified else "OVERLOAD" if network["average_load_percent"] >= 100 else "PASS",
+                     "load_percent": network["average_load_percent"] if capacity_applicable and capacity_verified else None,
                      "basis": "DIRECT_SIGNAL_LINE" if not capacity_applicable else "BOUNDED_EVENT_DEMAND" if any(row.get("traffic_load_basis") == "BOUNDED_EVENT_DEMAND" for row in streams) else "PERIODIC_DEMAND"},
         "schedule": {"status": schedule["status"], "slot_load_percent": schedule.get("slot_load_percent")},
-        "stress": {"status": "UNVERIFIED" if not capacity_applicable else "EXCEEDED" if max(network["peak_load_percent"], network["burst_load_percent"]) > network["target_bus_load_percent"] else "PASS",
-                   "peak_percent": network["peak_load_percent"], "burst_percent": network["burst_load_percent"]},
+        "stress": {"status": "NOT_APPLICABLE" if not capacity_applicable else "UNVERIFIED" if not capacity_verified else "EXCEEDED" if max(network["peak_load_percent"], network["burst_load_percent"]) > network["target_bus_load_percent"] else "PASS",
+                   "peak_percent": network["peak_load_percent"] if capacity_applicable and capacity_verified else None,
+                   "burst_percent": network["burst_load_percent"] if capacity_applicable and capacity_verified else None},
         "functional": {"status": status, "messages": functional,
             "explanation": "Funktionsfrist, Abtastung und Aktuation sind getrennt von der Bus-Antwortgrenze nachzuweisen."}}

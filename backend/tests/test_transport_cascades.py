@@ -1,7 +1,7 @@
 from copy import deepcopy
 import pytest
 
-from backend.tests.test_acceptance_scenarios import case_config
+from backend.tests.test_acceptance_scenarios import case_config, assert_timing_model_unavailable
 from hardware_profile import normalize_hardware_config
 from universal_trace import generate_universal_events
 from backend.engineering.reasoning.engine import EngineeringReasoningEngine
@@ -30,9 +30,12 @@ def run(config):
     return events, EngineeringReasoningEngine().analyze(project_id="cascade-qa", job_id="cascade", events=events, context=context)
 
 
-@pytest.mark.parametrize("technology", ["can_fd", "profinet", "dds_rtps"])
-def test_loss_stale_input_control_output_recovery_cascade(tmp_path, technology):
+@pytest.mark.parametrize("technology", ["can_fd", "profinet", "dds_rtps", "ethernet"])
+def test_loss_recovery_cascade_or_explicit_model_gap(tmp_path, technology):
     config = cascade_config(tmp_path, technology)
+    if technology in {'profinet', 'dds_rtps'}:
+        assert_timing_model_unavailable(config, [technology])
+        return
     events, reasoning = run(config)
     outputs = [e for e in events if e["route_id"] == "route-2"]
     assert any(e["signals"][0]["value"] == 0 and e["signals"][0]["golden_value"] == 40 for e in outputs)
@@ -47,7 +50,7 @@ def test_loss_stale_input_control_output_recovery_cascade(tmp_path, technology):
 
 
 def test_forged_dependency_claims_or_missing_source_cannot_prove_causality(tmp_path):
-    config = cascade_config(tmp_path, "profinet")
+    config = cascade_config(tmp_path, "can_fd")
     events, _ = run(config)
     for event in events:
         for sample in event["signals"]:
@@ -62,7 +65,7 @@ def test_forged_dependency_claims_or_missing_source_cannot_prove_causality(tmp_p
 
 def test_malformed_dependency_evidence_cannot_crash_or_confirm(tmp_path):
     from backend.engineering.reasoning.dependencies import validate_dependency_effect
-    config = cascade_config(tmp_path, 'profinet')
+    config = cascade_config(tmp_path, 'can_fd')
     events, _ = run(config)
     target = next(e for e in events if e['route_id'] == 'route-1')
     sample = deepcopy(target['signals'][0])
@@ -74,12 +77,17 @@ def test_malformed_dependency_evidence_cannot_crash_or_confirm(tmp_path):
     ('can_fd', 'BURST_TRAFFIC', {'factor': 100}),
     ('profinet', 'GATEWAY_DELAY', {'delay_ms': 45}),
     ('dds_rtps', 'MESSAGE_DELAY', {'delay_ms': 45}),
+    ('ethernet', 'GATEWAY_DELAY', {'delay_ms': 45}),
+    ('ethernet', 'MESSAGE_DELAY', {'delay_ms': 45}),
 ])
-def test_queue_and_delayed_delivery_propagate_through_explicit_age_budget(tmp_path, technology, kind, details):
+def test_delayed_delivery_cascade_or_explicit_model_gap(tmp_path, technology, kind, details):
     config = cascade_config(tmp_path, technology)
     scope = 'NETWORK' if kind == 'GATEWAY_DELAY' else 'MESSAGE'
     target = 'node-1' if kind == 'GATEWAY_DELAY' else 'route-0'
     config['scenario']['faults'] = [{'type': kind, 'scope': scope, 'target': {'id': target}, 'start_s': .02, 'end_s': .05, **details}]
+    if technology in {'profinet', 'dds_rtps'}:
+        assert_timing_model_unavailable(config, [technology])
+        return
     events, result = run(config)
     assert any(e['faults'] for e in events)
     assert any(effect.get('causality_proven') for effect in result.downstream_effects), result.data_gaps

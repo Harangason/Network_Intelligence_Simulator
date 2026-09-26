@@ -3,8 +3,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 from pydantic import Field
+from backend.agent_core.api.agent_response import InteractiveOption
 from backend.agent_core.api.tool_contract import Permission as P, ToolResult, ToolStatus
 from ..repository import get_object, ENTITY_SPECS, BASE_COLUMNS, NotFoundError
 from ..project_context import current_project_id
@@ -25,10 +26,17 @@ from ..intelligence import IntelligenceService
 from ..addressing import AddressResolutionService, LogicalNodeAddressAllocator
 from backend.intelligence.ml import MLInferenceService
 from backend.communication.technologies import DEFAULT_TECHNOLOGY_ONBOARDING
-from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation
+from . import model as access, generation, proposal_service as proposals, analysis, audit, wizard_generation, timing_diagnosis, communication_path
 from .catalog import TOOLS, register, ID, TEXT, PROMPT, OBJECT, OPTIONAL_OBJECT, ITEMS, COUNT, LIMIT, TECHNOLOGY
 
 CanonicalObjectType = Enum('CanonicalObjectType', {name: name for name in ENTITY_SPECS}, type=str)
+
+# Advertise the same option fields consumed by InteractiveQuestion. Older MCP
+# callers may use `value` as the identity; _ask_question normalizes that alias.
+QUESTION_OPTION_SCHEMA = InteractiveOption.model_json_schema()
+QUESTION_OPTION_SCHEMA['properties']['value'] = dict(QUESTION_OPTION_SCHEMA['properties']['id'])
+QUESTION_OPTION_SCHEMA['required'] = ['label']
+QUESTION_OPTION_SCHEMA['anyOf'] = [{'required': ['id']}, {'required': ['value']}]
 
 from . import model_import
 _import_fields = dict(filename=(str, Field(min_length=1, max_length=240)),
@@ -75,8 +83,20 @@ def _spatial_architecture(arguments):
 
 def _device(a):
     data = a.get("device") or get_object("HardwareNode", a["hardware_id"])
-    return DeviceClassificationRegistry().resolve_profile(**{k:v for k,v in data.items() if k in
-        {"name", "device_type", "device_class", "device_typing", "data_complexity"}}).to_dict()
+    from ..device_classification import TechnologyCandidateResolver, DEVICE_CLASS_PROFILES
+    profile = DeviceClassificationRegistry().resolve_profile(**{k:v for k,v in data.items() if k in
+        {"name", "device_type", "device_class", "device_typing", "data_complexity"}})
+    hardware_information = data.get('hardware_information') or {}
+    capabilities = hardware_information.get('communication_interfaces') or hardware_information.get('interface_capabilities') or []
+    existing_ports = [row for row in access.objects('HardwareNetworkInterface')
+                      if str(row.get('hardware_node_id')) == str(data.get('id'))] if data.get('id') else []
+    capabilities = [*capabilities, *(str(row.get('technology') or '') for row in existing_ports)]
+    return {**profile.to_dict(), 'device_class_profile': DEVICE_CLASS_PROFILES[profile.device_class].to_dict(),
+            'technology_candidates': TechnologyCandidateResolver().resolve(
+                device_class=profile.device_class, data_complexity=profile.data_complexity,
+                hardware_capabilities=capabilities,
+                existing_interfaces=[str(row.get('technology') or '') for row in existing_ports]),
+            'technology_binding_status': 'REVIEW_REQUIRED' if not capabilities else 'CANDIDATES_AVAILABLE'}
 
 
 def _communication_validation(a):
@@ -136,7 +156,30 @@ def _frame(a):
     estimate = estimate_frame(technology, payload, a.get("parameters") or {})
     if estimate.is_generic_estimate:
         raise NotImplementedError(f'Kein technologiespezifisches Frame-Modell für {technology}. Eine generische Schätzung ist kein bestätigter Technologienachweis.')
-    return estimate.to_dict()
+    return {**estimate.to_dict(), "status": "VERIFIED" if estimate.transmission_time_available else "UNVERIFIED"}
+
+
+def _empty_network_capacity(network):
+    """Zero demand is evidenced only for a modeled, configured, unattached net."""
+    from ..capacity.service import parameters_for_protocol
+    from ..workflow.service import WorkflowStatusService
+    parameters = WorkflowStatusService(current_project_id()).get()['parameters']
+    resolved = parameters_for_protocol(network['technology'], parameters,
+        network, network['id'], confirmed_parameters=parameters)
+    frame = estimate_frame(network['technology'], 0, resolved)
+    if frame.is_generic_estimate or not frame.transmission_time_available:
+        return None
+    if any(str(port.get('network_ref') or '') == network['id']
+           for port in access.objects('HardwareNetworkInterface')):
+        return None  # Missing route metrics on an attached net are not zero demand.
+    if any(str((route.get('source') or {}).get('network_id') or '') == network['id']
+           for route in access.routes()):
+        return None
+    limit = float(network.get('target_load_limit') or parameters.get('target_bus_load_percent') or 60)
+    return {'network_id': network['id'], 'protocol': network['technology'],
+            'average_load_percent': 0.0, 'capacity_margin_percent': 100.0,
+            'target_margin_percent': limit, 'route_count': 0, 'capacity_verified': True,
+            'status': 'VERIFIED', 'evidence_basis': 'CONFIGURED_UNATTACHED_NETWORK'}
 
 
 def _network_capacity(a):
@@ -144,8 +187,12 @@ def _network_capacity(a):
     result = _capacity(a)
     metric = next((item for item in result["results"]["networks"] if item["network_id"]==a["network_id"]),None)
     if metric is None:
-        metric = {"network_id":a["network_id"],"protocol":network["technology"],"average_load_percent":0,
-                  "capacity_margin_percent":100,"target_margin_percent":60,"route_count":0,"status":"PASS"}
+        metric = _empty_network_capacity(network)
+    if metric is None:
+        metric = {"network_id": a["network_id"], "protocol": network["technology"],
+                  "average_load_percent": None, "capacity_margin_percent": None,
+                  "target_margin_percent": None, "route_count": 0,
+                  "capacity_verified": False, "status": "UNVERIFIED"}
     return {**metric,"findings":[item for item in result["findings"] if a["network_id"] in str(item)],"network":network}
 
 
@@ -158,8 +205,12 @@ def _available(a):
             continue
         if a.get("technology") and network.get("technology") != a["technology"]:
             continue
-        metric = metrics.get(network["id"],{"target_margin_percent":60,"average_load_percent":0})
-        if metric["target_margin_percent"] >= a.get("required_load_percent",0):
+        metric = metrics.get(network["id"])
+        if metric is None:
+            metric = _empty_network_capacity(network)
+        if not metric or metric.get("capacity_verified") is not True:
+            continue
+        if metric.get("target_margin_percent") is not None and metric["target_margin_percent"] >= a.get("required_load_percent",0):
             candidates.append({"network":network,"metrics":metric})
     return {"candidates":sorted(candidates,key=lambda item:item["metrics"]["average_load_percent"]),"required_load_percent":a.get("required_load_percent",0)}
 
@@ -167,14 +218,19 @@ def _available(a):
 def _interface_load(a):
     interface = get_object("HardwareNetworkInterface",a["interface_id"])
     messages = [item for item in access.objects("Message") if str(item.get("hardware_interface_id"))==a["interface_id"]]
-    load = sum(_load({"technology":interface["technology"],"payload_bytes":message.get("dlc") or 0,
-                "cycle_ms":message.get("cycle_ms") or 10,"parameters":{"bitrate":interface.get("bitrate"),"data_bitrate":interface.get("data_bitrate")}})["load_percent"] for message in messages)
+    loads = [_load({"technology": interface["technology"], "payload_bytes": message.get("dlc") or 0,
+                "cycle_ms": message.get("cycle_ms") or 10, "parameters": {"bitrate": interface.get("bitrate"), "data_bitrate": interface.get("data_bitrate")}})["load_percent"] for message in messages]
+    load = sum(loads) if all(value is not None for value in loads) else None
     limit = float(interface.get("target_load_limit") or 60)
-    return {"interface_id":a["interface_id"],"load_percent":load,"message_count":len(messages),"limit_percent":limit,"valid":load<=limit}
+    return {"interface_id": a["interface_id"], "load_percent": load, "message_count": len(messages),
+            "limit_percent": limit, "status": "UNVERIFIED" if load is None else "VERIFIED",
+            "valid": load is not None and load <= limit}
 
 
 def _load(a):
     frame = _frame(a)
+    if frame["transmission_time_s"] is None:
+        return {**frame, "load_percent": None, "valid": False}
     load = utilization_percent(frame["transmission_time_s"], a["cycle_ms"], a.get("multiplicity", 1))
     return {**frame, "load_percent": load, "valid": load <= 100}
 
@@ -424,6 +480,10 @@ def register_tools():
     register("calculate_message_size", "Technologiespezifische Framegröße und Sendezeit berechnen.", P.READ_MODEL,_frame,**frame_fields)
     register("calculate_bus_load", "Technologiespezifische Buslast berechnen.", P.READ_MODEL,_load,**frame_fields,cycle_ms=(float,Field(gt=0)),multiplicity=(int,Field(default=1,ge=1,le=100000)))
     register("calculate_capacity","Kapazität und Timing berechnen; kanonische Eingaben als aktuellen Prüfsnapshot speichern.",P.VALIDATE,lambda a:CapacityTimingService(current_project_id()).calculate(a.get("overrides"),persist=not bool(a.get("overrides"))),overrides=OPTIONAL_OBJECT)
+    register('inspect_message_timing', 'Eine benannte kanonische Nachricht mit aktueller berechneter E2E-Latenz, Frist und Teilzeiten untersuchen; keine Trace-Messung behaupten.',
+             P.READ_MODEL, timing_diagnosis.inspect_message_timing, request=PROMPT)
+    register('inspect_communication_path', 'Bestehenden gerichteten Funktionspfad mit aktuellen berechneten Laufzeiten lesen; keine Objekte erzeugen oder beobachtete Transaktionen erfinden.',
+             P.READ_MODEL, communication_path.inspect_communication_path, source_ref=TEXT, target_ref=TEXT)
     register("calculate_network_load","Last des gewählten Netzwerks berechnen.",P.READ_MODEL,_network_capacity,network_id=ID,overrides=OPTIONAL_OBJECT)
     register("validate_network","Kapazität des gewählten Netzwerks validieren.",P.VALIDATE,lambda a:_validation((lambda metric:{**metric,"valid":metric["status"] not in {"FAIL","OVERLOAD","CRITICAL"}})(_network_capacity(a))),network_id=ID,overrides=OPTIONAL_OBJECT)
     register("calculate_interface_load","Last aus den tatsächlich zugeordneten Nachrichten berechnen.",P.READ_MODEL,_interface_load,interface_id=ID)
@@ -499,10 +559,11 @@ def register_tools():
              lambda a:{"tools":[{"name":item.name,"description":item.description} for item in TOOLS.values() if a["query"].casefold() in (item.name+" "+item.description).casefold()][:12]},query=TEXT)
     register('generate_camera_architecture', 'Explizit ausgewählte Kameraarchitektur als prüfbaren Vorschlag erzeugen.', P.GENERATE_PROPOSAL,
              generation.camera_architecture, coverage=TEXT, profile=TEXT, outputs=(list[str],Field(min_length=1,max_length=4)), prompt=PROMPT)
-    register("ask_engineering_question","Eine gezielte Auswahlfrage stellen und auf die Nutzerentscheidung warten.",P.READ_MODEL,
-             _ask_question, question_id=ID,question=TEXT,multiple=(bool,False),options=(list[dict[str,Any]],Field(min_length=2,max_length=4)),
+    register("ask_engineering_question","Nach Prüfung der Modellfakten eine fehlende fachliche Entscheidung erfragen. Keine erneute Zustimmung zum bereits erteilten Auftrag. Jede Option benötigt id und label; bekannte Modellfakten nicht beim Nutzer erfragen.",P.READ_MODEL,
+             _ask_question, question_id=ID,question=(str,Field(min_length=1,max_length=2000)),multiple=(bool,False),
+             options=(list[dict[str,Any]],Field(min_length=2,max_length=4,json_schema_extra={'items':QUESTION_OPTION_SCHEMA})),
              question_description=(str,Field(default='',max_length=2000)), required=(bool,True),
-             engineering_impact=(str,Field(default='REQUIRED',pattern='^(OPTIONAL|REQUIRED|CRITICAL)$')),
+             engineering_impact=(Literal['OPTIONAL','REQUIRED','CRITICAL'],'REQUIRED'),
              recommended_options=(list[str],Field(default_factory=list,max_length=4)))
 
 
@@ -529,6 +590,7 @@ register('prepare_project_request', 'Projektanforderung als versionierten Entwur
          operation_id=(str | None, Field(default=None, min_length=8, max_length=120)),
          revision=(int | None, Field(default=None, ge=1)))
 from . import project_draft
+from . import configuration
 from . import project_creation
 from . import project_bundle_restore
 register('plan_project_bundle_restore', 'Projektpaket als prüfbaren Vorschlag in ein neues benanntes Projekt übernehmen. Menschliche Freigabe erforderlich; startet keine gespeicherten Aufträge.', P.GENERATE_PROPOSAL,
@@ -544,6 +606,33 @@ register('prepare_draft_workflow', 'Gespeicherten Entwurf für den vorhandenen d
          scope_ids=(list[str], Field(min_length=1, max_length=9)))
 register('plan_project_model', 'Modell aus geklärter Entwurfsrevision durch den gemeinsamen Engineering-Generator planen und validieren. Menschliche Modellfreigabe bleibt erforderlich.', P.GENERATE_PROPOSAL,
          project_draft.plan_model, draft_id=ID, revision=(int, Field(ge=1)))
+register('plan_simple_project', 'Eine eindeutige kleine Projektstruktur direkt im geöffneten Projekt als validierten Core-Vorschlag vorbereiten. Unbekannte Technik und Anschlüsse bleiben offen; menschliches Review und Apply sind erforderlich.', P.GENERATE_PROPOSAL,
+         project_draft.plan_simple_project, requirement=(str, Field(min_length=1, max_length=16000)),
+         workload_id=(str | None, None))
+register('plan_lin_bitrate', 'Explizite LIN-Bitrate gegen TechnologyProfile prüfen und das eindeutig deklarierte Netz versionsgebunden zur Freigabe vorschlagen.', P.GENERATE_PROPOSAL,
+         configuration.plan_lin_bitrate, requirement=(str, Field(min_length=1, max_length=16000)),
+         workload_id=(str | None, None))
+from . import hardware_channel
+from . import gateway_outage
+register('inspect_gateway_outage_request', 'Ausdrücklichen Gateway-Ausfallauftrag anhand des gespeicherten Ziels und kanonischer Projektauswahl prüfen.',
+         P.READ_MODEL, gateway_outage.inspect_request, workload_id=ID)
+register('prepare_gateway_outage', 'Vom Nutzer ausdrücklich beauftragten Gateway-Ausfall als Szenario und aktuellen Simulationsstand speichern. Keine erfundenen Fehler oder Modelländerungen.',
+         P.RUN_SIMULATION, gateway_outage.prepare, workload_id=ID,
+         expected_model_revision=(str, Field(min_length=1, max_length=128)))
+register('assess_gateway_outage', 'Gespeichertes Szenario, aktuellen abgeschlossenen Lauf und persistierte Trace-Befunde des ausgewählten Gateways gemeinsam prüfen.',
+         P.ANALYZE_TRACE, gateway_outage.assess, workload_id=ID, reasoning_id=ID)
+
+from . import repair_execution
+register('inspect_signal_recipients', 'Alle kanonischen Signale auf belegte Empfänger und validierte Routen prüfen; fehlende Empfänger nicht aus Erreichbarkeit ableiten.',
+         P.READ_MODEL, repair_execution.inspect_recipients, workload_id=ID)
+register('prepare_signal_recipient_repair', 'Nur eindeutig fehlende Routen zu gespeicherten Empfängern zur Prüfung vorschlagen; ungeklärte Fälle als Review-Befunde erhalten.',
+         P.GENERATE_PROPOSAL, repair_execution.prepare_recipients, workload_id=ID,
+         expected_model_revision=(str, Field(min_length=1, max_length=200)))
+register('inspect_hardware_channel_request', 'Einen ausdrücklich angeforderten Hardwarekanal gegen kanonische Identität, TechnologyProfile und bestätigte Ressourcen prüfen. Keine Änderungen.',
+         P.READ_MODEL, hardware_channel.inspect_request, request=(str, Field(min_length=1, max_length=2000)))
+register('prepare_hardware_channel', 'Genau einen verfügbaren Hardwarekanal versionsgebunden zur menschlichen Freigabe vorbereiten. Keine erfundene Netzbindung, Bitrate oder Kommunikation.',
+         P.GENERATE_PROPOSAL, hardware_channel.prepare, request=(str, Field(min_length=1, max_length=2000)),
+         workload_id=ID, expected_model_revision=(str, Field(min_length=1, max_length=128)))
 register('update_project_draft', 'Entwurf unter Revisionsprüfung ergänzen. Keine Freigabe oder Modelländerung.', P.GENERATE_PROPOSAL,
          project_draft.command, action=(str, Field(pattern='^(CREATE|AMEND|RESOLVE)$')),
          operation_id=(str, Field(min_length=8, max_length=120)), revision=(int | None, Field(default=None, ge=1)),

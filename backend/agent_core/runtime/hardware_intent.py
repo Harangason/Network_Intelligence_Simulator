@@ -6,6 +6,26 @@ not interpreted as a signal, transport binding or acquisition implementation.
 import re
 
 _DEVICE_TYPES = {"ecu": "ECU", "controller": "EmbeddedController", "plc": "PLC"}
+_CHANNEL = re.compile(
+    r'(?:bitte\s+)?(?:füge|fuege)\s+(?:dem|der)\s+(?P<hardware>[^\n;!?]{1,100}?)\s+'
+    r'einen\s+(?P<ordinal>ersten|zweiten|dritten|vierten|fünften|fuenften|\d{1,3}\.)\s+'
+    r'(?P<technology>[A-Za-z0-9][A-Za-z0-9 _-]{0,40}?)[ -]Kanal\s+hinzu[.!]?', re.I,
+)
+_ORDINALS = {'ersten': 1, 'zweiten': 2, 'dritten': 3, 'vierten': 4, 'fünften': 5, 'fuenften': 5}
+
+
+def hardware_channel_intent(prompt: str) -> dict | None:
+    """Parse an explicit channel request; do not resolve hardware or capacity."""
+    match = _CHANNEL.fullmatch(prompt.strip())
+    if not match or re.search(r'\b(?:nicht|kein\w*|ohne|statt|und|oder)\b', prompt, re.I):
+        return None
+    ordinal = match['ordinal'].casefold()
+    channel = _ORDINALS.get(ordinal) or int(ordinal.rstrip('.'))
+    if channel < 1:
+        return None
+    return {'hardware_reference': match['hardware'].strip(' "\''),
+            'technology': match['technology'].strip(), 'channel_index': channel}
+
 _SIMPLE = re.compile(
     r"(?:bitte\s+)?(?:erstelle|erzeuge|lege)\s+(?:eine[n]?|ein|1)\s+"
     r"(?P<device>ECU|Controller|PLC)(?:\s+an)?"

@@ -245,6 +245,45 @@ class EngineeringAgent:
             status = 'ANSWERED' if result.success else 'INCOMPLETE'
             event('RESULT', status=status, text=text, data=data)
             return {'run_id': run_id, 'status': status, 'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
+        from ..orchestration.capability_intent import communication_path_question
+        path_refs = communication_path_question(prompt) if not context.wizard_request else None
+        if path_refs:
+            result = await call('inspect_communication_path', {'source_ref': path_refs[0], 'target_ref': path_refs[1]})
+            data = result.data or {}
+            lines = []
+            for route in data.get('routes', []):
+                names = ' → '.join(item['name'] for item in route.get('hops', []))
+                lines.append(f"{route['name']}: {names or 'physischer Pfad nicht nachgewiesen'}.")
+                for timing in route.get('timing', []):
+                    value = timing.get('end_to_end_latency_ms')
+                    lines.append(f"Berechnete Laufzeit: {value:g} ms." if isinstance(value, (int, float))
+                                 else 'Laufzeit nicht nachgewiesen; die fehlenden Modellparameter bleiben offen.')
+            complete = result.success and data.get('status') == 'MODEL_PATH_RESOLVED'
+            text = '\n'.join(lines) if lines else str(data.get('reason') or 'Der Kommunikationsweg konnte nicht eindeutig gelesen werden.')
+            if lines and not complete and data.get('reason'):
+                text += '\n' + data['reason']
+            sequence = data.get('sequence') or {}
+            if sequence.get('status') == 'SIMULATED':
+                transactions = sequence.get('transactions') or []
+                text += f"\nDie aktuelle Simulation enthält {len(transactions)} korrelierte Transaktionen. Das Sequenzdiagramm steht in der ausführlichen Auswertung."
+                latencies = [item['transport_latency_ms'] for item in transactions
+                             if isinstance(item.get('transport_latency_ms'), (int, float))
+                             and not isinstance(item['transport_latency_ms'], bool)]
+                if latencies:
+                    low, high = min(latencies), max(latencies)
+                    text += f"\nSimulierte Transportlaufzeit: {low:g} ms" + (f" bis {high:g} ms." if high != low else '.')
+                if sequence.get('receiver_action') == 'NOT_OBSERVED':
+                    text += '\nEmpfängerakzeptanz ist nicht nachgewiesen; die Transportzeit belegt keine vollständige E2E-Akzeptanz.'
+                else:
+                    text += '\nExplizite Empfängeraktionen sind je Transaktion im Simulationsergebnis ausgewiesen.'
+                if sequence.get('truncated_or_uncorrelated_count'):
+                    text += f"\n{sequence['truncated_or_uncorrelated_count']} weitere Transaktionen sind in dieser Ansicht nicht vollständig korreliert oder aus Platzgründen nicht enthalten."
+                text += '\nDiese Werte stammen aus der Simulation, nicht aus einer beobachteten Hardware-Trace.'
+            else:
+                text += '\nDie Laufzeit stammt aus dem aktuellen Berechnungsmodell. Beobachtete Transaktionen, Sequenz und Empfängeraktion sind damit nicht nachgewiesen.'
+            event('RESULT', status='ANSWERED' if complete else 'INCOMPLETE', text=text, data=data)
+            return {'run_id': run_id, 'status': 'ANSWERED' if complete else 'INCOMPLETE',
+                    'events': events, 'context': context.model_dump(), 'trace': traces, 'proposals': []}
         refs = connectivity_question(prompt) if not context.wizard_request else None
         signal_ref = signal_inspection(prompt) if not context.wizard_request else None
         if context.requested_mode == 'VALIDATE_SIGNAL' and not context.wizard_request:
@@ -822,11 +861,21 @@ class EngineeringAgent:
                                 'context': context.model_dump(), 'trace': traces,
                                 'proposals': list(proposals.values())}
                 status = 'INCOMPLETE'
+                blocking_findings = [item for item in result.findings
+                                     if str(item.get('severity') or '').upper() in {'ERROR', 'BLOCKER', 'REVIEW'}]
+                details = '; '.join(
+                    f"{item.get('code')}: {item.get('message')}" for item in blocking_findings[:3]
+                )
                 text = ('Capacity & Timing ist berechnet. Der anschließende Preflight hat konkrete '
-                        'blockierende Befunde gefunden; diese müssen vor der Simulation behoben werden.')
+                        'blockierende Befunde gefunden; diese müssen vor der Simulation behoben werden.'
+                        + (f' {details}' if details else ''))
                 event('RESULT', status=status, text=text)
+                # A missing executable technology model cannot be repaired by
+                # repeating the same wizard continuation without a model update.
+                recoverable = not bool(finding_codes & {'GENERIC_ESTIMATE'})
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
-                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                        'context': context.model_dump(), 'trace': traces, 'proposals': [],
+                        'recoverable': recoverable, 'blocking_findings': blocking_findings[:20]}
             checked = len(result.data.get('checked_steps') or [])
             warnings = int(result.data.get('warning_count') or 0)
             event('PROGRESS', status='VALIDATING',
@@ -838,7 +887,9 @@ class EngineeringAgent:
                 text = block_reason
                 event('RESULT', status=status, text=text)
                 return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
-                        'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                        'context': context.model_dump(), 'trace': traces, 'proposals': [],
+                        'recoverable': True,
+                        'blocking_findings': (result.data.get('findings') or [])[:20]}
             validation_complete = True
             if target_index == workflow_order.index('validation'):
                 text = 'Der Workflow-Preflight ist abgeschlossen.'
@@ -1121,7 +1172,7 @@ class EngineeringAgent:
             event('RESULT', status=status, text=text)
             return {'run_id': run_id, 'status': status, 'text': text, 'events': events,
                     'context': context.model_dump(), 'trace': traces, 'proposals': list(proposals.values())}
-        elif not answer and re.search(r"erzeug|erstell|benötig|benoetig|entwerf|modelli|generate|create", prompt, re.I) and re.search(r"funktion|function", prompt, re.I) and not re.search(r"vollständig|komplett|gesamte|complete|full", prompt, re.I):
+        elif not answer and requests_model_change(prompt) and re.search(r"erzeug|erstell|benötig|benoetig|entwerf|modelli|generate|create", prompt, re.I) and re.search(r"funktion|function", prompt, re.I) and not re.search(r"vollständig|komplett|gesamte|complete|full", prompt, re.I):
             selected = next((ref for ref in context.selected_object_refs if ref.get("object_type")=="HardwareNode"), {})
             if not selected.get('id'):
                 text = ('Welcher Controller führt die angeforderten Funktionen aus? Wähle die vorhandene Hardware '
@@ -1146,7 +1197,7 @@ class EngineeringAgent:
             directory = await call('inspect_assistant_capabilities')
             if directory.success and isinstance(directory.data.get('capabilities'), list):
                 messages.insert(len(messages) - 1, {'role': 'system', 'content': 'Verifizierter Fähigkeitenkatalog. Nutze prepare_assistant_action für passende Bedienabläufe und inspect_communication_repair für die aktuelle Architektur. '
-                    + json.dumps([{k: item[k] for k in ('id', 'label', 'description', 'tools', 'steps', 'execution') if k in item} for item in directory.data['capabilities']], ensure_ascii=False)})
+                    + json.dumps([{k: item[k] for k in ('id', 'label', 'description') if k in item} for item in directory.data['capabilities']], ensure_ascii=False)})
             if change_requested:
                 messages.insert(len(messages) - 1, {'role': 'system', 'content':
                     'Für jeden natürlichsprachlichen Engineering-Änderungsauftrag arbeite fachobjektübergreifend: '
@@ -1164,6 +1215,31 @@ class EngineeringAgent:
             tools = await self.client.tools()
             from ..orchestration.tool_selection import select_tools
             allowed = select_tools(prompt,tools)
+            def planning_evidence(name, result):
+                # These are actual server-side reads, not model-authored facts.
+                # Keep them in tool messages so local inference can compact
+                # large snapshots without treating project data as instructions.
+                call_id = str(uuid4())
+                # Retain the current user request as the final message; these
+                # prefetched facts supplement its bounded conversation context.
+                messages[-1:-1] = [
+                    {'role': 'assistant', 'content': '', 'tool_calls': [
+                        {'id': call_id, 'type': 'function', 'function': {'name': name, 'arguments': {}}}]},
+                    {'role': 'tool', 'tool_call_id': call_id, 'tool_name': name, 'content': result.model_dump_json()},
+                ]
+            planning_evidence('inspect_project', project)
+            if change_requested and self.reasoner and any(tool['name'] == 'inspect_model_situation' for tool in tools):
+                snapshot = await call('inspect_model_situation')
+                model = snapshot.data if isinstance(snapshot.data, dict) else {}
+                if (not snapshot.success or model.get('project_ref') != context.active_project_id
+                        or not isinstance(model.get('project_revision'), str) or not model['project_revision']):
+                    text = 'Der aktuelle kanonische Modellstand konnte nicht projektgebunden gelesen werden. Vor einer Fachfrage oder Änderung muss dieser Modellzugriff wieder verfügbar sein.'
+                    event('FINDING', severity='ERROR', text=text,
+                          metadata={'code': 'PLANNING_MODEL_CONTEXT_UNAVAILABLE', 'trace_id': snapshot.trace_id})
+                    event('RESULT', status='INCOMPLETE', text=text)
+                    return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                planning_evidence('inspect_model_situation', snapshot)
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
             evidence_retries = 0
             planning_timeouts = 0

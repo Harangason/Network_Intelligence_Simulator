@@ -34,7 +34,8 @@ def test_canonical_binding_to_port_to_packet(version):
         route = {'id': str(uuid4()), 'route_code': 'RT-IP', 'approval_state': 'APPROVED',
             'source': {'node_id': source[0], 'port_id': source[1], 'network_id': 'ip-net', 'protocol': 'ETHERNET'},
             'destinations': [{'node_id': target[0], 'port_id': target[1]}], 'timing': {'cycle_time_ms': 10}}
-        config = CommunicationConfigBuilder().build([route])['config']
+        config = CommunicationConfigBuilder().build([route], parameters={
+            'technology': 'ethernet', 'bitrate': 100_000_000})['config']
         config.update(duration_s=.01)
         _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=1700000000)
         assert events[0]['src_ip'] == source[2]

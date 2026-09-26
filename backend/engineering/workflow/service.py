@@ -1415,13 +1415,17 @@ class WorkflowStatusService:
             )
         return self._serialize_row(row)
 
-    def get_simulation_snapshot(self, snapshot_id: str, *, require_current: bool = False) -> dict[str, Any] | None:
+    def get_simulation_snapshot(self, snapshot_id: str, *, require_current: bool = False,
+                                metadata_only: bool = False) -> dict[str, Any] | None:
         # Recovery must bind the frozen input and current revision in one read.
         # Missing legacy revision metadata is not authority to execute again.
-        query = "SELECT * FROM engineering_simulation_snapshots WHERE id = %s AND project_id = %s"
+        columns = ("id, project_id, source_versions, status, job_id, is_outdated, outdated_reason"
+                   if metadata_only else "*")
+        query = f"SELECT {columns} FROM engineering_simulation_snapshots WHERE id = %s AND project_id = %s"
         if require_current:
-            query = """
-                SELECT snapshot.* FROM engineering_simulation_snapshots AS snapshot
+            selected = ', '.join('snapshot.' + column.strip() for column in columns.split(','))
+            query = f"""
+                SELECT {selected} FROM engineering_simulation_snapshots AS snapshot
                 JOIN engineering_workflow_projects AS project ON project.project_id = snapshot.project_id
                 WHERE snapshot.id = %s AND snapshot.project_id = %s
                   AND jsonb_typeof(snapshot.source_versions -> 'simulation') = 'number'

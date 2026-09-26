@@ -72,6 +72,197 @@ def save_runtime_workload(run_id, workload):
     return items[workload_id]
 
 
+def reconcile_runtime_model_apply(proposal):
+    """Close a direct assistant goal only after its reviewed objects exist.
+
+    Wizard and legacy workload proposals carry no explicit goal evidence and
+    continue through their own completion paths.
+    """
+    recipient_evidence = next((item for item in proposal.get('evidence') or []
+                               if item.get('source') == 'explicit_signal_recipient_repair'
+                               and item.get('engineering_goal_id')), None)
+    if recipient_evidence:
+        from .repair_execution import reconcile_recipient_apply
+        return reconcile_recipient_apply(proposal, recipient_evidence)
+    channel_evidence = next((item for item in proposal.get('evidence') or []
+                             if item.get('source') == 'explicit_hardware_channel'
+                             and item.get('engineering_goal_id')), None)
+    if channel_evidence:
+        return _reconcile_hardware_channel_apply(proposal, channel_evidence)
+    rate_evidence = next((item for item in proposal.get('evidence') or []
+                          if item.get('source') == 'explicit_network_bitrate'
+                          and item.get('engineering_goal_id')), None)
+    if rate_evidence:
+        return _reconcile_network_rate_apply(proposal, rate_evidence)
+    evidence = next((item for item in proposal.get('evidence') or []
+                     if item.get('source') == 'explicit_project_requirement'
+                     and item.get('engineering_goal_id')), None)
+    if not evidence:
+        return False
+    if proposal.get('status') != 'APPLIED' or not proposal.get('validation_result', {}).get('valid'):
+        raise ValueError('Nur ein angewendeter, validierter Strukturvorschlag kann den Auftrag abschließen.')
+    from ..repository import ENTITY_SPECS, get_object
+    from ..workflow.service import WorkflowStatusService
+    goal_id = str(evidence['engineering_goal_id'])
+    state = read()
+    workload = (state.get('engineering_workloads') or {}).get(goal_id)
+    if not workload or workload.get('project_id') != current_project_id():
+        raise ConcurrentUpdateError('Der zugehörige Engineering-Auftrag fehlt oder gehört zu einem anderen Projekt.')
+    if workload.get('status') == 'COMPLETED':
+        return True
+    canonical = proposal.get('canonical_ids') or []
+    if len(canonical) != len(proposal.get('changes') or []):
+        raise ValueError('Der angewendete Vorschlag besitzt keinen vollständigen Core-Nachweis.')
+    data_models = (((WorkflowStatusService(current_project_id()).get().get('parameters') or {})
+                    .get('engineering_models') or {}).get('DataObject') or [])
+    data_by_id = {str(item.get('id')): item for item in data_models}
+    for change, item in zip(proposal['changes'], canonical):
+        if change['object_type'] != item['object_type']:
+            raise ValueError('Die Modellreferenzen stimmen nicht mit dem freigegebenen Vorschlag überein.')
+        if item['object_type'] in ENTITY_SPECS:
+            persisted = get_object(item['object_type'], item['id'])
+        elif item['object_type'] == 'DataObject':
+            persisted = data_by_id.get(str(item['id']))
+        else:
+            raise ValueError('Unerwarteter Objekttyp im Strukturvorschlag.')
+        if not persisted or persisted.get('name') != change['data'].get('name'):
+            raise ValueError('Ein freigegebenes Modellobjekt ist nach Apply nicht nachweisbar.')
+    revision_after = model_revision()
+    previous = workload.get('result') or {}
+    completion = {'status': 'COMPLETED', 'completed': True,
+                  'achieved_outcomes': (workload.get('goal') or {}).get('required_outcomes') or [],
+                  'missing_outcomes': [],
+                  'evidence_refs': [proposal['proposal_id'], *[str(item['id']) for item in canonical]]}
+    workload['status'] = 'COMPLETED'
+    workload['evidence'] = completion['evidence_refs']
+    workload['result'] = {**previous, 'status': 'APPLIED', 'completion': completion,
+                          'proposal_id': proposal['proposal_id'], 'canonical_ids': canonical,
+                          'model_revision_after': revision_after,
+                          'model_diff': proposal['changes']}
+    workload['updated_at'] = datetime.now(timezone.utc).isoformat()
+    state['engineering_workloads'][goal_id] = workload
+    write(state)
+    return True
+
+
+def _reconcile_hardware_channel_apply(proposal, evidence):
+    from ..db import flush_model_changes
+    from ..goal_execution.graph import ModelGraphService
+    from ..goal_execution.commands import checked_port
+    from ..capacity.service import CapacityTimingService, PreflightService
+
+    if (proposal.get('proposal_type') != 'HARDWARE_CHANNEL' or proposal.get('status') != 'APPLIED'
+            or not proposal.get('validation_result', {}).get('valid')):
+        raise ValueError('Der Hardwarekanal muss geprüft und übernommen sein.')
+    goal_id = str(evidence['engineering_goal_id'])
+    state = read()
+    workload = (state.get('engineering_workloads') or {}).get(goal_id)
+    if (not workload or workload.get('project_id') != current_project_id()
+            or workload.get('goal', {}).get('goal_type') != 'EXTEND_HARDWARE'):
+        raise ConcurrentUpdateError('Der zugehörige Hardwareauftrag fehlt im aktuellen Projekt.')
+    canonical = proposal.get('canonical_ids') or []
+    if len(canonical) != 1 or canonical[0]['object_type'] != 'HardwareNetworkInterface':
+        raise ValueError('Der einzelne angeforderte Hardwarekanal ist nicht nachweisbar.')
+    graph = ModelGraphService.load()
+    interface = graph.hni[str(canonical[0]['id'])]
+    if (str(interface['hardware_node_id']) != evidence['hardware_id']
+            or interface['controller_ref'] != evidence['controller_id']
+            or interface['channel_index'] != evidence['channel_index']):
+        raise ValueError('Der übernommene Hardwarekanal passt nicht zum geprüften Auftrag.')
+    checked_port(graph, interface, require_network=False)
+    resource = next((p for p in graph.resources.get('PhysicalPort', [])
+                     if p['id'] == interface['physical_port_ref']
+                     and p['hardware_interface_ref'] == str(interface['id'])), None)
+    if not resource:
+        raise ValueError('Die kanonische physische Portressource fehlt.')
+    flush_model_changes(actor='local-human', reason='Bestätigten Hardwarekanal mit physischem Anschluss übernommen.')
+    capacity = CapacityTimingService(current_project_id()).calculate(persist=True)
+    preflight = PreflightService(current_project_id()).run()
+    capacity_id = str(capacity.get('id') or capacity.get('snapshot_id') or '')
+    preflight_id = str(preflight.get('snapshot_id') or '')
+    checked = bool(capacity_id and preflight_id and preflight.get('capacity_snapshot_id') == capacity_id
+                   and isinstance((capacity.get('results') or {}).get('timing'), dict))
+    supported = {'hardware_resolved': True, 'capability_verified': True, 'channel_available': True,
+                 'physical_interface_persisted': True, 'port_validated': True, 'dependent_assessments_checked': checked}
+    required = workload['goal']['required_outcomes']
+    missing = [key for key in required if supported.get(key) is not True]
+    refs = [proposal['proposal_id'], str(interface['id']), resource['id'], *[s for s in (capacity_id, preflight_id) if s]]
+    completion = {'status': 'BLOCKED_WITH_EXPLICIT_CAUSE' if missing else 'COMPLETED',
+                  'completed': not missing, 'achieved_outcomes': [key for key in required if supported.get(key) is True],
+                  'missing_outcomes': missing, 'evidence_refs': refs}
+    workload['status'] = completion['status']
+    workload['evidence'] = refs
+    workload['failure'] = ({'code': 'DEPENDENT_ASSESSMENTS_MISSING',
+                            'message': 'Der Hardwarekanal ist angelegt; abhängige Kapazitäts-, Timing- oder Preflight-Prüfungen sind noch nicht vollständig nachgewiesen.'} if missing else None)
+    workload['result'] = {**(workload.get('result') or {}), 'status': 'APPLIED', 'completion': completion,
+        'proposal_id': proposal['proposal_id'], 'canonical_ids': canonical, 'model_diff': proposal['changes'],
+        'model_revision_after': model_revision(), 'dependent_results': {
+            'capacity_snapshot_id': capacity_id, 'capacity_status': capacity.get('status'),
+            'preflight_snapshot_id': preflight_id, 'preflight_status': preflight.get('preflight_status'),
+            'preflight_ready_for_simulation': preflight.get('ready_for_simulation'),
+            'port_validation': {'valid': True, 'hardware_interface_id': str(interface['id']), 'physical_port_id': resource['id']},
+            'scope': 'Unconnected hardware channel; assessment status is not a communication or functional timing release.'}}
+    workload['updated_at'] = datetime.now(timezone.utc).isoformat()
+    state['engineering_workloads'][goal_id] = workload
+    write(state)
+    return True
+
+
+def _reconcile_network_rate_apply(proposal, evidence):
+    """Recalculate both dependent analyses after a reviewed rate change."""
+    if proposal.get('status') != 'APPLIED' or not proposal.get('validation_result', {}).get('valid'):
+        raise ValueError('Die LIN-Änderung muss geprüft und übernommen sein.')
+    from ..workflow.service import WorkflowStatusService
+    from ..capacity.service import CapacityTimingService, PreflightService
+    from backend.agent_core.runtime.completion import CompletionEvaluator
+
+    network_id = str(evidence['network_id'])
+    rate = int(evidence['bitrate_bps'])
+    parameters = WorkflowStatusService(current_project_id()).get()['parameters']
+    network = next((item for item in parameters.get('networks', [])
+                    if str(item.get('id')) == network_id), None)
+    if not network or network.get('bitrate') != rate or str(network.get('technology') or '').upper() != 'LIN':
+        raise ValueError('Die freigegebene LIN-Bitrate ist im kanonischen Modell nicht nachweisbar.')
+    state = read()
+    goal_id = str(evidence['engineering_goal_id'])
+    workload = (state.get('engineering_workloads') or {}).get(goal_id)
+    if not workload or workload.get('project_id') != current_project_id():
+        raise ConcurrentUpdateError('Der gespeicherte Engineering-Auftrag zur LIN-Änderung fehlt.')
+    if workload.get('status') == 'COMPLETED':
+        return True
+    capacity = CapacityTimingService(current_project_id()).calculate(persist=True)
+    preflight = PreflightService(current_project_id()).run()
+    capacity_id = str(capacity.get('id') or capacity.get('snapshot_id') or '')
+    preflight_id = str(preflight.get('snapshot_id') or '')
+    if not capacity_id or not preflight_id:
+        raise ValueError('Kapazitäts- oder Preflight-Snapshot fehlt nach der Netzänderung.')
+    revision_after = model_revision()
+    result = workload.get('result') or {}
+    evidence_refs = [proposal['proposal_id'], network_id, capacity_id, preflight_id]
+    completion = CompletionEvaluator().evaluate_configuration_apply(
+        workload.get('goal') or {}, capacity, preflight, evidence_refs=evidence_refs)
+    dependent = {'network_id': network_id, 'bitrate_bps': rate,
+                 'capacity_snapshot_id': capacity_id, 'capacity_status': capacity.get('status'),
+                 'capacity_findings': capacity.get('findings') or [],
+                 'preflight_snapshot_id': preflight_id,
+                 'preflight_status': preflight.get('preflight_status'),
+                 'preflight_ready_for_simulation': preflight.get('ready_for_simulation'),
+                 'preflight_findings': preflight.get('findings') or [],
+                 'completion': completion}
+    workload['status'] = completion['status']
+    workload['evidence'] = evidence_refs
+    workload['result'] = {**result, 'status': 'APPLIED', 'completion': completion,
+                          'proposal_id': proposal['proposal_id'],
+                          'model_revision_after': revision_after,
+                          'model_diff': proposal['changes'],
+                          'dependent_results': dependent}
+    workload['updated_at'] = datetime.now(timezone.utc).isoformat()
+    state['engineering_workloads'][goal_id] = workload
+    write(state)
+    proposal['dependent_results'] = dependent
+    return True
+
+
 def inspect():
     state = read()
     revision = model_revision()

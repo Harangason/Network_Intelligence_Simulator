@@ -73,8 +73,48 @@ def test_http_trace_window_is_project_scoped_and_reports_io_failure(monkeypatch,
     response = client.get('/api/simulations/job/trace-window', headers={'X-Project-ID': 'isolated'})
     assert response.status_code == 200
     assert response.get_json()['count'] == 1
+    assert response.get_json()['model_freshness']['status'] == 'UNVERIFIED'
     def unavailable(*args, **kwargs):
         raise OSError(errno.EIO, 'Input/output error')
     monkeypatch.setattr(jobs, 'artifact', unavailable)
     response = client.get('/api/simulations/job/trace-window', headers={'X-Project-ID': 'isolated'})
     assert response.status_code == 503
+
+
+@pytest.mark.parametrize('snapshot,expected', [
+    ({'is_outdated': False, 'source_versions': {'parameters': 1}}, 'CURRENT'),
+    ({'is_outdated': True, 'source_versions': {'parameters': 1}, 'outdated_reason': 'LIN bitrate changed'}, 'OUTDATED'),
+    (None, 'UNVERIFIED'),
+])
+def test_trace_window_reports_snapshot_freshness_without_rewriting_events(monkeypatch, tmp_path, snapshot, expected):
+    api = importlib.import_module('backend.app.api')
+    jobs = JobService(persist=False)
+    path = tmp_path / 'job' / 'universal_trace.jsonl'
+    path.parent.mkdir()
+    original = b'{"time_s":0,"signals":[],"bitrate":9600}\n'
+    path.write_bytes(original)
+    jobs._jobs['job'] = {'id': 'job', 'project_id': 'isolated', 'workflow_snapshot_id': 'snapshot',
+                         'result': {'artifacts': [str(path)]}}
+    monkeypatch.setattr(api, 'JOBS', jobs)
+    monkeypatch.setattr('backend.app.job_service.TRACE_ROOT', tmp_path)
+
+    class Workflow:
+        def __init__(self, project_id):
+            assert project_id == 'isolated'
+
+        def get_simulation_snapshot(self, snapshot_id, *, metadata_only):
+            assert snapshot_id == 'snapshot'
+            assert metadata_only is True
+            return snapshot
+
+    monkeypatch.setattr(api, 'WorkflowStatusService', Workflow)
+    client = create_app(testing=True).test_client()
+    assert client.get('/api/simulations/job/trace-window', headers={'X-Project-ID': 'other'}).status_code == 404
+    response = client.get('/api/simulations/job/trace-window', headers={'X-Project-ID': 'isolated'})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['model_freshness']['status'] == expected
+    assert data['model_freshness']['snapshot_id'] == 'snapshot'
+    assert data['model_freshness']['source_versions'] == (snapshot['source_versions'] if snapshot else None)
+    assert data['events'] == [json.loads(original)]
+    assert path.read_bytes() == original

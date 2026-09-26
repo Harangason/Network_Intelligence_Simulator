@@ -3,7 +3,7 @@
 import os
 import re
 import sys
-import tempfile
+import warnings
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -16,6 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 sys.path.insert(0, str(SIMULATOR_ROOT))
+
+from scripts.test_runtime_storage import RuntimeLease, cleanup_runtime_dirs
 
 
 def _safe_test_database_url(value: str) -> str:
@@ -43,7 +45,22 @@ def pytest_configure(config):
         # Pure unit suites remain usable without Postgres. Accidental SQL cannot
         # fall back to a developer database or establish a real connection.
         os.environ["DATABASE_URL"] = "postgresql://nis_test:disabled@127.0.0.1:1/nis_test_disabled"
-    runtime = tempfile.mkdtemp(prefix="nis-test-runtime-")
+    runtime_parent = PROJECT_ROOT / "traces" / "temp"
+    cleanup = cleanup_runtime_dirs(runtime_parent)
+    config._nis_runtime_cleanup = cleanup
+    if cleanup["deleted"] or cleanup["errors"]:
+        print(f"NIS test runtime cleanup: {len(cleanup['deleted'])} expired directories removed; "
+              f"{len(cleanup['active'])} active protected; {len(cleanup['errors'])} errors.")
+    lease = RuntimeLease(runtime_parent)
+    runtime = str(lease.path)
+
+    def finish_runtime():
+        try:
+            lease.close()
+        except OSError as error:
+            warnings.warn(f"Could not mark test runtime finished: {error}", RuntimeWarning)
+
+    config.add_cleanup(finish_runtime)
     os.environ["SIMULATOR_RUNTIME_ROOT"] = runtime
     os.environ["NUMERIC_ACCELERATOR"] = "cpu"
     config._nis_test_runtime = runtime

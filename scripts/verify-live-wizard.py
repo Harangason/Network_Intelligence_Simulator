@@ -77,6 +77,10 @@ Erzeuge das isolierte Testnetz mit einem Gateway, einer Motorsteuerung, einem Te
             'einer Motorsteuerung, einer Anzeige, einem Temperatursensor')
     if args.technology == 'ethernet':
         prompt = prompt.replace('CAN-FD', 'Ethernet').replace('can_fd', 'ethernet')
+    rate_lines = 'Ethernet: 100 Mbit/s' if args.technology == 'ethernet' else (
+        'CAN-FD: 500 kbit/s arbitration, 2 Mbit/s data\nCAN: 500 kbit/s'
+    )
+    prompt = prompt.replace('- Hardware-Sollwerte:', rate_lines + '\n- Hardware-Sollwerte:', 1)
     if args.initial_can_fd_segments is not None:
         assert args.initial_can_fd_segments >= 0
         prompt = prompt.replace('- Hardware-Sollwerte:',

@@ -86,7 +86,7 @@ def test_validation_job_completes() -> None:
     client = create_app(testing=True).test_client()
     response = client.post(
         "/api/simulations/validate",
-        json={"technology": "arinc429", "node_count": 2, "duration_s": 0.01},
+        json={"technology": "arinc429", "bitrate": 100_000, "node_count": 2, "duration_s": 0.01},
     )
     assert response.status_code == 202
     job_id = response.get_json()["id"]
@@ -109,6 +109,8 @@ def test_simulation_job_publishes_runtime_metrics() -> None:
         "/api/simulations",
         json={
             "technology": "can_fd",
+            "bitrate": 500_000,
+            "data_bitrate": 2_000_000,
             "node_count": 2,
             "duration_s": 0.02,
             "cycle_ms": 10,
@@ -145,7 +147,7 @@ def test_topology_config_drives_explicit_route_retries_and_gateway_metrics() -> 
         "retry_limit": 2,
         "gateway_delay_ms": 0.4,
         "gateway_maximum_throughput": 1_000_000,
-        "networks": [{"id": "network-can_fd", "technology": "can_fd", "bitrate": 500_000}],
+        "networks": [{"id": "network-can_fd", "technology": "can_fd", "bitrate": 500_000, "data_bitrate": 2_000_000}],
         "hardware": {
             "nodes": [
                 {

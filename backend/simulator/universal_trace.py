@@ -87,7 +87,9 @@ def _restbus_control_event(
         if reverse
         else (template.get("destination_names") or [target["hardware_id"]])[receiver_index]
     )
-    bitrate = max(1, int(template.get("configured_bitrate") or 1_000_000))
+    bitrate = int(template.get("configured_bitrate") or 0)
+    if bitrate <= 0:
+        raise ValueError("Ethernet-Trace benötigt eine positive konfigurierte Linkrate.")
     payload_hex = payload.hex(" ").upper()
     frame_bits = wire_bytes(flow, len(payload)) * 8
     event = {
@@ -172,7 +174,9 @@ def _add_restbus_sessions(events: list[dict[str, Any]], config: dict[str, Any], 
         template = route_events[0]
         flow = template["ethernet"]
         protocol = str(flow["transport_protocol"]).lower()
-        bitrate = max(1, int(template.get("configured_bitrate") or 1_000_000))
+        bitrate = int(template.get("configured_bitrate") or 0)
+        if bitrate <= 0:
+            raise ValueError("Ethernet-Restbus benötigt eine positive konfigurierte Linkrate.")
         control_delivery_s = wire_bytes(flow, 0) * 8 / bitrate * 2
         response_delay_s = float(settings["response_delay_s"])
         handshake_step_s = control_delivery_s + response_delay_s
@@ -524,9 +528,16 @@ def _generate_universal_events(
         if str(sender.get("health")).lower() in {"degraded", "faulty"}:
             cycle_s *= 2
         network_metadata = route.get("network_metadata") if isinstance(route.get("network_metadata"), dict) else {}
-        bitrate = int(network_metadata.get("bitrate") or network_metadata.get("link_speed")
-                      or technology.get("default_bitrate") or 1_000_000)
-        frame = estimate_frame(technology["id"], payload_size, {**network_metadata, "bitrate": bitrate})
+        frame_parameters = dict(network_metadata)
+        if "bitrate" not in frame_parameters and "link_speed" in frame_parameters:
+            frame_parameters["bitrate"] = frame_parameters["link_speed"]
+        frame = estimate_frame(technology["id"], payload_size, frame_parameters)
+        if frame.is_generic_estimate or not frame.transmission_time_available:
+            raise ValueError(
+                f"TIMING_UNVERIFIED: {technology['id']} auf Netz {route['network']}: "
+                "Explizite gültige Raten und ein technologiespezifisches Übertragungsmodell sind erforderlich."
+            )
+        bitrate = frame_parameters.get("bitrate") or frame_parameters.get("arbitration_bitrate") or 0
         ethernet = resolve_flow({**route, 'network_metadata': {
             **{key: config[key] for key in ('ip_version', 'transport_protocol', 'source_port', 'destination_port', 'mtu', 'vlan_id') if key in config},
             **network_metadata}})
@@ -678,12 +689,7 @@ def _generate_universal_events(
                 "duplicate_injected": not is_forwarding and rng.random() < duplicate_probability,
                 "reordered": reordered,
                 "retry_delay_ms": retransmission_count * retry_delay_ms,
-                "configured_bitrate": int(
-                    network_metadata.get("bitrate")
-                    or network_metadata.get("link_speed")
-                    or technology.get("default_bitrate")
-                    or 1_000_000
-                ),
+                "configured_bitrate": bitrate,
             }
             if ethernet:
                 event["ethernet"] = ethernet

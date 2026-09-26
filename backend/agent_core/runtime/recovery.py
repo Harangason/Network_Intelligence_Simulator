@@ -7,6 +7,12 @@ import asyncio
 class RecoveryManager:
     def classify(self, error: BaseException) -> dict:
         import httpx
+        if isinstance(error, BaseExceptionGroup):
+            failures = [self.classify(child) for child in error.exceptions]
+            # A task group may wrap the same actionable failure several times.
+            # Mixed or unknown causes must not become a misleading retry hint.
+            if failures and all(failure == failures[0] for failure in failures):
+                return failures[0]
         if isinstance(error, (asyncio.TimeoutError, TimeoutError, httpx.TimeoutException)):
             return {"code": "ENGINEERING_EXECUTION_TIMEOUT", "category": "TRANSIENT_TIMEOUT",
                     "status": "BLOCKED_WITH_EXPLICIT_CAUSE", "retryable": True,

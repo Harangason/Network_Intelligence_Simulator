@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from hashlib import sha256
 import json
-from .dimensioning import DIRECT_SIGNAL_PROTOCOLS, _constraints, bus_schedule, effective_period, policy_for, transmission_contract, unique_streams
+from .dimensioning import DIRECT_SIGNAL_PROTOCOLS, SUPPORTED_CAPACITY_PROTOCOLS, _constraints, bus_schedule, effective_period, policy_for, transmission_contract, unique_streams
 from .transmission import profile
 from .evaluation import network_evaluation
 from datetime import datetime, timezone
@@ -29,6 +29,7 @@ from .calculators import (
     classify_load,
     can_frame_time_bound_ms,
     clock_drift_ms,
+    confirmed_serial_evidence,
     estimate_frame,
     scheduled_queueing_delay_ms,
     utilization_percent,
@@ -70,7 +71,7 @@ def _number(value: Any, default: float) -> float:
 
 def parameters_for_protocol(
     protocol: str, parameters: dict[str, Any], configuration: dict[str, Any] | None = None,
-    network_id: str | None = None,
+    network_id: str | None = None, confirmed_parameters: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     aliases = {"AUTOMOTIVE_ETHERNET": "ETHERNET", "CANFD": "CAN_FD", "CAN_CLASSIC": "CAN", "SOMEIP": "SOME_IP"}
 
@@ -81,20 +82,62 @@ def parameters_for_protocol(
     resolved = dict(parameters)
     configured = canonical(parameters.get("technology") or parameters.get("protocol"))
     target = canonical(protocol)
+    confirmed = confirmed_parameters or {}
+    saved_rate = any(_number(confirmed.get(key), 0) > 0 for key in
+                     ("bitrate", "bitrate_bps", "arbitration_bitrate", "nominal_bitrate_bps"))
+    explicit_rates = confirmed.get("explicit_technology_bitrates") or {}
+    explicit_rate = next((_number(value, 0) for key, value in explicit_rates.items()
+                          if canonical(key) == target and _number(value, 0) > 0), 0)
+    explicitly_specified = explicit_rate > 0
+    parameter_provenance = confirmed.get("parameter_provenance") or {}
+    trusted_sources = {
+        "EXPLICIT_USER_SPECIFICATION", "USER_CONFIRMED", "MANUAL",
+    }
+    provenance = parameter_provenance.get("bitrate") or {}
+    manually_confirmed = not confirmed.get("defaults_source") or provenance.get("source") in trusted_sources
+    rate_evidenced = (canonical(confirmed.get("technology") or confirmed.get("protocol")) == target
+                      and saved_rate and manually_confirmed) or explicitly_specified
+    phase_sources = {"arbitration_bitrate": ("arbitration_bitrate", "bitrate"),
+                     "data_bitrate": ("data_bitrate",)}
+    phase_evidenced = {
+        phase: ((canonical(confirmed.get("technology") or confirmed.get("protocol")) == target or explicitly_specified) and
+                any(_number(confirmed.get(key), 0) > 0 and
+                    (not confirmed.get("defaults_source") or
+                     (parameter_provenance.get(key) or {}).get("source") in trusted_sources)
+                    for key in keys))
+        for phase, keys in phase_sources.items()
+    }
     # A global speed applies to the selected technology, not every bus in a mixed network.
     if configured and configured != target:
         for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
             resolved.pop(key, None)
-        resolved["bitrate"] = PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0]
-    resolved.setdefault("bitrate", PROTOCOL_CAPACITY.get(target, PROTOCOL_CAPACITY["CUSTOM"])[0])
+    if explicitly_specified:
+        resolved["bitrate"] = explicit_rate
     declared = next((item for item in parameters.get("networks", []) if str(item.get("id")) == str(network_id)), {}) if network_id else {}
     effective_configuration = {**(configuration or {}), **declared}
     for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
         value = effective_configuration.get(key)
         if _number(value, 0) > 0:
             resolved[key] = value
+            rate_evidenced = True
+            if key in phase_evidenced:
+                phase_evidenced[key] = True
+            if key == "bitrate" and target == "CAN_FD":
+                phase_evidenced["arbitration_bitrate"] = True
+    if target == "CAN_FD":
+        rate_evidenced = all(phase_evidenced.values())
+    if confirmed_parameters is not None:
+        resolved["_rate_evidenced"] = rate_evidenced
     if isinstance(effective_configuration.get("local_timing_evidence"), dict):
         resolved["local_timing_evidence"] = effective_configuration["local_timing_evidence"]
+    if target in {"I2C", "SPI"}:
+        serial = confirmed_serial_evidence(target, resolved)
+        rate_evidenced = serial is not None
+        if serial:
+            resolved["bitrate"] = serial["bitrate_bps"]
+        else:
+            resolved.pop("bitrate", None)
+        resolved["_rate_evidenced"] = rate_evidenced
     return resolved
 
 
@@ -250,13 +293,14 @@ def _priority_value(route: dict[str, Any], message: dict[str, Any], signals: lis
 
 
 class CapacityTimingService:
-    CALCULATION_VERSION = "3.3"
+    CALCULATION_VERSION = "3.5"
 
     def __init__(self, project_id: str = "default") -> None:
         self.workflow = WorkflowStatusService(project_id)
 
     def calculate(self, overrides: dict[str, Any] | None = None, *, persist: bool = True, include_drafts: bool = False) -> dict[str, Any]:
         state = self.workflow.get()
+        confirmed_parameters = state.get("parameters") or {}
         parameters = {
             **DEFAULT_PARAMETER_VALUES,
             **(state.get("parameters") or {}),
@@ -381,7 +425,8 @@ class CapacityTimingService:
                 interface = interfaces.get(str(endpoint.get("interface_id") or ""), {})
                 physical_interface = hardware_interfaces.get(str(endpoint.get("hardware_interface_id") or endpoint.get("port_id") or ""), {})
                 configuration = {**(interface.get("configuration") or {}), **(physical_interface.get("capabilities") or {})}
-                segment_parameters = parameters_for_protocol(segment_protocol, parameters, configuration, segment["network_id"])
+                segment_parameters = parameters_for_protocol(segment_protocol, parameters, configuration,
+                                                            segment["network_id"], confirmed_parameters)
                 frame = estimate_frame(segment_protocol, payload_bytes, segment_parameters)
                 segment_average = utilization_percent(frame.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
                 ethernet = frame.calculation_model == "ETHERNET_WIRE_ESTIMATE"
@@ -441,7 +486,12 @@ class CapacityTimingService:
                 "data_freshness_limit",
             )
             estimated_jitter = route_queue_ms * 0.25 + gateway_queue_ms * 0.25 + sync_precision_ms
-            load_status = "UNVERIFIED" if estimate.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else classify_load(max(average, peak, burst), thresholds)
+            capacity_verified = all(item["parameters"].get("_rate_evidenced") and
+                                    not item["frame"].is_generic_estimate and
+                                    item["frame"].transmission_time_available and
+                                    item["frame"].protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS
+                                    for item in estimates)
+            load_status = "UNVERIFIED" if not capacity_verified else classify_load(max(average, peak, burst), thresholds)
             latency_status = "FAIL" if max_latency and end_to_end > max_latency else "PASS"
             jitter_status = "FAIL" if jitter_limit and estimated_jitter > jitter_limit else "PASS"
             breakdown = {
@@ -473,7 +523,8 @@ class CapacityTimingService:
                 "route_segment_count": segment_count,
                 "protocol": estimate.protocol,
                 "capacity_applicable": estimate.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
-                "bitrate": _number(route_parameters.get("bitrate"), 1_000_000.0),
+                "capacity_verified": capacity_verified,
+                "bitrate": (_number(route_parameters.get("bitrate"), 0) or None) if route_parameters.get("_rate_evidenced") else None,
                 "payload_bytes": payload_bytes,
                 "cycle_ms": cycle_ms,
                 "frame_bits": estimate.frame_bits,
@@ -519,14 +570,15 @@ class CapacityTimingService:
                     "route_segment_count": segment_count,
                     "protocol": segment_frame.protocol,
                     "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
-                    "bitrate": None if segment_frame.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else _number(segment_data["parameters"].get("bitrate"), 1_000_000.0),
+                    "capacity_verified": bool(segment_data["parameters"].get("_rate_evidenced")) and segment_frame.transmission_time_available and not segment_frame.is_generic_estimate and segment_frame.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
+                    "bitrate": (_number(segment_data["parameters"].get("bitrate"), 0) or None) if segment_data["parameters"].get("_rate_evidenced") else None,
                     "local_timing_evidence": {key: value for key, value in (segment_data["parameters"].get("local_timing_evidence") or {}).items()},
                     "frame_bits": segment_frame.frame_bits,
                     "calculation_model": segment_frame.calculation_model,
                     "average_load_percent": round(segment_data["average"], 4),
                     "peak_load_percent": round(segment_data["peak"], 4),
                     "burst_load_percent": round(segment_data["burst"], 4),
-                    "status": "UNVERIFIED" if segment_frame.protocol.upper() in DIRECT_SIGNAL_PROTOCOLS else classify_load(max(segment_data["average"], segment_data["peak"], segment_data["burst"]), thresholds),
+                    "status": "UNVERIFIED" if not segment_data["parameters"].get("_rate_evidenced") or not segment_frame.transmission_time_available or segment_frame.is_generic_estimate or segment_frame.protocol.upper() not in SUPPORTED_CAPACITY_PROTOCOLS else classify_load(max(segment_data["average"], segment_data["peak"], segment_data["burst"]), thresholds),
                     "segment_transmission_latency_ms": round(segment_data["transmission_ms"], 6),
                     "frame_time_bound_ms": can_frame_time_bound_ms(segment_frame.protocol, payload_bytes, segment_data["parameters"]),
                     "segment_queueing_latency_ms": round(segment_data["queue_ms"], 6),
@@ -562,8 +614,12 @@ class CapacityTimingService:
                 peak = max((item["peak_load_percent"] for item in port_metrics), default=0)
                 burst = max((item["burst_load_percent"] for item in port_metrics), default=0)
             governing_load = max(average, peak, burst)
-            schedule = bus_schedule(items, policy_for(parameters))
             direct_signal = str(items[0]["protocol"]).upper() in DIRECT_SIGNAL_PROTOCOLS
+            capacity_verified = not direct_signal and all(item["capacity_verified"] for item in items)
+            schedule = bus_schedule(items, policy_for(parameters))
+            if not capacity_verified and schedule["status"] in {"FEASIBLE_UNDER_ASSUMPTIONS", "CONSTRAINT_VIOLATION", "OVERLOAD"}:
+                schedule = {**schedule, "status": "UNVERIFIED", "responses": {},
+                            "reasons": ["Kapazitätsmodell oder bestätigte Bus-/Linkrate fehlt; berechnete Zeitgrenzen sind nicht freigabefähig."]}
             network_metrics.append(
                 {
                     "network_id": network_id,
@@ -576,6 +632,7 @@ class CapacityTimingService:
                     "response_time_bound_ms": max(schedule.get("responses", {}).values(), default=None) if schedule["status"] == "FEASIBLE_UNDER_ASSUMPTIONS" else None,
                     "load_basis": "DIRECT_SIGNAL_LINE" if direct_signal else "BUSIEST_FULL_DUPLEX_PORT" if port_metrics else "SHARED_BUS",
                     "capacity_applicable": not direct_signal,
+                    "capacity_verified": capacity_verified,
                     "port_metrics": port_metrics,
                     "bitrate": items[0]["bitrate"],
                     "average_load_percent": round(average, 4),
@@ -586,8 +643,8 @@ class CapacityTimingService:
                     "capacity_margin_percent": round(100.0 - governing_load, 4),
                     "target_bus_load_percent": target_bus_load,
                     "target_margin_percent": round(target_bus_load - governing_load, 4),
-                    "target_status": "NOT_APPLICABLE" if direct_signal else "PASS" if governing_load <= target_bus_load else "EXCEEDED",
-                    "status": "UNVERIFIED" if direct_signal else "OVERLOAD" if average >= 100 else ("CRITICAL" if classify_load(governing_load, thresholds) == "OVERLOAD" else classify_load(governing_load, thresholds)),
+                    "target_status": "NOT_APPLICABLE" if not capacity_verified else "PASS" if governing_load <= target_bus_load else "EXCEEDED",
+                    "status": "UNVERIFIED" if not capacity_verified else "OVERLOAD" if average >= 100 else ("CRITICAL" if classify_load(governing_load, thresholds) == "OVERLOAD" else classify_load(governing_load, thresholds)),
                     "worst_end_to_end_latency_ms": round(statistics["worst_end_to_end_latency_ms"], 6),
                     "top_contributors": [
                         {"route_id": item["route_id"], "name": item["name"], "load_percent": item["average_load_percent"]}
@@ -690,12 +747,17 @@ class CapacityTimingService:
             findings.append({"severity": "ERROR", "code": "PHYSICAL_ROUTE_UNRESOLVED",
                 "message": "Der Gateway-Pfad besitzt noch keine vollständig bestätigten physischen Segmente; die Kapazität ist nur vorläufig geschätzt.",
                 "object_type": "RoutingEntry", "object_id": route_id, "step": "network_editor"})
+        direct_only = bool(signals) and not routes and not messages and all(
+            (signal.get("configuration") or {}).get("direct_signal_binding") for signal in signals.values()
+        )
         for step, accepted in (
             ("engineering_model", {"COMPLETE"}),
             ("routing", {"APPROVED"}),
             ("network_editor", {"COMPLETE"}),
             ("parameters", {"APPROVED", "COMPLETE"}),
         ):
+            if direct_only and step in {"routing", "network_editor"}:
+                continue
             current_status = state["statuses"].get(step)
             if current_status not in accepted:
                 findings.append(
@@ -707,7 +769,16 @@ class CapacityTimingService:
                         "recommendation": f"Workflow-Schritt {WORKFLOW_LABELS[step]} vervollstaendigen.",
                     }
                 )
-        if not routes:
+        if direct_only:
+            findings.append(
+                {
+                    "severity": "REVIEW",
+                    "code": "DIRECT_IO_CAPACITY_NOT_APPLICABLE",
+                    "message": "Direkte Signale benötigen keine Bus-Capacity. Ihr Reaktionszeitnachweis wird getrennt geprüft.",
+                    "recommendation": "Geräte- und Leitungstiming für jedes direkte Signal bestätigen.",
+                }
+            )
+        elif not routes:
             findings.append(
                 {
                     "severity": "ERROR",
@@ -718,6 +789,14 @@ class CapacityTimingService:
             )
         for network in network_metrics:
             schedule = network.get("communication_schedule") or {}
+            if not network["capacity_verified"] and any(
+                item["protocol"].upper() in SUPPORTED_CAPACITY_PROTOCOLS and not item.get("bitrate")
+                for item in network_groups[network["network_id"]]
+            ):
+                findings.append({"severity": "REVIEW", "code": "CAPACITY_RATE_UNVERIFIED",
+                    "object_type": "Network", "object_id": network["network_id"],
+                    "message": f"{network['network_name']}: bestätigte Link- oder Busrate fehlt; Kapazitätszahlen sind nicht freigabefähig.",
+                    "recommendation": "Bitrate im Projekt oder am konkreten Netzwerk-/Hardwareprofil bestätigen und Capacity erneut berechnen."})
             sizing_policy = policy_for(parameters)
             slot_load = schedule.get('slot_load_percent')
             if slot_load is not None and slot_load > sizing_policy['maximum_slot_load_percent']:
@@ -728,7 +807,7 @@ class CapacityTimingService:
                                'Bei 100 % bleibt kein freier Slot. Dies ist getrennt von Nominallast und Funktionsfreigabe zu bewerten.',
                     'recommendation': 'Verbleibende Schedule-Reserve ausdrücklich prüfen; bestätigte Zyklen und Kodierungen bleiben unverändert.'})
             if schedule.get("status") not in {"FEASIBLE_UNDER_ASSUMPTIONS", "EMPTY"}:
-                findings.append({"severity": "ERROR" if schedule.get("status") in {"OVERLOAD", "MODEL_INCONSISTENT", "CONSTRAINT_VIOLATION"} else "WARNING",
+                findings.append({"severity": "ERROR" if schedule.get("status") in {"OVERLOAD", "MODEL_INCONSISTENT", "CONSTRAINT_VIOLATION"} else "REVIEW",
                     "code": "COMMUNICATION_" + str(schedule.get("status")), "object_type": "Network", "object_id": network["network_id"],
                     "message": f"{network['network_name']}: " + "; ".join(schedule.get("reasons", [])),
                     "recommendation": "Kommunikation dimensionieren; Zyklusvarianten und Grenzen im Plan vergleichen."})
@@ -865,7 +944,7 @@ class CapacityTimingService:
         if generic_models:
             findings.append(
                 {
-                    "severity": "INFO",
+                    "severity": "REVIEW",
                     "code": "GENERIC_ESTIMATE",
                     "message": "Fuer " + ", ".join(sorted(generic_models)) + " wurde ein generisches Modell verwendet.",
                     "recommendation": "Technologiespezifische Overhead- und Scheduling-Parameter hinterlegen.",
@@ -883,7 +962,10 @@ class CapacityTimingService:
             protocol = str(physical_row.get("protocol") or physical.get("technology") or interface.get("interface_type") or default_protocol)
             payload_bytes = max(0, int(_number(message.get("dlc"), default_payload)))
             cycle_ms = effective_period(message, physical_row.get("cycle_ms") or _number(message.get("cycle_ms"), default_cycle))
-            estimate = estimate_frame(protocol, payload_bytes, parameters_for_protocol(protocol, parameters, configuration, configuration.get("network_id") or configuration.get("network")))
+            message_parameters = parameters_for_protocol(protocol, parameters, configuration,
+                                                          configuration.get("network_id") or configuration.get("network"),
+                                                          confirmed_parameters)
+            estimate = estimate_frame(protocol, payload_bytes, message_parameters)
             load = utilization_percent(estimate.transmission_time_s, cycle_ms) * (1.0 + retry_rate)
             requirements = message.get("configuration") or {}
             message_metrics.append(
@@ -892,6 +974,7 @@ class CapacityTimingService:
                     "name": message.get("name"),
                     "network_id": configuration.get("network_id") or configuration.get("network") or protocol,
                     "protocol": estimate.protocol,
+                    "capacity_verified": bool(message_parameters.get("_rate_evidenced")) and estimate.transmission_time_available and not estimate.is_generic_estimate and estimate.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
                     "payload_bytes": payload_bytes,
                     "cycle_ms": cycle_ms,
                     "average_load_percent": round(load, 4),
@@ -910,6 +993,7 @@ class CapacityTimingService:
         signal_metrics: list[dict[str, Any]] = []
         for signal_id, signal in signals.items():
             communication = signal.get("communication") or {}
+            direct_binding = (signal.get("configuration") or {}).get("direct_signal_binding")
             message = messages.get(str(signal.get("message_id") or ""), {})
             message_metric = next(
                 (item for item in message_metrics if item["message_id"] == str(message.get("id") or "")),
@@ -921,7 +1005,10 @@ class CapacityTimingService:
                     "name": signal.get("display_name") or signal.get("name"),
                     "message_id": str(signal.get("message_id") or ""),
                     "message_name": message.get("name"),
-                    "load_contribution_percent": message_metric.get("average_load_percent", 0.0) if message_metric else 0.0,
+                    "load_contribution_percent": None if direct_binding else message_metric.get("average_load_percent", 0.0) if message_metric else 0.0,
+                    "capacity_status": "NOT_APPLICABLE" if direct_binding else None,
+                    "timing_status": "UNVERIFIED" if direct_binding else None,
+                    "connection_type": "DIRECT_IO" if direct_binding else None,
                     "cycle_ms": communication.get("cycle_time_ms") or message.get("cycle_ms"),
                     "maximum_latency_ms": communication.get("maximum_latency_ms"),
                     "maximum_jitter_ms": communication.get("maximum_jitter_ms"),
@@ -931,7 +1018,7 @@ class CapacityTimingService:
                     "critical": str(communication.get("priority") or "").upper() in {"CRITICAL", "SAFETY_CRITICAL"},
                 }
             )
-        signal_metrics.sort(key=lambda item: (not item["critical"], -item["load_contribution_percent"]))
+        signal_metrics.sort(key=lambda item: (not item["critical"], -_number(item["load_contribution_percent"], 0.0)))
 
         signal_quality = build_generation_signal_audit(
             hardware=list(hardware.values()),
@@ -943,6 +1030,12 @@ class CapacityTimingService:
         )
         for network in network_metrics:
             network["evaluation"] = network_evaluation(network, network_groups[network["network_id"]], signal_quality["signals"])
+        for message in message_metrics:
+            if str(message["protocol"]).upper() in DIRECT_SIGNAL_PROTOCOLS:
+                findings.append({"severity": "ERROR", "code": "DIRECT_IO_MESSAGE_CREATED",
+                    "object_type": "Message", "object_id": message["message_id"],
+                    "message": "Direkte I/O-Signale dürfen keine Message oder TransportUnit erzeugen.",
+                    "recommendation": "Signal an einen DirectSignalBinding mit physischem Port binden."})
         for issue in signal_quality["issues"][:50]:
             findings.append(
                 {
@@ -975,7 +1068,7 @@ class CapacityTimingService:
             )
 
         worst_status = "ERROR" if any(item["severity"] == "ERROR" for item in findings) else (
-            "WARNING" if any(item["severity"] == "WARNING" for item in findings) else "COMPLETE"
+            "WARNING" if any(item["severity"] in {"WARNING", "REVIEW"} for item in findings) else "COMPLETE"
         )
         load_counts = {
             status: sum(item["status"] == status for item in network_metrics)
@@ -1009,11 +1102,27 @@ class CapacityTimingService:
             }
             for item in critical_paths
         )
+        # Preserve numeric intermediates for scheduling internals, but expose no
+        # fictional bus percentages or wire serialization for direct conductors.
+        for row in [*logical_route_metrics, *route_metrics, *network_metrics, *message_metrics]:
+            if row.get("capacity_applicable") is False or str(row.get("protocol") or "").upper() in DIRECT_SIGNAL_PROTOCOLS:
+                row["capacity_applicable"] = False
+                row["capacity_status"] = "NOT_APPLICABLE"
+                row["status"] = "NOT_APPLICABLE"
+                for field in ("average_load_percent", "peak_load_percent", "burst_load_percent",
+                              "available_capacity_percent", "capacity_reserve_percent", "capacity_margin_percent",
+                              "target_bus_load_percent", "target_margin_percent", "frame_bits",
+                              "transmission_latency_ms", "segment_transmission_latency_ms"):
+                    if field in row:
+                        row[field] = None
         results = {
             "overview": {
+                "capacity_applicable": not direct_only,
+                "capacity_status": "NOT_APPLICABLE" if direct_only else "EVALUATED",
                 "peak_factor": peak_factor,
                 "burst_factor": burst_factor,
                 "network_count": len(network_metrics),
+                "capacity_verified": all(item["capacity_verified"] or not item["capacity_applicable"] for item in network_metrics),
                 "route_count": len({item["route_id"] for item in logical_route_metrics}),
                 "timing_verified": all(item["timing_verified"] for item in network_metrics),
                 "route_segment_count": len(route_metrics),
@@ -1021,22 +1130,22 @@ class CapacityTimingService:
                 "signal_count": len(signal_metrics),
                 "load_status_counts": load_counts,
                 "max_peak_load_percent": max(
-                    (item["peak_load_percent"] for item in network_metrics if item["capacity_applicable"]), default=0.0
+                    (item["peak_load_percent"] for item in network_metrics if item["capacity_verified"]), default=0.0
                 ),
                 "max_burst_load_percent": max(
-                    (item["burst_load_percent"] for item in network_metrics if item["capacity_applicable"]), default=0.0
+                    (item["burst_load_percent"] for item in network_metrics if item["capacity_verified"]), default=0.0
                 ),
                 "target_bus_load_percent": target_bus_load,
                 "minimum_capacity_reserve_percent": min(
-                    (item["capacity_reserve_percent"] for item in network_metrics if item["capacity_applicable"]), default=100.0
+                    (item["capacity_reserve_percent"] for item in network_metrics if item["capacity_verified"]), default=100.0
                 ),
                 "minimum_capacity_margin_percent": min(
-                    (item["capacity_margin_percent"] for item in network_metrics if item["capacity_applicable"]), default=100.0
+                    (item["capacity_margin_percent"] for item in network_metrics if item["capacity_verified"]), default=100.0
                 ),
                 "worst_end_to_end_latency_ms": max(
                     (item["end_to_end_latency_ms"] for item in logical_route_metrics), default=0.0
                 ),
-                "highest_load_network": next((item["network_id"] for item in network_metrics if item["capacity_applicable"]), None),
+                "highest_load_network": next((item["network_id"] for item in network_metrics if item["capacity_verified"]), None),
                 "status": worst_status,
             },
             "networks": network_metrics,
@@ -1104,6 +1213,39 @@ class CapacityTimingService:
             },
             "timestamp": _now(),
         }
+        # Unknown computation inputs must not escape as a plausible zero or
+        # preview. This projection happens after internal scheduling, before
+        # persistence, so both API reads and saved evidence share the truth.
+        capacity_fields = ("average_load_percent", "peak_load_percent", "burst_load_percent",
+            "available_capacity_percent", "capacity_reserve_percent", "capacity_margin_percent",
+            "target_margin_percent", "transmission_latency_ms", "segment_transmission_latency_ms")
+        for row in [*logical_route_metrics, *route_metrics, *physical_transmissions, *network_metrics, *message_metrics]:
+            if row.get("capacity_verified") is False:
+                for field in capacity_fields:
+                    if field in row:
+                        row[field] = None
+                for port in row.get("port_metrics") or []:
+                    for field in capacity_fields:
+                        if field in port:
+                            port[field] = None
+            if row.get("timing_verified") is False:
+                for field in ("end_to_end_latency_ms", "queueing_latency_ms", "estimated_jitter_ms"):
+                    if field in row:
+                        row[field] = None
+        unverified_messages = {row["message_id"] for row in message_metrics if not row["capacity_verified"]}
+        for row in signal_metrics:
+            if row.get("message_id") in unverified_messages:
+                row["load_contribution_percent"] = None
+                row["capacity_status"] = "UNVERIFIED"
+        if not results["overview"]["capacity_verified"]:
+            results["overview"]["capacity_status"] = "UNVERIFIED"
+            for field in ("max_peak_load_percent", "max_burst_load_percent",
+                          "minimum_capacity_reserve_percent", "minimum_capacity_margin_percent"):
+                results["overview"][field] = None
+        if not results["overview"]["timing_verified"]:
+            results["overview"]["worst_end_to_end_latency_ms"] = None
+            for field in ("worst_end_to_end_latency_ms", "worst_queueing_latency_ms", "worst_estimated_jitter_ms"):
+                results["timing"][field] = None
         response = {
             "project_id": state["project_id"],
             "source_versions": state["versions"],
@@ -1129,30 +1271,17 @@ class CapacityTimingService:
             current_results = current.get("results") if current else None
             current_overview = current_results.get("overview") if isinstance(current_results, dict) else None
             if isinstance(current_overview, dict):
+                def delta(field, digits=4):
+                    before, after = current_overview.get(field), results["overview"].get(field)
+                    return round(after - before, digits) if isinstance(before, (int, float)) and isinstance(after, (int, float)) else None
                 response["impact"] = {
                     "current": current_overview,
                     "scenario": results["overview"],
                     "delta": {
-                        "peak_load_percent": round(
-                            results["overview"]["max_peak_load_percent"]
-                            - _number(current_overview.get("max_peak_load_percent"), 0.0),
-                            4,
-                        ),
-                        "burst_load_percent": round(
-                            results["overview"]["max_burst_load_percent"]
-                            - _number(current_overview.get("max_burst_load_percent"), 0.0),
-                            4,
-                        ),
-                        "capacity_reserve_percent": round(
-                            results["overview"]["minimum_capacity_reserve_percent"]
-                            - _number(current_overview.get("minimum_capacity_reserve_percent"), 100.0),
-                            4,
-                        ),
-                        "end_to_end_latency_ms": round(
-                            results["overview"]["worst_end_to_end_latency_ms"]
-                            - _number(current_overview.get("worst_end_to_end_latency_ms"), 0.0),
-                            6,
-                        ),
+                        "peak_load_percent": delta("max_peak_load_percent"),
+                        "burst_load_percent": delta("max_burst_load_percent"),
+                        "capacity_reserve_percent": delta("minimum_capacity_reserve_percent"),
+                        "end_to_end_latency_ms": delta("worst_end_to_end_latency_ms", 6),
                     },
                     "affected": {
                         "networks": len(network_metrics),

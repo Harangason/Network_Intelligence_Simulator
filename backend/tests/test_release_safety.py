@@ -12,6 +12,31 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_build_manifest_records_base_revision_separately_from_changed_source(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location('build_identity', ROOT / 'scripts/write-build-info.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delenv('NIS_BUILD_COMMIT_ID', raising=False)
+    assert module.build_manifest(tmp_path)['commit_id'] is None
+    base_commit = 'a' * 40
+    monkeypatch.setenv('NIS_BUILD_COMMIT_ID', base_commit)
+    before = module.build_manifest(tmp_path)
+    source = tmp_path / 'backend' / 'app.py'
+    source.parent.mkdir()
+    source.write_text('changed = True\n')
+    after = module.build_manifest(tmp_path)
+    assert before['commit_id'] == after['commit_id'] == base_commit
+    assert before['source_sha256'] != after['source_sha256']
+    monkeypatch.setenv('NIS_BUILD_COMMIT_ID', 'unknown')
+    with pytest.raises(ValueError, match='full Git object ID'):
+        module.build_manifest(tmp_path)
+    (tmp_path / '.git').mkdir()
+    monkeypatch.setenv('NIS_BUILD_COMMIT_ID', base_commit)
+    monkeypatch.setattr(module.subprocess, 'check_output', lambda *a, **kw: 'b' * 40)
+    with pytest.raises(ValueError, match='checkout HEAD'):
+        module.build_manifest(tmp_path)
+
+
 def test_release_manifest_tracks_agent_runtime_code_but_not_runtime_data(tmp_path):
     spec = importlib.util.spec_from_file_location('build_info', ROOT / 'scripts/write-build-info.py')
     build_info = importlib.util.module_from_spec(spec)

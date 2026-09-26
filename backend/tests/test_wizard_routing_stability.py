@@ -197,7 +197,7 @@ def test_multicast_shared_bus_is_one_physical_transmission():
 def test_independent_segment_loads_are_not_added_for_bus_saturation(monkeypatch):
     validator = FakeValidator(signal_bits=1, message_bindings={MESSAGE: {'dlc': 64}})
     monkeypatch.setattr(validator, '_canonical_transport_segments', lambda *_: [
-        {'network_id': network, 'protocol': 'CAN_FD'} for network in ('a', 'b', 'c')])
+        {'network_id': network, 'protocol': 'CAN_FD', 'bitrate': 2_000_000} for network in ('a', 'b', 'c')])
     result = validator.validate(route_payload(timing={'cycle_time_ms': 0.64}))
     assert not any(issue['code'] in {'BUS_LOAD_CRITICAL', 'BUS_LOAD_HIGH'}
                    for issue in [*result['errors'], *result['warnings']])

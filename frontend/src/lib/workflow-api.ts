@@ -97,7 +97,7 @@ function normalizeWorkflowState(payload: WorkflowState): WorkflowState {
 }
 
 export type AnalysisFinding = {
-  severity: "ERROR" | "WARNING" | "INFO";
+  severity: "ERROR" | "WARNING" | "REVIEW" | "INFO";
   code: string;
   message: string;
   recommendation?: string;
@@ -144,6 +144,7 @@ export type CapacityNetwork = {
   protocol: string;
   route_count: number;
   capacity_applicable?: boolean;
+  capacity_verified?: boolean;
   load_basis?: string;
   average_load_percent: number;
   peak_load_percent: number;
@@ -165,6 +166,7 @@ export type HardwareReviewProposal = {status: string; source: string; hardware_p
 
 export type CapacityRoute = {
   capacity_applicable?: boolean;
+  capacity_verified?: boolean;
   timing_verified?: boolean;
   response_time_bound_ms?: number | null;
   jitter_bound_ms?: number | null;
@@ -207,6 +209,7 @@ export type CapacityResults = {
     peak_factor?: number;
     burst_factor?: number;
     timing_verified?: boolean;
+    capacity_verified?: boolean;
     network_count: number;
     route_count: number;
     route_segment_count?: number;

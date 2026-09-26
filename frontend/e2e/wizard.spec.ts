@@ -165,7 +165,7 @@ async function verifyArtifacts(page: Page, project: string, minimumCanonicalSign
 }
 
 async function completeThroughWizard(page: Page, project: string, restart: boolean, expectedHardware: string[] = [], crashSimulation = false,
-  expectedSignals?: Record<string, unknown>, afterFirstModelApplied?: () => Promise<void>) {
+  expectedSignals?: Record<string, unknown>, afterFirstModelApplied?: () => Promise<void>, stopOnEvidenceBlock = false) {
   let reviewCount = 0;
   let runId: string | undefined;
   const reviewed = new Set<string>();
@@ -233,12 +233,15 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
     }
     const execution = workflow.context.agent_execution;
     const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
+    if (stopOnEvidenceBlock && execution?.state === 'BLOCKED' && execution.blocking_findings?.length) {
+      throw new Error(`Wizard BLOCKED at ${execution.step}: ${execution.message}`);
+    }
     if (execution?.state === 'BLOCKED' && execution.message?.includes('READY_WITH_WARNINGS')) {
       const warnings = dialog.getByRole('region', { name: 'Preflight-Warnungen' });
       await expect(warnings.getByRole('listitem').first()).toBeVisible();
       await warnings.getByRole('button', { name: 'Warnungen freigeben und fortsetzen' }).click();
       await expect.poll(async () => (await readProject(page, project, '/api/engineering/workflow?view=summary')).context.agent_execution?.updated_at,
-        { timeout: 60_000 }).not.toBe(execution.updated_at);
+        { timeout: expectedHardware.length > 100 ? 180_000 : 60_000 }).not.toBe(execution.updated_at);
       continue;
     }
     if (['BLOCKED', 'FAILED', 'INCOMPLETE'].includes(execution?.state) && execution.recoverable !== true) {
@@ -316,7 +319,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
   const dialog = await openWizard(page, project);
   await dialog.getByTitle('Projektname', { exact: true }).click();
   await dialog.locator('#engineering-project-name').fill('E2E small');
-  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern. Prüfe und arbeite bis Data Science & Intelligence.');
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System, den ECUs Motorsteuerung und Anzeige, einem Sensor MotorTemperature und einem Aktor MotorValve. MotorTemperature wird von Motorsteuerung ausgewertet. Motorsteuerung steuert MotorValve. Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern. Prüfe und arbeite bis Data Science & Intelligence.\nCAN-FD: 500 kbit/s arbitration, 2 Mbit/s data\nCAN: 500 kbit/s');
   await dialog.getByLabel('Weitere Hinweise', { exact: true }).fill('- Aktor-Befehle: {"MotorValve":{"length_bits":1,"data_type":"boolean","factor":1,"unit":"code","min_value":0,"max_value":1,"semantic":{"semantic_type":"BOOLEAN"},"data":{"enum_values":{"CLOSE":0,"OPEN":1}}}}');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   for (const [label, value] of [['Gateways', '1'], ['Controller', '2'], ['Sensoren', '1'], ['Aktoren', '1']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);
@@ -350,7 +353,7 @@ test('new small wizard traverses all nine stages and survives reload/restart @sm
 });
 
 for (const technology of ['I2C', 'Modbus RTU']) {
-  test(`Raspberry Pi temperature and valve project completes all nine stages using ${technology} @nonautomotive`, async ({ page }, testInfo) => {
+  test(`Raspberry Pi ${technology} project retains model and requests missing capacity evidence @nonautomotive`, async ({ page }, testInfo) => {
     const project = 'nis-e2e-embedded-' + randomUUID();
     const dialog = await openWizard(page, project);
     await dialog.getByTitle('Projektname', { exact: true }).click();
@@ -379,8 +382,15 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
     await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
     await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
-    const continuity = await completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2']);
-    const artifacts = await verifyArtifacts(page, project, 7, 'RaspberryPi');
+    await expect(completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2'], false, undefined, undefined, true))
+      .rejects.toThrow(/Wizard BLOCKED at validation/);
+    const workflow = await readProject(page, project, '/api/engineering/workflow');
+    const findings = workflow.context.agent_execution.blocking_findings as { code: string }[];
+    expect(findings.map(item => item.code)).toContain(technology === 'I2C' ? 'COMMUNICATION_UNVERIFIED' : 'GENERIC_ESTIMATE');
+    if (technology === 'I2C') {
+      expect(workflow.parameters.rate_review_proposals.i2c.status).toBe('REVIEW_REQUIRED');
+      expect(workflow.parameters.parameter_provenance.bitrate.source).toBe('TECHNOLOGY_PROFILE_REVIEW_PROPOSAL');
+    }
     const interfaces = await allObjects(page, project, 'hardware-interfaces');
     expect(interfaces.length).toBeGreaterThanOrEqual(7);
     expect(interfaces.every(item => !/automotive|can|lin/i.test(item.technology))).toBe(true);
@@ -390,14 +400,8 @@ for (const technology of ['I2C', 'Modbus RTU']) {
       const signals = await allObjects(page, project, 'signals');
       expect(signals.some(item => item.name === 'Temperatur_Temperatursensor1' && item.unit === 'degC')).toBe(true);
     }
-    const finished = page.waitForResponse(response => response.url().includes(`/runs/${continuity.runId}/finish`)
-      && response.request().method() === 'POST');
-    await dialog.getByRole('button', { name: 'Fertig stellen', exact: true }).click();
-    expect((await finished).ok()).toBe(true);
-    await expect(dialog).not.toBeVisible();
-    await openWizard(page, project);
-    expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(1);
-    await testInfo.attach('nonautomotive-evidence', { body: JSON.stringify({ project, technology, ...continuity, ...artifacts }), contentType: 'application/json' });
+    expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(0);
+    await testInfo.attach('nonautomotive-evidence', { body: JSON.stringify({ project, technology, findings }), contentType: 'application/json' });
   });
 }
 
@@ -450,6 +454,9 @@ test('a real AMEND after model approval adds the requested sensor and reuses its
 - Lauf-ID: ${runId}
 - Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd); Ethernet (ethernet)
+CAN-FD: 500 kbit/s arbitration, 2 Mbit/s data
+CAN: 500 kbit/s
+Ethernet: 100 Mbit/s
 - Hardware-Sollwerte: {"gateways":1,"ecus":2,"sensors":0,"actuators":0}
 - Systemcluster-Graph: ${JSON.stringify(graph)}
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:

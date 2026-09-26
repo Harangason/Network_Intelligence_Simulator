@@ -1735,9 +1735,9 @@ This task registration does not replace project contracts or confer new permissi
 - Category: Tool Check
 - Skill: tool-checker
 - Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\combined-source.md
-- Source Hash: 0a862deeae79099b57b74d4be896568961814763fcb2d3f7d370157b497af836
+- Source Hash: 60e1c16938d4cd90c6e1c9d415ca25139fb500a63e536cc7ab1a3ebc8a389143
 - Status: ACTIVE
-- Last Ingest: 2026-09-24T14:16:38.507893+00:00
+- Last Ingest: 2026-09-25T17:01:21.242844+00:00
 - Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-independent-run1-20260924-exec\manifest.json
 
 Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.
@@ -1747,3 +1747,11 @@ Default presentation: PROGRESS. Percentage, status and step counters come from r
 Progress rendering never invokes an LLM. Full local logs are shown only on request.
 This task registration does not replace project contracts or confer new permissions.
 <!-- /tool-check:nis-ea-independent-run1-20260924-exec -->
+
+## Prüfhinweis: Bustyp-Abdeckung (25.09.2026)
+
+- Quelle und vollständige Einzelmatrix: [BUS_TECHNOLOGY_COMPLETENESS_AUDIT_2026-09-25.md](BUS_TECHNOLOGY_COMPLETENESS_AUDIT_2026-09-25.md) und [BUS_TECHNOLOGY_COMPLETENESS_MATRIX_2026-09-25.md](BUS_TECHNOLOGY_COMPLETENESS_MATRIX_2026-09-25.md), Quellstand `ef08e18d`.
+- Geltungsbereich: Katalog, TechnologyProfile, PHY, Routing, Kapazität und Zeitplanung für alle 125 Katalogeinträge.
+- Soll: TechnologyProfile als maßgebliche Quelle; fehlende technische Evidenz sichtbar und ohne fremde Ersatzrate; Kapazitäts- und Zeitfreigabe getrennt.
+- Ist/Priorität: P0 für `CUSTOM`-Ratenfallback, generischen Rahmenrechner und Reifeverwechslung; P1 für fehlende Hardware-Evidenzpfade und Katalog-/Routing-Abweichung. Belege und Nachweisgrenzen stehen im Bericht.
+- Offene Entscheidung: technologiespezifische Modelle und Pflichtfelder je Bus/Stack fachlich festlegen. Dieser Prüfhinweis ändert keinen Vertrag und erteilt keine Umsetzungsfreigabe.

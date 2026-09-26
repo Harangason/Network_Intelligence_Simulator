@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { guardMandatoryAssertions } from './src/20260925_src_master_technology_quality_assertion_guard.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1')), '..');
 const input = JSON.parse(await new Promise((resolve, reject) => {
@@ -103,4 +104,4 @@ const observations = {
   findings: pytestPassed ? [] : [{ code: `TC_${scenario.test_id}_FOCUSED_PROBE_FAILED`, category: 'TOOL_BUG', blocking: true, detail: `Focused pytest exited ${probe.status}` }],
   claimed_complete: false,
 };
-process.stdout.write(JSON.stringify({ status: pytestPassed ? 'PASSED' : 'FAILED', llm_calls: null, evidence, observations }));
+process.stdout.write(JSON.stringify(guardMandatoryAssertions({ status: pytestPassed ? 'PASSED' : 'FAILED', llm_calls: null, evidence, observations }, scenario)));

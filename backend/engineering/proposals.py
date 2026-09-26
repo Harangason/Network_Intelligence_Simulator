@@ -16,6 +16,7 @@ from .models import (
 )
 from .relations import create_relation
 from .repository import (
+    _validate_signal_binding,
     parent_link_for_payload,
     NotFoundError,
     create_object,
@@ -199,6 +200,8 @@ def validate_proposed_items(proposal: dict[str, Any]) -> list[dict[str, Any]]:
                 spec = get_spec(object_type)
                 if object_type == "Interface" and not (item.get("function_id") or item.get("hardware_node_id")):
                     raise EngineeringValidationError("Pflichtfeld fehlt: 'function_id' oder 'hardware_node_id'")
+                if object_type == "Signal":
+                    _validate_signal_binding(item)
                 spec.validate(item)
                 parent_link = parent_link_for_payload(object_type, item)
                 if parent_link:

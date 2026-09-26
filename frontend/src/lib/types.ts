@@ -18,6 +18,23 @@ export type Technology = {
   hardware_interface?: string;
   default_stack?: string[];
   implementation_status?: "IMPLEMENTED" | "PARTIAL" | "PLANNED" | "EXPERIMENTAL" | "LEGACY" | "NOT_SUPPORTED";
+  connection_type?: "DIRECT_IO" | "COMMUNICATION_TECHNOLOGY";
+  parameter_proposals?: {
+    kind: string;
+    unit?: string;
+    candidate?: number;
+    options?: Array<{ mode: string; maximum: number }>;
+    source?: string;
+    source_revision?: string;
+    status: "REVIEW_REQUIRED";
+    note?: string;
+  };
+  capacity_evidence?: {
+    status: "MODEL_AVAILABLE" | "MODEL_MISSING" | "NOT_APPLICABLE";
+    frame_model?: string | null;
+    schedule_model?: string | null;
+    requires_confirmed_device_parameters?: boolean;
+  };
   capabilities?: Record<string, boolean>;
   known_limitations?: string;
 };

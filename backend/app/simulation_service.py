@@ -78,10 +78,12 @@ class SimulationService:
             selected_ids = list(model_type.get("recommended_technologies") or [
                 technology_id for technology_id, profile in profiles.items() if profile["domain"] == model_type["id"]
             ])
+            # Recommendations control order, not catalog visibility. Every
+            # registered technology must expose its evidence status in its
+            # owning domain, including profiles without a sizing model.
             selected_ids.extend(
                 technology_id for technology_id, profile in profiles.items()
                 if profile["domain"] == model_type["id"]
-                and profile.get("knowledge_origin") == "GENERATED_TECHNOLOGY_PACK"
                 and technology_id not in selected_ids
             )
             technologies = []
@@ -299,7 +301,9 @@ class SimulationService:
             duration_s=float(payload.get("duration_s", 1.0)),
             seed=int(payload.get("seed", 42)),
             node_count=int(payload.get("node_count", 2)),
-            bitrate=int(payload["bitrate"]) if payload.get("bitrate") not in {None, ""} else None,
+            bitrate=payload.get("bitrate", payload.get("bitrate_bps")),
+            arbitration_bitrate=payload.get("arbitration_bitrate", payload.get("nominal_bitrate_bps")),
+            data_bitrate=payload.get("data_bitrate", payload.get("data_bitrate_bps")),
             cycle_ms=float(payload.get("cycle_ms", 100.0)),
             payload_bytes=int(payload.get("payload_bytes", min(8, int(technology.get("max_payload_bytes") or 8)))),
             max_events=int(payload.get("max_events", 100_000)),
@@ -307,17 +311,23 @@ class SimulationService:
             corruption_probability=float(payload.get("corruption_probability", 0.0)),
             network_id=str(payload["network_id"]) if payload.get("network_id") else None,
         )
-        self._validate_options(options, technology)
         communication_profile = COMMUNICATION_TECHNOLOGY_REGISTRY.profile(technology_id)
         rate_model = communication_profile.get("rate_model") or {}
-        rate_parameters = dict(rate_model.get("defaults_bps") or {})
         rate_fields = rate_model.get("fields") or []
-        if options.bitrate is not None and rate_fields:
-            rate_parameters[rate_fields[-1]] = options.bitrate
+        rate_parameters = {key: payload[key] for key in
+            ("bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps") if key in payload}
+        if options.bitrate is not None:
+            field = "nominal_bitrate_bps" if "nominal_bitrate_bps" in rate_fields else "bitrate_bps"
+            rate_parameters.setdefault(field, options.bitrate)
+        if options.arbitration_bitrate is not None:
+            rate_parameters["nominal_bitrate_bps"] = options.arbitration_bitrate
+        if options.data_bitrate is not None:
+            rate_parameters["data_bitrate_bps"] = options.data_bitrate
         validation = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_parameters(technology_id, rate_parameters)
         if validation["status"] != "VALID":
             detail = "; ".join(item["message"] for item in validation["findings"])
             raise ValueError(f"Technology-Validierung fehlgeschlagen: {detail}")
+        self._validate_options(options, technology)
         config = options.to_config()
         if payload.get("physical_realizations") is not None:
             config["physical_realizations"] = copy.deepcopy(payload["physical_realizations"])

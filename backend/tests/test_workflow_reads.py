@@ -29,6 +29,25 @@ def project_with_default_artifacts(*, stale_parameters=False):
     return project
 
 
+def test_single_snapshot_metadata_preserves_scope_and_excludes_heavy_payloads():
+    project = project_with_default_artifacts()
+    snapshot_id = str(uuid4())
+    with get_connection() as connection:
+        connection.execute(
+            "INSERT INTO engineering_simulation_snapshots "
+            "(id, project_id, source_versions, configuration, calculated_metrics, result) "
+            "VALUES (%s, %s, '{\"simulation\":0}', '{\"large_model\":[]}', '{\"routes\":[]}', '{\"events\":[]}')",
+            (snapshot_id, project))
+    service = WorkflowStatusService(project)
+    detail = service.get_simulation_snapshot(snapshot_id)
+    metadata = service.get_simulation_snapshot(snapshot_id, metadata_only=True)
+    assert metadata['id'] == detail['id'] == snapshot_id
+    assert metadata['source_versions'] == detail['source_versions']
+    assert set(metadata).isdisjoint({'configuration', 'calculated_metrics', 'result'})
+    assert service.get_simulation_snapshot(snapshot_id, require_current=True, metadata_only=True) == metadata
+    assert WorkflowStatusService('other-' + project).get_simulation_snapshot(snapshot_id, metadata_only=True) is None
+
+
 def start_read(service, *, summary=True):
     finished = threading.Event()
     result = {}

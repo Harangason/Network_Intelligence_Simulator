@@ -1750,7 +1750,7 @@ export function EngineeringAgentWizard({
       return {
         id: technology.id,
         label,
-        detail: `${technology.implementation_status ?? "IMPLEMENTED"} · ${technology.layer ?? technology.medium} · ${technology.hardware_interface ?? technology.topology}${technology.max_payload_bytes ? ` · max. ${technology.max_payload_bytes} B` : ""}`,
+        detail: `${technology.implementation_status ?? "IMPLEMENTED"} · ${technology.connection_type === "DIRECT_IO" ? "Direktleitung" : technology.layer ?? technology.medium} · ${technology.hardware_interface ?? technology.topology}${technology.max_payload_bytes && technology.connection_type !== "DIRECT_IO" ? ` · max. ${technology.max_payload_bytes} B` : ""} · Kapazität: ${technology.capacity_evidence?.status === "NOT_APPLICABLE" ? "nicht anwendbar; Timing prüfen" : technology.capacity_evidence?.status === "MODEL_AVAILABLE" ? "Modell vorhanden, Gerätedaten prüfen" : technology.capacity_evidence?.status === "MODEL_MISSING" ? "kein Nachweismodell" : "Nachweisstatus offen"}${technology.parameter_proposals?.options?.length ? ` · Referenzbereiche zur Prüfung: ${technology.parameter_proposals.options.map((option) => `${option.mode} ≤ ${option.maximum} ${technology.parameter_proposals?.unit ?? ""}`).join(", ")}` : technology.parameter_proposals?.candidate ? ` · Katalogvorschlag ${technology.parameter_proposals.candidate} ${technology.parameter_proposals.unit ?? ""} (unbestätigt)` : ""}`,
         value: `${label} (${technology.id})`,
       };
     }),
@@ -3618,6 +3618,18 @@ export function EngineeringAgentWizard({
                       : currentRunMessages.length || workflowHasProgress
                         ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
                         : "Der Auftrag wird an den Agenten übergeben."}</small>
+                {runPaused && Array.isArray(execution?.blocking_findings) && execution.blocking_findings.length > 0 ? (
+                  <section aria-label="Blockierende Preflight-Befunde">
+                    <strong>Vor der Simulation zu klären</strong>
+                    <ul>{execution.blocking_findings.map((finding, index) => (
+                      <li key={`${finding.code ?? "finding"}:${finding.object_id ?? index}`}>
+                        <strong>{finding.code ?? "Befund"}</strong>: {finding.message ?? "Nachweis fehlt."}
+                        {finding.object_id ? ` · ${finding.object_type ?? "Objekt"}: ${finding.object_id}` : ""}
+                        {finding.recommendation ? ` · Nächster Schritt: ${finding.recommendation}` : ""}
+                      </li>
+                    ))}</ul>
+                  </section>
+                ) : null}
                 {preflightWarningsPending ? (
                   <section aria-label="Preflight-Warnungen">
                     <strong>Simulation mit Warnungen</strong>

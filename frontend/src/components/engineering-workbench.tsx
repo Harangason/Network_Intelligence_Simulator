@@ -67,13 +67,24 @@ const OBJECT_TYPE_RESOURCE: Partial<Record<string, EngineeringResource>> = Objec
   RESOURCES.map((item) => [RESOURCE_TO_OBJECT_TYPE[item], item]),
 ) as Partial<Record<string, EngineeringResource>>;
 const ENGINEERING_PAGE_SIZE = 50;
-const LOCAL_TIMING_FIELDS: Record<string, Array<{key: string; label: string; numeric?: boolean}>> = {
+const LOCAL_TIMING_FIELDS: Record<string, Array<{key: string; label: string; numeric?: boolean; boolean?: boolean; optional?: boolean}>> = {
   I2C: [{key: "master_node_id", label: "I2C-Master"}, {key: "slave_address", label: "Slave-Adresse"},
+    {key: "address_bits", label: "Adressbreite (7/10 Bit)", numeric: true},
+    {key: "i2c_mode", label: "I2C-Modus (STANDARD/FAST/FAST_PLUS/HIGH_SPEED)"},
+    {key: "transfer_direction", label: "Richtung (READ/WRITE/BIDIRECTIONAL)"},
+    {key: "start_stop_bound_us", label: "Start-/Stop-Grenze (µs)", numeric: true},
     {key: "clock_stretch_limit_us", label: "Clock-Stretching-Grenze (µs)", numeric: true},
     {key: "transfer_bits_bound", label: "Transferumfang inkl. Adresse/ACK (Bit)", numeric: true},
+    {key: "multi_master", label: "Mehrere Master", boolean: true},
+    {key: "arbitration_bound_us", label: "Arbitrationsgrenze bei mehreren Mastern (µs)", numeric: true, optional: true},
     {key: "bitrate_bps", label: "Bestätigter I2C-Takt (bit/s)", numeric: true}],
   SPI: [{key: "master_node_id", label: "SPI-Master"}, {key: "chip_select", label: "Chip-Select"},
-    {key: "transfer_bits_bound", label: "Transfergrenze (Bit)", numeric: true},
+    {key: "word_length_bits", label: "Wortlänge (Bit)", numeric: true},
+    {key: "duplex_mode", label: "Duplexmodus (FULL_DUPLEX/HALF_DUPLEX)"},
+    {key: "cpol", label: "CPOL (0/1)", numeric: true}, {key: "cpha", label: "CPHA (0/1)", numeric: true},
+    {key: "cs_setup_bound_us", label: "CS-Setup-Grenze (µs)", numeric: true},
+    {key: "inter_transfer_gap_us", label: "Transferabstandsgrenze (µs)", numeric: true},
+    {key: "transfer_bits_bound", label: "Transfergrenze in Taktbits", numeric: true},
     {key: "bitrate_bps", label: "Bestätigter SPI-Takt (bit/s)", numeric: true}],
   PWM: [{key: "pwm_frequency_hz", label: "PWM-Frequenz (Hz)", numeric: true},
     {key: "update_bound_ms", label: "Aktualisierungsgrenze (ms)", numeric: true},
@@ -81,6 +92,10 @@ const LOCAL_TIMING_FIELDS: Record<string, Array<{key: string; label: string; num
   GPIO: [{key: "sample_bound_ms", label: "Abtastgrenze (ms)", numeric: true},
     {key: "debounce_bound_ms", label: "Entprellgrenze (ms)", numeric: true},
     {key: "edge_detection_bound_ms", label: "Flankenerkennungsgrenze (ms)", numeric: true}],
+  ADC: [{key: "sample_bound_ms", label: "ADC-Abtastgrenze (ms)", numeric: true},
+    {key: "conversion_bound_ms", label: "ADC-Wandlungsgrenze (ms)", numeric: true}],
+  DAC: [{key: "update_bound_ms", label: "DAC-Aktualisierungsgrenze (ms)", numeric: true},
+    {key: "settling_bound_ms", label: "DAC-Einschwinggrenze (ms)", numeric: true}],
 };
 
 const HARDWARE_PRESETS = [
@@ -3465,13 +3480,16 @@ function EditObjectForm({
       payload.hard_load_limit = optionalNumber(form, "edit_hard_load_limit");
       if (isHardwareNetworkInterface(item) && LOCAL_TIMING_FIELDS[item.technology.toUpperCase()]) {
         const previous = (item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>;
-        const values = Object.fromEntries(LOCAL_TIMING_FIELDS[item.technology.toUpperCase()].map(field => {
+        const localFields = LOCAL_TIMING_FIELDS[item.technology.toUpperCase()];
+        const values = Object.fromEntries(localFields.map(field => {
           const raw = String(form.get(`edit_local_${field.key}`) ?? "").trim();
-          return [field.key, raw ? field.numeric ? Number(raw) : raw : null];
+          return [field.key, raw ? field.boolean ? raw === "true" : field.numeric ? Number(raw) : raw : null];
         }));
         const confirmed = form.get("edit_local_confirmed") === "on";
         const source = String(form.get("edit_local_source") ?? "").trim();
-        if (confirmed && (!source || Object.values(values).some(value => value === null || value === ""))) {
+        if (confirmed && (!source || localFields.some(field =>
+          (values[field.key] === null || values[field.key] === "") &&
+          (!field.optional || field.key === "arbitration_bound_us" && values.multi_master === true)))) {
           setFormError("Für die Bestätigung sind alle Gerätewerte und eine Nachweisquelle erforderlich.");
           setSubmitting(false);
           return;
@@ -3638,13 +3656,16 @@ function EditObjectForm({
           <p>Profilkandidaten aus der Kapazitätsanalyse erst mit Geräteunterlagen prüfen. Diese Angaben allein sind noch kein Zeitnachweis.</p>
           <div className="form-grid three">{LOCAL_TIMING_FIELDS[item.technology.toUpperCase()].map(field => <div className="field" key={field.key}>
             <label htmlFor={`edit_local_${field.key}`}>{field.label}</label>
-            <input id={`edit_local_${field.key}`} name={`edit_local_${field.key}`} type={field.numeric ? "number" : "text"}
+            {field.boolean ? <select id={`edit_local_${field.key}`} name={`edit_local_${field.key}`}
+              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")}>
+              <option value="">Bitte wählen</option><option value="false">Nein</option><option value="true">Ja</option>
+            </select> : <input id={`edit_local_${field.key}`} name={`edit_local_${field.key}`} type={field.numeric ? "number" : "text"}
               min={field.numeric ? "0" : undefined} step={field.numeric ? "any" : undefined}
-              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")} />
+              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")} />}
           </div>)}</div>
           <div className="field"><label htmlFor="edit_local_source">Nachweisquelle</label><input id="edit_local_source" name="edit_local_source" type="text"
             defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>).source ?? "")} /></div>
-          <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input defaultChecked={Boolean(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>).confirmed)} name="edit_local_confirmed" type="checkbox" /></label>
+          <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input name="edit_local_confirmed" type="checkbox" /></label>
         </fieldset>}
         </>
       )}

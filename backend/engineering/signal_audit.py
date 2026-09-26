@@ -196,6 +196,26 @@ def occupied_signal_bits(signal: dict[str, Any]) -> set[int] | None:
 
 def inspect_signal(signal: dict[str, Any], message: dict[str, Any] | None = None) -> dict[str, Any]:
     checks: list[dict[str, Any]] = integrity_checks(signal)
+    direct = _as_dict(_as_dict(signal.get("configuration")).get("direct_signal_binding"))
+    if direct:
+        if signal.get("message_id"):
+            checks.append({"code": "DIRECT_IO_MESSAGE_CREATED", "severity": "ERROR",
+                           "text": "Direktsignal darf keiner Nachricht zugeordnet sein."})
+        if not direct.get("destination_hardware_node_ref") or not direct.get("physical_port_ref"):
+            checks.append({"code": "DIRECT_IO_BINDING_INCOMPLETE", "severity": "OPEN",
+                           "text": "Empfänger oder physischer Port des Direktsignals fehlt."})
+        if direct.get("validation_status") != "CONFIRMED":
+            checks.append({"code": "DIRECT_IO_BINDING_UNVERIFIED", "severity": "OPEN",
+                           "text": "Direkte I/O-Bindung benötigt fachliche Bestätigung."})
+        if not _as_dict(direct.get("timing_profile")):
+            checks.append({"code": "DIRECT_IO_TIMING_UNVERIFIED", "severity": "OPEN",
+                           "text": "Abtast-, Aktualisierungs- oder Ausbreitungsgrenze fehlt."})
+        return {"signal_id": _text(signal.get("id")), "name": _text(signal.get("name")),
+                "message_id": None, "message_name": None, "length_bits": None,
+                "required_bits": None, "start_bit": None, "byte_order": None,
+                "semantic_type": _semantic_type(signal), "occupied_bits": None,
+                "connection_type": "DIRECT_IO", "capacity_status": "NOT_APPLICABLE",
+                "checks": checks, "status": _severity(checks)}
 
     def add(code: str, severity: str, text: str) -> None:
         checks.append({"code": code, "severity": severity, "text": text})
@@ -312,6 +332,8 @@ def build_generation_signal_audit(
             "occupied_bits": len(occupied),
             "minimum_dlc": max(1, (max(occupied) + 8) // 8) if occupied else None,
         })
+    signal_checks.extend(inspect_signal(signal) for signal in signals
+                         if (signal.get("configuration") or {}).get("direct_signal_binding"))
 
     network_participants: dict[str, dict[str, Any]] = {}
 

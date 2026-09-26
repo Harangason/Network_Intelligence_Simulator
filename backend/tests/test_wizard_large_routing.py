@@ -103,7 +103,8 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs()
         result = CapacityTimingService(authority.project_id).calculate(persist=False)
         errors = [item for item in result['findings'] if item.get('severity') == 'ERROR']
         assert result['status'] != 'ERROR', json.dumps(errors, default=str)
-        assert any(item['code'] == 'CAPACITY_TARGET_LOAD_EXCEEDED' and item['severity'] == 'WARNING' for item in result['findings'])
+        assert result['results']['overview']['capacity_verified'] is True
+        assert not any(item['code'] == 'CAPACITY_RATE_UNVERIFIED' for item in result['findings'])
         assert any(item['code'] == 'LIN_SCHEDULE_RESERVE_UNMET' and item['severity'] == 'WARNING' for item in result['findings'])
         return result
     call('verify_full_capacity_repair', verify_capacity_repair)

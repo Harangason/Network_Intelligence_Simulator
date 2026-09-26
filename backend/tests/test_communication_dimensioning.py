@@ -107,10 +107,23 @@ def test_local_interface_review_proposals_use_profiles_without_approving_timing(
         assert review["hardware_profile_status"] == "UNCONFIRMED"
         assert review["endpoint_candidates"] == ["controller", "device"]
         assert all(field["value"] is None for field in review["fields"])
-        assert all(field["candidate"] is None for field in review["fields"] if field["key"] != "bitrate_bps")
+        assert all(field["candidate"] is None for field in review["fields"] if not field["key"].endswith(":bitrate_bps"))
         assert review["release_gate"] == "TIMING_BLOCKED_UNTIL_DEVICE_EVIDENCE_CONFIRMED"
         network = dimension_communications([row], PARAMETERS)["networks"][0]
-        assert network["schedule"]["hardware_review_proposal"] == review
+        sized_review = network["schedule"]["hardware_review_proposal"]
+        assert sized_review["source"] == review["source"]
+        assert [field["label"] for field in sized_review["fields"]] == [field["label"] for field in review["fields"]]
+        assert all(field["value"] is None for field in sized_review["fields"])
+
+
+def test_local_review_keeps_device_addresses_separate_and_does_not_release_timing():
+    rows = [stream(0, protocol="I2C", local_timing_evidence={"slave_address": "0x40", "source": "datasheet", "confirmed": True}),
+            stream(1, protocol="I2C", local_timing_evidence={"slave_address": "0x41", "source": "datasheet", "confirmed": True})]
+    check = bus_schedule(rows, policy_for(PARAMETERS))
+    addresses = [field for field in check["hardware_review_proposal"]["fields"] if field["key"].endswith(":slave_address")]
+    assert [field["value"] for field in addresses] == ["0x40", "0x41"]
+    assert check["status"] == "UNVERIFIED"
+    assert check["hardware_review_proposal"]["hardware_profile_status"] == "UNCONFIRMED"
 
 
 def test_direct_signal_line_has_no_packet_bus_load_claim():

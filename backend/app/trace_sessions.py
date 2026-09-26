@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import time
 from uuid import uuid4
 from flask import jsonify, request
 from .saved_storage import project_folder
@@ -19,6 +20,21 @@ def session_root():
     if root.is_symlink():
         raise ValueError('Ungültiger Trace-Speicherort.')
     return root
+
+
+def _publish_session(stage, destination):
+    """Publish atomically, allowing short-lived Windows directory handle locks."""
+    delays = (0.05, 0.1, 0.2, 0.4)
+    for attempt in range(len(delays) + 1):
+        if destination.exists():
+            raise FileExistsError('Die Trace-Session existiert bereits.')
+        try:
+            os.replace(stage, destination)
+            return
+        except PermissionError:
+            if attempt == len(delays) or destination.exists() or not stage.is_dir():
+                raise
+            time.sleep(delays[attempt])
 
 
 def persist_import(data, filename, source_path):
@@ -99,7 +115,7 @@ def persist_import(data, filename, source_path):
         (stage / 'metadata.json').write_text(json.dumps(metadata, ensure_ascii=False), encoding='utf8')
         # Both paths are newly allocated direct children of the scoped root.
         assert stage.resolve().parent == root.resolve() == destination.resolve().parent
-        os.replace(stage, destination)
+        _publish_session(stage, destination)
     return session_window(session_id, limit=2000)
 
 

@@ -45,5 +45,22 @@ export type EngineeringProposal = {
   }[] };
   canonical_ids: { object_type: string; id: string }[];
   workload_id?: string;
+  dependent_results?: {
+    network_id: string;
+    bitrate_bps: number;
+    capacity_snapshot_id: string;
+    capacity_status?: string;
+    capacity_findings?: Record<string, unknown>[];
+    preflight_snapshot_id: string;
+    preflight_status?: string;
+    preflight_ready_for_simulation?: boolean;
+    preflight_findings?: Record<string, unknown>[];
+    completion?: {
+      status: string;
+      completed: boolean;
+      missing_outcomes: string[];
+      failure?: { message: string };
+    };
+  };
 };
 export type EngineeringAgentUIMessage = UIMessage<unknown, { engineering: EngineeringAgentEvent; attachment: ChatAttachment }, Record<string, { input: Record<string, unknown>; output: unknown }>>;

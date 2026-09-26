@@ -133,7 +133,7 @@ def functions(arguments: dict) -> dict:
         # for this precise intent. Preserve the typed acquisition goal and its
         # period in the reviewable canonical function instead.
         candidates = [{'name': 'StellgliedPositionAbfrage',
-                       'subfunctions': ['CANopen-Anfrage und korrelierte Positionsantwort',
+                       'subfunctions': ['Positionsanfrage und korrelierte Antwort über die bestätigte Technologie',
                                         'Abfrageintervall 30000 ms']}]
     for index, function in enumerate(candidates[:requested] if requested else candidates):
         changes.append({"object_type": "Function", "local_ref": f"function-{index}", "data": {

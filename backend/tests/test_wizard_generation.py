@@ -49,6 +49,21 @@ def test_explicit_s04_rates_preserve_each_technology_and_reject_invalid_values()
         wizard_generation._explicit_technology_bitrates('LIN:\n2 Mbit/s', ['lin'])
 
 
+def test_explicit_can_fd_phases_and_i2c_candidate_stay_distinct_from_evidence():
+    prompt = 'CAN-FD: 500 kbit/s arbitration, 2 Mbit/s data\nEthernet: 100 Mbit/s'
+    assert wizard_generation._explicit_can_fd_phases(prompt, ['can_fd']) == {
+        'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000,
+    }
+    assert wizard_generation._explicit_technology_bitrates(prompt, ['can_fd', 'ethernet']) == {
+        'ethernet': 100_000_000,
+    }
+    with pytest.raises(ValueError, match='TechnologyProfile'):
+        wizard_generation._explicit_can_fd_phases('CAN-FD: 2 Mbit/s arbitration, 2 Mbit/s data', ['can_fd'])
+    candidate, proposal = wizard_generation._rate_review_candidate('i2c')
+    assert candidate == 100_000
+    assert proposal['status'] == 'REVIEW_REQUIRED'
+
+
 def test_gateway_free_v0_identifies_only_the_controller_as_main_controller():
     controller = {'device_type': 'EmbeddedController'}
     sensor = {'device_type': 'SensorController'}
@@ -93,6 +108,73 @@ def test_explicit_function_assignments_preserve_each_confirmed_controller():
     }
     with pytest.raises(ValueError, match='Ungültige Funktionszuordnungen'):
         wizard_generation._declared_function_assignments('- Funktionszuordnungen: {"MotionControl":42}')
+
+
+def test_wizard_direct_gpio_signal_has_binding_without_message_or_bus(monkeypatch):
+    def chain(name, device_type, technology):
+        return {
+            'hardware_name': name, 'hardware_description': name,
+            'device_type': device_type, 'device_class': 4 if device_type == 'ECU' else 0,
+            'function_name': name + 'Function', 'function_description': name,
+            'interface_name': name + '_' + technology, 'interface_type': technology,
+            'transport_network_ref': None, 'message_name': name + 'Data',
+            'message_id_hex': None, 'direction': 'tx', 'cycle_ms': 20, 'dlc': 1,
+            'signal_name': name + 'Value', 'start_bit': 0, 'length_bits': 1,
+            'byte_order': 'little_endian', 'data_type': 'unsigned',
+            'factor': 1, 'offset_value': 0,
+        }
+    spec = {
+        'domain': 'Custom', 'modelType': 'custom',
+        'targetCounts': {'gateways': 0, 'ecus': 1, 'sensors': 1, 'actuators': 0},
+        'communicationSystemCounts': {'ethernet': 1, 'gpio': 1},
+        'chains': [chain('RaspberryPi', 'ECU', 'Ethernet'),
+                   chain('PT100', 'SensorController', 'GPIO')],
+    }
+    graph = [{'network_id': 'detected:ethernet', 'bus_name': 'Controller',
+              'controllers': [{'ecu': 'RaspberryPi', 'sensors': ['PT100'], 'actuators': []}]}]
+    prompt = '- Systemcluster-Graph: ' + json.dumps(graph, separators=(',', ':'))
+    captured = {}
+    monkeypatch.setattr(wizard_generation.proposal_store, 'list_proposals', lambda limit: [])
+    monkeypatch.setattr(wizard_generation.model, 'objects', lambda _kind: [])
+    monkeypatch.setattr(wizard_generation, 'extract_specification', lambda _prompt: spec)
+    monkeypatch.setattr(wizard_generation.proposal_service, 'create',
+                        lambda proposal_type, changes, summary, **metadata:
+                        captured.update(changes=changes) or captured)
+    changes = wizard_generation.generate({'prompt': prompt})['changes']
+    direct = next(item for item in changes if item['object_type'] == 'Signal'
+                  and item['data']['name'] == 'PT100Value')
+    binding = direct['data']['configuration']['direct_signal_binding']
+    assert 'message_id' not in direct['data']
+    assert binding['signal_type'] == 'GPIO'
+    assert binding['destination_hardware_node_ref']
+    assert all(item['data'].get('name') != 'PT100Data' for item in changes if item['object_type'] == 'Message')
+    assert not any(item['object_type'] == 'Network' and item['data']['technology'] == 'GPIO' for item in changes)
+
+
+def test_canonical_direct_signal_persists_without_transport_unit():
+    authority = ToolAuthority(f'pytest-direct-binding-{uuid4()}')
+
+    def operation():
+        source = create_object('HardwareNode', {'name': 'PassiveSwitch', 'device_type': 'SensorController', 'device_class': 0})
+        target = create_object('HardwareNode', {'name': 'Controller', 'device_type': 'ECU', 'device_class': 4})
+        port = create_object('HardwareNetworkInterface', {
+            'name': 'SwitchInput', 'hardware_node_id': str(source['id']), 'technology': 'GPIO'})
+        binding = {'source_hardware_node_ref': str(source['id']),
+                   'destination_hardware_node_ref': str(target['id']),
+                   'physical_port_ref': str(port['id']), 'signal_type': 'GPIO',
+                   'validation_status': 'REVIEW_REQUIRED'}
+        signal = create_object('Signal', {'name': 'SwitchState',
+            'configuration': {'direct_signal_binding': binding}})
+        assert signal['message_id'] is None
+        assert signal['configuration']['direct_signal_binding'] == binding
+        interface = create_object('Interface', {'name': 'SwitchLogic',
+            'hardware_node_id': str(source['id']), 'interface_type': 'GPIO'})
+        with pytest.raises(Exception, match='DIRECT_IO_MESSAGE_CREATED'):
+            create_object('Message', {'name': 'InvalidSwitchFrame', 'interface_id': str(interface['id'])})
+        return {'ok': True}
+
+    result = execute(authority, 'test_direct_binding', Permission.READ_MODEL, {}, lambda _: operation())
+    assert result.success, result.findings
 
 
 def test_repeat_reuses_named_hardware_port_when_only_network_reference_changed():
@@ -654,9 +736,19 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
         # This fixture explicitly connects the selected participants to one
         # test bus; protocol equality alone must no longer fabricate a path.
         selected_nodes = {str(item['id']) for item in (ecu, sensor, actuator, hmi)}
+        confirmed_rates = {'CAN_FD': 500_000, 'LIN': 19_200, 'Ethernet': 100_000_000}
+        def confirmed_bus_rates(technology):
+            return {'bitrate': confirmed_rates[technology], **({'arbitration_bitrate': 500_000,
+                'data_bitrate': 2_000_000} if technology == 'CAN_FD' else {})}
         for port in model.objects('HardwareNetworkInterface'):
             network = 'fixture-confirmed-shared-bus' if port['technology'] == ecu_type else 'fixture-' + port['technology'].lower()
-            update_object('HardwareNetworkInterface', str(port['id']), {'network_ref': network})
+            # This positive simulation fixture explicitly confirms the bus rate.
+            # Registry defaults alone are insufficient for capacity release.
+            update_object('HardwareNetworkInterface', str(port['id']), {
+                'network_ref': network,
+                'capabilities': {**(port.get('capabilities') or {}),
+                                 **confirmed_bus_rates(port['technology'])},
+            })
         gateway = next(item for item in canonical_hardware if item['device_type'] == 'Gateway')
         all_ports = model.objects('HardwareNetworkInterface')
         source_port = next(p for p in all_ports if str(p['hardware_node_id']) == str(ecu['id']) and p['technology'] == ecu_type)
@@ -672,7 +764,8 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
             canvas['ports'].append(result)
             return result
         for index, (node, endpoint) in enumerate([(ecu, source_port), (hmi, target_port)]):
-            gateway_port = create_object('HardwareNetworkInterface', {'hardware_node_id': str(gateway['id']), 'name': 'Fixture gateway ' + str(index), 'technology': endpoint['technology'], 'network_ref': endpoint['network_ref'], 'channel_index': 100 + index})
+            gateway_port = create_object('HardwareNetworkInterface', {'hardware_node_id': str(gateway['id']), 'name': 'Fixture gateway ' + str(index), 'technology': endpoint['technology'], 'network_ref': endpoint['network_ref'], 'channel_index': 100 + index,
+                'capabilities': confirmed_bus_rates(endpoint['technology'])})
             left, right = fixture_canvas_port(node, endpoint), fixture_canvas_port(gateway, gateway_port)
             edges.append({'id': 'fixture-edge-' + str(index), 'source': str(node['id']), 'target': str(gateway['id']), 'sourcePort': left['id'], 'targetPort': right['id'], 'bus': left['bus'], 'physicalNetworkId': endpoint['network_ref'], 'engineeringRelationId': 'fixture-' + str(index), 'routingEntryIds': [], 'origin': 'TEST_SPECIFICATION'})
         # Physical canonical bus membership is sufficient before the editor is generated.

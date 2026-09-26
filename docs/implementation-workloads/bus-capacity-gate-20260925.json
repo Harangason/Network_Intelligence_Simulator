@@ -1,0 +1,193 @@
+{
+  "goal_id": "bus-capacity-gate-20260925",
+  "goal_type": "repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "all catalog technologies",
+  "requested_change": "Remove misleading cross-technology capacity fallbacks and block release on unverified technology capacity/timing evidence",
+  "constraints": [
+    "confirmed user decision: UNVERIFIED blocks release",
+    "preserve existing CAN/CAN_FD/LIN/Ethernet models",
+    "no product database"
+  ],
+  "required_outcomes": [
+    "no_foreign_capacity_fallback",
+    "unverified_models_block_preflight",
+    "unverified_values_visible_as_unverified",
+    "regression_tests"
+  ],
+  "validation_requirements": [
+    "targeted_tests",
+    "frontend_typecheck",
+    "diff_check"
+  ],
+  "forbidden_changes": [
+    "invent protocol-specific timing models",
+    "change product DB"
+  ],
+  "unresolved_decisions": [],
+  "modify_code": true,
+  "allow_repair": true,
+  "revision_before": {
+    "backend/engineering/routing/validation.py": "16be0549b2588fa970fe60fa72f1f0c364e6826a0bcd4e82d9f6729ca6c0aab1",
+    "backend/engineering/capacity/dimensioning.py": "520834167b00a7fe60c507b00e8b756495b6809a8ff4691fc4d0630be9a7757a",
+    "backend/engineering/capacity/service.py": "9539e44d83500012cc78f59dad9357437d98dd58822926326caa80b62097d38f",
+    "frontend/src/components/capacity-workbench.tsx": "6a30500bd7c437a7fef3bc5ec26cfb2a87b040e68f718b5b667ece27c5114ef7",
+    "frontend/src/lib/workflow-api.ts": "6ae474b662182d0b310aea38cc4691505350bd6436e218861ce6e27d46bb1a54",
+    "backend/tests/test_unverified_technology_capacity.py": "095c6f4ef5e5e143e7f81a44154da948f996cd1e3ead3ffdf3b918e67da0db56",
+    "backend/engineering/routing/config_builder.py": "40965da8087e8cae00921e083e3e22dd91af554f4f56c0d63927e40b47534770",
+    "backend/engineering/intelligence/network_planning.py": "f4c51806ac0b7d8f5c04b4a7f57626abb3389e8f6842823b5a5bd26f2a7b4dfd",
+    "backend/engineering/capacity/evaluation.py": "026f5d425ff0d6a83988760d9d1da9f6bd645a3b8ebe489c06fd7ce60ac19dc6",
+    "backend/tests/test_routing.py": "82db0c8a3781475ae86b395e7589d107745b454350e7017524d9d31ef50f44a7",
+    "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx": "448a4f9319430b5c35a90ac202b4751361f3264efcb2fb37e2ece94685a82734",
+    "backend/engineering/capacity/calculators.py": "103970eedfeb901956d5cdf986422862e606a7d7cf9e417abc6c81f64a57f4dc",
+    "backend/tests/test_wizard_routing_stability.py": "e9faca6c011665f74b50c7859e93403347217eb069bfee6f1ad199c5834bcbae",
+    "backend/communication/technologies/catalog.py": "58ee83add58eda8732ace07a7472b3f8debccafc93fee7ff86c91ff67aa77c7a",
+    "backend/communication/technologies/core/registry.py": "648ad5dc63e328d67d27c28e1867bfd22cf2ab8964ef440cc655afa42c4898ec",
+    "backend/agent_core/core/engineering_agent.py": "0c0b362f3b10bf2b324520758b6a7b601d81e2cf69a176460b446cc9f844f7ef",
+    "backend/engineering/agent_tools/run_status.py": "8a5822a2b046859567f7b7be0c42013e1e01697eaa753b1283b73e21515eee20",
+    "backend/simulator/universal_trace.py": "084dcd305a7fc58a64b0163f408dfdc3dc6293b8dbe67a431aff0c36b3f8a156",
+    "backend/simulator/standalone_cli.py": "b954888deb6e42b3c924b832b9e3da7126f4829a49f6d902badb2bfe756fb10d",
+    "backend/tests/test_standalone_simulator.py": "768cb3439b22f069ce8fcdd39bcec1c9930fc52d7c5525619cfcbd2298c7385e",
+    "backend/tests/test_standalone_cli.py": "b5c79c55b968ce716f0b79041631c222a3ffb2db3a1d35ffe3fd648da5677e70",
+    "backend/communication/technologies/core/components.py": "c790c8cc91cc52c1b3a43882338a9ce98d4ec146519d7b6d009bea1cf3ae7d9c",
+    "backend/engineering/agent_tools/wizard_generation.py": "8f0e5e94c4046f8f6a61887d9a1d8905fb2c36667cf7fceb189f9f19fa480e82",
+    "backend/app/simulation_service.py": "827573ec8d89b999e13cd6c8af408a5aa61cff069fab8b114667e9e48a25b1e9"
+  },
+  "repair": {
+    "finding_ids": [
+      "BUS-AUDIT-P0-1",
+      "BUS-AUDIT-P0-2"
+    ],
+    "root_cause": "Routing and capacity use independent tables and generic frame/rate fallbacks while preflight treats their INFO/WARNING as releasable.",
+    "first_failing_layer": "routing capacity lookup and generic capacity estimator",
+    "reproduction": "Audit 2026-09-25: ETHERCAT, PROFINET and I2C produce identical 0.256 ms generic frame at 8 B with no rate; unknown routes fall back to CUSTOM 1 Mbit/s.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\BUS_TECHNOLOGY_COMPLETENESS_AUDIT_2026-09-25.md",
+        "sha256": "84866cd35b43e6289890fed59dbb412fa7c11848d382b20c3ca33fd921d39bd8"
+      }
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "affected_files": [
+      "backend/engineering/routing/validation.py",
+      "backend/engineering/capacity/dimensioning.py",
+      "backend/engineering/capacity/service.py",
+      "frontend/src/components/capacity-workbench.tsx",
+      "frontend/src/lib/workflow-api.ts",
+      "backend/engineering/routing/config_builder.py",
+      "backend/engineering/intelligence/network_planning.py",
+      "backend/engineering/capacity/evaluation.py",
+      "backend/tests/test_routing.py",
+      "frontend/src/features/workflow/stage_08_results_analysis/results-workbench.tsx",
+      "backend/engineering/capacity/calculators.py",
+      "backend/tests/test_wizard_routing_stability.py",
+      "backend/communication/technologies/catalog.py",
+      "backend/communication/technologies/core/registry.py",
+      "backend/agent_core/core/engineering_agent.py",
+      "backend/engineering/agent_tools/run_status.py",
+      "backend/simulator/universal_trace.py",
+      "backend/simulator/standalone_cli.py",
+      "backend/tests/test_standalone_simulator.py",
+      "backend/tests/test_standalone_cli.py",
+      "backend/communication/technologies/core/components.py",
+      "backend/engineering/agent_tools/wizard_generation.py",
+      "backend/app/simulation_service.py"
+    ],
+    "acceptance_criteria": [
+      "no foreign rate for unknown catalog technology",
+      "generic model and missing schedule produce REVIEW_REQUIRED preflight",
+      "UI does not present generic load as verified"
+    ],
+    "targeted_tests": [
+      "test_unverified_technology_capacity.py"
+    ],
+    "weaken_assertions_to_pass": false
+  },
+  "outcomes": {
+    "no_foreign_capacity_fallback": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\tests\\test_unverified_technology_capacity.py",
+          "sha256": "0d05bdb4b4b227a777de32c91f0d33faaa8e9354888c5ec6ecf5ca484ad06251"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\backend-tests.log",
+          "sha256": "a688a32d3fc8a5aa75819b4136e741a323979f4a34268c6945527cac782332f7"
+        }
+      ]
+    },
+    "unverified_models_block_preflight": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\tests\\test_unverified_technology_capacity.py",
+          "sha256": "0d05bdb4b4b227a777de32c91f0d33faaa8e9354888c5ec6ecf5ca484ad06251"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\backend-tests.log",
+          "sha256": "a688a32d3fc8a5aa75819b4136e741a323979f4a34268c6945527cac782332f7"
+        }
+      ]
+    },
+    "unverified_values_visible_as_unverified": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\src\\components\\capacity-workbench.tsx",
+          "sha256": "6a30500bd7c437a7fef3bc5ec26cfb2a87b040e68f718b5b667ece27c5114ef7"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\BUS_TECHNOLOGY_REPAIR_REPORT_2026-09-25.md",
+          "sha256": "60ee2a5116907ae6387b5b55bc92fd89f3cb688b015f73d69fdb39c0063647ce"
+        }
+      ]
+    },
+    "regression_tests": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\backend-tests.log",
+          "sha256": "a688a32d3fc8a5aa75819b4136e741a323979f4a34268c6945527cac782332f7"
+        }
+      ]
+    }
+  },
+  "validations": {
+    "targeted_tests": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\backend-tests.log",
+          "sha256": "a688a32d3fc8a5aa75819b4136e741a323979f4a34268c6945527cac782332f7"
+        }
+      ]
+    },
+    "frontend_typecheck": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\typecheck.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\cbc45d3585f2\\receipt.json",
+          "sha256": "22d0b26a0c1751aae26409b38a5b44f4b859d3299a644819cefa05d26b066969"
+        }
+      ]
+    },
+    "diff_check": {
+      "status": "PASSED",
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\BUS_TECHNOLOGY_REPAIR_REPORT_2026-09-25.md",
+          "sha256": "60ee2a5116907ae6387b5b55bc92fd89f3cb688b015f73d69fdb39c0063647ce"
+        }
+      ]
+    }
+  },
+  "remaining_findings": [
+    "RELEASE_GATE_BROWSER_E2E_FAILED: five old nine-stage Wizard cases conflict with confirmed missing-evidence gate; updated acceptance contract decision pending; no PASS receipt or product deployment"
+  ]
+}

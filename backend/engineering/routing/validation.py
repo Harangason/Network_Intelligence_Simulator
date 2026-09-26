@@ -12,6 +12,8 @@ from psycopg.types.json import Jsonb
 from ..db import get_connection
 from ..project_context import current_project_id
 from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+from ...communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+from ..capacity.dimensioning import SUPPORTED_CAPACITY_PROTOCOLS
 
 PROTOCOL_CAPACITY = {
     "CAN": (500_000, 8),
@@ -42,7 +44,6 @@ PROTOCOL_CAPACITY = {
     "ETB": (100_000_000, 1_500),
     "TRDP": (100_000_000, 65_507),
     "PCIE": (8_000_000_000, 4096),
-    "CUSTOM": (1_000_000, 65_535),
 }
 
 INTERFACE_PROTOCOLS = {
@@ -63,6 +64,8 @@ INTERFACE_PROTOCOLS = {
     "SPI": {"SPI"},
     "GPIO": {"GPIO"},
     "PWM": {"PWM"},
+    "ADC": {"ADC"},
+    "DAC": {"DAC"},
     "OPCUA": {"OPC_UA"},
     "ARINC": {"ARINC"},
     "MIL_STD_1553": {"MIL_STD_1553"},
@@ -73,7 +76,7 @@ INTERFACE_PROTOCOLS = {
     "PCIe": {"PCIE"},
     "Other": set(PROTOCOL_CAPACITY),
 }
-DIRECT_SIGNAL_PROTOCOLS = frozenset({"GPIO", "PWM"})
+DIRECT_SIGNAL_PROTOCOLS = frozenset(item.upper() for item in DIRECT_IO_TECHNOLOGIES)
 
 
 def physical_route_technology(value):
@@ -266,11 +269,9 @@ class RoutingValidator:
                                  'source_node_id': left, 'target_node_id': right})
                 continue
             technology = next(iter(technologies))
-            protocol = technology.upper()
-            if protocol not in PROTOCOL_CAPACITY:
-                supported = INTERFACE_PROTOCOLS.get(technology, set())
-                protocol = next(iter(supported)) if len(supported) == 1 else 'CUSTOM'
-            segments.append({'network_id': network, 'protocol': protocol,
+            # The canonical registered identity is retained even when no
+            # capacity model exists. A foreign CUSTOM rate must not be inferred.
+            segments.append({'network_id': network, 'protocol': technology.upper(),
                              'source_node_id': left, 'target_node_id': right})
         return segments
 
@@ -525,8 +526,8 @@ class RoutingValidator:
             warn("PAYLOAD_UNSPECIFIED", "Die Route hat noch keinen konkreten Payload.")
 
         protocol = str(source.get("protocol") or "CUSTOM").upper()
-        if protocol not in PROTOCOL_CAPACITY and protocol not in DIRECT_SIGNAL_PROTOCOLS:
-            warn("CUSTOM_PROTOCOL", f"Für das Protokoll {protocol} liegen keine Standardkapazitäten vor.")
+        if protocol not in SUPPORTED_CAPACITY_PROTOCOLS and protocol not in DIRECT_SIGNAL_PROTOCOLS:
+            warn("CAPACITY_MODEL_UNVERIFIED", f"Für {protocol} fehlt ein technologiespezifischer Kapazitäts- und Zeitnachweis.")
         if source.get("port_id") and any(not destination.get("port_id") for destination in destinations):
             error("DESTINATION_PHYSICAL_PORT_MISSING", "Empfänger besitzt keinen nachgewiesenen Anschluss für diesen Transport.")
         source_network_id = str(source.get("network_id") or "").strip().casefold()
@@ -651,10 +652,17 @@ class RoutingValidator:
         for segment_protocol in sorted(segment_protocols):
             if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
                 continue
-            _, max_payload = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])
-            if frame_payload_bytes > max_payload:
+            try:
+                profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(segment_protocol)
+            except KeyError:
+                profile = None
+            capacity = PROTOCOL_CAPACITY.get(segment_protocol)
+            max_payload = profile.get("max_payload_bytes") if profile else capacity[1] if capacity else None
+            if max_payload is not None and frame_payload_bytes > max_payload:
                 error("PAYLOAD_TOO_LARGE", f"Payload {frame_payload_bytes} Byte überschreitet {max_payload} Byte für {segment_protocol}. Eine Protokollübersetzung allein erzeugt keine kleinere kodierte Nachricht.")
-        bitrate = None if protocol in DIRECT_SIGNAL_PROTOCOLS else PROTOCOL_CAPACITY.get(protocol, PROTOCOL_CAPACITY['CUSTOM'])[0]
+        bitrate = source.get("bitrate") if protocol in SUPPORTED_CAPACITY_PROTOCOLS else None
+        if not isinstance(bitrate, (int, float)) or isinstance(bitrate, bool) or bitrate <= 0:
+            bitrate = None
 
         hop_count = max(1, len(path.get("hops", [])) - 1)
         gateway_count = len(gateways)
@@ -696,7 +704,11 @@ class RoutingValidator:
             segment_protocol = str(item.get('protocol') or protocol).upper()
             if segment_protocol in DIRECT_SIGNAL_PROTOCOLS:
                 continue
-            segment_bitrate = PROTOCOL_CAPACITY.get(segment_protocol, PROTOCOL_CAPACITY['CUSTOM'])[0]
+            segment_bitrate = item.get("bitrate")
+            if (segment_protocol not in SUPPORTED_CAPACITY_PROTOCOLS
+                    or not isinstance(segment_bitrate, (int, float))
+                    or isinstance(segment_bitrate, bool) or segment_bitrate <= 0):
+                continue
             segment_loads[network] = payload_bits / (cycle_ms / 1000.0) / segment_bitrate * 100
         segment_count = len(segment_loads) or 1
         # Preserve the route's aggregate demand indicator, deduplicating a shared

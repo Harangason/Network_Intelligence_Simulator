@@ -3,6 +3,9 @@ import { createRequire } from 'node:module';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { guardWithRegistryEvidence, readExpectedRuntime } from './src/20260925_src_master_technology_quality_registry_gate_bridge.mjs';
+import { captureProjectPersistence, projectPersistenceEvidence } from './src/20260925_src_master_technology_quality_persistence.mjs';
+import { captureRuntimeBoundary, projectRuntimeEvidence, verifyTestProjectId } from './src/20260925_src_master_technology_quality_runtime.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1')), '..');
 const require = createRequire(path.join(root, 'frontend', 'package.json'));
@@ -19,7 +22,9 @@ const input = JSON.parse(await new Promise((resolve, reject) => {
 const { step } = input;
 const scenario = step.case;
 const baseURL = step.base_url.replace(/\/$/, '');
-const project = step.project_id;
+const project = verifyTestProjectId(step.project_id);
+const runtimeRequested = Object.values(scenario).filter(Array.isArray).flat()
+  .some(value => typeof value === 'string' && value.startsWith('[TC-RUNTIME-01]'));
 const evidenceDir = path.join(process.env.TOOL_CHECKER_EVIDENCE_ROOT || path.join(root, '.tool-checker', 'evidence'), scenario.test_id);
 await mkdir(evidenceDir, { recursive: true });
 const evidence = [];
@@ -960,6 +965,8 @@ try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
+  const runtimeBefore = runtimeRequested ? await captureRuntimeBoundary({ step,
+    api: url => api(page, url), save, boundary: 'before-flow' }) : null;
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
   await page.goto(`${baseURL}/studio/engineering?assistant=project&project=${encodeURIComponent(project)}`, { waitUntil: 'load', timeout: 120_000 });
@@ -1031,6 +1038,23 @@ try {
   };
   persistence.hardware_count_match = persistence.hardware_count_before === persistence.hardware_count_after;
   await save('persistence-reload.json', persistence);
+  let canonicalPersistence = null;
+  let persistenceRuntime = null;
+  if (Object.values(scenario).filter(Array.isArray).flat()
+      .some(value => typeof value === 'string' && value.startsWith('[TC-PROJECT-03]'))) {
+    const { receipt } = await readExpectedRuntime(step);
+    persistenceRuntime = receipt.release;
+    canonicalPersistence = await captureProjectPersistence({ page, save,
+      screenshot: name => screenshot(page, name), baseURL, project, expectedBuild: persistenceRuntime,
+      api: async (url, method = 'GET', data) => {
+        const response = await page.request.fetch(baseURL + url, {
+          method, ...(data === undefined ? {} : { data }), headers: { 'X-Project-ID': project }, timeout: 60000,
+        });
+        if (!response.ok()) throw new Error(`${url}: HTTP ${response.status()}`);
+        return response.json();
+      },
+    });
+  }
   await save('scripted-decisions.json', { decision_source: 'SCRIPTED_TEST', choices, reviewed_proposals: completed.reviewed });
   await save('browser-actions.json', browserActions);
   await save('browser-errors.json', pageErrors, 'log');
@@ -1166,7 +1190,15 @@ try {
     questions: [], checks, findings, browser: browserActions.map(action => ({ ...action, evidence: shared })),
     model_after: model, decision_source: 'SCRIPTED_TEST', claimed_complete: false,
   };
-  process.stdout.write(JSON.stringify({ status: 'PASSED', llm_calls: null, evidence, observations }));
+  const original = { status: 'PASSED', llm_calls: null, evidence, observations };
+  let verified = await guardWithRegistryEvidence(original, scenario, step);
+  if (canonicalPersistence) verified = projectPersistenceEvidence(verified, original, canonicalPersistence, project, persistenceRuntime);
+  if (runtimeBefore) {
+    const runtimeAfter = await captureRuntimeBoundary({ step, api: url => api(page, url), save, boundary: 'after-flow' });
+    verified.evidence = [...verified.evidence, ...evidence.filter(item => !verified.evidence.some(known => known.ref === item.ref))];
+    verified = projectRuntimeEvidence(verified, original, runtimeBefore, runtimeAfter);
+  }
+  process.stdout.write(JSON.stringify(verified));
 } catch (error) {
   await save('scripted-decisions-error.json', { decision_source: 'SCRIPTED_TEST', choices, browserActions }, 'log');
   await save('adapter-error.txt', error?.stack || String(error), 'log');

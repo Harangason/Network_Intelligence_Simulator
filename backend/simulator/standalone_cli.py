@@ -72,6 +72,8 @@ class StandaloneSimulationOptions:
     seed: int = 42
     node_count: int = 2
     bitrate: int | None = None
+    arbitration_bitrate: int | None = None
+    data_bitrate: int | None = None
     cycle_ms: float = 100.0
     payload_bytes: int = 8
     max_events: int = 100_000
@@ -90,9 +92,10 @@ class StandaloneSimulationOptions:
                 "corruption_probability": self.corruption_probability,
             },
         }
-        selected_bitrate = self.bitrate or technology.get("default_bitrate")
-        if selected_bitrate is not None:
-            network["bitrate"] = int(selected_bitrate)
+        for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
+            value = getattr(self, key)
+            if value is not None:
+                network[key] = value
 
         hardware: list[dict[str, Any]] = []
         interface_ids: list[str] = []
@@ -189,13 +192,17 @@ class InteractiveStandaloneCli:
                 return int(selected) - 1
             self.output("Ungültige Auswahl.")
 
-    def _integer(self, title: str, default: int, minimum: int, maximum: int) -> int:
+    def _integer(self, title: str, default: int | None, minimum: int, maximum: int) -> int:
         while True:
             selected = self.input(
-                f"{title} [{minimum}-{maximum}, Enter = {default}]: "
+                f"{title} [{minimum}-{maximum}" +
+                (f", Enter = {default}" if default is not None else ", Eingabe erforderlich") + "]: "
             ).strip()
             if not selected:
-                return default
+                if default is not None:
+                    return default
+                self.output("Für diese Technologie ist eine ausdrückliche Bitrate erforderlich.")
+                continue
             try:
                 value = int(selected)
             except ValueError:
@@ -253,13 +260,19 @@ class InteractiveStandaloneCli:
                 else "; keine nativen Adapter"
             )
         )
-        default_bitrate = int(profile.get("default_bitrate") or 1_000_000)
+        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as communication_registry
+        rate_model = communication_registry.profile(technology_id).get("rate_model") or {}
+        multi_phase = rate_model.get("type") == "MULTI_PHASE_BITRATE"
+        default_bitrate = (rate_model.get("defaults_bps") or {}).get("nominal_bitrate_bps") if multi_phase else (
+            int(profile["default_bitrate"]) if profile.get("default_bitrate") else None)
         bitrate = self._integer(
-            "Bitrate in bit/s",
+            "Nominal-/Arbitrationsbitrate in bit/s" if multi_phase else "Bitrate in bit/s",
             default_bitrate,
             1,
-            100_000_000_000,
+            rate_model.get("nominal_maximum_bps", 100_000_000_000) if multi_phase else 100_000_000_000,
         )
+        data_bitrate = self._integer("Datenphasenbitrate in bit/s", None, 1,
+            rate_model.get("data_maximum_bps", 100_000_000_000)) if multi_phase else None
         node_count = self._integer("Anzahl Hardware-Knoten", 2, 2, 100)
         duration_s = self._number("Simulationsdauer in Sekunden", 1.0, 0.001, 86_400.0)
         cycle_ms = self._number("Kommunikationszyklus in Millisekunden", 100.0, 0.001, 3_600_000.0)
@@ -301,6 +314,7 @@ class InteractiveStandaloneCli:
             seed=seed,
             node_count=node_count,
             bitrate=bitrate,
+            data_bitrate=data_bitrate,
             cycle_ms=cycle_ms,
             payload_bytes=payload_bytes,
             max_events=max_events,
@@ -358,8 +372,6 @@ def options_from_namespace(args: Any) -> StandaloneSimulationOptions:
             f"--payload-bytes muss für {technology['id']} zwischen 0 und {payload_limit} liegen"
         )
     bitrate = args.bitrate
-    if bitrate is None:
-        bitrate = technology.get("default_bitrate")
     return StandaloneSimulationOptions(
         technology=technology["id"],
         industry=str(args.industry or domain_for_technology(technology["id"])),
@@ -369,6 +381,8 @@ def options_from_namespace(args: Any) -> StandaloneSimulationOptions:
         seed=int(args.seed),
         node_count=int(args.nodes),
         bitrate=int(bitrate) if bitrate is not None else None,
+        arbitration_bitrate=getattr(args, "arbitration_bitrate", None),
+        data_bitrate=getattr(args, "data_bitrate", None) or getattr(args, "fd_bitrate", None),
         cycle_ms=float(args.cycle_ms),
         payload_bytes=payload,
         max_events=int(args.max_events or args.messages or 100_000),

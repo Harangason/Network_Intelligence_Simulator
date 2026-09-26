@@ -50,6 +50,25 @@ def test_unknown_profile_blocks_instead_of_using_foreign_default() -> None:
     assert codes(result) == {"TECHNOLOGY_PROFILE_MISSING"}
 
 
+@pytest.mark.parametrize("technology", ["can", "can_fd", "lin", "ethernet", "dds", "i2c", "spi", "can_xl"])
+def test_absent_transport_rates_are_unverified_and_not_filled_from_catalog(technology):
+    parameters = {}
+    result = REGISTRY.validate_parameters(technology, parameters)
+    assert result["status"] == "UNVERIFIED"
+    assert "TECHNOLOGY_PARAMETER_MISSING" in codes(result)
+    assert parameters == {}
+
+
+def test_missing_rate_http_response_is_unverified_not_valid():
+    client = create_app().test_client()
+    response = client.post('/api/technologies/validate-parameters', json={
+        'technology_id': 'LIN', 'parameters': {},
+    })
+    assert response.status_code == 200
+    assert response.get_json()['status'] == 'UNVERIFIED'
+    assert response.get_json()['findings'][0]['severity'] == 'BLOCKER'
+
+
 def test_registered_profile_with_missing_stack_layer_is_not_silently_valid() -> None:
     custom = TechnologyRegistry()
     custom.register_defaults([{

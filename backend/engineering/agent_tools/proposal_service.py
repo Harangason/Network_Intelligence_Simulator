@@ -72,9 +72,20 @@ def envelope(row: dict) -> dict:
         evidence=row.get("evidence") or [], validation_result=contract.get("validation_result", {}),
         status=contract["status"],
     ).model_dump(mode="json")
+    dependent_results = None
+    if contract['status'] == 'APPLIED':
+        rate_evidence = next((item for item in row.get('evidence') or []
+                              if item.get('source') == 'explicit_network_bitrate'
+                              and item.get('engineering_goal_id')), None)
+        if rate_evidence:
+            from . import conversation
+            workload = (conversation.snapshot(current_project_id()).get('engineering_workloads') or {}).get(
+                str(rate_evidence['engineering_goal_id'])) or {}
+            dependent_results = (workload.get('result') or {}).get('dependent_results')
     return {**value, "revision": contract["revision"], "approved_by": contract.get("approved_by"),
             "canonical_ids": contract.get("canonical_ids", []), "workload_id": contract.get("workload_id"),
-            'replacement_proposal_id': contract.get('replacement_proposal_id')}
+            'replacement_proposal_id': contract.get('replacement_proposal_id'),
+            **({'dependent_results': dependent_results} if dependent_results else {})}
 
 
 def set_replacement(proposal_id: str, replacement_id: str):
@@ -134,7 +145,7 @@ def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptio
     return _write(str(row["proposal_id"]), contract)
 
 
-def _validate_changes(changes: list[dict]) -> dict:
+def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
     findings, known, names, definitions = [], {}, set(), {}
     message_signals = {}
     for index, change in enumerate(changes):
@@ -194,6 +205,17 @@ def _validate_changes(changes: list[dict]) -> dict:
                 result = WorkflowStatusService._topology_artifact_check(topology)
                 if not result["complete"]:
                     raise ValueError(f"Netzwerktopologie ist unvollständig: {result}")
+            elif kind == "Network" and action == "UPDATE":
+                if proposal_type != 'NETWORK_BITRATE_UPDATE' or set(data) != {'bitrate'}:
+                    raise ValueError('Netzwerkänderungen unterstützen nur den geprüften Bitratenauftrag.')
+                declared = (WorkflowStatusService(current_project_id()).get().get('parameters') or {}).get('networks') or []
+                target = next((item for item in declared if str(item.get('id')) == str(change.get('object_id'))), None)
+                if target is None or str(target.get('technology') or '').upper() != 'LIN':
+                    raise ValueError('Das deklarierte LIN-Netz wurde nicht gefunden.')
+                from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+                result = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters('LIN', {'bitrate_bps': data['bitrate']})
+                if result['status'] != 'VALID':
+                    raise ValueError('LIN TechnologyProfile: ' + str(result['findings']))
             elif kind == "Network" and action == "CREATE":
                 if not data.get("id") or not data.get("technology"):
                     raise ValueError("Netzwerk benötigt id und technology.")
@@ -235,12 +257,49 @@ def _validate_changes(changes: list[dict]) -> dict:
             definitions[ref] = data
         except (KeyError, ValueError, LookupError, EngineeringValidationError, ConcurrentUpdateError) as error:
             findings.append({"severity": "ERROR", "index": index, "message": str(error)})
+    if not findings and proposal_type == 'HARDWARE_CHANNEL':
+        from .hardware_channel import validate_changes
+        try:
+            validate_changes(changes)
+        except (ValueError, KeyError, EngineeringValidationError) as error:
+            findings.append({'severity': 'ERROR', 'index': 0, 'code': 'HARDWARE_CHANNEL_INVALID', 'message': str(error)})
+    if not findings and proposal_type == 'SIGNAL_RECIPIENT_REPAIR':
+        from .repair_execution import validate_recipient_changes
+        try:
+            validate_recipient_changes(changes)
+        except (ValueError, KeyError, EngineeringValidationError) as error:
+            findings.append({'severity': 'ERROR', 'index': 0, 'code': 'RECIPIENT_REPAIR_INVALID', 'message': str(error)})
+    open_findings = []
     if not findings:
         from .validation import validate_effective_model
-        findings.extend(validate_effective_model(changes))
+        for finding in validate_effective_model(changes):
+            # An unassigned communication technology must not prevent a
+            # reviewable structural project model. The missing controller
+            # status remains explicit and still blocks communication release
+            # and preflight. Only this narrow structural proposal may defer it.
+            if finding.get('code') == 'CAPACITY_UNVERIFIED':
+                # A draft may preserve missing rate evidence for review. This
+                # validates its structure, never its communication capacity;
+                # capacity/preflight retain their independent evidence gate.
+                open_findings.append({**finding, 'severity': 'OPEN'})
+            elif (proposal_type == 'SIMPLE_PROJECT_STRUCTURE'
+                    and finding.get('code') == 'DEVICE_STATUS_MISSING'
+                    and any(change.get('object_type') == 'HardwareNode'
+                            and '$' + change.get('local_ref', '') == finding.get('object_id')
+                            and not any(item.get('object_type') in {'Interface', 'HardwareNetworkInterface', 'Message'}
+                                        for item in changes)
+                            for change in changes)):
+                open_findings.append({**finding, 'severity': 'OPEN',
+                    'message': finding['message'] + ' Kommunikationstechnologie und Statuszyklus sind noch nicht festgelegt.'})
+            else:
+                findings.append(finding)
     # Several findings on one route still represent one invalid change.
     invalid_count = len({item['index'] for item in findings}) if findings and all('index' in item for item in findings) else len(findings)
-    return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-invalid_count), "findings": findings}
+    return {"valid": not findings, "requested": len(changes), "valid_count": max(0, len(changes)-invalid_count),
+            "validation_scope": "MODEL_STRUCTURE",
+            "capacity_status": "UNVERIFIED" if any(item.get('code') == 'CAPACITY_UNVERIFIED'
+                for item in open_findings) else "NOT_ASSESSED",
+            "findings": [*findings, *open_findings]}
 
 
 def _validate_topology_inventory(row: dict, changes: list[dict]) -> list[dict]:
@@ -288,7 +347,7 @@ def validate(proposal_id: str) -> dict:
     envelope(row)
     if contract["status"] in {"APPLIED", "REJECTED", "APPROVED"}:
         return envelope(row)
-    contract["validation_result"] = _validate_changes(contract["changes"])
+    contract["validation_result"] = _validate_changes(contract["changes"], proposal_type=row['proposal_type'])
     inventory_findings = _validate_topology_inventory(row, contract['changes'])
     if inventory_findings:
         contract['validation_result']['findings'].extend(inventory_findings)
@@ -357,7 +416,7 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         contract["status"] = "OUTDATED"
         contract["revision"] = str(uuid4())
         return _write(proposal_id, contract)
-    validation = _validate_changes(contract["changes"])
+    validation = _validate_changes(contract["changes"], proposal_type=row['proposal_type'])
     inventory_findings = _validate_topology_inventory(row, contract['changes'])
     if inventory_findings:
         validation['findings'].extend(inventory_findings)
@@ -390,6 +449,9 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
                                     'import_id': evidence['import_id'], 'file_name': evidence['file_name'],
                                     'import_key': origin['import_key']}
                 item = create_object(kind, {**data, "source": "ai_generated", "created_by": contract["approved_by"], "review_state": "reviewed", "approval_state": "approved"})
+                if row['proposal_type'] == 'HARDWARE_CHANNEL':
+                    from .hardware_channel import persist_port
+                    persist_port(item, contract.get('workload_id'))
             elif action == "UPDATE":
                 item = update_object(kind, change["object_id"], {**data, "expected_version": change["expected_version"], "actor": actor})
             else:
@@ -421,9 +483,17 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         elif kind == "Network":
             workflow = WorkflowStatusService(current_project_id())
             parameters = deepcopy(workflow.get()["parameters"])
-            parameters.setdefault("networks", []).append(data)
+            if action == 'UPDATE':
+                target = next((entry for entry in parameters.get('networks', [])
+                               if str(entry.get('id')) == str(change['object_id'])), None)
+                if target is None:
+                    raise ConcurrentUpdateError('Das zu ändernde LIN-Netz wurde entfernt.')
+                target.update(data)
+                item = target
+            else:
+                parameters.setdefault("networks", []).append(data)
+                item = data
             workflow.save_parameters(parameters, actor=actor)
-            item = data
         elif kind == "SignalBehavior":
             from ..signal_behavior_service import save_behavior
             item = save_behavior(data)
@@ -446,7 +516,9 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         connection.execute("UPDATE engineering_ai_proposals SET proposed_objects=%s WHERE proposal_id=%s AND project_id=%s",
                            (Jsonb(json_safe(original)), proposal_id, current_project_id()))
     result = _write(proposal_id, contract, legacy_status="APPROVED")
-    if contract.get("workload_id"):
+    # Direct assistant goals live in the conversation, not the legacy workload
+    # table. Their canonical completion is reconciled by the apply endpoint.
+    if contract.get("workload_id") and row['proposal_type'] not in {'HARDWARE_CHANNEL', 'SIGNAL_RECIPIENT_REPAIR'}:
         from ..workloads import EngineeringWorkloadOrchestrator
         EngineeringWorkloadOrchestrator(current_project_id()).evaluate_workload_completion(contract["workload_id"], actor=actor)
     record(trace_id, actor, "APPLY", "apply_approved_proposal", "APPLIED", {"proposal_id": proposal_id, "canonical_ids": canonical})

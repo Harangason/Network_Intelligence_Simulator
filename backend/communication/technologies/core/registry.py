@@ -21,6 +21,29 @@ from .physical import physical_profile, validate_physical_realization
 LAYER_ORDER = {layer.value: index for index, layer in enumerate(Layer)}
 
 
+def _identity_token(value: Any) -> str:
+    token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
+    while "__" in token:
+        token = token.replace("__", "_")
+    return token
+
+
+# Ingress aliases belong to technology identities and are exported with them.
+# Device classes (for example SPS/PLC) are not communication technologies.
+BUILTIN_PROFILE_ALIASES = {
+    "can_fd": ("CANFD",), "can_xl": ("CANXL",), "someip": ("some_ip",),
+    "ethernet": ("automotiveethernet",), "modbus_tcp": ("modbustcp",),
+    "modbus_rtu": ("modbusrtu",), "opc_ua": ("opcua",),
+    "arinc429": ("arinc",), "mil_std_1553": ("milstd_1553",), "dds": ("dds_rtps",),
+    "ros2": ("ROS2", "ROS_2", "ros-2", "ros2_dds"),
+    "rs485": ("rs_485",), "rs422": ("rs_422",),
+}
+BUILTIN_INGRESS_ALIASES = {
+    _identity_token(alias): canonical
+    for canonical, aliases in BUILTIN_PROFILE_ALIASES.items() for alias in aliases
+}
+
+
 def format_rate_bps(value: int) -> str:
     rate = int(value)
     for divisor, unit in ((1_000_000_000, "Gbit/s"), (1_000_000, "Mbit/s"), (1_000, "kbit/s")):
@@ -44,35 +67,39 @@ class TechnologyRegistry:
         self._timing_models: dict[str, Any] = {}
 
     def normalize_id(self, value: Any) -> str:
-        token = str(value or "custom_protocol").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
-        while "__" in token:
-            token = token.replace("__", "_")
-        aliases = {
-            "canfd": "can_fd", "canxl": "can_xl", "some_ip": "someip",
-            "automotiveethernet": "ethernet", "modbustcp": "modbus_tcp",
-            "modbusrtu": "modbus_rtu", "opcua": "opc_ua", "profinet": "profinet",
-            "arinc": "arinc429", "milstd_1553": "mil_std_1553", "dds_rtps": "dds",
-            "ros_2": "ros2", "ros2_dds": "ros2", "sps": "plc",
-            "rs_485": "rs485", "rs_422": "rs422",
-        }
-        token = aliases.get(token, token)
-        return self._aliases.get(token, token)
+        token = _identity_token(value)
+        return self._aliases.get(token, BUILTIN_INGRESS_ALIASES.get(token, token))
 
     def register_profile(self, technology_id: str, profile: dict[str, Any]) -> None:
         key = self.normalize_id(technology_id)
         if key in self._profiles:
             raise ValueError(f"technology already registered: {key}")
+        supplied_aliases = profile.get("aliases") or ()
+        if not isinstance(supplied_aliases, (list, tuple)):
+            raise ValueError("technology aliases must be a list")
+        label = str(profile.get("label") or key).strip()
+        aliases = list(dict.fromkeys(str(alias).strip() for alias in
+                       (*BUILTIN_PROFILE_ALIASES.get(key, ()), label, *supplied_aliases)
+                       if str(alias).strip()))
         pending_aliases: dict[str, str] = {}
-        for alias in profile.get("aliases") or ():
-            alias_key = str(alias or "").strip().lower().replace("-", "_").replace("/", "_").replace(" ", "_")
-            while "__" in alias_key:
-                alias_key = alias_key.replace("__", "_")
+        for alias in aliases:
+            alias_key = _identity_token(alias)
             if alias_key and alias_key != key:
-                owner = self._aliases.get(alias_key)
+                owner = self._aliases.get(alias_key, BUILTIN_INGRESS_ALIASES.get(alias_key))
+                if alias_key in self._profiles and alias_key != key:
+                    raise ValueError(f"technology alias conflicts with canonical identity: {alias_key}")
                 if owner and owner != key:
                     raise ValueError(f"technology alias already registered: {alias_key}")
                 pending_aliases[alias_key] = key
-        self._profiles[key] = TechnologyProfile.from_dict({**deepcopy(profile), "id": key})
+        self._profiles[key] = TechnologyProfile.from_dict({
+            **deepcopy(profile), "id": key, "canonical_id": key, "display_name": label,
+            "aliases": aliases,
+            "classification": profile.get("connection_type") or profile["layer"],
+            "fallback_allowed": False,
+            # A profile describes available models; registration supplies no
+            # project parameters, physical realization or execution evidence.
+            "verification_status": "UNVERIFIED", "verification_scope": "REGISTRY_TEMPLATE",
+        })
         self._aliases.update(pending_aliases)
 
     def register_generated_profile(self, profile: dict[str, Any]) -> None:
@@ -83,17 +110,32 @@ class TechnologyRegistry:
             raise ValueError(f"generated pack cannot replace built-in technology: {technology_id}")
         if profile.get("knowledge_origin") != "GENERATED_TECHNOLOGY_PACK":
             raise ValueError("generated profile origin is missing")
-        if existing:
-            self._aliases = {alias: owner for alias, owner in self._aliases.items() if owner != technology_id}
-            self._profiles.pop(technology_id, None)
-            self._bindings.pop(technology_id, None)
-            self._generators.pop(technology_id, None)
-            self._validators.pop(technology_id, None)
-            self._encoders.pop(technology_id, None)
-            self._decoders.pop(technology_id, None)
-            self._load_calculators.pop(technology_id, None)
-            self._timing_models.pop(technology_id, None)
-        self.register_defaults([profile])
+        # An imported description cannot install executable capacity code.
+        profile = deepcopy(profile)
+        profile["id"] = technology_id
+        profile["capacity_evidence"] = {
+            "status": "MODEL_MISSING", "frame_model": None,
+            "schedule_model": None, "requires_confirmed_device_parameters": True,
+        }
+        components = dict(profile.get("components") or {})
+        components.update(timing_model=None, load_model=None)
+        profile["components"] = components
+        registries = ("_profiles", "_aliases", "_bindings", "_generators", "_validators",
+                      "_encoders", "_decoders", "_load_calculators", "_timing_models")
+        before = {name: dict(getattr(self, name)) for name in registries}
+        try:
+            if existing:
+                self._aliases = {alias: owner for alias, owner in self._aliases.items() if owner != technology_id}
+                for name in registries:
+                    if name != "_aliases":
+                        getattr(self, name).pop(technology_id, None)
+            self.register_defaults([profile])
+        except Exception:
+            # Validation and alias failures must leave the previously registered
+            # profile, its aliases and all executable components usable.
+            for name, values in before.items():
+                setattr(self, name, values)
+            raise
 
     def register_binding(self, technology_id: str, binding: Any) -> None:
         self._bindings[self.normalize_id(technology_id)] = binding
@@ -123,15 +165,19 @@ class TechnologyRegistry:
             self.register_profile(technology_id, profile)
             status = ImplementationStatus(profile["implementation_status"])
             if status in {ImplementationStatus.IMPLEMENTED, ImplementationStatus.PARTIAL, ImplementationStatus.EXPERIMENTAL, ImplementationStatus.LEGACY}:
-                binding = TechnologyBindingAdapter(technology_id)
-                timing = TechnologyTimingModel(technology_id, profile)
+                binding = TechnologyBindingAdapter(technology_id, self.validate_binding_stack)
                 self.register_binding(technology_id, binding)
                 self.register_generator(technology_id, TechnologyTransportGenerator(technology_id, profile["transport_unit"], profile.get("max_payload_bytes")))
                 self.register_validator(technology_id, TechnologyValidator(technology_id, profile))
                 self.register_encoder(technology_id, IdentityEncoder())
                 self.register_decoder(technology_id, IdentityDecoder())
-                self.register_timing_model(technology_id, timing)
-                self.register_load_calculator(technology_id, TechnologyLoadCalculator(technology_id, timing))
+                # Generic payload-plus-overhead arithmetic is not a technology
+                # timing model. Only profiles backed by a capacity branch expose
+                # these adapters to callers.
+                if (profile.get("capacity_evidence") or {}).get("status") == "MODEL_AVAILABLE":
+                    timing = TechnologyTimingModel(technology_id, profile)
+                    self.register_timing_model(technology_id, timing)
+                    self.register_load_calculator(technology_id, TechnologyLoadCalculator(technology_id, timing))
 
     def get_capabilities(self, technology_id: str) -> dict[str, bool]:
         return deepcopy(self.profile(technology_id)["capabilities"])
@@ -144,6 +190,10 @@ class TechnologyRegistry:
 
     def profiles(self) -> list[dict[str, Any]]:
         return [self._profiles[key].to_dict() for key in sorted(self._profiles)]
+
+    def list_all(self) -> list[dict[str, Any]]:
+        """Enumerate canonical definitions without implying verified projects."""
+        return self.profiles()
 
     def resolve_stack(self, stack: str | Iterable[str]) -> dict[str, Any]:
         ids = tuple(self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack))
@@ -171,6 +221,23 @@ class TechnologyRegistry:
             if technology_id in self._bindings:
                 return self._bindings[technology_id]
         raise LookupError(f"no executable binding for stack: {ids}")
+
+    def validate_binding_stack(self, technology_id: str, stack: Iterable[str]) -> tuple[str, ...]:
+        """Validate an explicit choice; registry defaults are never inserted here."""
+        key = self.normalize_id(technology_id)
+        ids = tuple(self.normalize_id(item) for item in stack)
+        if not ids or ids[-1] != key or len(ids) != len(set(ids)):
+            raise ValueError("TECHNOLOGY_STACK_MISMATCH: duplicate layers or wrong binding technology")
+        profiles = [self.profile(item) for item in ids]
+        layers = [LAYER_ORDER[item["layer"]] for item in profiles]
+        if layers != sorted(layers):
+            raise ValueError("TECHNOLOGY_STACK_ORDER_INVALID: layers must be explicitly ordered")
+        profile = self.profile(key)
+        declared = profile.get("stack_variants") or [profile.get("default_stack") or [key]]
+        variants = {tuple(self.normalize_id(item) for item in variant) for variant in declared}
+        if ids not in variants:
+            raise ValueError(f"TECHNOLOGY_STACK_UNVERIFIED: {ids} is not an explicitly declared stack for {key}")
+        return ids
 
     def resolve_generator(self, stack: str | Iterable[str]) -> Any:
         ids = [self.normalize_id(item) for item in ([stack] if isinstance(stack, str) else stack)]
@@ -241,7 +308,39 @@ class TechnologyRegistry:
             }
             for validator in self._validators.get(stack_id, ()):
                 findings.extend(vars(item) for item in validator.validate({"parameters": layer_parameters}))
-        return {"technology_id": key, "status": "INVALID" if findings else "VALID", "findings": findings}
+        # Validation of an empty/partial request must not certify a complete
+        # physical transport. Catalog defaults are proposals, not supplied data.
+        missing = sorted(stack_rate_fields - supplied_rate_fields)
+        if missing and not any(item["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH" for item in findings):
+            already_missing = any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
+            if not already_missing:
+                findings.extend({
+                    "stage": "TECHNOLOGY_PARAMETERS", "code": "TECHNOLOGY_PARAMETER_MISSING",
+                    "message": f"{field} requires an explicit value for {key}",
+                    "parameter": field, "severity": "BLOCKER",
+                } for field in missing)
+        required_parameters = sorted({
+            field for stack_id in stack
+            for field in self._profiles[stack_id].definition["required_parameters"]
+        })
+        for field in required_parameters:
+            if field in stack_rate_fields:
+                continue  # Rate validation above has stricter type/unit rules.
+            value = parameters.get(field)
+            if value is None or (isinstance(value, str) and not value.strip()):
+                findings.append({
+                    "stage": "TECHNOLOGY_PARAMETERS", "code": "TECHNOLOGY_PARAMETER_MISSING",
+                    "message": f"{field} requires an explicit value for {key}",
+                    "parameter": field, "severity": "BLOCKER",
+                })
+        incomplete = findings and all(item["code"] in {
+            "TECHNOLOGY_PARAMETER_MISSING", "TECHNOLOGY_PARAMETER_INVALID",
+        } for item in findings)
+        return {"technology_id": key,
+                "status": "UNVERIFIED" if incomplete else "INVALID" if findings else "VALID",
+                "findings": findings, "required_parameters": required_parameters,
+                "validation_scope": "DECLARED_PROFILE_PARAMETERS",
+                "required_parameter_completeness": "UNVERIFIED"}
 
     def change_parameters(self, previous_technology: str, target_technology: str, parameters: dict[str, Any]) -> dict[str, Any]:
         previous = self.profile(previous_technology)

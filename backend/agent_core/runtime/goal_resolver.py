@@ -8,10 +8,20 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+RECIPIENT_REPAIR_OUTCOMES = ['signals_scanned', 'findings_created', 'deterministic_repairs_only',
+                             'ambiguous_cases_review_required', 'revalidation_complete']
+
+
+def recipient_repair_intent(text: str) -> bool:
+    return bool(re.fullmatch(r'(?:bitte\s+)?(?:finde|suche)\s+alle\s+signale\s+ohne\s+'
+        r'(?:empfänger|empfaenger)\s+und\s+(?:korrigiere|repariere)\s+(?:nur\s+)?die\s+'
+        r'eindeutigen\s+fälle[.!]?', text.strip(), re.I))
+
 
 class GoalType(StrEnum):
     CREATE_PROJECT = "CREATE_PROJECT"
     CREATE_HARDWARE = "CREATE_HARDWARE"
+    EXTEND_HARDWARE = "EXTEND_HARDWARE"
     CREATE_FUNCTION = "CREATE_FUNCTION"
     CREATE_SIGNAL = "CREATE_SIGNAL"
     CREATE_NETWORK = "CREATE_NETWORK"
@@ -79,9 +89,9 @@ def _timing(text: str) -> list[dict[str, Any]]:
 def _requested_objects(text: str) -> list[dict[str, Any]]:
     patterns = (
         ("CONTROLLER", r"\b(?:controller|steuergerät|steuergeraet|plc)\b"),
-        ("PRESSURE_SENSOR", r"\b(?:drucksensor|pressure\s+sensor)\b"),
+        ("PRESSURE_SENSOR", r"\b(?:druck[\s-]*sensor|pressure\s+sensor)\b"),
         ("SENSOR", r"\b(?:sensor|messfühler|messfuehler)\b"),
-        ("VALVE_ACTUATOR", r"\b(?:ventil(?:aktor)?|valve\s+actuator)\b"),
+        ("VALVE_ACTUATOR", r"\b(?:ventil[\s-]*aktor|ventil|valve\s+actuator)\b"),
         ("ACTUATOR", r"\b(?:aktor|actuator|stellglied)\b"),
         ("SIGNAL", r"\b(?:signal|signale)\b"),
         ("NETWORK", r"\b(?:netzwerk|netz|network|bus)\b"),
@@ -134,9 +144,12 @@ def _technologies(text: str) -> list[str]:
 _OUTCOMES: dict[GoalType, list[str]] = {
     GoalType.CREATE_PROJECT: ["canonical_objects_resolved", "proposal_validated", "model_change_reviewed"],
     GoalType.CREATE_HARDWARE: ["hardware_exists", "hardware_classified", "model_validated"],
+    GoalType.EXTEND_HARDWARE: ["hardware_resolved", "capability_verified", "channel_available",
+                             "physical_interface_persisted", "port_validated", "dependent_assessments_checked"],
     GoalType.CREATE_FUNCTION: ["function_exists", "hardware_mapping_valid", "model_validated"],
     GoalType.CREATE_SIGNAL: ["signal_exists", "encoding_preserved", "signal_validated"],
     GoalType.CREATE_NETWORK: ["network_exists", "technology_resolved", "preflight_valid"],
+    GoalType.CHANGE_CONFIGURATION: ["configuration_persisted", "capacity_recalculated", "timing_recalculated", "preflight_rerun"],
     GoalType.CONNECT_OBJECTS: ["endpoints_resolved", "route_valid", "capacity_evaluated", "timing_evaluated", "preflight_valid"],
     GoalType.PERIODIC_ACQUISITION: ["requester_exists", "data_sources_resolved", "period_configured", "route_valid", "capacity_evaluated", "timing_evaluated", "preflight_valid"],
     GoalType.CALCULATE_CAPACITY: ["capacity_calculation_current", "findings_reported"],
@@ -175,7 +188,10 @@ class GoalResolver:
         text = source.casefold()
         context = context or {}
         previous = active_workload or {}
-        asked = _ACTION.search(source) is not None
+        from .hardware_intent import hardware_channel_intent
+        from .gateway_intent import gateway_outage_intent, OUTCOMES as GATEWAY_OUTCOMES
+        channel_intent = hardware_channel_intent(source)
+        asked = _ACTION.search(source) is not None or channel_intent is not None
         question = bool(re.match(r"\s*(?:wie|was|welche|warum|wieso|ist|sind|zeige|erkläre|erklaere|kann|how|what|which|why|show|explain|is|are)\b", text))
         wizard_request = context.get("wizard_request")
         wizard_target = (wizard_request.get("target") if isinstance(wizard_request, dict)
@@ -186,8 +202,22 @@ class GoalResolver:
             kind = None
         periodic = bool(re.search(r"\b(?:alle\s+)?\d+(?:[.,]\d+)?\s*(?:s|sek(?:unden?)?|ms|min(?:uten?)?)\b", text)
                         and re.search(r"\b(?:abfrag|abfrage|poll|erfass|erhebung|acquisition|sample)\w*\b", text))
+        first_clause = re.split(r"\b(?:und|and|dann|then)\b|[;!?]", text, maxsplit=1)[0]
+        configuration_command = (
+            re.match(r"^(?:(?:bitte|please)\s+)?(?:ändere|aendere|konfiguriere|change|configure)\b", first_clause)
+            and not re.search(r"\b(?:nicht|nichts|kein\w*|not|no|never)\b", first_clause)
+        )
+        from ..orchestration.capability_intent import communication_path_question
         if kind is not None:
             pass
+        elif channel_intent:
+            kind = GoalType.EXTEND_HARDWARE
+        elif communication_path_question(source):
+            kind = GoalType.EXPLAIN
+        elif configuration_command:
+            # A requested parameter change includes its dependent checks. A later
+            # "prüfe" or "berechne" must not turn it into a read-only goal.
+            kind = GoalType.CHANGE_CONFIGURATION
         elif periodic and re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc)\b", text):
             kind = GoalType.PERIODIC_ACQUISITION
         elif re.search(r"\b(?:trace|trace-session|golden\s+trace)\b", text) and re.search(r"\b(?:analys|untersuch|compare|vergleich|ursach|root)\w*\b", text):
@@ -218,11 +248,11 @@ class GoalResolver:
             kind = GoalType.CREATE_SIGNAL
         elif re.search(r"\b(?:netz|network|bus)\b", text) and re.search(r"\b(?:anleg|erstell|erzeug|create|add)\w*\b|\blege\b.{0,40}\ban\b", text):
             kind = GoalType.CREATE_NETWORK
-        elif re.search(r"\b(?:funktion|function)\b", text) and asked:
+        elif re.search(r"\b(?:funktion|function)\b", text) and asked and not question:
             kind = GoalType.CREATE_FUNCTION
-        elif re.search(r"\b(?:projekt|project)\b", text) and asked:
+        elif re.search(r"\b(?:projekt|project)\b", text) and asked and not question:
             kind = GoalType.CREATE_PROJECT
-        elif re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc|hardware|aktor|actuator|sensor|ventil)\b", text) and asked:
+        elif re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc|hardware|aktor|actuator|sensor|ventil)\b", text) and asked and not question:
             kind = GoalType.CREATE_HARDWARE
         elif re.search(r"\b(?:verbinde|verbinden|connect|route|routing)\b", text):
             kind = GoalType.CONNECT_OBJECTS
@@ -247,10 +277,17 @@ class GoalResolver:
         timings = _timing(source)
         technology_constraints = _technologies(source)
         objects = _requested_objects(source)
+        if follow_up and previous_goal and kind.value == previous_goal.get('goal_type'):
+            # A referential follow-up changes scope while retaining the
+            # confirmed period, technology and object class of its source.
+            # Explicit values in the new utterance always win.
+            timings = timings or list(previous_goal.get('timing_constraints') or [])
+            technology_constraints = technology_constraints or list(previous_goal.get('technology_constraints') or [])
+            objects = objects or list(previous_goal.get('requested_objects') or [])
         selected = context.get("selected_object_refs") or []
         targets = [{"id": str(item["id"]), "object_type": str(item.get("object_type") or item.get("type") or "Unknown")}
                    for item in selected if isinstance(item, dict) and item.get("id")]
-        current_findings = context.get("unresolved_findings") or []
+        current_findings = context.get("unresolved_findings") or context.get("active_findings") or []
         finding_refs = [str(item.get("id") or item.get("finding_id")) for item in current_findings
                         if isinstance(item, dict) and (item.get("id") or item.get("finding_id"))]
         unresolved = []
@@ -262,5 +299,7 @@ class GoalResolver:
             requested_objects=objects, requested_changes=[{"intent": kind.value}] if asked else [],
             timing_constraints=timings, technology_constraints=technology_constraints,
             target_objects=targets, user_constraints=list(context.get("user_constraints") or []),
-            required_outcomes=list(_OUTCOMES.get(kind, ["evidence-backed-result"])),
+            required_outcomes=list(GATEWAY_OUTCOMES if kind == GoalType.RUN_SIMULATION and gateway_outage_intent(source)
+                                   else RECIPIENT_REPAIR_OUTCOMES if kind == GoalType.REPAIR and recipient_repair_intent(source)
+                                   else _OUTCOMES.get(kind, ["evidence-backed-result"])),
             unresolved_decisions=unresolved, follow_up_of=str(follow_up_of) if follow_up_of else None)

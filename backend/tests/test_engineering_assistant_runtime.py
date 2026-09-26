@@ -57,6 +57,39 @@ def test_wizard_results_analysis_target_selects_analysis_capability():
     assert goal.goal_type == GoalType.ANALYZE_TRACE
 
 
+def test_leading_configuration_change_retains_dependent_calculation_goals():
+    resolver = GoalResolver()
+    for prompt in (
+        'Ändere das LIN-Netz auf 19,2 kbit/s und prüfe alle abhängigen Berechnungen.',
+        'Bitte ändere das LIN-Netz auf 19,2 kbit/s und berechne die Buslast neu.',
+        'Konfiguriere das LIN-Netz mit 9600 bit/s und prüfe das Timing.',
+        'Please change the LIN network to 19200 bit/s and validate the model.',
+    ):
+        goal = resolver.resolve(prompt)
+        assert goal.goal_type == GoalType.CHANGE_CONFIGURATION, prompt
+        assert goal.original_request == prompt
+        assert set(goal.required_outcomes) == {
+            'configuration_persisted', 'capacity_recalculated',
+            'timing_recalculated', 'preflight_rerun',
+        }
+
+
+def test_configuration_mentions_do_not_override_inspection_or_wizard_target():
+    resolver = GoalResolver()
+    for prompt, expected in (
+        ('Prüfe das LIN-Netz, ohne die Bitrate zu ändern.', GoalType.VALIDATE_MODEL),
+        ('Ändere die LIN-Bitrate nicht und prüfe das Modell.', GoalType.VALIDATE_MODEL),
+        ('Ändere nichts am LIN-Netz und prüfe das Modell.', GoalType.VALIDATE_MODEL),
+        ('Berechne die Buslast nach der Änderung der Bitrate.', GoalType.CALCULATE_CAPACITY),
+        ('Warum sollte ich die LIN-Bitrate ändern?', GoalType.DIAGNOSE),
+    ):
+        assert resolver.resolve(prompt).goal_type == expected
+    goal = resolver.resolve('Ändere das LIN-Netz und prüfe die Ergebnisse.', {
+        'wizard_request': {'version': 2, 'target': 'results_analysis'},
+    })
+    assert goal.goal_type == GoalType.ANALYZE_TRACE
+
+
 def test_context_resolver_carries_durable_wizard_target_to_goal_resolution():
     descriptor = {'version': 2, 'target': 'engineering_model', 'revision': 'saved-revision'}
     resolved = ContextResolver().resolve(AgentContext(
@@ -88,6 +121,23 @@ def test_goal_resolver_routes_precise_status_queries_and_repair_followups():
     followup = resolver.resolve('Mach das auch für die anderen Aktoren.', {}, previous)
     assert followup.goal_type == GoalType.PERIODIC_ACQUISITION
     assert followup.follow_up_of == 'workload-old'
+
+
+def test_followup_keeps_confirmed_period_and_server_findings():
+    resolver = GoalResolver()
+    original = resolver.resolve('Lege eine ECU an, die Stellgliedpositionen alle 30 Sekunden abfragt.',
+                                {'active_project_id': 'project-a'})
+    previous = {'workload_id': original.goal_id, 'goal': original.model_dump(mode='json')}
+    followup = resolver.resolve('Mach das auch für die anderen Aktoren.',
+                                {'active_project_id': 'project-a'}, previous)
+    assert followup.goal_type == GoalType.PERIODIC_ACQUISITION
+    assert followup.timing_constraints == original.timing_constraints
+    assert followup.requested_objects == original.requested_objects
+    context = ContextResolver().resolve(AgentContext(active_project_id='project-a',
+        unresolved_findings=[{'id': 'finding-1', 'code': 'ACTUATOR_POSITION_DATA_MISSING'}]))
+    repair = resolver.resolve('Dann Fehleranalyse und Korrektur.', context, previous)
+    assert repair.goal_type == GoalType.REPAIR
+    assert repair.unresolved_decisions == []
 
 
 def test_runtime_persists_goal_and_completes_only_with_structured_evidence():
@@ -131,3 +181,49 @@ def test_completion_evaluator_rejects_success_without_model_evidence():
 
     assert completion['status'] == 'INCOMPLETE'
     assert completion['missing_outcomes']
+
+
+def test_read_only_tools_do_not_advertise_mutating_or_simulation_execution():
+    from backend.agent_core.runtime.capability_registry import CapabilityRegistry
+
+    registry = CapabilityRegistry()
+    assert not registry.resolve(GoalType.CREATE_PROJECT, {'prepare_project_request'})['available']
+    assert not registry.resolve(GoalType.REPAIR, {'inspect_findings'})['available']
+    assert not registry.resolve(GoalType.PERIODIC_ACQUISITION, {'inspect_model_situation'})['available']
+    assert not registry.resolve(GoalType.RUN_SIMULATION, {'validate_simulation_preflight'})['available']
+
+
+def test_periodic_acquisition_free_chat_exposes_reviewed_partial_model_without_false_completion():
+    from backend.agent_core.api.tool_contract import ToolResult
+
+    proposal = {'proposal_id': 'proposal-30s', 'proposal_type': 'FUNCTION_STRUCTURE',
+                'revision': 'revision-1', 'status': 'VALIDATED', 'rationale': 'ECU anlegen',
+                'assumptions': [], 'changes': [{'object_type': 'HardwareNode', 'data': {'name': 'StellgliedAbfrageECU'}}],
+                'validation_result': {'valid': True, 'findings': []}, 'canonical_ids': []}
+
+    class Client:
+        def __init__(self):
+            self.calls = []
+
+        async def tools(self):
+            return [{'name': 'generate_functions'}, {'name': 'validate_proposal'}]
+
+        async def call(self, name, arguments):
+            self.calls.append((name, arguments))
+            return ToolResult(data={**proposal, 'status': 'PROPOSED'} if name == 'generate_functions' else proposal)
+
+    class NoReasoner:
+        def __init__(self, *args, **kwargs):
+            raise AssertionError('A recognized 30 s acquisition must use the core adapter')
+
+    client = Client()
+    result = asyncio.run(EngineeringAssistantService(client, agent_factory=NoReasoner).execute(
+        'Lege eine ECU an, die mir die Stellgliedpositionen im System alle 30 Sekunden abfragt.',
+        AgentContext(active_project_id='project-a')))
+    assert [name for name, _ in client.calls] == ['generate_functions', 'validate_proposal']
+    assert result['runtime']['status'] == 'READY_FOR_REVIEW'
+    assert not result['runtime']['completed']
+    approval = next(item for item in result['events'] if item['type'] == 'APPROVAL')
+    assert approval['metadata']['period_ms'] == 30000
+    assert len(approval['metadata']['missing_engineering_steps']) == 3
+    assert result['proposals'][0]['proposal_id'] == 'proposal-30s'

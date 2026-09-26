@@ -16,7 +16,7 @@ from backend.engineering.capacity.calculators import estimate_frame
 def case_config(path, technologies):
     config = simulation_config(path)
     config['networks'] = [{'id': f'network-{i}', 'technology': tech, 'bitrate': 100_000_000 if tech != 'can_fd' else 500_000,
-                           'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000}
+                           **({'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000} if tech == 'can_fd' else {})}
                           for i, tech in enumerate(technologies)]
     config['hardware']['devices'] = []
     for i in range(len(technologies) + 1):
@@ -38,14 +38,33 @@ def case_config(path, technologies):
     return config
 
 
+def assert_timing_model_unavailable(config, technologies):
+    """Negative capability evidence only; this does not accept an architecture."""
+    for technology in technologies:
+        network = next(item for item in config['networks'] if item['technology'] == technology)
+        frame = estimate_frame(technology, 8, network)
+        assert frame.to_dict()['transmission_time_s'] is None
+        assert not frame.transmission_time_available
+    with pytest.raises(ValueError, match='TIMING_UNVERIFIED'):
+        generate_universal_events(config, normalize_hardware_config(config), start_utc=1_700_000_000)
+
+
 @pytest.mark.parametrize('case,technologies,fault', [
     ('A-CAN-FD-gateway', ['can_fd', 'can_fd'], {'scope': 'NETWORK', 'type': 'GATEWAY_DROP', 'target': {'id': 'node-1'}}),
     ('B-industrial', ['profinet', 'modbus_tcp'], {'scope': 'SIGNAL', 'type': 'SIGNAL_OFFSET', 'target': {'id': 'sig-temperature'}, 'magnitude': 12}),
     ('C-DDS', ['dds_rtps'], {'scope': 'MESSAGE', 'type': 'MESSAGE_LOSS', 'target': {'id': 'route-0'}}),
     ('D-mixed-gateway', ['can_fd', 'ethernet'], {'scope': 'NETWORK', 'type': 'GATEWAY_DELAY', 'target': {'id': 'node-1'}, 'delay_ms': 5}),
+    ('modeled-Ethernet-offset', ['ethernet'], {'scope': 'SIGNAL', 'type': 'SIGNAL_OFFSET', 'target': {'id': 'sig-temperature'}, 'magnitude': 12}),
+    ('modeled-Ethernet-loss', ['ethernet'], {'scope': 'MESSAGE', 'type': 'MESSAGE_LOSS', 'target': {'id': 'route-0'}}),
 ])
-def test_cross_industry_normal_fault_trace_and_root_cause(tmp_path, case, technologies, fault):
+def test_cross_industry_trace_and_root_cause_or_explicit_model_gap(tmp_path, case, technologies, fault):
     normal = case_config(tmp_path / 'normal', technologies)
+    if case in {'B-industrial', 'C-DDS'}:
+        assert_timing_model_unavailable(normal, technologies)
+        changed = deepcopy(normal)
+        changed['scenario'] = {'mode': 'USER_DEFINED_FAULT', 'faults': [{**fault, 'start_s': .02, 'end_s': .05}]}
+        assert_timing_model_unavailable(changed, technologies)
+        return
     profile = normalize_hardware_config(normal)
     _, baseline = generate_universal_events(normal, profile, start_utc=1_700_000_000)
     _, replay = generate_universal_events(normal, profile, start_utc=1_700_000_000)

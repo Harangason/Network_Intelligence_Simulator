@@ -250,6 +250,8 @@ def test_parallel_simulation_start_uses_one_frozen_snapshot(workspace, monkeypat
 def test_parallel_route_edits_reject_stale_revisions(workspace):
     _, call = workspace
     assert call("PUT", "/workflow/topology", {"topology": topology()}).status_code == 200
+    assert call("PATCH", "/workflow/parameters", {"parameters": {
+        "technology": "can_fd", "bitrate": 500_000, "data_bitrate": 2_000_000}}).status_code == 200
     route = call("GET", "/routing").get_json()["items"][0]
     gate = Barrier(4)
     def edit(index):
@@ -289,6 +291,8 @@ def test_canonical_transport_has_executable_ports_and_produces_frames(workspace,
     from communication_simulator import run_simulation
     project, call = workspace
     assert call("PUT", "/workflow/topology", {"topology": topology()}).status_code == 200
+    assert call("PATCH", "/workflow/parameters", {"parameters": {
+        "technology": "can_fd", "bitrate": 500_000, "data_bitrate": 2_000_000}}).status_code == 200
     route = call("GET", "/routing").get_json()["items"][0]
     validation = call("POST", f"/routing/{route['id']}/validate", {})
     assert validation.status_code == 200, validation.get_json()

@@ -60,8 +60,9 @@ class PackedMessage:
     payload_capacity_bits: int = 0
     interface_ref: str | None = None
     network_ref: str | None = None
-    load_contribution_percent: float = 0.0
-    projected_interface_load_percent: float = 0.0
+    load_contribution_percent: float | None = None
+    projected_interface_load_percent: float | None = None
+    capacity_status: str = "UNVERIFIED"
     signals: list[PackedSignal] = field(default_factory=list)
 
     @property
@@ -117,7 +118,7 @@ class InterfaceAllocationDecision:
     message_name: str
     selected_hardware_interface: str | None
     selected_network: str | None
-    projected_network_load: float
+    projected_network_load: float | None
     proposal_required: bool = False
     finding: str | None = None
 
@@ -160,6 +161,12 @@ class HardwareInterfaceAllocationService:
                 finding="HARDWARE_CAPABILITY_EXCEEDED",
             )
         contribution = _message_load_percent(message, self.parameters)
+        if contribution is None:
+            return InterfaceAllocationDecision(
+                message_name=message.name, selected_hardware_interface=None,
+                selected_network=None, projected_network_load=None,
+                proposal_required=True, finding="CAPACITY_UNVERIFIED",
+            )
         key = (message.sender_hardware_ref, technology)
         interfaces = self.interfaces.setdefault(key, [])
         selected = next(
@@ -195,6 +202,7 @@ class HardwareInterfaceAllocationService:
         message.network_ref = selected.network_ref
         message.load_contribution_percent = round(contribution, 4)
         message.projected_interface_load_percent = round(selected.current_load_percent, 4)
+        message.capacity_status = "VERIFIED"
         return InterfaceAllocationDecision(
             message_name=message.name,
             selected_hardware_interface=selected.interface_ref,
@@ -278,8 +286,10 @@ def allocate_messages_to_interfaces(
     return messages
 
 
-def _message_load_percent(message: PackedMessage, parameters: dict[str, Any]) -> float:
+def _message_load_percent(message: PackedMessage, parameters: dict[str, Any]) -> float | None:
     estimate = estimate_frame(message.technology, message.dlc, parameters)
+    if estimate.is_generic_estimate or not estimate.transmission_time_available:
+        return None
     return utilization_percent(estimate.transmission_time_s, message.cycle_ms)
 
 

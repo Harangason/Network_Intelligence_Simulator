@@ -2175,7 +2175,7 @@ def main() -> None:
         "--bitrate",
         type=int,
         default=None,
-        help="Technologie-Bitrate in bit/s; Standardwert kommt aus der Registry",
+        help="Explizite Technologie-Bitrate in bit/s; für CAN-FD zusätzlich --fd-bitrate angeben",
     )
     parser.add_argument("--nodes", type=int, default=2, help="Anzahl Hardware-Knoten, mindestens 2")
     parser.add_argument(

@@ -265,12 +265,13 @@ def _technology_contract(interface_type: str) -> dict:
         'transport_unit_type': profile['transport_unit'],
         'hardware_interface': profile['hardware_interface'],
         'implementation_status': profile['implementation_status'],
+        'capacity_evidence': profile.get('capacity_evidence'),
         'capabilities': profile['capabilities'],
         'binding': type(resolved['binding']).__name__,
         'generator': type(resolved['generator']).__name__,
         'validator_chain': [type(item).__name__ for item in resolved['validators']],
-        'timing_model': type(resolved['timing_model']).__name__,
-        'load_calculator': type(resolved['load_calculator']).__name__,
+        'timing_model': type(resolved['timing_model']).__name__ if resolved['timing_model'] else None,
+        'load_calculator': type(resolved['load_calculator']).__name__ if resolved['load_calculator'] else None,
     }
 
 
@@ -459,7 +460,7 @@ def _explicit_technology_bitrates(prompt: str, technology_ids: list[str]) -> dic
     """Read rates explicitly attached to a technology heading in the user task."""
     rates: dict[str, int] = {}
     pattern = re.compile(
-        r'^\s*(LIN|Ethernet)\s*:\s*(?:\r?\n\s*)?'
+        r'^\s*(LIN|Ethernet|CAN)\s*:\s*(?:\r?\n\s*)?'
         r'(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\b', re.M,
     )
     for match in pattern.finditer(prompt):
@@ -481,22 +482,57 @@ def _explicit_technology_bitrates(prompt: str, technology_ids: list[str]) -> dic
     return rates
 
 
+def _explicit_can_fd_phases(prompt: str, technology_ids: list[str]) -> dict[str, int]:
+    """Read both user-specified CAN-FD phases; one rate alone is not evidence."""
+    if 'can_fd' not in technology_ids:
+        return {}
+    pattern = re.compile(
+        r'^\s*CAN[-_ ]FD\s*:\s*(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*'
+        r'(?:arbitration|nominal)\s*[,;]\s*'
+        r'(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*(?:data|daten)\b',
+        re.M | re.I,
+    )
+    phases: dict[str, int] = {}
+    profile = DEFAULT_TECHNOLOGY_REGISTRY.profile('can_fd')
+    limits = profile.get('rate_model') or {}
+    for match in pattern.finditer(prompt):
+        nominal = round(float(match.group(1).replace(',', '.')) * (1000 if match.group(2).lower() == 'k' else 1_000_000))
+        data = round(float(match.group(3).replace(',', '.')) * (1000 if match.group(4).lower() == 'k' else 1_000_000))
+        if (nominal <= 0 or data <= 0 or
+                nominal > limits.get('nominal_maximum_bps', 0) or
+                data > limits.get('data_maximum_bps', 0)):
+            raise ValueError('CAN-FD: explizite Arbitration- oder Data-Rate liegt außerhalb des TechnologyProfile.')
+        current = {'arbitration_bitrate': nominal, 'data_bitrate': data}
+        if phases and phases != current:
+            raise ValueError('CAN-FD: widersprüchliche explizite Bitraten im Auftrag.')
+        phases = current
+    return phases
+
+
+def _rate_review_candidate(technology_id: str) -> tuple[int | None, dict | None]:
+    proposal = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id).get('parameter_proposals') or {}
+    if proposal.get('status') != 'REVIEW_REQUIRED':
+        return None, None
+    options = proposal.get('options') or []
+    candidate = options[0].get('maximum') if options else proposal.get('candidate')
+    return (int(candidate), proposal) if isinstance(candidate, (int, float)) and candidate > 0 else (None, proposal)
+
+
 def generate_parameters(arguments: dict) -> dict:
     """Persist confirmed registry defaults without delegating tool choice to an LLM."""
     prompt = effective_wizard_prompt(arguments['prompt'])
     workflow = WorkflowStatusService(current_project_id())
     state = workflow.get()
     technology_ids = _wizard_parameter_technology_ids(prompt)
-    if not technology_ids:
-        for route in model.routes():
-            protocol = str((route.get('source') or {}).get('protocol') or '')
-            try:
-                technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol)
-                DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
-            except (KeyError, ValueError):
-                continue
-            if technology_id not in technology_ids:
-                technology_ids.append(technology_id)
+    for route in model.routes():
+        protocol = str((route.get('source') or {}).get('protocol') or '')
+        try:
+            technology_id = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol)
+            DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id)
+        except (KeyError, ValueError):
+            continue
+        if technology_id not in technology_ids:
+            technology_ids.append(technology_id)
     if not technology_ids:
         raise ValueError('Keine registrierte Netzwerktechnologie für die Parameter-Defaults gefunden.')
 
@@ -505,9 +541,16 @@ def generate_parameters(arguments: dict) -> dict:
         (state.get('parameters') or {}).get('industry') or 'generic_networking'
     )
     explicit_rates = _explicit_technology_bitrates(prompt, technology_ids)
+    can_fd_phases = _explicit_can_fd_phases(prompt, technology_ids)
+    if can_fd_phases:
+        explicit_rates['can_fd'] = can_fd_phases['data_bitrate']
+    review_candidates = {technology_id: _rate_review_candidate(technology_id) for technology_id in technology_ids}
     technology_defaults = {technology_id: {
         **_parameter_defaults(technology_id),
+        **({'bitrate': review_candidates[technology_id][0]}
+           if 'bitrate' not in _parameter_defaults(technology_id) and review_candidates[technology_id][0] else {}),
         **({'bitrate': explicit_rates[technology_id]} if technology_id in explicit_rates else {}),
+        **(can_fd_phases if technology_id == 'can_fd' else {}),
     } for technology_id in technology_ids}
     primary = technology_ids[0]
     primary_defaults = technology_defaults[primary]
@@ -516,22 +559,32 @@ def generate_parameters(arguments: dict) -> dict:
         **primary_defaults,
         **existing,
         **({'bitrate': explicit_rates[primary]} if primary in explicit_rates else {}),
+        **(can_fd_phases if primary == 'can_fd' else {}),
         'industry': industry,
         'technology': primary,
         'formats': list(existing.get('formats') or ['universal-jsonl', 'universal-csv']),
         'technology_defaults': technology_defaults,
         'defaults_source': 'technology-registry-with-explicit-user-rates' if explicit_rates else 'technology-registry',
         'explicit_technology_bitrates': explicit_rates,
+        'rate_review_proposals': {technology_id: proposal for technology_id, (_candidate, proposal) in review_candidates.items() if proposal},
         'spatial_architecture': architecture_from(existing, prompt),
     }
     if primary in explicit_rates:
         parameters['parameter_provenance'] = {
             **(existing.get('parameter_provenance') or {}),
             'bitrate': {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': explicit_rates[primary]},
+            **({key: {'source': 'EXPLICIT_USER_SPECIFICATION', 'value': value}
+                for key, value in can_fd_phases.items()} if primary == 'can_fd' else {}),
+        }
+    elif not existing.get('bitrate') and review_candidates[primary][0]:
+        parameters['parameter_provenance'] = {
+            **(existing.get('parameter_provenance') or {}),
+            'bitrate': {'source': 'TECHNOLOGY_PROFILE_REVIEW_PROPOSAL',
+                        'status': 'REVIEW_REQUIRED', 'value': review_candidates[primary][0]},
         }
     if 'duration_s' not in existing and 'duration_s' in primary_defaults:
         parameters['parameter_provenance'] = {
-            **(existing.get('parameter_provenance') or {}),
+            **(parameters.get('parameter_provenance') or {}),
             'duration_s': {'source': 'TECHNOLOGY_DEFAULT', 'value': primary_defaults['duration_s']},
         }
 
@@ -658,6 +711,12 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             for chain in [*gateways, *matching_controllers]:
                 chain['transport_network_ref'] = network_ref
                 chain['transport_network_name'] = network_ref
+    from ...communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+    for chain in spec['chains']:
+        if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(chain['interface_type']) in DIRECT_IO_TECHNOLOGIES:
+            # The port is real; a bus/network and framed transport are not.
+            chain['transport_network_ref'] = None
+            chain['transport_network_name'] = None
     changes, refs = [], {}
 
     def hardware_interface_identity(data):
@@ -791,6 +850,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             chain['transport_network_name'] = row['name']
 
 
+    pending_direct_bindings = []
     for chain in spec['chains']:
         technology_contract = _technology_contract(chain['interface_type'])
         local_main_controller = _is_local_main_controller(chain, spec)
@@ -827,6 +887,26 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             'configuration': {'physical_interface_ids': [port],
                 **({'endpoint_role': 'SYSTEM_CONTROLLER'} if fn and chain is chain_by_name[str(chain['hardware_name']).casefold()] else {})},
             'interface_type': chain['interface_type']}, 'function_id' if fn else 'hardware_node_id')
+        if technology_contract['technology_id'] in DIRECT_IO_TECHNOLOGIES:
+            configuration = dict(chain.get('configuration') or {})
+            configuration['direct_signal_binding'] = {
+                'source_hardware_node_ref': hw,
+                'destination_hardware_node_ref': None,
+                'physical_port_ref': port,
+                'signal_type': technology_contract['technology_id'].upper(),
+                'electrical_profile': {},
+                'update_rate_hz': None,
+                'timing_profile': {},
+                'validation_status': 'REVIEW_REQUIRED',
+            }
+            signal_ref = ensure('Signal', chain['signal_name'], {
+                **{key: chain[key] for key in ('length_bits', 'data_type', 'unit', 'min_value',
+                    'max_value', 'semantic', 'data', 'communication', 'quality') if key in chain},
+                'configuration': configuration,
+                'protocol_bindings': [],
+            })
+            pending_direct_bindings.append((signal_ref, chain, hw, port))
+            continue
         message = ensure('Message', concise_name('Message', chain['message_name']), {
             'interface_id': interface, 'hardware_interface_id': port,
             **{key: chain[key] for key in ('message_id_hex', 'direction', 'cycle_ms', 'dlc')},
@@ -863,6 +943,27 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                 'source_ref': hw,
                 'technology_binding_ref': technology_contract['technology_id'],
             }]}, 'message_id')
+
+    for signal_ref, chain, endpoint_ref, endpoint_port in pending_direct_bindings:
+        change = next((item for item in changes if '$' + item.get('local_ref', '') == signal_ref), None)
+        if not change:
+            continue
+        owner_name = (local_memberships.get(str(chain['hardware_name']).casefold()) or [None])[0]
+        owner_ref = hardware_refs.get(str(owner_name or '').casefold())
+        binding = change['data']['configuration']['direct_signal_binding']
+        if owner_ref:
+            if chain['device_type'] == 'ActuatorController':
+                controller_port = ensure('HardwareNetworkInterface',
+                    f'{owner_name}_{chain["interface_type"]}_{chain["hardware_name"]}_Output', {
+                        'hardware_node_id': owner_ref, 'technology': chain['interface_type'],
+                        'channel_index': 1, 'network_ref': None,
+                        'capabilities': {'hardware_interface': _technology_contract(chain['interface_type'])['hardware_interface']}},
+                    'hardware_node_id')
+                binding.update(source_hardware_node_ref=owner_ref,
+                               destination_hardware_node_ref=endpoint_ref,
+                               physical_port_ref=controller_port)
+            else:
+                binding['destination_hardware_node_ref'] = owner_ref
 
     # A named functional requirement must not disappear behind the generic
     # controller status function. A sole function host is unambiguous; with

@@ -48,7 +48,9 @@ def main():
     isolation = importlib.util.module_from_spec(module); module.loader.exec_module(isolation)
     info_spec = importlib.util.spec_from_file_location('nis_build_info', ROOT/'scripts/write-build-info.py')
     info = importlib.util.module_from_spec(info_spec); info_spec.loader.exec_module(info)
-    initial_source_sha256 = info.build_manifest()['source_sha256']
+    initial_manifest = info.build_manifest()
+    initial_source_sha256 = initial_manifest['source_sha256']
+    initial_commit_id = initial_manifest['commit_id']
     docker = isolation.docker_executable()
     token = secrets.token_hex(6)
     output = args.output.resolve() / token; output.mkdir(parents=True, exist_ok=True)
@@ -56,7 +58,8 @@ def main():
     password = secrets.token_hex(24)
     env = {**os.environ, 'POSTGRES_PASSWORD': password}
     receipt = {'schema_version': 1, 'status': 'RUNNING', 'checks': [], 'containers': names,
-               'initial_source_sha256': initial_source_sha256, 'verification_sha256': verification_manifest()}
+               'initial_source_sha256': initial_source_sha256, 'initial_commit_id': initial_commit_id,
+               'verification_sha256': verification_manifest()}
     created = []
     def save_receipt():
         (output/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
@@ -80,13 +83,15 @@ def main():
             raise RuntimeError('Sources changed during unit verification. Repeat the gate from the initial source.')
         if receipt['verification_sha256'] != verification_manifest():
             raise RuntimeError('Tests changed during unit verification. Repeat the gate before building a candidate.')
+        if not initial_commit_id:
+            raise RuntimeError('Git revision is unavailable. A candidate needs a real base commit identity.')
         image = args.image or 'networkis:candidate-' + token
         if not args.image:
-            command = [docker, 'build', '-t', image]
+            command = [docker, 'build', '-t', image, '--build-arg', 'NIS_BUILD_COMMIT_ID=' + initial_commit_id]
             if args.development_base:
                 base_id = control('image','inspect',args.development_base,'--format','{{.Id}}')
                 development_file = output/'Dockerfile.development'
-                development_file.write_text(f'FROM {args.development_base}\nLABEL networkis.development=true\nCOPY . /app\nRUN python /app/scripts/write-build-info.py\nRUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build\n',encoding='utf-8')
+                development_file.write_text(f'FROM {args.development_base}\nLABEL networkis.development=true\nCOPY . /app\nARG NIS_BUILD_COMMIT_ID\nRUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py\nRUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build\n',encoding='utf-8')
                 receipt['development_base_id'] = base_id
                 command += ['-f', str(development_file)]
                 receipt['development_only'] = True
@@ -101,6 +106,8 @@ def main():
         manifest = json.loads(control('run', '--rm', '--entrypoint', 'cat', image_id, '/app/backend/app/build-info.json'))
         if manifest['source_sha256'] != initial_source_sha256 or initial_source_sha256 != info.build_manifest()['source_sha256']:
             raise RuntimeError('Candidate source differs from the working tree. Build a new candidate.')
+        if manifest.get('commit_id') != initial_commit_id or info.build_manifest()['commit_id'] != initial_commit_id:
+            raise RuntimeError('Candidate Git revision differs from the verified base commit.')
         receipt['release'] = manifest
         control('volume', 'create', '--label', 'networkis.test=disposable', names['runtime']); created.append(('volume', names['runtime']))
         control('network', 'create', '--label', 'networkis.test=disposable', names['network']); created.append(('network', names['network']))
@@ -152,6 +159,8 @@ def main():
             run([sys.executable,str(ROOT/'scripts/verify-live-wizard.py'),'--base-url',base,'--report',str(output/(name+'-http.json')),*options],environment=test_env,name=name+'-http')
         if manifest['source_sha256'] != info.build_manifest()['source_sha256']:
             raise RuntimeError('Sources changed during verification. Candidate cannot be released.')
+        if manifest['commit_id'] != info.build_manifest()['commit_id']:
+            raise RuntimeError('Git revision changed during verification. Candidate cannot be released.')
         if receipt['verification_sha256'] != verification_manifest():
             raise RuntimeError('Tests changed during verification. Repeat the gate before release.')
         receipt['status'] = 'PASS'

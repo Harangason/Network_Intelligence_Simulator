@@ -129,7 +129,7 @@ class ReasoningService:
             "faults": (config.get("scenario") or {}).get("faults", metadata.get("faults") or []),
             "lineage": lineage, "job_status": job["status"], "job_error": job.get("error")}
 
-    def analyze(self, payload):
+    def analyze(self, payload, *, persist=True, message_id=None):
         request = payload if isinstance(payload, ReasoningRequest) else ReasoningRequest.model_validate(payload)
         previous = self.get(request.previous_reasoning_id) if request.previous_reasoning_id else None
         if previous and (previous.simulation_run_id != request.job_id or previous.validation_status == "STALE"):
@@ -137,12 +137,28 @@ class ReasoningService:
         if previous and (not previous.continuation or any(getattr(request, k) != previous.continuation[k] for k in ("cursor", "start_s", "end_s"))):
             raise WorkflowConflictError("Fortsetzung muss am gespeicherten Cursor im selben Zeitfenster erfolgen.")
         context = self.context(request.job_id)
+        if message_id is not None:
+            if persist or request.previous_reasoning_id or request.golden_job_id:
+                raise ValueError('Nachrichtenbezogene Diagnose ist eine begrenzte, nicht persistierte Einzelabfrage.')
+            messages = (context['configuration'].get('engineering_model') or {}).get('messages') or []
+            if not any(str(item.get('id')) == message_id for item in messages):
+                raise NotFoundError('Nachricht gehört nicht zum kanonischen Modell dieses Simulationslaufs.')
+            context['lineage']['message_id'] = message_id
         try:
             events, window = TraceWindowResolver().resolve(request)
         except NotFoundError:
             if context["job_status"] != "failed":
                 raise
             events, window = [], {"start_s": request.start_s, "end_s": request.end_s, "next_cursor": None}
+        if message_id is not None:
+            scanned = len(events)
+            events = [event for event in events if message_id in {str(value) for value in event.get('message_ids') or []}]
+            window = {**window, 'scope': 'MESSAGE_SCOPED_TRACE_WINDOW', 'message_id': message_id,
+                      'scanned_event_count': scanned, 'event_count': len(events),
+                      'capacity_scope': 'SELECTED_MESSAGE_CONTRIBUTION_ONLY'}
+            if not events:
+                context.setdefault('data_gaps', []).append({'code': 'MESSAGE_TRACE_MISSING',
+                    'message': 'Im gelesenen Trace-Fenster ist kein Ereignis dieser kanonischen Nachricht belegt.', 'blocking': True})
         comparison = None
         if request.golden_job_id:
             golden, golden_window = TraceWindowResolver().resolve(request.model_copy(update={"job_id": request.golden_job_id, "cursor": 0}))
@@ -167,7 +183,11 @@ class ReasoningService:
             result.conclusion = "ROOT_CAUSE_UNCONFIRMED: Fehlgeschlagener Simulationslauf; technische Fehlerdetails und Trace-Abdeckung prüfen."
         if context["lineage"]["snapshot_outdated"]:
             result.validation_status = "STALE"
-        self._save(result, request)
+        current_versions = self.workflow.get(summary=True)['versions']
+        if any(current_versions.get(key) != context['lineage']['source_versions'].get(key) for key in SOURCE_STEPS):
+            result.validation_status = 'STALE'
+        if persist:
+            self._save(result, request)
         return result
 
     def _save(self, result, request):

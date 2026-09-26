@@ -238,7 +238,7 @@ export function engineeringHardwareKind(
   return "ecu";
 }
 
-export type BusProfile = { label: string; bitrate: number; cycleMs: number; payload: number; color: string };
+export type BusProfile = { label: string; bitrate: number | null; cycleMs: number; payload: number; color: string };
 
 export const busProfiles: Record<BusType, BusProfile> = {
   can: { label: "CAN", bitrate: 500_000, cycleMs: 10, payload: 8, color: "#70c48c" },
@@ -252,10 +252,10 @@ export const busProfiles: Record<BusType, BusProfile> = {
   uart: { label: "UART", bitrate: 115_200, cycleMs: 10, payload: 65_535, color: "#75a9e8" },
   modbus_rtu: { label: "Modbus RTU", bitrate: 115_200, cycleMs: 20, payload: 253, color: "#e5ad58" },
   modbus_tcp: { label: "Modbus TCP", bitrate: 100_000_000, cycleMs: 10, payload: 253, color: "#69b88d" },
-  gpio: { label: "GPIO", bitrate: 1, cycleMs: 10, payload: 1, color: "#b6bec8" },
-  pwm: { label: "PWM", bitrate: 1, cycleMs: 10, payload: 1, color: "#ed9368" },
-  adc: { label: "ADC", bitrate: 1, cycleMs: 10, payload: 4, color: "#62b6a7" },
-  dac: { label: "DAC", bitrate: 1, cycleMs: 10, payload: 4, color: "#dc85a6" },
+  gpio: { label: "GPIO", bitrate: null, cycleMs: 10, payload: 1, color: "#b6bec8" },
+  pwm: { label: "PWM", bitrate: null, cycleMs: 10, payload: 1, color: "#ed9368" },
+  adc: { label: "ADC", bitrate: null, cycleMs: 10, payload: 4, color: "#62b6a7" },
+  dac: { label: "DAC", bitrate: null, cycleMs: 10, payload: 4, color: "#dc85a6" },
 };
 
 const catalogBusProfiles: Record<string, BusProfile> = {
@@ -285,7 +285,7 @@ export function busProfile(bus: string | null | undefined): BusProfile {
   for (const character of key) hash = ((hash * 31) + character.charCodeAt(0)) >>> 0;
   return {
     label: catalogTechnologyLabel(key),
-    bitrate: 1_000_000,
+    bitrate: null,
     cycleMs: 10,
     payload: 64,
     color: `hsl(${hash % 360} 48% 58%)`,

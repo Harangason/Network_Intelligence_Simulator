@@ -39,6 +39,7 @@ _HEARTBEAT_SECONDS = 30.0
 COOKIE = "engineering_review_csrf"
 _PROPOSAL_STATUS_FIELDS = (
     "proposal_id", "proposal_type", "revision", "status", "validation_result", "canonical_ids", "workload_id",
+    "dependent_results",
 )
 _WIZARD_REVIEW_PROPOSAL_TYPES = {
     "WIZARD_ENGINEERING_MODEL",
@@ -271,6 +272,7 @@ def proposal_apply(proposal_id):
         # One transaction: an applied model must never leave the wizard at its
         # old review gate if updating the durable continuation state fails.
         reconcile_model_apply(authority.project_id, proposal)
+        conversation.reconcile_runtime_model_apply(proposal)
         return proposal
     result = execute(authority,"apply_approved_proposal",Permission.APPLY_APPROVED_PROPOSAL,{"proposal_id":proposal_id},
                      apply_and_reconcile)

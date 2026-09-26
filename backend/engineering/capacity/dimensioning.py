@@ -14,20 +14,42 @@ import json
 from math import ceil, floor, isfinite, lcm
 
 from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+from .calculators import confirmed_serial_evidence
 from .transmission import profile
 
 VERSION = "communication-sizing-v3"
-DIRECT_SIGNAL_PROTOCOLS = frozenset({"GPIO", "PWM"})
+DIRECT_SIGNAL_PROTOCOLS = frozenset(item.upper() for item in DIRECT_IO_TECHNOLOGIES)
+SUPPORTED_CAPACITY_PROTOCOLS = frozenset(
+    item["id"].upper() for item in DEFAULT_TECHNOLOGY_REGISTRY.profiles()
+    if (item.get("capacity_evidence") or {}).get("status") == "MODEL_AVAILABLE"
+)
 LOCAL_EVIDENCE_FIELDS = {
     "I2C": (("master_node_id", "Bestätigter I2C-Master"), ("slave_address", "Slave-Adresse des Geräts"),
-            ("clock_stretch_limit_us", "Clock-Stretching-Grenze (µs)"), ("transfer_bits_bound", "Transferumfang einschließlich Adresse und ACK (Bit)"),
+            ("address_bits", "I2C-Adressbreite (7/10 Bit)"),
+            ("i2c_mode", "I2C-Modus (STANDARD/FAST/FAST_PLUS/HIGH_SPEED)"),
+            ("transfer_direction", "Übertragungsrichtung (READ/WRITE/BIDIRECTIONAL)"),
+            ("start_stop_bound_us", "Start-/Stop-Grenze je Transaktion (µs)"),
+            ("clock_stretch_limit_us", "Gesamte Clock-Stretch-Grenze je Transaktion (µs)"),
+            ("transfer_bits_bound", "Transferumfang einschließlich Adresse und ACK (Bit)"),
+            ("multi_master", "Mehrere Master (true/false)"),
+            ("arbitration_bound_us", "Arbitrationsgrenze bei mehreren Mastern (µs)"),
             ("bitrate_bps", "Bestätigter I2C-Takt (bit/s)")),
     "SPI": (("master_node_id", "Bestätigter SPI-Master"), ("chip_select", "Chip-Select je Gerät"),
-            ("transfer_bits_bound", "Transfergrenze (Bit)"), ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
+            ("word_length_bits", "Wortlänge (Bit)"), ("duplex_mode", "Duplexmodus"),
+            ("cpol", "CPOL (0/1)"), ("cpha", "CPHA (0/1)"),
+            ("cs_setup_bound_us", "CS-Setup-Grenze (µs)"),
+            ("inter_transfer_gap_us", "Transferabstandsgrenze (µs)"),
+            ("transfer_bits_bound", "Transfergrenze in Taktbits"),
+            ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
     "PWM": (("pwm_frequency_hz", "PWM-Frequenz (Hz)"), ("update_bound_ms", "Aktualisierungsgrenze (ms)"),
             ("capture_bound_ms", "Erfassungsgrenze (ms)")),
     "GPIO": (("sample_bound_ms", "Abtastgrenze (ms)"), ("debounce_bound_ms", "Entprellgrenze (ms)"),
              ("edge_detection_bound_ms", "Flankenerkennungsgrenze (ms)")),
+    "ADC": (("sample_bound_ms", "ADC-Abtastgrenze (ms)"),
+            ("conversion_bound_ms", "ADC-Wandlungsgrenze (ms)")),
+    "DAC": (("update_bound_ms", "DAC-Aktualisierungsgrenze (ms)"),
+            ("settling_bound_ms", "DAC-Einschwinggrenze (ms)")),
 }
 
 
@@ -43,6 +65,8 @@ def local_evidence_proposal(protocol, rows):
         evidence = row.get("local_timing_evidence") or {}
         owner = str(row.get("name") or row.get("stream_id") or "Gerät")
         for key, label in LOCAL_EVIDENCE_FIELDS[protocol]:
+            if key == "arbitration_bound_us" and evidence.get("multi_master") is False:
+                continue
             value = evidence.get(key)
             fields.append({"key": f"{row.get('stream_id')}:{key}", "label": f"{owner} · {label}",
                            "value": str(value) if value is not None else None,
@@ -50,6 +74,7 @@ def local_evidence_proposal(protocol, rows):
                            "candidate": candidate_rate if key == "bitrate_bps" and value is None else None})
     hardware_status = "EVIDENCE_CONFIRMED" if fields and all(field["state"] == "CONFIRMED" for field in fields) else "UNCONFIRMED"
     return {"status": "REVIEW_REQUIRED", "source": f"TechnologyProfile:{profile['id']}",
+            "parameter_proposals": profile.get("parameter_proposals"),
             "hardware_profile_status": hardware_status, "endpoint_candidates": endpoints,
             "fields": fields, "release_gate": "TIMING_BLOCKED_UNTIL_DEVICE_EVIDENCE_CONFIRMED"}
 DEFAULT_POLICY = {
@@ -167,7 +192,47 @@ def bus_schedule(rows, policy):
               "assumptions": ["Vollständiger modellierter Verkehr", "Keine zusätzlichen Busfehler oder Retransmissions-Bursts", "Serialisierte Übertragungen"]}
     if nominal >= 100 and protocol not in DIRECT_SIGNAL_PROTOCOLS and not is_ethernet:
         return {**result, "status": "OVERLOAD", "reasons": ["Nominaler Bedarf erreicht oder überschreitet 100 %."]}
-    if protocol == "LIN":
+    if protocol in {"I2C", "SPI"}:
+        evidence = [confirmed_serial_evidence(protocol, {"local_timing_evidence": row.get("local_timing_evidence")},
+                                              int(number(row.get("payload_bytes")))) for row in rows]
+        masters = {str(item.get("master_node_id")) for item in evidence if item}
+        if (any(item is None for item in evidence) or len(masters) != 1
+                or any(number(row.get("segment_transmission_latency_ms")) <= 0 for row in rows)):
+            reason = (
+                "Für den I2C-Zeitnachweis fehlen oder widersprechen Master-Zuordnung, Slave-Adresse, "
+                "Clock Stretching und bestätigte Transfer-/Taktgrenzen."
+                if protocol == "I2C" else
+                "Für den SPI-Zeitnachweis fehlen oder widersprechen Master-Zuordnung, "
+                "Chip-Select-Zuordnung, Transfergrenze und bestätigter Takt."
+            )
+            return {**result, "status": "UNVERIFIED", "nominal_load_percent": None,
+                    "reasons": [reason],
+                    "hardware_review_proposal": local_evidence_proposal(protocol, rows)}
+        durations = {row["stream_id"]: number(row["segment_transmission_latency_ms"]) for row in rows}
+        for row in rows:
+            identifier = row["stream_id"]
+            blocking = max((duration for key, duration in durations.items() if key != identifier), default=0.0)
+            response = blocking + durations[identifier]
+            for _ in range(1000):
+                updated = blocking + durations[identifier] + sum(
+                    ceil(response / periods[other["stream_id"]]) * durations[other["stream_id"]]
+                    for other in rows if other["stream_id"] != identifier)
+                if abs(updated - response) < 1e-9:
+                    break
+                if updated > 1_000_000:
+                    return {**result, "status": "UNVERIFIED", "responses": {},
+                            "reasons": ["Serialisierter Master-Zeitplan konvergiert nicht innerhalb der Analysegrenze."]}
+                response = updated
+            else:
+                return {**result, "status": "UNVERIFIED", "responses": {},
+                        "reasons": ["Serialisierter Master-Zeitplan erreichte die Iterationsgrenze."]}
+            result["responses"][identifier] = response
+            if response > periods[identifier]:
+                result["reasons"].append(f"{identifier}: Antwortgrenze {response:.3f} ms übersteigt den Zyklus {periods[identifier]:.3f} ms.")
+            result["reasons"].extend(_constraints(row, periods[identifier],
+                                                  response + number(row.get("fixed_path_delay_ms"))))
+        result["assumptions"].append("Ein bestätigter Master und nicht unterbrechbare Transaktionen")
+    elif protocol == "LIN":
         base = number(policy["lin_timebase_ms"])
         jitter = number(policy["lin_master_jitter_ms"])
         ticks = {key: round(value / base) for key, value in periods.items()}
@@ -252,6 +317,8 @@ def bus_schedule(rows, policy):
                 "GPIO ist eine direkte Signalleitung und kein paketbasierter Bus. "
                 "Abtast-, Entprell- und Flankenerkennungszeiten fehlen für den Reaktionszeitnachweis."
             ),
+            "ADC": "ADC ist eine direkte Analog-Eingangsleitung; Abtast- und Wandlungsgrenzen fehlen.",
+            "DAC": "DAC ist eine direkte Analog-Ausgangsleitung; Aktualisierungs- und Einschwinggrenzen fehlen.",
             "I2C": (
                 "Für den I2C-Zeitnachweis fehlen Master-Zuordnung, Slave-Adresse und eine Grenze für Clock Stretching."
             ),

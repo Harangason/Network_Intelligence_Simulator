@@ -79,6 +79,8 @@ INTERFACE_TYPES = (
     "IO_LINK",
     "GPIO",
     "PWM",
+    "ADC",
+    "DAC",
     "USB",
     "PCIe",
     "MQTT",

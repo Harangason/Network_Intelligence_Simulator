@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.device_classification import DeviceClassificationRegistry
+from backend.engineering.device_classification import (
+    DeviceClassificationRegistry, TechnologyCandidateResolver, DEVICE_CLASS_PROFILES,
+)
 from backend.engineering import schema as engineering_schema
 
 
@@ -83,3 +85,28 @@ def test_schema_contains_device_class_columns_and_indexes() -> None:
     assert "classification_status TEXT" in ddl
     assert "capability_profile_ref TEXT" in ddl
     assert "idx_hardware_nodes_device_class" in ddl
+
+
+def test_class_profile_does_not_choose_a_technology_without_hardware():
+    assert set(DEVICE_CLASS_PROFILES) == set(range(5))
+    resolver = TechnologyCandidateResolver()
+    assert resolver.resolve(device_class=2, data_complexity="PHYSICAL_SCALAR", hardware_capabilities=[]) == []
+    choices = resolver.resolve(device_class=2, data_complexity="PHYSICAL_SCALAR",
+                               hardware_capabilities=["i2c_controller", "spi_controller"])
+    assert {row["technology_id"] for row in choices} >= {"i2c", "spi"}
+    assert all(row["status"] == "REVIEW_REQUIRED" for row in choices)
+
+
+def test_image_stream_filters_low_bandwidth_and_direct_io_candidates():
+    choices = TechnologyCandidateResolver().resolve(device_class=3, data_complexity="IMAGE_STREAM",
+        hardware_capabilities=["gpio_port", "lin_channel", "ethernet_port"],
+        existing_interfaces=["ethernet"])
+    assert choices[0]["technology_id"] == "ethernet"
+    assert all(row["technology_id"] not in {"gpio", "lin"} for row in choices)
+
+
+def test_actuator_role_wins_over_camera_system_prefix():
+    profile = DeviceClassificationRegistry().resolve_profile(
+        name="KameraverarbeitungStellglied", device_type="ActuatorController")
+    assert profile.device_class == 1
+    assert profile.data_complexity == "CONTROL_COMMAND"

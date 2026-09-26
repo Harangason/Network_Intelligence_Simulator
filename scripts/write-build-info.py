@@ -2,9 +2,32 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
+import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def commit_identity(root):
+    """Base Git revision; source_sha256 separately identifies uncommitted code."""
+    supplied = os.environ.get("NIS_BUILD_COMMIT_ID", "").strip()
+    if supplied:
+        if not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", supplied):
+            raise ValueError("NIS_BUILD_COMMIT_ID must be a full Git object ID")
+    if not (root / ".git").exists():
+        return supplied or None
+    try:
+        value = subprocess.check_output(
+            ["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
+            text=True, stderr=subprocess.DEVNULL, timeout=10,
+        ).strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if supplied and supplied != value:
+        raise ValueError("NIS_BUILD_COMMIT_ID differs from the checkout HEAD")
+    return value if re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", value) else None
 
 
 def build_manifest(root=ROOT):
@@ -30,6 +53,7 @@ def build_manifest(root=ROOT):
         hashes[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     source = hashlib.sha256(json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     return {"schema_version": 1, "build_id": source[:12], "source_sha256": source,
+            "commit_id": commit_identity(root),
             "built_at": datetime.now(timezone.utc).isoformat(), "source_file_count": len(hashes)}
 
 

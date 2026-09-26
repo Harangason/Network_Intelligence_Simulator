@@ -160,7 +160,13 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       <button type="submit" disabled={busy}>Bearbeitete Fassung prüfen</button><button type="button" onClick={() => setEditing(false)}>Abbrechen</button>
     </form>}
     {complete && <ContextLinks refs={proposal.canonical_ids.map((ref, index) => ({ ...ref, name: String(proposal.changes[index]?.data?.name ?? proposal.changes[index]?.object_name ?? ref.object_type) }))} projectId={projectId} />}
-    {proposal.status === "APPLIED" && <p>{proposal.canonical_count ?? proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
+    {proposal.status === "APPLIED" && proposal.proposal_type === "NETWORK_BITRATE_UPDATE" && proposal.dependent_results ? <section aria-label="Ergebnis der LIN-Änderung">
+      <strong>LIN-Netz {proposal.dependent_results.network_id}: {proposal.dependent_results.bitrate_bps.toLocaleString("de-DE")} bit/s</strong>
+      <p>Folgeprüfungen — Kapazität und Timing: {proposal.dependent_results.capacity_status ?? "Ergebnis gespeichert"} · Preflight: {proposal.dependent_results.preflight_status ?? "Ergebnis gespeichert"}</p>
+      {proposal.dependent_results.completion?.completed === false && <p role="status">{proposal.dependent_results.completion.failure?.message ?? "Die Änderung wurde übernommen; abhängige Ergebnisse sind noch offen."}</p>}
+      <p>{proposal.dependent_results.preflight_ready_for_simulation ? "Simulation freigegeben" : "Simulation derzeit nicht freigegeben"} · {proposal.dependent_results.capacity_findings?.length ?? 0} Kapazitätsbefunde · {proposal.dependent_results.preflight_findings?.length ?? 0} Preflight-Befunde</p>
+      <details><summary>Prüfevidenz</summary><Value value={{ capacity_snapshot_id: proposal.dependent_results.capacity_snapshot_id, preflight_snapshot_id: proposal.dependent_results.preflight_snapshot_id }} /></details>
+    </section> : proposal.status === "APPLIED" && <p>{proposal.canonical_count ?? proposal.canonical_ids.length} Modellobjekte bestätigt.</p>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

@@ -221,6 +221,8 @@ class WizardExecutionTracker:
         *,
         completed: int | None = None,
         total: int | None = None,
+        recoverable: bool = False,
+        blocking_findings: list[dict] | None = None,
     ) -> None:
         token = activate_project(self.project_id)
         try:
@@ -256,7 +258,8 @@ class WizardExecutionTracker:
                     "owner_turn_id": self.owner_turn_id,
                     "request_revision": request.get('revision'),
                     "model_review_required": request.get('version') == 2 and wizard.get('model_request_revision') != request.get('revision'),
-                    "recoverable": False,
+                    "recoverable": recoverable,
+                    "blocking_findings": (blocking_findings or [])[:20],
                 },
             }, summary=True, execution_guard=guard)
         except WorkflowConflictError:
@@ -299,7 +302,8 @@ class WizardExecutionTracker:
         elif status in TERMINAL_REVIEW:
             self.update("REVIEW_REQUIRED", message)
         else:
-            self.update("BLOCKED", message)
+            self.update("BLOCKED", message, recoverable=bool(result.get("recoverable")),
+                        blocking_findings=result.get("blocking_findings"))
 
     def failed(self, message: str) -> None:
         self.update("BLOCKED", message)

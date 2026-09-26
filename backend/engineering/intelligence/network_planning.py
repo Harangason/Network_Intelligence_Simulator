@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from ..capacity.lin_schedule import lin_schedule_check
-from ..capacity.dimensioning import bus_schedule, policy_for, stream_key, unique_streams
+from ..capacity.dimensioning import SUPPORTED_CAPACITY_PROTOCOLS, bus_schedule, policy_for, stream_key, unique_streams
 from copy import deepcopy
 import json
 from math import ceil, isfinite
@@ -75,6 +75,8 @@ def _technology_defaults(protocol: str, parameters: dict[str, Any]) -> dict[str,
 
 
 def _candidate_route_load(row: dict[str, Any], protocol: str, parameters: dict[str, Any]) -> dict[str, float] | None:
+    if protocol not in SUPPORTED_CAPACITY_PROTOCOLS:
+        return None
     payload = max(0, int(_number(row.get("payload_bytes"), 8)))
     capacity = PROTOCOL_CAPACITY.get(protocol)
     if capacity is None or payload > capacity[1]:
@@ -83,6 +85,8 @@ def _candidate_route_load(row: dict[str, Any], protocol: str, parameters: dict[s
     if cycle <= 0:
         return None
     frame = estimate_frame(protocol, payload, _technology_defaults(protocol, parameters))
+    if frame.is_generic_estimate or not frame.transmission_time_available:
+        return None
     retry = max(0, min(1, _number(parameters.get("retransmission_rate"), 0)))
     average = utilization_percent(frame.transmission_time_s, cycle) * (1 + retry)
     source_average = max(_number(row.get("average_load_percent"), 0), 0.0001)

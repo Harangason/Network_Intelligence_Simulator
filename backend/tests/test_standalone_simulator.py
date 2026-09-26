@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from bus_technologies import BUILTIN_TECHNOLOGIES, catalog_summary, resolve_technology, technology_registry
@@ -192,47 +193,37 @@ class UniversalSimulationTests(unittest.TestCase):
         self.assertIsInstance(CommunicationSimulator(), CommunicationSimulator)
         self.assertIsInstance(UniversalTraceGenerator(), UniversalTraceGenerator)
 
-    def test_every_builtin_technology_can_generate_neutral_events(self) -> None:
-        networks = []
-        node_a_ports = []
-        node_b_ports = []
+    def test_every_builtin_technology_has_truthful_timing_capability(self) -> None:
+        # Explicit fixture inputs, never defaults inferred from a catalogue.
+        modeled_rates = {"can": 500_000, "can_fd": 500_000, "lin": 19_200, "ethernet": 100_000_000}
+        visited = set()
         for technology in BUILTIN_TECHNOLOGIES:
-            network_id = f"net_{technology}"
-            networks.append({"id": network_id, "technology": technology})
-            node_a_ports.append(
-                {
-                    "id": f"a_{technology}",
-                    "interfaces": [
-                        {"id": f"a_if_{technology}", "technology": technology, "network": network_id}
-                    ],
-                }
-            )
-            node_b_ports.append(
-                {
-                    "id": f"b_{technology}",
-                    "interfaces": [
-                        {"id": f"b_if_{technology}", "technology": technology, "network": network_id}
-                    ],
-                }
-            )
-        config = {
-            "duration_s": 0.001,
-            "networks": networks,
-            "hardware": [
-                {"id": "node_a", "ports": node_a_ports},
-                {"id": "node_b", "ports": node_b_ports},
-            ],
-        }
-        profile = normalize_hardware_config(config)
+            with self.subTest(technology=technology):
+                network = {"id": "bus", "technology": technology,
+                           "bitrate": modeled_rates.get(technology, 1_000_000)}
+                if technology == "can_fd":
+                    network.update(arbitration_bitrate=500_000, data_bitrate=2_000_000)
+                config = {"duration_s": .001, "networks": [network], "hardware": [
+                    {"id": node, "ports": [{"id": node + "_port", "interfaces": [
+                        {"id": node + "_if", "technology": technology, "network": "bus"}]}]}
+                    for node in ("a", "b")]}
+                profile = normalize_hardware_config(config)
+                if technology in modeled_rates:
+                    _, events = generate_universal_events(config, profile, start_utc=0)
+                    self.assertTrue(events)
+                    self.assertEqual({e["technology"] for e in events}, {technology})
+                    self.assertTrue(all(e["transmission_latency_ms"] > 0 for e in events))
+                else:
+                    # Includes I2C/SPI without the required local timing proof.
+                    from backend.engineering.capacity.calculators import estimate_frame
+                    self.assertIsNone(estimate_frame(technology, 8, network).to_dict()["transmission_time_s"])
+                    with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                        generate_universal_events(config, profile, start_utc=0)
+                visited.add(technology)
+        self.assertEqual(visited, set(BUILTIN_TECHNOLOGIES))
+        self.assertEqual(len(visited), 54)
 
-        _, events = generate_universal_events(config, profile, start_utc=0)
-
-        self.assertEqual(
-            {event["technology"] for event in events},
-            set(BUILTIN_TECHNOLOGIES),
-        )
-
-    def test_non_can_and_custom_technologies_generate_events(self) -> None:
+    def test_unmodeled_non_can_and_custom_technologies_cannot_fabricate_timing(self) -> None:
         config = {
             "duration_s": 0.1,
             "seed": 7,
@@ -248,8 +239,8 @@ class UniversalSimulationTests(unittest.TestCase):
                 }
             ],
             "networks": [
-                {"id": "avionics", "technology": "arinc429"},
-                {"id": "vendor", "technology": "vendor_bus_x"},
+                {"id": "avionics", "technology": "arinc429", "bitrate": 100_000},
+                {"id": "vendor", "technology": "vendor_bus_x", "bitrate": 1_000_000},
             ],
             "hardware": [
                 {
@@ -268,15 +259,21 @@ class UniversalSimulationTests(unittest.TestCase):
                 },
             ],
         }
-        profile = normalize_hardware_config(config)
-
-        routes, events = generate_universal_events(config, profile, start_utc=0)
-
-        self.assertEqual({route["technology"] for route in routes}, {"arinc429", "vendor_bus_x"})
-        self.assertEqual({event["technology"] for event in events}, {"arinc429", "vendor_bus_x"})
-        vendor_events = [event for event in events if event["technology"] == "vendor_bus_x"]
-        self.assertTrue(vendor_events)
-        self.assertTrue(all(event["payload_bytes"] <= 16 for event in vendor_events))
+        # Test each identity independently; the first failing network cannot mask another.
+        for network in config["networks"]:
+            with self.subTest(technology=network["technology"]):
+                selected = deepcopy(config)
+                selected["networks"] = [network]
+                for node in selected["hardware"]:
+                    node["ports"] = [port for port in node["ports"]
+                                     if port["interfaces"][0]["network"] == network["id"]]
+                profile = normalize_hardware_config(selected)
+                self.assertEqual(profile["networks"][0]["technology"], network["technology"])
+                with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                    generate_universal_events(selected, profile, start_utc=0)
+                selected["networks"][0].pop("bitrate")
+                with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                    generate_universal_events(selected, normalize_hardware_config(selected), start_utc=0)
 
     def test_primary_api_writes_clean_standalone_result(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -285,13 +282,19 @@ class UniversalSimulationTests(unittest.TestCase):
                 "output_dir": temp_dir,
                 "duration_s": 0.05,
                 "formats": ["universal-jsonl", "universal-csv"],
-                "networks": [{"id": "serial_bus", "technology": "rs485"}],
+                "networks": [{"id": "serial_bus", "technology": "rs485", "bitrate": 19_200}],
                 "hardware": [
                     {"id": "controller", "ports": [{"id": "rs485_a", "interfaces": [{"id": "controller_if", "technology": "rs485", "network": "serial_bus"}]}]},
                     {"id": "device", "ports": [{"id": "rs485_b", "interfaces": [{"id": "device_if", "technology": "rs485", "network": "serial_bus"}]}]},
                 ],
             }
 
+            with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                run_simulation(config)
+            self.assertFalse((Path(temp_dir) / "traces" / "universal_trace.jsonl").exists())
+            config["networks"][0]["technology"] = "lin"
+            for node in config["hardware"]:
+                node["ports"][0]["interfaces"][0]["technology"] = "lin"
             result = run_simulation(config)
 
             self.assertEqual(result["status"], "completed")
@@ -309,6 +312,7 @@ class UniversalSimulationTests(unittest.TestCase):
                 {
                     "id": "fieldbus",
                     "technology": "modbus_rtu",
+                    "bitrate": 19_200,
                     "fault_model": {"dropout_probability": 1.0},
                 }
             ],
@@ -317,6 +321,11 @@ class UniversalSimulationTests(unittest.TestCase):
                 {"id": "slave", "ports": [{"id": "b", "interfaces": [{"id": "slave_if", "technology": "modbus_rtu", "network": "fieldbus"}]}]},
             ],
         }
+        with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+            generate_universal_events(config, normalize_hardware_config(config), start_utc=0)
+        config["networks"][0]["technology"] = "lin"
+        for node in config["hardware"]:
+            node["ports"][0]["interfaces"][0]["technology"] = "lin"
         profile = normalize_hardware_config(config)
 
         _, events = generate_universal_events(config, profile, start_utc=0)

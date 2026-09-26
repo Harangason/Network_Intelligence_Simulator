@@ -19,7 +19,10 @@ test("catalog and unknown technologies always receive a renderable profile", () 
   const unknown = busProfile("future_fieldbus");
   assert.equal(unknown.label, "Future Fieldbus");
   assert.match(unknown.color, /^hsl\(/);
-  assert.ok(unknown.bitrate > 0);
+  assert.equal(unknown.bitrate, null); // An unknown technology has no defensible default rate.
+  for (const direct of ["gpio", "pwm", "adc", "dac"]) {
+    assert.equal(busProfile(direct).bitrate, null);
+  }
   assert.deepEqual(busProfile("future_fieldbus"), unknown);
 });
 

@@ -65,7 +65,7 @@ def simulation_config(tmp_path: Path, *, faults=None, seed=42):
         "seed": seed,
         "max_events": 1000,
         "formats": ["universal-jsonl", "universal-csv"],
-        "networks": [{"id": "can-main", "name": "Antriebs-CAN", "technology": "can_fd", "bitrate": 2_000_000}],
+        "networks": [{"id": "can-main", "name": "Antriebs-CAN", "technology": "can_fd", "bitrate": 500_000, "arbitration_bitrate": 500_000, "data_bitrate": 2_000_000}],
         "hardware": {
             "devices": [
                 {"id": "sensor", "name": "Sensor", "type": "sensor", "logical_node_address": 0x12, "formatted_logical_node_address": "0x0012", "ports": [{"id": "p1", "physical_type": "can", "network_interfaces": [{"id": "if-sensor", "technology": "can_fd", "network": "can-main"}]}]},

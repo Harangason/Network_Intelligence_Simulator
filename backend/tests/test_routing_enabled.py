@@ -173,7 +173,7 @@ def test_off_keeps_local_bus_load_and_timing_but_removes_external_frame_load(mon
     monkeypatch.setattr(capacity, 'list_routes', lambda **kwargs: deepcopy(rows))
     service = capacity.CapacityTimingService('routing-off-test')
     monkeypatch.setattr(service.workflow, 'get', lambda: {'project_id': 'routing-off-test', 'versions': default_versions(),
-        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {}, 'topology': {}})
+        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000, 'networks': [{'id': 'motor-lin', 'bitrate': 19_200}, {'id': 'system-can', 'bitrate': 500_000, 'data_bitrate': 2_000_000}]}, 'topology': {}})
     monkeypatch.setattr(service, 'latest', lambda: None)
     before = service.calculate(persist=False)
     rows.append(capacity_route('forbidden', 'frame', 'display', 'system-can', 'CAN_FD'))

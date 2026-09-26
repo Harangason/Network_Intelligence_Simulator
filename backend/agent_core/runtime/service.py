@@ -6,6 +6,7 @@ from typing import Any, Callable
 from .capability_registry import CapabilityRegistry
 from .completion import CompletionEvaluator
 from .context_resolver import ContextResolver
+from .executor import EngineeringExecutor
 from .goal_resolver import GoalResolver
 from .planner import EngineeringPlanner
 from .recovery import RecoveryManager
@@ -22,6 +23,7 @@ class EngineeringAssistantService:
         self.agent_factory = agent_factory
         self.persist = persist or (lambda _workload: None)
         self.context_resolver = ContextResolver()
+        self.executor = EngineeringExecutor(client)
         self.goal_resolver = GoalResolver()
         self.capabilities = CapabilityRegistry()
         self.planner = EngineeringPlanner()
@@ -70,11 +72,14 @@ class EngineeringAssistantService:
                 result["events"].append(event)
                 runtime_emit(event)
             else:
-                agent = self.agent_factory(self.client, reasoner=self.reasoner) if self.agent_factory else None
-                if agent is None:
-                    from ..core.engineering_agent import EngineeringAgent
-                    agent = EngineeringAgent(self.client, reasoner=self.reasoner)
-                result = await agent.run(prompt, context, emit=runtime_emit, history=history)
+                result = await self.executor.execute(goal, context, resolved_context,
+                    emit=runtime_emit, available_tools={item.get('name') for item in available_tools})
+                if result is None:
+                    agent = self.agent_factory(self.client, reasoner=self.reasoner) if self.agent_factory else None
+                    if agent is None:
+                        from ..core.engineering_agent import EngineeringAgent
+                        agent = EngineeringAgent(self.client, reasoner=self.reasoner)
+                    result = await agent.run(prompt, context, emit=runtime_emit, history=history)
             runtime_result = self.result_composer.compose(goal, workload, result.get("events", []))
             failure = next((event.get('metadata', {}).get('failure') for event in reversed(result.get('events', []))
                             if event.get('metadata', {}).get('failure')), None)

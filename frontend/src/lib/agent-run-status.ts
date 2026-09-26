@@ -12,6 +12,14 @@ export type AgentRunStatus = AgentBuildProgress & {
   message: string;
   updated_at: string;
   recoverable?: boolean;
+  blocking_findings?: Array<{
+    code?: string;
+    severity?: string;
+    message?: string;
+    recommendation?: string;
+    object_type?: string;
+    object_id?: string;
+  }>;
   server_pid?: number;
   request_revision?: string;
   model_review_required?: boolean;

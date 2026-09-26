@@ -5,6 +5,49 @@ from __future__ import annotations
 class CompletionEvaluator:
     TERMINAL_COMPLETE = {"COMPLETE", "COMPLETED"}
 
+    def evaluate_configuration_apply(self, goal: dict, capacity: dict, preflight: dict,
+                                     *, evidence_refs: list[str]) -> dict:
+        """Evaluate a verified mutation separately from its dependent analyses.
+
+        A reported deadline violation is a calculation result. Missing routes or
+        unverified timing are not. Running preflight does not grant simulation
+        permission, so a BLOCKED preflight can still satisfy preflight_rerun.
+        """
+        results = capacity.get("results") or {}
+        networks, routes = results.get("networks") or [], results.get("routes") or []
+        source_ready = (bool(networks) and bool(routes)
+                        and not capacity.get("is_outdated")
+                        and capacity.get("status") not in {"OUTDATED", "STALE"}
+                        and not any(item.get("code") in {"CAPACITY_SOURCE_NOT_READY", "CAPACITY_NO_ROUTES"}
+                                    for item in capacity.get("findings") or []))
+        capacity_id = capacity.get("snapshot_id") or capacity.get("id")
+        supported = {
+            "configuration_persisted": True,  # caller verified the canonical value
+            "capacity_recalculated": bool(capacity_id) and source_ready
+                and all(item.get("capacity_verified") is True for item in networks),
+            "timing_recalculated": bool(capacity_id) and source_ready
+                and all(item.get("timing_verified") is True for item in networks)
+                and all(item.get("timing_verified") is True for item in routes),
+            "preflight_rerun": bool(preflight.get("snapshot_id")) and bool(capacity_id)
+                and preflight.get("capacity_snapshot_id") == capacity_id
+                and preflight.get("preflight_status") in {"READY", "READY_WITH_WARNINGS", "REVIEW_REQUIRED", "BLOCKED"},
+        }
+        required = goal.get("required_outcomes") or list(supported)
+        achieved = [name for name in required if supported.get(name)]
+        missing = [name for name in required if not supported.get(name)]
+        decision = {"status": "BLOCKED_WITH_EXPLICIT_CAUSE" if missing else "COMPLETED",
+                    "completed": not missing, "achieved_outcomes": achieved,
+                    "missing_outcomes": missing, "evidence_refs": evidence_refs}
+        if missing:
+            decision["failure"] = {
+                "code": "DEPENDENT_CALCULATION_INCOMPLETE",
+                "message": "Die Bitrate wurde übernommen. Abhängige Berechnungen sind noch nicht vollständig nachgewiesen.",
+                "missing_outcomes": missing,
+                "capacity_findings": capacity.get("findings") or [],
+                "preflight_findings": preflight.get("findings") or [],
+            }
+        return decision
+
     def evaluate(self, goal: dict, events: list[dict], *, failure: dict | None = None) -> dict:
         failure = failure or next((event.get('metadata', {}).get('failure') for event in reversed(events)
                                    if event.get('metadata', {}).get('failure')), None)

@@ -45,11 +45,53 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
         "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [10_000_000, 100_000_000, 1_000_000_000, 10_000_000_000]},
         "mechanisms": {"integrity": ["ETHERNET_FCS", "TCP_CHECKSUM"], "addressing": ["IP_ADDRESS", "TCP_PORT_502", "UNIT_IDENTIFIER"]},
     },
+    "i2c": {
+        "rate_model": {"type": "I2C_CONFIRMED_CLOCK", "fields": ["bitrate_bps"],
+                       "minimum_bps": 1, "maximum_bps": 3_400_000},
+        "mechanisms": {"addressing": ["SEVEN_OR_TEN_BIT_ADDRESS"],
+                       "integrity": ["ACK_NACK"], "arbitration": ["MULTI_MASTER_IF_CONFIRMED"]},
+    },
+    "spi": {
+        "rate_model": {"type": "DEVICE_DEPENDENT_CLOCK", "fields": ["bitrate_bps"],
+                       "minimum_bps": 1},
+        "mechanisms": {"addressing": ["CHIP_SELECT"], "clocking": ["CPOL", "CPHA"]},
+    },
     "j1939": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["J1939_ADDRESS_CLAIM"], "diagnostics": ["J1939_DM"]}},
     "canopen": {"mechanisms": {"integrity": ["CAN_CRC"], "addressing": ["NODE_ID"], "diagnostics": ["CANOPEN_EMCY", "CANOPEN_SDO"], "supervision": ["HEARTBEAT", "NMT"]}},
     "dds": {"mechanisms": {"discovery": ["DDS_PARTICIPANT_DISCOVERY", "DDS_ENDPOINT_DISCOVERY"], "supervision": ["LIVELINESS", "DEADLINE"]}},
     "bacnet_ip": {"mechanisms": {"discovery": ["BACNET_WHO_IS_I_AM", "BACNET_WHO_HAS_I_HAVE"]}},
     "nmea2000": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["NMEA2000_ADDRESS_CLAIM"]}},
+}
+
+# These are the transport models implemented by the capacity service. A catalog
+# entry, a default link rate, or a binding/generator is not capacity evidence.
+CAPACITY_MODELS = {
+    "can": ("CAN_ESTIMATED_STUFFING", "CAN_SUFFICIENT_COMPLETION_BOUND_V1"),
+    "can_fd": ("CAN_FD_PHASE_ESTIMATE", "CAN_SUFFICIENT_COMPLETION_BOUND_V1"),
+    "lin": ("LIN_NOMINAL_WITH_CHECKSUM", "LIN_PERIODIC_MASTER_TABLE_V1"),
+    "ethernet": ("ETHERNET_WIRE_ESTIMATE", "ETHERNET_FULL_DUPLEX_FIFO_RESPONSE_BOUND_V1"),
+    "i2c": ("I2C_CONFIRMED_TRANSACTION_BOUND_V1", "SERIAL_MASTER_BUSY_WINDOW_V1"),
+    "spi": ("SPI_CONFIRMED_TRANSFER_BOUND_V1", "SERIAL_MASTER_BUSY_WINDOW_V1"),
+}
+
+# These physical endpoints carry a value on a conductor, not framed bus traffic.
+# A missing timing bound remains a separate review item.
+DIRECT_IO_TECHNOLOGIES = frozenset({"gpio", "pwm", "adc", "dac"})
+
+# Source-backed proposals are deliberately distinct from confirmed port/device
+# parameters and from executable capacity models. No proposal is a fallback rate.
+REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
+    "i2c": {
+        "kind": "STANDARD_MODE_LIMITS", "unit": "bit/s",
+        "options": [{"mode": "Standard", "maximum": 100_000},
+                    {"mode": "Fast", "maximum": 400_000},
+                    {"mode": "Fast Plus", "maximum": 1_000_000},
+                    {"mode": "High Speed", "maximum": 3_400_000}],
+        "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+        "source_revision": "UM10204 Rev. 7.0 (2021-10-01)",
+        "status": "REVIEW_REQUIRED",
+        "note": "Mode, controller, target, clock stretching and physical bus must be confirmed.",
+    },
 }
 
 
@@ -150,6 +192,8 @@ def _spec(
     rate_model = semantics.get("rate_model") or ({
         "type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1,
     } if bitrate else {"type": "INHERITED_OR_NOT_APPLICABLE", "fields": []})
+    capacity_models = CAPACITY_MODELS.get(technology_id)
+    direct_io = technology_id in DIRECT_IO_TECHNOLOGIES
     return {
         "id": technology_id,
         "label": label,
@@ -159,6 +203,8 @@ def _spec(
         "payload_element_types": list(payload_types),
         "hardware_interface": hardware_interface,
         "default_stack": list(stack or (technology_id,)),
+        "stack_variants": ([list(stack), ["ethernet", "ip", "tcp", "someip"]]
+                           if technology_id == "someip" else [list(stack or (technology_id,))]),
         "default_bitrate": bitrate,
         "rate_model": rate_model,
         "parameter_schema": {
@@ -174,12 +220,29 @@ def _spec(
         "deterministic": deterministic,
         "overhead_bytes": overhead_bytes,
         "implementation_status": _status(technology_id),
+        "connection_type": "DIRECT_IO" if direct_io else "COMMUNICATION_TECHNOLOGY",
+        "parameter_proposals": REVIEW_RATE_PROPOSALS.get(technology_id) or (
+            {"kind": "EXISTING_CATALOG_CANDIDATE", "unit": "bit/s",
+             "candidate": bitrate, "source": "NIS built-in catalog",
+             "status": "REVIEW_REQUIRED",
+             "note": "Historical catalog value; confirm hardware, mode and physical link before use."}
+            if bitrate and not direct_io else
+            {"kind": "DEVICE_DEPENDENT", "status": "REVIEW_REQUIRED",
+             "required_fields": list(rate_model.get("fields") or []),
+             "note": "No universal rate is available; inspect the selected hardware/profile."}
+        ),
+        "capacity_evidence": {
+            "status": "NOT_APPLICABLE" if direct_io else "MODEL_AVAILABLE" if capacity_models else "MODEL_MISSING",
+            "frame_model": capacity_models[0] if capacity_models else None,
+            "schedule_model": capacity_models[1] if capacity_models else None,
+            "requires_confirmed_device_parameters": not direct_io,
+        },
         "components": {
             "binding": f"{technology_id}.binding",
             "generator": f"{technology_id}.generator",
             "validator": f"{technology_id}.validator",
-            "timing_model": f"{technology_id}.timing",
-            "load_model": f"{technology_id}.load",
+            "timing_model": f"{technology_id}.timing" if capacity_models else None,
+            "load_model": f"{technology_id}.load" if capacity_models else None,
             "encoder": f"{technology_id}.encoder",
             "decoder": f"{technology_id}.decoder",
         },

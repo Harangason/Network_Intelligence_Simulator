@@ -61,6 +61,14 @@ def validate_effective_model(changes):
         if item is None:
             continue
         try:
+            if kind == 'HardwareNode':
+                registry = DeviceClassificationRegistry()
+                valid, reason = registry.validate_device_suitability(
+                    name=str(item.get('name') or ''), device_type=str(item.get('device_type') or ''),
+                    device_class=int(item.get('device_class') or 0),
+                    data_complexity=str(item.get('data_complexity') or 'SERVICE_DATA'))
+                if not valid:
+                    raise ValueError(reason)
             if kind == 'Function' and item.get('lifecycle_state') not in {'deprecated', 'superseded'}:
                 hardware = parent('HardwareNode', item['hardware_node_id'])
                 profile = DeviceClassificationRegistry().resolve_profile(
@@ -83,10 +91,44 @@ def validate_effective_model(changes):
             if item.get('name') and any(other['id'] != identifier and str(other.get('name') or '').strip().casefold() == str(item['name']).strip().casefold() and (not link or str(other.get(link[0])) == str(item.get(link[0]))) for other in graph[kind].values()):
                 raise ValueError('Ein Objekt mit diesem Namen existiert bereits im gleichen Elternobjekt.')
             if kind == 'Signal':
-                affected_messages.add(str(item['message_id']))
+                direct_binding = (item.get('configuration') or {}).get('direct_signal_binding')
+                if bool(item.get('message_id')) == bool(direct_binding):
+                    raise ValueError('Signal benötigt genau eine Message oder einen DirectSignalBinding.')
+                if direct_binding:
+                    from ..core.models import DirectSignalBinding
+                    from ...communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+                    binding = DirectSignalBinding(**direct_binding)
+                    if binding.signal_type.lower() not in DIRECT_IO_TECHNOLOGIES or item.get('protocol_bindings'):
+                        raise ValueError('DIRECT_IO_MESSAGE_CREATED: Direktsignal darf keine Transportbindung besitzen.')
+                    port = parent('HardwareNetworkInterface', binding.physical_port_ref)
+                    if str(port.get('hardware_node_id')) != str(binding.source_hardware_node_ref):
+                        raise ValueError('DirectSignalBinding-Quelle passt nicht zum physischen Port.')
+                    if str(port.get('technology') or '').lower() != binding.signal_type.lower():
+                        raise ValueError('DirectSignalBinding-Technologie passt nicht zum physischen Port.')
+                    if binding.destination_hardware_node_ref:
+                        parent('HardwareNode', binding.destination_hardware_node_ref)
+                    else:
+                        findings.append({'severity': 'OPEN', 'code': 'DIRECT_IO_DESTINATION_UNVERIFIED',
+                                         'index': index, 'object_id': identifier,
+                                         'message': 'Empfänger des Direktsignals muss bestätigt werden.'})
+                else:
+                    affected_messages.add(str(item['message_id']))
             if kind == 'Message':
                 affected_messages.add(identifier)
                 logical = parent('Interface', item['interface_id'])
+                from ...communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+                if str(logical.get('interface_type') or '').lower() in DIRECT_IO_TECHNOLOGIES:
+                    raise ValueError('DIRECT_IO_MESSAGE_CREATED: Direkte I/O-Signale dürfen keine Message besitzen.')
+                owner_ref = logical.get('hardware_node_id')
+                if logical.get('function_id'):
+                    owner_ref = parent('Function', logical['function_id']).get('hardware_node_id')
+                owner = graph['HardwareNode'].get(str(owner_ref), {})
+                from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+                technology = DEFAULT_TECHNOLOGY_REGISTRY.profile(str(logical.get('interface_type') or ''))
+                if (str(owner.get('data_complexity') or '').upper() in
+                    {'IMAGE', 'IMAGE_STREAM', 'AUDIO', 'AUDIO_STREAM', 'POINT_CLOUD'}
+                        and not technology.get('capabilities', {}).get('supports_streams')):
+                    raise ValueError('DATA_COMPLEXITY_TECHNOLOGY_MISMATCH: Streamdaten benötigen einen geeigneten Anschluss.')
                 if valid_payload_bytes(logical['interface_type'], int(item.get('dlc') or 0)) != int(item.get('dlc') or 0):
                     raise ValueError('Die Nutzlast ist für diese Technologie keine gültige Framegröße.')
                 if item.get('hardware_interface_id'):
@@ -130,9 +172,15 @@ def validate_effective_model(changes):
     for identifier in affected_ports:
         port = graph['HardwareNetworkInterface'][identifier]
         parameters = {key: port[key] for key in ('bitrate', 'data_bitrate') if port.get(key)}
-        load = sum(utilization_percent(estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters).transmission_time_s, float(item.get('cycle_ms') or 10)) for item in graph['Message'].values()
+        messages = [item for item in graph['Message'].values()
             if str(item.get('hardware_interface_id')) == identifier or any(str(binding.get('hardware_interface_id')) == identifier
-                for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or []))
+                for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or [])]
+        frames = [(item, estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters)) for item in messages]
+        if any(frame.is_generic_estimate or not frame.transmission_time_available for _, frame in frames):
+            findings.append({'severity': 'ERROR', 'object_id': identifier, 'code': 'CAPACITY_UNVERIFIED',
+                'message': 'Interface-Auslastung nicht nachgewiesen: explizite Raten oder Übertragungsmodell fehlen.'})
+            continue
+        load = sum(utilization_percent(frame.transmission_time_s, float(item.get('cycle_ms') or 10)) for item, frame in frames)
         if load > float(port.get('target_load_limit') or 60):
             findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': f'Interface-Auslastung {load:.2f}% überschreitet die zulässige Zielauslastung.'})
     from ..physical_ports import topology_port_findings

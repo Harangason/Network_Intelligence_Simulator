@@ -23,6 +23,8 @@ DEVICE_TYPINGS_BY_CLASS: dict[int, tuple[str, ...]] = {
 }
 
 DATA_COMPLEXITIES = (
+    "BOOLEAN", "SCALAR", "ENUM", "STATE", "STRUCTURED_OBJECT", "IMAGE", "AUDIO",
+    "COMMAND", "SERVICE",
     "RAW_SCALAR",
     "PHYSICAL_SCALAR",
     "MULTI_VALUE",
@@ -35,6 +37,88 @@ DATA_COMPLEXITIES = (
     "CONTROL_COMMAND",
     "EVENT",
 )
+
+
+@dataclass(frozen=True)
+class DeviceClassProfile:
+    class_id: int
+    name: str
+    description: str
+    typical_device_types: tuple[str, ...]
+    allowed_data_complexities: tuple[str, ...]
+    typical_connection_types: tuple[str, ...]
+    requires_controller: bool
+    supports_local_processing: bool
+    supports_network_stack: bool
+    supports_diagnostics: bool
+    supports_multiple_interfaces: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+DEVICE_CLASS_PROFILES = {
+    0: DeviceClassProfile(0, DEVICE_CLASSES[0], "Passive element", ("passive switch", "PT100", "potentiometer"),
+                          ("BOOLEAN", "RAW_SCALAR", "PHYSICAL_SCALAR"), ("DIRECT_IO",), True, False, False, False, False),
+    1: DeviceClassProfile(1, DEVICE_CLASSES[1], "Basic sensor or actuator", ("sensor", "relay", "valve"),
+                          ("BOOLEAN", "SCALAR", "PHYSICAL_SCALAR", "CONTROL_COMMAND", "EVENT"),
+                          ("DIRECT_IO", "COMMUNICATION_TECHNOLOGY"), True, False, False, False, False),
+    2: DeviceClassProfile(2, DEVICE_CLASSES[2], "Smart controlled endpoint", ("smart sensor", "motor controller"),
+                          DATA_COMPLEXITIES, ("COMMUNICATION_TECHNOLOGY", "DIRECT_IO"), False, True, True, True, True),
+    3: DeviceClassProfile(3, DEVICE_CLASSES[3], "Perception endpoint", ("camera", "lidar", "radar"),
+                          DATA_COMPLEXITIES, ("COMMUNICATION_TECHNOLOGY",), False, True, True, True, True),
+    4: DeviceClassProfile(4, DEVICE_CLASSES[4], "Intelligent subsystem", ("ECU", "PLC", "gateway"),
+                          DATA_COMPLEXITIES, ("COMMUNICATION_TECHNOLOGY", "DIRECT_IO"), False, True, True, True, True),
+}
+
+
+class TechnologyCandidateResolver:
+    """Return reviewable choices; class alone never binds a technology."""
+
+    def resolve(self, *, device_class: int, data_complexity: str,
+                hardware_capabilities: tuple[str, ...] | list[str],
+                existing_interfaces: tuple[str, ...] | list[str] = (),
+                required_bandwidth_bps: float | None = None,
+                cycle_time_ms: float | None = None,
+                distance_m: float | None = None,
+                topology: str | None = None,
+                explicit_device_exception: bool = False) -> list[dict[str, Any]]:
+        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+
+        if device_class not in DEVICE_CLASS_PROFILES:
+            raise ValueError("Unknown device class")
+        hardware = {str(item).lower() for item in hardware_capabilities}
+        existing = {DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(item) for item in existing_interfaces}
+        if not hardware:
+            return []  # Hardware capability is mandatory, not guessed from class.
+        streaming = data_complexity.upper() in {"IMAGE", "IMAGE_STREAM", "AUDIO", "AUDIO_STREAM", "POINT_CLOUD"}
+        candidates = []
+        for profile in DEFAULT_TECHNOLOGY_REGISTRY.profiles():
+            interface = str(profile.get("hardware_interface") or "").lower()
+            if interface not in hardware and profile["id"] not in hardware:
+                continue
+            if streaming and not profile["capabilities"].get("supports_streams"):
+                continue
+            suitable_classes = {
+                "gpio": {0, 1}, "pwm": {1}, "adc": {0, 1}, "dac": {1},
+                "i2c": {1, 2}, "spi": {1, 2}, "lin": {1, 2, 4},
+                "can": {2, 4}, "can_fd": {2, 3, 4}, "ethernet": {2, 3, 4},
+            }.get(profile["id"])
+            suitability = "DEFAULT" if suitable_classes is None or device_class in suitable_classes else "EXCEPTION_REVIEW"
+            if suitability == "EXCEPTION_REVIEW" and not explicit_device_exception:
+                continue
+            rate = profile.get("default_bitrate")
+            if required_bandwidth_bps and rate and required_bandwidth_bps > rate:
+                continue
+            candidates.append({"technology_id": profile["id"],
+                "connection_type": profile.get("connection_type", "COMMUNICATION_TECHNOLOGY"),
+                "suitability": suitability,
+                "capacity_status": (profile.get("capacity_evidence") or {}).get("status", "MODEL_MISSING"),
+                "hardware_interface": interface,
+                "existing_interface": profile["id"] in existing,
+                "cycle_time_ms": cycle_time_ms, "distance_m": distance_m, "topology": topology,
+                "status": "REVIEW_REQUIRED"})
+        return sorted(candidates, key=lambda row: (not row["existing_interface"], row["technology_id"]))
 
 CLASSIFICATION_STATUSES = ("UNKNOWN", "PROPOSED", "CONFIRMED", "REVIEW_REQUIRED")
 
@@ -225,7 +309,18 @@ class DeviceClassificationRegistry:
             return False, "Typing does not belong to device class"
         if data_complexity not in DATA_COMPLEXITIES:
             return False, "Unknown data complexity"
+        if device_class <= 1 and data_complexity in {"IMAGE", "IMAGE_STREAM", "AUDIO", "AUDIO_STREAM", "POINT_CLOUD"}:
+            return False, "DEVICE_CLASS_MISMATCH: passive/basic devices cannot be perception streams"
         return True, "ok"
+
+    def validate_device_suitability(self, *, name: str, device_type: str, device_class: int,
+                                    data_complexity: str) -> tuple[bool, str]:
+        haystack = f"{name} {device_type}".lower()
+        if device_type != "ActuatorController" and any(token in haystack for token in ("camera", "kamera", "lidar")) and device_class < 3:
+            return False, "DEVICE_CLASS_MISMATCH: perception device needs class 3 or 4"
+        if any(token in haystack for token in ("passive switch", "pt100", "potentiometer")) and device_class == 4:
+            return False, "DEVICE_CLASS_MISMATCH: passive component cannot be a class 4 subsystem"
+        return self.validate_combination(device_class, self.resolve_typing(None, device_class), data_complexity)
 
     def class_options(self) -> list[dict[str, Any]]:
         return [{"value": key, "label": value} for key, value in DEVICE_CLASSES.items()]
@@ -243,6 +338,12 @@ class DeviceClassificationRegistry:
             return 4, "Intelligent Subsystem", "gateway", "SERVICE_DATA"
         if device_type in {"ECU", "PLC", "RobotController", "EmbeddedController", "IndustrialPC", "FlightComputer", "BatteryManagementSystem", "EnergyController", "BuildingController"}:
             return 4, "Intelligent Subsystem", "controller", "SERVICE_DATA"
+        # The explicit actuator role wins over a subsystem prefix such as
+        # "KameraverarbeitungStellglied". It is not itself a camera stream.
+        if device_type == "ActuatorController":
+            return (2, "Controlled Actuator", "actuator", "CONTROL_COMMAND") if any(
+                token in haystack for token in ("servo", "controlled", "smart", "pump", "driver")) else (
+                1, "Basic Actuator", "actuator", "CONTROL_COMMAND")
         if any(token in haystack for token in ("camera", "kamera", "vision")):
             return 3, "Perception Sensor", "sensor", "IMAGE_STREAM"
         if "radar" in haystack or "ultrasonic array" in haystack:

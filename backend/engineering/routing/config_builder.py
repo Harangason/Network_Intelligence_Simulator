@@ -9,7 +9,6 @@ from typing import Any
 from ..db import get_connection
 from ..project_context import current_project_id
 from ..addressing import format_logical_node_address
-from .validation import PROTOCOL_CAPACITY
 from ..models import EngineeringValidationError
 
 IP_FIELDS = ("ipv4", "ipv6", "mac", "mac_address", "ip_version", "transport_protocol", "source_port", "destination_port", "udp_port", "tcp_port", "mtu", "vlan_id")
@@ -20,7 +19,7 @@ PROTOCOL_TO_TECHNOLOGY = {
     "CAN_XL": "can_xl",
     "LIN": "lin",
     "FLEXRAY": "flexray",
-    "ETHERNET": "automotive_ethernet",
+    "ETHERNET": "ethernet",
     "SOME_IP": "someip",
     "TCP": "tcp",
     "UDP": "udp",
@@ -178,10 +177,14 @@ class CommunicationConfigBuilder:
                 net, protocol, technology = network_info(source)
                 source_interface, configuration = bind_endpoint(source, net, technology)
                 target_interface, _ = bind_endpoint(target, net, technology)
-                resolved = parameters_for_protocol(protocol, parameters, configuration, net)
+                resolved = parameters_for_protocol(protocol, parameters, configuration, net,
+                                                   confirmed_parameters=parameters)
                 network = networks.setdefault(net, {"id": net, "name": source.get("network_name") or net,
                     "technology": technology, "protocol": protocol,
-                    "bitrate": resolved.get("bitrate", PROTOCOL_CAPACITY.get(protocol, (100_000_000, 1500))[0]),
+                    "bitrate": resolved.get("bitrate"),
+                    "_rate_evidenced": resolved.get("_rate_evidenced", False),
+                    **({"local_timing_evidence": resolved["local_timing_evidence"]}
+                       if "local_timing_evidence" in resolved else {}),
                     **{key: resolved[key] for key in ("arbitration_bitrate", "data_bitrate") if key in resolved},
                     "cycle_ms": cycle_ms, "nodes": set()})
                 if network["technology"] != technology:

@@ -131,11 +131,11 @@ def parse_requirement(requirement: str, industry: str | None = None) -> dict:
         add(match[2].strip(), role, match[0])
     for role, pattern, stem, known in [
         ('SENSOR', r'temperatur(?:mess)?sensor(?:en|s)?|temperature\s+sensors?|sensor(?:en|s)?\s+(?:(?:für|fuer|zur messung von)\s+temperatur(?:en)?|(?:die\s+)?temperatur(?:en)?\s+messen|for\s+temperatures?)', 'Temperatursensor', True),
-        ('SENSOR', r'drucksensor(?:en|s)?|pressure\s+sensors?', 'Drucksensor', True),
+        ('SENSOR', r'druck[\s-]*sensor(?:en|s)?|pressure\s+sensors?', 'Drucksensor', True),
         ('SENSOR', r'feuchtigkeits(?:mess)?sensor(?:en|s)?|humidity\s+sensors?', 'Feuchtigkeitssensor', True),
         ('SENSOR', r'stromsensor(?:en|s)?|current\s+sensors?', 'Stromsensor', True),
         ('SENSOR', r'spannungssensor(?:en|s)?|voltage\s+sensors?', 'Spannungssensor', True),
-        ('ACTUATOR', r'ventilaktor(?:en)?|ventil(?:e|en)?|valves?|aktor(?:en)?\s+(?:(?:für|fuer)\s+ventile|zum\s+(?:steuern\s+von\s+ventilen|ventil\s+steuern))', 'Ventilaktor', True),
+        ('ACTUATOR', r'ventil[\s-]*aktor(?:en)?|ventil(?:e|en)?|valves?|aktor(?:en)?\s+(?:(?:für|fuer)\s+ventile|zum\s+(?:steuern\s+von\s+ventilen|ventil\s+steuern))', 'Ventilaktor', True),
         ('SENSOR', r'sensor(?:en|s)?', 'Sensor', False),
         ('ACTUATOR', r'aktor(?:en)?|actuators?', 'Aktor', False),
     ]:
@@ -558,3 +558,92 @@ def workflow_request(arguments):
                'agent_prompt': prompt,
                'engineering_draft_ref': {'draft_id': draft['draft_id'], 'revision': draft['revision']}}
     return {'prompt': prompt, 'context': context, 'target': scopes[-1]}
+
+
+def plan_simple_project(arguments):
+    """Plan a small, explicit structure in the open project without a transport default.
+
+    This intentionally stops at model structure. A bus, physical port, message
+    encoding or owner relationship is not implied by the device inventory.
+    The shared proposal service performs validation and the ordinary human
+    review/apply path performs the canonical write.
+    """
+    from . import model as access, proposal_service as proposals
+    from ..repository import normalize_hardware_name
+
+    requirement = str(arguments['requirement']).strip()
+    parsed = parse_requirement(requirement)
+    devices = parsed['devices']
+    roles = {role: [device for device in devices if device['role'] == role]
+             for role in ('CONTROLLER', 'SENSOR', 'ACTUATOR')}
+    expected = (len(devices) == 3 and all(len(items) == 1 for items in roles.values())
+                and roles['SENSOR'][0]['name'].casefold().startswith('drucksensor')
+                and roles['ACTUATOR'][0]['name'].casefold().startswith('ventilaktor')
+                and not parsed['generation_policy'].get('bus_types')
+                and not any(issue['code'] not in {'OWNER_REQUIRED', 'INDUSTRY_REQUIRED', 'CONNECTION_REQUIRED'}
+                            for issue in parsed['issues']))
+    if not expected:
+        return {'supported': False, 'reason': 'Der direkte Strukturpfad ist nur für ein eindeutig beschriebenes kleines Projekt bestimmt.'}
+
+    existing = {str(row['name']).casefold(): row for row in access.objects('HardwareNode')}
+    changes = []
+    refs = {}
+    device_types = {'CONTROLLER': 'EmbeddedController', 'SENSOR': 'GenericDevice', 'ACTUATOR': 'GenericDevice'}
+    for role in ('CONTROLLER', 'SENSOR', 'ACTUATOR'):
+        device = roles[role][0]
+        name = normalize_hardware_name(device['name'])
+        old = existing.get(name.casefold())
+        if old:
+            if old.get('device_type') != device_types[role]:
+                return {'supported': True, 'status': 'BLOCKED', 'reason':
+                        f'{name} existiert bereits mit einer anderen Geräteklasse. Bitte die Identität klären.'}
+            refs[role] = str(old['id'])
+        else:
+            ref = f'simple-{role.casefold()}'
+            refs[role] = '$' + ref
+            changes.append({'object_type': 'HardwareNode', 'local_ref': ref, 'data': {
+                'name': name, 'device_type': device_types[role],
+                'description': f'Aus der Projektanforderung: {device["source"]}. Kommunikation und Einbauort offen.'}})
+
+    existing_functions = {str(row['name']).casefold(): row for row in access.objects('Function')}
+    for name, ref in [('PressureAcquire', 'pressure-acquire'), ('ValveControl', 'valve-control')]:
+        old = existing_functions.get(name.casefold())
+        if old:
+            if refs['CONTROLLER'].startswith('$') or str(old.get('hardware_node_id')) != refs['CONTROLLER']:
+                return {'supported': True, 'status': 'BLOCKED', 'reason':
+                        f'{name} existiert bereits; die Zuordnung zum Controller muss geprüft werden.'}
+            refs[ref] = str(old['id'])
+        else:
+            refs[ref] = '$' + ref
+            changes.append({'object_type': 'Function', 'local_ref': ref, 'data': {
+                'name': name, 'hardware_node_id': refs['CONTROLLER'],
+                'description': 'Fachliche Funktion aus der ausdrücklichen Drucksensor-/Ventilaktor-Anforderung; Datenpfad offen.'}})
+
+    from ..workflow.service import WorkflowStatusService
+    stored_models = ((WorkflowStatusService(current_project_id()).get().get('parameters') or {})
+                     .get('engineering_models') or {}).get('DataObject') or []
+    existing_data = {str(row.get('name') or '').casefold() for row in stored_models}
+    for name, producer in [('PressureValue', 'pressure-acquire'), ('ValveCommand', 'valve-control')]:
+        if name.casefold() in existing_data:
+            continue
+        changes.append({'object_type': 'DataObject', 'local_ref': name.casefold(), 'data': {
+            'name': name, 'producer_function_ref': refs[producer],
+            'description': 'Fachliches Datenkonzept. Datentyp, Einheit, Kodierung und Übertragung sind nicht festgelegt.',
+            'fields': [{'name': 'value', 'data_type': 'UNASSIGNED', 'dimension_status': 'UNSPECIFIED'}]}})
+
+    if not changes:
+        return {'supported': True, 'status': 'ALREADY_PRESENT', 'canonical_ids':
+                [{'object_type': 'HardwareNode', 'id': refs[role]} for role in roles],
+                'model_revision': access.model_revision()}
+    proposal = proposals.create('SIMPLE_PROJECT_STRUCTURE', changes,
+        'Projektstruktur aus Controller, Drucksensor und Ventilaktor im geöffneten Projekt anlegen.',
+        assumptions=['Kommunikationstechnologie, physische Anschlüsse und räumliche Zuordnung bleiben offen.',
+                     'Die Funktions- und Datenobjektnamen sind fachliche Struktur; konkrete Signaldefinitionen erfordern Kodierung und Zuordnung.'],
+        evidence=[{'source': 'explicit_project_requirement', 'requirement': requirement,
+                   'engineering_goal_id': arguments.get('workload_id'),
+                   'inventory': [{'name': d['name'], 'role': d['role']} for d in devices]}])
+    return {'supported': True, 'status': 'READY_FOR_REVIEW',
+            'proposal': proposals.validate(proposal['proposal_id']),
+            'open_decisions': [issue for issue in parsed['issues'] if issue['code'] in
+                               {'OWNER_REQUIRED', 'INDUSTRY_REQUIRED', 'CONNECTION_REQUIRED'}],
+            'model_revision_before': access.model_revision()}

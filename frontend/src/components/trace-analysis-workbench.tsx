@@ -88,6 +88,7 @@ export function TraceAnalysisWorkbench() {
   const loadGeneration = useRef(0);
   const [signalChannels, setSignalChannels] = useState<string[]>([]);
   const [sequenceModel, setSequenceModel] = useState<SequenceDiagramModel | null>(null);
+  const [modelFreshness, setModelFreshness] = useState<{ status: string; reason?: string | null } | null>(null);
 
   useEffect(() => { void listSimulations().then(setJobs).catch(() => setJobs([])); }, []);
   useEffect(() => {
@@ -124,6 +125,7 @@ export function TraceAnalysisWorkbench() {
       if (generation !== loadGeneration.current) return;
       const loaded = (result.events as Record<string, unknown>[]).map(eventFromRecord);
       setSequenceModel(result.sequence_model ?? null);
+      setModelFreshness(result.model_freshness ?? (jobId.startsWith("import:") ? null : { status: "UNVERIFIED" }));
       setEvents(loaded); setCurrentCursor(cursor);
       setSelectedEvent(search.get("event") ? loaded.find(item => item.id === search.get("event")) ?? null : range && loaded.length ? loaded.reduce((nearest, item) => Math.abs(item.timestamp-range.focus) < Math.abs(nearest.timestamp-range.focus) ? item : nearest) : null);
       setTraceJob(jobId); setNextCursor(result.next_cursor); setSourceName(`Simulation ${jobId} · Trace-Fenster`);
@@ -153,6 +155,7 @@ export function TraceAnalysisWorkbench() {
       if (generation !== loadGeneration.current) return;
       const imported = (result.events as Record<string, unknown>[]).map(eventFromRecord);
       setEvents(imported); setCurrentCursor(0);
+      setModelFreshness(null);
       setImportWarnings(result.warnings ?? []); setSourceFormat(String(result.format).toUpperCase());
       setTimeStart(0); setTimeEnd(1e15); setQuery("");
       setSelectedEvent(null);
@@ -272,6 +275,8 @@ export function TraceAnalysisWorkbench() {
             <p>{loading ? "Trace-Fenster wird geladen …" : `${events.length} Ereignisse im Speicher · gemeinsames Zeitfenster für alle Ansichten`}</p>
             {selectedEvent && <div aria-label="Gemeinsamer Trace-Kontext"><strong>{selectedEvent.timeKnown ? `${selectedEvent.timestamp.toFixed(6)} s` : "Zeit unbekannt"} · {selectedEvent.source} → {selectedEvent.destination}</strong><p>{selectedEvent.message} · {selectedEvent.signal}: {displayTraceValue(selectedEvent.signals[0]?.value ?? selectedEvent.value)} {selectedEvent.unit}</p>{selectedEvent.ipContext && <p aria-label="IP- und Port-Zuordnung">{selectedEvent.ipContext}</p>}{selectedEvent.refs.map(ref => { const href = engineeringContextHref(ref, readActiveProjectId()); return href ? <a key={ref.object_type + ref.id} href={href}>{ref.object_type} öffnen </a> : null; })}</div>}
             {error && <div className="notice error" role="alert">{error}</div>}
+            {modelFreshness?.status === "OUTDATED" && <div className="notice" role="status"><strong>Trace-Modellbezug ist OUTDATED.</strong> Historische Ereignisse bleiben lesbar; sie belegen nicht den aktuellen Modellstand. {modelFreshness.reason}</div>}
+            {modelFreshness?.status === "UNVERIFIED" && <div className="notice" role="status">Der Modellbezug dieses Traces ist nicht nachgewiesen. {modelFreshness.reason}</div>}
             {importWarnings.map((warning, index) => <div className="notice" role="status" key={index}>{warning}</div>)}
             <p className="trace-view-note">{viewMeta.note}</p>
             <p className="trace-governance-note">IMPORT {"->"} ANALYSIS PROJECTION. Keine automatischen Core-, Evidence- oder TraceLink-Writes.</p>

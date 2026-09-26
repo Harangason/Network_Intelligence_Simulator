@@ -201,14 +201,14 @@ export function CapacityWorkbench({ initialProjectId = "" }: { initialProjectId?
         {scenario && <button className="text-command" onClick={() => setScenario(null)} type="button">Vergleich schließen</button>}
       </div>
 
-      {scenarioImpact && <div className="impact-strip"><Metric label="Δ Peak" value={`${scenarioImpact.delta.peak_load_percent.toFixed(2)} %`} /><Metric label="Δ Burst" value={`${scenarioImpact.delta.burst_load_percent.toFixed(2)} %`} /><Metric label="Δ Reserve" value={`${scenarioImpact.delta.capacity_reserve_percent.toFixed(2)} %`} /><Metric label="Δ E2E" value={`${scenarioImpact.delta.end_to_end_latency_ms.toFixed(3)} ms`} /></div>}
+      {scenarioImpact && shown?.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) && <div className="impact-strip"><Metric label="Δ Peak" value={formatEvidence(scenarioImpact.delta.peak_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Burst" value={formatEvidence(scenarioImpact.delta.burst_load_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ Reserve" value={formatEvidence(scenarioImpact.delta.capacity_reserve_percent, 2, "%", "Nicht vergleichbar")} /><Metric label="Δ E2E" value={formatEvidence(scenarioImpact.delta.end_to_end_latency_ms, 3, "ms", "Nicht vergleichbar")} /></div>}
 
       {shown ? (
         <>
           <p>Ø Load beschreibt den nominalen Busbedarf. Peak und Stresslast sind rechnerische Varianten mit Faktor {shown.overview.peak_factor ?? 1.15} und {shown.overview.burst_factor ?? 1.5}; keine gleichzeitig sendenden Teilnehmer und keine Messwerte.</p>
           <div className="metric-strip">
-            <Metric label="Peak Load" value={`${shown.overview.max_peak_load_percent.toFixed(2)} %`} />
-            <Metric label="Kapazitätsreserve" value={`${shown.overview.minimum_capacity_reserve_percent.toFixed(2)} %`} />
+            <Metric label="Peak Load" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.max_peak_load_percent, 2, "%") : "Nicht nachgewiesen"} />
+            <Metric label="Kapazitätsreserve" value={shown.networks.every((network) => network.capacity_verified === true || network.capacity_applicable === false) ? formatEvidence(shown.overview.minimum_capacity_reserve_percent, 2, "%") : "Nicht nachgewiesen"} />
             <Metric label="E2E-Antwortgrenze" value={shown.overview.timing_verified ? `${shown.overview.worst_end_to_end_latency_ms.toFixed(3)} ms` : "Nicht nachgewiesen"} />
             <Metric label="Netze / Routen" value={`${shown.overview.network_count} / ${shown.overview.route_count}`} />
             <Metric details={statusDetails} label="Status" value={status ?? shown.overview.status} tone={status ?? shown.overview.status} />
@@ -305,7 +305,7 @@ function buildCapacityWarningInfo(
   if ((loadCounts.CRITICAL ?? 0) > 0) addWarning(info, "critical", `${loadCounts.CRITICAL} Netze im Status CRITICAL.`);
   if ((loadCounts.OVERLOAD ?? 0) > 0) addWarning(info, "critical", `${loadCounts.OVERLOAD} Netze im Status OVERLOAD.`);
 
-  const issueFindings = findings.filter((finding) => finding.severity === "ERROR" || finding.severity === "WARNING");
+  const issueFindings = findings.filter((finding) => finding.severity === "ERROR" || finding.severity === "WARNING" || finding.severity === "REVIEW");
   for (const finding of issueFindings) {
     const readableMessage = readableCapacityFinding(finding.message);
     addWarning(info, "overview", readableMessage);
@@ -319,16 +319,24 @@ function buildCapacityWarningInfo(
         addWarning(info, "networks", `${capacityNetworkName(network)}: direkte Signalleitung; Buslast nicht anwendbar, Reaktionszeit nicht nachgewiesen.`);
         continue;
       }
+      if (network.capacity_verified !== true) {
+        addWarning(info, "networks", `${capacityNetworkName(network)}: Kapazität und Zeit nicht nachgewiesen.`);
+        continue;
+      }
       const target = network.target_bus_load_percent == null ? "" : ` Ziel ${network.target_bus_load_percent.toFixed(2)} %`;
-      addWarning(info, "networks", `${capacityNetworkName(network)}: ${network.status}, Burst ${network.burst_load_percent.toFixed(2)} %.${target}`);
+      addWarning(info, "networks", `${capacityNetworkName(network)}: ${network.status}, Burst ${formatEvidence(network.burst_load_percent, 2, "%")}.${target}`);
       addWarning(info, "overview", `${capacityNetworkName(network)} verursacht Netz-Warnung.`);
     }
   }
 
   for (const route of results.routes) {
     if (route.capacity_applicable === false) continue;
+    if (route.capacity_verified !== true) {
+      addWarning(info, "routes", `${route.name}: Kapazität nicht nachgewiesen.`);
+      continue;
+    }
     if (route.status !== "NORMAL" || route.latency_status === "FAIL" || route.jitter_status === "FAIL" || route.requirement_status === "FAIL") {
-      addWarning(info, "routes", `${route.name}: ${route.status}, Peak ${route.peak_load_percent.toFixed(2)} %, E2E ${route.end_to_end_latency_ms.toFixed(3)} ms.`);
+      addWarning(info, "routes", `${route.name}: ${route.status}, Peak ${formatEvidence(route.peak_load_percent, 2, "%")}, E2E ${formatEvidence(route.end_to_end_latency_ms, 3, "ms")}.`);
     }
     if (route.latency_status === "FAIL" || route.jitter_status === "FAIL" || route.requirement_status === "FAIL") {
       addWarning(info, "timing", `${route.name}: Timing-Anforderung verletzt.`);
@@ -367,7 +375,7 @@ function buildCapacityWarningInfo(
 
   for (const route of results.critical_paths) {
     if (route.status === "NORMAL" && route.latency_status !== "FAIL" && route.jitter_status !== "FAIL" && route.requirement_status !== "FAIL") continue;
-    addWarning(info, "critical", `${route.name}: ${route.status}, Burst ${route.burst_load_percent.toFixed(2)} %.`);
+    addWarning(info, "critical", `${route.name}: ${route.status}, Burst ${formatEvidence(route.burst_load_percent, 2, "%")}.`);
   }
   if (effectiveStatus === "WARNING" || effectiveStatus === "ERROR") {
     if (outdatedReason) {
@@ -565,7 +573,7 @@ function NetworkTable({ items, routes, onSelect, selectedId, sourceVersions }: {
         return <Fragment key={item.network_id}>
           <tr className={`capacity-network-row${expanded ? " selected" : ""}`} onClick={toggle}>
             <td><button aria-controls={expanded ? detailId : undefined} aria-expanded={expanded} className="capacity-network-toggle" onClick={(event) => { event.stopPropagation(); toggle(); }} title={expanded ? "Netzdetails schließen" : "Netzdetails öffnen"} type="button"><span aria-hidden="true">{expanded ? "▾" : "▸"}</span><strong>{capacityNetworkName(item)}</strong></button></td>
-            <td>{item.protocol}</td><td>{item.capacity_applicable === false ? "n/a" : `${item.average_load_percent.toFixed(2)} %`}</td><td>{item.capacity_applicable === false ? "n/a" : `${item.peak_load_percent.toFixed(2)} %`}</td><td>{item.capacity_applicable === false ? "n/a" : `${item.capacity_reserve_percent.toFixed(2)} %`}</td><td>{item.timing_verified && item.response_time_bound_ms != null ? `${item.response_time_bound_ms.toFixed(3)} ms` : "Nicht nachgewiesen"}</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td>
+            <td>{item.protocol}</td><td>{item.capacity_applicable === false ? "n/a" : item.capacity_verified === true ? `${item.average_load_percent.toFixed(2)} %` : "Nicht nachgewiesen"}</td><td>{item.capacity_applicable === false ? "n/a" : item.capacity_verified === true ? `${item.peak_load_percent.toFixed(2)} %` : "Nicht nachgewiesen"}</td><td>{item.capacity_applicable === false ? "n/a" : item.capacity_verified === true ? `${item.capacity_reserve_percent.toFixed(2)} %` : "Nicht nachgewiesen"}</td><td>{item.timing_verified && item.response_time_bound_ms != null ? `${item.response_time_bound_ms.toFixed(3)} ms` : "Nicht nachgewiesen"}</td><td><span className={`load-status load-${item.status.toLowerCase()}`}>{item.status}</span></td>
           </tr>
           {expanded && <tr className="capacity-network-detail-row"><td colSpan={7}><NetworkDetail id={detailId} network={item} routes={routes.filter((route) => route.network_id === item.network_id)} sourceVersions={sourceVersions} /></td></tr>}
         </Fragment>;
@@ -585,11 +593,11 @@ function NetworkDetail({ id, network, routes, sourceVersions }: { id: string; ne
         <ul>{network.communication_schedule.hardware_review_proposal.fields.map(field => <li key={field.key}>{field.label}: {field.value ?? "offen"}{field.candidate != null ? ` · Profilkandidat ${field.candidate.toLocaleString("de-DE")} (ungeprüft)` : ""}{field.state === "CONFLICT" ? " · widersprüchliche Angaben" : ""}</li>)}</ul>
         <p>Master, Gerät und Zeitgrenzen am Hardware Interface bestätigen; die Zeitfreigabe bleibt bis dahin gesperrt.</p>
       </div>}
-      <dl className="overview-list"><div><dt>Burst</dt><dd>{network.capacity_applicable === false ? "n/a" : `${network.burst_load_percent.toFixed(2)} %`}</dd></div><div><dt>Margin</dt><dd>{network.capacity_applicable === false ? "n/a" : `${(network.capacity_margin_percent ?? 100 - network.burst_load_percent).toFixed(2)} %`}</dd></div><div><dt>Routen</dt><dd>{routes.length}</dd></div></dl>
+      <dl className="overview-list"><div><dt>Burst</dt><dd>{network.capacity_applicable === false ? "n/a" : network.capacity_verified === true ? `${formatEvidence(network.burst_load_percent, 2, "%")}` : "Nicht nachgewiesen"}</dd></div><div><dt>Margin</dt><dd>{network.capacity_applicable === false ? "n/a" : network.capacity_verified === true ? `${(network.capacity_margin_percent ?? 100 - network.burst_load_percent).toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div><div><dt>Routen</dt><dd>{routes.length}</dd></div></dl>
       {network.evaluation && <div className="capacity-evaluation" aria-label="Getrennte Netzbewertung">
         <dl className="overview-list">
           <div><dt>Nutzlast / Kodierung</dt><dd>{network.evaluation.payload.status === "PASS" ? "Passend" : network.evaluation.payload.status === "FAIL" ? `${network.evaluation.payload.errors} Fehler` : "Offen"}</dd></div>
-          <div><dt>{network.evaluation.capacity.basis === "BOUNDED_EVENT_DEMAND" ? "Begrenzter Ereignisbedarf" : "Nominaler Kapazitätsbedarf"}</dt><dd>{network.capacity_applicable === false ? "Nicht anwendbar" : `${network.evaluation.capacity.load_percent.toFixed(2)} %`}</dd></div>
+          <div><dt>{network.evaluation.capacity.basis === "BOUNDED_EVENT_DEMAND" ? "Begrenzter Ereignisbedarf" : "Nominaler Kapazitätsbedarf"}</dt><dd>{network.capacity_applicable === false ? "Nicht anwendbar" : network.capacity_verified === true ? `${network.evaluation.capacity.load_percent.toFixed(2)} %` : "Nicht nachgewiesen"}</dd></div>
           <div><dt>Busplan</dt><dd>{network.evaluation.schedule.status === "FEASIBLE_UNDER_ASSUMPTIONS" ? "Machbar unter Annahmen" : "Nicht nachgewiesen"}{network.evaluation.schedule.slot_load_percent != null && ` · ${network.evaluation.schedule.slot_load_percent.toFixed(2)} % Slots`}</dd></div>
           <div><dt>Stressszenario</dt><dd>{network.evaluation.stress.status === "UNVERIFIED" ? "Nicht anwendbar" : network.evaluation.stress.status === "PASS" ? "Im Planungsziel" : "Planungsziel überschritten"}</dd></div>
           <div><dt>Funktionale Reaktionszeit</dt><dd>{network.evaluation.functional.status === "PASS" ? "Vorgabe eingehalten" : network.evaluation.functional.status === "FAIL" ? "Vorgabe verletzt" : "Nicht nachgewiesen"}</dd></div>
@@ -597,7 +605,7 @@ function NetworkDetail({ id, network, routes, sourceVersions }: { id: string; ne
         <p className="muted">Slotreservierung und Stressfaktor sind verschiedene Bewertungen. {network.evaluation.functional.explanation}</p>
       </div>}
       <NetworkSignalInspection networkId={network.network_id} sourceVersions={sourceVersions} />
-      {network.capacity_applicable !== false && <PaginatedResults items={contributors} label="Lastbeiträge">{(entries) => <div className="capacity-contributors"><strong>Top Contributors</strong>{entries.map((item) => <span key={item.route_id}>{item.name}<b>{item.load_percent.toFixed(2)} %</b></span>)}</div>}</PaginatedResults>}
+      {network.capacity_verified === true && <PaginatedResults items={contributors} label="Lastbeiträge">{(entries) => <div className="capacity-contributors"><strong>Top Contributors</strong>{entries.map((item) => <span key={item.route_id}>{item.name}<b>{item.load_percent.toFixed(2)} %</b></span>)}</div>}</PaginatedResults>}
       <RouteTable items={routes} networks={[network]} />
     </section>
   );
@@ -662,7 +670,7 @@ function RouteTable({ items, networks }: { items: CapacityResults["routes"]; net
   if (!items.length) return <EmptyAnalysis text="Keine passenden Routen vorhanden." />;
   return (
     <PaginatedResults items={items} label="Routen">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Netz</th><th>Payload / Cycle</th><th>Peak</th><th>E2E-Antwortgrenze</th><th>Modell</th></tr></thead><tbody>
-      {entries.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{capacityNetworkName(item, networks)}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.capacity_applicable === false ? "n/a" : `${item.peak_load_percent.toFixed(2)} %`}</td><td>{responseBound(item)}</td><td><code>{item.calculation_model}</code></td></tr>)}
+      {entries.map((item) => <tr key={item.route_id}><td><strong>{item.name}</strong><small>{item.route_code}</small></td><td>{capacityNetworkName(item, networks)}</td><td>{item.payload_bytes} B / {item.cycle_ms} ms</td><td>{item.capacity_applicable === false ? "n/a" : item.capacity_verified === true ? `${item.peak_load_percent.toFixed(2)} %` : "Nicht nachgewiesen"}</td><td>{responseBound(item)}</td><td><code>{item.calculation_model}</code></td></tr>)}
     </tbody></table></div>}</PaginatedResults>
   );
 }
@@ -671,7 +679,7 @@ function MessageTable({ items, networks }: { items: CapacityResults["messages"];
   if (!items.length) return <EmptyAnalysis text="Keine Messages mit Timingdaten vorhanden." />;
   return (
     <PaginatedResults items={items} label="Messages">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Message</th><th>Netz</th><th>Technologie</th><th>Payload / Cycle</th><th>Ø Load</th><th>Peak</th><th>Modell</th></tr></thead><tbody>
-      {entries.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{capacityNetworkName(item, networks)}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{["GPIO", "PWM"].includes(String(item.protocol ?? "").toUpperCase()) ? "n/a" : `${Number(item.average_load_percent ?? 0).toFixed(2)} %`}</td><td>{["GPIO", "PWM"].includes(String(item.protocol ?? "").toUpperCase()) ? "n/a" : `${Number(item.peak_load_percent ?? 0).toFixed(2)} %`}</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
+      {entries.map((item, index) => <tr key={String(item.message_id ?? index)}><td><strong>{String(item.name ?? item.message_id)}</strong></td><td>{capacityNetworkName(item, networks)}</td><td>{String(item.protocol ?? "—")}</td><td>{String(item.payload_bytes ?? "—")} B / {String(item.cycle_ms ?? "—")} ms</td><td>{["GPIO", "PWM", "ADC", "DAC"].includes(String(item.protocol ?? "").toUpperCase()) ? "n/a" : item.capacity_verified === true ? `${Number(item.average_load_percent ?? 0).toFixed(2)} %` : "Nicht nachgewiesen"}</td><td>{["GPIO", "PWM", "ADC", "DAC"].includes(String(item.protocol ?? "").toUpperCase()) ? "n/a" : item.capacity_verified === true ? `${Number(item.peak_load_percent ?? 0).toFixed(2)} %` : "Nicht nachgewiesen"}</td><td><code>{String(item.calculation_model ?? "—")}</code></td></tr>)}
     </tbody></table></div>}</PaginatedResults>
   );
 }
@@ -680,29 +688,31 @@ function TimingAnalysis({ results }: { results: CapacityResults }) {
   const timing = results.timing;
   const reliability = results.reliability;
   const synchronization = results.synchronization;
-  const worstQueue = timing?.worst_queueing_latency_ms
-    ?? Math.max(0, ...results.routes.map((route) => route.queueing_latency_ms));
-  const worstJitter = timing?.worst_estimated_jitter_ms
-    ?? Math.max(0, ...results.routes.map((route) => route.estimated_jitter_ms ?? 0));
+  const worstQueue = timing?.worst_queueing_latency_ms;
+  const worstJitter = timing?.worst_estimated_jitter_ms;
 
   return (
     <div className="timing-analysis">
       <div className="metric-strip compact">
-        <Metric label="Geschätztes Queueing" value={`${worstQueue.toFixed(3)} ms`} />
-        <Metric label="Geschätzter Jitter" value={`${worstJitter.toFixed(3)} ms`} />
+        <Metric label="Geschätztes Queueing" value={formatEvidence(worstQueue, 3, "ms")} />
+        <Metric label="Geschätzter Jitter" value={formatEvidence(worstJitter, 3, "ms")} />
         <Metric label="Queue Policy" value={timing?.queue_policy ?? "FIFO"} />
         <Metric label="Retransmission" value={`${((reliability?.configured_retransmission_rate ?? 0) * 100).toFixed(2)} %`} />
         <Metric label="Clock Drift" value={`${synchronization?.clock_drift_ppm ?? 0} ppm`} />
         <Metric label="Sync Precision" value={`${synchronization?.sync_precision_ms ?? 0} ms`} />
       </div>
       <PaginatedResults items={results.routes} label="Timing">{(entries) => <div className="analysis-table-wrap"><table className="analysis-table"><thead><tr><th>Route</th><th>Transmission</th><th>Queueing (Schätzung)</th><th>Gateway</th><th>E2E-Antwortgrenze</th><th>Jitter (Schätzung) / Budget</th><th>Deadline</th></tr></thead><tbody>
-        {entries.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{(route.transmission_latency_ms ?? 0).toFixed(3)} ms</td><td>{route.queueing_latency_ms.toFixed(3)} ms</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{responseBound(route)}</td><td>{(route.estimated_jitter_ms ?? 0).toFixed(3)} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
+        {entries.map((route) => <tr key={route.route_id}><td><strong>{route.name}</strong><small>{route.route_code}</small></td><td>{formatEvidence(route.transmission_latency_ms, 3, "ms")}</td><td>{formatEvidence(route.queueing_latency_ms, 3, "ms")}</td><td>{(route.gateway_latency_ms ?? 0).toFixed(3)} ms</td><td>{responseBound(route)}</td><td>{formatEvidence(route.estimated_jitter_ms, 3, "ms")} / {route.jitter_budget_ms ? `${route.jitter_budget_ms.toFixed(3)} ms` : "—"}</td><td>{route.max_latency_ms ? `${route.max_latency_ms} ms` : "—"}</td></tr>)}
       </tbody></table></div>}</PaginatedResults>
       {synchronization && (
         <p className="analysis-footnote">Maximale Drift im Beobachtungsfenster: <strong>{synchronization.max_drift_over_observation_ms.toFixed(3)} ms</strong> bei {synchronization.observation_s} s.</p>
       )}
     </div>
   );
+}
+
+function formatEvidence(value: number | null | undefined, digits: number, unit: string, missing = "Nicht nachgewiesen") {
+  return typeof value === "number" && Number.isFinite(value) ? `${value.toFixed(digits)} ${unit}` : missing;
 }
 
 function EmptyAnalysis({ text }: { text: string }) {

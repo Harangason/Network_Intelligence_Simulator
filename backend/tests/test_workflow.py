@@ -274,10 +274,10 @@ def test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed():
     assert parameters_for_protocol("CAN_FD", parameters) == parameters
     ethernet = parameters_for_protocol("Ethernet", parameters)
     lin = parameters_for_protocol("LIN", parameters)
-    assert ethernet["bitrate"] == 100_000_000
-    assert lin["bitrate"] == 19_200
+    assert "bitrate" not in ethernet
+    assert "bitrate" not in lin
     assert "data_bitrate" not in ethernet
-    assert estimate_frame("LIN", 8, lin).transmission_time_s == 124 / 19_200
+    assert estimate_frame("LIN", 8, lin).to_dict()["transmission_time_s"] is None
     assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
     assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
     assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600

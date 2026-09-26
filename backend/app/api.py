@@ -311,6 +311,17 @@ def trace_window(job_id: str):
                                   query=request.args.get('q', ''))
         from .e2e_assurance import build_sequence_model
         result['sequence_model'] = build_sequence_model(result['events'], source='SIMULATED')
+        # Historical events remain readable, but they cannot silently serve as
+        # evidence for a model whose governing simulation snapshot is stale.
+        snapshot_id = job.get('workflow_snapshot_id')
+        snapshot = (WorkflowStatusService(project_id).get_simulation_snapshot(snapshot_id, metadata_only=True)
+                    if snapshot_id else None)
+        result['model_freshness'] = {
+            'status': ('OUTDATED' if snapshot.get('is_outdated') else 'CURRENT') if snapshot else 'UNVERIFIED',
+            'snapshot_id': snapshot_id,
+            'source_versions': snapshot.get('source_versions') if snapshot else None,
+            'reason': snapshot.get('outdated_reason') if snapshot else 'Kein zugehöriger Modell-Snapshot nachweisbar.',
+        }
         return jsonify({**result, 'job_id': job_id, 'project_id': project_id})
     except (ValueError, UnicodeError) as error:
         return jsonify({'error': str(error)}), 400

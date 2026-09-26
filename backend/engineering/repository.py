@@ -220,7 +220,7 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
         json_columns=frozenset(
             {"configuration", "semantic", "data", "communication", "quality", "protocol_bindings"}
         ),
-        required=("message_id",),
+        required=(),
         enum_fields={"byte_order": SIGNAL_BYTE_ORDERS},
     ),
 }
@@ -249,7 +249,29 @@ def parent_link_for_payload(
         if payload.get("hardware_node_id"):
             return "hardware_node_id", "HardwareNode", "HAS_INTERFACE"
         return None
+    if object_type == "Signal" and (payload.get("configuration") or {}).get("direct_signal_binding"):
+        return None
     return PARENT_LINKS.get(object_type)
+
+
+def _validate_signal_binding(data: dict[str, Any]) -> None:
+    from .core.models import DirectSignalBinding
+    from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+
+    direct = (data.get("configuration") or {}).get("direct_signal_binding")
+    if bool(data.get("message_id")) == bool(direct):
+        raise EngineeringValidationError("Signal benötigt genau eines der Felder message_id oder direct_signal_binding.")
+    if direct:
+        if not isinstance(direct, dict):
+            raise EngineeringValidationError("direct_signal_binding muss ein Objekt sein.")
+        try:
+            binding = DirectSignalBinding(**direct)
+        except (TypeError, ValueError) as exc:
+            raise EngineeringValidationError(str(exc)) from exc
+        if binding.signal_type.lower() not in DIRECT_IO_TECHNOLOGIES:
+            raise EngineeringValidationError("DirectSignalBinding benötigt GPIO, PWM, ADC oder DAC.")
+        if data.get("protocol_bindings"):
+            raise EngineeringValidationError("Direct I/O darf keine Transport-Protokollbindung besitzen.")
 
 
 def _all_columns(spec: EntitySpec) -> tuple[str, ...]:
@@ -422,6 +444,13 @@ def create_object(object_type: str, data: dict[str, Any]) -> dict[str, Any]:
     if object_type == "Interface" and data.get("function_id"):
         parent_function = get_object("Function", str(data["function_id"]))
         data = {**data, "hardware_node_id": parent_function["hardware_node_id"]}
+    if object_type == "Signal":
+        _validate_signal_binding(data)
+    if object_type == "Message":
+        from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+        interface = get_object("Interface", str(data.get("interface_id") or ""))
+        if str(interface.get("interface_type") or "").lower() in DIRECT_IO_TECHNOLOGIES:
+            raise EngineeringValidationError("DIRECT_IO_MESSAGE_CREATED: Direkte I/O-Signale besitzen keine Message.")
     spec.validate(data)
 
     columns = list(BASE_COLUMNS) + list(spec.own_columns)
@@ -737,6 +766,8 @@ def update_object(object_type: str, object_id: str, data: dict[str, Any]) -> dic
     if not updates:
         return existing
 
+    if object_type == "Signal":
+        _validate_signal_binding({**existing, **updates})
     spec.validate({**existing, **updates})
 
     for field_name, allowed in {

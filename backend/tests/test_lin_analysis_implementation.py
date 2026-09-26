@@ -82,6 +82,7 @@ def test_runtime_unchanged_event_state_is_not_periodically_sent(tmp_path):
 
 def test_capacity_and_stress_are_distinct_from_functional_approval():
     network = {"communication_schedule": {"status": "FEASIBLE_UNDER_ASSUMPTIONS", "responses": {"s": 4.667}, "slot_load_percent": 80},
+        "capacity_verified": True,
         "average_load_percent": 53.33, "peak_load_percent": 61.33, "burst_load_percent": 80, "target_bus_load_percent": 60}
     stream = {"stream_id": "s", "message_id": "m", "cycle_ms": 50}
     result = network_evaluation(network, [stream], [{"message_id": "m", "status": "PASS"}])

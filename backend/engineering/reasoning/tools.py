@@ -27,6 +27,12 @@ def inspect(name, arguments):
 
 
 def register_reasoning_tools():
+    register('inspect_message_trace_timing',
+        'Aktuellen Simulations-Trace für genau eine kanonische Nachricht mit bestehender Ursachenanalyse untersuchen. Keine Persistenz oder Modelländerung; Simulation ist kein realer Empfänger-Nachweis.',
+        Permission.ANALYZE_TRACE,
+        lambda a: result_contract(ReasoningService().analyze({'job_id': a['job_id'], 'goal': a['request']},
+            persist=False, message_id=a['message_id'])),
+        job_id=ID, message_id=ID, request=(str, Field(min_length=1, max_length=2000)))
     fields = dict(job_id=ID, goal=(str, Field(default="Ursache im Trace untersuchen.", max_length=2000)),
         focus_s=(float | None, Field(default=None, ge=0)), start_s=(float, Field(default=0, ge=0)),
         end_s=(float, Field(default=1e15, ge=0)), cursor=(int, Field(default=0, ge=0)),

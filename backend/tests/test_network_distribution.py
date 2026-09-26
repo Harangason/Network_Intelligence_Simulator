@@ -329,6 +329,7 @@ def test_unapplied_migration_does_not_free_segments_for_split_proposals():
     source['results']['routes'].extend(extra)
     result = plan_network_distribution(
         source, hardware(), {}, available_protocol_counts={'LIN': 2, 'CAN_FD': 1},
+        parameters={'technology_defaults': {'can_fd': {'bitrate': 500_000, 'data_bitrate': 2_000_000}}},
     )
     assert result['networks'][0]['decision'] == 'MIGRATE_TECHNOLOGY'
     assert result['remaining_protocol_inventory']['LIN'] == 0
@@ -411,7 +412,8 @@ def test_split_plan_rewrites_only_the_overloaded_branch_and_preserves_route_evid
 
 
 def test_single_route_overload_is_not_hidden_by_adding_buses():
-    result = plan_network_distribution(capacity((120, 20, 20)), hardware(), {}, allowed_protocols=["LIN", "CAN_FD"])
+    result = plan_network_distribution(capacity((120, 20, 20)), hardware(), {}, allowed_protocols=["LIN", "CAN_FD"],
+        parameters={"technology_defaults": {"can_fd": {"bitrate": 500_000, "data_bitrate": 2_000_000}}})
     assert result["status"] == "PROPOSED"
     segment = next(item for item in result["networks"][0]["segments"] if item["load_check"] == "EXCEEDED")
     assert "20.0 ms" in segment["alternatives"][0]
@@ -472,10 +474,17 @@ def test_simulator_export_preserves_physical_segments_and_protocol_speed(monkeyp
          "destinations": [{"node_id": "gateway"}], "timing": {"cycle_time_ms": 100}}
         for index, network in enumerate(("lin-port-a", "lin-port-b", "lin-port-a"))
     ]
-    config = CommunicationConfigBuilder().build(routes)["config"]
+    config = CommunicationConfigBuilder().build(routes, parameters={'technology': 'lin', 'bitrate': 19_200})["config"]
     assert {item["id"] for item in config["networks"]} == {"lin-port-a", "lin-port-b"}
     assert all(item["bitrate"] == 19_200 for item in config["networks"])
     assert {item["network_id"] for item in config["communications"]} == {"lin-port-a", "lin-port-b"}
+    secondary = CommunicationConfigBuilder().build(routes, parameters={
+        'technology': 'ethernet', 'bitrate': 100_000_000,
+        'explicit_technology_bitrates': {'lin': 9_600}})['config']
+    assert all(item['bitrate'] == 9_600 and item['_rate_evidenced'] is True for item in secondary['networks'])
+    missing = CommunicationConfigBuilder().build(routes, parameters={
+        'technology': 'ethernet', 'bitrate': 100_000_000})['config']
+    assert all(item['bitrate'] is None and item['_rate_evidenced'] is False for item in missing['networks'])
 
 
 def test_simulator_export_updates_interface_technology_with_route_network(monkeypatch):

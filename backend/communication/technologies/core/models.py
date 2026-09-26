@@ -193,6 +193,33 @@ class TechnologyProfile:
         mechanisms = definition.get("mechanisms") or {}
         if not isinstance(mechanisms, dict):
             raise ValueError("mechanisms must be an object")
+        required_parameters = definition.get("required_parameters", [])
+        if not isinstance(required_parameters, list) or any(
+            not isinstance(name, str) or not name.strip() or name != name.strip()
+            for name in required_parameters
+        ):
+            raise ValueError("required_parameters must be a list of non-empty parameter names")
+        schema = definition.get("parameter_schema", {})
+        if not isinstance(schema, dict) or any(not isinstance(spec, dict) for spec in schema.values()):
+            raise ValueError("parameter_schema must map parameter names to definitions")
+        if "stack_variants" in definition:
+            variants = definition["stack_variants"]
+            if not isinstance(variants, list) or not variants or any(
+                not isinstance(stack, list) or not stack or any(
+                    not isinstance(item, str) or not item.strip() or item != item.strip() for item in stack
+                ) or len(stack) != len(set(stack))
+                for stack in variants
+            ):
+                raise ValueError("stack_variants must contain explicit non-empty unique technology sequences")
+        # Only declare requirements already owned by this profile. Inherited
+        # requirements are resolved against the registered lower layers.
+        definition["required_parameters"] = sorted(set(required_parameters)
+            | set(rate_model.get("fields") or ())
+            | {name for name, spec in schema.items() if spec.get("required") is True})
+        # Enumeration cannot certify that all device, physical and transaction
+        # requirements have been specified or that their values are confirmed.
+        definition["required_parameter_scope"] = "DECLARED_PROFILE_FIELDS"
+        definition["required_parameter_completeness"] = "UNVERIFIED"
         return cls(identifier, layer, status, deepcopy(rate_model), deepcopy(mechanisms),
                    definition.get("physical_layer_profile_id"), definition.get("medium_access_model"),
                    definition.get("arbitration_model_id"), definition)

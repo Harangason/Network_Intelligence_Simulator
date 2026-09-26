@@ -47,7 +47,7 @@ def test_runtime_broadcast_does_not_occupy_the_wire_twice(tmp_path):
 def test_gateway_does_not_inherit_source_bus_schedule():
     config = {'duration_s': .25, 'seed': 42, 'max_events': 100, 'formats': [],
         'networks': [{'id': 'local', 'technology': 'lin', 'bitrate': 19200},
-                     {'id': 'backbone', 'technology': 'can_fd', 'bitrate': 500000}],
+                     {'id': 'backbone', 'technology': 'can_fd', 'bitrate': 500000, 'data_bitrate': 2000000}],
         'hardware': {'devices': [
             {'id': 'sensor', 'name': 'Sensor', 'type': 'sensor', 'interfaces': [{'id': 's', 'technology': 'lin', 'network': 'local'}]},
             {'id': 'gateway', 'name': 'Gateway', 'type': 'gateway', 'interfaces': [

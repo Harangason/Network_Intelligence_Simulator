@@ -141,13 +141,15 @@ def communication_findings(graph):
         profile = DeviceClassificationRegistry().resolve_profile(name=node.get('name', ''), device_type=node.get('device_type', 'ECU'), device_class=node.get('device_class'))
         outgoing = [m for m in messages.values() if owner(m) == node_id and m.get('direction') != 'rx']
         output = [s for s in signals.values() if any(str(s.get('message_id')) == str(m['id']) for m in outgoing)]
+        output.extend(s for s in signals.values()
+                      if str(((s.get('configuration') or {}).get('direct_signal_binding') or {}).get('source_hardware_node_ref')) == node_id)
         if profile.requires_function_model and not any(str(f.get('hardware_node_id')) == node_id for f in functions.values()):
             add('FUNCTION_MISSING', 'HardwareNode', node, f"{node['name']}: Klasse {profile.device_class} benötigt eine Funktion.")
         if profile.requires_status_model and not any((s.get('semantic') or {}).get('meaning') == 'Betriebszustand' or str(s.get('name', '')).lower().endswith(('status', 'state')) for s in output):
             add('DEVICE_STATUS_MISSING', 'HardwareNode', node, f"{node['name']}: Betriebsstatus fehlt.")
         if node.get('device_type') == 'SensorController' and not output:
             add('SENSOR_VALUE_MISSING', 'HardwareNode', node, f"{node['name']}: Messwert oder funktionsbezogenes Signal fehlt.")
-        if node.get('device_type') == 'ActuatorController' and not output:
+        if node.get('device_type') == 'ActuatorController' and profile.device_class >= 2 and not output:
             add('ACTUATOR_FEEDBACK_MISSING', 'HardwareNode', node, f"{node['name']}: Istwert bzw. Ausführungsrückmeldung fehlt.")
     for message_id, message in messages.items():
         provenance = (((message.get('configuration') or {}).get('transport_unit') or {}).get('provenance') or {})

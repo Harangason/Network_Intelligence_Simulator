@@ -38,7 +38,7 @@ def test_pack_signals_reuses_one_message_for_compatible_producer_timing_and_rece
             SignalCandidate("MotorRpm", 16, "MotorControl", "MotorECU", "CAN_FD", 10, ("Gateway",)),
             SignalCandidate("MotorTorque", 16, "MotorControl", "MotorECU", "CAN_FD", 10, ("Gateway",)),
             SignalCandidate("MotorCurrent", 16, "MotorControl", "MotorECU", "CAN_FD", 10, ("Gateway",)),
-        ],
+        ], parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
     )
 
     assert len(messages) == 1
@@ -55,7 +55,7 @@ def test_pack_signals_keeps_different_timing_classes_separate() -> None:
         [
             SignalCandidate("MotorRpm", 16, "MotorControl", "MotorECU", "CAN_FD", 10, ("Gateway",)),
             SignalCandidate("MotorTemperature", 16, "MotorControl", "MotorECU", "CAN_FD", 1000, ("Gateway",)),
-        ],
+        ], parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
     )
 
     assert len(messages) == 2
@@ -68,7 +68,7 @@ def test_pack_signals_keeps_different_receiver_sets_separate() -> None:
         [
             SignalCandidate("SignalA", 8, "BodyControl", "BodyECU", "CAN_FD", 20, ("ECU_1", "ECU_2")),
             SignalCandidate("SignalB", 8, "BodyControl", "BodyECU", "CAN_FD", 20, ("ECU_9",)),
-        ],
+        ], parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
     )
 
     assert len(messages) == 2
@@ -81,7 +81,7 @@ def test_pack_signals_splits_messages_without_splitting_atomic_signals() -> None
             SignalCandidate("BlobA", 392, "Perception", "CameraECU", "CAN_FD", 10, ("Gateway",)),
             SignalCandidate("BlobB", 120, "Perception", "CameraECU", "CAN_FD", 10, ("Gateway",)),
             SignalCandidate("BlobC", 8, "Perception", "CameraECU", "CAN_FD", 10, ("Gateway",)),
-        ],
+        ], parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
     )
 
     assert len(messages) == 2
@@ -99,7 +99,7 @@ def test_allocation_reuses_interface_until_configured_capacity_threshold() -> No
         SignalCandidate(f"Status{index}", 8, f"Producer{index}", "Gateway", "CAN_FD", 100, ("ECU",))
         for index in range(10)
     ]
-    messages = pack_signals(signals, target_load_percent=60.0)
+    messages = pack_signals(signals, target_load_percent=60.0, parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000})
 
     assert len(messages) == 10
     assert len({message.interface_ref for message in messages}) == 1
@@ -111,7 +111,7 @@ def test_allocation_uses_new_channel_when_projected_load_crosses_threshold() -> 
         SignalCandidate(f"Fast{index}", 64, f"Producer{index}", "Gateway", "CAN_FD", 1, ("ECU",))
         for index in range(200)
     ]
-    messages = pack_signals(signals, target_load_percent=60.0)
+    messages = pack_signals(signals, target_load_percent=60.0, parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000})
 
     assert len({message.interface_ref for message in messages}) > 1
     assert all(message.projected_interface_load_percent <= 60.0 for message in messages)
@@ -123,6 +123,7 @@ def test_hardware_interface_allocation_reuses_existing_capacity_first() -> None:
         for index in range(3)
     ]
     service = HardwareInterfaceAllocationService(
+        parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
         existing_interfaces=[
             HardwareInterfaceState("ECU_A_CAN_FD_1", "ECU_A", "CAN_FD", "CAN_FD_A", target_load_limit=60.0)
         ],
@@ -138,6 +139,7 @@ def test_hardware_interface_allocation_reuses_existing_capacity_first() -> None:
 def test_hardware_interface_allocation_blocks_when_capability_channel_limit_is_reached() -> None:
     message = PackedMessage("FastData", "MotorControl", "ECU_A", "CAN_FD", 1, ("Gateway",), "HIGH", payload_capacity_bits=512)
     service = HardwareInterfaceAllocationService(
+        parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
         target_load_percent=1.0,
         capabilities={
             "ECU_A": HardwareCapability(
@@ -164,6 +166,7 @@ def test_two_interfaces_on_same_network_do_not_double_network_capacity() -> None
         PackedMessage("B", "FunctionB", "ECU_A", "CAN_FD", 100, ("Gateway",), "NORMAL", payload_capacity_bits=64),
     ]
     service = HardwareInterfaceAllocationService(
+        parameters={'bitrate': 500_000, 'data_bitrate': 2_000_000},
         existing_interfaces=[
             HardwareInterfaceState("ECU_A_CAN_FD_1", "ECU_A", "CAN_FD", "CAN_FD_A", target_load_limit=60.0),
             HardwareInterfaceState("ECU_A_CAN_FD_2", "ECU_A", "CAN_FD", "CAN_FD_A", target_load_limit=60.0),
@@ -174,3 +177,12 @@ def test_two_interfaces_on_same_network_do_not_double_network_capacity() -> None
 
     assert {message.network_ref for message in messages} == {"CAN_FD_A"}
     assert len({message.interface_ref for message in messages}) == 1
+
+
+def test_missing_rate_cannot_allocate_a_channel_as_zero_load():
+    message = PackedMessage('UnknownRate', 'F', 'ECU', 'CAN_FD', 10, (), 'NORMAL', payload_capacity_bits=64)
+    decision = HardwareInterfaceAllocationService().allocate([message])[0]
+    assert decision.proposal_required and decision.finding == 'CAPACITY_UNVERIFIED'
+    assert decision.projected_network_load is None
+    assert message.interface_ref is None and message.network_ref is None
+    assert message.load_contribution_percent is None and message.capacity_status == 'UNVERIFIED'

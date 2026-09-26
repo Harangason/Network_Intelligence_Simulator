@@ -135,6 +135,25 @@ def test_direct_signal_route_has_no_fictitious_packet_capacity(protocol):
     assert load["network_load_percent"] == {}
 
 
+@pytest.mark.parametrize("protocol", ["I2C", "SPI", "PROFINET", "ETHERCAT", "RS485"])
+def test_unverified_technology_route_has_no_foreign_capacity(protocol):
+    route = route_payload(
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": protocol, "network_id": "bus"},
+        destinations=[{"node_id": TARGET, "interface_id": TARGET_INTERFACE, "protocol": protocol, "network_id": "bus"}],
+    )
+    result = FakeValidator(source_type=protocol, target_type=protocol).validate(route)
+    load = next(item for item in result["evidence"] if item["type"] == "LOAD")
+    assert result["metrics"]["route_load_percent"] is None
+    assert load["network_load_percent"] == {}
+
+
+def test_supported_can_fd_route_retains_capacity_estimate():
+    result = FakeValidator().validate(route_payload(source={
+        "node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "bitrate": 2_000_000,
+    }))
+    assert result["metrics"]["route_load_percent"] is not None
+
+
 @pytest.mark.parametrize('has_signals', [False, True])
 def test_generated_command_requires_canonical_signal_definition(has_signals):
     validator = FakeValidator(message_bindings={MESSAGE: {'configuration': {
@@ -722,7 +741,7 @@ def test_linked_agent_route_receives_physical_network_and_ports():
 def test_validation_counts_shared_network_destinations_as_one_physical_segment():
     validator = FakeValidator(signal_bits=16)
     shared = route_payload(
-        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a"},
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a", "bitrate": 2_000_000},
         destinations=[
             {"node_id": TARGET, "network_id": "net-a", "protocol": "CAN_FD"},
             {"node_id": "00000000-0000-0000-0000-000000000003", "network_id": "net-a", "protocol": "CAN_FD"},
@@ -730,10 +749,10 @@ def test_validation_counts_shared_network_destinations_as_one_physical_segment()
         routing_policy={"routing_type": "MULTICAST", "redundancy": "NONE", "conditions": []},
     )
     split = route_payload(
-        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a"},
+        source={"node_id": SOURCE, "interface_id": SOURCE_INTERFACE, "protocol": "CAN_FD", "network_id": "net-a", "bitrate": 2_000_000},
         destinations=[
-            {"node_id": TARGET, "network_id": "net-b", "protocol": "CAN_FD"},
-            {"node_id": "00000000-0000-0000-0000-000000000003", "network_id": "net-c", "protocol": "CAN_FD"},
+            {"node_id": TARGET, "network_id": "net-b", "protocol": "CAN_FD", "bitrate": 2_000_000},
+            {"node_id": "00000000-0000-0000-0000-000000000003", "network_id": "net-c", "protocol": "CAN_FD", "bitrate": 2_000_000},
         ],
         routing_policy={"routing_type": "MULTICAST", "redundancy": "NONE", "conditions": []},
     )

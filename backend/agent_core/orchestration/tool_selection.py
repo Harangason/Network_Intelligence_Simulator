@@ -81,4 +81,11 @@ def select_tools(prompt: str, tools: list[dict]) -> list[dict]:
         focused.update({'generate_fault_proposals', 'plan_fault_activation'})
         names.update(focused)
     selected = [tool for tool in tools if tool["name"] in names]
-    return sorted(selected, key=lambda tool: (tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture', 'inspect_model_situation', 'inspect_communication_feasibility', 'ask_engineering_question'} | focused, tool["name"] not in reasoning_names))[:24]
+    # Context bounding must not remove canonical identity lookup or the escape
+    # hatch used to discover capabilities that did not fit in this first batch.
+    essential = {'inspect_project', 'inspect_object', 'search_model',
+                 'discover_engineering_tools', 'ask_engineering_question'}
+    return sorted(selected, key=lambda tool: (not (spatial and tool['name'] == 'inspect_spatial_architecture'),
+        tool['name'] not in essential,
+        tool['name'] not in {'prepare_engineering_connection', 'continue_engineering_goal', 'inspect_engineering_goal', 'inspect_assistant_capabilities', 'prepare_assistant_action', 'inspect_communication_repair', 'inspect_spatial_architecture', 'inspect_model_situation', 'inspect_communication_feasibility'} | focused,
+        tool["name"] not in reasoning_names))[:24]

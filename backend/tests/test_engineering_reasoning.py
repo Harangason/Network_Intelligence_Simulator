@@ -181,12 +181,20 @@ def test_no_raw_events_or_private_reasoning_persisted():
     (["can_fd", "can_fd"], {"type": "GATEWAY_DROP", "scope": "NETWORK", "target": {"id": "node-1"}}),
     (["profinet"], {"type": "MESSAGE_DELAY", "scope": "MESSAGE", "target": {"id": "route-0"}, "delay_ms": 50}),
     (["dds_rtps"], {"type": "MESSAGE_LOSS", "scope": "MESSAGE", "target": {"id": "route-0"}}),
+    (["ethernet"], {"type": "MESSAGE_DELAY", "scope": "MESSAGE", "target": {"id": "route-0"}, "delay_ms": 50}),
+    (["ethernet"], {"type": "MESSAGE_LOSS", "scope": "MESSAGE", "target": {"id": "route-0"}}),
 ])
-def test_real_simulator_cross_technology_fault_reasoning(tmp_path, technologies, fault):
-    from backend.tests.test_acceptance_scenarios import case_config
+def test_real_simulator_fault_reasoning_or_explicit_model_gap(tmp_path, technologies, fault):
+    from backend.tests.test_acceptance_scenarios import case_config, assert_timing_model_unavailable
     from communication_simulator import run_simulation
     config = case_config(tmp_path, technologies)
     config["scenario"] = {"mode": "USER_DEFINED_FAULT", "faults": [{**fault, "start_s": .02, "end_s": .05}]}
+    if technologies[0] in {'profinet', 'dds_rtps'}:
+        assert_timing_model_unavailable(config, technologies)
+        with pytest.raises(ValueError, match='TIMING_UNVERIFIED'):
+            run_simulation(config)
+        assert not list(tmp_path.rglob('universal_trace.jsonl'))
+        return
     simulation = run_simulation(config)
     path = next(Path(p) for p in simulation["artifacts"] if str(p).endswith("universal_trace.jsonl"))
     events = [json.loads(line) for line in path.read_text().splitlines()]

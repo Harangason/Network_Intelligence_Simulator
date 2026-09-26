@@ -87,7 +87,8 @@ class EngineeringReasoningEngine:
             eid = event_id(event)
             metrics = {key: event[key] for key in ("route_id", "route_ref", "network", "sequence", "scheduled_time_s",
                 "queue_delay_ms", "queue_depth_estimate", "end_to_end_latency_ms", "transmission_latency_ms",
-                "configured_latency_ms", "configured_cycle_ms", "injected_jitter_ms", "gateway_delay_ms", "status", "faults", "gateway_ids", "message_ids") if key in event}
+                "configured_latency_ms", "configured_cycle_ms", "injected_jitter_ms", "gateway_delay_ms", "status", "faults", "gateway_ids", "message_ids",
+                "access_model", "base_transmission_time_s", "tx_start_s", "tx_end_s") if key in event}
             metrics["event_id"] = eid
             r = ref("TraceEvent", eid, timestamp, objects, metrics)
             if event.get("faults"):

@@ -47,7 +47,7 @@ export function E2ESequenceDiagram({ model, selectedId, onSelect }: {
           : "";
         return <button className={`e2e-sequence-row${selectedId === event.id ? " selected" : ""}`} key={event.id} type="button" onClick={() => onSelect?.(event)} aria-label={`${formatTime(event.timeS)} ${event.source} an ${event.destination}: ${event.status}`} style={{ "--participant-count": participants.length, "--lane-left": left + 2, "--lane-right": right + 3, "--source-lane": sourceIndex + 2, "--target-lane": destinationIndex + 2 } as CSSProperties}>
           <time>{formatTime(event.timeS)}</time>
-          {participants.map((participant, index) => <span aria-hidden="true" className="e2e-sequence-lifeline" key={`${event.id}:${participant}:${index}`} />)}
+          {participants.map((participant, index) => <span aria-hidden="true" className="e2e-sequence-lifeline" style={{ gridColumn: index + 2 }} key={`${event.id}:${participant}:${index}`} />)}
           <span aria-hidden="true" className={`e2e-sequence-activation source${isReverse ? " reverse" : ""}`} />
           {destinationIndex !== sourceIndex && <span aria-hidden="true" className="e2e-sequence-activation destination" />}
           <span className={`e2e-sequence-message${isReverse ? " reverse" : ""}${event.eventKind === "RECEIVER" ? " receiver" : ""}`}>

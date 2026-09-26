@@ -8,6 +8,7 @@ the frontend.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from enum import StrEnum
 from typing import Any
 
 from ..addressing import LogicalNodeAddress
@@ -128,16 +129,48 @@ class ProtocolBinding:
         return asdict(self)
 
 
+class ConnectionType(StrEnum):
+    DIRECT_IO = "DIRECT_IO"
+    COMMUNICATION_TECHNOLOGY = "COMMUNICATION_TECHNOLOGY"
+
+
+@dataclass(frozen=True)
+class DirectSignalBinding:
+    """A canonical Signal's physical conductor; stored in Signal.configuration."""
+
+    source_hardware_node_ref: str
+    destination_hardware_node_ref: str | None
+    physical_port_ref: str
+    signal_type: str
+    electrical_profile: dict[str, Any] = field(default_factory=dict)
+    update_rate_hz: float | None = None
+    timing_profile: dict[str, Any] = field(default_factory=dict)
+    validation_status: str = "REVIEW_REQUIRED"
+
+    def __post_init__(self) -> None:
+        for key in ("source_hardware_node_ref", "physical_port_ref", "signal_type"):
+            if not str(getattr(self, key) or "").strip():
+                raise ValueError(f"DirectSignalBinding.{key} is required")
+        if self.update_rate_hz is not None and self.update_rate_hz <= 0:
+            raise ValueError("DirectSignalBinding.update_rate_hz must be positive")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 @dataclass(frozen=True)
 class Signal(EngineeringObject):
     semantic_type: str = "UNKNOWN"
     value_domain: ValueDomain = field(default_factory=ValueDomain)
     encoding: Encoding = field(default_factory=Encoding)
     protocol_binding: ProtocolBinding | None = None
+    direct_signal_binding: DirectSignalBinding | None = None
 
     def __post_init__(self) -> None:
         super().__post_init__()
         object.__setattr__(self, "semantic_type", _clean_text(self.semantic_type, "semantic_type").upper())
+        if self.protocol_binding and self.direct_signal_binding:
+            raise ValueError("Signal cannot have both protocol and direct I/O bindings")
 
 
 @dataclass(frozen=True)

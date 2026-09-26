@@ -24,6 +24,7 @@ class ContextResolver:
             "selected_object_refs": selected,
             "active_workload": active_workload or {},
             "active_findings": getattr(context, "unresolved_findings", None) or [],
+            "unresolved_findings": getattr(context, "unresolved_findings", None) or [],
             "answered_questions": getattr(context, "answered_questions", None) or {},
             "current_workload_id": getattr(context, "current_workload", None),
             "current_requirement": state.get("goal_requirement") or state.get("current_requirement", ""),

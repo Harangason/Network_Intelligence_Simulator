@@ -27,12 +27,14 @@ def test_minimum_model_checks_class_two_status_and_class_three_function():
         'smart': {'id': 'smart', 'name': 'SmartSensor', 'device_type': 'SensorController', 'device_class': 2},
         'ecu': {'id': 'ecu', 'name': 'Engine', 'device_type': 'ECU', 'device_class': 3},
         'act': {'id': 'act', 'name': 'Actuator', 'device_type': 'ActuatorController', 'device_class': 1},
+        'smart_act': {'id': 'smart_act', 'name': 'SmartActuator', 'device_type': 'ActuatorController', 'device_class': 2},
     }, 'Function': {}, 'Interface': {}, 'Message': {}, 'Signal': {}}
     findings = {(f['object_id'], f['code']) for f in communication_findings(graph)}
     assert ('smart', 'DEVICE_STATUS_MISSING') in findings
     assert ('smart', 'FUNCTION_MISSING') not in findings
     assert ('ecu', 'FUNCTION_MISSING') in findings
-    assert ('act', 'ACTUATOR_FEEDBACK_MISSING') in findings
+    assert ('act', 'ACTUATOR_FEEDBACK_MISSING') not in findings
+    assert ('smart_act', 'ACTUATOR_FEEDBACK_MISSING') in findings
 
 
 def test_empty_command_is_reported_at_model_review():

@@ -26,6 +26,17 @@ def connectivity_question(prompt):
     return tuple(part.strip(' \"') for part in match.groups()) if match else None
 
 
+def communication_path_question(prompt):
+    """Explicit read-only path request; following timing clause is not an endpoint."""
+    match = re.fullmatch(
+        r'\s*(?:bitte\s+)?(?:zeige(?:\s+mir)?|erkläre(?:\s+mir)?|show(?:\s+me)?)\s+'
+        r'(?:den\s+)?(?:Weg|Kommunikationsweg|Pfad|(?:the\s+)?path)\s+'
+        r'(?:von|from)\s+(.+?)\s+(?:zu|nach|to)\s+(.+?)'
+        r'(?:\s+(?:und|and)\s+(?:wie\s+lange\s+(?:die\s+)?(?:Botschaft|Nachricht)\s+(?:benötigt|braucht)|'
+        r'(?:its\s+)?(?:latency|timing)))?\s*[.!?]?\s*', prompt, re.I)
+    return tuple(part.strip(' .!?"') for part in match.groups()) if match else None
+
+
 def communication_question(prompt):
     match = re.fullmatch(r'\s*(?:Prüfe die bestehende Architektur und stelle fest, ob|Kann)\s+([\w.-]+)\s+mit\s+([\w.-]+)\s+kommunizieren(?: kann)?[?.!]?\s*', prompt, re.I)
     return match.groups() if match else None
