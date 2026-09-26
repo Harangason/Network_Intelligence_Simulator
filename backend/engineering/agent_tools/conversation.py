@@ -78,6 +78,12 @@ def reconcile_runtime_model_apply(proposal):
     Wizard and legacy workload proposals carry no explicit goal evidence and
     continue through their own completion paths.
     """
+    acquisition_evidence = next((item for item in proposal.get('evidence') or []
+                                 if item.get('source') == 'explicit_periodic_acquisition'
+                                 and item.get('engineering_goal_id')), None)
+    if acquisition_evidence:
+        from .periodic_acquisition import reconcile_apply
+        return reconcile_apply(proposal, acquisition_evidence)
     recipient_evidence = next((item for item in proposal.get('evidence') or []
                                if item.get('source') == 'explicit_signal_recipient_repair'
                                and item.get('engineering_goal_id')), None)

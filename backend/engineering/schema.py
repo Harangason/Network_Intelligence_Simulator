@@ -58,6 +58,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
         description TEXT,
         domain TEXT,
         hardware_node_id UUID REFERENCES engineering_hardware_nodes(id) ON DELETE SET NULL,
+        configuration JSONB NOT NULL DEFAULT '{}'::jsonb,
         version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
         lifecycle_state TEXT NOT NULL DEFAULT 'draft'
             CHECK (lifecycle_state IN ('draft', 'active', 'deprecated', 'superseded')),
@@ -524,6 +525,7 @@ MIGRATION_STATEMENTS: tuple[str, ...] = (
     "CREATE INDEX IF NOT EXISTS idx_intelligence_issue_reviews_project ON engineering_intelligence_issue_reviews(project_id, issue_code, object_type, object_id)",
     "ALTER TABLE engineering_hardware_nodes ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_functions ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
+    "ALTER TABLE engineering_functions ADD COLUMN IF NOT EXISTS configuration JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE engineering_hardware_interfaces ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_interfaces ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",
     "ALTER TABLE engineering_messages ADD COLUMN IF NOT EXISTS project_id TEXT NOT NULL DEFAULT 'default'",

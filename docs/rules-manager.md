@@ -1737,7 +1737,7 @@ This task registration does not replace project contracts or confer new permissi
 - Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\combined-source.md
 - Source Hash: 60e1c16938d4cd90c6e1c9d415ca25139fb500a63e536cc7ab1a3ebc8a389143
 - Status: ACTIVE
-- Last Ingest: 2026-09-25T17:01:21.242844+00:00
+- Last Ingest: 2026-09-26T09:05:41.734021+00:00
 - Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-independent-run1-20260924-exec\manifest.json
 
 Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.

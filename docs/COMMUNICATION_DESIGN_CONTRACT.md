@@ -107,3 +107,28 @@ Optional `functional_requirements` contains `confirmed`,
 The current separated functional evaluator conservatively includes one release
 interval; multiple-bus functional proofs remain UNVERIFIED. It does not issue a
 safety certification.
+
+## Explicit bus request and response
+
+`ON_REQUEST` also supports `request_source: bus_message` for an explicitly
+modeled CAN-FD exchange on one physical network. The response identifies its
+canonical `request_message_ref`, a confirmed nonnegative
+`response_processing_ms`, and a positive `minimum_interval_ms`. Independent
+`request_times_ms` are forbidden for this mode. The complete traffic set must
+contain exactly one cyclic request with reversed unicast hardware endpoints.
+Missing requests, chained requests, multi-hop exchanges, other technologies,
+and a response minimum interval exceeding the request period are rejected.
+
+The executable scheduler releases a response only after successful physical
+delivery of its request. Dropped or corrupted requests produce no response.
+It samples the response payload at the response release time, applies its
+minimum interval, and preserves the request transaction and causal event ID.
+The ordinary bus scheduler still handles arbitration and serialization.
+
+Assessment includes both request and response traffic. `request_exchanges`
+reports the conservative request delivery, processing, rate-limit wait and
+response delivery bound separately from individual frame bounds. Functional
+acceptance additionally includes one request period and confirmed sampling
+and actuation delays. Missing functional evidence or a bound that permits
+overlapping exchanges prevents a verified exchange result. This remains a
+model-based bound under the reported assumptions, not a safety certification.

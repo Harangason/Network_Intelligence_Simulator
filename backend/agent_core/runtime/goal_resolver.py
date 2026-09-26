@@ -18,6 +18,41 @@ def recipient_repair_intent(text: str) -> bool:
         r'eindeutigen\s+fälle[.!]?', text.strip(), re.I))
 
 
+def contextual_repair_intent(text: str) -> bool:
+    return bool(re.fullmatch(r'(?:bitte\s+)?dann\s+wei(?:ß|ss)t\s+du\s+ja,?\s+was\s+du\s+'
+        r'zu\s+tun\s+hast,?\s+fehleranalyse\s+und\s+korrektur[.!]?', text.strip(), re.I))
+
+
+def recipient_repair_followup(prompt: str, context: dict) -> dict | None:
+    """Identify a saved candidate; the MCP service must revalidate it canonically."""
+    if not contextual_repair_intent(prompt) or context.get('wizard_request') or context.get('pending_decisions'):
+        return None
+    previous = context.get('active_workload') or {}
+    goal = previous.get('goal') or {}
+    scan = previous.get('recipient_repair') or {}
+    findings = scan.get('findings') or []
+    if (previous.get('status') != 'READY_FOR_REVIEW'
+            or not previous.get('workload_id') or goal.get('goal_id') != previous['workload_id']
+            or previous.get('project_id') != context.get('active_project_id')
+            or scan.get('project_id') != previous.get('project_id')
+            or goal.get('goal_type') != 'REPAIR'
+            or goal.get('required_outcomes') != RECIPIENT_REPAIR_OUTCOMES
+            or not recipient_repair_intent(goal.get('original_request', ''))
+            or len(findings) != 1 or not scan.get('proposal_id') or not scan.get('model_revision')):
+        return None
+    finding = findings[0]
+    if (finding.get('code') != 'SIGNAL_DECLARED_RECIPIENT_UNROUTED'
+            or finding.get('status') != 'REPAIRABLE' or finding.get('review_required') is not False
+            or not finding.get('signal_id') or not finding.get('message_id')
+            or scan.get('repairable_signal_ids') != [finding['signal_id']]
+            or scan.get('review_required_signal_ids') != []):
+        return None
+    return {'request': prompt, 'source_workload_id': previous['workload_id'],
+            'original_request': goal['original_request'], 'project_id': previous['project_id'],
+            'finding': dict(finding), 'proposal_id': scan['proposal_id'],
+            'model_revision': scan['model_revision']}
+
+
 class GoalType(StrEnum):
     CREATE_PROJECT = "CREATE_PROJECT"
     CREATE_HARDWARE = "CREATE_HARDWARE"
@@ -190,6 +225,7 @@ class GoalResolver:
         previous = active_workload or {}
         from .hardware_intent import hardware_channel_intent
         from .gateway_intent import gateway_outage_intent, OUTCOMES as GATEWAY_OUTCOMES
+        from .recovery import recovery_request
         channel_intent = hardware_channel_intent(source)
         asked = _ACTION.search(source) is not None or channel_intent is not None
         question = bool(re.match(r"\s*(?:wie|was|welche|warum|wieso|ist|sind|zeige|erkläre|erklaere|kann|how|what|which|why|show|explain|is|are)\b", text))
@@ -212,6 +248,8 @@ class GoalResolver:
             pass
         elif channel_intent:
             kind = GoalType.EXTEND_HARDWARE
+        elif recovery_request(source):
+            kind = GoalType.REPAIR
         elif communication_path_question(source):
             kind = GoalType.EXPLAIN
         elif configuration_command:
@@ -268,7 +306,11 @@ class GoalResolver:
         follow_up = bool(re.search(r"\b(?:das|dies|dasselbe|auch für|auch fuer|weitere|restlichen|noch einmal|same|that|those|other)\b", text))
         previous_goal = previous.get("goal") if isinstance(previous.get("goal"), dict) else {}
         follow_up_of = previous.get("workload_id") if follow_up and previous_goal else None
-        goal_id = str(previous_goal.get("goal_id")) if previous_goal and previous_goal.get("original_request") == source else str(uuid4())
+        goal_id = (str(previous_goal.get("goal_id"))
+                   if previous_goal and previous_goal.get("original_request") == source
+                   and not (follow_up and previous.get('status') == 'COMPLETED'
+                            and previous_goal.get('goal_type') == GoalType.PERIODIC_ACQUISITION.value)
+                   else str(uuid4()))
         if follow_up and previous_goal and kind in {GoalType.EXPLAIN, GoalType.GENERAL_ENGINEERING}:
             try:
                 kind = GoalType(previous_goal.get("goal_type"))

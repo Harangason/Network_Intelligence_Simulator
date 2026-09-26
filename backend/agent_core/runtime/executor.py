@@ -32,8 +32,11 @@ class EngineeringExecutor:
         return await handler(goal, context, emit=emit, available_tools=available_tools)
 
     async def _recipient_repair(self, goal, context, *, emit, available_tools):
-        from .goal_resolver import recipient_repair_intent
-        if not recipient_repair_intent(goal.original_request):
+        from .goal_resolver import recipient_repair_intent, contextual_repair_intent
+        from .recovery import recovery_request
+        unresolved_recovery = recovery_request(goal.original_request)
+        unresolved_followup = contextual_repair_intent(goal.original_request) or unresolved_recovery
+        if not recipient_repair_intent(goal.original_request) and not unresolved_followup:
             return None
         required = {'inspect_signal_recipients', 'prepare_signal_recipient_repair', 'validate_proposal'}
         events, trace, proposals = [], [], []
@@ -56,6 +59,7 @@ class EngineeringExecutor:
                 text=text, proposal=proposal, findings=details.get('findings') or [], metadata={
                     'run_id': run_id, 'input_ref': getattr(getattr(context, 'input_envelope', None), 'input_id', ''),
                     'details': details, 'tool_trace_id': trace[-1]['trace_id'] if trace else None,
+                    **({'failure': details['failure']} if details.get('failure') else {}),
                 }).model_dump(mode='json', exclude_none=True)
             events.append(event); emit(event)
             return {'run_id': run_id, 'status': status, 'events': events, 'trace': trace,
@@ -66,32 +70,51 @@ class EngineeringExecutor:
             trace.append({'tool': name, 'trace_id': response.trace_id, 'status': response.status.value})
             return response
 
+        if unresolved_followup:
+            return finish('WAITING_FOR_ENGINEERING_DECISION',
+                'Für diesen Folgeauftrag fehlt ein gespeicherter, sicher wiederaufnehmbarer Reparaturauftrag im aktuellen Projekt.'
+                if unresolved_recovery else
+                'Der Folgeauftrag benötigt genau einen aktuellen, eindeutig belegten Reparaturbefund im selben Projekt. '
+                'Der gespeicherte Kontext reicht dafür nicht aus; bitte den zu korrigierenden Befund auswählen.')
         if not required <= available_tools:
             details['missing_tools'] = sorted(required - available_tools)
             return finish('NOT_SUPPORTED_WITH_CAPABILITY_GAP', 'Die vollständige Empfängerprüfung ist nicht verfügbar.')
         inspected = await call('inspect_signal_recipients', {'workload_id': goal.goal_id})
         if not inspected.success:
             details['findings'] = inspected.findings
-            return finish('BLOCKED', 'Der Signalbestand konnte nicht vollständig im aktuellen Projekt geprüft werden.')
+            reason = next((str(f.get('message')) for f in inspected.findings if f.get('message')), '')
+            return finish('BLOCKED', 'Der Signalbestand konnte nicht vollständig im aktuellen Projekt geprüft werden. ' + reason)
         details.update(inspected.data)
-        prepared = await call('prepare_signal_recipient_repair', {'workload_id': goal.goal_id,
-            'expected_model_revision': inspected.data['model_revision']})
-        if not prepared.success:
-            return finish('BLOCKED', 'Der geprüfte Empfängerstand ist nicht mehr aktuell oder die Reparatur konnte nicht vorbereitet werden.')
-        details.update(prepared.data)
-        proposal = details.pop('proposal', None)
+        proposal = details.pop('resume_proposal', None)
+        if proposal is None:
+            prepared = await call('prepare_signal_recipient_repair', {'workload_id': goal.goal_id,
+                'expected_model_revision': inspected.data['model_revision']})
+            if not prepared.success:
+                details['findings'] = prepared.findings
+                if prepared.status.value == 'CONFLICT':
+                    details['failure'] = {'code': 'ENGINEERING_RECIPIENT_PRECONDITION_FAILED',
+                        'category': 'PRECONDITION', 'retryable': False,
+                        'message': 'Der Empfängerstand hat sich seit der Prüfung geändert. Vor Fortsetzung ist eine aktuelle Prüfung erforderlich.'}
+                return finish('BLOCKED', 'Der geprüfte Empfängerstand ist nicht mehr aktuell oder die Reparatur konnte nicht vorbereitet werden.')
+            details.update(prepared.data)
+            proposal = details.pop('proposal', None)
         count = len(details['scanned_signal_ids'])
         pending = len(details['review_required_signal_ids'])
         if not proposal:
             details['completion'] = {'complete': True}
             return finish('COMPLETED', f'{count} Signale geprüft. Keine eindeutige fehlende Route zur Übernahme. '
                 f'{pending} Signal(e) bleiben zur Empfängerklärung offen. Es wurden keine Empfänger erfunden.')
-        checked = await call('validate_proposal', {'proposal_id': proposal['proposal_id']})
-        proposal = checked.data or proposal
-        if not checked.success or proposal.get('status') != 'VALIDATED':
-            return finish('BLOCKED', 'Die eindeutigen Empfängerrouten konnten nicht als gültiger Vorschlag bestätigt werden.')
+        reused = details.get('recovery_evidence', {}).get('completed_steps_reused', [])
+        if 'validate_proposal' not in reused:
+            checked = await call('validate_proposal', {'proposal_id': proposal['proposal_id']})
+            proposal = checked.data or proposal
+            if not checked.success or proposal.get('status') != 'VALIDATED':
+                return finish('BLOCKED', 'Die eindeutigen Empfängerrouten konnten nicht als gültiger Vorschlag bestätigt werden.')
         proposals.append(proposal)
         details['proposal_id'] = proposal['proposal_id']
+        recovery_evidence = details.get('recovery_evidence')
+        if recovery_evidence and recovery_evidence.get('failure_category') == 'PRECONDITION':
+            recovery_evidence['precondition_repaired'] = True
         return finish('READY_FOR_REVIEW', f'{count} Signale geprüft. Für '
             f"{len(details['repairable_signal_ids'])} Signal(e) sind Empfänger ausdrücklich gespeichert und die fehlenden Routen eindeutig. "
             f'Diese Routen sind zur Übernahme vorbereitet. {pending} Signal(e) bleiben zur Empfängerklärung offen.', proposal)
@@ -310,6 +333,40 @@ class EngineeringExecutor:
         intervals still use the general agent until a transport-independent
         acquisition planner exists.
         """
+        if 'prepare_periodic_acquisition' in available_tools:
+            planned = await self.client.call('prepare_periodic_acquisition', {'workload_id': goal.goal_id})
+            if not planned.success or (planned.data or {}).get('supported'):
+                run_id = getattr(getattr(context, 'input_envelope', None), 'run_ref', '')
+                events = []
+                trace = [{'tool': 'prepare_periodic_acquisition', 'trace_id': planned.trace_id, 'status': planned.status.value}]
+                data = planned.data or {}; proposal = data.get('proposal')
+                findings = data.get('findings') or planned.findings or []
+                if planned.success and proposal:
+                    validated = await self.client.call('validate_proposal', {'proposal_id': proposal['proposal_id']})
+                    trace.append({'tool': 'validate_proposal', 'trace_id': validated.trace_id, 'status': validated.status.value})
+                    proposal = validated.data or proposal
+                    ready = validated.success and proposal.get('status') == 'VALIDATED'
+                    if not ready:
+                        findings = (proposal.get('validation_result') or {}).get('findings') or validated.findings
+                else:
+                    ready = False
+                prepared = ('Die bestehende Abfrage wird für die weiteren Aktoren erweitert. Die zusätzlichen Anfrage-/Antwortwege sind zur Prüfung vorbereitet.'
+                            if goal.follow_up_of else
+                            'Die neue ECU, die periodische Abfrage und ihre bestätigten Anfrage-/Antwortwege sind zur Prüfung vorbereitet.')
+                text = (prepared
+                        if ready else 'Die vollständige Abfrage kann mit den aktuellen Modelldaten noch nicht vorbereitet werden. '
+                        + ' '.join(str(f.get('message') or '') for f in findings))
+                if ready and findings:
+                    text += ' Für weitere Stellglieder bleiben Datenlücken offen: ' + ' '.join(str(f.get('message') or '') for f in findings)
+                item = AgentResponse(type='APPROVAL' if ready else 'RESULT',
+                    status='READY_FOR_REVIEW' if ready else 'BLOCKED', text=text,
+                    proposal=proposal if ready else None, findings=findings,
+                    metadata={'run_id': run_id, 'tool_trace_id': planned.trace_id,
+                              'acquisition_scope': 'CAN_FD_REQUEST_RESPONSE', 'completion_status': 'INCOMPLETE'}).model_dump(mode='json', exclude_none=True)
+                events.append(item); emit(item)
+                return {'run_id': run_id, 'status': 'READY_FOR_REVIEW' if ready else 'BLOCKED',
+                        'events': events, 'context': context.model_dump(mode='json'), 'trace': trace,
+                        'proposals': [proposal] if proposal else []}
         if not {'generate_functions', 'validate_proposal'} <= available_tools:
             return None
         periods = [item.get('seconds') for item in goal.timing_constraints if item.get('kind') == 'PERIOD']

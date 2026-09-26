@@ -148,6 +148,17 @@ def create(proposal_type: str, changes: list[dict], rationale: str, *, assumptio
 def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
     findings, known, names, definitions = [], {}, set(), {}
     message_signals = {}
+    route_preview = None
+    preview_refs = {}
+    if proposal_type == 'PERIODIC_ACQUISITION':
+        from .periodic_acquisition import validate_preview
+        try:
+            snapshot, preview_refs = validate_preview(changes)
+            route_preview = RoutingValidator(current_project_id(), model_snapshot=snapshot)
+        except (ValueError, KeyError, LookupError) as error:
+            return {'valid': False, 'requested': len(changes), 'valid_count': 0,
+                    'validation_scope': 'MODEL_STRUCTURE', 'findings': [
+                        {'severity': 'ERROR', 'index': 0, 'code': 'ACQUISITION_MODEL_INVALID', 'message': str(error)}]}
     for index, change in enumerate(changes):
         try:
             kind, action = change["object_type"], change["action"]
@@ -188,7 +199,8 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
                     elif not change.get("impact_analysis"):
                         raise ValueError("Löschen benötigt eine dokumentierte Auswirkungsanalyse.")
             elif kind == "RoutingEntry" and action == "CREATE":
-                result = RoutingValidator().validate(data)
+                result = (route_preview.validate(_resolve(data, preview_refs), exclude_route_id=preview_refs[ref])
+                          if route_preview is not None else RoutingValidator().validate(data))
                 if not result.get("valid", result.get("is_valid", False)):
                     issues = result.get('errors') or result.get('findings') or [
                         {'code': 'ROUTING_INVALID', 'message': 'Der Routingvorschlag ist nicht gültig.'}]
@@ -200,6 +212,10 @@ def _validate_changes(changes: list[dict], *, proposal_type: str = '') -> dict:
                             'object_name': str(data.get('name') or ''),
                             'source': data.get('source') or {}, 'destinations': data.get('destinations') or []})
                     continue
+            elif proposal_type == 'PERIODIC_ACQUISITION' and kind in {
+                    'CommunicationCapability', 'CommunicationController', 'PhysicalPort', 'NetworkConnection'} and action == 'CREATE':
+                from ..goal_execution.store import RESOURCE_MODELS
+                RESOURCE_MODELS[kind].model_validate(data)
             elif kind == "NetworkTopology" and action == "CREATE":
                 topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
                 result = WorkflowStatusService._topology_artifact_check(topology)
@@ -463,6 +479,10 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             item = accept_proposal_routes(str(route_proposal["proposal_id"]),[0],actor=contract["approved_by"])[0]
             save_validation(str(item["id"]),RoutingValidator().validate(item,exclude_route_id=str(item["id"])),actor=actor)
             item = approve_routes([str(item["id"])],actor=contract["approved_by"])[0]
+        elif row['proposal_type'] == 'PERIODIC_ACQUISITION' and kind in {
+                'CommunicationCapability', 'CommunicationController', 'PhysicalPort', 'NetworkConnection'}:
+            from ..goal_execution.store import save_resource
+            item = save_resource(kind, data)
         elif kind == "NetworkTopology":
             topology = data.get("topology") if isinstance(data.get("topology"), dict) else {}
             flush_model_changes(actor=actor, reason='Freigegebene Hardwarekanäle für die physische Topologie übernommen.')
@@ -503,7 +523,7 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             item = {**data, "id": str(uuid4()), "proposal_id": proposal_id, "approved_by": contract["approved_by"]}
             parameters.setdefault("engineering_models", {}).setdefault(kind, []).append(item)
             workflow.save_parameters(parameters, actor=actor)
-        identifier = str(item.get("id") or item.get("scenario_id"))
+        identifier = str(item.get("id") or item.get("connection_id") or item.get("scenario_id"))
         refs[change["local_ref"]] = identifier
         canonical.append({"object_type": kind, "id": identifier})
     contract.update(status="APPLIED", canonical_ids=canonical, revision=str(uuid4()))
@@ -518,7 +538,7 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     result = _write(proposal_id, contract, legacy_status="APPROVED")
     # Direct assistant goals live in the conversation, not the legacy workload
     # table. Their canonical completion is reconciled by the apply endpoint.
-    if contract.get("workload_id") and row['proposal_type'] not in {'HARDWARE_CHANNEL', 'SIGNAL_RECIPIENT_REPAIR'}:
+    if contract.get("workload_id") and row['proposal_type'] not in {'HARDWARE_CHANNEL', 'SIGNAL_RECIPIENT_REPAIR', 'PERIODIC_ACQUISITION'}:
         from ..workloads import EngineeringWorkloadOrchestrator
         EngineeringWorkloadOrchestrator(current_project_id()).evaluate_workload_completion(contract["workload_id"], actor=actor)
     record(trace_id, actor, "APPLY", "apply_approved_proposal", "APPLIED", {"proposal_id": proposal_id, "canonical_ids": canonical})

@@ -22,7 +22,7 @@ CAPABILITIES: dict[GoalType, Capability] = {
     GoalType.CREATE_SIGNAL: Capability("signal.create", ("generate_signals", "validate_signal", "create_objects_via_proposal"), "Signal anlegen und explizite Kodierung validieren"),
     GoalType.CREATE_NETWORK: Capability("network.create", ("create_network_proposal", "resolve_generation_rules", "validate_simulation_preflight"), "Technologiegebundenes Netz planen und validieren"),
     GoalType.CONNECT_OBJECTS: Capability("communication.connect", ("prepare_engineering_connection", "inspect_communication_feasibility", "generate_routing"), "Bestehende Kommunikationspfade nutzen oder Entscheidungsplan erstellen"),
-    GoalType.PERIODIC_ACQUISITION: Capability("acquisition.periodic", ("inspect_model_situation", "generate_functions", "generate_messages", "generate_signals", "generate_routing", "calculate_capacity", "validate_simulation_preflight"), "Periodische Erfassung anhand vorhandener Daten und Kommunikation planen"),
+    GoalType.PERIODIC_ACQUISITION: Capability("acquisition.periodic", ("inspect_model_situation", "prepare_periodic_acquisition", "generate_functions", "generate_messages", "generate_signals", "generate_routing", "calculate_capacity", "validate_simulation_preflight"), "Periodische Erfassung anhand vorhandener Daten und Kommunikation planen"),
     GoalType.CHANGE_CONFIGURATION: Capability("configuration.change", ("plan_lin_bitrate", "update_object_via_proposal", "calculate_capacity", "validate_simulation_preflight"), "Konfiguration vorschlagen und abhängige Berechnungen ausführen"),
     GoalType.VALIDATE_MODEL: Capability("model.validate", ("inspect_findings", "validate_simulation_preflight", "inspect_model_situation"), "Modell und Preflight prüfen"),
     GoalType.CALCULATE_CAPACITY: Capability("capacity.calculate", ("calculate_capacity", "inspect_network", "calculate_bus_load"), "Kapazität mit aktueller Netzwerktechnik berechnen"),
@@ -64,7 +64,7 @@ class CapabilityRegistry:
         if goal_type in mutation_adapters:
             executable = bool(mutation_adapters[goal_type] & names)
         elif goal_type == GoalType.PERIODIC_ACQUISITION:
-            executable = {'generate_functions', 'validate_proposal'} <= names
+            executable = 'validate_proposal' in names and bool({'generate_functions', 'prepare_periodic_acquisition'} & names)
         elif goal_type == GoalType.RUN_SIMULATION:
             executable = {'validate_simulation_preflight', 'create_simulation_snapshot',
                           'start_simulation', 'get_simulation_status'} <= names

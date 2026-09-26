@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { reconcileQuestionSelection } from '@/lib/agent/question-selection';
 import type { EngineeringAgentEvent, EngineeringProposal } from "@/lib/agent/engineering-agent";
 import { publishEngineeringModelChanged } from "@/lib/engineering-events";
+import { notifyWorkflowChanged } from "./workflow-header";
 import { WorkloadProgress } from "./workload-progress";
 import { GoalHardwareFacts } from './goal-hardware-facts';
 import { useGoalResponse } from '@/lib/agent/use-goal-response';
@@ -79,6 +80,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
         setProposal(persisted);
         setEditing(false);
         if (persisted.status === "APPLIED") {
+          notifyWorkflowChanged();
           window.dispatchEvent(new Event("engineering:write-completed"));
           publishEngineeringModelChanged({ resource: "hardware-nodes", id: persisted.proposal_id, name: "Engineering-Vorschlag" });
         }
@@ -95,6 +97,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       setProposal(current => ({ ...current, ...result.data }));
       setEditing(false);
       if (result.data.status === "APPLIED") {
+        notifyWorkflowChanged();
         window.dispatchEvent(new Event("engineering:write-completed"));
         publishEngineeringModelChanged({ resource: "hardware-nodes", id: proposal.proposal_id, name: "Engineering-Vorschlag" });
       }

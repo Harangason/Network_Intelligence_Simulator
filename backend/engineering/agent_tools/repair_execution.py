@@ -152,15 +152,89 @@ def _recipient_scan():
 
 
 def inspect_recipients(arguments):
-    _recipient_workload(arguments['workload_id'])
+    _, workload = _recipient_workload(arguments['workload_id'])
     scan = _recipient_scan()
-    return {key: value for key, value in scan.items() if key != 'changes'}
+    _check_recipient_followup(workload, scan)
+    result = {key: value for key, value in scan.items() if key != 'changes'}
+    recovered = _recipient_recovery(workload, scan)
+    if recovered is not None:
+        result.update(resume_proposal=recovered[0], recovery_evidence=recovered[1])
+    return result
+
+
+def _recipient_recovery(workload, scan):
+    from . import proposal_service
+    from ..models import EngineeringValidationError
+    from backend.agent_core.runtime.recovery import MAX_EXPLICIT_RESUMES
+    recovery = (workload.get('result') or {}).get('recovery')
+    if not recovery:
+        return None
+    count = recovery.get('attempt_count')
+    if (recovery.get('blocked') or type(count) is not int or not 1 <= count <= MAX_EXPLICIT_RESUMES
+            or recovery.get('max_attempts') != MAX_EXPLICIT_RESUMES):
+        raise EngineeringValidationError('Die begrenzten Wiederholungen sind ausgeschöpft. Der gespeicherte Auftrag bleibt unverändert; die Ursache muss vor einem neuen Auftrag geklärt werden.')
+    if (recovery.get('source_workload_id') != workload['workload_id']
+            or recovery.get('project_id') != current_project_id()
+            or recovery.get('original_request') != workload['goal']['original_request']):
+        raise EngineeringValidationError('Die Wiederaufnahme gehört nicht zum aktuellen Reparaturauftrag.')
+    saved = workload.get('recipient_repair') or {}
+    proposal = None
+    reused = []
+    if saved.get('proposal_id'):
+        if (recovery.get('proposal_id') != saved['proposal_id']
+                or recovery.get('model_revision') != saved.get('model_revision')
+                or scan['model_revision'] != saved.get('model_revision')):
+            raise ConcurrentUpdateError('Der vorbereitete Reparaturumfang hat sich geändert. Eine Wiederaufnahme darf ihn nicht stillschweigend erweitern.')
+        proposal = proposal_service.get(saved['proposal_id'])
+        if (proposal.get('workload_id') != workload['workload_id']
+                or proposal.get('proposal_type') != 'SIGNAL_RECIPIENT_REPAIR'
+                or proposal.get('status') not in {'PROPOSED', 'VALIDATED'}
+                or proposal.get('changes') != scan['changes']):
+            raise ConcurrentUpdateError('Der gespeicherte Reparaturvorschlag ist nicht mehr aktuell.')
+        reused.append('prepare_signal_recipient_repair')
+        if proposal['status'] == 'VALIDATED':
+            if proposal.get('validation_result', {}).get('valid') is not True:
+                raise EngineeringValidationError('Der gespeicherte Validierungsnachweis ist unvollständig.')
+            reused.append('validate_proposal')
+    elif recovery.get('proposal_id'):
+        raise EngineeringValidationError('Der behauptete Reparaturvorschlag fehlt im gespeicherten Auftrag.')
+    return proposal, {'preconditions_rechecked': True, 'checked_model_revision': scan['model_revision'],
+        'completed_steps_reused': reused, 'failure_category': recovery['previous_failure']['category'],
+        'precondition_repaired': False}
+
+
+def _check_recipient_followup(workload, scan):
+    """A contextual correction cannot expand beyond its saved, reviewed finding."""
+    from . import proposal_service, conversation
+    followup = (workload.get('result') or {}).get('contextual_repair')
+    if not followup:
+        return
+    old = workload.get('recipient_repair') or {}
+    finding = followup.get('finding') or {}
+    if (followup.get('proposal_id') not in (conversation.read().get('pending_approvals') or [])
+            or followup.get('source_workload_id') != workload['workload_id']
+            or followup.get('project_id') != current_project_id()
+            or followup.get('model_revision') != scan['model_revision']
+            or followup.get('model_revision') != old.get('model_revision')
+            or scan.get('findings') != [finding]
+            or scan.get('repairable_signal_ids') != [finding.get('signal_id')]
+            or scan.get('review_required_signal_ids') != []
+            or not followup.get('proposal_id') or followup['proposal_id'] != old.get('proposal_id')):
+        raise ConcurrentUpdateError('Der gespeicherte Reparaturbefund ist nicht mehr eindeutig und aktuell. Erneute Prüfung erforderlich.')
+    proposal = proposal_service.get(followup['proposal_id'])
+    if (proposal.get('workload_id') != workload['workload_id']
+            or proposal.get('proposal_type') != 'SIGNAL_RECIPIENT_REPAIR'
+            or proposal.get('status') != 'VALIDATED'
+            or proposal.get('changes') != scan['changes']):
+        raise ConcurrentUpdateError('Der gespeicherte Vorschlag entspricht nicht mehr dem aktuellen Reparaturbefund.')
 
 
 def prepare_recipients(arguments):
     from . import conversation, proposal_service
     state, workload = _recipient_workload(arguments['workload_id'])
     scan = _recipient_scan()
+    _check_recipient_followup(workload, scan)
+    _recipient_recovery(workload, scan)
     if scan['model_revision'] != arguments['expected_model_revision']:
         raise ConcurrentUpdateError('Der Signal- oder Empfängerbestand hat sich seit der Prüfung geändert.')
     changes = scan.pop('changes')

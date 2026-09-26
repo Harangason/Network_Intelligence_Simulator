@@ -142,8 +142,8 @@ ENTITY_SPECS: dict[str, EntitySpec] = {
     "Function": EntitySpec(
         table="engineering_functions",
         object_type="Function",
-        own_columns=("hardware_node_id",),
-        json_columns=frozenset(),
+        own_columns=("hardware_node_id", "configuration"),
+        json_columns=frozenset({"configuration"}),
         required=("hardware_node_id",),
     ),
     "HardwareNetworkInterface": EntitySpec(

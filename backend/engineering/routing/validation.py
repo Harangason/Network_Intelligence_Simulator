@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from copy import deepcopy
 from math import ceil
 from typing import Any
 from uuid import UUID
@@ -117,10 +118,40 @@ def is_gateway_fanout_interface(interface: dict[str, Any]) -> bool:
 class RoutingValidator:
     """Validates references, path semantics, timing, payload and estimated load."""
 
-    def __init__(self, project_id: str | None = None, *, physical_planner=None):
+    def __init__(self, project_id: str | None = None, *, physical_planner=None, model_snapshot=None):
         self.project_id = project_id or current_project_id()
         # A caller validating one atomic batch can reuse its post-mutation snapshot.
         self.physical_planner = physical_planner
+        self.model_snapshot = None
+        if model_snapshot is not None:
+            from ..communication_repair import RepairPlanner
+            tables = {'HardwareNode': 'engineering_hardware_nodes',
+                      'HardwareNetworkInterface': 'engineering_hardware_interfaces',
+                      'Function': 'engineering_functions', 'Interface': 'engineering_interfaces',
+                      'Message': 'engineering_messages', 'Signal': 'engineering_signals'}
+            required = {*tables.values(), 'engineering_routing_entries'}
+            if (not isinstance(model_snapshot, dict) or model_snapshot.get('project_id') != self.project_id
+                    or physical_planner is not None
+                    or not isinstance(model_snapshot.get('tables'), dict)
+                    or not required <= model_snapshot['tables'].keys()
+                    or not isinstance(model_snapshot.get('topology'), dict)
+                    or not isinstance(model_snapshot.get('parameters'), dict)):
+                raise ValueError('Routing preview requires a complete snapshot of the selected project.')
+            for name in required:
+                rows = model_snapshot['tables'][name]
+                if (not isinstance(rows, list) or any(not isinstance(row, dict) or not row.get('id')
+                        or row.get('project_id', self.project_id) != self.project_id for row in rows)
+                        or len({str(row['id']) for row in rows}) != len(rows)):
+                    raise ValueError('Routing preview contains invalid or foreign model rows: ' + name)
+            self.model_snapshot = deepcopy(model_snapshot)
+            self.physical_planner = RepairPlanner(
+                {key: self.model_snapshot[key] for key in ('topology', 'parameters')},
+                {kind: self.model_snapshot['tables'][name] for kind, name in tables.items()},
+                self.model_snapshot['tables']['engineering_routing_entries'])
+
+    def _snapshot_rows(self, table):
+        snapshot = getattr(self, 'model_snapshot', None)
+        return snapshot['tables'][table] if snapshot is not None else None
 
     def _physical_path_mapping(
         self,
@@ -130,44 +161,50 @@ class RoutingValidator:
         project_id = getattr(self, "project_id", None)
         if not project_id or not source_node_id or not destination_node_ids:
             return None, []
-        with get_connection() as connection:
-            hardware_interfaces = connection.execute(
-                "SELECT hardware_node_id, network_ref FROM engineering_hardware_interfaces "
-                "WHERE project_id = %s "
-                "AND network_ref IS NOT NULL AND network_ref <> ''",
-                (project_id,),
-            ).fetchall()
-            networks_by_node: dict[str, set[str]] = {}
-            for item in hardware_interfaces:
-                networks_by_node.setdefault(str(item["hardware_node_id"]), set()).add(str(item["network_ref"]))
-            source_networks = networks_by_node.get(source_node_id, set())
-            hardware_unmapped = [
-                destination_id
-                for destination_id in destination_node_ids
-                if not source_networks.intersection(networks_by_node.get(destination_id, set()))
-            ]
-            if source_networks and not hardware_unmapped:
-                return True, []
-            gateways = connection.execute(
-                "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s AND device_type = 'Gateway'",
-                (project_id,),
-            ).fetchall()
-            reachable_networks = set(source_networks)
-            while True:
-                before = len(reachable_networks)
-                for gateway in gateways:
-                    gateway_networks = networks_by_node.get(str(gateway['id']), set())
-                    if reachable_networks.intersection(gateway_networks):
-                        reachable_networks.update(gateway_networks)
-                if len(reachable_networks) == before:
-                    break
-            if reachable_networks and all(reachable_networks.intersection(networks_by_node.get(destination, set())) for destination in destination_node_ids):
-                return True, []
-            row = connection.execute(
-                "SELECT topology FROM engineering_workflow_projects WHERE project_id = %s",
-                (project_id,),
-            ).fetchone()
-        topology = row.get("topology") if row else None
+        hardware_interfaces = self._snapshot_rows('engineering_hardware_interfaces')
+        if hardware_interfaces is None:
+            with get_connection() as connection:
+                hardware_interfaces = connection.execute(
+                    "SELECT hardware_node_id, network_ref FROM engineering_hardware_interfaces "
+                    "WHERE project_id = %s AND network_ref IS NOT NULL AND network_ref <> ''",
+                    (project_id,),
+                ).fetchall()
+        networks_by_node: dict[str, set[str]] = {}
+        for item in hardware_interfaces:
+            if item.get('network_ref'):
+                networks_by_node.setdefault(str(item['hardware_node_id']), set()).add(str(item['network_ref']))
+        source_networks = networks_by_node.get(source_node_id, set())
+        hardware_unmapped = [destination_id for destination_id in destination_node_ids
+            if not source_networks.intersection(networks_by_node.get(destination_id, set()))]
+        if source_networks and not hardware_unmapped:
+            return True, []
+        gateways = self._snapshot_rows('engineering_hardware_nodes')
+        if gateways is None:
+            with get_connection() as connection:
+                gateways = connection.execute(
+                    "SELECT id FROM engineering_hardware_nodes WHERE project_id = %s AND device_type = 'Gateway'",
+                    (project_id,),
+                ).fetchall()
+        else:
+            gateways = [row for row in gateways if row.get('device_type') == 'Gateway']
+        reachable_networks = set(source_networks)
+        while True:
+            before = len(reachable_networks)
+            for gateway in gateways:
+                gateway_networks = networks_by_node.get(str(gateway['id']), set())
+                if reachable_networks.intersection(gateway_networks):
+                    reachable_networks.update(gateway_networks)
+            if len(reachable_networks) == before:
+                break
+        if reachable_networks and all(reachable_networks.intersection(networks_by_node.get(destination, set())) for destination in destination_node_ids):
+            return True, []
+        snapshot = getattr(self, 'model_snapshot', None)
+        if snapshot is None:
+            with get_connection() as connection:
+                row = connection.execute("SELECT topology FROM engineering_workflow_projects WHERE project_id = %s", (project_id,)).fetchone()
+            topology = row.get('topology') if row else None
+        else:
+            topology = snapshot['topology']
         if not isinstance(topology, dict):
             return False, destination_node_ids
         nodes = topology.get("nodes") if isinstance(topology.get("nodes"), list) else []
@@ -210,6 +247,9 @@ class RoutingValidator:
     def _rows(self, table: str, ids: list[str]) -> dict[str, dict[str, Any]]:
         if not ids:
             return {}
+        preview = self._snapshot_rows(table)
+        if preview is not None:
+            return {str(row['id']): row for row in preview if str(row['id']) in ids}
         with get_connection() as connection:
             rows = connection.execute(
                 f"SELECT * FROM {table} WHERE id = ANY(%s::uuid[]) AND project_id = %s",
@@ -234,12 +274,16 @@ class RoutingValidator:
             ids = [str(UUID(item)) for item in dict.fromkeys(hops)]
         except ValueError:
             return []  # Editor aliases are checked through physical_paths.
-        with get_connection() as connection:
-            ports = connection.execute(
-                'SELECT hardware_node_id, network_ref, technology FROM engineering_hardware_interfaces '
-                'WHERE project_id=%s AND hardware_node_id=ANY(%s::uuid[]) AND network_ref IS NOT NULL',
-                (self.project_id, ids),
-            ).fetchall()
+        ports = self._snapshot_rows('engineering_hardware_interfaces')
+        if ports is None:
+            with get_connection() as connection:
+                ports = connection.execute(
+                    'SELECT hardware_node_id, network_ref, technology FROM engineering_hardware_interfaces '
+                    'WHERE project_id=%s AND hardware_node_id=ANY(%s::uuid[]) AND network_ref IS NOT NULL',
+                    (self.project_id, ids),
+                ).fetchall()
+        else:
+            ports = [port for port in ports if str(port['hardware_node_id']) in ids and port.get('network_ref')]
         by_node = {}
         for port in ports:
             network = str(port.get('network_ref') or '')
@@ -288,20 +332,29 @@ class RoutingValidator:
             selected.update({field: value for field, value in content.items() if field not in {"message_ids", "message_id", "interface_definition_ids", "interface_definition_id", "signal_ids", "signal_id"} and value not in (None, "", [], {})})
             destinations_key = sorted(tuple(str(item.get(field) or "") for field in ("node_id", "interface_id", "port_id", "network_id")) for item in endpoints)
             return selected, destinations_key
-        with get_connection() as connection:
-            rows = connection.execute(
-                "SELECT id, route_code, payload, destinations FROM engineering_routing_entries "
-                "WHERE source ->> 'node_id' = %s "
-                "AND (%s::uuid IS NULL OR id <> %s::uuid) "
-                "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED', 'DEPRECATED') AND project_id = %s",
-                (source_node_id, exclude_route_id, exclude_route_id, self.project_id),
-            ).fetchall()
+        rows = self._snapshot_rows('engineering_routing_entries')
+        if rows is None:
+            with get_connection() as connection:
+                rows = connection.execute(
+                    "SELECT id, route_code, payload, destinations FROM engineering_routing_entries "
+                    "WHERE source ->> 'node_id' = %s "
+                    "AND (%s::uuid IS NULL OR id <> %s::uuid) "
+                    "AND status NOT IN ('REJECTED', 'SUPERSEDED', 'OUTDATED', 'DEPRECATED') AND project_id = %s",
+                    (source_node_id, exclude_route_id, exclude_route_id, self.project_id),
+                ).fetchall()
+        else:
+            rows = [row for row in rows if str((row.get('source') or {}).get('node_id')) == source_node_id
+                    and str(row['id']) != exclude_route_id
+                    and row.get('status') not in {'REJECTED', 'SUPERSEDED', 'OUTDATED', 'DEPRECATED'}]
         expected = key(payload, destinations)
         return [row for row in rows if key(row["payload"], row["destinations"]) == expected]
 
     def _messages_with_signals(self, message_ids: list[str]) -> set[str]:
         if not message_ids:
             return set()
+        preview = self._snapshot_rows('engineering_signals')
+        if preview is not None:
+            return {str(row['message_id']) for row in preview if str(row.get('message_id')) in message_ids}
         with get_connection() as connection:
             rows = connection.execute(
                 "SELECT DISTINCT message_id FROM engineering_signals "
@@ -313,6 +366,10 @@ class RoutingValidator:
     def _non_routed_frame_signals(self, message_ids):
         if not message_ids or not getattr(self, "project_id", None):
             return {}
+        preview = self._snapshot_rows('engineering_signals')
+        if preview is not None:
+            return {str(row['id']): row for row in preview if str(row.get('message_id')) in message_ids
+                    and ((row.get('configuration') or {}).get('routing') or {}).get('enabled') is False}
         with get_connection() as connection:
             rows = connection.execute(
                 "SELECT id, message_id, name, configuration FROM engineering_signals "

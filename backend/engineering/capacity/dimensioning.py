@@ -16,7 +16,7 @@ from math import ceil, floor, isfinite, lcm
 from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
 from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
 from .calculators import confirmed_serial_evidence
-from .transmission import profile
+from .transmission import profile, bus_request_pairs
 
 VERSION = "communication-sizing-v3"
 DIRECT_SIGNAL_PROTOCOLS = frozenset(item.upper() for item in DIRECT_IO_TECHNOLOGIES)
@@ -187,6 +187,10 @@ def bus_schedule(rows, policy):
         return {"status": "PROFILE_INCOMPLETE", "responses": {}, "reasons": ["Positiver Sendeabstand fehlt."]}
     if any(row.get("traffic_profile_incomplete") for row in rows):
         return {"status": "PROFILE_INCOMPLETE", "responses": {}, "reasons": ["Ereignis-/Anfrageprofil ist nicht vollständig begrenzt."]}
+    try:
+        request_pairs = bus_request_pairs(rows)
+    except ValueError as error:
+        return {"status": "PROFILE_INCOMPLETE", "responses": {}, "reasons": [str(error)]}
     nominal = sum(number(row.get("segment_transmission_latency_ms")) / periods[row["stream_id"]] * 100 for row in rows)
     result = {"status": "UNVERIFIED", "nominal_load_percent": round(nominal, 6), "responses": {}, "slots": [], "reasons": [],
               "assumptions": ["Vollständiger modellierter Verkehr", "Keine zusätzlichen Busfehler oder Retransmissions-Bursts", "Serialisierte Übertragungen"]}
@@ -336,6 +340,27 @@ def bus_schedule(rows, policy):
         review = local_evidence_proposal(protocol, rows) if protocol in LOCAL_EVIDENCE_FIELDS else None
         return {**result, "nominal_load_percent": None, "status": "UNVERIFIED", "reasons": [reason],
                 **({"hardware_review_proposal": review} if review else {})}
+    result['request_exchanges'] = []
+    for request, response in request_pairs:
+        contract = response['transmission_contract']
+        # Include request delivery, confirmed processing, response rate-limiting
+        # and response delivery. No bus response is proved by its wire time alone.
+        request_bound = result['responses'].get(request['stream_id'])
+        response_bound = result['responses'].get(response['stream_id'])
+        bound = (request_bound + number(request.get('fixed_path_delay_ms'))
+            + contract['response_processing_ms'] + contract['minimum_interval_ms']
+            + response_bound + number(response.get('fixed_path_delay_ms')))
+        requirement = contract.get('functional_requirements') or {}
+        event_bound = request['cycle_ms'] + bound + number(requirement.get('sampling_delay_ms')) + number(requirement.get('actuation_delay_ms'))
+        confirmed = requirement.get('confirmed') is True and all(
+            key in requirement and number(requirement[key], -1) >= 0 for key in ('sampling_delay_ms', 'actuation_delay_ms'))
+        deadline = number(requirement.get('maximum_event_to_response_ms'))
+        status = ('PASS' if event_bound <= deadline and bound < request['cycle_ms'] else 'FAIL') if confirmed and deadline > 0 else 'UNVERIFIED'
+        result['request_exchanges'].append({'request_message_id': request['message_id'],
+            'response_message_id': response['message_id'], 'request_to_response_bound_ms': bound,
+            'event_to_response_bound_ms': event_bound, 'requirement_ms': deadline or None, 'status': status})
+        if status != 'PASS':
+            result['reasons'].append('Anfrage-Antwort-Kette: Zeitbedingung oder überlappungsfreier Betrieb ist nicht nachgewiesen.')
     result["status"] = "CONSTRAINT_VIOLATION" if result["reasons"] else "FEASIBLE_UNDER_ASSUMPTIONS"
     return result
 

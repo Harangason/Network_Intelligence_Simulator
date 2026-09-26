@@ -9,7 +9,7 @@ from .context_resolver import ContextResolver
 from .executor import EngineeringExecutor
 from .goal_resolver import GoalResolver
 from .planner import EngineeringPlanner
-from .recovery import RecoveryManager
+from .recovery import RecoveryManager, recipient_resume
 from .result import ResultComposer
 from .workload import EngineeringWorkload, WorkloadManager, WorkloadStatus
 
@@ -36,12 +36,26 @@ class EngineeringAssistantService:
         resolved_context = self.context_resolver.resolve(context, saved_state)
         from .hardware_intent import resume_hardware_request
         prompt, resumed_id = resume_hardware_request(prompt, resolved_context)
+        from .goal_resolver import recipient_repair_followup
+        repair_followup = recipient_repair_followup(prompt, resolved_context)
+        if repair_followup:
+            prompt, resumed_id = repair_followup['original_request'], repair_followup['source_workload_id']
+        recovery = recipient_resume(prompt, resolved_context)
+        if recovery:
+            prompt, resumed_id = recovery['original_request'], recovery['source_workload_id']
         goal = self.goal_resolver.resolve(prompt, resolved_context, resolved_context.get("active_workload"))
         if resumed_id:
             goal = goal.model_copy(update={'goal_id': resumed_id})
         workload_model = EngineeringWorkload(workload_id=goal.goal_id, goal=goal,
             project_id=str(goal.project_context.get("project_id") or "unknown"), status=WorkloadStatus.PLANNING,
             result={"request_revision": getattr(context, "project_draft_revision", None), "follow_up_of": goal.follow_up_of})
+        if repair_followup:
+            workload_model.result['contextual_repair'] = repair_followup
+        if recovery:
+            workload_model.result['recovery'] = recovery
+            workload_model.created_at = resolved_context['active_workload'].get('created_at') or workload_model.created_at
+            if recovery['blocked']:
+                workload_model.failure = recovery['previous_failure']
         workload = workload_model.model_dump(mode="json")
         self.workloads.save(workload_model)
         try:
@@ -105,6 +119,13 @@ class EngineeringAssistantService:
             workload_model.result = {"status": result.get("status"), "event_ids": [item.get("id") for item in result.get("events", [])],
                 "request_revision": getattr(context, "project_draft_revision", None), "follow_up_of": goal.follow_up_of,
                 "completion": runtime_result.model_dump(mode="json")}
+            if repair_followup:
+                workload_model.result['contextual_repair'] = repair_followup
+            if recovery:
+                inspected = next((event.get('metadata', {}).get('details', {}).get('recovery_evidence')
+                    for event in reversed(result.get('events', []))
+                    if event.get('metadata', {}).get('details', {}).get('recovery_evidence')), None)
+                workload_model.result['recovery'] = {**recovery, **(inspected or {})}
             self.workloads.save(workload_model)
             result["runtime"] = runtime_result.model_dump(mode="json") | {"capability": capability}
             return result

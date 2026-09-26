@@ -16,7 +16,7 @@ from bus_technologies import normalize_technology_id, resolve_technology, techno
 from hardware_profile import iter_network_interfaces
 from model_based_simulation import ModelBasedSimulationEngine
 from backend.engineering.capacity.calculators import estimate_frame
-from backend.engineering.capacity.transmission import release_grid
+from backend.engineering.capacity.transmission import release_grid, bus_request_pairs
 from ethernet_transport import resolve_flow, wire_bytes, packet_bytes
 from event_scheduler import EventScheduler
 from simulation_cancellation import check_cancellation
@@ -491,6 +491,12 @@ def _generate_universal_events(
     trace_start = float(start_utc if start_utc is not None else datetime.now(timezone.utc).timestamp())
     registry = technology_registry(profile.get("technology_profiles"))
     routes = _build_routes(config, profile)
+    bus_request_pairs([{'message_id': (route['metadata'].get('message_ids') or [None])[0],
+        'transmission_contract': route['metadata'].get('transmission_contract') or {},
+        'cycle_ms': route['cycle_ms'], 'producer': route['sender']['hardware_id'],
+        'consumers': [receiver['hardware_id'] for receiver in route['receivers']],
+        'protocol': route['technology'], 'network_id': route['network'],
+        'route_segment_count': route['metadata'].get('segment_count', 1)} for route in routes])
     events: list[dict[str, Any]] = []
     rng = random.Random(seed)
     model_engine = ModelBasedSimulationEngine(config)
@@ -507,6 +513,7 @@ def _generate_universal_events(
 
     address_owners = {}
     forwarding_templates = {}
+    response_templates = {}
     for route in routes:
         check_cancellation()
         segment_index = int(route["metadata"].get("segment_index") or 0)
@@ -586,9 +593,10 @@ def _generate_universal_events(
             jitter_amplitude_s = max(0.0, float(configured_jitter)) / 1000 if configured_jitter is not None else 0.0
         contract = deepcopy(route["metadata"].get("transmission_contract") or {})
         mode = str(contract.get("mode") or "CYCLIC").upper()
+        is_bus_response = mode == 'ON_REQUEST' and contract.get('request_source') == 'bus_message'
         if mode == "CYCLIC":
             contract["period_ms"] = cycle_s * 1000
-        candidates = [0.0] if is_forwarding else release_grid(contract, cycle_s * 1000, duration_s * 1000,
+        candidates = [0.0] if is_forwarding or is_bus_response else release_grid(contract, cycle_s * 1000, duration_s * 1000,
             relative_time * 1000, max_events)
         last_payload, last_sent = None, None
         for release_ms in candidates:
@@ -716,6 +724,10 @@ def _generate_universal_events(
                 event["_probabilities"] = (dropout_probability, corruption_probability)
                 forwarding_templates[(end_to_end_id, segment_index)] = event
                 break
+            if is_bus_response:
+                response_templates.setdefault(contract['request_message_ref'], []).append(
+                    (event, route, contract, dropout_probability, corruption_probability))
+                break
             event["faults"] = list(dict.fromkeys([
                 *model_engine.faults.event_faults(event),
                 *(fault for signal in event['signals'] for fault in signal.get('faults') or []),
@@ -767,6 +779,8 @@ def _generate_universal_events(
     pending = EventScheduler(events, network_available_at)
     events = []
     physical_frames = {}
+    response_releases = {}
+    answered_requests = set()
     while len(events) < max_events:
         check_cancellation()
         event = pending.pop()
@@ -793,6 +807,43 @@ def _generate_universal_events(
         if event.get("transmission_attempted") is False:
             event["transmission_latency_ms"] = 0.0
         events.append(event)
+        if event['status'] == 'transmitted' and event.get('final_segment', True):
+            for message_id in event.get('message_ids') or []:
+                for template, response_route, contract, drop_probability, corrupt_probability in response_templates.get(message_id, []):
+                    identity = (template['route_id'], event.get('physical_transmission_id') or event['event_id'])
+                    if identity in answered_requests:
+                        continue
+                    answered_requests.add(identity)
+                    release = max(float(event['time_s']) + float(contract['response_processing_ms']) / 1000,
+                        response_releases.get(template['route_id'], -float('inf')) + float(contract['minimum_interval_ms']) / 1000)
+                    if release > duration_s:
+                        continue
+                    response_releases[template['route_id']] = release
+                    reply = deepcopy(template)
+                    reply.update(event_id=template['route_id'] + ':response:' + event['event_id'],
+                        end_to_end_event_id=template['route_id'] + ':response:' + event['event_id'],
+                        transaction_id=event['transaction_id'], caused_by_event_id=event['event_id'],
+                        request_message_id=message_id, request_release_time_s=event['origin_release_time_s'],
+                        scheduled_time_s=release, origin_scheduled_time_s=release, origin_release_time_s=release,
+                        time_s=release + float(template['configured_latency_ms']) / 1000,
+                        release_basis='delivered_bus_request', sequence=event['sequence'], status='transmitted',
+                        retransmission_count=0, retry_delay_ms=0, duplicate_injected=False, reordered=False)
+                    payload = model_engine.encode_event(response_route, release, int(reply['payload_bytes']))
+                    reply['payload_hex'] = str(payload['payload_hex']) if payload.get('signals') else _payload(reply['route_id'], reply['sequence'], int(reply['payload_bytes']))
+                    reply['signals'] = payload.get('signals') or []
+                    if reply['signals']:
+                        first = reply['signals'][0]
+                        for key, source_key in [('signal','signal'), ('signal_id','signal_id'), ('signal_value','value'),
+                            ('value','value'), ('unit','unit'), ('golden_value','golden_value'), ('model_label','model_label'), ('behavior_type','behavior_type')]:
+                            reply[key] = first.get(source_key)
+                    if rng.random() < drop_probability:
+                        reply['status'] = 'dropped'
+                    elif rng.random() < corrupt_probability:
+                        reply['status'] = 'corrupted'
+                        reply['payload_hex'] = 'FF' + reply['payload_hex'][2:] if reply['payload_hex'] else 'FF'
+                    reply['faults'] = list(dict.fromkeys([*model_engine.faults.event_faults(reply),
+                        *(fault for signal in reply['signals'] for fault in signal.get('faults') or [])]))
+                    pending.enqueue(reply)
         for acknowledgement in _restbus_ack_events(event, session_settings):
             acknowledgement["faults"] = model_engine.faults.event_faults(acknowledgement)
             if float(acknowledgement["time_s"]) <= duration_s:
