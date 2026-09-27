@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔍 Tool Checker · Fortschritt</title>
+<style>
+:root{font:16px system-ui;color:#172e44;background:#eef3f7;color-scheme:light}
+body{max-width:860px;margin:44px auto;padding:0 22px}header{display:flex;align-items:center;justify-content:space-between;gap:20px}h1{font-size:26px;margin:0}small,.muted{color:#536d80}article{background:white;border:1px solid #dbe4ed;border-radius:16px;padding:24px;margin:20px 0}h2{font-size:18px;margin:0 0 16px}progress{width:100%;height:14px;accent-color:#196bb4} .line{display:flex;justify-content:space-between;align-items:center;gap:12px}.percent{font-size:32px;font-weight:650}.status{border-radius:30px;background:#edf3f8;padding:6px 12px;font-size:13px}.COMPLETE{background:#e2f4e8;color:#146234}.FAILED,.BLOCKED{background:#fff0e7;color:#953c12}.WAITING_FOR_USER{background:#fff6cf;color:#755900}.CANCELLED{background:#e8e9ed;color:#465065}button{font:inherit;border:1px solid #c7d5e1;background:white;border-radius:7px;padding:8px 13px;cursor:pointer;margin:7px 7px 0 0}button.primary{background:#196bb4;color:white;border-color:#196bb4}button:disabled{opacity:.5;cursor:default}.question{padding:16px;background:#fff9e6;border-radius:9px;margin-top:14px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;background:#f3f6f8;padding:14px;max-height:460px;overflow:auto}#error{color:#943515}#empty{margin-top:40px}.counter{margin-top:12px}.batch{border-left:4px solid #196bb4}.result{font-weight:600}a{color:#145b97}select{font:inherit;padding:5px}
+</style></head><body>
+<header><div><h1>🔍 Tool Checker</h1><small>Lokale Prüfungen · deterministischer Fortschritt</small></div><span id="connection" class="muted">Verbinden …</span></header>
+<p id="error" role="alert"></p><div id="batches"></div><main id="jobs" aria-live="polite"></main><p id="empty" hidden>Noch keine vorbereiteten Prüfläufe. Einen Job mit dem Tool-Checker-CLI anlegen.</p>
+<script>
+"use strict";
+const params=new URLSearchParams(location.hash.slice(1));
+if(params.has("token")){sessionStorage.setItem("tc-token",params.get("token"));history.replaceState(null,"",location.pathname)}
+const token=sessionStorage.getItem("tc-token")||"";
+const cards=new Map(), details=new Set(), labels={QUEUED:"Bereit",RUNNING:"Prüfung läuft",WAITING_FOR_USER:"Warte auf Entscheidung",BLOCKED:"Blockiert",FAILED:"Fehlgeschlagen",COMPLETE:"Abgeschlossen",CANCELLED:"Abgebrochen"};
+async function api(path,body){const response=await fetch("/tool-check/"+path,{method:body?"POST":"GET",headers:{"Authorization":"Bearer "+token,...(body?{"Content-Type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});const result=await response.json();if(!response.ok)throw Error(result.error||"Anfrage fehlgeschlagen");return result}
+function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
+function control(text,action,primary=false){const b=el("button",text,primary?"primary":"");b.onclick=async()=>{b.disabled=true;try{await action();await refresh()}catch(e){document.querySelector("#error").textContent=e.message}finally{b.disabled=false}};return b}
+async function showDetails(job,container){const data=await api("jobs/"+job.job_id+"/details");container.replaceChildren(el("pre",JSON.stringify(data,null,2)));for(const ev of data.result.evidence||[]){if(ev.kind==="screenshot"){const b=control("Screenshot ansehen",async()=>{const response=await fetch("/tool-check/jobs/"+job.job_id+"/evidence/"+ev.id,{headers:{Authorization:"Bearer "+token}});if(!response.ok)throw Error("Screenshot nicht verfügbar");const image=el("img");image.alt="Gespeicherte Browser-Evidence";image.style.maxWidth="100%";const url=URL.createObjectURL(await response.blob());image.onload=()=>URL.revokeObjectURL(url);image.src=url;container.append(image)});container.append(b)}}}
+function render(job){
+ let card=cards.get(job.job_id);if(!card){card=el("article");cards.set(job.job_id,card);document.querySelector("#jobs").append(card)}
+ const signature=JSON.stringify(job);if(card.dataset.signature===signature)return;card.dataset.signature=signature;
+ const title=el("h2",job.test_id+" · "+job.task_id), state=el("span",labels[job.status]||job.status,"status "+job.status), line=el("div",undefined,"line");
+ const silent=job.output_mode==="SILENT";line.append(state);if(!silent)line.append(el("span",job.percentage.toLocaleString("de-DE")+" %","percent"));card.replaceChildren(title,line);
+ if(!silent){const progress=el("progress");progress.max=100;progress.value=job.percentage;progress.setAttribute("aria-label","Fortschritt "+job.test_id);card.append(progress,el("div",job.status==="COMPLETE"?"Alle Pflichtprüfungen bestanden":job.current_step,"muted"),el("div",job.completed_steps+" / "+job.total_steps+" Prüfungen","counter"))}
+ if(job.status==="WAITING_FOR_USER"&&job.decision){const question=el("div",undefined,"question");question.append(el("p",job.decision.question));for(const choice of job.decision.options)question.append(control(choice,()=>api("jobs/"+job.job_id+"/answer",{step_id:job.decision.step_id,choice}),true));card.append(question)}
+ if(["FAILED","BLOCKED","CANCELLED"].includes(job.status))card.append(el("p",job.message||labels[job.status],"result"));
+ if(job.cancel_requested&&!["COMPLETE","FAILED","BLOCKED","CANCELLED"].includes(job.status))card.append(el("p","Abbruch vorgemerkt – aktuelle atomare Operation wird beendet."));
+ if(job.status==="QUEUED")card.append(control("Test starten",()=>api("jobs/"+job.job_id+"/start",{}),true));
+ if(!["COMPLETE","FAILED","BLOCKED","CANCELLED"].includes(job.status))card.append(control("Abbrechen",()=>api("jobs/"+job.job_id+"/cancel",{})));
+ const panel=el("div");
+ const button=control(job.result_ref?"Ergebnis ansehen":"Details",async()=>{details.add(job.job_id);await showDetails(job,panel)});
+ card.append(button,panel);
+ if(details.has(job.job_id)||job.output_mode==="VERBOSE")showDetails(job,panel).catch(e=>panel.textContent=e.message);
+}
+async function refresh(){
+ try{const jobs=await api("jobs");document.querySelector("#connection").textContent="Verbunden";document.querySelector("#empty").hidden=jobs.length>0;for(const job of jobs)render(job);
+ const batches=[...new Set(jobs.map(j=>j.batch_id).filter(Boolean))];const area=document.querySelector("#batches");area.replaceChildren();
+ for(const id of batches){const batch=await api("batches/"+id);const box=el("article",undefined,"batch");box.append(el("h2","Batch · "+(labels[batch.status]||batch.status)),el("div",batch.percentage+" %","percent"),el("p",batch.completed_tests+" / "+batch.total_tests+" abgeschlossen"),el("p","✓ "+batch.counts.COMPLETE+"   ✕ "+batch.counts.FAILED+"   ! "+batch.counts.BLOCKED));area.append(box)}
+ document.querySelector("#error").textContent="";
+ }catch(e){document.querySelector("#connection").textContent="Verbindung unterbrochen";document.querySelector("#error").textContent=e.message}
+}
+async function poll(){await refresh();setTimeout(poll,750)}poll();
+</script></body></html>

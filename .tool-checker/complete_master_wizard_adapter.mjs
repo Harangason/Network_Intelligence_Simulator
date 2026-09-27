@@ -3,13 +3,12 @@ import { createRequire } from 'node:module';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { originalDecision } from './src/20260927_src_wizard_decision_admission.mjs';
 import { guardWithRegistryEvidence, readExpectedRuntime } from './src/20260925_src_master_technology_quality_registry_gate_bridge.mjs';
-import { captureProjectPersistence, projectPersistenceEvidence } from './src/20260925_src_master_technology_quality_persistence.mjs';
+import { captureProjectPersistence } from './src/20260925_src_master_technology_quality_persistence.mjs';
 import { captureRuntimeBoundary, projectRuntimeEvidence, verifyTestProjectId } from './src/20260925_src_master_technology_quality_runtime.mjs';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(.:)/, '$1')), '..');
-const require = createRequire(path.join(root, 'frontend', 'package.json'));
-const { chromium } = require('playwright');
 
 const input = JSON.parse(await new Promise((resolve, reject) => {
   let value = '';
@@ -18,6 +17,23 @@ const input = JSON.parse(await new Promise((resolve, reject) => {
   process.stdin.on('end', () => resolve(value));
   process.stdin.on('error', reject);
 }));
+
+const admission = await originalDecision(root, input);
+if (!admission.result.allowed) {
+  const target = path.join(input.output_directory, 'wizard-decision-admission.json');
+  await writeFile(target, JSON.stringify({ case_id: admission.original.test_id,
+    contract_hash: admission.original.contract_hash, native_job_id: input.job_id,
+    native_run_id: input.run_id, ...admission.result,
+    browser_started: false, scripted_answers_executed: false,
+    approval_performed: false, original_criteria_preserved: true }, null, 2), { encoding: 'utf8', flag: 'wx' });
+  process.stdout.write(JSON.stringify({ status: 'BLOCKED', reason: admission.result.reason,
+    llm_calls: 0, evidence: [{ ref: 'wizard-decision-admission', path: target, kind: 'validation' }],
+    observations: { actions: [], tools: [], views: [], questions: [], checks: [], browser: [],
+      findings: [], claimed_complete: false } }));
+  process.exit(0);
+}
+const require = createRequire(path.join(root, 'frontend', 'package.json'));
+const { chromium } = require('playwright');
 
 const { step } = input;
 const scenario = step.case;
@@ -1191,8 +1207,7 @@ try {
     model_after: model, decision_source: 'SCRIPTED_TEST', claimed_complete: false,
   };
   const original = { status: 'PASSED', llm_calls: null, evidence, observations };
-  let verified = await guardWithRegistryEvidence(original, scenario, step);
-  if (canonicalPersistence) verified = projectPersistenceEvidence(verified, original, canonicalPersistence, project, persistenceRuntime);
+  let verified = await guardWithRegistryEvidence(original, scenario, step, { persistence: canonicalPersistence });
   if (runtimeBefore) {
     const runtimeAfter = await captureRuntimeBoundary({ step, api: url => api(page, url), save, boundary: 'after-flow' });
     verified.evidence = [...verified.evidence, ...evidence.filter(item => !verified.evidence.some(known => known.ref === item.ref))];

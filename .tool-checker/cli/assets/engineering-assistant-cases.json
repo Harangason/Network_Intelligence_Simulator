@@ -1,0 +1,867 @@
+{
+  "title": "Engineering Assistant EA-01 bis EA-12 mit Pflichtvarianten",
+  "domain": "engineering-assistant",
+  "purpose": "In kumulatives Projektmanifest integrieren; echte Fixture- und Capability-Zuordnung erforderlich",
+  "global_rules": [
+    "NO EVIDENCE → NO PASS",
+    "Chat ist UI; Tool-Erfolg ist keine Completion",
+    "Kampagnen: höchstens drei volle Runden; Reparatur nur dazwischen"
+  ],
+  "test_cases": [
+    {
+      "test_id": "EA-01",
+      "title": "Periodische Stellgliedabfrage",
+      "input": "Lege eine ECU an, die mir die Stellgliedpositionen im System alle 30 Sekunden abfragt.",
+      "source_lines": [
+        11,
+        72
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-01",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "actuators_resolved",
+          "position_data_resolved",
+          "ecu_created",
+          "periodic_function_created",
+          "functional_interfaces_valid",
+          "hardware_ports_valid",
+          "signals_dataobjects_valid",
+          "transport_valid"
+        ],
+        "expected_values": {
+          "cycle_time_seconds": 30
+        }
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-01"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-02",
+      "title": "Follow-up-Reparatur",
+      "input": "Dann weißt du ja, was du zu tun hast, Fehleranalyse und Korrektur.",
+      "source_lines": [
+        73,
+        133
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet",
+        "Genau ein aktives Finding mit Evidence und autorisierter Modellkorrektur im selben Workload"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-02",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "previous_context_resolved",
+          "unique_finding_loaded",
+          "finding_evidence_loaded",
+          "root_cause_evidenced",
+          "repair_plan_created",
+          "repair_applied",
+          "revalidation_passed",
+          "no_redundant_question"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-02"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-03",
+      "title": "Kontextfortsetzung",
+      "input": "Mach das auch für die anderen Aktoren.",
+      "source_lines": [
+        134,
+        190
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet",
+        "Vorherige zyklische Abfrage im selben Kontext vorhanden"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-03",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "active_context_retained",
+          "remaining_actuators_resolved",
+          "existing_configuration_reused",
+          "no_duplicate_objects"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-03"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-04",
+      "title": "LIN-Bitrate",
+      "input": "Ändere das LIN-Netz auf 19,2 kbit/s und prüfe alle abhängigen Berechnungen.",
+      "source_lines": [
+        191,
+        248
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-04",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "technology_profile_used",
+          "bitrate_valid_for_lin",
+          "dependent_data_marked_stale",
+          "dependent_calculations_refreshed",
+          "simulation_trace_baselines_stale"
+        ],
+        "expected_values": {
+          "bitrate_bps": 19200
+        }
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-04"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-05",
+      "title": "Funktionen verbinden",
+      "input": "Verbinde Function A mit Function B und prüfe anschließend die Kommunikation.",
+      "source_lines": [
+        249,
+        305
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-05",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "functions_resolved",
+          "hardware_mapping_resolved",
+          "interfaces_ports_valid",
+          "network_connected",
+          "transport_valid"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-05"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-06",
+      "title": "Timing-Ursache",
+      "input": "Warum kommt PressureCommand zu spät an?",
+      "source_lines": [
+        306,
+        364
+      ],
+      "mutating": false,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-06",
+        "expected_status": "COMPLETED",
+        "mutation_expected": false,
+        "checks": [
+          "e2e_timing_checked",
+          "trace_correlated",
+          "queue_delay_checked",
+          "arbitration_checked",
+          "gateway_delay_checked",
+          "timing_breakdown",
+          "root_cause_evidenced"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-06"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-07",
+      "title": "Gateway-Ausfall",
+      "input": "Simuliere den Ausfall dieses Gateways und zeige mir, welche Kommunikation betroffen ist.",
+      "source_lines": [
+        365,
+        422
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-07",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "selected_gateway_resolved",
+          "fault_scenario_created",
+          "simulation_completed",
+          "trace_created",
+          "affected_routes_identified",
+          "findings_created"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-07"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-08",
+      "title": "Datenqualität",
+      "input": "Finde alle Signale ohne Empfänger und korrigiere die eindeutigen Fälle.",
+      "source_lines": [
+        423,
+        477
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-08",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "signals_scanned",
+          "findings_created",
+          "deterministic_repairs_only",
+          "ambiguous_cases_review_required"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-08"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-09",
+      "title": "CAN-FD-Kanal",
+      "input": "Füge dem Controller einen zweiten CAN-FD-Kanal hinzu.",
+      "source_lines": [
+        478,
+        533
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-09",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "hardware_capability_checked",
+          "channel_count_checked",
+          "free_resource_checked",
+          "physical_port_created",
+          "interface_created"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-09"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-10",
+      "title": "E2E-Pfad",
+      "input": "Zeige mir den Weg von Function A zu Function B und wie lange die Botschaft benötigt.",
+      "source_lines": [
+        534,
+        593
+      ],
+      "mutating": false,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant",
+        "critical"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-10",
+        "expected_status": "COMPLETED",
+        "mutation_expected": false,
+        "checks": [
+          "source_receiver_resolved",
+          "route_hops_resolved",
+          "gateway_technology_resolved",
+          "e2e_timing_checked",
+          "sequence_view_correlated",
+          "transaction_resolved",
+          "technology_transitions_resolved",
+          "receiver_action_checked_if_available"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-10"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-11",
+      "title": "Unvollständiger Auftrag",
+      "input": "Lege eine Diagnoseabfrage für alle Stellglieder an.",
+      "source_lines": [
+        594,
+        649
+      ],
+      "mutating": false,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet",
+        "Modell und Policy lassen eine fachlich notwendige Zyklus-/Triggerentscheidung offen"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-11",
+        "expected_status": "WAITING_FOR_ENGINEERING_DECISION",
+        "mutation_expected": false,
+        "checks": [
+          "model_checked_before_question",
+          "missing_decision_identified",
+          "precise_question",
+          "no_deterministic_fact_question"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-11"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-12",
+      "title": "Tool-Recovery",
+      "input": "Setze den Auftrag nach einem kontrolliert transienten MCP/Core-Fehler fort.",
+      "source_lines": [
+        650,
+        705
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-12",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "failure_classified_transient",
+          "retry_bounded",
+          "same_workload_resumed",
+          "completed_steps_not_repeated",
+          "preconditions_rechecked"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-12"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-09-NO-CAPABILITY",
+      "title": "CAN-FD-Kanal – zusätzliche Variante",
+      "input": "Füge dem Controller einen zweiten CAN-FD-Kanal hinzu.",
+      "source_lines": [
+        706,
+        759
+      ],
+      "mutating": false,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet",
+        "Hardware besitzt nachweislich keinen zweiten freien CAN-FD-Kanal"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-09",
+        "expected_status": "BLOCKED_WITH_EXPLICIT_CAUSE",
+        "mutation_expected": false,
+        "checks": [
+          "hardware_capability_checked",
+          "no_unauthorized_channel_created"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-09"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-12-PRECONDITION",
+      "title": "Tool-Recovery – zusätzliche Variante",
+      "input": "Setze den Auftrag nach einem kontrolliert transienten MCP/Core-Fehler fort.",
+      "source_lines": [
+        760,
+        812
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-12",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "precondition_repaired",
+          "same_workload_resumed"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-12"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    },
+    {
+      "test_id": "EA-11-MODEL-DETERMINED",
+      "title": "Unvollständiger Auftrag – zusätzliche Variante",
+      "input": "Lege eine Diagnoseabfrage für alle Stellglieder an.",
+      "source_lines": [
+        813,
+        865
+      ],
+      "mutating": true,
+      "browser_required": true,
+      "tags": [
+        "engineering-assistant"
+      ],
+      "preconditions": [
+        "Isoliertes autorisiertes Testprojekt vorhanden",
+        "Browser, Assistant-Service, MCP-Registry und Core wirklich erreichbar",
+        "Projektkontext und Berechtigungen beobachtet"
+      ],
+      "required_actions": [
+        "send-real-command",
+        "observe-assistant-result",
+        "inspect-engineering-result"
+      ],
+      "required_tools": [],
+      "required_views": [],
+      "completion_criteria": [
+        "Engineering-Assistant-Vertrag mit Browser-, MCP- und Core-Evidence erfüllt"
+      ],
+      "failure_conditions": [
+        "Assistant ersetzt Ausführung nur durch Navigation"
+      ],
+      "engineering_assistant": {
+        "id": "EA-11",
+        "expected_status": "COMPLETED",
+        "mutation_expected": true,
+        "checks": [
+          "model_resolves_parameters",
+          "no_redundant_question"
+        ],
+        "expected_values": {}
+      },
+      "parent_group": "S21-S30",
+      "source_refs": [
+        {
+          "source_file": "TOOL_CHECKER_3_RUN_ENGINEERING_ASSISTANT_INTEGRATION.md",
+          "section": "EA-11"
+        },
+        {
+          "source_file": "NETWORK_SIMULATOR_60_TESTS_3_RUN_ENGINEERING_ASSISTANT_MASTER.md",
+          "section": "Engineering Assistant – verpflichtende Akzeptanzsuite für S21–S30"
+        }
+      ]
+    }
+  ]
+}
