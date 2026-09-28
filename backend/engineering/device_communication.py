@@ -101,7 +101,11 @@ def complete_new_actuator_messages(changes, existing, command_definitions=None):
                 'factor': 1, 'unit': 'code', 'min_value': 0, 'max_value': 4,
                 'semantic': {'semantic_type': 'STATE', 'meaning': 'Ausführung des angeforderten Befehls'},
                 'data': {'enum_values': EXECUTION_STATES, 'default_value': 'IDLE', 'invalid_values': [7], 'reserved_values': [5, 6]}})
-        if not command and int(owner.get('device_class') or 0) >= 2 and not any(str(s.get('name', '')).endswith(('Status', 'State')) for s in current):
+        # A function output is independently selectable by its consumers.
+        # Packing device status into that frame would silently couple two
+        # different meanings and make a partial TX/RX choice impossible.
+        function_output = ((message.get('configuration') or {}).get('communication_contract') or {}).get('scope') == 'FUNCTION_OUTPUT'
+        if not command and not function_output and int(owner.get('device_class') or 0) >= 2 and not any(str(s.get('name', '')).endswith(('Status', 'State')) for s in current):
             candidates.append({'name': owner['name'] + 'Status', 'length_bits': 4, 'data_type': 'unsigned',
                 'factor': 1, 'unit': 'code', 'min_value': 0, 'max_value': 15,
                 'semantic': {'semantic_type': 'STATE', 'meaning': 'Betriebszustand'},

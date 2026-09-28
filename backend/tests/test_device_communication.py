@@ -15,6 +15,30 @@ def test_class_two_generation_adds_status_without_function_or_replacing_measurem
     assert not any(c['object_type'] == 'Function' for c in changes)
 
 
+def test_function_output_keeps_controller_status_in_separate_frame():
+    from backend.engineering.device_communication import complete_new_actuator_messages
+    changes = [
+        {'object_type': 'HardwareNode', 'local_ref': 'node', 'data':
+            {'name': 'Elektromotorsteuerung', 'device_type': 'ECU', 'device_class': 3}},
+        {'object_type': 'Message', 'local_ref': 'status', 'data': {'name': 'Controller status',
+            'dlc': 1, 'configuration': {'transport_unit': {'producer_ref': '$node'}}}},
+        {'object_type': 'Message', 'local_ref': 'output', 'data': {'name': 'Functional output',
+            'dlc': 2, 'configuration': {'communication_contract': {'scope': 'FUNCTION_OUTPUT'},
+                'transport_unit': {'producer_ref': '$node'}}}},
+        {'object_type': 'Signal', 'local_ref': 'value', 'data':
+            {'name': 'ElektromotorDrehmomentIst', 'message_id': '$output', 'start_bit': 0,
+             'length_bits': 15, 'data_type': 'signed'}},
+    ]
+    complete_new_actuator_messages(changes, {'HardwareNode': [], 'Message': [], 'Signal': []})
+    status = [change['data'] for change in changes if change['object_type'] == 'Signal'
+              and change['data']['name'] == 'ElektromotorsteuerungStatus']
+    assert len(status) == 1
+    assert status[0]['message_id'] == '$status'
+    output_signals = [change['data']['name'] for change in changes if change['object_type'] == 'Signal'
+                      and change['data'].get('message_id') == '$output']
+    assert output_signals == ['ElektromotorDrehmomentIst']
+
+
 def test_unknown_actuator_does_not_receive_an_invented_command():
     assert actuator_command_template({'name': 'AirbagIgniter'}) is None
     assert actuator_command_template({'name': 'TestSchaltausgang'})['length_bits'] == 1

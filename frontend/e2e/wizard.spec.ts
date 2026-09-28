@@ -554,6 +554,7 @@ test('reviewable functional TX/RX OFF survives request reload and canonical mode
   await dialog.locator('#engineering-project-name').fill('TX RX functional partners');
   await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System und den ECUs Motorsteuerung, Getriebesteuerung und Elektromotorsteuerung. Die berechneten Funktionsausgänge dienen der Antriebskoordination. Controllerstatus bleibt intern.\nCAN-FD: 500 kbit/s arbitration, 2 Mbit/s data');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  await dialog.getByRole('button', { name: 'Automotive / Vehicle übernehmen', exact: true }).click();
   for (const [label, value] of [['Gateways', '1'], ['Controller', '3'], ['Sensoren', '0'], ['Aktoren', '0']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);
   const txrx = dialog.locator('details').filter({ has: page.locator('summary').filter({ hasText: /^TX\/RX/ }) }).first();
   await expect(txrx).toBeVisible();

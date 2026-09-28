@@ -1,0 +1,46 @@
+{
+  "goal_id": "nis-txrx-separate-status-20260928",
+  "goal_type": "repair",
+  "kind": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "project_scope": "NIS Engineering Wizard",
+  "modify_code": true,
+  "allow_repair": true,
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "requested_change": "Generated FUNCTION_OUTPUT payload must not absorb controller status and block independent TX/RX selection",
+  "required_outcomes": [
+    "functional_payload_separation",
+    "preserve_status_evidence"
+  ],
+  "validation_requirements": [
+    "unit",
+    "targeted_run"
+  ],
+  "unresolved_decisions": [],
+  "revision_before": {
+    "backend/engineering/device_communication.py": "3527f631eb8f076568c38a37e30dd10d616b505df7f51478500aa330e96e27ec",
+    "backend/tests/test_device_communication.py": "ca749cd552a9bb38b5a9365b55240f85af20592348d57ace6a618d93976f2a67"
+  },
+  "repair": {
+    "root_cause": "complete_new_actuator_messages adds device status to each generated message, including FUNCTION_OUTPUT despite a separate status frame",
+    "first_failing_layer": "backend/engineering/device_communication.py",
+    "owner": "PROJECT_PRODUCT",
+    "affected_files": [
+      "backend/engineering/device_communication.py",
+      "backend/tests/test_device_communication.py"
+    ],
+    "reproduction": "Targeted @txrx run on prepared image 55b170823d95 pauses: mixed enabled/disabled FUNCTION_OUTPUT frame includes generated ElektromotorsteuerungStatus",
+    "targeted_tests": [
+      "backend/tests/test_device_communication.py",
+      "frontend/e2e/wizard.spec.ts @txrx"
+    ],
+    "acceptance_criteria": "Functional frame retains only function signal, controller status remains in its own authored/generated status frame, partial TX/RX selection reaches model review",
+    "weaken_assertions_to_pass": false,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\nis-txrx-repro-dev\\targeted-browser-fixed\\wizard-reviewable-function-4b7d1-nonical-model-adoption-txrx\\error-context.md",
+        "sha256": "bb2a41daa3e84b8a2dabbb551da7572c6e3ef162daa0974bbb2f936732832074"
+      }
+    ]
+  }
+}
