@@ -4,7 +4,7 @@
 const PARTS = new Set((
   "fahrwerk fahrdynamik fahrer beifahrer sitz tuer tuere fond links rechts vorne hinten " +
   "daempfer regelung steuerung brems bremse bremsen sensorik lenkung hinterachs allrad anhaenger " +
-  "motor elektro abgas nachbehandlung getriebe kraftstoff reifen druck kontrolle " +
+  "verarbeitung koordination drehmoment motor elektro abgas nachbehandlung getriebe kraftstoff reifen druck kontrolle " +
   "bordnetz management batterie energie versorgung kuehl mittel kreislauf oel temperatur " +
   "innen aussen licht raum wischer heck klappe schiebe dach assistenz ultraschall " +
   "schalt ausgang stellglied erfassung zustand befehl status funktion signal sensor controller actuator " +

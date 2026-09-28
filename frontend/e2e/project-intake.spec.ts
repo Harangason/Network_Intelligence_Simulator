@@ -1,6 +1,10 @@
 import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
+// First actionable reply test allowance: backend/SSE 290s + one history PUT 8s + UI expect 30s.
+// Sources: src/app/api/agent/chat/route.ts, playwright.config.ts; not a whole-stream bound or SLA.
+const ENGINEERING_REPLY_BUDGET_MS = 290_000 + 8_000 + 30_000;
+
 for (const entry of ['workspace', 'sidebar']) {
 test(`natural small project request from ${entry} creates a persistent editable project draft @project-intake`, async ({ page }) => {
   const compact = '20260914000000000-' + randomUUID().replaceAll('-', '').slice(0, 8);
@@ -11,7 +15,7 @@ test(`natural small project request from ${entry} creates a persistent editable 
   await page.getByRole('textbox', { name: 'Nachricht an den Engineering-Assistenten' }).fill(requirement);
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' }).last();
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await editor.getByText(/Offene Angaben \(/).click();
   await expect(editor.getByText(/Wie viele Ventile/)).toBeVisible();
   // Persisted responses must retain the requirement, not only the streamed card.

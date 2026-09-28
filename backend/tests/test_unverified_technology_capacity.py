@@ -28,6 +28,123 @@ def test_supported_can_rate_stays_missing_without_explicit_capacity_input():
     assert "bitrate" not in parameters
 
 
+IDENTITY_CASES = [({}, True), ({'technology': 'TARGET'}, True), ({'protocol': 'TARGET'}, True),
+                  ({'technology': 'CAN'}, False), ({'protocol': 'CAN'}, False),
+                  ({'technology': 'TARGET', 'protocol': 'CAN'}, False),
+                  ({'technology': 'CAN', 'protocol': 'TARGET'}, False),
+                  ({'technology': 'UNRESOLVED'}, False), ({'protocol': 'UNRESOLVED'}, False)]
+
+
+def provenance_source_fixture(target, scope, tags, values):
+    from copy import deepcopy
+    parameters, configuration, confirmed = {}, {}, {}
+    if scope == 'global':
+        parameters = {**tags, **values}; confirmed = deepcopy(parameters)
+    elif scope == 'configuration': configuration = {**tags, **values}
+    elif scope == 'network': parameters = {'networks': [{'id': 'bus', **tags, **values}]}
+    else:
+        contents = {**tags, **values} if scope == 'reviewed_values' else values
+        group = {'values': contents, 'provenance': {
+            key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': value} for key, value in contents.items()}}
+        if scope == 'reviewed_enclosing': group.update(tags)
+        confirmed = {'technology_parameters': {target: group}}
+    return parameters, configuration, confirmed
+
+
+@pytest.mark.parametrize('target', ['LIN', 'SPI', 'I2C', 'CAN_FD'])
+@pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values', 'reviewed_enclosing'])
+@pytest.mark.parametrize('tags,valid', IDENTITY_CASES)
+def test_every_capacity_source_identity_must_match_before_overlay(target, scope, tags, valid):
+    tags = {key: target if value == 'TARGET' else value for key, value in tags.items()}
+    serial = {'confirmed': True, 'source': 'approved datasheet', 'master_node_id': 'master',
+              'transfer_bits_bound': 100, 'bitrate_bps': 100_000,
+              'chip_select': 'CS0', 'word_length_bits': 8, 'duplex_mode': 'FULL_DUPLEX',
+              'cpol': 0, 'cpha': 0, 'cs_setup_bound_us': 0, 'inter_transfer_gap_us': 0,
+              'slave_address': 32, 'address_bits': 7, 'i2c_mode': 'STANDARD',
+              'transfer_direction': 'READ', 'start_stop_bound_us': 1,
+              'clock_stretch_limit_us': 0, 'multi_master': False}
+    values = ({'local_timing_evidence': serial} if target in {'SPI', 'I2C'} else
+              {'bitrate': 500_000, 'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000} if target == 'CAN_FD' else
+              {'bitrate': 19_200})
+    parameters, configuration, confirmed = provenance_source_fixture(target, scope, tags, values)
+    resolved = parameters_for_protocol(target, parameters, configuration, 'bus', confirmed)
+    expected = valid and not (not tags and (scope == 'network' or scope == 'global' and target in {'LIN', 'CAN_FD'}))
+    assert resolved['_rate_evidenced'] is expected
+    assert estimate_frame(target, 8, resolved).transmission_time_available is expected
+    if not valid:
+        assert not any(key in resolved for key in ('bitrate', 'arbitration_bitrate', 'data_bitrate', 'local_timing_evidence'))
+    if valid and scope.startswith('reviewed'):
+        assert 'technology' not in resolved and 'protocol' not in resolved
+
+
+@pytest.mark.parametrize('tags,valid', [item for item in IDENTITY_CASES if not item[1]])
+@pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values', 'reviewed_enclosing'])
+def test_invalid_scalar_source_never_overwrites_matching_physical_evidence(tags, valid, scope):
+    tags = {key: 'LIN' if value == 'TARGET' else value for key, value in tags.items()}
+    parameters, configuration, confirmed = provenance_source_fixture('LIN', scope, tags, {'bitrate': 500_000})
+    # Independent matching physical configuration remains authoritative when
+    # the other source has contradictory, foreign or unknown identity.
+    if scope == 'configuration':
+        parameters = {'technology': 'LIN', 'bitrate': 19_200}; confirmed = parameters
+    else: configuration = {'technology': 'LIN', 'bitrate': 19_200}
+    resolved = parameters_for_protocol('LIN', parameters, configuration, 'bus', confirmed)
+    assert resolved['_rate_evidenced'] is True
+    assert resolved['bitrate'] == 19_200
+
+
+@pytest.mark.parametrize('target', ['SPI', 'I2C'])
+@pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values'])
+@pytest.mark.parametrize('tags,valid', IDENTITY_CASES)
+def test_nested_serial_identity_matrix(target, scope, tags, valid):
+    serial = {'confirmed': True, 'source': 'approved datasheet', 'master_node_id': 'master',
+              'transfer_bits_bound': 100, 'bitrate_bps': 100_000,
+              'chip_select': 'CS0', 'word_length_bits': 8, 'duplex_mode': 'FULL_DUPLEX',
+              'cpol': 0, 'cpha': 0, 'cs_setup_bound_us': 0, 'inter_transfer_gap_us': 0,
+              'slave_address': 32, 'address_bits': 7, 'i2c_mode': 'STANDARD',
+              'transfer_direction': 'READ', 'start_stop_bound_us': 1,
+              'clock_stretch_limit_us': 0, 'multi_master': False,
+              **{key: target if value == 'TARGET' else value for key, value in tags.items()}}
+    p, c, confirmed = provenance_source_fixture(target, scope, {'technology': target}, {'local_timing_evidence': serial})
+    resolved = parameters_for_protocol(target, p, c, 'bus', confirmed)
+    assert resolved['_rate_evidenced'] is valid
+    assert estimate_frame(target, 8, resolved).transmission_time_available is valid
+
+
+@pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values'])
+@pytest.mark.parametrize('tags,valid', IDENTITY_CASES)
+def test_field_proof_identity_cannot_contradict_matching_scalar_scope(scope, tags, valid):
+    p, c, confirmed = provenance_source_fixture('LIN', scope, {'technology': 'LIN'}, {'bitrate': 19_200})
+    proof = {key: 'LIN' if value == 'TARGET' else value for key, value in tags.items()}
+    if scope == 'reviewed_values':
+        confirmed['technology_parameters']['LIN']['provenance']['bitrate'].update(proof)
+    else:
+        container = p['networks'][0] if scope == 'network' else c if scope == 'configuration' else p
+        container['parameter_provenance'] = {'bitrate': proof}
+        if scope == 'global': confirmed = p
+    resolved = parameters_for_protocol('LIN', p, c, 'bus', confirmed)
+    assert resolved['_rate_evidenced'] is valid
+    assert estimate_frame('LIN', 8, resolved).transmission_time_available is valid
+
+
+@pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values', 'reviewed_enclosing'])
+@pytest.mark.parametrize('tags,valid', [item for item in IDENTITY_CASES if not item[1]])
+def test_invalid_serial_source_preserves_independent_matching_evidence(scope, tags, valid):
+    from copy import deepcopy
+    serial = {'confirmed': True, 'source': 'approved datasheet', 'master_node_id': 'master',
+              'transfer_bits_bound': 64, 'bitrate_bps': 100_000,
+              'chip_select': 'CS0', 'word_length_bits': 8, 'duplex_mode': 'FULL_DUPLEX',
+              'cpol': 0, 'cpha': 0, 'cs_setup_bound_us': 0, 'inter_transfer_gap_us': 0}
+    foreign = {**serial, 'bitrate_bps': 1_000_000, **{key: 'SPI' if value == 'TARGET' else value for key, value in tags.items()}}
+    p, c, confirmed = provenance_source_fixture('SPI', scope, {'technology': 'SPI'}, {'local_timing_evidence': foreign})
+    if scope == 'configuration':
+        p = {'technology': 'SPI', 'local_timing_evidence': deepcopy(serial)}; confirmed = p
+    else:
+        c = {'technology': 'SPI', 'local_timing_evidence': deepcopy(serial)}
+    resolved = parameters_for_protocol('SPI', p, c, 'bus', confirmed)
+    assert resolved['_rate_evidenced'] is True
+    assert resolved['bitrate'] == 100_000
+
+
 def test_explicit_secondary_lin_rate_is_evidence_without_inheriting_can_fd_rate():
     confirmed = {"technology": "can_fd", "bitrate": 2_000_000,
                  "defaults_source": "technology-registry-with-explicit-user-rates",
@@ -216,6 +333,53 @@ def test_i2c_reference_modes_are_review_proposals_not_automatic_evidence():
     assert profile["capacity_evidence"]["status"] == "MODEL_AVAILABLE"
     assert estimate_frame("I2C", 8, {}).transmission_time_available is False
     assert estimate_frame("SPI", 8, {}).transmission_time_available is False
+
+
+@pytest.mark.parametrize('location', ['global', 'configuration', 'network', 'reviewed_group'])
+@pytest.mark.parametrize('foreign', ['CAN', 'I2C'])
+def test_foreign_serial_timing_never_proves_spi(location, foreign):
+    evidence = {'confirmed': True, 'source': 'approved device datasheet',
+                'master_node_id': 'controller', 'chip_select': 'CS0', 'word_length_bits': 8,
+                'duplex_mode': 'FULL_DUPLEX', 'cpol': 0, 'cpha': 0,
+                'cs_setup_bound_us': 2, 'inter_transfer_gap_us': 1,
+                'transfer_bits_bound': 64, 'bitrate_bps': 1_000_000}
+    parameters, configuration, confirmed = {}, {}, {}
+    if location == 'global':
+        parameters = {'technology': foreign, 'local_timing_evidence': evidence}
+    elif location == 'configuration':
+        configuration = {'technology': foreign, 'local_timing_evidence': evidence}
+    elif location == 'network':
+        parameters = {'networks': [{'id': 'serial', 'technology': foreign, 'local_timing_evidence': evidence}]}
+    else:
+        confirmed = {'technology_parameters': {foreign: {'values': {'local_timing_evidence': evidence},
+            'provenance': {'local_timing_evidence': {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': evidence}}}}}
+    resolved = parameters_for_protocol('SPI', parameters, configuration, network_id='serial', confirmed_parameters=confirmed)
+    assert resolved['_rate_evidenced'] is False
+    assert 'bitrate' not in resolved
+    assert estimate_frame('SPI', 8, resolved).transmission_time_available is False
+
+
+@pytest.mark.parametrize('location', ['global', 'configuration', 'network', 'reviewed_group'])
+@pytest.mark.parametrize('nested_technology', ['SPI', 'CAN', 'conflicting_alias'])
+def test_serial_timing_requires_consistent_nested_technology(location, nested_technology):
+    evidence = {'technology': nested_technology, 'confirmed': True, 'source': 'approved device datasheet',
+                'master_node_id': 'controller', 'chip_select': 'CS0', 'word_length_bits': 8,
+                'duplex_mode': 'FULL_DUPLEX', 'cpol': 0, 'cpha': 0,
+                'cs_setup_bound_us': 2, 'inter_transfer_gap_us': 1,
+                'transfer_bits_bound': 64, 'bitrate_bps': 1_000_000}
+    if nested_technology == 'conflicting_alias':
+        evidence.update(technology='SPI', protocol='CAN')
+    parameters, configuration, confirmed = {}, {}, {}
+    container = {'technology': 'SPI', 'local_timing_evidence': evidence}
+    if location == 'global': parameters = container
+    elif location == 'configuration': configuration = container
+    elif location == 'network': parameters = {'networks': [{'id': 'serial', **container}]}
+    else:
+        confirmed = {'technology_parameters': {'SPI': {'values': {'local_timing_evidence': evidence},
+            'provenance': {'local_timing_evidence': {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': evidence}}}}}
+    resolved = parameters_for_protocol('SPI', parameters, configuration, network_id='serial', confirmed_parameters=confirmed)
+    assert resolved['_rate_evidenced'] is (nested_technology == 'SPI')
+    assert estimate_frame('SPI', 8, resolved).transmission_time_available is (nested_technology == 'SPI')
 
 
 @pytest.mark.parametrize(("protocol", "evidence", "expected_us"), [
@@ -420,3 +584,24 @@ def test_explicit_invalid_arbitration_phase_is_never_replaced_by_bitrate_alias(r
     assert frame.transmission_time_available is False
     assert frame.to_dict()['transmission_time_s'] is None
     assert can_frame_time_bound_ms('CAN_FD', 8, parameters) is None
+
+@pytest.mark.parametrize('declared_technology', ['CAN', 'CAN_FD', 'SPI', 'UnspecifiedBus', None])
+def test_network_id_alone_never_imports_foreign_or_unknown_rate_evidence(declared_technology):
+    declared = {'id': 'same-id', 'bitrate': 500000}
+    if declared_technology is not None:
+        declared['technology'] = declared_technology
+    parameters = {'technology': 'CAN', 'networks': [declared]}
+    resolved = parameters_for_protocol('LIN', parameters, network_id='same-id', confirmed_parameters=parameters)
+    assert 'bitrate' not in resolved
+    assert resolved['_rate_evidenced'] is False
+
+@pytest.mark.parametrize('declared_technology', ['LIN', 'lin'])
+def test_matching_network_technology_retains_its_explicit_rate_evidence(declared_technology):
+    parameters = {'technology': 'CAN', 'networks': [{'id': 'same-id', 'technology': declared_technology, 'bitrate': 19200}]}
+    resolved = parameters_for_protocol('LIN', parameters, network_id='same-id', confirmed_parameters=parameters)
+    assert resolved['bitrate'] == 19200 and resolved['_rate_evidenced'] is True
+
+def test_foreign_workflow_network_does_not_override_matching_physical_port_rate():
+    parameters = {'technology': 'CAN', 'networks': [{'id': 'same-id', 'technology': 'CAN', 'bitrate': 500000}]}
+    resolved = parameters_for_protocol('LIN', parameters, {'technology': 'LIN', 'bitrate': 19200}, 'same-id', parameters)
+    assert resolved['bitrate'] == 19200 and resolved['_rate_evidenced'] is True

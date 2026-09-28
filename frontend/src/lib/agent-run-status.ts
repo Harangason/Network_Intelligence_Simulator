@@ -70,7 +70,7 @@ export function resolveAgentRunStep(run: AgentRunStatus | null, statuses: Partia
 export function wizardRunCanRetry(runPaused: boolean, hasResumablePrompt: boolean, run: AgentRunStatus | null) {
   // Retries are explicit user actions. A failed attempt must not turn the
   // durable wizard into a permanent dead end; only cancellation is terminal.
-  return runPaused && hasResumablePrompt && run?.state !== "CANCELED";
+  return runPaused && hasResumablePrompt && (!run || ['BLOCKED', 'RUNNING'].includes(run.state));
 }
 
 export function wizardContinuationPrompt({

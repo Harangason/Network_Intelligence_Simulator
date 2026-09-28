@@ -172,7 +172,8 @@ def _continuation(graph, state, goal, period):
         interface = graph.interfaces.get(str(message.get('interface_id'))) or {}
         replies = [m for m in graph.messages.values() if (m.get('configuration') or {}).get('generation_role') == 'ACQUISITION_RESPONSE'
                    and m['configuration'].get('acquisition_exchange', {}).get('source_signal_ref') == source
-                   and m['configuration'].get('communication_contract', {}).get('consumer_refs') == [str(requester['id'])]]
+                   and m['configuration'].get('communication_contract', {}).get('consumer_refs') in
+                       ([str(requester['id'])], [str(fn['id'])])]
         if str(interface.get('hardware_node_id')) != actor or len(replies) != 1 or replies[0].get('cycle_ms') != period:
             raise EngineeringValidationError('Die vorhandene Positionsabfrage stimmt nicht mehr mit ihren Quellen überein.')
         request = graph.messages.get(replies[0]['configuration']['communication_contract']['transmission'].get('request_message_ref')) or {}
@@ -303,7 +304,92 @@ def prepare(arguments):
     return {'supported': True, 'proposal': proposal, 'findings': gaps}
 
 
-def build_changes(graph, template, settings, template_port, definitions, period, goal, *, continuation=None):
+def prepare_diagnostic(arguments):
+    """Realize a confirmed project-defined service on an existing requester."""
+    from . import conversation, proposal_service
+    from ..goal_execution.graph import ModelGraphService
+    from ..goal_execution.commands import checked_port
+    from ..physical_ports import technology_id
+    from backend.agent_core.orchestration.capability_intent import diagnostic_creation_without_parameters
+    state = conversation.read()
+    work = state.get('engineering_workloads', {}).get(arguments['workload_id']) or {}
+    goal = work.get('goal') or {}
+    if (work.get('project_id') != current_project_id() or goal.get('goal_type') != 'GENERAL_ENGINEERING'
+            or goal.get('goal_id') != arguments['workload_id']
+            or state.get('active_engineering_workload_id') != arguments['workload_id']):
+        raise EngineeringValidationError('Die Diagnoseabfrage benötigt den aktuellen gespeicherten Engineering-Auftrag.')
+    if not diagnostic_creation_without_parameters(goal.get('original_request', '')):
+        return {'supported': False}
+    graph = ModelGraphService.load()
+    templates = [f for f in graph.functions.values() if 'diagnostic_request_template' in (f.get('configuration') or {})]
+    if not templates:
+        return {'supported': False}
+    def blocked(code, message, **facts):
+        return {'supported': True, 'proposal': None, 'findings': [_gap(code, message, **facts)]}
+    if len(templates) != 1:
+        return blocked('DIAGNOSTIC_DEFINITION_AMBIGUOUS', 'Genau eine bestätigte Diagnosevorgabe auswählen.')
+    definition = templates[0]; config = definition['configuration']['diagnostic_request_template']
+    if (not isinstance(config, dict) or config.get('confirmed') is not True
+            or config.get('trigger') != 'CYCLIC'
+            or type(config.get('period_ms')) not in (int, float) or not 0 < config['period_ms'] <= 3600000
+            or not isinstance(config.get('service_id'), str) or not config['service_id'].strip()
+            or not isinstance(config.get('source_signal_refs'), list) or not config['source_signal_refs']
+            or any(not isinstance(ref, str) or not ref for ref in config['source_signal_refs'])
+            or len(config['source_signal_refs']) != len(set(config['source_signal_refs']))):
+        return blocked('DIAGNOSTIC_DEFINITION_INCOMPLETE', 'Bestätigten Diagnosezyklus, Dienst und eindeutige Datenquellen festlegen.')
+    if any((f.get('configuration') or {}).get('diagnostic_definition_ref') == str(definition['id']) for f in graph.functions.values()):
+        return blocked('DIAGNOSTIC_QUERY_ALREADY_EXISTS', 'Zu dieser Diagnosevorgabe besteht bereits eine Abfrage. Es wird keine doppelte Abfrage angelegt.')
+    requester = graph.hardware.get(str(definition['hardware_node_id']))
+    port = graph.hni.get(str(config.get('requester_hardware_interface_ref') or ''))
+    if (not requester or not port or str(port.get('hardware_node_id')) != str(requester['id'])
+            or technology_id(port.get('technology')) != 'can_fd'):
+        return blocked('DIAGNOSTIC_REQUESTER_UNRESOLVED', 'Die Diagnosevorgabe benötigt einen vorhandenen, bestätigten CAN-FD-Anschluss ihres Controllers.')
+    checked_port(graph, port)
+    actuator_ids = {key for key, h in graph.hardware.items() if h.get('device_type') == 'ActuatorController'
+                    and h.get('lifecycle_state') not in {'deprecated', 'superseded'}}
+    definitions = []; covered = set()
+    for ref in config['source_signal_refs']:
+        signal = graph.signals.get(ref)
+        message = graph.messages.get(str((signal or {}).get('message_id')), {})
+        interface = graph.interfaces.get(str(message.get('interface_id')), {})
+        owner = str(interface.get('hardware_node_id') or graph.functions.get(str(interface.get('function_id')), {}).get('hardware_node_id') or '')
+        source_port = graph.hni.get(str(message.get('hardware_interface_id')))
+        contract = (message.get('configuration') or {}).get('request_response_acquisition')
+        if (not signal or owner not in actuator_ids or owner in covered
+                or not source_port or source_port.get('network_ref') != port.get('network_ref')
+                or technology_id(source_port.get('technology')) != 'can_fd'
+                or technology_id(interface.get('interface_type')) != 'can_fd'
+                or not isinstance(contract, dict) or contract.get('confirmed') is not True
+                or not isinstance(contract.get('request_signal'), dict)
+                or not contract.get('request_frame_id') or not contract.get('response_frame_id')
+                or not isinstance(contract.get('functional_requirements'), dict)
+                or contract['functional_requirements'].get('confirmed') is not True
+                or type(contract.get('response_processing_ms')) not in (int, float)
+                or not 0 <= contract['response_processing_ms'] < config['period_ms']
+                or type(contract.get('response_minimum_interval_ms')) not in (int, float)
+                or not 0 < contract['response_minimum_interval_ms'] <= config['period_ms']):
+            return blocked('DIAGNOSTIC_SOURCE_CONTRACT_INVALID', 'Diagnosequelle, Eigentümer, gemeinsames Netz und bestätigter Anfrage-/Antwortvertrag müssen eindeutig zusammenpassen.', source_signal_ref=ref)
+        checked_port(graph, source_port, role='source')
+        definitions.append({'actuator_id': owner, 'signal': signal, 'message': message,
+            'interface': interface, 'port': source_port, 'contract': contract})
+        covered.add(owner)
+    if not actuator_ids or covered != actuator_ids:
+        return blocked('DIAGNOSTIC_ACTUATORS_UNCOVERED', 'Die bestätigte Diagnosevorgabe muss alle aktiven Stellglieder mit einer Datenquelle abdecken.', missing_actuator_ids=sorted(actuator_ids-covered))
+    saved_definition = {'function_id': str(definition['id']), 'configuration': deepcopy(definition['configuration']),
+        'requester_id': str(requester['id']), 'port_id': str(port['id'])}
+    changes = build_changes(graph, requester, {}, port, definitions, config['period_ms'], goal,
+        diagnostic_definition=saved_definition)
+    proposal = proposal_service.create('PERIODIC_ACQUISITION', changes, goal['original_request'],
+        workload_id=goal['goal_id'], evidence=[{'source': 'explicit_periodic_acquisition',
+            'engineering_goal_id': goal['goal_id'], 'source_revision': access.model_revision(),
+            'controller_template_ref': str(requester['id']), 'actuator_ids': sorted(actuator_ids),
+            'resolved_actuator_ids': [d['actuator_id'] for d in definitions],
+            'source_signal_ids': config['source_signal_refs'], 'period_ms': config['period_ms'],
+            'data_gaps': [], 'transport_scope': 'CAN_FD_REQUEST_RESPONSE', 'diagnostic_definition': saved_definition}])
+    return {'supported': True, 'proposal': proposal, 'findings': [], 'acquisition_kind': 'DIAGNOSTIC'}
+
+
+def build_changes(graph, template, settings, template_port, definitions, period, goal, *, continuation=None, diagnostic_definition=None):
     """Build one reviewable atomic delta; preserve every existing object."""
     from ..message_packing import valid_payload_bytes
     from ..signal_audit import occupied_signal_bits
@@ -318,6 +404,11 @@ def build_changes(graph, template, settings, template_port, definitions, period,
         name = 'StellgliedAbfrageECU_' + str(index); index += 1
     if continuation:
         name = str(graph.hardware[continuation['requester_id']]['name']) + '_Erweiterung_' + str(len(continuation['actuator_ids']) + 1)
+    if diagnostic_definition:
+        name = str(template['name']) + '_Diagnoseabfrage'
+        index = 2
+        while any(str(m['name']).startswith(name + '_') for m in graph.messages.values()):
+            name = str(template['name']) + '_Diagnoseabfrage_' + str(index); index += 1
     provenance = {'source': 'explicit_periodic_acquisition', 'workload_id': goal['goal_id'],
                   'controller_template_ref': str(template['id'])}
     changes = []
@@ -331,6 +422,10 @@ def build_changes(graph, template, settings, template_port, definitions, period,
         'configuration': {'acquisition_mode': 'REQUEST_RESPONSE', 'cycle_time_ms': period,
             'actuator_refs': [d['actuator_id'] for d in definitions],
             'source_signal_refs': [str(d['signal']['id']) for d in definitions]}})
+    if diagnostic_definition:
+        changes[-1]['data']['name'] = 'Diagnoseabfrage'
+        changes[-1]['data']['configuration'].update(diagnostic_definition_ref=diagnostic_definition['function_id'],
+            diagnostic_service_id=diagnostic_definition['configuration']['diagnostic_request_template']['service_id'])
     controllers = [c for c in graph.resources.get('CommunicationController', []) if c['id'] == template_port['controller_ref']]
     caps = [c for c in graph.resources.get('CommunicationCapability', [])
             if str(c['hardware_node_ref']) == str(template['id']) and str(c['technology']).upper() == 'CAN_FD']
@@ -406,7 +501,7 @@ def build_changes(graph, template, settings, template_port, definitions, period,
                 or requirements['maximum_event_to_response_ms'] <= 0):
             raise EngineeringValidationError('Bestätigte funktionale Zeitbedingungen fehlen.')
         config = {'generation_role': role, 'maximum_latency_ms': requirements['maximum_event_to_response_ms'],
-            'communication_contract': {'scope': 'FUNCTION_OUTPUT', 'consumer_refs': [consumer],
+            'communication_contract': {'scope': 'FUNCTION_OUTPUT', 'consumer_refs': [consumer_function or consumer],
                 'transmission': {'mode': 'CYCLIC' if role != 'ACQUISITION_RESPONSE' else 'ON_REQUEST',
                     'period_ms': interval, 'functional_requirements': deepcopy(requirements)}},
             'transport_unit': {'technology_id': 'can_fd', 'payload_bytes': size, 'cycle_ms': interval,
@@ -427,29 +522,33 @@ def build_changes(graph, template, settings, template_port, definitions, period,
         add('Signal', ref + '-signal', value); new_message_refs.append(ref)
     for index, definition in enumerate(definitions):
         contract = definition['contract']; correlation = str(uuid4()); suffix = str(index)
-        transport('request-' + suffix, name + '_Positionsanfrage_' + suffix, '$logical', '$port',
+        transport('request-' + suffix, name + ('_Diagnoseanfrage_' if diagnostic_definition else '_Positionsanfrage_') + suffix, '$logical', '$port',
             contract['request_frame_id'], period, str(definition['interface'].get('function_id') or definition['actuator_id']),
             contract['request_signal'], contract['functional_requirements'], 'ACQUISITION_REQUEST', correlation)
-        transport('response-' + suffix, name + '_Positionsantwort_' + suffix, str(definition['interface']['id']), str(definition['port']['id']),
+        transport('response-' + suffix, name + ('_Diagnoseantwort_' if diagnostic_definition else '_Positionsantwort_') + suffix, str(definition['interface']['id']), str(definition['port']['id']),
             contract['response_frame_id'], period, '$acquisition', definition['signal'], contract['functional_requirements'],
             'ACQUISITION_RESPONSE', correlation, int(definition['message']['dlc']),
             '$request-' + suffix, contract)
-    if not continuation:
+    if not continuation and not diagnostic_definition:
         transport('status', name + '_Status', '$logical', '$port', settings.get('status_frame_id'), settings['status_cycle_ms'],
             settings['status_consumer_ref'], settings.get('status_signal') or {}, settings.get('status_functional_requirements') or {}, 'DEVICE_STATUS')
     else:
-        reused = {'$requester': continuation['requester_id'], '$logical': continuation['logical_id'],
-                  '$port': continuation['port_id'], '$acquisition': continuation['function_id']}
+        reused = ({'$requester': diagnostic_definition['requester_id'], '$port': diagnostic_definition['port_id']}
+                  if diagnostic_definition else
+                  {'$requester': continuation['requester_id'], '$logical': continuation['logical_id'],
+                   '$port': continuation['port_id'], '$acquisition': continuation['function_id']})
         def reuse(value):
             if isinstance(value, dict): return {k: reuse(v) for k, v in value.items()}
             if isinstance(value, list): return [reuse(v) for v in value]
             return reused.get(value, value) if isinstance(value, str) else value
-        changes = [reuse(c) for c in changes if c['object_type'] in {'Message', 'Signal'}]
-        config = deepcopy(continuation['configuration'])
-        config['actuator_refs'] += [d['actuator_id'] for d in definitions]
-        config['source_signal_refs'] += [str(d['signal']['id']) for d in definitions]
-        changes.insert(0, {'object_type': 'Function', 'action': 'UPDATE', 'local_ref': 'acquisition',
-            'object_id': continuation['function_id'], 'data': {'configuration': config}})
+        retained = {'Function', 'Interface', 'Message', 'Signal'} if diagnostic_definition else {'Message', 'Signal'}
+        changes = [reuse(c) for c in changes if c['object_type'] in retained]
+        if continuation:
+            config = deepcopy(continuation['configuration'])
+            config['actuator_refs'] += [d['actuator_id'] for d in definitions]
+            config['source_signal_refs'] += [str(d['signal']['id']) for d in definitions]
+            changes.insert(0, {'object_type': 'Function', 'action': 'UPDATE', 'local_ref': 'acquisition',
+                'object_id': continuation['function_id'], 'data': {'configuration': config}})
     changes = order_change_dependencies(changes)
     snapshot, _, refs = proposed_model(changes)
     objects = {kind: snapshot['tables'][table] for kind, table in TABLES.items()}
@@ -467,7 +566,7 @@ def build_changes(graph, template, settings, template_port, definitions, period,
         if isinstance(value, list): return [localize(v) for v in value]
         return reverse.get(value, value) if isinstance(value, str) else value
     for index, route in enumerate(routes):
-        data = localize(route['data']); data.setdefault('route', {})['topology_ref'] = 'workflow-network-topology' if continuation else '$topology'
+        data = localize(route['data']); data.setdefault('route', {})['topology_ref'] = 'workflow-network-topology' if continuation or diagnostic_definition else '$topology'
         changes.append({'object_type': 'RoutingEntry', 'action': 'CREATE', 'local_ref': 'route-' + str(index), 'data': data})
     return order_change_dependencies(changes)
 
@@ -483,7 +582,11 @@ def reconcile_apply(proposal, evidence):
     from .proposal_service import _resolve
     state = conversation.read(); goal_id = str(evidence['engineering_goal_id'])
     work = state.get('engineering_workloads', {}).get(goal_id) or {}; goal = work.get('goal') or {}
-    if (work.get('project_id') != current_project_id() or goal.get('goal_type') != 'PERIODIC_ACQUISITION'
+    diagnostic = evidence.get('diagnostic_definition')
+    from backend.agent_core.orchestration.capability_intent import diagnostic_creation_without_parameters
+    valid_goal = (goal.get('goal_type') == 'GENERAL_ENGINEERING' and diagnostic_creation_without_parameters(goal.get('original_request', ''))
+                  if diagnostic else goal.get('goal_type') == 'PERIODIC_ACQUISITION')
+    if (work.get('project_id') != current_project_id() or not valid_goal
             or proposal.get('workload_id') != goal_id or proposal.get('proposal_type') != 'PERIODIC_ACQUISITION'
             or proposal.get('status') != 'APPLIED' or not proposal.get('validation_result', {}).get('valid')):
         raise ConcurrentUpdateError('Der Abfragevorschlag gehört nicht zum gespeicherten Auftrag.')
@@ -491,6 +594,13 @@ def reconcile_apply(proposal, evidence):
     if not changes or len(changes) != len(canonical):
         raise EngineeringValidationError('Die kanonischen Abfrageobjekte sind nicht vollständig belegt.')
     refs = {change['local_ref']: row['id'] for change, row in zip(changes, canonical)}
+    if diagnostic:
+        definition = access.json_safe(get_object('Function', diagnostic['function_id']))
+        if (definition.get('configuration') != diagnostic['configuration']
+                or str(definition['hardware_node_id']) != diagnostic['requester_id']
+                or str(get_object('HardwareNetworkInterface', diagnostic['port_id'])['hardware_node_id']) != diagnostic['requester_id']):
+            raise EngineeringValidationError('Die bestätigte Diagnosevorgabe oder ihr Controlleranschluss ist nicht mehr aktuell.')
+        refs['requester'] = diagnostic['requester_id']
     continuation = evidence.get('continuation')
     if continuation:
         previous = state.get('engineering_workloads', {}).get(continuation.get('prior_workload_id')) or {}
@@ -501,7 +611,9 @@ def reconcile_apply(proposal, evidence):
             raise EngineeringValidationError('Die übernommene Erweiterung gehört nicht zur vorhandenen Abfrage.')
         refs['requester'] = continuation['requester_id']
     periods = [p.get('seconds') for p in goal.get('timing_constraints', []) if p.get('kind') == 'PERIOD']
-    if len(periods) != 1 or evidence.get('period_ms') != periods[0] * 1000:
+    correct_period = (not periods and evidence.get('period_ms') == diagnostic['configuration']['diagnostic_request_template']['period_ms']
+                      if diagnostic else len(periods) == 1 and evidence.get('period_ms') == periods[0] * 1000)
+    if not correct_period:
         raise EngineeringValidationError('Das übernommene Abfrageintervall weicht vom Auftrag ab.')
     def contains(actual, expected):
         if isinstance(expected, dict):
@@ -553,7 +665,7 @@ def reconcile_apply(proposal, evidence):
                           and all(exchange.get('status') == 'PASS' for exchange in exchanges))
     outcomes = {'requester_exists': bool(refs.get('requester')), 'period_configured': bool(refs.get('acquisition')),
         'data_sources_resolved': not evidence.get('data_gaps') and bool(evidence.get('source_signal_ids')),
-        'route_valid': len(route_ids) == len(evidence.get('resolved_actuator_ids') or []) * 2 + (0 if continuation else 1),
+        'route_valid': len(route_ids) == len(evidence.get('resolved_actuator_ids') or []) * 2 + (0 if continuation or diagnostic else 1),
         'capacity_evaluated': checked and bool(networks) and all(n.get('capacity_verified') is True for n in networks),
         'timing_evaluated': checked and exchanges_verified and bool(routes) and all(r.get('timing_verified') is True for r in routes),
         'preflight_valid': checked and preflight.get('ready_for_simulation') is True}
@@ -566,7 +678,7 @@ def reconcile_apply(proposal, evidence):
         'canonical_ids': canonical, 'model_diff': changes, 'model_revision_after': access.model_revision(),
         'completion': {'status': work['status'], 'completed': complete, 'achieved_outcomes': [k for k in required if outcomes.get(k)],
             'missing_outcomes': missing, 'evidence_refs': proof},
-        'periodic_acquisition': {'requester_id': refs.get('requester'), 'function_id': refs.get('acquisition'),
+        ('diagnostic_acquisition' if diagnostic else 'periodic_acquisition'): {'requester_id': refs.get('requester'), 'function_id': refs.get('acquisition'),
             'period_ms': evidence['period_ms'], 'actuator_ids': (continuation or {}).get('actuator_ids', []) + evidence['resolved_actuator_ids'],
             'source_signal_ids': (continuation or {}).get('source_signal_ids', []) + evidence['source_signal_ids'],
             'route_ids': (continuation or {}).get('route_ids', []) + route_ids, 'data_gaps': evidence.get('data_gaps') or []},

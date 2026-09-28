@@ -1,6 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actuatorCommandLabel, actuatorCommands, selectActuatorCommand, unresolvedActuatorCommands, ACTUATOR_COMMANDS } from './actuator-commands.ts';
+import { actuatorCommandLabel, actuatorCommands, proposedActuatorCommand, resolvedActuatorCommands, selectActuatorCommand, unresolvedActuatorCommands, ACTUATOR_COMMANDS } from './actuator-commands.ts';
+
+test('default commands are serialized for new drafts while explicit and imported contracts survive', () => {
+  const nodes = ['TelematikSchaltausgang', 'TelematikStellglied'].map(hardware_name => ({ hardware_name, device_type: 'ActuatorController' }));
+  assert.deepEqual(resolvedActuatorCommands(nodes, ''), { TelematikSchaltausgang: ACTUATOR_COMMANDS.OPEN_CLOSE, TelematikStellglied: ACTUATOR_COMMANDS.POSITION });
+  const custom = { length_bits: 8, data: { enum_values: { OPEN: 23 } } };
+  const source = '- Aktor-Befehle: ' + JSON.stringify({ TelematikSchaltausgang: custom });
+  assert.deepEqual(resolvedActuatorCommands(nodes, source).TelematikSchaltausgang, custom);
+  assert.deepEqual(resolvedActuatorCommands(nodes, 'per Wizard-Uebernehmen bestaetigt'), {});
+});
+
+test('named generic actuator roles use the requested command proposals', () => {
+  assert.equal(proposedActuatorCommand('TelematikSchaltausgang').choice, 'OPEN_CLOSE');
+  assert.equal(proposedActuatorCommand('TelematikStellglied').choice, 'POSITION');
+  assert.equal(proposedActuatorCommand('TelematikStellgliedActuator').choice, 'POSITION');
+  assert.equal(proposedActuatorCommand('Unbekannt'), null);
+});
 
 const valves = ['Ventilaktor1', 'Ventilaktor2'].map(hardware_name => ({ hardware_name, device_type: 'ActuatorController' }));
 test('each valve needs its own explicit command and selection preserves the other device', () => {

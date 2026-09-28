@@ -76,3 +76,12 @@ test('lost combined wizard response reads back APPLIED without repeating the wri
   assert.equal(result.status, 'APPLIED');
   assert.deepEqual(methods, ['POST', 'GET', 'GET']);
 });
+
+import { proposalFindingGroups } from './proposal-client.ts';
+test('all 301 historical capacity findings retain identities in compact technology groups', () => {
+  const changes = Array.from({ length: 301 }, (_, i) => ({ local_ref: `port-${i}`, object_type: 'HardwareNetworkInterface', data: { name: `ECU${i}_LIN`, technology: 'LIN', network_ref: 'local-lin' } }));
+  const findings = changes.map(change => ({ code: 'CAPACITY_UNVERIFIED', object_id: `$${change.local_ref}`, message: 'Rate fehlt', severity: 'OPEN' }));
+  const groups = proposalFindingGroups({ changes, validation_result: { findings } });
+  assert.equal(groups.length, 1); assert.equal(groups[0].findings.length, 301);
+  assert.equal(groups[0].findings[300].object_name, 'ECU300_LIN');
+});

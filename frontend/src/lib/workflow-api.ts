@@ -281,6 +281,7 @@ export type CapacityImpact = {
 
 export type AnalysisSnapshot = {
   id: string;
+  project_id?: string;
   analysis_type: "capacity_timing" | "preflight" | "intelligence";
   source_versions: Record<WorkflowStepId, number>;
   results: CapacityResults | PreflightResults | Record<string, unknown>;
@@ -415,9 +416,15 @@ export const cancelEngineeringWorkload = (workloadId: string, actor = "engineeri
     body: JSON.stringify({ actor }),
   });
 
-export const saveWorkflowParameters = (parameters: Record<string, unknown>, expectedToken?: string) =>
+export const getWorkflowParameters = (projectId = readActiveProjectId()) =>
+  request<{ project_id: string; parameters: Record<string, unknown>; edit_token: string }>("/workflow/parameters", {
+    headers: { "X-Project-ID": projectId },
+  });
+
+export const saveWorkflowParameters = (parameters: Record<string, unknown>, expectedToken?: string, projectId?: string) =>
   request<WorkflowState>("/workflow/parameters", {
     method: "PATCH",
+    ...(projectId ? { headers: { "X-Project-ID": projectId } } : {}),
     body: JSON.stringify({ parameters, expected_token: expectedToken }),
     signal: AbortSignal.timeout(180000),
   }).then(normalizeWorkflowState);

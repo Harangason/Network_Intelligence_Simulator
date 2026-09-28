@@ -2,6 +2,10 @@ import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
+// First actionable reply test allowance: backend/SSE 290s + one history PUT 8s + UI expect 30s.
+// Sources: src/app/api/agent/chat/route.ts, playwright.config.ts; not a whole-stream bound or SLA.
+const ENGINEERING_REPLY_BUDGET_MS = 290_000 + 8_000 + 30_000;
+
 test('native wizard preserves its complete source while adopting an edited shared draft @project-draft', async ({ page }) => {
   const project = 'nis-e2e-shared-native-' + randomUUID();
   const run = randomUUID();
@@ -50,7 +54,7 @@ test('conflicting edits retain input and load the current revision without overw
   await page.getByRole('textbox', { name: 'Nachricht an den Engineering-Assistenten' }).fill('Erstelle ein Projekt mit Raspberry Pi und drei Temperatursensoren.');
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText('Revision 1');
+  await expect(editor).toContainText('Revision 1', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await editor.getByRole('textbox', { name: 'Name', exact: true }).first().fill('MeineRegelung');
   const session = await (await page.request.get('/api/engineering/agent/review-session')).json();
   const remote = await page.request.post('/api/engineering/agent/project-draft', { headers: {
@@ -80,7 +84,7 @@ test('draft recovers a lost save response and survives application restart @proj
   await page.getByRole('textbox', { name: 'Nachricht an den Engineering-Assistenten' }).fill('Erstelle ein Projekt mit Raspberry Pi und drei Temperatursensoren.');
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await editor.getByRole('textbox', { name: 'Anschlusstechnologie', exact: true }).first().fill('ethernet');
   let dropped = false;
   await page.route('**/api/engineering/agent/project-draft', async route => {
@@ -117,7 +121,7 @@ test('removing a draft device survives save, amendment and reload @project-draft
   await expect(send).toBeEnabled({ timeout: 120_000 });
   await send.click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await editor.getByRole('group', { name: 'Temperatursensor3 · SENSOR', exact: true })
     .getByRole('button', { name: 'Aus Entwurf entfernen', exact: true }).click();
   await editor.getByRole('button', { name: 'Angaben speichern', exact: true }).click();
@@ -139,7 +143,7 @@ for (const mode of ['chat', 'wizard']) test(`missing controller can be added in 
   await input.fill('Ein neues Projekt mit drei Sensoren.');
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   let editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' }).last();
-  await expect(editor).toContainText('3 Geräte');
+  await expect(editor).toContainText('3 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await editor.getByText('Offene Angaben', { exact: false }).click();
   await expect(editor).toContainText('Controller ergänzen');
   if (mode === 'wizard') {
@@ -153,7 +157,7 @@ for (const mode of ['chat', 'wizard']) test(`missing controller can be added in 
     await input.fill('Ergänze einen Raspberry Pi.');
     await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   }
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', mode === 'chat' ? { timeout: ENGINEERING_REPLY_BUDGET_MS } : undefined);
   await page.reload();
   editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' }).last();
   await expect(editor).toContainText('Revision 2');
@@ -183,7 +187,7 @@ for (const valveCount of [2, 5]) test(`chat creates and applies the real model w
     `Ich möchte ein kleines Projekt mit einem Raspberry-Pi, drei Temperatursensoren und ${valveCount} Ventilen.`);
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText(`${4 + valveCount} Geräte`);
+  await expect(editor).toContainText(`${4 + valveCount} Geräte`, { timeout: ENGINEERING_REPLY_BUDGET_MS });
   await expect(page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' })).toHaveCount(0);
   const technologies = editor.getByRole('textbox', { name: 'Anschlusstechnologie', exact: true });
   const owners = editor.getByRole('combobox', { name: 'Verarbeitender Controller', exact: true });
@@ -226,7 +230,7 @@ test('new project is created from the saved draft without moving the original pr
     'Ein neues Projekt mit Raspberry Pi und drei Temperatursensoren.');
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   const before = await page.request.get('/api/engineering/agent/project-draft', { headers: { 'X-Project-ID': origin } });
   const originalDraft = (await before.json()).data;
   await editor.getByText('Als neues Projekt verwenden', { exact: true }).click();
@@ -256,7 +260,7 @@ test('the saved inline draft produces and applies a real model proposal @project
     'Ein neues Projekt mit Raspberry Pi und drei Temperatursensoren.');
   await page.locator('.eng-agent-composer').getByRole('button', { name: 'Senden', exact: true }).click();
   const editor = page.getByRole('region', { name: 'Gespeicherter Projektentwurf' });
-  await expect(editor).toContainText('4 Geräte');
+  await expect(editor).toContainText('4 Geräte', { timeout: ENGINEERING_REPLY_BUDGET_MS });
   for (const field of await editor.getByRole('textbox', { name: 'Anschlusstechnologie', exact: true }).all()) await field.fill('ethernet');
   for (const field of await editor.getByRole('combobox', { name: 'Verarbeitender Controller', exact: true }).all()) await field.selectOption({ label: 'RaspberryPi' });
   await editor.getByRole('combobox', { name: 'Technische Parameter', exact: true }).selectOption('defaults');

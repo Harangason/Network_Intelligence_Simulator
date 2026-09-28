@@ -429,7 +429,7 @@ def test_impact_contains_transitive_signals_and_relations(authority):
 
 def test_network_parameters_are_used_by_shared_calculator():
     from backend.engineering.capacity.service import parameters_for_protocol
-    result = parameters_for_protocol("CAN_FD", {"technology": "CAN_FD", "bitrate": 2000000, "networks": [{"id": "slow", "bitrate": 125000, "data_bitrate": 500000}]}, {"bitrate": 500000}, "slow")
+    result = parameters_for_protocol("CAN_FD", {"technology": "CAN_FD", "bitrate": 2000000, "networks": [{"id": "slow", "technology": "CAN_FD", "bitrate": 125000, "data_bitrate": 500000}]}, {"bitrate": 500000}, "slow")
     assert result["bitrate"] == 125000
     assert result["data_bitrate"] == 500000
 

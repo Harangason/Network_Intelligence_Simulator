@@ -72,8 +72,8 @@ def gateway_config(monkeypatch):
         "payload": {"message_id": "message", "signal_ids": ["temperature"], "payload_bytes": 2}}
     config = config_builder.CommunicationConfigBuilder().build([route], topology=topology,
         parameters={"technology": "can_fd", "bitrate": 500_000, "jitter_ms": 1, "gateway_delay_ms": 2,
-            "networks": [{"id": "input-bus", "bitrate": 500_000, "data_bitrate": 2_000_000},
-                         {"id": "output-bus", "bitrate": 19_200} ]})["config"]
+            "networks": [{"id": "input-bus", "technology": "CAN_FD", "bitrate": 500_000, "data_bitrate": 2_000_000},
+                         {"id": "output-bus", "technology": "LIN", "bitrate": 19_200} ]})["config"]
     config.update(duration_s=.12, seed=0, formats=["universal-jsonl", "universal-csv"],
         topology=topology,
         scenario={"mode": "NORMAL", "faults": []},

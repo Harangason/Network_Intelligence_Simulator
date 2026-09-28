@@ -122,17 +122,21 @@ def test_source_change_during_units_refuses_candidate_build(tmp_path, monkeypatc
     test_source = tmp_path / 'backend' / 'tests' / 'test_example.py'
     test_source.parent.mkdir()
     test_source.write_text('assert True\n')
+    # exec_module does not add the entry point's directory as a CLI launch does.
+    # Supply that sibling-import context temporarily for release_storage.
+    monkeypatch.syspath_prepend(str(ROOT / 'scripts'))
     spec = importlib.util.spec_from_file_location('release_gate_source_race', ROOT / 'scripts/run-release-gate.py')
     gate = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gate)
     monkeypatch.setattr(gate, 'ROOT', tmp_path)
     monkeypatch.setattr(sys, 'argv', ['run-release-gate.py', '--output', str(tmp_path / 'reports')])
     monkeypatch.setenv('NIS_TEST_DOCKER', 'docker-must-not-run')
+    monkeypatch.setattr(gate, 'disk_readiness', lambda paths: {'ready': True})
     commands = []
 
     def completed_units(command, **kwargs):
         commands.append(command)
-        if len(commands) == 3:
+        if 'backend/tests' in command:
             if changed_input == 'source':
                 source.write_text('version = 2\n')
             else:
@@ -140,9 +144,21 @@ def test_source_change_during_units_refuses_candidate_build(tmp_path, monkeypatc
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(subprocess, 'run', completed_units)
-    monkeypatch.setattr(subprocess, 'check_output', lambda *args, **kwargs: pytest.fail('Docker must not execute after changed sources'))
+
+    def inventory_only(command, **kwargs):
+        # The pre-unit retention check may inventory images; building or any
+        # Docker work after the source/test mutation must still fail this test.
+        if not commands and command == [
+            'docker-must-not-run', 'image', 'ls', 'networkis', '--no-trunc', '--format', '{{.ID}}',
+        ]:
+            return ''
+        pytest.fail('Docker must not execute after changed sources')
+
+    monkeypatch.setattr(subprocess, 'check_output', inventory_only)
     assert gate.main() == 1
     receipt = json.loads(next((tmp_path / 'reports').glob('*/receipt.json')).read_text())
     assert receipt['status'] == 'FAIL'
     assert ('Sources' if changed_input == 'source' else 'Tests') + ' changed during unit verification' in receipt['error']
-    assert [check['name'] for check in receipt['checks']] == ['typecheck', 'frontend-tests', 'backend-tests']
+    assert [check['name'] for check in receipt['checks']] == [
+        'storage-tests', 'typecheck', 'frontend-tests', 'backend-tests',
+    ]

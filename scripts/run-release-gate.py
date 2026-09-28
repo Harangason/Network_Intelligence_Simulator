@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 from urllib.request import urlopen
+from release_storage import CACHE_POLICY, default_storage_paths, disk_readiness, image_budget
 
 ROOT = Path(__file__).resolve().parents[1]
 POSTGRES = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685"
@@ -25,9 +26,11 @@ POSTGRES = "postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b676793
 
 def verification_manifest():
     paths = set((ROOT/'backend/tests').rglob('*')) | set((ROOT/'frontend/e2e').rglob('*')) | set((ROOT/'tests/fixtures').rglob('*'))
+    paths.update((ROOT/'scripts/tests').rglob('*.py'))
     paths.update(ROOT/name for name in ('frontend/playwright.config.ts',
         'scripts/run-release-gate.py', 'scripts/run-isolated-tests.py',
         'scripts/verify-live-wizard.py', 'scripts/deploy-verified-release.py',
+        'scripts/release_storage.py',
         '.github/workflows/wizard-release-gate.yml'))
     hashes = {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
               for path in sorted(paths) if path.is_file() and '__pycache__' not in path.parts}
@@ -41,9 +44,17 @@ def main():
     parser.add_argument('--keep', action='store_true', help='Keep only this isolated stack on failure for diagnosis.')
     parser.add_argument('--prepare', action='store_true', help='Build/start an isolated development stack; never issues a release PASS.')
     parser.add_argument('--development-base', help='Only with --prepare: reuse installed runtime dependencies while iterating.')
+    parser.add_argument('--builder', help='Existing dedicated nis-* buildx builder; never creates or prunes a builder.')
+    parser.add_argument('--docker-storage-path', type=Path, help='Also check a custom Docker data volume before build.')
     args = parser.parse_args()
     if args.development_base and not args.prepare:
         parser.error('--development-base cannot produce a release PASS; use a clean Dockerfile build for the gate.')
+    if args.builder:
+        from release_storage import cache_cleanup_proposal
+        try:
+            cache_cleanup_proposal(args.builder)
+        except ValueError as error:
+            parser.error(str(error))
     module = importlib.util.spec_from_file_location('nis_isolation', ROOT / 'scripts/run-isolated-tests.py')
     isolation = importlib.util.module_from_spec(module); module.loader.exec_module(isolation)
     info_spec = importlib.util.spec_from_file_location('nis_build_info', ROOT/'scripts/write-build-info.py')
@@ -60,6 +71,9 @@ def main():
     receipt = {'schema_version': 1, 'status': 'RUNNING', 'checks': [], 'containers': names,
                'initial_source_sha256': initial_source_sha256, 'initial_commit_id': initial_commit_id,
                'verification_sha256': verification_manifest()}
+    receipt['storage'] = {'retention': 'PROTECTED_PENDING_FEATURE_AUDIT',
+                          'cache_policy': CACHE_POLICY, 'builder': args.builder,
+                          'automatic_image_cleanup': False}
     created = []
     def save_receipt():
         (output/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
@@ -74,8 +88,23 @@ def main():
     def control(*command):
         return subprocess.check_output([docker, *command], env=env, text=True).strip()
     try:
+        if not args.image:
+            paths = default_storage_paths(ROOT)
+            if args.docker_storage_path:
+                paths.append(args.docker_storage_path)
+            receipt['storage']['disk_readiness'] = disk_readiness(paths)
+            save_receipt()
+            if not receipt['storage']['disk_readiness']['ready']:
+                raise RuntimeError('Insufficient disk budget: 20 GiB free is required on source/system/Docker storage volumes before a candidate build. Review the storage audit; no automatic prune is performed.')
+            receipt['storage']['image_budget'] = image_budget(
+                control('image', 'ls', 'networkis', '--no-trunc', '--format', '{{.ID}}').splitlines())
+            save_receipt()
+            if not receipt['storage']['image_budget']['ready']:
+                raise RuntimeError('NetworkIS image retention budget reached (100 immutable images). Review and accept a feature audit before exact scoped cleanup; no automatic image prune is performed.')
         node = shutil.which('node') or r'C:\Program Files\nodejs\node.exe'
         if not args.prepare:
+            run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts/tests',
+                 '-p', 'test_release_storage.py', '-v'], name='storage-tests')
             run([node, 'node_modules/typescript/bin/tsc', '--noEmit', '--incremental', 'false'], cwd=ROOT/'frontend', name='typecheck')
             run([node, '--experimental-strip-types', '--test', 'src/lib/*.test.mjs', 'src/lib/agent/*.test.mjs'], cwd=ROOT/'frontend', name='frontend-tests')
             run([sys.executable, str(ROOT/'scripts/run-isolated-tests.py'), '--', 'backend/tests', '-q'], name='backend-tests')
@@ -86,8 +115,15 @@ def main():
         if not initial_commit_id:
             raise RuntimeError('Git revision is unavailable. A candidate needs a real base commit identity.')
         image = args.image or 'networkis:candidate-' + token
+        receipt['image_tag'] = image
+        save_receipt()  # Record provenance even when a build or later inspection fails.
         if not args.image:
             command = [docker, 'build', '-t', image, '--build-arg', 'NIS_BUILD_COMMIT_ID=' + initial_commit_id]
+            if args.builder:
+                command = [docker, 'buildx', 'build', '--builder', args.builder, '--load',
+                           '-t', image, '--build-arg', 'NIS_BUILD_COMMIT_ID=' + initial_commit_id]
+            command += ['--label', 'networkis.release.gate=' + token,
+                        '--label', 'networkis.release.source=' + initial_source_sha256]
             if args.development_base:
                 base_id = control('image','inspect',args.development_base,'--format','{{.Id}}')
                 development_file = output/'Dockerfile.development'

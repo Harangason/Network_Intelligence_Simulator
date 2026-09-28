@@ -14,11 +14,24 @@ import { ProjectDraftEditor } from './project-draft-editor';
 import type { AgentInput, InteractiveQuestion } from "@/lib/agent/agent-response";
 import { engineeringContextHref, readAssistantContext } from "@/lib/agent/assistant-context";
 import { readConversation } from '@/lib/agent/conversation-client';
-import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, refreshProposal } from '@/lib/agent/proposal-client';
+import { applyReviewedProposal, approveAndApplyWizardProposal, hasCompleteProposal, proposalChangePage, proposalFindingGroups, refreshProposal } from '@/lib/agent/proposal-client';
 
 function LazyDetails({ title, children }: { title: string; children: () => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return <details onToggle={event => setOpen(event.currentTarget.open)}><summary>{title}</summary>{open && children()}</details>;
+}
+
+function FindingGroupDetails({ findings }: { findings: NonNullable<EngineeringProposal['validation_result']['findings']> }) {
+  const [page, setPage] = useState(0);
+  const size = 50;
+  return <><nav aria-label="Befunde durchblättern">
+    <button type="button" disabled={!page} onClick={() => setPage(page - 1)}>Zurück</button>
+    <span>{page * size + 1}–{Math.min((page + 1) * size, findings.length)} von {findings.length}</span>
+    <button type="button" disabled={(page + 1) * size >= findings.length} onClick={() => setPage(page + 1)}>Weiter</button>
+  </nav><ul>{findings.slice(page * size, (page + 1) * size).map((finding, index) => <li key={index}>
+    <strong>{finding.object_name}</strong>{finding.node_name && ` · ${finding.node_name}`}{finding.network_name && ` · ${finding.network_name}`}<p>{finding.code}: {finding.message}</p>
+    {finding.missing_fields && <p>Fehlt: {finding.missing_fields.join(', ')}</p>}
+  </li>)}</ul></>;
 }
 
 function ContextLinks({ refs, projectId }: { refs: Record<string, string>[]; projectId: string }) {
@@ -41,7 +54,7 @@ function Value({ value, references = {} }: { value: unknown; references?: Record
   return <span>{value == null ? "—" : (references[String(value)] ?? String(value))}</span>;
 }
 
-function ProposalReview({ initial, projectId, wizardReview = false }: { initial: EngineeringProposal; projectId: string; wizardReview?: boolean }) {
+function ProposalReview({ initial, projectId, wizardReview = false, onProposalChange, onReviewBusyChange }: { initial: EngineeringProposal; projectId: string; wizardReview?: boolean; onProposalChange?: (proposal: EngineeringProposal) => void; onReviewBusyChange?: (busy: boolean) => void }) {
   const [proposal, setProposal] = useState(initial);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -59,7 +72,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
         if (!loaded || proposal.revision !== result.revision || proposal.proposal_id !== result.proposal_id) {
           setRationale(result.rationale); setNames({}); setEditing(false); setPage(0);
         }
-        setProposal(result); setLoaded(true); setError("");
+        setProposal(result); onProposalChange?.(result); setLoaded(true); setError("");
       } })
       .catch(cause => { if (!controller.signal.aborted) { setLoaded(false); setError(cause instanceof Error ? cause.message : "Vorschlag konnte nicht vollständig geladen werden."); } });
     void refresh();
@@ -68,7 +81,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
   }, [base, projectId, busy, proposal.revision, loaded]);
   async function action(kind: "approve" | "approveApply" | "reject" | "apply" | "validate" | "revise") {
     if (!loaded || !hasCompleteProposal(proposal) || busy) return;
-    setBusy(true); setError("");
+    setBusy(true); onReviewBusyChange?.(true); setError("");
     try {
       const session = await fetch("/api/engineering/agent/review-session", { cache: "no-store" });
       if (!session.ok) throw new Error("Review-Sitzung konnte nicht geöffnet werden.");
@@ -78,6 +91,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
           ? await approveAndApplyWizardProposal(proposal, projectId, csrf_token)
           : await applyReviewedProposal(proposal, projectId, csrf_token);
         setProposal(persisted);
+        onProposalChange?.(persisted);
         setEditing(false);
         if (persisted.status === "APPLIED") {
           notifyWorkflowChanged();
@@ -94,7 +108,8 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error ?? result.findings?.[0]?.message ?? "Aktion fehlgeschlagen.");
-      setProposal(current => ({ ...current, ...result.data }));
+      const updated = { ...proposal, ...result.data };
+      setProposal(updated); onProposalChange?.(updated);
       setEditing(false);
       if (result.data.status === "APPLIED") {
         notifyWorkflowChanged();
@@ -102,7 +117,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
         publishEngineeringModelChanged({ resource: "hardware-nodes", id: proposal.proposal_id, name: "Engineering-Vorschlag" });
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Aktion fehlgeschlagen."); }
-    finally { setBusy(false); }
+    finally { setBusy(false); onReviewBusyChange?.(false); }
   }
   const complete = loaded && hasCompleteProposal(proposal);
   const review = proposalChangePage(complete ? proposal : { ...proposal, changes: [] }, page);
@@ -117,6 +132,22 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       {' · '}{proposal.status === 'APPLIED' ? `${proposal.canonical_count ?? proposal.canonical_ids.length} übernommen` : 'noch nicht übernommen'}
     </p>}
     {!complete && <p role="status">Vollständiger Vorschlag wird aus dem gespeicherten Modell geladen. Freigabe ist bis dahin gesperrt.</p>}
+    {complete && Boolean(proposal.validation_result.findings?.length) && <section aria-label="Prüfbefunde des Vorschlags">
+      <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
+      {proposalFindingGroups(proposal).map(group => <article key={group.key}>
+        <strong>{group.code === 'CAPACITY_UNVERIFIED' ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ohne Kapazitätsnachweis` : group.findings[0].object_name}</strong>
+        <p>{group.findings[0].message}</p>
+        {group.code === 'CAPACITY_UNVERIFIED' && <><p>Kapazitätsprüfung erfolgt nach Bestätigung und Übernahme der Technologieparameter. Modellfreigabe bestätigt keine Kapazität.</p>
+          <a className="button secondary tiny" href={`/studio?mode=parameters&project=${encodeURIComponent(projectId)}`}>Technologieparameter bearbeiten und bestätigen</a></>}
+        {group.code === 'CAPACITY_UNVERIFIED' ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
+          : group.findings.map((finding, index) => <div key={index}>
+            <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
+            <ContextLinks refs={[finding.source, ...(finding.destinations ?? [])].filter(endpoint => endpoint && typeof endpoint.node_id === 'string').map(endpoint => ({ object_type: 'HardwareNode', id: String(endpoint!.node_id), name: 'Betroffenes Gerät öffnen' }))} projectId={projectId} />
+            {finding.code && <details><summary>Technischer Befund</summary><code>{finding.code}</code>
+              {finding.source && <Value value={{ Quelle: finding.source, Ziele: finding.destinations }} references={references} />}</details>}
+          </div>)}
+      </article>)}
+    </section>}
     {complete && <LazyDetails title="Änderungen prüfen">{() => <>
       {review.pages > 1 && <nav aria-label="Änderungen durchblättern">
         <button type="button" disabled={review.page === 0} onClick={() => setPage(review.page - 1)}>Zurück</button>
@@ -129,23 +160,8 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
       </article>)}
     </>}</LazyDetails>}
     {complete && !!proposal.assumptions.length && <details><summary>Annahmen ({proposal.assumptions.length})</summary><ul>{proposal.assumptions.map((item, index) => <li key={index}>{item}</li>)}</ul></details>}
-    {complete && Boolean(proposal.validation_result.findings?.length) && <section aria-label="Prüfbefunde des Vorschlags">
-      <h4>{proposal.validation_result.findings!.length} Prüfbefunde</h4>
-      <ul>{proposal.validation_result.findings!.map((finding, index) => {
-        const change = typeof finding.index === 'number' ? proposal.changes[finding.index] : undefined;
-        const label = finding.object_name || String(change?.data?.name ?? change?.object_name ?? finding.object_type ?? 'Vorschlag');
-        const endpoints = [finding.source, ...(finding.destinations ?? [])].filter(endpoint => endpoint && typeof endpoint.node_id === 'string');
-        return <li key={`${finding.code ?? 'finding'}-${index}`}>
-          <strong>{label}</strong>
-          <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
-          <ContextLinks refs={endpoints.map(endpoint => ({ object_type: 'HardwareNode', id: String(endpoint!.node_id), name: 'Betroffenes Gerät öffnen' }))} projectId={projectId} />
-          {finding.code && <details><summary>Technischer Befund</summary><code>{finding.code}</code>
-            {finding.source && <Value value={{ Quelle: finding.source, Ziele: finding.destinations }} references={references} />}
-          </details>}
-        </li>;
-      })}</ul>
-    </section>}
-    <div className="engineering-proposal-actions">
+    {busy && <p role="status">Freigabe und Übernahme werden verarbeitet …</p>}
+    {!busy && <div className="engineering-proposal-actions">
       {['PROPOSED', 'VALIDATED', 'APPROVED', 'OUTDATED'].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => setEditing(value => !value)}>Bearbeiten</button>}
       {proposal.status === "VALIDATED" && (wizardReview
         ? <button disabled={busy || !loaded} onClick={() => void action("approveApply")}>Freigeben, übernehmen &amp; fortfahren</button>
@@ -155,7 +171,7 @@ function ProposalReview({ initial, projectId, wizardReview = false }: { initial:
         : <button disabled={busy || !loaded} onClick={() => void action("apply")}>Ins Modell übernehmen</button>)}
       {["PROPOSED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("validate")}>Erneut prüfen</button>}
       {["PROPOSED", "VALIDATED", "APPROVED", "OUTDATED"].includes(proposal.status) && <button disabled={busy || !loaded} onClick={() => void action("reject")}>Ablehnen</button>}
-    </div>
+    </div>}
     {editing && complete && <form className="engineering-proposal-editor" onSubmit={e => { e.preventDefault(); void action('revise'); }}>
       <p>Eine bearbeitete Fassung wird neu validiert und benötigt eine neue Freigabe.</p>
       <label>Beschreibung<textarea required value={rationale} onChange={e => setRationale(e.target.value)} /></label>
@@ -271,12 +287,12 @@ export function ProjectDraftWorkspace({ projectId, draftId }: { projectId: strin
     {proposal && <ProposalReview key={`${projectId}:${proposal.proposal_id}`} initial={proposal} projectId={projectId} />}</>;
 }
 
-export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, onStartCapability, wizardReview = false }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; onStartCapability?: (prompt: string) => void; wizardReview?: boolean }) {
+export function EngineeringAgentEventCard({ event, projectId, onAnswer, onRetry, onStartCapability, wizardReview = false, onProposalChange, onReviewBusyChange }: { event: EngineeringAgentEvent; projectId: string; onAnswer?: (answer: AgentInput) => void; onRetry?: () => void; onStartCapability?: (prompt: string) => void; wizardReview?: boolean; onProposalChange?: (proposal: EngineeringProposal) => void; onReviewBusyChange?: (busy: boolean) => void }) {
   const [draftProposal, setDraftProposal] = useState<EngineeringProposal | null>(null);
   useEffect(() => setDraftProposal(null), [projectId, event.id]);
   event = useGoalResponse(event, projectId);
   if (event.type === 'CONTEXT' || event.type === 'HEARTBEAT') return null;
-  if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} />;
+  if (event.type === "APPROVAL" && event.proposal) return <ProposalReview initial={event.proposal} projectId={projectId} wizardReview={wizardReview} onProposalChange={onProposalChange} onReviewBusyChange={onReviewBusyChange} />;
   if (event.question) return <section data-response-type={event.type}>{event.title && <h4>{event.title}</h4>}{event.recommendation && <LazyDetails title="Empfehlung im Detail">{() => <Value value={event.recommendation} />}</LazyDetails>}<EngineeringQuestion key={event.question.id} question={event.question} projectId={projectId} onAnswer={onAnswer} wizardReview={wizardReview} /></section>;
   const text = event.text ?? '';
   const summary = text.length > 700 ? `${text.slice(0, 700)}…` : text;

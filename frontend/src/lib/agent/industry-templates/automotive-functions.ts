@@ -2,6 +2,10 @@
  * Values and periods are editable design defaults, not measured requirements.
  */
 export const automotiveFunctionOutputs = [
+  ["Motorsteuerung", "Motormomentberechnung", "MotorDrehmomentIst", "Nm", -500, 1000, 0.1],
+  ["Getriebesteuerung", "Getriebezustand", "GetriebeUebersetzungIst", "ratio", 0, 20, 0.01],
+  ["Elektromotorsteuerung", "Elektromomentberechnung", "ElektromotorDrehmomentIst", "Nm", -1000, 1000, 0.1],
+  ["Drehmomentkoordination", "Antriebsmomentkoordination", "AntriebDrehmomentSoll", "Nm", -1000, 2000, 0.1],
   ["BodyControl", "Innenraumueberwachung", "InnenraumBelegung", "Personen", 0, 9, 1],
   ["BodyControl", "Einbruchueberwachung", "InnenraumBewegungsintensitaet", "%", 0, 100, 1],
   ["Klimatisierung", "InnenraumTemperaturregelung", "InnenraumTemperaturIst", "degC", -40, 85, 0.1],

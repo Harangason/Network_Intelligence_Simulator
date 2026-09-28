@@ -1228,7 +1228,9 @@ class EngineeringAgent:
                     {'role': 'tool', 'tool_call_id': call_id, 'tool_name': name, 'content': result.model_dump_json()},
                 ]
             planning_evidence('inspect_project', project)
-            if change_requested and self.reasoner and any(tool['name'] == 'inspect_model_situation' for tool in tools):
+            from ..orchestration.capability_intent import diagnostic_creation_without_parameters, sparse_diagnostic_trigger_question
+            diagnostic_request = diagnostic_creation_without_parameters(prompt)
+            if change_requested and (self.reasoner or diagnostic_request) and any(tool['name'] == 'inspect_model_situation' for tool in tools):
                 snapshot = await call('inspect_model_situation')
                 model = snapshot.data if isinstance(snapshot.data, dict) else {}
                 if (not snapshot.success or model.get('project_ref') != context.active_project_id
@@ -1240,6 +1242,18 @@ class EngineeringAgent:
                     return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
                             'context': context.model_dump(), 'trace': traces, 'proposals': []}
                 planning_evidence('inspect_model_situation', snapshot)
+                question_args = sparse_diagnostic_trigger_question(prompt, model, context.answered_questions)
+                if question_args and any(tool['name'] == 'ask_engineering_question' for tool in allowed):
+                    asked = await call('ask_engineering_question', question_args)
+                    response = (asked.data or {}).get('agent_response') if asked.success else None
+                    if response:
+                        event(response['type'], **{key: value for key, value in response.items() if key != 'type'})
+                        return {'run_id': run_id, 'status': 'BLOCKED', 'events': events,
+                                'context': context.model_dump(), 'trace': traces, 'proposals': []}
+                    text = 'Die fehlende Auslösung der Diagnoseabfrage konnte nicht als Engineering-Frage gespeichert werden. Bitte den Werkzeugbefund prüfen.'
+                    event('RESULT', status='INCOMPLETE', text=text)
+                    return {'run_id': run_id, 'status': 'INCOMPLETE', 'text': text, 'events': events,
+                            'context': context.model_dump(), 'trace': traces, 'proposals': []}
             confirmed_wizard_run = "Strukturierte Vorgaben fuer den Engineering-Agenten:" in prompt and "per Wizard-Uebernehmen bestaetigt" in prompt
             evidence_retries = 0
             planning_timeouts = 0

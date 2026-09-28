@@ -23,12 +23,30 @@ export function actuatorCommandChoice(command: unknown): string {
   return Object.entries(ACTUATOR_COMMANDS).find(([, value]) => JSON.stringify(command) === JSON.stringify(value))?.[0] ?? 'CUSTOM';
 }
 
+export function resolvedActuatorCommands(chains: ExtractedEngineeringChain[], text: string): Record<string, unknown> {
+  const commands = actuatorCommands(text);
+  // An imported, already confirmed wizard contract keeps its historical
+  // encoding. New defaults must never rewrite that contract on re-execution.
+  if (/per Wizard-Uebernehmen bestaetigt/.test(text) && !/^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$/m.test(text)) return commands;
+  for (const chain of chains) {
+    if (chain.device_type !== 'ActuatorController' || commands[chain.hardware_name]
+        || !/(?:Schaltausgang|SchaltausgangActuator|Stellglied|StellgliedActuator)$/.test(chain.hardware_name)) continue;
+    const proposal = proposedActuatorCommand(chain.hardware_name);
+    if (proposal) commands[chain.hardware_name] = ACTUATOR_COMMANDS[proposal.choice];
+  }
+  return commands;
+}
+
 export function actuatorCommandLabel(role: string, name: string, purpose = ''): string {
   if (role !== 'ACTUATOR') return '';
   return /ventil|valve/i.test(`${name} ${purpose}`) ? 'Ventilbefehl' : 'Aktorbefehl';
 }
 
 export function proposedActuatorCommand(name: string): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
+  if (/(?:Schaltausgang|SchaltausgangActuator)$/.test(name))
+    return { choice: 'OPEN_CLOSE', reason: 'Schaltausgang: Auf/Zu als editierbare Entwurfsvorgabe' };
+  if (/(?:Stellglied|StellgliedActuator)$/.test(name))
+    return { choice: 'POSITION', reason: 'Stellglied: 0–100 %, Auflösung 0,1 % als editierbare Entwurfsvorgabe' };
   if (/ventil|valve|relais|relay|schalt/i.test(name))
     return { choice: 'OPEN_CLOSE', reason: 'Schaltendes Stellglied; binärer Entwurf, Kodierung prüfen' };
   if (/motor|drive|servo|linear|antrieb|motion|lüfter|luefter|fan|steering/i.test(name))

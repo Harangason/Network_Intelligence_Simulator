@@ -62,9 +62,9 @@ def actuator_command_template(node):
                 ('length_bits', 'data_type', 'unit', 'factor', 'min_value', 'max_value', 'semantic', 'data')}
     name = str(node.get('name') or '')
     if name.endswith(('Schaltausgang', 'SchaltausgangActuator')):
-        return {'length_bits': 1, 'data_type': 'boolean', 'unit': 'code', 'factor': 1,
+        return {'length_bits': 1, 'data_type': 'unsigned', 'unit': 'code', 'factor': 1,
                 'min_value': 0, 'max_value': 1, 'semantic': {'semantic_type': 'BOOLEAN', 'meaning': 'Angeforderter Schaltzustand'},
-                'data': {'enum_values': {'OFF': 0, 'ON': 1}, 'default_value': 'OFF'}}
+                'data': {'enum_values': {'CLOSE': 0, 'OPEN': 1}, 'default_value': 'CLOSE'}}
     if name.endswith(('Stellglied', 'StellgliedActuator')):
         return {'length_bits': 10, 'data_type': 'unsigned', 'unit': '%', 'factor': 0.1,
                 'min_value': 0, 'max_value': 100, 'semantic': {'semantic_type': 'NUMERIC', 'meaning': 'Angeforderte relative Stellposition'},

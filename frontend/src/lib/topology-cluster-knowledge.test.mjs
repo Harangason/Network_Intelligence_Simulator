@@ -74,3 +74,11 @@ test("system aliases merge only exact duplicate system identities", () => {
     topologySystemIdentityForText("Motorsteuerung", "industrial_automation"),
   );
 });
+
+test('complete radar processing and torque coordination compounds retain their automotive domain', () => {
+  assert.equal(topologyClusterForText('Radarverarbeitung ECU', 'automotive').key, 'driver_assistance');
+  assert.equal(topologyClusterForText('Drehmomentkoordination ECU', 'automotive').key, 'powertrain_transmission');
+  assert.equal(topologyClusterForText('Fahrwerk ECU', 'automotive').key, 'chassis');
+  assert.equal(topologyClusterForText('Unbekannt ECU', 'automotive').key, 'control');
+  assert.notEqual(topologyClusterForText('Radarverarbeitung ECU', 'rail').key, 'driver_assistance');
+});

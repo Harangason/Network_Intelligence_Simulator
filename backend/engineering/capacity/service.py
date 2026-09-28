@@ -80,8 +80,24 @@ def parameters_for_protocol(
         return aliases.get(name, name)
 
     resolved = dict(parameters)
-    configured = canonical(parameters.get("technology") or parameters.get("protocol"))
     target = canonical(protocol)
+    def matching_identity(scope: dict[str, Any], *, required: bool = False) -> bool:
+        identities = [canonical(scope.get(key)) for key in ("technology", "protocol") if scope.get(key)]
+        return (bool(identities) or not required) and all(value == target for value in identities)
+
+    def matching_field(scope: dict[str, Any], key: str) -> bool:
+        proof = (scope.get("parameter_provenance") or {}).get(key) or {}
+        value = scope.get(key)
+        return matching_identity(proof) and (key != "local_timing_evidence" or
+                isinstance(value, dict) and matching_identity(value))
+
+    transport_fields = {"bitrate", "bitrate_bps", "nominal_bitrate_bps", "arbitration_bitrate", "data_bitrate", "local_timing_evidence"}
+    if not matching_identity(parameters):
+        for key in transport_fields:
+            resolved.pop(key, None)
+    for key in transport_fields:
+        if not matching_field(parameters, key):
+            resolved.pop(key, None)
     confirmed = confirmed_parameters or {}
     saved_rate = any(_number(confirmed.get(key), 0) > 0 for key in
                      ("bitrate", "bitrate_bps", "arbitration_bitrate", "nominal_bitrate_bps"))
@@ -95,26 +111,57 @@ def parameters_for_protocol(
     }
     provenance = parameter_provenance.get("bitrate") or {}
     manually_confirmed = not confirmed.get("defaults_source") or provenance.get("source") in trusted_sources
-    rate_evidenced = (canonical(confirmed.get("technology") or confirmed.get("protocol")) == target
-                      and saved_rate and manually_confirmed) or explicitly_specified
+    confirmed_identity = matching_identity(confirmed, required=True)
+    rate_evidenced = (confirmed_identity and saved_rate and manually_confirmed
+                      and matching_identity(provenance)) or explicitly_specified
     phase_sources = {"arbitration_bitrate": ("arbitration_bitrate", "bitrate"),
                      "data_bitrate": ("data_bitrate",)}
     phase_evidenced = {
-        phase: ((canonical(confirmed.get("technology") or confirmed.get("protocol")) == target or explicitly_specified) and
+        phase: (confirmed_identity and
                 any(_number(confirmed.get(key), 0) > 0 and
+                    matching_identity(parameter_provenance.get(key) or {}) and
                     (not confirmed.get("defaults_source") or
                      (parameter_provenance.get(key) or {}).get("source") in trusted_sources)
                     for key in keys))
         for phase, keys in phase_sources.items()
     }
-    # A global speed applies to the selected technology, not every bus in a mixed network.
-    if configured and configured != target:
-        for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
-            resolved.pop(key, None)
+    # Explicitly reviewed technology groups share the existing canonical
+    # parameter document; catalog proposals never enter this path.
+    scoped = next((value for key, value in (confirmed.get("technology_parameters") or {}).items()
+                   if canonical(key) == target), {})
+    scoped_values = scoped.get("values") or {}
+    scoped_provenance = scoped.get("provenance") or {}
+    if not matching_identity(scoped) or not matching_identity(scoped_values):
+        scoped_values = {}
+    for key, value in scoped_values.items():
+        proof = scoped_provenance.get(key) or {}
+        if (key not in {"technology", "protocol"} and matching_identity(proof) and matching_field(scoped_values, key)
+                and proof.get("source") in trusted_sources and proof.get("status") == "CONFIRMED" and proof.get("value") == value):
+            resolved[key] = value
+            if key in {"bitrate", "bitrate_bps"} and _number(value, 0) > 0:
+                rate_evidenced = True
+            if key in phase_evidenced and _number(value, 0) > 0:
+                phase_evidenced[key] = True
     if explicitly_specified:
         resolved["bitrate"] = explicit_rate
+        if target == "CAN_FD":
+            phase_evidenced["arbitration_bitrate"] = True
     declared = next((item for item in parameters.get("networks", []) if str(item.get("id")) == str(network_id)), {}) if network_id else {}
-    effective_configuration = {**(configuration or {}), **declared}
+    # A matching ID is not technology evidence. Workflow declarations may be
+    # stale or refer to another bus; only the matching transport contributes.
+    if not matching_identity(declared, required=True):
+        declared = {}
+    configured_scope = configuration or {}
+    if not matching_identity(configured_scope):
+        configured_scope = {key: value for key, value in configured_scope.items()
+                            if key not in transport_fields}
+    # Filter each source before merging: a rejected network declaration must
+    # neither override matching physical evidence nor hide its provenance.
+    declared = {key: value for key, value in declared.items()
+                if key not in transport_fields or matching_field(declared, key)}
+    configured_scope = {key: value for key, value in configured_scope.items()
+                        if key not in transport_fields or matching_field(configured_scope, key)}
+    effective_configuration = {**configured_scope, **declared}
     for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
         value = effective_configuration.get(key)
         if _number(value, 0) > 0:
@@ -130,6 +177,11 @@ def parameters_for_protocol(
         resolved["_rate_evidenced"] = rate_evidenced
     if isinstance(effective_configuration.get("local_timing_evidence"), dict):
         resolved["local_timing_evidence"] = effective_configuration["local_timing_evidence"]
+    # A reviewed shape is not permission to cross transport boundaries. The
+    # enclosing technology and any explicit nested identity must agree.
+    local_evidence = resolved.get("local_timing_evidence") or {}
+    if not matching_identity(local_evidence):
+        resolved.pop("local_timing_evidence", None)
     if target in {"I2C", "SPI"}:
         serial = confirmed_serial_evidence(target, resolved)
         rate_evidenced = serial is not None
@@ -1520,7 +1572,15 @@ class PreflightService:
 
         stored_parameters = state.get("parameters") or {}
         parameters = {**DEFAULT_PARAMETER_VALUES, **stored_parameters}
-        technology_id = str(parameters.get("technology") or "").strip()
+        # UI defaults are not a saved technology selection. In particular, an
+        # unconfigured project must not acquire a CAN-FD identity in preflight.
+        technology_id = str(stored_parameters.get("technology") or "").strip()
+        if not technology_id:
+            add("technology", "BLOCKER", "TECHNOLOGY_UNASSIGNED",
+                "Die Technologie der Projektparameter ist nicht festgelegt; keine Standardtechnologie wird angenommen.",
+                "Technologiezuordnung anhand der vorhandenen Kommunikationspfade prüfen und explizit festlegen.",
+                object_type="WorkflowParameters", object_id=self.project_id, step="parameters",
+                parameter="technology", data_status="UNKNOWN")
         if technology_id:
             # Profile validation must inspect persisted values, not project/UI
             # defaults: defaults are not evidence that this binding is configured.

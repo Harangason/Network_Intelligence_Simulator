@@ -454,3 +454,8 @@ export const RESOURCE_TO_OBJECT_TYPE: Record<EngineeringResource, string> = {
   messages: "Message",
   signals: "Signal",
 };
+
+export type FunctionalPartnerSuggestion = { industry?: string; source: string; target: string; signal: string; accepted: number; rejected: number; confidence: number; proposal_refs: string[]; requires_current_confirmation: boolean };
+export function retrieveGenerationExperience(payload: { industry: string; bus_types: string[]; candidate_controllers?: string[] }, signal?: AbortSignal, projectId = readActiveProjectId()): Promise<{ experience: { functional_partner_suggestions: FunctionalPartnerSuggestion[] } }> {
+  return quietRequest('/generation-experience/retrieve', { method: 'POST', body: JSON.stringify(payload), signal, headers: { 'X-Project-ID': projectId } });
+}

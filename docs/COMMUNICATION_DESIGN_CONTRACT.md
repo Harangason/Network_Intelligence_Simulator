@@ -63,7 +63,9 @@ behavior or timing acceptance. Preflight and snapshot creation use the same rule
 and the canonical project inventory; supplied configuration claims cannot override it.
 
 HMI display choices in the engineering wizard are explicit per source signal and
-display destination. New choices start disabled. The submitted system cluster
+display destination. Per user clarification of 27.09.2026, new choices start
+enabled as editable review proposals. Explicit disabled choices remain disabled.
+The submitted system cluster
 graph stores enabled values in `hmi_routes.signals` and disabled values in
 `hmi_routes.excluded_signals`. Disabled display forwarding must not be restored
 by default monitoring recipients or stale routing consumers. Local calculations,
@@ -132,3 +134,23 @@ acceptance additionally includes one request period and confirmed sampling
 and actuation delays. Missing functional evidence or a bound that permits
 overlapping exchanges prevents a verified exchange result. This remains a
 model-based bound under the reported assumptions, not a safety certification.
+
+## Model-defined diagnostic acquisition
+
+A confirmed `Function.configuration.diagnostic_request_template` may define a
+cyclic diagnostic read using `trigger: CYCLIC`, positive `period_ms`, a nonempty
+`service_id`, `requester_hardware_interface_ref`, and explicit
+`source_signal_refs`. Its owning hardware is the existing requester. The service
+ID is a project semantic label; it does not imply UDS, invent wire bytes or select
+a transport. Each source retains its confirmed `request_response_acquisition`
+device contract, exact encoding and functional requirements. The current complete
+execution path supports the same single-network CAN-FD exchange described above.
+
+The source mapping must cover every active actuator exactly once. Multiple,
+unconfirmed, incomplete or incompatible definitions remain explicit findings.
+The reviewed delta creates the query Function/Interface and request/response
+messages, signals and routes on the existing requester; it creates no additional
+ECU or unsolicited status traffic. Completion requires current routing, capacity,
+request/response timing and preflight evidence. A model-defined cycle must not be
+replaced with a default or asked again. Bare hardware inventories without a
+diagnostic definition instead require a structured trigger decision.

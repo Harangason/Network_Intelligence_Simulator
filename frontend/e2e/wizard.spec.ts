@@ -60,6 +60,21 @@ async function readProject(page: Page, project: string, path: string) {
   return result.json();
 }
 
+async function readWarningReviewState(page: Page, project: string) {
+  const authority = await readProject(page, project, '/api/engineering/workflow?view=summary');
+  const parameters = await readProject(page, project, '/api/engineering/workflow/parameters');
+  const verified = await readProject(page, project, '/api/engineering/workflow?view=summary');
+  expect(parameters.project_id).toBe(project);
+  expect(authority.project_id).toBe(project);
+  expect(verified.project_id).toBe(project);
+  for (const field of ['run_id', 'request_revision'])
+    expect(verified.context.agent_execution?.[field]).toBe(authority.context.agent_execution?.[field]);
+  return { project_id: verified.project_id, statuses: verified.statuses,
+    context: { agent_execution: { run_id: verified.context.agent_execution?.run_id,
+      request_revision: verified.context.agent_execution?.request_revision } },
+    parameters: { preflight_warning_approval: parameters.parameters.preflight_warning_approval } };
+}
+
 async function openWizard(page: Page, project: string) {
   await page.goto(`/studio/engineering?assistant=project&project=${project}`, { waitUntil: 'load' });
   const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
@@ -237,9 +252,26 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
       throw new Error(`Wizard BLOCKED at ${execution.step}: ${execution.message}`);
     }
     if (execution?.state === 'BLOCKED' && execution.message?.includes('READY_WITH_WARNINGS')) {
+      const beforeReview = await readWarningReviewState(page, project);
+      const preflight = await readProject(page, project, '/api/engineering/preflight');
       const warnings = dialog.getByRole('region', { name: 'Preflight-Warnungen' });
       await expect(warnings.getByRole('listitem').first()).toBeVisible();
+      const started = performance.now(), startedWall = Date.now();
+      watchdog.remaining(started);
+      const approvalResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/engineering/preflight/warnings/approve'
+        && response.request().method() === 'POST', { timeout: 180_000 });
       await warnings.getByRole('button', { name: 'Warnungen freigeben und fortsetzen' }).click();
+      const approved = await approvalResponse;
+      const receipt = await approved.json();
+      const afterReview = await readWarningReviewState(page, project);
+      const proof = { before: beforeReview, after: afterReview, snapshotId: preflight.id,
+        requestProject: approved.request().headers()['x-project-id'], submitted: approved.request().postDataJSON(),
+        status: approved.status(), response: receipt, started, startedWall, finishedWall: Date.now() };
+      const committedAt = performance.now();
+      const committed = watchdog.commitWarningReview(proof, committedAt);
+      await test.info().attach('verified-warning-review-proof', { body: JSON.stringify({ proof, committedAt, committed }), contentType: 'application/json' });
+      progressMilestones.get(test.info().testId)!.push({ at: new Date().toISOString(), manualWarningApproval: committed.approvalIdentity,
+        frontier: committed.frontier, project, execution: afterReview.context.agent_execution, approval: receipt.approval });
       await expect.poll(async () => (await readProject(page, project, '/api/engineering/workflow?view=summary')).context.agent_execution?.updated_at,
         { timeout: expectedHardware.length > 100 ? 180_000 : 60_000 }).not.toBe(execution.updated_at);
       continue;
@@ -512,4 +544,57 @@ Motorsteuerung und Anzeige mit einem zentralen Gateway System verbinden.`;
   }
   const artifacts = await verifyArtifacts(page, project, 1);
   await testInfo.attach('amendment-evidence', { body: JSON.stringify({ project, ...continuity, ...artifacts }), contentType: 'application/json' });
+});
+
+// Real isolated UI -> persisted model boundary regression, not nine-stage completion proof.
+test('reviewable functional TX/RX OFF survives request reload and canonical model adoption @txrx', async ({ page }, testInfo) => {
+  const project = 'nis-e2e-txrx-' + randomUUID();
+  const dialog = await openWizard(page, project);
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await dialog.locator('#engineering-project-name').fill('TX RX functional partners');
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill('Erzeuge ein Automotive CAN-FD Netzwerk mit einem Gateway System und den ECUs Motorsteuerung, Getriebesteuerung und Elektromotorsteuerung. Die berechneten Funktionsausgänge dienen der Antriebskoordination. Controllerstatus bleibt intern.\nCAN-FD: 500 kbit/s arbitration, 2 Mbit/s data');
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  for (const [label, value] of [['Gateways', '1'], ['Controller', '3'], ['Sensoren', '0'], ['Aktoren', '0']]) await dialog.getByLabel(`${label}: verbindliche Anzahl`, { exact: true }).fill(value);
+  const txrx = dialog.locator('details').filter({ has: page.locator('summary').filter({ hasText: /^TX\/RX/ }) }).first();
+  await expect(txrx).toBeVisible();
+  await txrx.locator('summary').click();
+  const selected = txrx.getByRole('switch', { name: 'MotorDrehmomentIst → Getriebesteuerung', exact: true });
+  await expect(selected).toBeChecked(); await selected.uncheck();
+  const startRequest = page.waitForRequest(request => request.url().endsWith('/api/agent/chat') && request.method() === 'POST' && request.postDataJSON()?.wizard_command?.action === 'START');
+  for (let step = 0; step < 10; step++) {
+    const button = dialog.locator('.eng-agent-questionnaire-head').getByRole('button');
+    await expect(button).toBeEnabled(); const label = await button.innerText(); await button.click();
+    if (label === 'Übernehmen' || label === 'Auftrag starten') break;
+  }
+  const context = (await startRequest).postDataJSON().wizard_command.wizard_context;
+  const submitted = context.system_cluster_assignments.flatMap((cluster: any) => cluster.functional_routes ?? []);
+  const off = submitted.find((route: any) => route.source === 'Motorsteuerung' && route.target === 'Getriebesteuerung');
+  expect(off.signals).toEqual([]); expect(off.excluded_signals).toEqual(['MotorDrehmomentIst']);
+  let proposal: any;
+  await expect.poll(async () => {
+    const conversation = await readProject(page, project, '/api/engineering/agent/conversation');
+    if (!conversation.data.active_proposal) return false;
+    proposal = (await readProject(page, project, `/api/engineering/agent/proposals/${conversation.data.active_proposal}`)).data;
+    return proposal.proposal_type === 'WIZARD_ENGINEERING_MODEL';
+  }, { timeout: 180_000 }).toBe(true);
+  await page.reload(); await openWizard(page, project);
+  const findings = proposal.validation_result.findings.filter((item: any) => item.code === 'CAPACITY_UNVERIFIED');
+  if (findings.length) {
+    const review = page.getByRole('region', { name: 'Prüfbefunde des Vorschlags' });
+    await expect(review).toContainText(`${proposal.validation_result.findings.length} Prüfbefunde`);
+    await expect(review.getByRole('link', { name: 'Technologieparameter bearbeiten und bestätigen' }).first()).toHaveAttribute('href', new RegExp(`project=${project}`));
+    await review.locator('summary').first().click(); await expect(review.getByRole('navigation', { name: 'Befunde durchblättern' }).first()).toBeVisible();
+  }
+  const apply = page.waitForResponse(response => response.url().includes(`/proposals/${proposal.proposal_id}/approve-apply`) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Freigeben, übernehmen & fortfahren', exact: true }).click(); expect((await apply).ok()).toBe(true);
+  const nodes = await allObjects(page, project, 'hardware-nodes');
+  const messages = await allObjects(page, project, 'messages'); const signals = await allObjects(page, project, 'signals');
+  const signal = signals.find(item => item.name === 'MotorDrehmomentIst'); expect(signal).toBeTruthy();
+  const message = messages.find(item => item.id === signal.message_id);
+  const gearbox = nodes.find(item => item.name === 'Getriebesteuerung');
+  const emotor = nodes.find(item => item.name === 'Elektromotorsteuerung');
+  expect(message.configuration.communication_contract.scope).toBe('FUNCTION_OUTPUT');
+  expect(message.configuration.communication_contract.consumer_refs).not.toContain(gearbox.id);
+  expect(message.configuration.communication_contract.consumer_refs).toContain(emotor.id);
+  await testInfo.attach('functional-txrx-evidence', { body: JSON.stringify({ project, off, message }), contentType: 'application/json' });
 });

@@ -35,7 +35,7 @@ import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
 import { SENSOR_MEASUREMENTS, sensorMeasurement, selectSensorMeasurement, selectSensorMeasurements } from '@/lib/agent/sensor-measurements';
-import { actuatorCommands, actuatorCommandChoice, proposedActuatorCommand, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
+import { actuatorCommands, actuatorCommandChoice, proposedActuatorCommand, resolvedActuatorCommands, selectActuatorCommand, unresolvedActuatorCommands } from '@/lib/agent/actuator-commands';
 import { proposedDeviceConnection, selectDeviceConnectionInTask } from '@/lib/agent/device-connections';
 import { parseProjectIntake, projectIntakeKey } from '@/lib/agent/project-intake';
 import {
@@ -43,6 +43,8 @@ import {
   equipmentClusterBusWarnings,
   equipmentClusterBusIssues,
   hmiSignalKey,
+  hmiSelectionsFromRoutes,
+  hmiSelectionsForRequest,
   selectHmiSignals,
   reviewedEquipmentCluster,
   equipmentClusterGraphPrompt,
@@ -56,6 +58,8 @@ import {
   listAllEngineeringObjects,
   recordEquipmentAssignmentLearning,
   retrieveEquipmentAssignmentLearning,
+  retrieveGenerationExperience,
+  type FunctionalPartnerSuggestion,
   type EquipmentAssignmentLearningSuggestion,
 } from "@/lib/engineering-api";
 import { approveRoutes, listRoutes } from "@/lib/routing-api";
@@ -88,6 +92,7 @@ import { WORKFLOW_CHANGED_EVENT } from "./workflow-header";
 import { AgentToolResult } from "./agent-tool-result";
 import { WorkloadProgress } from "./workload-progress";
 import { EngineeringAgentEventCard } from "./engineering-agent-event";
+import { WizardPreflightReview } from './wizard-preflight-review';
 
 const EQUIPMENT_CATEGORIES = [
   { key: "gateways", label: "Gateways", type: "Gateway" },
@@ -851,6 +856,7 @@ function restoredWizardContext(value: unknown, projectId: string): AgentWizardCo
           evidence: Array.isArray(item.evidence) ? item.evidence.filter((value): value is string => typeof value === "string") : [],
           tree: Array.isArray(item.tree) ? item.tree as EquipmentClusterAssignment["tree"] : undefined,
           unassigned: Array.isArray(item.unassigned) ? item.unassigned as EquipmentClusterAssignment["unassigned"] : undefined,
+          functional_routes: Array.isArray(item.functional_routes) ? item.functional_routes as EquipmentClusterAssignment["functional_routes"] : undefined,
           hmi_routes: Array.isArray(item.hmi_routes) ? item.hmi_routes as EquipmentClusterAssignment["hmi_routes"] : undefined,
           validation: item.validation && typeof item.validation === "object"
             ? item.validation as EquipmentClusterAssignment["validation"]
@@ -1144,6 +1150,7 @@ export function EngineeringAgentWizard({
       verdicts?: Record<string, boolean>;
       branchTargets?: Record<string, string>;
       hmiSignals?: Record<string, boolean>;
+      functionalSignals?: Record<string, boolean>;
     }>;
   }>({ source: "", values: {} });
   const [clusterReviewDialog, setClusterReviewDialog] = useState<null | {
@@ -1215,7 +1222,7 @@ export function EngineeringAgentWizard({
   const deviceRowByName = new Map(deviceRows.map((row) => [row.name, row]));
   const unresolvedConnections = connectionInventory.filter(chain => !chain.interface_type || chain.interface_type === 'Other');
   const commandSource = `${taskSource}\n${notes}`;
-  const selectedActuatorCommands = actuatorCommands(commandSource);
+  const selectedActuatorCommands = resolvedActuatorCommands(connectionInventory, commandSource);
   const unresolvedCommands = unresolvedActuatorCommands(connectionInventory, commandSource);
   function selectDeviceConnection(name: string, technology: string) {
     setTaskText(current => selectSensorMeasurements(
@@ -1263,6 +1270,7 @@ export function EngineeringAgentWizard({
   const commandInFlightRef = useRef(false);
   const [learnedEquipmentAssignments, setLearnedEquipmentAssignments] = useState<EquipmentAssignmentLearningSuggestion[]>([]);
   const [assignmentLearningCorpusSize, setAssignmentLearningCorpusSize] = useState(0);
+  const [assignmentLearningRevision, setAssignmentLearningRevision] = useState(0);
   const wizardTransport = useMemo(
     () => new DefaultChatTransport({
       api: "/api/agent/chat",
@@ -1308,6 +1316,7 @@ export function EngineeringAgentWizard({
   const [routingEntries, setRoutingEntries] = useState<RoutingEntry[]>([]);
   const [hardwareItems, setHardwareItems] = useState<EngineeringObject[]>([]);
   const [reviewProposal, setReviewProposal] = useState<EngineeringProposal | null>(null);
+  const [reviewActionBusy, setReviewActionBusy] = useState(false);
   const [routingReviewBusy, setRoutingReviewBusy] = useState(false);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [supplementOpen, setSupplementOpen] = useState(false);
@@ -1587,7 +1596,7 @@ export function EngineeringAgentWizard({
     ? Math.max(0, Number((rawWizardStatus as Record<string, unknown>).automatic_resume_count) || 0)
     : submittedContext?.automatic_resume_count ?? 0;
   const transportPending = wizardAgentStatus === "submitted" || wizardAgentStatus === "streaming";
-  const agentPending = transportPending || agentRunIsActive(execution);
+  const agentPending = transportPending || reviewActionBusy || agentRunIsActive(execution);
   const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
   const displayedStatusError = statusError || statusRefreshError;
   const parameterTool = currentRunMessages.flatMap((message) => message.parts).findLast((part) => (
@@ -1814,6 +1823,7 @@ export function EngineeringAgentWizard({
       endpoints,
       candidate_controllers: candidateControllers,
     }, controller.signal, projectId).then((result) => {
+      if (controller.signal.aborted) return;
       setLearnedEquipmentAssignments(result.suggestions);
       setAssignmentLearningCorpusSize(result.corpus_projects);
     }).catch((error) => {
@@ -1822,13 +1832,24 @@ export function EngineeringAgentWizard({
       }
     });
     return () => controller.abort();
-  }, [plannedEquipment.chains, previewDomain]);
+  }, [plannedEquipment.chains, previewDomain, projectId, assignmentLearningRevision]);
+  const [functionalHistory, setFunctionalHistory] = useState<FunctionalPartnerSuggestion[]>([]);
+  const [functionalExperience, setFunctionalExperience] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    const controller = new AbortController();
+    setFunctionalExperience({}); setFunctionalHistory([]);
+    void retrieveGenerationExperience({ industry: previewDomain, bus_types: selectedTechnologies, candidate_controllers: plannedEquipment.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).map(chain => chain.hardware_name) }, controller.signal, projectId).then(result => {
+      if (!controller.signal.aborted) { setFunctionalHistory(result.experience.functional_partner_suggestions ?? []); setFunctionalExperience(Object.fromEntries((result.experience.functional_partner_suggestions ?? []).map(choice =>
+        [hmiSignalKey({ source: choice.source, target: choice.target, signals: [], path: [] }, choice.signal), choice.accepted > choice.rejected]))); }
+    }).catch(() => undefined);
+    return () => controller.abort();
+  }, [previewDomain, projectId, selectedTechnologies.join('|'), plannedEquipment.chains]);
   const equipmentClusters = useMemo(() => buildEquipmentClusters(
     plannedEquipment.chains,
     communicationSystemCounts.map((item) => ({ id: item.id, label: item.label, count: item.count })),
     previewDomain,
-    learnedEquipmentAssignments,
-  ), [communicationSystemCounts, learnedEquipmentAssignments, plannedEquipment.chains, previewDomain]);
+    learnedEquipmentAssignments, functionalHistory,
+  ), [communicationSystemCounts, learnedEquipmentAssignments, plannedEquipment.chains, previewDomain, functionalHistory]);
   const ecuOwnerOptions = useMemo(() => [...new Map(
     plannedEquipment.chains
       .filter((chain) => isEngineeringControllerDevice(chain.device_type))
@@ -1841,6 +1862,13 @@ export function EngineeringAgentWizard({
     setEquipmentClusterEdits(current => ({ ...current, source: equipmentClusterSource }));
     controllerExtensionRef.current = null;
   }, [extendingController, communicationSystemSource, equipmentClusterSource]);
+  const savedHmiSelections = useMemo(() => hmiSelectionsFromRoutes(
+    submittedContext?.project_id === projectId
+      ? (submittedContext.system_cluster_assignments ?? []).flatMap(cluster => cluster.hmi_routes ?? []) : [],
+  ), [submittedContext, projectId]);
+  const savedFunctionalSelections = useMemo(() => hmiSelectionsFromRoutes(
+    submittedContext?.project_id === projectId ? (submittedContext.system_cluster_assignments ?? []).flatMap(cluster => cluster.functional_routes ?? []) : [],
+  ), [submittedContext, projectId]);
   const equipmentClusterAssignments: EquipmentClusterAssignment[] = useMemo(() => {
     const assignments: EquipmentClusterAssignment[] = equipmentClusters.map((cluster, index) => {
     const edit = clusterEditValues[cluster.id];
@@ -1886,10 +1914,15 @@ export function EngineeringAgentWizard({
       selected,
       tree: controllers,
       unassigned,
-      hmi_routes: selectHmiSignals(cluster.hmiRoutes, edit?.hmiSignals).map((route) => ({
+      hmi_routes: selectHmiSignals(cluster.hmiRoutes, { ...hmiSelectionsForRequest(cluster.hmiRoutes, commandSource), ...savedHmiSelections, ...edit?.hmiSignals }).map((route) => ({
         ...route,
         path: [route.source, network.label, "Gateway", route.target],
       })),
+      functional_routes: selectHmiSignals(cluster.functionalRoutes, { ...functionalExperience, ...savedFunctionalSelections, ...edit?.functionalSignals }).map(route => {
+        const history = functionalHistory.filter(choice => choice.source === route.source && choice.target === route.target && [...route.signals, ...(route.excluded_signals ?? [])].includes(choice.signal));
+        return history.length ? { ...route, provenance: `${route.provenance}; reviewed_generation_experience`,
+          reason: `${route.reason} Geprüfte frühere Auswahl: ${history.map(choice => `${choice.signal}: ${choice.accepted} bestätigt / ${choice.rejected} abgelehnt (${choice.proposal_refs.join(', ')})`).join('; ')}. Aktuelle Auswahl hat Vorrang.` } : route;
+      }),
       validation: { valid: warnings.length === 0, warnings },
     };
     });
@@ -1940,7 +1973,7 @@ export function EngineeringAgentWizard({
       assignment.validation = { valid: warnings.length === 0, warnings };
     }
     return assignments;
-  }, [clusterEditValues, communicationSystemCounts, equipmentClusters, plannedEquipment.chains]);
+  }, [clusterEditValues, communicationSystemCounts, equipmentClusters, plannedEquipment.chains, savedHmiSelections, savedFunctionalSelections, functionalExperience, functionalHistory, commandSource]);
   const equipmentOwnershipReady = equipmentClusterAssignments.every((assignment) => !assignment.selected || !(assignment.unassigned?.length));
   const equipmentClusterValidationReady = equipmentClusterAssignments.every((assignment) => !assignment.selected || assignment.validation?.valid !== false);
   const activeEquipmentCluster = equipmentClusters.find((cluster) => cluster.id === activeEquipmentClusterId)
@@ -2008,6 +2041,7 @@ export function EngineeringAgentWizard({
     verdicts?: Record<string, boolean>;
     branchTargets?: Record<string, string>;
     hmiSignals?: Record<string, boolean>;
+      functionalSignals?: Record<string, boolean>;
   }) {
     setEquipmentClusterEdits((current) => {
       const values = current.source === equipmentClusterSource ? current.values : {};
@@ -2026,7 +2060,10 @@ export function EngineeringAgentWizard({
     source: string,
   ) {
     if (!records.length) return;
-    void recordEquipmentAssignmentLearning({ domain: previewDomain, source, records }, projectId).catch((error) => {
+    void recordEquipmentAssignmentLearning({ domain: previewDomain, source, records }, projectId).then(() => {
+      setAssignmentLearningRevision(current => current + 1);
+    }).catch((error) => {
+      setStatusError('Die Controller-Zuordnung ist im Entwurf erhalten, konnte aber nicht zum Lernen gespeichert werden. Bitte erneut zuordnen.');
       void writeWizardDiagnostic("error", {
         projectId,
         runId,
@@ -2199,6 +2236,7 @@ export function EngineeringAgentWizard({
         `- Geplante Netzwerkverbindungen: ${plannedNetworkConnections}\n` +
         `- Systemcluster-Netzvorgaben: ${clusterSummary || "keine explizite Clusterbindung"}\n` +
         `- Bus-Teilnehmergrenzen: ${JSON.stringify(normalizeEngineeringWizardSettings(workflow?.context.engineering_wizard_settings).bus_participant_limits)}\n` +
+        (Object.keys(selectedActuatorCommands).length ? `- Aktor-Befehle: ${JSON.stringify(selectedActuatorCommands)}\n` : '') +
         `- Systemcluster-Graph: ${JSON.stringify(equipmentClusterGraphPrompt(equipmentClusterAssignments, networkArchitecture))}\n` +
         `- Topologie-Cluster-Profil: ${topologyKnowledge.profile}\n` +
         `- Topologie-Cluster-Regeln: ${topologyKnowledge.ruleSummary.join("; ") || "generische Systemnaehe verwenden"}\n` +
@@ -2207,6 +2245,7 @@ export function EngineeringAgentWizard({
         `- Netzarchitektur-ID: ${selectedArchitecture.id}\n` +
         `- Netzarchitektur: ${selectedArchitecture.label}\n` +
         `- Netzarchitektur-Regeln: ${selectedArchitecture.rules}\n` +
+        `- TX/RX-Freigabe: Funktionspartner und Signalauswahl gemeinsam mit dem Wizard-Auftrag durch Nutzer zur Modellprüfung bestätigt\n` +
         `- Netzarchitektur-Freigabe: gemeinsam mit dem Engineering-Auftrag durch den Nutzer bestätigt am ${confirmedAt}\n` +
         `- Hardware-Sollwerte: ${JSON.stringify(equipmentCounts)}\n` +
         `- Vollstaendigkeitsprinzip: Nur benannte und bestätigte Geräte verwenden. Fehlende Geräte, Anschlüsse und funktionale Anforderungen als offene Entscheidungen behandeln; keine Beispielgeräte ergänzen.\n` +
@@ -2734,15 +2773,17 @@ export function EngineeringAgentWizard({
     message.role === "user" && textFromParts(message.parts).includes(`- Lauf-ID: ${runId}`)
   )) || Boolean(submittedContext?.agent_prompt?.trim());
   const routingReview = routingApprovalProgress(routingEntries);
-  const modelReviewPending = !agentPending && agentReviewStep(execution) === "engineering_model"
+  const appliedReviewAwaitingState = execution?.state === "REVIEW_REQUIRED" && reviewProposal?.status === 'APPLIED';
+  const automaticContinuationPending = execution?.state === 'READY_TO_CONTINUE' || appliedReviewAwaitingState;
+  const modelReviewPending = !agentPending && !appliedReviewAwaitingState && agentReviewStep(execution) === "engineering_model"
     && (execution?.model_review_required || !["COMPLETE", "APPROVED", "WARNING"].includes(workflow?.statuses.engineering_model ?? "EMPTY"));
-  const routingReviewPending = !agentPending
+  const routingReviewPending = !agentPending && !appliedReviewAwaitingState
     && !executionStopped && !routingReview.complete
     && !modelReviewPending && (routingReview.total > 0 || agentReviewStep(execution) === "routing");
-  const workflowReviewPending = !agentPending && execution?.state === "REVIEW_REQUIRED";
-  const runPaused = !agentPending && !workflowReviewPending && !routingReviewPending && !modelReviewPending
+  const workflowReviewPending = !agentPending && !appliedReviewAwaitingState && execution?.state === "REVIEW_REQUIRED";
+  const runPaused = !agentPending && !automaticContinuationPending && !workflowReviewPending && !routingReviewPending && !modelReviewPending
     && (executionStopped || persistedStatusRows.some((item) => item.selected && !["COMPLETE", "APPROVED", "WARNING"].includes(item.status)));
-  const canRetryPopupRun = wizardRunCanRetry(runPaused, hasResumablePrompt, execution);
+  const canRetryPopupRun = !execution?.blocking_findings?.length && wizardRunCanRetry(runPaused, hasResumablePrompt, execution);
   const needsAutomaticRecovery = wizardRunNeedsAutomaticRecovery({
     runPaused,
     hasResumablePrompt,
@@ -3430,6 +3471,19 @@ export function EngineeringAgentWizard({
                         renderDeviceControls={renderDeviceControls}
                       />
                     )}
+                    {cluster.functionalIssues.length > 0 && <div role="alert"><strong>TX/RX-Zuordnung offen</strong><ul>{cluster.functionalIssues.map(issue => <li key={issue}>{issue}</li>)}</ul></div>}
+                    {(assignment?.functional_routes?.length ?? 0) > 0 && <details className="agent-cluster-hmi">
+                      <summary>TX/RX · {assignment?.functional_routes?.length} geplante ECU-Beziehungen · Freigabe offen</summary>
+                      <p>Vorschläge mit dem Wizard-Auftrag bestätigen. Physischer Pfad und Kapazität werden erst am erzeugten Modell nachgewiesen.</p>
+                      {assignment?.functional_routes?.map(route => <div key={`${route.source}:${route.target}`}>
+                        <strong>TX {route.source} → RX {route.target}</strong><p>{route.reason} · {route.provenance} · Konfidenz {route.confidence}</p>
+                        {[...route.signals, ...(route.excluded_signals ?? [])].map(signal => <label key={signal}>
+                          <input type="checkbox" role="switch" aria-label={`${signal} → ${route.target}`} checked={route.signals.includes(signal)} disabled={effectiveBusy}
+                            onChange={event => updateEquipmentCluster(cluster.id, { functionalSignals: { ...clusterEditValues[cluster.id]?.functionalSignals, [hmiSignalKey(route, signal)]: event.target.checked } })} />
+                          {signal} · {route.signals.includes(signal) ? 'Ein · prüfen' : 'Aus'}
+                        </label>)}
+                      </div>)}
+                    </details>}
                     {(assignment?.hmi_routes?.length ?? 0) > 0 && (
                       <section className="agent-cluster-hmi" aria-label={`${cluster.label}: HMI-Routing`}>
                         <strong>Nutzeranzeige über Routing</strong>
@@ -3485,6 +3539,7 @@ export function EngineeringAgentWizard({
       {phase === 'questionnaire' && activeStepId === 'status' && !submittedContext && (
         <section className="agent-wizard-status" aria-label="Auftrag vor dem Start prüfen">
           <h3>Projektentwurf prüfen</h3>
+
           <p>Es wurde noch kein Auftrag gestartet. Prüfe die Beschreibung und ergänze offene Angaben.</p>
           <h4>{projectName || 'Projektname fehlt'}</h4>
           <p style={{ whiteSpace: 'pre-wrap' }}>{taskText || 'Projektbeschreibung fehlt'}</p>
@@ -3603,32 +3658,26 @@ export function EngineeringAgentWizard({
             ) : (
               <div>
                 <span className="eyebrow">Rückfragen</span>
-                <strong>{modelReviewPending ? "Modellfreigabe ausstehend" : routingReviewPending ? "Routing-Review ausstehend" : workflowReviewPending ? "Freigabe ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
+                <strong>{reviewActionBusy ? "Freigabe wird übernommen" : automaticContinuationPending ? "Auftrag wird fortgesetzt" : modelReviewPending ? "Modellfreigabe ausstehend" : routingReviewPending ? "Routing-Review ausstehend" : workflowReviewPending ? "Freigabe ausstehend" : runPaused ? blockedTitle : "Keine Rückfrage offen"}</strong>
                 <small>{modelReviewPending ? runMessage : routingReviewPending
                   ? `${displayedRoutingTotal} Routing-Einträge vorbereitet · ${proposedRoutingCount ? 0 : routingReview.awaitingValidation} noch zu validieren · ${displayedRoutingValid} valide und freigabebereit.`
                   : workflowReviewPending
                     ? runMessage
+                  : automaticContinuationPending
+                    ? "Die Freigabe ist gespeichert. Der Auftrag wird am nächsten Schritt fortgesetzt."
                   : agentPending
                     ? execution?.state === "RUNNING" ? runMessage : "Der Agent verarbeitet den bestätigten Auftrag."
                     : runPaused
                       ? [
-                        runMessage || "Der Lauf wurde beendet, bevor alle ausgewählten Schritte abgeschlossen waren.",
+                        execution?.blocking_findings?.length ? "Der Auftrag benötigt bestätigte Angaben. Bearbeite die betroffenen Objekte unten und prüfe den Stand erneut." : runMessage || "Der Lauf wurde beendet, bevor alle ausgewählten Schritte abgeschlossen waren.",
                         documentedDeviationSummary ? `Dokumentiert: ${documentedDeviationSummary}` : "",
                       ].filter(Boolean).join(" ")
                       : currentRunMessages.length || workflowHasProgress
                         ? "Die ausgewählten Arbeitsschritte sind abgeschlossen."
                         : "Der Auftrag wird an den Agenten übergeben."}</small>
                 {runPaused && Array.isArray(execution?.blocking_findings) && execution.blocking_findings.length > 0 ? (
-                  <section aria-label="Blockierende Preflight-Befunde">
-                    <strong>Vor der Simulation zu klären</strong>
-                    <ul>{execution.blocking_findings.map((finding, index) => (
-                      <li key={`${finding.code ?? "finding"}:${finding.object_id ?? index}`}>
-                        <strong>{finding.code ?? "Befund"}</strong>: {finding.message ?? "Nachweis fehlt."}
-                        {finding.object_id ? ` · ${finding.object_type ?? "Objekt"}: ${finding.object_id}` : ""}
-                        {finding.recommendation ? ` · Nächster Schritt: ${finding.recommendation}` : ""}
-                      </li>
-                    ))}</ul>
-                  </section>
+                  <WizardPreflightReview findings={execution.blocking_findings} projectId={projectId} disabled={agentPending}
+                    onContinue={() => retryPopupRun(false, 'review')} />
                 ) : null}
                 {preflightWarningsPending ? (
                   <section aria-label="Preflight-Warnungen">
@@ -3645,6 +3694,13 @@ export function EngineeringAgentWizard({
                   <button className="button primary tiny" onClick={() => setSupplementOpen(true)} type="button">
                     Anschlüsse ergänzen
                   </button>
+                ) : runPaused && /Ein- und ausgeschaltete HMI-Werte|Signale fehlen im Modell/.test(runMessage || '') ? (
+                  <div>
+                    <p>Die Anzeigeauswahl benötigt einen neuen Modellvorschlag mit getrennten Nachrichten. Deine Ein-/Aus-Auswahl bleibt erhalten.</p>
+                    <button className="button primary tiny" onClick={() => setSupplementOpen(true)} type="button">
+                      Anzeigeauswahl prüfen und Auftrag ergänzen
+                    </button>
+                  </div>
                 ) : canRetryPopupRun && (
                   <button className="button primary tiny" onClick={() => void retryPopupRun(false)} type="button">
                     Auftrag fortsetzen
@@ -3654,7 +3710,7 @@ export function EngineeringAgentWizard({
             )}
           </section>
 
-          {(execution?.state === "REVIEW_REQUIRED" || execution?.state === "BLOCKED") && <WizardModelReview key={`${runId}:${execution.step}`} onProposalLoaded={setReviewProposal} projectId={projectId} runId={runId} />}
+          {(execution?.state === "REVIEW_REQUIRED" || execution?.state === "BLOCKED") && <WizardModelReview key={`${runId}:${execution.step}`} onProposalLoaded={setReviewProposal} onReviewBusyChange={setReviewActionBusy} projectId={projectId} runId={runId} />}
 
           <div
             className="agent-wizard-runtime"
@@ -4412,11 +4468,15 @@ function summarizeToolInput(input: unknown) {
   return hints.length ? `: ${hints.join(" · ")}.` : ".";
 }
 
-function WizardModelReview({ onProposalLoaded, projectId, runId }: { onProposalLoaded?: (proposal: EngineeringProposal) => void; projectId: string; runId: string }) {
+function WizardModelReview({ onProposalLoaded, onReviewBusyChange, projectId, runId }: { onProposalLoaded?: (proposal: EngineeringProposal) => void; onReviewBusyChange?: (busy: boolean) => void; projectId: string; runId: string }) {
   const [proposal, setProposal] = useState<EngineeringProposal | null>(null);
   const [error, setError] = useState("");
   const revisionRef = useRef('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const proposalChanged = useCallback((value: EngineeringProposal) => { setProposal(value); onProposalLoaded?.(value); }, [onProposalLoaded]);
+  const busyChanged = useCallback((value: boolean) => { setReviewBusy(value); onReviewBusyChange?.(value); }, [onReviewBusyChange]);
   useEffect(() => {
+    if (reviewBusy) return;
     const controller = new AbortController();
     const options = { headers: { "X-Project-ID": projectId }, signal: controller.signal, cache: "no-store" as const };
     let refreshing = false;
@@ -4445,9 +4505,9 @@ function WizardModelReview({ onProposalLoaded, projectId, runId }: { onProposalL
     void refresh();
     const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 5000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [onProposalLoaded, projectId, runId]);
+  }, [onProposalLoaded, projectId, runId, reviewBusy]);
   if (error) return <p role="alert">{error}</p>;
-  return proposal ? <EngineeringAgentEventCard key={`${proposal.proposal_id}:${proposal.revision}`} event={{ type: "APPROVAL", proposal }} projectId={projectId} wizardReview /> : null;
+  return proposal ? <EngineeringAgentEventCard key={`${proposal.proposal_id}:${proposal.revision}`} event={{ type: "APPROVAL", proposal }} projectId={projectId} wizardReview onProposalChange={proposalChanged} onReviewBusyChange={busyChanged} /> : null;
 }
 
 function canonicalWizardDomain(value: string) {

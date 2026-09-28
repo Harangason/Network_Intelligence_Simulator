@@ -136,21 +136,22 @@ def test_parameter_change_only_invalidates_calculation_and_later_steps():
     assert changed["statuses"]["simulation"] == "OUTDATED"
 
 
-def test_parameters_are_approved_by_default_and_ignore_upstream_changes():
+@pytest.mark.parametrize("parameter_status", ["EMPTY", "APPROVED"])
+def test_parameters_require_an_artifact_and_ignore_unrelated_upstream_changes(parameter_status):
     state = {
         "versions": default_versions(),
-        "statuses": default_statuses(),
+        "statuses": {**default_statuses(), "parameters": parameter_status},
         "stale_reasons": {},
     }
 
     changed = transition_state(state, "engineering_model", "Model changed")
 
-    assert default_statuses()["parameters"] == "APPROVED"
-    assert changed["statuses"]["parameters"] == "APPROVED"
+    assert default_statuses()["parameters"] == "EMPTY"
+    assert changed["statuses"]["parameters"] == parameter_status
     assert "parameters" not in changed["stale_reasons"]
 
 
-def test_parameter_artifact_approves_defaults_and_complete_configuration():
+def test_parameter_artifact_requires_saved_values_before_approval():
     defaults = WorkflowStatusService._parameter_artifact_check({})
     complete = WorkflowStatusService._parameter_artifact_check({
         "industry": "automotive",
@@ -167,15 +168,45 @@ def test_parameter_artifact_approves_defaults_and_complete_configuration():
     })
 
     assert defaults == {
-        "status": "APPROVED",
-        "complete": True,
-        "uses_defaults": True,
+        "status": "EMPTY",
+        "complete": False,
+        "uses_defaults": False,
         "required": {},
         "invalid_numeric": [],
     }
     assert complete["status"] == "APPROVED"
     assert complete["complete"] is True
     assert complete["uses_defaults"] is False
+
+
+def test_legacy_empty_parameter_approval_is_reconciled_and_dependents_invalidated(monkeypatch):
+    service = WorkflowStatusService("legacy-empty-parameters")
+    state = {
+        "statuses": {step: "APPROVED" for step in default_statuses()},
+        "parameters": {},
+        "stale_reasons": {},
+    }
+    # Keep unrelated source artifacts complete so only the real parameter check
+    # can cause invalidation. A held row lock prevents opportunistic persistence.
+    monkeypatch.setattr(service, "_source_artifact_check", lambda connection, step, current:
+        service._parameter_artifact_check(current["parameters"]) if step == "parameters"
+        else {"status": "APPROVED", "complete": True})
+
+    class LockedConnection:
+        def execute(self, query, params):
+            assert "FOR UPDATE SKIP LOCKED" in query
+            return self
+
+        def fetchone(self):
+            return None
+
+    checks = service._bootstrap_statuses(LockedConnection(), state)
+    assert checks["parameters"]["complete"] is False
+    assert state["statuses"]["parameters"] == "EMPTY"
+    assert state["statuses"]["routing"] == "APPROVED"
+    for step in ("capacity_timing", "validation", "simulation", "results_analysis", "data_science_intelligence"):
+        assert state["statuses"][step] == "OUTDATED"
+        assert "Artefakt" in state["stale_reasons"][step]
 
 
 def test_empty_future_steps_stay_empty_until_a_result_exists():
@@ -683,6 +714,35 @@ def test_preflight_does_not_treat_default_rates_as_configured(monkeypatch, techn
 
     findings = result["category_checks"]["technology"]
     assert any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
+    assert result["preflight_status"] == "BLOCKED"
+    assert result["ready_for_simulation"] is False
+
+
+@pytest.mark.parametrize("selection", [{}, {"technology": None}, {"technology": ""}, {"technology": "  "}])
+def test_preflight_missing_selection_does_not_inherit_default_technology(monkeypatch, selection):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": selection,
+        "topology": {"nodes": [], "edges": []},
+    }
+    service = PreflightService("unassigned-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+    findings = result["category_checks"]["technology"]
+    assert len(findings) == 1
+    assert findings[0]["code"] == "TECHNOLOGY_UNASSIGNED"
+    assert findings[0]["data_status"] == "UNKNOWN"
+    assert findings[0]["object_type"] == "WorkflowParameters"
+    assert findings[0]["object_id"] == "unassigned-project"
+    assert findings[0]["step"] == "parameters"
+    assert "technology_id" not in findings[0]
+    assert state["parameters"] == selection
     assert result["preflight_status"] == "BLOCKED"
     assert result["ready_for_simulation"] is False
 

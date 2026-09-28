@@ -6,5 +6,5 @@ for await (const chunk of process.stdin) input += chunk;
 const { prompt } = JSON.parse(input);
 if (typeof prompt !== 'string' || prompt.length > 120000) throw new Error('Invalid wizard specification');
 const specification = extractEngineeringSpecification(prompt);
-specification.chains = applyIndustryGenerationPath(packEngineeringChains(expandEngineeringSignalModel(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt))), specification.domain);
+specification.chains = applyIndustryGenerationPath(packEngineeringChains(expandEngineeringSignalModel(applyConfirmedClusterGraph(reconcileConfirmedGraphDevices(specification, prompt), prompt)), undefined, prompt), specification.domain, prompt);
 process.stdout.write(JSON.stringify(specification));

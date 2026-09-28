@@ -15,6 +15,7 @@ import { SETTINGS_EVENT, withProjectParam } from "@/lib/user-settings";
 import { traceViewHref } from "@/lib/trace-navigation";
 import { normalizeEngineeringWizardSettings } from "@/lib/engineering-wizard-settings";
 import { WORKFLOW_LINKS, WORKFLOW_STEP_DEFINITIONS } from "@/features/workflow/definition";
+import { SourceFindings } from "@/components/source-findings";
 
 const LINKS: Record<WorkflowStepId, string> = WORKFLOW_LINKS;
 
@@ -242,6 +243,7 @@ function WorkflowHeaderContent({ initialProjectId = "" }: { initialProjectId?: s
           <strong>Neuberechnung erforderlich:</strong> {activeStaleReason}
         </p>
       )}
+      <SourceFindings projectId={projectIdForLinks} stage={activeStep} />
     </section>
   );
 }

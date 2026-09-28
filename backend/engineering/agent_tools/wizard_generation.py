@@ -912,6 +912,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
             **{key: chain[key] for key in ('message_id_hex', 'direction', 'cycle_ms', 'dlc')},
             'configuration': {
                 'model_type': 'TransportUnit',
+                **({'communication_contract': {'scope': 'FUNCTION_OUTPUT'}} if ((chain.get('configuration') or {}).get('communication_contract') or {}).get('scope') == 'FUNCTION_OUTPUT' else {}),
                 'technology_binding': technology_contract,
                 'transport_unit': {
                     'transport_unit_type': technology_contract['transport_unit_type'],
@@ -1185,6 +1186,7 @@ def generate(arguments: dict, *, source_evidence: list[dict] | None = None) -> d
                    'communication_system_counts': spec['communicationSystemCounts'],
                    'model_type': spec.get('modelType') or spec.get('domain'),
                    'generation_policy': spec['generationPolicy'],
+                   'functional_route_choices': [route for cluster in (json.loads(graph_raw.group(1)) if graph_raw else []) for route in cluster.get('functional_routes') or []],
                    'architecture': 'HardwareNode -> HardwareInterface -> FunctionalInterface -> TechnologyBinding -> TransportUnit -> PayloadElement'}])
     return _supersede_previous('WIZARD_ENGINEERING_MODEL', proposal_identity, proposals, proposal)
 

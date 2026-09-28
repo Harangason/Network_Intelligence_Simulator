@@ -62,3 +62,24 @@ def test_unreviewed_history_never_becomes_learning_evidence():
 
     assert result['reviewed_generation_proposals'] == 0
     assert result['matching_suggestions'] == []
+
+def test_functional_choices_require_review_and_exact_industry_identity():
+    policy = resolve_generation_policy('Fahrzeug CAN-FD', industry='automotive', bus_types=['can_fd'])
+    def row(status, identifier):
+        value = _row(status, identifier, policy)
+        value['evidence'][0]['functional_route_choices'] = [{'source': 'Motorsteuerung', 'target': 'Getriebesteuerung', 'signals': ['MomentIst'], 'excluded_signals': ['PrivateStatus'], 'review_status': 'USER_REJECTED' if status == 'REJECTED' else 'USER_CONFIRMED'}]
+        return value
+    result = collect_generation_experience([row('APPLIED', 'yes'), row('REJECTED', 'no'), row('VALIDATED', 'pending')], policy)
+    choices = result['functional_partner_suggestions']
+    selected = next(choice for choice in choices if choice['signal'] == 'MomentIst')
+    assert selected['accepted'] == 1 and selected['rejected'] == 1
+    assert selected['proposal_refs'] == ['yes', 'no'] and selected['requires_current_confirmation']
+    assert next(choice for choice in choices if choice['signal'] == 'PrivateStatus')['accepted'] == 0
+    rail = resolve_generation_policy('Zug CAN-FD', industry='rail', bus_types=['can_fd'])
+    assert collect_generation_experience([row('APPLIED', 'yes')], rail)['functional_partner_suggestions'] == []
+
+def test_rejected_model_without_partner_verdict_does_not_suppress_functional_choice():
+    policy = resolve_generation_policy('Fahrzeug CAN-FD', industry='automotive', bus_types=['can_fd'])
+    row = _row('REJECTED', 'capacity-problem', policy)
+    row['evidence'][0]['functional_route_choices'] = [{'source': 'Motor', 'target': 'Getriebe', 'signals': ['MomentIst'], 'excluded_signals': []}]
+    assert collect_generation_experience([row], policy)['functional_partner_suggestions'] == []

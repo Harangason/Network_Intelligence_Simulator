@@ -84,7 +84,7 @@ def test_status_read_finishes_while_an_existing_project_writer_is_uncommitted(su
             assert finished.wait(3), 'Status polling waited for the active project transaction.'
             assert 'error' not in result, result
             assert result['state']['statuses']['capacity_timing'] == 'EMPTY'
-            assert result['state']['statuses']['parameters'] == 'APPROVED'
+            assert result['state']['statuses']['parameters'] == 'EMPTY'
     finally:
         # On a regression release/rollback the writer before joining the read.
         if worker is not None:
@@ -96,7 +96,7 @@ def test_status_read_finishes_while_an_existing_project_writer_is_uncommitted(su
             'SELECT statuses FROM engineering_workflow_projects WHERE project_id = %s', (project,),
         ).fetchone()['statuses']
     assert stored['capacity_timing'] == 'COMPLETE'
-    assert stored['parameters'] == ('IN_PROGRESS' if stale_parameters else 'APPROVED')
+    assert stored['parameters'] == ('IN_PROGRESS' if stale_parameters else 'EMPTY')
 
 
 @pytest.mark.parametrize('advance_timestamp', [True, False])
@@ -142,7 +142,7 @@ def test_uncontended_status_read_still_persists_verified_source_statuses():
         stored = connection.execute(
             'SELECT statuses FROM engineering_workflow_projects WHERE project_id = %s', (project,),
         ).fetchone()['statuses']
-    assert result['statuses']['parameters'] == stored['parameters'] == 'APPROVED'
+    assert result['statuses']['parameters'] == stored['parameters'] == 'EMPTY'
 
 
 def test_large_workflow_details_remain_available_with_revision_tokens_under_the_status_budget():

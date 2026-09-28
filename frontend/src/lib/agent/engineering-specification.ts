@@ -4,12 +4,13 @@ import { automotiveFunctionOutputs } from "./industry-templates/automotive-funct
 import { SENSOR_MEASUREMENTS, sensorMeasurementSelections } from './sensor-measurements.ts';
 import inventoryVocabulary from './inventory-vocabulary.json' with { type: 'json' };
 
-export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string): ExtractedEngineeringChain[] {
+export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[], domain: string, includeFunctionalDependencies = true): ExtractedEngineeringChain[] {
   if (domain !== "automotive") return chains;
   const result = [...chains];
   const usedIds = new Set(chains.map(chain => Number(chain.message_id_hex)));
   let nextId = 0x180;
   for (const [host, functionName, signal, unit, minValue, maxValue, factor] of automotiveFunctionOutputs) {
+    if (!includeFunctionalDependencies && ['Motorsteuerung', 'Getriebesteuerung', 'Elektromotorsteuerung', 'Drehmomentkoordination'].includes(host)) continue;
     const owner = chains.find(chain => chain.hardware_name === host && !/Sensor|Actuator|Gateway/.test(chain.device_type));
     if (!owner || result.some(chain => chain.hardware_name === host && chain.signal_name === signal)) continue;
     while (usedIds.has(nextId)) nextId++;
@@ -22,7 +23,7 @@ export function addAutomotiveFunctionOutputs(chains: ExtractedEngineeringChain[]
       interface_name: owner.interface_name, function_name: functionName,
       function_description: `${functionName}: berechneter Funktionsausgang auf ${host}. Editierbare Entwurfsvorgabe; Eingangsdaten und fachliche Anforderungen prüfen.`,
       message_name: `${host}_${signal}`, configuration: { ...output.configuration,
-        functional_output_template: true, design_evidence: "illustrative_template_requires_review" } });
+        functional_output_template: true, ...(includeFunctionalDependencies ? { communication_contract: { scope: 'FUNCTION_OUTPUT' } } : {}), design_evidence: "illustrative_template_requires_review" } });
   }
   return result;
 }
@@ -41,7 +42,9 @@ const INDUSTRY_GENERATION_PATHS: Readonly<Record<string, IndustryGenerationPath>
 export function applyIndustryGenerationPath(
   chains: ExtractedEngineeringChain[],
   domain: string,
+  prompt = '',
 ): ExtractedEngineeringChain[] {
+  if (domain === 'automotive') return addAutomotiveFunctionOutputs(chains, domain, !/per Wizard-Uebernehmen bestaetigt/.test(prompt) || /"functional_routes"\s*:\s*\[\s*\{/.test(prompt));
   const path = INDUSTRY_GENERATION_PATHS[domain];
   return path ? path(chains, domain) : chains;
 }
@@ -388,6 +391,7 @@ function messageGroupKey(chain: ExtractedEngineeringChain) {
     normalized(chain.function_name),
     normalized(chain.interface_type),
     String(chain.cycle_ms),
+    chain.configuration?.functional_output_template ? "FUNCTION_OUTPUT" : "",
     String(communication.priority ?? ""),
     consumers,
   ].join("|");
@@ -405,11 +409,36 @@ function packedInterfaceName(chain: ExtractedEngineeringChain, channel: number) 
 export function packEngineeringChains(
   chains: ExtractedEngineeringChain[],
   targetLoadPercent = DEFAULT_INTERFACE_TARGET_LOAD_PERCENT,
+  prompt = '',
 ) {
   const packed = chains.map((chain) => ({ ...chain, function_name: conciseGeneratedName('Function', chain.function_name) }));
   const grouped = new Map<string, ExtractedEngineeringChain[]>();
+  const graphRaw = prompt.match(/^- Systemcluster-Graph:\s*(\[[^\r\n]*\])\s*$/m)?.[1];
+  type SignalRoute = { source: string; target: string; signals: string[]; excluded_signals?: string[] };
+  const graph = graphRaw ? JSON.parse(graphRaw) as Array<{ hmi_routes?: SignalRoute[]; functional_routes?: SignalRoute[] }> : [];
+  const originalGroups = new Map<string, ExtractedEngineeringChain[]>();
   for (const chain of packed) {
     const key = messageGroupKey(chain);
+    originalGroups.set(key, [...(originalGroups.get(key) ?? []), chain]);
+  }
+  const hasAlias = (signals: string[], chain: ExtractedEngineeringChain) => signals.some(signal =>
+    signal.toLocaleLowerCase('de') === chain.signal_name.toLocaleLowerCase('de')
+    || signal.toLocaleLowerCase('de') === chain.signal_display_name?.toLocaleLowerCase('de'));
+  // Partition only newly generated payloads. Existing model messages are never
+  // repacked; their mixed-payload validation remains strict in the backend.
+  const hmiPartition = (chain: ExtractedEngineeringChain) => graph.flatMap(cluster => [...(cluster.hmi_routes ?? []), ...(cluster.functional_routes ?? [])])
+    .filter(route => route.source === chain.hardware_name && Array.isArray(route.excluded_signals))
+    .map(route => {
+      const siblings = originalGroups.get(messageGroupKey(chain)) ?? [];
+      const mixed = siblings.some(sibling => hasAlias(route.signals, sibling))
+        && siblings.some(sibling => hasAlias(route.excluded_signals ?? [], sibling));
+      // Metadata and signals without an explicit OFF choice remain in their
+      // original frame. Only a real ON/OFF conflict changes payload encoding.
+      return [route.target, mixed ? !hasAlias(route.excluded_signals ?? [], chain) : null];
+    })
+    .sort((left, right) => String(left[0]).localeCompare(String(right[0])));
+  for (const chain of packed) {
+    const key = `${messageGroupKey(chain)}|${JSON.stringify(hmiPartition(chain))}`;
     grouped.set(key, [...(grouped.get(key) ?? []), chain]);
   }
 
@@ -424,6 +453,7 @@ export function packEngineeringChains(
     chains: ExtractedEngineeringChain[];
   };
   const messages: PackedMessage[] = [];
+  const nameCounters = new Map<string, number>();
 
   for (const group of grouped.values()) {
     const ordered = [...group].sort((left, right) => left.signal_name.localeCompare(right.signal_name, "de-DE", { numeric: true, sensitivity: "base" }));
@@ -433,8 +463,11 @@ export function packEngineeringChains(
       const signalBits = Math.max(1, chain.length_bits);
       let message = groupMessages.find((candidate) => candidate.usedBits + signalBits <= maxBits);
       if (!message) {
+        const originalGroup = messageGroupKey(chain);
+        const nameIndex = nameCounters.get(originalGroup) ?? 0;
+        nameCounters.set(originalGroup, nameIndex + 1);
         message = {
-          name: packedMessageName(chain, groupMessages.length),
+          name: packedMessageName(chain, nameIndex),
           interfaceType: chain.interface_type,
           producerKey: normalized(chain.hardware_name),
           hardwareName: chain.hardware_name,
@@ -829,7 +862,7 @@ function chainCounts(chains: ExtractedEngineeringChain[]) {
   );
 }
 
-function systemInterfaceType(name: string, domain: string) {
+function systemInterfaceType(name: string, domain: string, preserveConfirmedDefaults = false) {
   const key = normalized(name);
   if (domain === "industrial_automation" || domain === "process_industry") {
     if (/motion|antrieb|servo|roboter|foerder|safety|sicher/.test(key)) return "EtherCAT";
@@ -870,16 +903,20 @@ function systemInterfaceType(name: string, domain: string) {
   if (domain === "generic_networking") return "Ethernet";
   if (domain === "iot_wireless") return "WiFi";
   if (domain === "custom") return "Ethernet";
-  if (/infotainment|telematik|diagnose|fahrerassistenz|radar|kamera|zentralrechner|konnektivitaet/i.test(name)) {
+  // Replay imported confirmed contracts with their historical transport
+  // definitions. Future display proposals use the corrected defaults below.
+  if (preserveConfirmedDefaults && /headup/i.test(name)) return 'LIN';
+  if (preserveConfirmedDefaults && /kombiinstrument|armatur.*anzeige/i.test(name)) return 'CAN_FD';
+  if (/infotainment|telematik|diagnose|fahrerassistenz|radar|kamera|zentralrechner|konnektivitaet|headup|kombiinstrument|armatur.*anzeige/i.test(name)) {
     return "Ethernet";
   }
-  if (/tuer|sitz|licht|keyless|wischer|schiebedach|heckklappe|soundsystem|headup/i.test(name)) {
+  if (/tuer|sitz|licht|keyless|wischer|schiebedach|heckklappe|soundsystem/i.test(name)) {
     return "LIN";
   }
   return "CAN_FD";
 }
 
-function architectureTemplates(domain: string): ArchitectureTemplate[] {
+function architectureTemplates(domain: string, preserveConfirmedDefaults = false): ArchitectureTemplate[] {
   const profile = industryTemplateProfile(domain);
   const automotiveSensorOwner = (name: string) => {
     if (domain !== "automotive") return undefined;
@@ -922,7 +959,7 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     coverageRole: "DomainMeasurement",
   }));
   const controllers = profile.systemVariants.map((name) => {
-    const interfaceType = systemInterfaceType(name, domain);
+    const interfaceType = systemInterfaceType(name, domain, preserveConfirmedDefaults);
     return {
     hardwareName: name,
     deviceType: controllerDeviceTypeForModel(domain),
@@ -936,7 +973,8 @@ function architectureTemplates(domain: string): ArchitectureTemplate[] {
     };
   });
   const actuators = profile.systemVariants.flatMap((name) => ["Stellglied", "Schaltausgang"].map((kind) => {
-    const interfaceType = domain === "automotive" ? "LIN" : systemInterfaceType(`${name} ${kind}`, domain);
+    const interfaceType = domain === "automotive" && (preserveConfirmedDefaults || !/headup|kombiinstrument|armatur.*anzeige/i.test(name))
+      ? "LIN" : systemInterfaceType(`${name} ${kind}`, domain);
     return {
     hardwareName: `${baseName(name)}${kind}Actuator`,
     deviceType: "ActuatorController" as const,
@@ -1187,6 +1225,7 @@ function expandArchitectureChains(
   overrides: Partial<EngineeringHardwareCounts> = {},
   completenessFirst = false,
   allowExampleTemplates = false,
+  preserveConfirmedDefaults = false,
 ) {
   const canonicalRecognizedChains = canonicalizeRecognizedSystems(recognizedChains, domain);
   const recognizedCounts = chainCounts(canonicalRecognizedChains);
@@ -1221,7 +1260,7 @@ function expandArchitectureChains(
   // expand a catalogue. Keep missing inventory visible to the caller.
   if (!targets.explicit || !allowExampleTemplates) return { chains: allowExampleTemplates ? chains : [...canonicalRecognizedChains], targets };
 
-  const templates = architectureTemplates(domain);
+  const templates = architectureTemplates(domain, preserveConfirmedDefaults);
   const targetFor = (deviceType: ArchitectureTemplate["deviceType"]) => (
     deviceType === "SensorController" ? targets.sensors : deviceType === "ActuatorController" ? targets.actuators : deviceType === "Gateway" ? targets.gateways : targets.ecus
   );
@@ -1236,7 +1275,11 @@ function expandArchitectureChains(
     if (currentCount >= targetFor(template.deviceType)) continue;
     const key = normalized(normalizeHardwareName(template.hardwareName));
     if (names.has(key)) continue;
-    const allowedInterfaceType = communicationSystems.some((system) => communicationSystemAllowsTemplateInterface(system, template.interfaceType))
+    const displayDevice = !preserveConfirmedDefaults && domain === 'automotive' && /headup|kombiinstrument|armatur.*anzeige/i.test(template.hardwareName);
+    const displaySystems = communicationSystems.filter(system => /^(?:CAN|CAN_FD|CAN_XL|Ethernet)$/.test(canonicalCommunicationSystem(system)));
+    const allowedInterfaceType = displayDevice && communicationSystems.length && !communicationSystems.some(system => communicationSystemAllowsTemplateInterface(system, template.interfaceType))
+      ? displaySystems[0] ?? 'Other'
+      : communicationSystems.some((system) => communicationSystemAllowsTemplateInterface(system, template.interfaceType))
       ? template.interfaceType
       : communicationSystems.length
         ? communicationSystems[chains.length % communicationSystems.length]
@@ -2193,6 +2236,7 @@ export function extractEngineeringSpecification(
     { ...confirmedHardwareCounts(text), ...overrides },
     completenessFirst || /System- und Funktionsvollstaendigkeit hat Vorrang vor den Hardware-Sollwerten/i.test(text),
     exampleRequested || legacyConfirmed,
+    legacyConfirmed,
   );
 
   return {
@@ -2262,7 +2306,9 @@ export function reconcileConfirmedGraphDevices(spec: ExtractedEngineeringSpecifi
       for (const name of controller.actuators ?? []) add(name, "ActuatorController", controller.ecu);
     }
   }
-  const catalog = architectureTemplates(spec.domain);
+  const importedConfirmed = /per Wizard-Uebernehmen bestaetigt/.test(prompt)
+    && !/^- Generierungsmodus:\s*EXAMPLE_PROJECT\s*$/m.test(prompt);
+  const catalog = architectureTemplates(spec.domain, importedConfirmed);
   const confirmedCoverageTemplate = (device: { name: string; role: ArchitectureTemplate["deviceType"]; owner?: string }) => {
     if (!device.owner || (device.role !== "SensorController" && device.role !== "ActuatorController")) return undefined;
     const ownerKey = keyOf(device.owner);

@@ -1765,6 +1765,12 @@ def knowledge_subgraph_route():
     return jsonify(CanonicalKnowledgeService().subgraph([str(value) for value in object_ids], depth=depth))
 
 
+@engineering_api.route("/generation-experience/retrieve", methods=["POST"])
+def retrieve_generation_experience_route():
+    from .generation_experience import GenerationExperienceService
+    return jsonify(GenerationExperienceService().inspect(_routing_payload()))
+
+
 @engineering_api.route("/equipment-assignment-learning/retrieve", methods=["POST"])
 def retrieve_equipment_assignment_learning_route():
     return jsonify(EquipmentAssignmentLearningService(_project_id()).retrieve(_routing_payload()))

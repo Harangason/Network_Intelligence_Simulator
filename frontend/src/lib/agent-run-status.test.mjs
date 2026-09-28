@@ -76,7 +76,9 @@ test("all downstream workflow steps survive reopening the wizard", () => {
 
 test("an explicit retry remains available after earlier failed continuations", () => {
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "BLOCKED" }), true);
-  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "READY_TO_CONTINUE" }), true);
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "READY_TO_CONTINUE" }), false);
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "REVIEW_REQUIRED" }), false);
+  assert.equal(wizardRunCanRetry(true, true, { ...run, state: "COMPLETED" }), false);
   assert.equal(wizardRunCanRetry(true, true, { ...run, state: "CANCELED" }), false);
   assert.equal(wizardRunCanRetry(false, true, { ...run, state: "BLOCKED" }), false);
 });

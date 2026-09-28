@@ -17,9 +17,7 @@ def default_versions() -> dict[str, int]:
 
 
 def default_statuses() -> dict[str, str]:
-    statuses = {step: "EMPTY" for step in WORKFLOW_STEPS}
-    statuses["parameters"] = "APPROVED"
-    return statuses
+    return {step: "EMPTY" for step in WORKFLOW_STEPS}
 
 
 def normalize_step(step: str) -> str:

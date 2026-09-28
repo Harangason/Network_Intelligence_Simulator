@@ -143,6 +143,7 @@ export const automotiveTemplateProfile: IndustryTemplateProfile = {
     "Innenlicht",
     "Airbag",
     "Kombiinstrument",
+    "HeadUpDisplay",
     "Infotainment",
     "Telematik",
     "Diagnose",
@@ -172,6 +173,5 @@ export const automotiveTemplateProfile: IndustryTemplateProfile = {
     "Hinterachslenkung",
     "Allradsteuerung",
     "Soundsystem",
-    "HeadUpDisplay",
   ],
 };

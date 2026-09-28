@@ -2,7 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { extractEngineeringSpecification } from "./engineering-specification.ts";
-import { hmiSignalKey, selectHmiSignals } from "./equipment-clustering.ts";
+import { hmiSignalKey, hmiSelectionsFromRoutes, hmiSelectionsForRequest, selectHmiSignals } from "./equipment-clustering.ts";
+
+test('explicit internal controller status overrides new ON defaults until a per-target choice', () => {
+  const route = { source: 'Motorsteuerung', target: 'Anzeige', signals: ['MotorsteuerungStatus', 'Drehzahl'], path: [] };
+  const selections = hmiSelectionsForRequest([route], 'Controllerstatus bleibt bis zur Auswahl konkreter Empfänger und Signale intern.');
+  assert.deepEqual(selectHmiSignals([route], selections)[0].signals, ['Drehzahl']);
+  assert.deepEqual(selectHmiSignals([route], selections)[0].excluded_signals, ['MotorsteuerungStatus']);
+  assert.deepEqual(selectHmiSignals([route], { ...selections, [hmiSignalKey(route, 'MotorsteuerungStatus')]: true })[0].signals, route.signals);
+  assert.deepEqual(hmiSelectionsForRequest([route], 'Controllerstatus auf der Anzeige darstellen.'), {});
+});
 import { buildEquipmentClusters, equipmentClusterBusIssues, reviewedEquipmentCluster, equipmentClusterBusWarnings, equipmentClusterGraphPrompt, equipmentClusterSummary, equipmentTermMeaning } from "./equipment-clustering.ts";
 
 test('explicit task participants and controller ownership reach the cluster graph and Anzeige routing', () => {
@@ -46,6 +55,17 @@ function chain(name, deviceType, interfaceType = "LIN") {
   };
 }
 
+test('reviewed learning overrides generated ownership but preserves explicit current ownership', () => {
+  const nodes = [chain('BodyControl', 'ECU', 'CAN_FD'), chain('Motorsteuerung', 'ECU', 'CAN_FD'),
+    { ...chain('Temperatur', 'SensorController'), configuration: { functional_owner: 'Motorsteuerung' } }];
+  const learning = [{ endpoint_name: 'Temperatur', controller_name: 'BodyControl', confidence: 0.95, reason: 'Bestätigte Zuordnung' }];
+  const learned = buildEquipmentClusters(nodes, [], 'automotive', learning);
+  assert.ok(learned.flatMap(c => c.controllers).find(c => c.name === 'BodyControl').sensors.some(s => s.name === 'Temperatur'));
+  nodes[2].configuration.functional_owner_source = 'explicit_user_statement';
+  const explicit = buildEquipmentClusters(nodes, [], 'automotive', learning);
+  assert.ok(explicit.flatMap(c => c.controllers).find(c => c.name === 'Motorsteuerung').sensors.some(s => s.name === 'Temperatur'));
+});
+
 test("LIN findings identify exact participants and values, keeping cluster rules separate", () => {
   const cluster = { label: "Antriebsstrang", devices: [chain("Motor", "ECU"), { ...chain("Slow", "SensorController"), cycle_ms: 50 }, { ...chain("Unknown", "SensorController"), cycle_ms: 0 }], unassigned: [] };
   const issues = equipmentClusterBusIssues(cluster, "lin");
@@ -57,16 +77,26 @@ test("LIN findings identify exact participants and values, keeping cluster rules
   assert.deepEqual(equipmentClusterBusIssues(cluster, "can-fd"), []);
 });
 
-test("display signals default off, toggle per target and retain exclusions in the submitted graph", () => {
+test("display signals default on, toggle per target and retain explicit exclusions in the submitted graph", () => {
   const routes = ['Kombiinstrument', 'HeadUpDisplay'].map(target => ({ source: 'Motor', target, signals: ['Drehzahl', 'Health'], path: ['Motor', target] }));
-  assert.ok(selectHmiSignals(routes).every(route => route.signals.length === 0 && route.excluded_signals.length === 2));
-  const selected = selectHmiSignals(routes, { [hmiSignalKey(routes[0], 'Drehzahl')]: true });
+  assert.ok(selectHmiSignals(routes).every(route => route.signals.length === 2 && route.excluded_signals.length === 0));
+  const selected = selectHmiSignals(routes, { [hmiSignalKey(routes[0], 'Health')]: false });
   assert.deepEqual(selected[0].signals, ['Drehzahl']);
   assert.deepEqual(selected[0].excluded_signals, ['Health']);
-  assert.deepEqual(selected[1].signals, []);
+  assert.deepEqual(selected[1].signals, ['Drehzahl', 'Health']);
   const serialized = JSON.parse(JSON.stringify(equipmentClusterGraphPrompt([{ selected: true, hmi_routes: selected }])));
   assert.deepEqual(serialized[0].hmi_routes, selected);
-  assert.deepEqual(selectHmiSignals(routes, { [hmiSignalKey(routes[0], 'Drehzahl')]: false })[0].signals, []);
+  assert.deepEqual(selectHmiSignals(routes, { [hmiSignalKey(routes[0], 'Drehzahl')]: false })[0].signals, ['Health']);
+  assert.deepEqual(selectHmiSignals(selected)[0], selected[0]);
+});
+
+test('saved HMI OFF survives reload and an amendment while a new display starts ON', () => {
+  const candidate = { source: 'Konnektivitaet', target: 'Infotainment', signals: ['InternetDatenrate', 'WLANSignalstaerke'], path: [] };
+  const saved = { ...candidate, signals: ['WLANSignalstaerke'], excluded_signals: ['InternetDatenrate'] };
+  const selections = hmiSelectionsFromRoutes([saved]);
+  assert.deepEqual(selectHmiSignals([candidate], selections)[0], saved);
+  assert.deepEqual(selectHmiSignals([{ ...candidate, target: 'HeadUpDisplay' }], selections)[0].signals, candidate.signals);
+  assert.deepEqual(selectHmiSignals([candidate], { ...selections, [hmiSignalKey(candidate, 'InternetDatenrate')]: true })[0].excluded_signals, []);
 });
 
 test("warnings follow reviewed ownership and consider every signal of moved hardware", () => {
@@ -256,8 +286,9 @@ test("automotive equipment is grouped by domain families instead of singleton fa
   assert.ok(labels.has("Zugang und Diebstahlschutz"));
   assert.ok(labels.has("Karosserie und Komfort"));
   assert.ok(labels.has("Infotainment und Anzeige"));
-  assert.equal(clusters.find((cluster) => cluster.label === "Fahrerassistenz")?.devices.length, 4);
+  assert.equal(clusters.find((cluster) => cluster.label === "Fahrerassistenz")?.devices.length, 3);
   assert.equal(clusters.find((cluster) => cluster.label === "Antrieb")?.devices[0]?.hardware_name, "OilLevel");
+  assert.deepEqual(clusters.find(cluster => cluster.label === "Fahrwerk / Fahrdynamik")?.devices.map(device => device.hardware_name), ["VerticalAcceleration"]);
   assert.equal(clusters.some((cluster) => /^Oil|ParkassistenzSchalt|Vertical/.test(cluster.label)), false);
 });
 
@@ -335,7 +366,8 @@ test("automotive scale clusters stay compact enough to guide network node planni
     { id: "automotive-someip", label: "automotive - someip", count: 1 },
   ]);
 
-  assert.equal(clusters.length, 10);
+  assert.equal(clusters.length, 11);
+  assert.ok(clusters.some(cluster => cluster.label === "Fahrwerk / Fahrdynamik"));
   assert.equal(clusters.some((cluster) => cluster.devices.length === 1), false);
   assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AmbientLight"))?.label, "Licht");
   assert.equal(clusters.find((cluster) => cluster.devices.some((chain) => chain.hardware_name === "AccessoryCurrent"))?.label, "Energie");
@@ -378,5 +410,30 @@ test("all domains offer HMI outputs and hosted functions do not invent devices",
   assert.equal(new Set(routes.map(route => JSON.stringify([route.source, route.target]))).size, routes.length);
   const names = clusters.flatMap(cluster => cluster.controllers.flatMap(controller => (controller.functions ?? []).map(fn => fn.name)));
   for (const name of ["Innenraumueberwachung", "InnenraumTemperaturregelung", "RadioFM", "RadioDAB", "Navigation", "GNSSPositionierungGPS", "WLAN", "Bluetooth", "InternetMobilfunk", "Bedienelemente"]) assert.ok(names.includes(name), name);
-  assert.ok(selectHmiSignals(routes).every(route => !route.signals.length));
+  assert.ok(selectHmiSignals(routes).every(route => route.signals.length > 0));
+});
+
+test('reviewable ECU partners use only hosted functional outputs and preserve OFF roundtrip', () => {
+  const hosts = ['Motorsteuerung', 'Getriebesteuerung', 'Elektromotorsteuerung', 'Drehmomentkoordination'];
+  const chains = hosts.map(name => ({ ...chain(name, 'ECU', 'CAN_FD'), domain: 'automotive' }));
+  const clusters = buildEquipmentClusters(chains, [{ id: 'can_fd', label: 'CAN-FD' }], 'automotive');
+  const routes = clusters.flatMap(cluster => cluster.functionalRoutes);
+  assert.ok(routes.some(route => route.source === 'Motorsteuerung' && route.target === 'Elektromotorsteuerung'));
+  assert.ok(routes.every(route => route.signals.every(signal => !signal.endsWith('Status')) && route.review_status === 'REVIEW_REQUIRED'));
+  const first = routes[0];
+  const off = selectHmiSignals(routes, { [hmiSignalKey(first, first.signals[0])]: false });
+  assert.equal(hmiSelectionsFromRoutes(off)[hmiSignalKey(first, first.signals[0])], false);
+  assert.equal(buildEquipmentClusters(chains.map(c => ({ ...c, domain: 'rail' })), [], 'rail').flatMap(c => c.functionalRoutes).length, 0);
+});
+
+test('reviewed exact functional history adds non-automotive candidates and exposes unmatched identities', () => {
+  const source = { ...chain('PLC_A', 'PLC', 'ProfiNET'), domain: 'industrial_automation', signal_name: 'ProcessedPressure', configuration: { communication_contract: { scope: 'FUNCTION_OUTPUT' } } };
+  const target = { ...chain('PLC_B', 'PLC', 'ProfiNET'), domain: 'industrial_automation' };
+  const lesson = { industry: 'industrial_automation', source: 'PLC_A', target: 'PLC_B', signal: 'ProcessedPressure', accepted: 1, rejected: 0, confidence: 1, proposal_refs: ['reviewed'], requires_current_confirmation: true };
+  const clusters = buildEquipmentClusters([source, target], [], 'industrial_automation', [], [lesson]);
+  const route = clusters.flatMap(cluster => cluster.functionalRoutes)[0];
+  assert.equal(route.target, 'PLC_B'); assert.deepEqual(route.signals, ['ProcessedPressure']); assert.equal(route.review_status, 'REVIEW_REQUIRED');
+  assert.ok(route.provenance.includes('reviewed'));
+  assert.equal(buildEquipmentClusters([source, target], [], 'industrial_automation', [], [{ ...lesson, industry: 'automotive' }]).flatMap(c => c.functionalRoutes).length, 0);
+  assert.ok(buildEquipmentClusters([source], [], 'industrial_automation', [], [lesson]).flatMap(c => c.functionalIssues).some(issue => issue.includes('PLC_B')));
 });

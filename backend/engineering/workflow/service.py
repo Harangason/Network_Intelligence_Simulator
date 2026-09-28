@@ -572,9 +572,9 @@ class WorkflowStatusService:
     def _parameter_artifact_check(parameters: dict[str, Any]) -> dict[str, Any]:
         if not parameters:
             return {
-                "status": "APPROVED",
-                "complete": True,
-                "uses_defaults": True,
+                "status": "EMPTY",
+                "complete": False,
+                "uses_defaults": False,
                 "required": {},
                 "invalid_numeric": [],
             }
@@ -956,6 +956,7 @@ class WorkflowStatusService:
             raise ValueError("parameters muss ein nicht-leeres Objekt sein.")
         with get_connection() as connection:
             state = self._get_locked(connection)
+            self._validate_parameter_reviews(parameters, state['parameters'])
             explicit_scope = "simulation_scope" in parameters
             # Parameter forms must not erase the separately confirmed architecture.
             for key in ('spatial_architecture', 'spatial_zoning'):
@@ -990,6 +991,55 @@ class WorkflowStatusService:
             status=check["status"],
             actor=actor,
         )
+
+    @staticmethod
+    def _validate_parameter_reviews(parameters: dict[str, Any], previous: dict[str, Any]) -> None:
+        """Validate edited groups/networks against the same authoritative profile."""
+        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+        from backend.app.simulation_service import SimulationService
+
+        def validate(technology, values):
+            profile = registry.profile(technology)
+            normalized = dict(values)
+            aliases = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps',
+                       'data_bitrate': 'data_bitrate_bps'}
+            fields = set(profile.get('rate_model', {}).get('fields') or ())
+            for key, canonical in aliases.items():
+                if key in values:
+                    if key == 'bitrate' and 'nominal_bitrate_bps' in fields:
+                        if 'arbitration_bitrate' not in values: normalized['nominal_bitrate_bps'] = values[key]
+                    else: normalized[canonical] = values[key]
+            result = registry.validate_parameters(technology, normalized)
+            if result['status'] != 'VALID':
+                raise ValueError('; '.join(f"{item['code']}: {item['message']}" for item in result['findings']))
+            for field in SimulationService._parameter_schema(registry.normalize_id(technology), profile):
+                value = values.get(field['key'])
+                if value is None: continue
+                if field['type'] == 'number' and (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or field.get('min') is not None and value < field['min']
+                    or field.get('max') is not None and value > field['max']):
+                    raise ValueError(f"TECHNOLOGY_PARAMETER_OUT_OF_RANGE: {technology}/{field['key']}")
+
+        groups = parameters.get('technology_parameters', {})
+        if not isinstance(groups, dict): raise ValueError('technology_parameters muss ein Objekt sein.')
+        for technology, group in groups.items():
+            if not isinstance(group, dict) or not isinstance(group.get('values'), dict) or not isinstance(group.get('provenance'), dict):
+                raise ValueError('Technologieparameter benötigen Werte und Bestätigungsnachweise.')
+            profile = registry.profile(technology)
+            allowed = {field['key'] for field in SimulationService._parameter_schema(registry.normalize_id(technology), profile)}
+            if 'data_bitrate' in allowed: allowed.add('bitrate')
+            if set(group['values']) - allowed: raise ValueError('TECHNOLOGY_RATE_MODEL_MISMATCH: Fremde Parameter im Technologieprofil.')
+            for key, value in group['values'].items():
+                proof = group['provenance'].get(key) or {}
+                if proof.get('source') != 'USER_CONFIRMED' or proof.get('status') != 'CONFIRMED' or proof.get('value') != value:
+                    raise ValueError('Technologieparameter sind noch nicht bestätigt.')
+            validate(technology, group['values'])
+        old_networks = {str(item.get('id')): item for item in previous.get('networks', [])}
+        for network in parameters.get('networks', []):
+            old = old_networks.get(str(network.get('id')), {})
+            rates = ('bitrate', 'arbitration_bitrate', 'data_bitrate', 'bitrate_bps', 'nominal_bitrate_bps', 'data_bitrate_bps')
+            if any(network.get(key) != old.get(key) for key in rates):
+                validate(network.get('technology'), {key: network[key] for key in rates if key in network})
 
     def save_topology(self, topology: dict[str, Any], actor: str | None = None, *, layout_positions: dict | None = None) -> dict[str, Any]:
         if not isinstance(topology, dict) or not isinstance(topology.get("nodes"), list):

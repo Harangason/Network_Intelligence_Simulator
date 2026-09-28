@@ -277,3 +277,99 @@ def test_legacy_upgrade_reuses_pending_review_and_becomes_unchanged_after_apply(
     for change in first['changes']:
         graph['Message'][change['object_id']]['configuration'] = change['data']['configuration']
     assert generation.generate_communication_contract({'prompt': prompt}) == {'status': 'UNCHANGED'}
+
+def test_signal_specific_functional_route_never_forwards_local_command_and_retains_off():
+    prompt, graph = fixture()
+    graph['Signal']['out'] = {'name': 'MomentIst', 'message_id': 'ecu'}
+    graph['Message']['ecu']['configuration'] = {'communication_contract': {'scope': 'FUNCTION_OUTPUT', 'transmission': {'mode': 'EVENT', 'trigger': 'on_change', 'minimum_interval_ms': 20}}}
+    clusters = json.loads(prompt.split(': ', 1)[1])
+    clusters[0]['functional_routes'] = [{'source': 'Motor', 'target': 'Diagnose', 'signals': ['MomentIst'], 'excluded_signals': []}]
+    planned = communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)
+    assert planned['ecu']['transport_unit']['consumer_refs'] == ['diag']
+    assert planned['command']['transport_unit']['consumer_refs'] == ['actuator']
+    assert planned['ecu']['communication_contract']['transmission']['mode'] == 'EVENT'
+    graph['Message']['ecu']['configuration'] = planned['ecu']
+    clusters[0]['functional_routes'][0].update(signals=[], excluded_signals=['MomentIst'])
+    off = communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)
+    assert off['ecu']['transport_unit']['consumer_refs'] == []
+    graph['Signal']['private'] = {'name': 'PrivateRaw', 'message_id': 'ecu'}
+    clusters[0]['functional_routes'][0].update(signals=['MomentIst'], excluded_signals=['PrivateRaw'])
+    with pytest.raises(ValueError, match='eigene Nachricht'):
+        communication_plan('- Systemcluster-Graph: ' + json.dumps(clusters), graph)
+
+def separate_functional_fixture():
+    graph = {'HardwareNode': {'source': {'name': 'PLC_A', 'device_type': 'PLC'}, 'target': {'name': 'PLC_B', 'device_type': 'PLC'}},
+             'Function': {}, 'HardwareNetworkInterface': {}, 'Interface': {'i': {'hardware_node_id': 'source'}},
+             'Message': {key: {'name': 'Output' + key.upper(), 'interface_id': 'i', 'dlc': 8, 'configuration': {
+                 'communication_contract': {'scope': 'FUNCTION_OUTPUT', 'transmission': {'mode': 'EVENT', 'trigger': 'on_change', 'minimum_interval_ms': 20}},
+                 'transport_unit': {'consumer_refs': ['target']}}} for key in ('a', 'b')},
+             'Signal': {key: {'name': 'Out' + key.upper(), 'message_id': key} for key in ('a', 'b')}}
+    return graph
+
+
+@pytest.mark.parametrize('choice', ['partial_on', 'partial_off', 'mixed'])
+@pytest.mark.parametrize('alias', ['OutA', 'Processed pressure'])
+def test_authored_multisignal_functional_frame_rejects_partial_choices(choice, alias):
+    from copy import deepcopy
+    graph = separate_functional_fixture()
+    graph['Signal']['a']['display_name'] = 'Processed pressure'
+    graph['Signal']['b']['message_id'] = 'a'
+    original = deepcopy(graph)
+    enabled = [alias] if choice != 'partial_off' else []
+    disabled = [alias] if choice == 'partial_off' else (['OutB'] if choice == 'mixed' else [])
+    prompt = '- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [{
+        'source': 'PLC_A', 'target': 'PLC_B', 'signals': enabled, 'excluded_signals': disabled}]}])
+    with pytest.raises(ValueError, match='eigene Nachricht'):
+        communication_plan(prompt, graph)
+    assert graph == original
+
+
+@pytest.mark.parametrize('enabled', [True, False])
+def test_authored_multisignal_functional_frame_accepts_full_choice_with_aliases(enabled):
+    graph = separate_functional_fixture()
+    graph['Signal']['a']['display_name'] = 'Processed pressure'
+    graph['Signal']['b']['message_id'] = 'a'
+    identities = ['OutA', 'Processed pressure', 'OutB']
+    prompt = '- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [{
+        'source': 'PLC_A', 'target': 'PLC_B', 'signals': identities if enabled else [],
+        'excluded_signals': [] if enabled else identities}]}])
+    plan = communication_plan(prompt, graph)
+    assert plan['a']['transport_unit']['consumer_refs'] == (['target'] if enabled else [])
+    assert graph['Message']['a']['dlc'] == 8
+    assert graph['Signal']['b']['message_id'] == 'a'
+
+@pytest.mark.parametrize('enabled', [True, False])
+def test_functional_choice_only_changes_the_explicit_signal_frame(enabled):
+    graph = separate_functional_fixture()
+    before = deepcopy(graph)
+    prompt = '- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [{'source': 'PLC_A', 'target': 'PLC_B',
+        'signals': ['OutA'] if enabled else [], 'excluded_signals': [] if enabled else ['OutA']}]}])
+    plan = communication_plan(prompt, graph)
+    assert plan['a']['transport_unit']['consumer_refs'] == (['target'] if enabled else [])
+    assert plan['b']['transport_unit']['consumer_refs'] == ['target']
+    assert 'functional_routing_selection' not in plan['b']
+    assert graph == before
+
+@pytest.mark.parametrize('selection', ['OutA', 'Processed pressure', 'CanonicalAlias'])
+def test_name_display_and_signal_aliases_are_one_canonical_payload_identity(selection):
+    graph = separate_functional_fixture()
+    graph['Signal']['a'].update(display_name='Processed pressure', signal_name='CanonicalAlias')
+    before = deepcopy(graph)
+    prompt = '- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [{'source': 'PLC_A', 'target': 'PLC_B',
+        'signals': [selection], 'excluded_signals': []}]}])
+    plan = communication_plan(prompt, graph)
+    assert plan['a']['transport_unit']['consumer_refs'] == ['target']
+    assert plan['b']['transport_unit']['consumer_refs'] == ['target']
+    assert plan['a']['communication_contract']['transmission'] == before['Message']['a']['configuration']['communication_contract']['transmission']
+    assert graph == before and graph['Message']['a']['dlc'] == 8
+
+def test_aliases_cannot_hide_contradictory_choices_or_real_partial_payload():
+    graph = separate_functional_fixture()
+    graph['Signal']['a']['display_name'] = 'Processed pressure'
+    route = {'source': 'PLC_A', 'target': 'PLC_B', 'signals': ['OutA'], 'excluded_signals': ['Processed pressure']}
+    with pytest.raises(ValueError, match='dieselbe Signalidentität'):
+        communication_plan('- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [route]}]), graph)
+    route['excluded_signals'] = []
+    graph['Signal']['private'] = {'name': 'PrivateRaw', 'message_id': 'a'}
+    with pytest.raises(ValueError, match='eigene Nachricht'):
+        communication_plan('- Systemcluster-Graph: ' + json.dumps([{'functional_routes': [route]}]), graph)

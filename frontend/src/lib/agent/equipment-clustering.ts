@@ -1,5 +1,5 @@
 import { addAutomotiveFunctionOutputs, isEngineeringControllerDevice, normalizeHardwareName, type ExtractedEngineeringChain } from "./engineering-specification.ts";
-import type { EquipmentAssignmentLearningSuggestion } from "../engineering-api.ts";
+import type { EquipmentAssignmentLearningSuggestion, FunctionalPartnerSuggestion } from "../engineering-api.ts";
 import {
   compareTopologyClusterKeys,
   resolveTopologyClusterProfile,
@@ -26,6 +26,7 @@ export type EquipmentClusterAssignment = {
   tree?: EquipmentEcuBranch[];
   unassigned?: EquipmentDeviceLeaf[];
   hmi_routes?: EquipmentHmiRoute[];
+  functional_routes?: EquipmentHmiRoute[];
   validation?: { valid: boolean; warnings: string[] };
 };
 
@@ -78,16 +79,39 @@ export type EquipmentHmiRoute = {
   signals: string[];
   excluded_signals?: string[];
   path: string[];
+  reason?: string;
+  confidence?: number;
+  provenance?: string;
+  review_status?: string;
 };
 
 export function hmiSignalKey(route: EquipmentHmiRoute, signal: string) {
   return JSON.stringify([route.source, route.target, signal]);
 }
 
+export function hmiSelectionsFromRoutes(routes: EquipmentHmiRoute[]): Record<string, boolean> {
+  return Object.fromEntries(routes.flatMap(route => [
+    ...route.signals.map(signal => [hmiSignalKey(route, signal), true] as const),
+    ...(route.excluded_signals ?? []).map(signal => [hmiSignalKey(route, signal), false] as const),
+  ]));
+}
+
+// New display defaults must still respect an explicitly internal controller state.
+// Saved per-target selections and subsequent switch edits take precedence.
+export function hmiSelectionsForRequest(routes: EquipmentHmiRoute[], text: string): Record<string, boolean> {
+  const internalStatus = text.split(/[.!?\n]/).some(sentence =>
+    /controller\s*status|controllerstatus/i.test(sentence) && /\bintern(?:al)?\b/i.test(sentence));
+  if (!internalStatus) return {};
+  return Object.fromEntries(routes.flatMap(route => route.signals
+    .filter(signal => signal.toLocaleLowerCase('de') === `${route.source}Status`.toLocaleLowerCase('de'))
+    .map(signal => [hmiSignalKey(route, signal), false] as const)));
+}
+
 export function selectHmiSignals(routes: EquipmentHmiRoute[], selections: Record<string, boolean> = {}): EquipmentHmiRoute[] {
   return routes.map(route => ({ ...route,
-    signals: route.signals.filter(signal => selections[hmiSignalKey(route, signal)] === true),
-    excluded_signals: route.signals.filter(signal => selections[hmiSignalKey(route, signal)] !== true),
+    signals: route.signals.filter(signal => selections[hmiSignalKey(route, signal)] !== false),
+    excluded_signals: [...new Set([...(route.excluded_signals ?? []).filter(signal => selections[hmiSignalKey(route, signal)] !== true),
+      ...route.signals.filter(signal => selections[hmiSignalKey(route, signal)] === false)])],
   }));
 }
 
@@ -104,6 +128,8 @@ export type EquipmentCluster = {
   controllers: EquipmentEcuBranch[];
   unassigned: EquipmentDeviceLeaf[];
   hmiRoutes: EquipmentHmiRoute[];
+  functionalRoutes: EquipmentHmiRoute[];
+  functionalIssues: string[];
 };
 
 const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferredNetworks: string[]; recommendation: string }> = [
@@ -141,13 +167,15 @@ const CLUSTER_RULES: Array<{ id: string; label: string; terms: string[]; preferr
     terms: [
       "adas", "fahrerassistenz", "driverassist", "driver assistance", "parkassistenz", "parkassist", "parking",
       "ultraschall", "ultrasonic", "radar", "lidar", "kamera", "camera", "frontkamera", "heckkamera",
-      "lane", "spur", "acceleration", "beschleunigung", "verticalacceleration", "lateralacceleration",
-      "longitudinalacceleration", "pitchrate", "yawrate", "rollrate", "damper", "daempfer", "suspension",
-      "fahrwerk", "fahrdynamik", "reifendruck", "tirepressure", "tire", "reifen", "wheel", "rad", "wheelspeed",
-      "wheelload", "wheelangle", "wheeltorque", "tirewear", "suspensiontravel",
+      "lane", "spur",
     ],
     preferredNetworks: ["ethernet", "canfd", "can"],
     recommendation: "Umfeld-, Park- und Fahrdynamiksignale gemeinsam auf Latenz, Bandbreite und Sensorfusion pruefen.",
+  },
+  {
+    id: "chassis", label: "Fahrwerk / Fahrdynamik",
+    terms: ["acceleration", "beschleunigung", "verticalacceleration", "lateralacceleration", "longitudinalacceleration", "pitchrate", "yawrate", "rollrate", "damper", "daempfer", "suspension", "fahrwerk", "fahrdynamik", "reifendruck", "tirepressure", "tire", "reifen", "wheel", "rad", "wheelspeed", "wheelload", "wheelangle", "wheeltorque", "tirewear", "suspensiontravel"],
+    preferredNetworks: ["canfd", "can", "ethernet"], recommendation: "Fahrdynamik und lokale Fahrwerksregelung getrennt von Umfeldsensorik bewerten.",
   },
   {
     id: "energy",
@@ -429,17 +457,18 @@ function controllerBranches(
       ? endpoint.configuration.functional_owner
       : "";
     const learned = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(endpoint.hardware_name));
-    const explicitOwnerName = configuredOwner || learned?.controller_name || "";
+    const explicitOwnerName = endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
+      ? configuredOwner : learned?.controller_name || configuredOwner || "";
     const explicitOwner = controllers.find((controller) => compactKey(controller.hardware_name) === compactKey(explicitOwnerName));
     if (explicitOwner) {
       const branch = branches.find((candidate) => candidate.name === explicitOwner.hardware_name)!;
       const leaf = deviceLeaf(
         endpoint,
-        learned?.confidence ?? 1,
-        configuredOwner ? endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
+        endpoint.configuration?.functional_owner_source === 'explicit_user_statement' ? 1 : learned?.confidence ?? 1,
+        endpoint.configuration?.functional_owner_source === 'explicit_user_statement'
           ? "Vom Nutzer ausdrücklich diesem Controller zugeordnet."
-          : "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden."
-          : learned?.reason ?? "Aus bestätigter Controller-Zuordnung übernommen.",
+          : learned?.controller_name === explicitOwnerName ? learned.reason
+            : "Vom Vollständigkeitsgenerator fachlich an diesen Controller gebunden.",
       );
       if (endpoint.device_type === "SensorController") branch.sensors.push(leaf);
       else branch.actuators.push(leaf);
@@ -533,7 +562,7 @@ export function equipmentClusterBusIssues(cluster: EquipmentCluster, networkId: 
       affected: fast.map(chain => ({ name: chain.hardware_name, detail: `${chain.signal_display_name || chain.signal_name || chain.message_name}: ${chain.cycle_ms} ms · Schnittstelle ${chain.interface_type}` })) });
   }
   if (network.includes("lin") && /safety|bremse|antrieb|traction|fahrwerk|signalling/.test(cluster.label.toLowerCase())) {
-    issues.push({ code: "lin-cluster", message: `Bustechnik des gesamten Clusters „${cluster.label}“: LIN erfordert eine begründete Ausnahme.`,
+    issues.push({ code: "lin-cluster", message: `Bustechnik des gesamten Clusters â€ž${cluster.label}â€œ: LIN erfordert eine begründete Ausnahme.`,
       action: "Die Prüfregel stammt aus der Clusterbezeichnung, nicht aus einem nachgewiesenen Fehler eines einzelnen Geräts. Bustechnik und Funktionsanforderungen dieses Systemzweigs prüfen.", affected: [] });
   }
   if (cluster.unassigned.length) issues.push({ code: "owner", message: `${cluster.unassigned.length} Sensoren/Aktoren ohne eindeutige Controller-Zuordnung.`,
@@ -552,6 +581,7 @@ export function buildEquipmentClusters(
   networkOptions: EquipmentNetworkOption[],
   industry?: string,
   learnedAssignments: EquipmentAssignmentLearningSuggestion[] = [],
+  functionalHistory: FunctionalPartnerSuggestion[] = [],
 ): EquipmentCluster[] {
   chains = addAutomotiveFunctionOutputs(chains, chains[0]?.domain || industry || "");
   const profile = resolveTopologyClusterProfile(industry || chains[0]?.domain);
@@ -569,7 +599,8 @@ export function buildEquipmentClusters(
       const stem = ownershipStem(chain.hardware_name);
       const configuredOwner = typeof chain.configuration?.functional_owner === "string" ? chain.configuration.functional_owner : "";
       const learnedOwner = learnedAssignments.find((suggestion) => compactKey(suggestion.endpoint_name) === compactKey(chain.hardware_name))?.controller_name ?? "";
-      const ownerName = configuredOwner || learnedOwner;
+      const ownerName = chain.configuration?.functional_owner_source === 'explicit_user_statement'
+        ? configuredOwner : learnedOwner || configuredOwner;
       const inheritedGraph = (chain.device_type === "SensorController" || chain.device_type === "ActuatorController")
         ? controllerGraphs.find((candidate) => ownerName && compactKey(candidate.name) === compactKey(ownerName))?.graph
           ?? controllerGraphs.find((candidate) => stem.length >= 3 && candidate.stem === stem)?.graph
@@ -618,11 +649,46 @@ export function buildEquipmentClusters(
         controllers: ownership.branches,
         unassigned: ownership.unassigned,
         hmiRoutes: [],
+        functionalRoutes: [] as EquipmentHmiRoute[],
+        functionalIssues: [] as string[],
       };
     })
     .sort((left, right) => compareTopologyClusterKeys(left.clusterKey, right.clusterKey, profile)
       || left.label.localeCompare(right.label, "de"));
   displayRoutesForClusters(clusters, chains);
+  if (profile === 'automotive') {
+    // Directed functional dependencies, never topology affinity or all-to-all.
+    const partners: Record<string, string[]> = {
+      Motorsteuerung: ['Getriebesteuerung', 'Elektromotorsteuerung', 'Drehmomentkoordination'],
+      Getriebesteuerung: ['Motorsteuerung', 'Elektromotorsteuerung', 'Drehmomentkoordination'],
+      Elektromotorsteuerung: ['Motorsteuerung', 'Getriebesteuerung', 'Drehmomentkoordination'],
+      Drehmomentkoordination: ['Motorsteuerung', 'Elektromotorsteuerung', 'Getriebesteuerung'],
+    };
+    const present = new Set(chains.map(chain => chain.hardware_name));
+    for (const cluster of clusters) cluster.functionalRoutes = cluster.controllers.flatMap(source =>
+      (partners[source.name] ?? []).filter(target => present.has(target)).map(target => ({
+        source: source.name, target,
+        signals: [...new Set(chains.filter(chain => chain.hardware_name === source.name && chain.configuration?.functional_output_template).map(chain => chain.signal_name))],
+        path: [source.name, target], reason: 'Berechneter Funktionsausgang für die Antriebskoordination; Bedarf und Empfänger bestätigen.',
+        confidence: 0.8, provenance: 'automotive_function_output_dependency', review_status: 'REVIEW_REQUIRED',
+      })).filter(route => route.signals.length > 0));
+  }
+  for (const choice of functionalHistory) {
+    if (choice.industry && resolveTopologyClusterProfile(choice.industry) !== profile) continue;
+    const cluster = clusters.find(item => item.controllers.some(branch => branch.name === choice.source));
+    if (!cluster) continue;
+    const output = chains.find(chain => chain.hardware_name === choice.source && chain.signal_name === choice.signal
+      && (chain.configuration?.functional_output_template || (chain.configuration?.communication_contract as { scope?: string } | undefined)?.scope === 'FUNCTION_OUTPUT'));
+    if (!output || !clusters.some(item => item.controllers.some(branch => branch.name === choice.target))) {
+      cluster.functionalIssues.push(`${choice.source} → ${choice.target} / ${choice.signal}: früher bestätigter Partner oder Funktionsausgang fehlt im aktuellen Entwurf; Zuordnung offen.`);
+      continue;
+    }
+    const existing = cluster.functionalRoutes.find(route => route.source === choice.source && route.target === choice.target);
+    if (existing) { if (!existing.signals.includes(choice.signal)) existing.signals.push(choice.signal); }
+    else cluster.functionalRoutes.push({ source: choice.source, target: choice.target, signals: [choice.signal], path: [choice.source, choice.target],
+      reason: 'Früher menschlich geprüfte Funktionspartner-Auswahl; aktuellen Bedarf bestätigen.', confidence: choice.confidence,
+      provenance: `reviewed_generation_experience:${choice.proposal_refs.join(',')}`, review_status: 'REVIEW_REQUIRED' });
+  }
   return clusters;
 }
 
@@ -656,6 +722,7 @@ export function equipmentClusterGraphPrompt(assignments: EquipmentClusterAssignm
         ...(route.excluded_signals ? { excluded_signals: route.excluded_signals } : {}),
         path: route.path,
       })),
+      functional_routes: assignment.functional_routes ?? [],
       warnings: assignment.validation?.warnings ?? [],
     }));
 }

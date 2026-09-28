@@ -4,6 +4,7 @@ import { CommunicationWarningIndicator } from "@/components/communication-warnin
 import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/lib/communication-warnings";
 import { listRoutes } from "@/lib/routing-api";
 import { physicalBindingStatus } from "@/lib/interface-status";
+import { SourceFindings } from "@/components/source-findings";
 import { routingEnabled, withRoutingPermission } from "@/lib/routing-permission";
 import { RoutingPermissionFields } from "@/components/routing-permission-fields";
 
@@ -2572,6 +2573,7 @@ function DetailPanel({
 
   return (
     <div className="eng-detail-dropdown">
+      <SourceFindings objectType={engineeringResourceType(resource)} objectId={item.id} />
       <details className="eng-detail-section" open>
         <summary>
           <span className={`eng-object-badge ${engineeringObjectTypeClass(engineeringResourceType(resource))}`}>{engineeringObjectTypeLabel(engineeringResourceType(resource))}</span>

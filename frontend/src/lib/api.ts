@@ -44,12 +44,13 @@ function announceMode(mode: "backend" | "browser") {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("simulator-mode", { detail: mode }));
 }
 
-export async function getCatalog(): Promise<Catalog> {
+export async function getCatalog(options: { strict?: boolean } = {}): Promise<Catalog> {
   try {
     const catalog = await apiRequest<Catalog>("/api/technologies");
     announceMode("backend");
     return catalog;
-  } catch {
+  } catch (error) {
+    if (options.strict) throw error;
     announceMode("browser");
     return localCatalog;
   }

@@ -39,6 +39,7 @@ def build_manifest(root=ROOT):
     paths.update(root / name for name in (
         "Dockerfile", ".dockerignore", "generate_realistic_communication_tool.py", "scripts/write-build-info.py",
         "scripts/verify-runtime-lock.py",
+        "scripts/release_storage.py",
         "backend/requirements.txt", "backend/requirements.lock", "backend/pyproject.toml", "backend/uv.lock",
         "frontend/package.json", "frontend/package-lock.json",
     ))

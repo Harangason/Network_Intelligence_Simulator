@@ -1,5 +1,7 @@
 "use client";
 
+import { confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
+
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCatalog } from "@/lib/api";
@@ -20,7 +22,7 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
-import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflow, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
+import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflow, getWorkflowParameters, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
 import { routingBusType as routingBus } from "@/lib/bus-technology";
 import { defaultSimulationFormats } from "@/lib/simulation-formats";
 import {
@@ -522,6 +524,7 @@ export function SimulationWizard({
 }) {
   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
   const [catalogError, setCatalogError] = useState("");
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [domainId, setDomainId] = useState("automotive");
   const [technologyId, setTechnologyId] = useState("can_fd");
   const [advanced, setAdvanced] = useState(false);
@@ -687,18 +690,30 @@ export function SimulationWizard({
   }, []);
 
   useEffect(() => {
-    getCatalog()
-      .then(setCatalog)
-      .catch((error) =>
-        setCatalogError(
-          error instanceof Error
-            ? error.message
-            : "Technologiekatalog konnte nicht geladen werden.",
-        ),
-      );
-  }, []);
+    let active = true;
+    setCatalogLoaded(false); setCatalogError("");
+    void getCatalog({ strict: mode === "parameters" }).then(value => {
+      if (active) { setCatalog(value); setCatalogLoaded(true); }
+    }).catch(error => {
+      if (active) setCatalogError(error instanceof Error ? error.message : "Technologiekatalog konnte nicht geladen werden.");
+    });
+    return () => { active = false; };
+  }, [mode]);
 
   useEffect(() => {
+    if (mode === "parameters") {
+      let active = true;
+      setWorkflowLoaded(false); setFormError("");
+      void getWorkflowParameters(initialProjectId).then(state => {
+        if (!active) return;
+        editTokensRef.current.parameters = state.edit_token;
+        setStoredParameters(state.parameters);
+        if (typeof state.parameters.industry === "string") setDomainId(state.parameters.industry);
+        if (typeof state.parameters.technology === "string") setTechnologyId(state.parameters.technology);
+        setWorkflowLoaded(true);
+      }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Parameter konnten nicht geladen werden."); });
+      return () => { active = false; };
+    }
     if (mode === "network") {
       let active = true;
       void getNetworkView().then(state => {
@@ -731,7 +746,7 @@ export function SimulationWizard({
       .catch((error) => {
         setFormError(error instanceof Error ? error.message : "Workflow konnte nicht geladen werden.");
       });
-  }, [mode]);
+  }, [mode, initialProjectId]);
 
   useEffect(() => {
     if (mode !== "parameters") return;
@@ -865,6 +880,7 @@ export function SimulationWizard({
     () => (domain?.technologies ?? []).find((item) => item.id === technologyId),
     [domain, technologyId],
   );
+  const displayedParameters = useMemo(() => technology ? technologyParameterValues(storedParameters, technology) : {}, [storedParameters, technology]);
   const formats = useMemo(
     () => Array.isArray(storedParameters.formats)
       ? storedParameters.formats.map(String)
@@ -961,7 +977,7 @@ export function SimulationWizard({
         setSavedMessage("Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.");
       } else if (advanced) {
         const parsed = JSON.parse(advancedConfig) as Record<string, unknown>;
-        const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters);
+        const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId);
         editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(parsed);
         setSavedMessage("Parameterkonfiguration gespeichert.");
@@ -993,13 +1009,9 @@ export function SimulationWizard({
           dynamicParameters.critical_threshold = Math.round((warningThreshold + overloadThreshold) / 2);
           dynamicParameters.overload_threshold = overloadThreshold;
         }
-        const parameters = {
-          industry: domainId,
-          technology: technologyId,
-          ...dynamicParameters,
-          formats,
-        };
-        const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters);
+        if (!technology) throw new Error("Das Technologieprofil ist nicht verfügbar.");
+        const parameters = { ...confirmTechnologyParameters(storedParameters, technology, dynamicParameters), industry: domainId, formats };
+        const saved = await saveWorkflowParameters(parameters, editTokensRef.current.parameters, initialProjectId);
         editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(parameters);
         setSavedMessage("Technologie- und Timing-Parameter gespeichert.");
@@ -1024,6 +1036,11 @@ export function SimulationWizard({
         </p>
       </div>
     );
+  }
+  if (mode === "parameters" && (!catalogLoaded || !workflowLoaded)) {
+    return <div className="panel loading-panel" role="status">Gespeicherte Parameter und Technologieprofile werden geladen …
+      {formError && <p role="alert">{formError}</p>}
+    </div>;
   }
   if (!domain || !technology) {
     return <div className="panel loading-panel">Technologiekatalog wird geladen …</div>;
@@ -1242,6 +1259,13 @@ export function SimulationWizard({
               <span>01</span>
               Technologie
             </div>
+            {(parameterIsUnverified(storedParameters, "technology", technologyId)
+              || (technology.parameter_schema ?? []).some(field => parameterIsUnverified(storedParameters, field.key, technologyId))) && (
+              <p className="notice warning parameter-gap-notice">
+                <strong>UNVERIFIED · Nicht bestätigte Parameter</strong><br />
+                Nicht gespeicherte Werte sind Profilvorschläge. Sie sind noch keine bestätigten Projektdaten und bleiben bis zur bewussten Übernahme offen.
+              </p>
+            )}
             <div className="form-grid">
               <div className="field">
                 <label htmlFor="domain">Anwendungsbereich</label>
@@ -1259,6 +1283,7 @@ export function SimulationWizard({
               </div>
               <div className="field">
                 <label htmlFor="technology">Bus / Protokoll</label>
+                {parameterIsUnverified(storedParameters, "technology", technologyId) && <small>UNVERIFIED · Keine bestätigte Technologieauswahl</small>}
                 <select
                   id="technology"
                   onChange={(event) => chooseTechnology(event.target.value)}
@@ -1283,20 +1308,21 @@ export function SimulationWizard({
               <BusLoadParameterControl
                 field={busLoadField}
                 key={technology.id}
-                parameters={storedParameters}
+                parameters={displayedParameters}
                 technology={technology}
               />
             )}
             <div className="parameter-groups">
               {parameterGroups.map(([category, fields]) => (
-                <fieldset className={`parameter-group parameter-group-${category}`} key={category}>
+                <fieldset className={`parameter-group parameter-group-${category}`} key={`${technology.id}:${category}`}>
                   <legend>{parameterCategoryLabels[category]}</legend>
                   <div className="form-grid three">
                     {fields.map((field) => (
                       <ParameterControl
                         field={field}
                         key={field.key}
-                        value={storedParameters[field.key] ?? field.default}
+                        value={displayedParameters[field.key]}
+                        unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
                       />
                     ))}
                   </div>
@@ -1345,12 +1371,14 @@ export function SimulationWizard({
   );
 }
 
-function ParameterControl({ field, value }: { field: TechnologyParameterField; value: unknown }) {
+function ParameterControl({ field, value, unverified = false }: { field: TechnologyParameterField; value: unknown; unverified?: boolean }) {
   const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
+  const gap = unverified ? <small>UNVERIFIED · Profilvorschlag</small> : null;
   if (field.type === "select") {
     return (
       <div className="field" title={field.description}>
         <label htmlFor={field.key}>{label}</label>
+        {gap}
         <select defaultValue={String(value ?? "")} id={field.key} name={field.key}>
           {(field.options ?? []).map((option) => (
             <option key={option} value={option}>{option.replaceAll("_", " ")}</option>
@@ -1364,6 +1392,7 @@ function ParameterControl({ field, value }: { field: TechnologyParameterField; v
       <label className="parameter-toggle" title={field.description}>
         <input defaultChecked={Boolean(value)} name={field.key} type="checkbox" />
         <span>{label}</span>
+        {gap}
       </label>
     );
   }
@@ -1371,12 +1400,14 @@ function ParameterControl({ field, value }: { field: TechnologyParameterField; v
     return (
       <div className="field" title={field.description}>
         <label htmlFor={field.key}>{label}</label>
+        {gap}
         <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" />
       </div>
     );
   }
   return (
     <div title={field.description}>
+      {gap}
       <NumberField
         label={label}
         name={field.key}

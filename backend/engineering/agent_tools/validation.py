@@ -53,7 +53,8 @@ def validate_effective_model(changes):
     from ..workflow.service import WorkflowStatusService
     from ..project_context import current_project_id
     from ..scope_rules import normalize_engineering_scope_rules, hardware_scope_category, communication_system_allows_interface
-    raw_rules = (WorkflowStatusService(current_project_id()).get().get('context') or {}).get('engineering_scope_rules')
+    workflow_state = WorkflowStatusService(current_project_id()).get()
+    raw_rules = (workflow_state.get('context') or {}).get('engineering_scope_rules')
     rules = normalize_engineering_scope_rules(raw_rules) if raw_rules else None
     affected_messages, affected_ports = set(), set()
     for (kind, identifier), index in touched.items():
@@ -171,16 +172,35 @@ def validate_effective_model(changes):
                     findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': check['text']})
     for identifier in affected_ports:
         port = graph['HardwareNetworkInterface'][identifier]
-        parameters = {key: port[key] for key in ('bitrate', 'data_bitrate') if port.get(key)}
+        from ..capacity.service import parameters_for_protocol
+        from ..capacity.transmission import profile
+        from ..capacity.dimensioning import transmission_contract
+        confirmed = workflow_state.get('parameters') or {}
+        network = declared.get(str(port.get('network_ref')), {})
+        network_parameters = network if _network_supports_interface(network.get('technology'), port['technology']) else {}
+        scoped = {**(network_parameters.get('configuration') or {}), **network_parameters, **(port.get('configuration') or {}), **{key: value for key, value in port.items() if value is not None}}
+        parameters = parameters_for_protocol(port['technology'], confirmed, scoped, port.get('network_ref'), confirmed)
         messages = [item for item in graph['Message'].values()
             if str(item.get('hardware_interface_id')) == identifier or any(str(binding.get('hardware_interface_id')) == identifier
                 for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or [])]
         frames = [(item, estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters)) for item in messages]
-        if any(frame.is_generic_estimate or not frame.transmission_time_available for _, frame in frames):
-            findings.append({'severity': 'ERROR', 'object_id': identifier, 'code': 'CAPACITY_UNVERIFIED',
-                'message': 'Interface-Auslastung nicht nachgewiesen: explizite Raten oder Übertragungsmodell fehlen.'})
+        if frames and (not parameters.get('_rate_evidenced') or any(frame.is_generic_estimate or not frame.transmission_time_available for _, frame in frames)):
+            technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+            required = ['arbitration_bitrate', 'data_bitrate'] if technology.upper() == 'CAN_FD' else ['local_timing_evidence'] if technology.upper() in {'I2C', 'SPI'} else ['bitrate']
+            missing = [key for key in required if not parameters.get(key)] or ['confirmed_rate_evidence_or_transmission_model']
+            node = graph['HardwareNode'].get(str(port.get('hardware_node_id')), {})
+            findings.append({'severity': 'ERROR', 'index': touched.get(('HardwareNetworkInterface', identifier)),
+                'object_id': identifier, 'object_type': 'HardwareNetworkInterface', 'object_name': port.get('name') or identifier,
+                'node_name': node.get('name'), 'network_id': port.get('network_ref'), 'network_name': network.get('name') or network.get('id'),
+                'technology': technology, 'missing_fields': missing, 'repair_action': 'REVIEW_TECHNOLOGY_PARAMETERS', 'code': 'CAPACITY_UNVERIFIED',
+                'message': 'Interface-Auslastung nicht nachgewiesen: ' + ', '.join(missing) + '. Parameter für diese Technologie prüfen und bestätigen.'})
             continue
-        load = sum(utilization_percent(frame.transmission_time_s, float(item.get('cycle_ms') or 10)) for item, frame in frames)
+        releases = [(item, frame, profile(transmission_contract(item), item.get('cycle_ms'))) for item, frame in frames]
+        if any(release['errors'] for _, _, release in releases):
+            findings.append({'severity': 'ERROR', 'object_id': identifier, 'object_name': port.get('name'), 'code': 'CAPACITY_TRAFFIC_UNVERIFIED',
+                'message': 'Sendeabstand oder Auslöser fehlt; Übertragungsmodus prüfen.'})
+            continue
+        load = sum(utilization_percent(frame.transmission_time_s, release['period_ms']) for _, frame, release in releases)
         if load > float(port.get('target_load_limit') or 60):
             findings.append({'severity': 'ERROR', 'object_id': identifier, 'message': f'Interface-Auslastung {load:.2f}% überschreitet die zulässige Zielauslastung.'})
     from ..physical_ports import topology_port_findings

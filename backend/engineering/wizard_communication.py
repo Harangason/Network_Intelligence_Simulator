@@ -12,16 +12,16 @@ VERSION = 2
 KINDS = ('HardwareNode', 'Function', 'Interface', 'HardwareNetworkInterface', 'Message', 'Signal')
 
 
-def hmi_message_choices(clusters, graph):
+def hmi_message_choices(clusters, graph, route_field="hmi_routes"):
     """Resolve explicit display switches to whole canonical messages, never guessed payloads."""
     names = {str(node['name']).casefold(): str(key) for key, node in graph['HardwareNode'].items()}
     signals = {}
-    for signal in graph.get('Signal', {}).values():
-        signals.setdefault(str(signal.get('message_id')), set()).update(
-            str(signal[field]).casefold() for field in ('name', 'display_name', 'signal_name') if signal.get(field))
+    for identifier, signal in graph.get('Signal', {}).items():
+        signals.setdefault(str(signal.get('message_id')), {})[str(identifier)] = {
+            str(signal[field]).casefold() for field in ('name', 'display_name', 'signal_name') if signal.get(field)}
     choices = {}
     for cluster in clusters:
-        for route in cluster.get('hmi_routes') or []:
+        for route in cluster.get(route_field) or []:
             if 'excluded_signals' not in route:
                 continue  # Older reviewed requests keep their original meaning.
             enabled = {str(name).casefold() for name in route.get('signals') or []}
@@ -40,10 +40,19 @@ def hmi_message_choices(clusters, graph):
                 producer = str(interface.get('hardware_node_id') or function.get('hardware_node_id') or '')
                 if producer != source:
                     continue
-                payload = signals.get(str(key), set())
-                selected = enabled & payload
-                found.update(selected)
-                if selected and disabled & payload:
+                contract = (message.get('configuration') or {}).get('communication_contract') or {}
+                if route_field == 'functional_routes' and contract.get('scope') != 'FUNCTION_OUTPUT':
+                    continue
+                payload = signals.get(str(key), {})
+                selected = {signal_id for signal_id, aliases in payload.items() if enabled & aliases}
+                deselected = {signal_id for signal_id, aliases in payload.items() if disabled & aliases}
+                if selected & deselected:
+                    raise ValueError('HMI-Auswahl enthält widersprüchliche Ein/Aus-Werte für dieselbe Signalidentität.')
+                found.update(alias for signal_id in selected for alias in payload[signal_id] if alias in enabled)
+                if route_field == 'functional_routes' and not selected and not deselected:
+                    continue  # An unrelated authored frame retains its existing consumers.
+                if (selected and (deselected or (route_field == 'functional_routes' and set(payload) - selected))
+                        or (route_field == 'functional_routes' and deselected and set(payload) - deselected)):
                     raise ValueError(f'{message["name"]}: Ein- und ausgeschaltete HMI-Werte teilen eine Nachricht. Für die Auswahl ist eine eigene Nachricht mit expliziter Kodierung erforderlich.')
                 choice = bool(selected)
                 pair = (str(key), target)
@@ -62,6 +71,7 @@ def communication_plan(prompt, graph):
     clusters = json.loads(match.group(1))
     nodes = graph['HardwareNode']
     hmi_choices = hmi_message_choices(clusters, graph)
+    functional_choices = hmi_message_choices(clusters, graph, "functional_routes")
     names = {str(n['name']).casefold(): key for key, n in nodes.items()}
     controller_types = {'ECU', 'Gateway', 'PLC', 'IndustrialPC', 'DomainController',
                         'EmbeddedController', 'RobotController', 'FlightComputer',
@@ -86,7 +96,7 @@ def communication_plan(prompt, graph):
                 if identifier in owners and owners[identifier] != owner:
                     raise ValueError(f'Kommunikationsplanung: {endpoint} besitzt mehrere Controller.')
                 owners[identifier] = owner
-        for route in [*(route for route in cluster.get('hmi_routes') or [] if 'excluded_signals' not in route), *(cluster.get('functional_routes') or [])]:
+        for route in [*(route for route in cluster.get('hmi_routes') or [] if 'excluded_signals' not in route), *(route for route in cluster.get('functional_routes') or [] if 'excluded_signals' not in route)]:
             source, target = names.get(str(route.get('source', '')).casefold()), names.get(str(route.get('target', '')).casefold())
             if source and target and source != target:
                 displays.setdefault(source, set()).add(target)
@@ -136,6 +146,19 @@ def communication_plan(prompt, graph):
             else:
                 targets.discard(target)
             selected_displays.append({'target_ref': target, 'enabled': enabled})
+        selected_functional = []
+        for (message_id, target), enabled in functional_choices.items():
+            if message_id != str(identifier):
+                continue
+            if enabled:
+                targets.add(target)
+            else:
+                targets.discard(target)
+            selected_functional.append({'target_ref': target, 'enabled': enabled})
+        if selected_functional:
+            config['functional_routing_selection'] = selected_functional
+            if targets and any(choice['enabled'] for choice in selected_functional):
+                config['routing'] = {**config.get('routing', {}), 'enabled': True}
         if selected_displays:
             config['hmi_routing_selection'] = selected_displays
         if producer in targets or any(key not in nodes for key in targets):
@@ -149,7 +172,7 @@ def communication_plan(prompt, graph):
                 and sorted(previous.get('consumer_refs') or []) == sorted(targets)):
             role, basis = previous['role'], previous['basis']
         transport.update(producer_ref=producer, consumer_refs=sorted(targets))
-        config['communication_contract'] = {'version': VERSION, 'role': role, 'basis': basis,
+        config['communication_contract'] = {**previous, 'version': VERSION, 'role': role, 'basis': basis,
             'producer_ref': producer, 'consumer_refs': sorted(targets)}
         if role == 'INTERNAL_STATE' and not targets:
             config['routing'] = {**config.get('routing', {}), 'enabled': False}
@@ -177,6 +200,21 @@ def attach_new_message_contracts(prompt, changes, existing):
 
 def contract_findings(graph):
     findings = []
+    def recipient_hardware(ref):
+        ref = str(ref)
+        if ref in graph['HardwareNode']:
+            return ref
+        function = graph.get('Function', {}).get(ref)
+        interface = graph.get('Interface', {}).get(ref)
+        if interface:
+            function = graph.get('Function', {}).get(str(interface.get('function_id')))
+            if interface.get('function_id') and not function:
+                return ''
+            if function and interface.get('hardware_node_id') and str(interface['hardware_node_id']) != str(function.get('hardware_node_id')):
+                return ''
+            if not function:
+                return str(interface.get('hardware_node_id') or '')
+        return str((function or {}).get('hardware_node_id') or '')
     for key, message in graph['Message'].items():
         config = message.get('configuration') or {}
         contract = config.get('communication_contract')
@@ -184,12 +222,14 @@ def contract_findings(graph):
             continue  # Imported models use their own contracts.
         transport = config.get('transport_unit') or {}
         consumers = transport.get('consumer_refs') or []
+        contract_consumers = [recipient_hardware(ref) for ref in contract.get('consumer_refs') or []]
         internal = (contract.get('role') == 'INTERNAL_STATE' and contract.get('scope') in {'INTERNAL', 'FUNCTION_OUTPUT'}
                     and (config.get('routing') or {}).get('enabled') is False and not consumers
                     and not contract.get('consumer_refs') and transport.get('producer_ref') in graph['HardwareNode'])
         if (not consumers and not internal or any(str(ref) not in graph['HardwareNode'] for ref in consumers)
                 or transport.get('producer_ref') in consumers
-                or sorted(consumers) != sorted(contract.get('consumer_refs') or [])):
+                or any(ref not in graph['HardwareNode'] for ref in contract_consumers)
+                or sorted(consumers) != sorted(contract_consumers)):
             findings.append({'kind': 'Message', 'id': key, 'code': 'COMMUNICATION_CONTRACT_INVALID',
                 'message': f'{message["name"]}: Empfänger fehlen oder widersprechen dem Kommunikationsplan.', 'severity': 'ERROR'})
     return findings

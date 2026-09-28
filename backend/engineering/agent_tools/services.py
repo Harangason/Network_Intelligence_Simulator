@@ -626,6 +626,8 @@ from . import repair_execution
 from . import periodic_acquisition
 register('prepare_periodic_acquisition', 'Explizite Positionsquellen, bestätigte Controller-Vorlage und Anfrage/Antwort-Verträge in einen vollständigen prüfbaren Abfragevorschlag überführen. Keine erfundenen Protokolldaten oder automatische Freigabe.',
          P.GENERATE_PROPOSAL, periodic_acquisition.prepare, workload_id=ID)
+register('prepare_diagnostic_acquisition', 'Eine bestätigte kanonische Diagnosevorgabe mit Zyklus, Dienst, Datenquellen und vorhandenem Controller in einen prüfbaren Anfrage-/Antwortvorschlag überführen. Keine erfundenen Protokolldaten, zusätzlichen Controller oder automatische Freigabe.',
+         P.GENERATE_PROPOSAL, periodic_acquisition.prepare_diagnostic, workload_id=ID)
 register('inspect_signal_recipients', 'Alle kanonischen Signale auf belegte Empfänger und validierte Routen prüfen; fehlende Empfänger nicht aus Erreichbarkeit ableiten.',
          P.READ_MODEL, repair_execution.inspect_recipients, workload_id=ID)
 register('prepare_signal_recipient_repair', 'Nur eindeutig fehlende Routen zu gespeicherten Empfängern zur Prüfung vorschlagen; ungeklärte Fälle als Review-Befunde erhalten.',

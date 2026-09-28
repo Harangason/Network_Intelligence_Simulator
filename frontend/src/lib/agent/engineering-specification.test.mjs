@@ -680,7 +680,10 @@ test("sensor templates preserve their domain bus while simple actuators remain o
   assert.ok(actuators.length > 0);
   assert.ok(basicSensors.some((chain) => chain.interface_type === "CAN_FD"));
   assert.ok(basicSensors.some((chain) => chain.interface_type === "LIN"));
-  assert.ok(actuators.every((chain) => chain.interface_type === "LIN"));
+  const displays = actuators.filter(chain => /HeadUpDisplay|Kombiinstrument/.test(chain.hardware_name));
+  assert.ok(displays.length > 0);
+  assert.ok(displays.every(chain => chain.interface_type === 'Ethernet'));
+  assert.ok(actuators.filter(chain => !displays.includes(chain)).every(chain => chain.interface_type === 'LIN'));
 });
 
 test("gateway-direct generation does not add a central computer beside the system gateway", () => {
@@ -1058,6 +1061,39 @@ test("packing reuses one interface and one message for compatible producer signa
   assert.equal(packed[0].configuration?.payload_capacity_bits, 48);
 });
 
+test('new HMI payloads partition per destination without dropping excluded signals or changing source encodings', () => {
+  const template = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
+  const chains = ['Public', 'Private', 'Other'].map(signal_name => ({ ...template,
+    hardware_name: 'Konnektivitaet', function_name: 'Internet', signal_name,
+    signal_display_name: signal_name, length_bits: 16, factor: 0.1, min_value: 0, max_value: 100 }));
+  const prompt = '- Systemcluster-Graph: ' + JSON.stringify([{ hmi_routes: [
+    { source: 'Konnektivitaet', target: 'Infotainment', signals: ['Public', 'Other'], excluded_signals: ['Private'] },
+    { source: 'Konnektivitaet', target: 'Kombiinstrument', signals: ['Public', 'Private'], excluded_signals: ['Other'] },
+  ] }]);
+  const before = structuredClone(chains);
+  const packed = packEngineeringChains(chains, undefined, prompt);
+  assert.equal(packed.length, 3);
+  assert.equal(new Set(packed.map(c => c.message_name)).size, 3);
+  assert.equal(new Set(packed.map(c => c.message_id_hex)).size, 3);
+  assert.deepEqual(chains, before);
+  assert.ok(packed.every(c => c.length_bits === 16 && c.factor === 0.1 && c.start_bit === 0 && c.dlc === 2));
+  assert.deepEqual(packEngineeringChains(chains, undefined, prompt), packed);
+  assert.equal(new Set(packEngineeringChains(chains).map(c => c.message_name)).size, 1);
+});
+
+test('generic actuator templates preserve their legacy numeric contract for imported model proposals', () => {
+  const spec = extractEngineeringSpecification('- Generierungsmodus: EXAMPLE_PROJECT\nIndustrie: Automotive',
+    { sensors: 0, actuators: 100, ecus: 50, gateways: 1 }, 'automotive', true);
+  const commands = Object.fromEntries(spec.chains.filter(c => c.device_type === 'ActuatorController')
+    .map(c => [c.hardware_name, c.configuration.actuator_command_template]));
+  assert.equal(commands.TelematikSchaltausgang.length_bits, 1);
+  assert.equal(commands.TelematikSchaltausgang.data.minimum, 0);
+  assert.equal(commands.TelematikSchaltausgang.data.maximum, 1);
+  assert.equal(commands.TelematikStellglied.length_bits, 10);
+  assert.equal(commands.TelematikStellglied.factor, 0.1);
+  assert.equal(commands.TelematikStellglied.data.resolution, 0.1);
+});
+
 test("intelligent devices receive a complete five-signal minimum model before packing", () => {
   const base = extractEngineeringSpecification("Motorsteuergerät mit CAN-FD und Signal Motordrehzahl").chains[0];
   const expanded = expandEngineeringSignalModel([base]);
@@ -1271,4 +1307,13 @@ test("industry generation dispatcher isolates optional automotive enrichment", a
     assert.deepEqual(result, specification.chains, domain);
     assert.equal(result.some(chain => chain.configuration?.functional_output_template), false, domain);
   }
+});
+
+test('functional per-target OFF partitions new outputs without changing local encoding', () => {
+  const base = extractEngineeringSpecification('Motorsteuergerät mit CAN-FD und Signal Motordrehzahl').chains[0];
+  const chains = ['PublicMoment', 'PrivateMoment'].map(signal_name => ({ ...base, hardware_name: 'Motorsteuerung', function_name: 'Momentberechnung', signal_name, signal_display_name: signal_name, length_bits: 8, dlc: 1, configuration: { functional_output_template: true } }));
+  const prompt = '- Systemcluster-Graph: ' + JSON.stringify([{ functional_routes: [{ source: 'Motorsteuerung', target: 'Getriebesteuerung', signals: ['PublicMoment'], excluded_signals: ['PrivateMoment'] }] }]);
+  const packed = packEngineeringChains(chains, undefined, prompt);
+  assert.equal(new Set(packed.map(chain => chain.message_name)).size, 2);
+  assert.ok(packed.every(chain => chain.length_bits === 8 && chain.dlc === 1));
 });

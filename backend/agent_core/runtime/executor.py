@@ -20,7 +20,8 @@ class EngineeringExecutor:
                          GoalType.EXTEND_HARDWARE: self._hardware_channel,
                          GoalType.RUN_SIMULATION: self._gateway_outage,
                          GoalType.REPAIR: self._recipient_repair,
-                         GoalType.DIAGNOSE: self._message_timing_diagnosis}
+                         GoalType.DIAGNOSE: self._message_timing_diagnosis,
+                         GoalType.GENERAL_ENGINEERING: self._diagnostic_acquisition}
 
     async def execute(self, goal: EngineeringGoal, context: Any, resolved_context: dict,
                       *, emit, available_tools: set[str]) -> dict | None:
@@ -325,20 +326,37 @@ class EngineeringExecutor:
                     'tool': 'plan_simple_project', 'trace_id': response.trace_id,
                     'status': response.status.value}], 'proposals': [proposal] if proposal else []}
 
+    async def _diagnostic_acquisition(self, goal, context, *, emit, available_tools):
+        from ..orchestration.capability_intent import diagnostic_creation_without_parameters
+        if not diagnostic_creation_without_parameters(goal.original_request):
+            return None
+        if not {'inspect_model_situation', 'prepare_diagnostic_acquisition'} <= available_tools:
+            return None
+        inspected = await self.client.call('inspect_model_situation')
+        model = inspected.data if inspected.success and isinstance(inspected.data, dict) else {}
+        if (model.get('project_ref') != context.active_project_id or not model.get('project_revision')
+                or not any('diagnostic_request_template' in (f.get('configuration') or {}) for f in model.get('functions', []))):
+            return None  # Existing grounded read/clarification handles absent facts.
+        result = await self._periodic_acquisition(goal, context, emit=emit, available_tools=available_tools,
+            preparation_tool='prepare_diagnostic_acquisition', allow_legacy=False)
+        if result:
+            result['trace'].insert(0, {'tool': 'inspect_model_situation', 'trace_id': inspected.trace_id, 'status': inspected.status.value})
+        return result
+
     async def _periodic_acquisition(self, goal: EngineeringGoal, context: Any, *, emit,
-                                    available_tools: set[str]) -> dict | None:
+                                    available_tools: set[str], preparation_tool='prepare_periodic_acquisition', allow_legacy=True) -> dict | None:
         """Expose the existing reviewed ECU generator without claiming E2E completion.
 
         Only its confirmed 30 s position-poll pattern is implemented. Other
         intervals still use the general agent until a transport-independent
         acquisition planner exists.
         """
-        if 'prepare_periodic_acquisition' in available_tools:
-            planned = await self.client.call('prepare_periodic_acquisition', {'workload_id': goal.goal_id})
+        if preparation_tool in available_tools:
+            planned = await self.client.call(preparation_tool, {'workload_id': goal.goal_id})
             if not planned.success or (planned.data or {}).get('supported'):
                 run_id = getattr(getattr(context, 'input_envelope', None), 'run_ref', '')
                 events = []
-                trace = [{'tool': 'prepare_periodic_acquisition', 'trace_id': planned.trace_id, 'status': planned.status.value}]
+                trace = [{'tool': preparation_tool, 'trace_id': planned.trace_id, 'status': planned.status.value}]
                 data = planned.data or {}; proposal = data.get('proposal')
                 findings = data.get('findings') or planned.findings or []
                 if planned.success and proposal:
@@ -353,6 +371,8 @@ class EngineeringExecutor:
                 prepared = ('Die bestehende Abfrage wird für die weiteren Aktoren erweitert. Die zusätzlichen Anfrage-/Antwortwege sind zur Prüfung vorbereitet.'
                             if goal.follow_up_of else
                             'Die neue ECU, die periodische Abfrage und ihre bestätigten Anfrage-/Antwortwege sind zur Prüfung vorbereitet.')
+                if preparation_tool == 'prepare_diagnostic_acquisition':
+                    prepared = 'Die Diagnoseabfrage ist anhand der bestätigten Modellvorgaben auf dem vorhandenen Controller zur Prüfung vorbereitet.'
                 text = (prepared
                         if ready else 'Die vollständige Abfrage kann mit den aktuellen Modelldaten noch nicht vorbereitet werden. '
                         + ' '.join(str(f.get('message') or '') for f in findings))
@@ -367,7 +387,7 @@ class EngineeringExecutor:
                 return {'run_id': run_id, 'status': 'READY_FOR_REVIEW' if ready else 'BLOCKED',
                         'events': events, 'context': context.model_dump(mode='json'), 'trace': trace,
                         'proposals': [proposal] if proposal else []}
-        if not {'generate_functions', 'validate_proposal'} <= available_tools:
+        if not allow_legacy or not {'generate_functions', 'validate_proposal'} <= available_tools:
             return None
         periods = [item.get('seconds') for item in goal.timing_constraints if item.get('kind') == 'PERIOD']
         if periods != [30.0] or not any(word in goal.original_request.casefold()

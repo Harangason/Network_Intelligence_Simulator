@@ -89,3 +89,23 @@ export async function approveAndApplyWizardProposal(
     throw new Error(`Freigabe und Übernahme nicht bestätigt. Der gespeicherte Stand wird beim nächsten Abruf erneut geprüft; bitte nicht blind wiederholen.${detail}`);
   }
 }
+
+/** Resolve old anonymous proposal findings against their actual local objects. */
+export function proposalFindingGroups(proposal: EngineeringProposal) {
+  const findings = proposal.validation_result.findings ?? [];
+  const groups = new Map<string, { key: string; technology: string; network: string; code: string; findings: typeof findings }>();
+  for (const finding of findings) {
+    const change = typeof finding.index === 'number' ? proposal.changes[finding.index] : proposal.changes.find(item =>
+      item.object_id === finding.object_id || (item.local_ref && `$${item.local_ref}` === finding.object_id));
+    const data = change?.data ?? {};
+    const technology = finding.technology || String(data.technology ?? 'offen');
+    const network = finding.network_name || finding.network_id || String(data.network_ref ?? 'Projekt');
+    const resolved = { ...finding, network_name: network, object_name: finding.object_name || String(data.name ?? change?.object_name ?? finding.object_id ?? 'Projekt') };
+    const code = finding.code ?? 'REVIEW';
+    const key = code === 'CAPACITY_UNVERIFIED' ? JSON.stringify([code, technology, finding.missing_fields ?? []]) : JSON.stringify([code, resolved.object_name]);
+    const group = groups.get(key) ?? { key, technology, network, code, findings: [] };
+    if (group.network !== network) group.network = "mehrere Netze";
+    group.findings.push(resolved); groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => Number(b.code === 'CAPACITY_UNVERIFIED') - Number(a.code === 'CAPACITY_UNVERIFIED'));
+}

@@ -39,7 +39,7 @@ CAPABILITIES: dict[GoalType, Capability] = {
     GoalType.COMPARE: Capability("engineering.compare", ("compare_simulation_runs", "evaluate_architecture", "compare_golden_trace"), "Architekturen oder Läufe anhand gemeinsamer Kriterien vergleichen"),
     GoalType.REMOVE: Capability("model.remove", ("delete_object_via_impact_analysis", "inspect_model_situation"), "Entfernungsfolgen analysieren und gezielt vorschlagen"),
     GoalType.STATUS_QUERY: Capability("system.status", ("inspect_project", "inspect_findings", "validate_simulation_preflight", "get_simulation_status", "calculate_capacity"), "Aktuellen Modell-, Befund- und Messstatus berichten"),
-    GoalType.GENERAL_ENGINEERING: Capability("engineering.general", ("inspect_project", "search_model", "discover_engineering_tools", "ask_engineering_question"), "Engineering-Anforderung klassifizieren und passende Fähigkeiten bestimmen"),
+    GoalType.GENERAL_ENGINEERING: Capability("engineering.general", ("inspect_project", "inspect_model_situation", "search_model", "discover_engineering_tools", "ask_engineering_question", "prepare_diagnostic_acquisition"), "Engineering-Anforderung klassifizieren und passende Fähigkeiten bestimmen"),
 }
 
 

@@ -79,3 +79,56 @@ test('the first valid run binds identity without rewarding startup delay', () =>
   assert.equal(watchdog.observe(workflow(4), 200000).remainingMs, 40000);
   assert.throws(() => watchdog.observe(workflow(4), 240000), /no new contiguous stage completion/);
 });
+
+function warningProof() {
+  const approval = { snapshot_id: 'snapshot', signature: 'signature', actor: 'reviewer', approved_at: new Date(101000).toISOString() };
+  return { before: workflow(6), after: workflow(6, { parameters: { preflight_warning_approval: approval } }), snapshotId: 'snapshot',
+    requestProject: 'project', submitted: { snapshot_id: 'snapshot', actor: 'reviewer' }, status: 200,
+    response: { approval: { ...approval }, preflight: { warnings_allowed: true, ready_for_simulation: true } },
+    started: 200000, startedWall: 100000, finishedWall: 140000 };
+}
+
+test('a distinct durable warning approval starts one section; a separate valid write may cross the old deadline', () => {
+  const watchdog = new WizardProgressWatchdog(0, workflow(6)), proof = warningProof();
+  assert.equal(watchdog.commitWarningReview(proof, 240001).remainingMs, 240000);
+  assert.equal(watchdog.remaining(480000), 1);
+  assert.throws(() => watchdog.remaining(480001), /no new contiguous/);
+});
+
+for (const [name, mutate] of [
+  ['failed HTTP', p => p.status = 500], ['missing receipt', p => delete p.response.approval],
+  ['wrong submitted snapshot', p => p.submitted.snapshot_id = 'old'], ['wrong current snapshot', p => p.snapshotId = 'old'],
+  ['foreign project', p => p.after.project_id = 'foreign'], ['foreign request', p => p.requestProject = 'foreign'],
+  ['changed run', p => p.after.context.agent_execution.run_id = 'new'], ['changed revision', p => p.after.context.agent_execution.request_revision = 'new'],
+  ['wrong actor', p => p.submitted.actor = 'other'], ['missing actor', p => p.submitted.actor = ''],
+  ['undurable receipt', p => delete p.after.parameters.preflight_warning_approval],
+  ['changed stored signature', p => p.after.parameters.preflight_warning_approval.signature = 'other'],
+  ['not approved', p => p.response.preflight.warnings_allowed = false], ['not ready', p => p.response.preflight.ready_for_simulation = false],
+  ['stale receipt', p => p.response.approval.approved_at = new Date(99000).toISOString()],
+  ['future receipt', p => p.response.approval.approved_at = new Date(150000).toISOString()],
+  ['no-op existing approval', p => p.before.parameters = structuredClone(p.after.parameters)],
+  ['same warnings under a refreshed snapshot', p => p.before.parameters = { preflight_warning_approval: { ...p.response.approval, snapshot_id: 'earlier-snapshot' } }],
+  ['late manual start', p => p.started = 240001], ['write exceeded180s', p => p.started = 1000],
+]) test(`invalid ${name} cannot extend the warning-review clock`, () => {
+  const watchdog = new WizardProgressWatchdog(0, workflow(6)), proof = warningProof();mutate(proof);
+  assert.throws(() => watchdog.commitWarningReview(proof, 240002));
+  assert.throws(() => watchdog.remaining(240002), /no new contiguous/);
+});
+
+test('a repeated warning receipt never resets again, including timestamp-only retries', () => {
+  const watchdog = new WizardProgressWatchdog(0, workflow(6)), proof = warningProof();
+  watchdog.commitWarningReview(proof, 240001);
+  proof.started = 250000;proof.startedWall = 100000;
+  assert.throws(() => watchdog.commitWarningReview(proof, 260000), /Repeated or no-op/);
+  proof.response.approval.approved_at = new Date(102000).toISOString();proof.after.parameters.preflight_warning_approval.approved_at = proof.response.approval.approved_at;
+  assert.throws(() => watchdog.commitWarningReview(proof, 270000), /Repeated or no-op/);
+  assert.equal(watchdog.remaining(270000), 210001);
+});
+
+for (const field of ['now', 'started', 'startedWall', 'finishedWall']) for (const value of [NaN, Infinity, -Infinity])
+  test(`nonfinite ${field} ${value} cannot reset or corrupt a live clock`, () => {
+    const watchdog = new WizardProgressWatchdog(0, workflow(6)), proof = warningProof();
+    if (field !== 'now') proof[field] = value;
+    assert.throws(() => watchdog.commitWarningReview(proof, field === 'now' ? value : 230000), /finite monotonic and wall clocks/);
+    assert.equal(watchdog.remaining(239999), 1);
+  });

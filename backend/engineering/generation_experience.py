@@ -48,6 +48,7 @@ def collect_generation_experience(
             "generator_sources": [],
         }
     )
+    functional_choices = {}
     reviewed = 0
     for row in rows:
         contract = row.get("engineering_contract") or {}
@@ -68,6 +69,20 @@ def collect_generation_experience(
             continue
         if requested_buses and not requested_buses.intersection(known_buses):
             continue
+        for evidence in row.get('evidence') or []:
+            for route in evidence.get('functional_route_choices') or []:
+                if status == 'REJECTED' and route.get('review_status') != 'USER_REJECTED':
+                    continue  # Rejection of an entire model is not a negative partner decision.
+                source, target = str(route.get('source') or ''), str(route.get('target') or '')
+                if not source or not target or source == target:
+                    continue
+                for signal in [*(route.get('signals') or []), *(route.get('excluded_signals') or [])]:
+                    identity = (known_industry, source, target, str(signal))
+                    choice = functional_choices.setdefault(identity, {'accepted': 0, 'rejected': 0, 'proposal_refs': []})
+                    accepted = status == 'APPLIED' and signal in (route.get('signals') or [])
+                    choice['accepted' if accepted else 'rejected'] += 1
+                    if row.get('proposal_id') and len(choice['proposal_refs']) < 10:
+                        choice['proposal_refs'].append(str(row['proposal_id']))
         key = (known_industry, known_buses)
         entry = aggregates[key]
         entry["applied" if status == "APPLIED" else "rejected"] += 1
@@ -105,6 +120,12 @@ def collect_generation_experience(
     return {
         "reviewed_generation_proposals": reviewed,
         "matching_suggestions": suggestions[:20],
+        "functional_partner_suggestions": [
+            {'industry': identity[0], 'source': identity[1], 'target': identity[2], 'signal': identity[3],
+             **choice, 'confidence': round(choice['accepted'] / (choice['accepted'] + choice['rejected']), 3),
+             'advisory': True, 'requires_current_confirmation': True}
+            for identity, choice in sorted(functional_choices.items())
+        ],
         "learning_mode": "reviewed_retrieval",
         "model_weights_changed": False,
         "authority": "advisory_only",
@@ -125,7 +146,11 @@ class GenerationExperienceService:
                 "FROM engineering_ai_proposals ORDER BY modified_at DESC LIMIT %s",
                 (MAX_REVIEWED_PROPOSALS,),
             ).fetchall()
-        return {
-            "generation_policy": policy,
-            "experience": collect_generation_experience(rows, policy),
-        }
+        experience = collect_generation_experience(rows, policy)
+        candidates = set(map(str, payload.get('candidate_controllers') or []))
+        if candidates:
+            experience['functional_partner_suggestions'] = [choice for choice in experience['functional_partner_suggestions']
+                if choice['source'] in candidates][:20]
+        else:
+            experience['functional_partner_suggestions'] = experience['functional_partner_suggestions'][:20]
+        return {"generation_policy": policy, "experience": experience}

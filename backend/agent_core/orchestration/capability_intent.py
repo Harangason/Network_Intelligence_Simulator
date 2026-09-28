@@ -92,3 +92,42 @@ def capability_question(prompt: str) -> str | None:
             if re.search(pattern, text):
                 return key
     return None
+
+
+def diagnostic_creation_without_parameters(prompt):
+    """Recognize only an unqualified all-actuator diagnostic creation request."""
+    return bool(re.fullmatch(
+        r'\s*(?:(?:bitte\s+)?(?:lege|erstelle|erzeuge)\s+eine\s+Diagnoseabfrage\s+'
+        r'f(?:ü|ue)r\s+alle\s+(?:Stellglieder|Aktoren)(?:\s+an)?|'
+        r'(?:please\s+)?(?:create|add)\s+a\s+diagnostic\s+(?:request|query)\s+'
+        r'for\s+(?:all\s+actuators|every\s+actuator))\s*[.!]?\s*', prompt, re.I))
+
+
+def sparse_diagnostic_trigger_question(prompt, model, answered_questions):
+    """A bare hardware inventory cannot determine a diagnostic trigger.
+
+    Do not interpret arbitrary modeled configuration here. Any functional or
+    communication evidence, explicit qualifier or previous decision keeps the
+    request on the existing general planning path.
+    """
+    if not diagnostic_creation_without_parameters(prompt) or answered_questions:
+        return None
+    empty_sections = ('functions', 'functional_interfaces', 'hardware_interfaces',
+        'transport_units', 'payload_elements', 'routes', 'networks',
+        'communication_capabilities', 'communication_controllers', 'physical_ports',
+        'network_connections')
+    if any(model.get(key) != [] for key in empty_sections):
+        return None
+    hardware = model.get('hardware_nodes')
+    if (not isinstance(hardware, list) or not hardware
+            or not any(h.get('device_type') == 'ActuatorController' for h in hardware)
+            or any(h.get('identity') or h.get('configuration') for h in hardware)):
+        return None
+    return {'question_id': 'diagnostic_trigger',
+        'question': 'Wodurch soll die Diagnoseabfrage ausgelöst werden?',
+        'question_description': 'Die Stellglieder sind im aktuellen Modell bekannt. '
+            'Ein Diagnoseablauf mit Trigger oder Zyklus ist noch nicht modelliert.',
+        'options': [{'id': 'manual', 'label': 'Manuell bei Bedarf'},
+                    {'id': 'cyclic', 'label': 'Zyklisch in einem festzulegenden Intervall'},
+                    {'id': 'event', 'label': 'Durch ein festzulegendes Ereignis'}],
+        'required': True, 'engineering_impact': 'REQUIRED'}

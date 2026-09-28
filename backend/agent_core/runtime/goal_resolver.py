@@ -226,6 +226,8 @@ class GoalResolver:
         from .hardware_intent import hardware_channel_intent
         from .gateway_intent import gateway_outage_intent, OUTCOMES as GATEWAY_OUTCOMES
         from .recovery import recovery_request
+        from ..orchestration.capability_intent import diagnostic_creation_without_parameters
+        diagnostic_request = diagnostic_creation_without_parameters(source)
         channel_intent = hardware_channel_intent(source)
         asked = _ACTION.search(source) is not None or channel_intent is not None
         question = bool(re.match(r"\s*(?:wie|was|welche|warum|wieso|ist|sind|zeige|erkläre|erklaere|kann|how|what|which|why|show|explain|is|are)\b", text))
@@ -256,6 +258,8 @@ class GoalResolver:
             # A requested parameter change includes its dependent checks. A later
             # "prüfe" or "berechne" must not turn it into a read-only goal.
             kind = GoalType.CHANGE_CONFIGURATION
+        elif diagnostic_request:
+            kind = GoalType.GENERAL_ENGINEERING
         elif periodic and re.search(r"\b(?:ecu|controller|steuergerät|steuergeraet|plc)\b", text):
             kind = GoalType.PERIODIC_ACQUISITION
         elif re.search(r"\b(?:trace|trace-session|golden\s+trace)\b", text) and re.search(r"\b(?:analys|untersuch|compare|vergleich|ursach|root)\w*\b", text):
@@ -308,8 +312,8 @@ class GoalResolver:
         follow_up_of = previous.get("workload_id") if follow_up and previous_goal else None
         goal_id = (str(previous_goal.get("goal_id"))
                    if previous_goal and previous_goal.get("original_request") == source
-                   and not (follow_up and previous.get('status') == 'COMPLETED'
-                            and previous_goal.get('goal_type') == GoalType.PERIODIC_ACQUISITION.value)
+                   and not (previous.get('status') == 'COMPLETED' and (diagnostic_request
+                            or follow_up and previous_goal.get('goal_type') == GoalType.PERIODIC_ACQUISITION.value))
                    else str(uuid4()))
         if follow_up and previous_goal and kind in {GoalType.EXPLAIN, GoalType.GENERAL_ENGINEERING}:
             try:
@@ -343,5 +347,6 @@ class GoalResolver:
             target_objects=targets, user_constraints=list(context.get("user_constraints") or []),
             required_outcomes=list(GATEWAY_OUTCOMES if kind == GoalType.RUN_SIMULATION and gateway_outage_intent(source)
                                    else RECIPIENT_REPAIR_OUTCOMES if kind == GoalType.REPAIR and recipient_repair_intent(source)
+                                   else _OUTCOMES[GoalType.PERIODIC_ACQUISITION] if kind == GoalType.GENERAL_ENGINEERING and diagnostic_request
                                    else _OUTCOMES.get(kind, ["evidence-backed-result"])),
             unresolved_decisions=unresolved, follow_up_of=str(follow_up_of) if follow_up_of else None)

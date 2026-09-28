@@ -40,7 +40,8 @@ export type EngineeringProposal = {
   changes: { local_ref?: string; action: string; object_type: string; object_id?: string; object_name?: string; data?: Record<string, unknown>; impact_analysis?: Record<string, unknown> }[];
   validation_result: { valid?: boolean; requested?: number; valid_count?: number; findings?: {
     message: string; code?: string; severity?: string; index?: number;
-    object_name?: string; object_type?: string; object_ref?: string;
+    object_name?: string; object_type?: string; object_ref?: string; object_id?: string;
+    technology?: string; network_id?: string; network_name?: string; node_name?: string; missing_fields?: string[]; repair_action?: string;
     source?: Record<string, unknown>; destinations?: Record<string, unknown>[];
   }[] };
   canonical_ids: { object_type: string; id: string }[];

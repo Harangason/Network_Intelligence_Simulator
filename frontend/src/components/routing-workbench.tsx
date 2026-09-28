@@ -1,5 +1,7 @@
 "use client";
 
+import { SourceFindings } from "@/components/source-findings";
+
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1643,6 +1645,7 @@ function RoutingDetail({ route, nodeNames, messageNames, signalNames, interfaceN
         </span>
       </button>
       <div className="routing-detail-body">
+          <SourceFindings projectId={projectId} objectType="RoutingEntry" objectId={route.id} />
           {route.origin === "NETWORK_EDITOR" && <p className="routing-network-origin">Proposed from Network Editor</p>}
           <div className="routing-detail-actions" aria-label="Route Aktionen">
             <section aria-label="Bearbeiten">
