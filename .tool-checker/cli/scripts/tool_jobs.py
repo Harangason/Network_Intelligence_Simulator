@@ -66,8 +66,9 @@ class Jobs:
         return update
 
     def submit(self, task, test, preflight, baseline=None, mode=None, llm_policy=None,
-               queued=False, batch_id=None, test_weight=1, execution_scope="campaign"):
+               queued=False, batch_id=None, test_weight=1, execution_scope="campaign", automated_e2e=False):
         if execution_scope not in ("campaign", "standalone"): raise ValueError("Unknown execution scope")
+        if type(automated_e2e) is not bool: raise ValueError("Invalid E2E automation policy")
         from case_inventory import materialize, binding
         provision=materialize(self.tc,task)
         if provision['installation_conflicts']:
@@ -106,6 +107,7 @@ class Jobs:
             job_id = "job-"+uuid.uuid4().hex
             job = {"job_id":job_id,"task_id":task,"test_id":test,"run_id":None,"testcase_revision":durable,
                    "plan_binding":case.get("plan_binding"),"execution_scope":execution_scope,"config_hash":digest(cfg),"status":"QUEUED","plan":plan,"phase_weights":phase_weights,
+                   "automated_e2e":automated_e2e,
                    "weighted":case.get("weighted_progress",True),"completed_step_ids":[],
                    "output_mode":mode,"llm_usage_policy":policy,"batch_id":batch_id,"test_weight":test_weight,
                    "started_at":None,"updated_at":now(),"finished_at":None,"result_ref":None,
@@ -274,6 +276,8 @@ class Jobs:
                 choice=case["expected_decision"]
                 if choice not in step["options"]: raise ValueError("Scripted decision outside options")
                 observations.update(decision=choice,decision_source="SCRIPTED_TEST")
+            elif job.get("automated_e2e"):
+                raise ValueError("Automated E2E cannot infer an answer to an original interactive decision: "+step["question"])
             else:
                 job.update(status="WAITING_FOR_USER",decision={"step_id":step["step_id"],"question":step["question"],"options":step["options"]})
                 self.emit(job,"WAITING_FOR_USER",step)
@@ -304,15 +308,57 @@ class Jobs:
                 request=directory/(step["step_id"]+"-request.json")
                 write(request,{"step":step,"run_id":job["run_id"],"job_id":job["job_id"],"project":self.tc.cfg()["project"],
                                "output_directory":str(directory),"decision":observations.get("decision"),
+                               "interactive_decision_bridge":1 if case["decision_mode"]=="INTERACTIVE" else None,
+                               "automated_e2e":job.get("automated_e2e",False),
                                "llm_usage_policy":job["llm_usage_policy"],"atomic_mutation":adapter["mutating"]})
                 output=directory/(step["step_id"]+"-stdout.json"); errors=directory/(step["step_id"]+"-stderr.log")
                 # Cancellation does not terminate atomic operations. Mutating adapters have no forced timeout.
                 with request.open("rb") as stdin, output.open("wb") as stdout, errors.open("wb") as stderr:
-                    completed=subprocess.run(argv,stdin=stdin,stdout=stdout,stderr=stderr,cwd=self.tc.cfg()["project"],
-                        shell=False,timeout=None if adapter["mutating"] else timeout,
-                        creationflags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0)
-                if completed.returncode:
-                    raise RuntimeError(f"Adapter failed with exit code {completed.returncode}; details in local log")
+                    child=subprocess.Popen(argv,stdin=stdin,stdout=stdout,stderr=stderr,cwd=self.tc.cfg()["project"],
+                        shell=False,creationflags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0)
+                    decision_sequence=0
+                    started=time.monotonic()
+                    while child.poll() is None:
+                        pending=directory/(f"adapter-decision-{decision_sequence+1}.json")
+                        if pending.exists():
+                            if job.get("automated_e2e"):
+                                raise ValueError("Automated E2E adapter attempted to request a user decision")
+                            if case["decision_mode"]!="INTERACTIVE":
+                                raise ValueError("Scripted adapter requested an interactive decision")
+                            decision=read(pending)
+                            options=decision.get("options")
+                            if (decision.get("sequence")!=decision_sequence+1 or
+                                not isinstance(decision.get("question"),str) or not decision["question"].strip() or
+                                not isinstance(options,list) or len(options)<2 or
+                                any(not isinstance(x,str) or not x for x in options) or len(set(options))!=len(options)):
+                                raise ValueError("Invalid adapter decision request")
+                            decision_sequence+=1
+                            decision_step=f"{step['step_id']}-decision-{decision_sequence}"
+                            job.update(status="WAITING_FOR_USER",decision={"step_id":decision_step,
+                                "question":decision["question"],"options":options,
+                                "proposal":decision.get("proposal"),"revision":decision.get("revision")})
+                            self.emit(job,"WAITING_FOR_USER",step)
+                            answer=directory/("answer-"+decision_step+".json")
+                            while not answer.exists():
+                                self.check_stop(job)
+                                if child.poll() is not None: raise RuntimeError("Adapter exited while awaiting decision")
+                                time.sleep(.2)
+                            saved=read(answer)
+                            if saved.get("choice") not in options or saved.get("decision_source")!="INTERACTIVE":
+                                raise ValueError("Invalid interactive adapter answer")
+                            observations["questions"].append({"name":decision["question"],
+                                "choice":saved["choice"],"decision_source":"INTERACTIVE",
+                                "revision":decision.get("revision"),
+                                "evidence":[self.register(job,pending,"validation"),self.register(job,answer,"validation")]})
+                            job.update(status="RUNNING",decision=None)
+                            self.emit(job,"DECISION_RECEIVED",step)
+                        self.check_stop(job)
+                        if not adapter["mutating"] and time.monotonic()-started>timeout:
+                            raise TimeoutError("Adapter timeout")
+                        time.sleep(.2)
+                    returncode=child.returncode
+                if returncode:
+                    raise RuntimeError(f"Adapter failed with exit code {returncode}; details in local log")
                 if output.stat().st_size>8*1024*1024: raise ValueError("Adapter result exceeds 8 MiB")
                 data=read(output)
             calls=data.get("llm_calls",0 if adapter.get("uses_llm") is False else None)

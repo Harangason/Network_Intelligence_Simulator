@@ -5,6 +5,7 @@ import argparse
 import difflib
 import json
 import math
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -248,10 +249,11 @@ class CLI:
             launcher=artifacts(self.checker)/'Start-Tests.ps1'
             completed=subprocess.run([shutil.which('pwsh') or shutil.which('powershell') or 'powershell','-NoProfile','-File',str(launcher),'-Command','run','-Task',self.task,
                 '-Selection',','.join(c['test_id'] for c in items),'-Reviewed',
-                '-Rounds',str(rounds),'-ErrorBehavior',behavior,'-Mode',mode,'-Interactive'])
+                '-Rounds',str(rounds),'-ErrorBehavior',behavior,'-Mode',mode,'-Interactive'],
+                env={**os.environ,'TOOL_CHECKER_AUTOMATED_E2E':'1'})
             return completed.returncode
         from standalone_runs import run_rounds
-        receipt=run_rounds(self,items,None,rounds,behavior,mode)
+        receipt=run_rounds(self,items,None,rounds,behavior,mode,automated_e2e=True)
         self.output(receipt['status']+' — '+receipt['report_path'])
         return 0 if receipt['status']=='PASS' else 2
     def prepare_case_inputs(self, case, round_number, retest=False):
@@ -301,7 +303,9 @@ class CLI:
         self.output(case['test_id']+': Voraussetzungen prüfen (Lauf '+str(round_number)+')')
         try:
             with (directory/'adapter.log').open('w',encoding='utf-8') as log:
-                result=subprocess.run(command,cwd=self.checker.cfg()['project'],stdout=log,stderr=subprocess.STDOUT,timeout=timeout)
+                environment=os.environ.copy()
+                environment['PYTHONIOENCODING']='utf-8'
+                result=subprocess.run(command,cwd=self.checker.cfg()['project'],stdout=log,stderr=subprocess.STDOUT,timeout=timeout,env=environment)
         except subprocess.TimeoutExpired:
             raise ValueError('Vorprüfung überschreitet '+str(timeout)+' Sekunden; Details: '+str(directory/'adapter.log')) from None
         if result.returncode:
@@ -429,9 +433,13 @@ def case_entry(task,test,directory):
     print(json.dumps(receipt,ensure_ascii=False,indent=2));return 0 if receipt['status']=='SUBMITTED' else 2
 
 def main(argv=None):
+    for stream in (sys.stdout,sys.stderr):
+        if hasattr(stream,'reconfigure'):
+            stream.reconfigure(encoding='utf-8',errors='backslashreplace')
     p=argparse.ArgumentParser();p.add_argument('--state',required=True);p.add_argument('command',nargs='?',default='help')
-    p.add_argument('--interactive',action='store_true');p.add_argument('--rounds',type=int,default=1);p.add_argument('--behavior',choices=['continue','stop','pause'],default='continue');p.add_argument('--mode',choices=['verify','repair'],default='verify');p.add_argument('--task');p.add_argument('--selection',default='on');p.add_argument('--inputs');p.add_argument('--output');p.add_argument('--source');p.add_argument('--plugin-path');p.add_argument('--reviewed',action='store_true')
+    p.add_argument('--interactive',action='store_true');p.add_argument('--automated-e2e',action='store_true');p.add_argument('--rounds',type=int,default=1);p.add_argument('--behavior',choices=['continue','stop','pause'],default='continue');p.add_argument('--mode',choices=['verify','repair'],default='verify');p.add_argument('--task');p.add_argument('--selection',default='on');p.add_argument('--inputs');p.add_argument('--output');p.add_argument('--source');p.add_argument('--plugin-path');p.add_argument('--reviewed',action='store_true')
     args=p.parse_args(argv)
+    args.automated_e2e = args.automated_e2e or os.environ.get('TOOL_CHECKER_AUTOMATED_E2E') == '1'
     if args.command=='help': print('menu | start (Dialog, kein Autostart) | plan | catalog | sources | markdown --source <Datei.md> | prepare-project | status | results | export | migrate | run\nMarkdown wird als Spezifikation inventarisiert; unvollständige Fälle bleiben Review-pflichtig/BLOCKED.');return 0
     try:
         if args.command in ('markdown','prepare-project'):
@@ -480,7 +488,8 @@ def main(argv=None):
         elif args.command=='run':
             if not args.reviewed:raise ValueError('run benötigt explizit --reviewed; start öffnet den Bestätigungsdialog')
             from standalone_runs import run_rounds
-            result=run_rounds(cli,cli.choose(args.selection),read(args.inputs) if args.inputs else None,args.rounds,args.behavior,args.mode,show_progress=args.interactive)
+            result=run_rounds(cli,cli.choose(args.selection),read(args.inputs) if args.inputs else None,args.rounds,args.behavior,args.mode,
+                              show_progress=args.interactive,automated_e2e=args.automated_e2e)
             if args.interactive:
                 print(result["status"]+" — "+result["report_path"]);return 0 if result["status"]=="PASS" else 2
         else:raise ValueError('Unbekannter Befehl')

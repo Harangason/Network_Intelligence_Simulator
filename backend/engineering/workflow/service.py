@@ -348,11 +348,26 @@ class WorkflowStatusService:
                      OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi
                          WHERE hi.id = m.hardware_interface_id AND hi.project_id = m.project_id))) AS messages,
                 (SELECT COUNT(*) FROM engineering_signals s
-                 WHERE s.project_id = %s AND (s.message_id IS NULL OR s.start_bit IS NULL
-                     OR s.length_bits IS NULL OR s.byte_order IS NULL OR s.data_type IS NULL
-                     OR s.factor IS NULL OR s.offset_value IS NULL
-                     OR NOT EXISTS (SELECT 1 FROM engineering_messages m
-                         WHERE m.id = s.message_id AND m.project_id = s.project_id))) AS signals
+                 WHERE s.project_id = %s AND (CASE
+                     WHEN s.configuration -> 'direct_signal_binding' IS NOT NULL THEN
+                         s.message_id IS NOT NULL OR s.length_bits IS NULL OR s.length_bits <= 0
+                         OR s.data_type IS NULL
+                         OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref', '') = ''
+                         OR COALESCE(s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref', '') = ''
+                         OR NOT EXISTS (SELECT 1 FROM engineering_hardware_interfaces hi
+                             WHERE hi.id::text = s.configuration -> 'direct_signal_binding' ->> 'physical_port_ref'
+                               AND hi.project_id = s.project_id
+                               AND hi.hardware_node_id::text = s.configuration -> 'direct_signal_binding' ->> 'source_hardware_node_ref'
+                               AND lower(hi.technology) = lower(s.configuration -> 'direct_signal_binding' ->> 'signal_type'))
+                         OR NOT EXISTS (SELECT 1 FROM engineering_hardware_nodes n
+                             WHERE n.id::text = s.configuration -> 'direct_signal_binding' ->> 'destination_hardware_node_ref'
+                               AND n.project_id = s.project_id)
+                     ELSE s.message_id IS NULL OR s.start_bit IS NULL OR s.length_bits IS NULL
+                         OR s.byte_order IS NULL OR s.data_type IS NULL OR s.factor IS NULL
+                         OR s.offset_value IS NULL
+                         OR NOT EXISTS (SELECT 1 FROM engineering_messages m
+                             WHERE m.id = s.message_id AND m.project_id = s.project_id)
+                     END)) AS signals
             """,
             (self.project_id, self.project_id, self.project_id, self.project_id),
         ).fetchone()

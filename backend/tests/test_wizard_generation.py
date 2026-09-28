@@ -163,10 +163,16 @@ def test_canonical_direct_signal_persists_without_transport_unit():
                    'destination_hardware_node_ref': str(target['id']),
                    'physical_port_ref': str(port['id']), 'signal_type': 'GPIO',
                    'validation_status': 'REVIEW_REQUIRED'}
-        signal = create_object('Signal', {'name': 'SwitchState',
+        signal = create_object('Signal', {'name': 'SwitchState', 'length_bits': 1, 'data_type': 'unsigned',
             'configuration': {'direct_signal_binding': binding}})
         assert signal['message_id'] is None
         assert signal['configuration']['direct_signal_binding'] == binding
+        check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
+        assert check['incomplete']['signals'] == 0, check
+        create_object('Signal', {'name': 'UnboundSwitchState', 'length_bits': 1, 'data_type': 'unsigned',
+            'configuration': {'direct_signal_binding': {**binding, 'physical_port_ref': str(uuid4())}}})
+        check = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
+        assert check['incomplete']['signals'] == 1, check
         interface = create_object('Interface', {'name': 'SwitchLogic',
             'hardware_node_id': str(source['id']), 'interface_type': 'GPIO'})
         with pytest.raises(Exception, match='DIRECT_IO_MESSAGE_CREATED'):

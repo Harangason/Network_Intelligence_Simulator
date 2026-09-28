@@ -1,0 +1,46 @@
+{
+  "validation_requirements": [
+    "unit",
+    "targeted_run"
+  ],
+  "project_scope": "NIS Tool Checker Wizard",
+  "modify_code": true,
+  "required_outcomes": [
+    "unattended_runner",
+    "review_provenance",
+    "preserve_contract"
+  ],
+  "kind": "repair",
+  "goal_type": "repair",
+  "repair": {
+    "root_cause": "Workflow artifact completeness treats direct GPIO/PWM signals as message-bound",
+    "targeted_tests": [
+      "backend/tests/test_wizard_generation.py::test_canonical_direct_signal_persists_without_transport_unit"
+    ],
+    "reproduction": "S01-A run-d28b23c64ff045c3a75b71cecf6dd0dc, incomplete.signals=4",
+    "affected_files": [
+      "backend/engineering/workflow/service.py",
+      "backend/tests/test_wizard_generation.py"
+    ],
+    "acceptance_criteria": "Interactive question reaches WAITING_FOR_USER and bound answer resumes original wizard; no scripted answer",
+    "weaken_assertions_to_pass": false,
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\state\\tasks\\nis-ea-independent-run1-20260924-exec\\results\\run-d28b23c64ff045c3a75b71cecf6dd0dc\\summary.md",
+        "sha256": "ff9b595a35ec3d80aa91f71f04f646c662d80b827ddf718c28232e3378812f04"
+      }
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "first_failing_layer": "backend/engineering/workflow/service.py"
+  },
+  "goal_id": "nis-interactive-wizard-bridge-20260928",
+  "unresolved_decisions": [],
+  "requested_change": "Unbeaufsichtigter E2E-Lauf mit ehrlicher Befundung aller Entscheidungen",
+  "allow_repair": true,
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "revision_before": {
+    "backend/engineering/workflow/service.py": "d21e00fd3541c4fb6353f66650a477fbcd2e8032e6122e4bce1511858ff0d8af",
+    "backend/tests/test_wizard_generation.py": "c95c2043edfe1a7cf4ed4e91c841d024b95659b3acbf0598ae46cb3bf50113f3"
+  },
+  "campaign_id": "nis-ea-independent-20260924-run1"
+}

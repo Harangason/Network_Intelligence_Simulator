@@ -3,7 +3,8 @@ import { createRequire } from 'node:module';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
-import { originalDecision } from './src/20260927_src_wizard_decision_admission.mjs';
+import { createHash } from 'node:crypto';
+import { originalDecision, interactiveDecisionBridge } from './src/20260927_src_wizard_decision_admission.mjs';
 import { guardWithRegistryEvidence, readExpectedRuntime } from './src/20260925_src_master_technology_quality_registry_gate_bridge.mjs';
 import { captureProjectPersistence } from './src/20260925_src_master_technology_quality_persistence.mjs';
 import { captureRuntimeBoundary, projectRuntimeEvidence, verifyTestProjectId } from './src/20260925_src_master_technology_quality_runtime.mjs';
@@ -31,6 +32,22 @@ if (!admission.result.allowed) {
     observations: { actions: [], tools: [], views: [], questions: [], checks: [], browser: [],
       findings: [], claimed_complete: false } }));
   process.exit(0);
+}
+const automatedE2E = input.automated_e2e === true;
+const decisionSource = automatedE2E ? 'AUTOMATED_E2E_TEST' : 'INTERACTIVE';
+const automatedDecisions = [];
+const decide = automatedE2E ? async (question, options, proposal) => {
+  const revision = createHash('sha256').update(JSON.stringify(proposal ?? null)).digest('hex');
+  const choice = options.includes('Freigeben') ? 'Freigeben' : options.includes('Offen lassen') ? 'Offen lassen' : null;
+  if (!choice) throw new Error(`Automated E2E has no evidence-backed choice for: ${question}`);
+  automatedDecisions.push({ question, options, choice, proposal, revision,
+    decision_source: 'AUTOMATED_E2E_TEST', user_approved: false });
+  return { choice, revision, decision_source: 'AUTOMATED_E2E_TEST' };
+} : interactiveDecisionBridge(input);
+async function requireApproval(question, proposal) {
+  const response = await decide(question, ['Freigeben', 'Abbrechen'], proposal);
+  if (response.choice !== 'Freigeben') throw new Error(`E2E-Review abgelehnt: ${question}`);
+  return response;
 }
 const require = createRequire(path.join(root, 'frontend', 'package.json'));
 const { chromium } = require('playwright');
@@ -362,9 +379,9 @@ function selectScriptedOption(control, options) {
     return pick(['temperature', 'pressure', 'speed', 'torque', 'position', 'flow'][((slot - 1) % 6 + 6) % 6]);
   }
   if (/Stellbefehl$/.test(control)) {
-    if (/motor|drive|antrieb|motion|umrichter|servo|steering|lüfter|luefter|pumpe|pump|linear/i.test(control)) return pick('POSITION');
-    if (/ventil|valve|relais|relay|schalt|klappe|safety|sicher/i.test(control)) return pick('OPEN_CLOSE');
-    return pick('OPEN_CLOSE');
+    // Command encoding is a technical fact. Do not infer bits, scale or values
+    // from an actuator name when the original task did not specify them.
+    return null;
   }
   if (/Anschluss$/.test(control)) {
     if (/^System:\s*Anschluss$/i.test(control)) return pick('Ethernet') || pick('ModbusTCP') || available[0];
@@ -571,9 +588,20 @@ async function fillVisibleRequiredControls(dialog) {
   if (await deviceProposalButton.isVisible().catch(() => false) && await deviceProposalButton.isEnabled()) {
     await dialog.locator('.agent-device-proposals details').evaluate(element => { element.open = true; });
     const proposed = await dialog.locator('.agent-device-proposals').innerText();
+    const answer = await requireApproval(`Geräte- und Kodierungsvorschläge für ${scenario.test_id} prüfen: ${proposed}`,
+      { case_id: scenario.test_id, original_input: scenario.input, proposed });
+    if (automatedE2E && /Kodierung prüfen/i.test(proposed)) productIssues.push({
+      code: 'TC_UNCONFIRMED_ENCODING_PROPOSAL',
+      detail: 'Der automatische E2E-Operator hat einen UI-Entwurf mit ungeprüfter Kodierung zur Ausführung übernommen; diese Kodierung ist kein bestätigter Hardwarefakt.',
+    });
+    if (await dialog.locator('.agent-device-proposals').innerText() !== proposed) {
+      throw new Error('Geräteentwurf hat sich nach der Nutzerentscheidung geändert; neue Prüfung erforderlich.');
+    }
     await deviceProposalButton.click();
     choices.push({ control: 'Geprüfte Entwurfsvorschläge übernehmen', value: proposed,
-      source: 'SCRIPTED_TEST', rationale: 'Sichtbare Produktvorschläge als Testentscheidung bestätigt' });
+      source: decisionSource, revision: answer.revision,
+      rationale: automatedE2E ? 'Sichtbarer Produktentwurf als E2E-Testaktion übernommen; fachliche Kodierung bleibt ungeprüft'
+        : 'Sichtbare Produktvorschläge ausdrücklich bestätigt' });
     changed = true;
   }
   const architecture = dialog.locator('.agent-architecture-group');
@@ -687,12 +715,24 @@ async function fillVisibleRequiredControls(dialog) {
         options: [...row.options].map(option => ({ value: option.value, label: option.textContent?.trim() || '', disabled: option.disabled })) }];
     }));
     const selected = pending.map(item => ({ ...item, option: selectScriptedOption(item.control, item.options) }))
-      .find(item => item.option);
+      .find(item => item.option || /Stellbefehl$/.test(item.control));
     if (!selected) break;
     const target = selects.nth(selected.index);
-    const { control, option } = selected;
+    const { control } = selected;
+    let { option } = selected;
+    let decision;
+    if (!option) {
+      const available = selected.options.filter(item => item.value && !item.disabled);
+      const proposal = { case_id: scenario.test_id, original_input: scenario.input,
+        control, options: available, reason: 'Kodierung im Originalauftrag nicht ausdrücklich angegeben' };
+      decision = await decide(`${control}: Welche Kodierung ist fachlich belegt? Optionen: ${available.map(item => `${item.value} = ${item.label}`).join('; ')}`,
+        [...available.map(item => item.value), 'Offen lassen'], proposal);
+      if (decision.choice === 'Offen lassen') throw new Error(`${control}: Kodierung fachlich offen; keine Default-Kodierung bestätigt.`);
+      option = available.find(item => item.value === decision.choice);
+    }
     await target.selectOption(option.value);
-    choices.push({ control, value: option.value, label: option.label, source: 'SCRIPTED_TEST' });
+    choices.push({ control, value: option.value, label: option.label,
+      source: decision ? decisionSource : 'SCRIPTED_TEST', revision: decision?.revision });
     changed = true;
     // Selection updates the task marker and reparses the complete inventory.
     // Playwright waits for the controlled select event itself. A short yield is
@@ -806,6 +846,26 @@ async function runQuestionnaire(page, dialog) {
       }
     }
     const label = (await next.innerText()).trim();
+    if (label === 'Übernehmen') {
+      const proposal = { case_id: scenario.test_id, original_input: scenario.input,
+        questionnaire: await dialog.innerText(), choices: structuredClone(choices),
+        controls: await dialog.locator('select').evaluateAll(rows => rows.map(row => ({
+          label: row.getAttribute('aria-label') || row.getAttribute('name'), value: row.value,
+          selected: row.selectedOptions[0]?.textContent?.trim() || '' }))) };
+      await save('questionnaire-review.json', proposal, 'browser');
+      const answer = await requireApproval(`Wizard-Fragebogen für ${scenario.test_id} prüfen. Entwurf und Originalauftrag: ${JSON.stringify(proposal).slice(0, 30000)}`, proposal);
+      const current = { ...proposal, questionnaire: await dialog.innerText(),
+        controls: await dialog.locator('select').evaluateAll(rows => rows.map(row => ({
+          label: row.getAttribute('aria-label') || row.getAttribute('name'), value: row.value,
+          selected: row.selectedOptions[0]?.textContent?.trim() || '' }))) };
+      if (JSON.stringify(current) !== JSON.stringify(proposal)) {
+        throw new Error('Wizard-Fragebogen hat sich nach der Nutzerentscheidung geändert; neue Prüfung erforderlich.');
+      }
+      choices.forEach(choice => { if (choice.source === 'SCRIPTED_TEST') {
+        choice.source = automatedE2E ? 'AUTOMATED_E2E_DRAFT' : 'INTERACTIVE_REVIEWED_DRAFT';
+        choice.revision = answer.revision;
+      } });
+    }
     // Async questionnaire parsing can invalidate a previously enabled Next
     // button between the readiness check and Playwright's stability check.
     // Re-apply visible required decisions, then retry the same step. Never
@@ -849,6 +909,15 @@ async function completeRun(page, dialog) {
       const conversation = await api(page, '/api/engineering/agent/conversation');
       const proposalId = conversation.data?.active_proposal;
       if (!proposalId || reviewed.includes(proposalId)) { await page.waitForTimeout(1000); continue; }
+      const proposal = await api(page, `/api/engineering/agent/proposals/${encodeURIComponent(proposalId)}`);
+      await save(`wizard-proposal-${proposalId}.json`, proposal, 'backend');
+      await requireApproval(`Engineering-Vorschlag ${proposalId} für ${scenario.test_id} freigeben? ${JSON.stringify(proposal).slice(0, 30000)}`,
+        { proposal_id: proposalId, proposal });
+      const currentProposal = await api(page, `/api/engineering/agent/proposals/${encodeURIComponent(proposalId)}`);
+      const stableProposal = value => { const { trace_id: ignored, ...stable } = value; return stable; };
+      if (JSON.stringify(stableProposal(currentProposal)) !== JSON.stringify(stableProposal(proposal))) {
+        throw new Error(`Engineering-Vorschlag ${proposalId} hat sich nach der Nutzerentscheidung geändert.`);
+      }
       const approval = dialog.getByRole('button', { name: /^(Freigeben, übernehmen & fortfahren|Übernehmen & fortfahren)$/ });
       await approval.waitFor({ state: 'visible', timeout: 60_000 });
       const reviewResponse = page.waitForResponse(response => {
@@ -884,6 +953,8 @@ async function completeRun(page, dialog) {
     if (execution.state === 'BLOCKED' && /READY_WITH_WARNINGS/.test(execution.message || '')) {
       const approval = dialog.getByRole('button', { name: 'Warnungen freigeben und fortsetzen', exact: true });
       if (await approval.isVisible().catch(() => false)) {
+        await requireApproval(`Preflight-Warnungen für ${scenario.test_id} freigeben? ${execution.message}`,
+          { state: execution.state, step: execution.step, message: execution.message });
         await approval.click({ timeout: 10_000 });
         browserActions.push({ target: 'Warnungen freigeben und fortsetzen', purpose: 'Sichtbare Preflight-Warnungen als Testentscheidung freigeben', precondition: 'READY_WITH_WARNINGS and approval button visible', expected_effect: 'Preflight approval is persisted and run continues', actual_effect: 'Approval clicked', url: page.url(), status: 'PASSED' });
       }
@@ -891,6 +962,8 @@ async function completeRun(page, dialog) {
       continue;
     }
     if (execution.state === 'BLOCKED' && /keine Modelländerung|aktuellen gültigen Modellstand/i.test(execution.message || '')) {
+      await requireApproval(`Bestehenden Modellstand für ${scenario.test_id} bestätigen? ${execution.message}`,
+        { state: execution.state, step: execution.step, message: execution.message });
       const existing = dialog.getByText('Aktuellen gültigen Stand bestätigen', { exact: true }).last();
       const apply = dialog.getByRole('button', { name: 'Auswahl übernehmen', exact: true }).last();
       let accepted = false;
@@ -905,7 +978,7 @@ async function completeRun(page, dialog) {
       }
       if (accepted) {
         choices.push({
-          decision_source: 'SCRIPTED_TEST',
+          decision_source: decisionSource,
           question: execution.message,
           answer: 'Aktuellen gültigen Stand bestätigen',
         });
@@ -933,6 +1006,8 @@ async function completeRun(page, dialog) {
         controller_status_scope: 'INTERNAL', warnings: [],
       }];
       const amendment = `- Systemcluster-Graph: ${JSON.stringify(graph)}`;
+      await requireApproval(`Ergänzung des Originalauftrags für S03-A prüfen: ${amendment}`,
+        { original_input: scenario.input, amendment, blocker: execution.message });
       await dialog.getByRole('button', { name: 'Ergänzen', exact: true }).click();
       const supplement = dialog.getByRole('region', { name: 'Engineering-Auftrag ergänzen' });
       await supplement.getByRole('textbox', { name: 'Ergänzung zur Analyse' }).fill(amendment);
@@ -940,7 +1015,7 @@ async function completeRun(page, dialog) {
       await supplement.getByRole('button', { name: 'Ergänzung analysieren' }).click();
       s03CommunicationAmended = true;
       choices.push({ control: 'S03-A-Kommunikationsentscheidung', value: graph,
-        source: 'SCRIPTED_TEST', rationale: 'Controllerstatus intern; Gateway-Diagnose an den benannten Embedded Controller.' });
+        source: decisionSource, rationale: 'Controllerstatus intern; Gateway-Diagnose an den benannten Embedded Controller.' });
       browserActions.push({ target: 'Ergänzung analysieren', purpose: 'Fehlende Empfänger durch explizite Testentscheidung ergänzen',
         precondition: execution.message, expected_effect: 'Neue Auftragsrevision mit prüfbarem Modellvorschlag',
         actual_effect: 'AMEND über Wizard abgeschickt', url: page.url(), status: 'PASSED',
@@ -994,6 +1069,8 @@ try {
   await screenshot(page, 'wizard-complete.png');
   const finish = dialog.getByRole('button', { name: 'Fertig stellen', exact: true });
   await finish.waitFor({ state: 'visible', timeout: 30_000 });
+  await requireApproval(`Abgeschlossenen Engineering-Lauf ${scenario.test_id} im Wizard fertigstellen?`,
+    { workflow: completed.workflow, reviewed_proposals: completed.reviewed });
   await finish.click();
   await dialog.waitFor({ state: 'hidden', timeout: 60_000 });
   browserActions.push({ target: 'Fertig stellen', purpose: 'Haupt-Wizard regulär abschließen', precondition: 'Alle neun Stufen abgeschlossen', expected_effect: 'Wizard closes and project remains available', actual_effect: 'Dialog closed', url: page.url(), status: 'PASSED' });
@@ -1071,7 +1148,8 @@ try {
       },
     });
   }
-  await save('scripted-decisions.json', { decision_source: 'SCRIPTED_TEST', choices, reviewed_proposals: completed.reviewed });
+  await save('scripted-decisions.json', { decision_source: decisionSource, choices, reviewed_proposals: completed.reviewed,
+    automated_decisions: automatedDecisions });
   await save('browser-actions.json', browserActions);
   await save('browser-errors.json', pageErrors, 'log');
   const shared = [
@@ -1204,7 +1282,7 @@ try {
     views: observedViews,
     outputs: [{ name: 'Fresh evidence per case', status: 'PASSED', evidence: shared }],
     questions: [], checks, findings, browser: browserActions.map(action => ({ ...action, evidence: shared })),
-    model_after: model, decision_source: 'SCRIPTED_TEST', claimed_complete: false,
+    model_after: model, decision_source: decisionSource, claimed_complete: false,
   };
   const original = { status: 'PASSED', llm_calls: null, evidence, observations };
   let verified = await guardWithRegistryEvidence(original, scenario, step, { persistence: canonicalPersistence });
@@ -1215,7 +1293,8 @@ try {
   }
   process.stdout.write(JSON.stringify(verified));
 } catch (error) {
-  await save('scripted-decisions-error.json', { decision_source: 'SCRIPTED_TEST', choices, browserActions }, 'log');
+  await save('scripted-decisions-error.json', { decision_source: decisionSource, choices, browserActions,
+    automated_decisions: automatedDecisions }, 'log');
   await save('adapter-error.txt', error?.stack || String(error), 'log');
   process.stdout.write(JSON.stringify({ status: 'FAILED', llm_calls: null, evidence, observations: {
     actions: [], tools: [], views: [], outputs: [], questions: [], checks: [], browser: browserActions,

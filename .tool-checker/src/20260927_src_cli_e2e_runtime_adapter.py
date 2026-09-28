@@ -4,13 +4,13 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import build_opener,ProxyHandler,Request,HTTPRedirectHandler
 ROOT=Path('I:/PycharmProjects/My_first_Network_Simulator')
-HASHES={'complete_master_reuse_adapter.mjs':'dd5fb5b1621d8afaeb136108f12d61d0e66c80d5d807a42b142fb19ae0c32a98','complete_master_wizard_adapter.mjs':'e499caa3083935e28d0fdaecd0e564b4e248e05323ad88df26c6c55c9c8ae69c','complete_master_specialized_adapter.mjs':'994c31a08c1066692616ee3d65d66d76ee7cba37d4922594a653a0e06dcb71a9'}
+HASHES={'complete_master_reuse_adapter.mjs':'dd5fb5b1621d8afaeb136108f12d61d0e66c80d5d807a42b142fb19ae0c32a98','complete_master_wizard_adapter.mjs':'bec03bbe5c87d0e58d26067b9fae97396a282f3fd5581af3adcdabcc469da1e4','complete_master_specialized_adapter.mjs':'994c31a08c1066692616ee3d65d66d76ee7cba37d4922594a653a0e06dcb71a9'}
 def read(p):return json.loads(Path(p).read_text(encoding='utf-8-sig'))
 class NoRedirect(HTTPRedirectHandler):
  def redirect_request(self,*args):raise ValueError('Isolated runtime redirect rejected')
 def verify_wizard_admission(root):
  helper=Path(root)/'.tool-checker/src/20260927_src_wizard_decision_admission.mjs'
- if helper.is_symlink() or hashlib.sha256(helper.read_bytes()).hexdigest()!='a4cea53a634910e24b1ac38bb25c8ad2582f357555350dc275c09dc225f1a422':raise ValueError('Unreviewed wizard decision admission helper bytes/path')
+ if helper.is_symlink() or hashlib.sha256(helper.read_bytes()).hexdigest()!='121139c9d629f2f412ec94bda7ece6049442935a2abec90a60b443cc6a82b80f':raise ValueError('Unreviewed wizard decision admission helper bytes/path')
 
 def context(request,adapter):
  root=ROOT.resolve(strict=True);state=root/'.tool-checker/state'
@@ -71,6 +71,6 @@ def execute(request,adapter):
  return subprocess.run([node,str(binding['target'])],input=json.dumps(request).encode('utf-8'),env=env,cwd=str(ROOT),stdout=sys.stdout.buffer,stderr=sys.stderr.buffer,shell=False).returncode
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--adapter',required=True);args=parser.parse_args()
- try:return execute(json.load(sys.stdin),args.adapter)
+ try:return execute(json.load(sys.stdin.buffer),args.adapter)
  except Exception as error:print('Receipt-bound NIS adapter blocked: '+str(error),file=sys.stderr);return 2
 if __name__=='__main__':raise SystemExit(main())

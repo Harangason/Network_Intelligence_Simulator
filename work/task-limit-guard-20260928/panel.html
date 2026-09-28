@@ -1,0 +1,124 @@
+<style>#task-limit-guard-panel [hidden] { display: none !important; }</style>
+<div id="task-limit-guard-panel">
+  <h2>Task-Limit-Wächter</h2>
+  <form>
+    <label class="form-label" for="tlg-search">Chats und Tasks auswählen</label>
+    <input class="form-control" id="tlg-search" type="search" placeholder="Angebotene Tasks nach Titel filtern">
+    <div id="tlg-tasks" role="group" aria-label="Ziel-Tasks"></div>
+    <button class="btn btn-ghost" id="tlg-more" type="button" hidden>Weitere Tasks anzeigen</button>
+    <div class="text-small" id="tlg-count" aria-live="polite"></div>
+    <hr>
+    <div class="viz-controls">
+      <label class="form-label">Verbleibendes Wochenlimit (%)
+        <input class="form-control" id="tlg-limit" type="number" min="0" max="100" step="any" required>
+      </label>
+      <label class="form-label">Prüfintervall (Minuten)
+        <input class="form-control" id="tlg-interval" type="number" min="1" max="10080" step="1" required>
+      </label>
+    </div>
+    <div id="tlg-summary" aria-live="polite"></div>
+    <hr>
+    <div class="viz-row">
+      <button class="btn btn-primary" id="tlg-apply" type="button">Übernehmen</button>
+      <span id="tlg-status" class="text-small" role="status"></span>
+    </div>
+    <div id="tlg-error" class="text-destructive" role="alert"></div>
+    <label id="tlg-fallback-label" class="form-label" hidden>Auftrag zum Kopieren
+      <textarea class="form-control" id="tlg-fallback" rows="6" readonly></textarea>
+    </label>
+  </form>
+</div>
+<script>
+(() => {
+  const config = {"schemaVersion": 1, "controllerThreadId": "01a0e644-899d-7851-ba09-356727236207", "remainingPercent": 30, "intervalMinutes": 1, "status": "ACTIVE", "targets": [], "automationId": null, "candidates": []};
+  const root = document.getElementById('task-limit-guard-panel');
+  const get = id => root.querySelector('#tlg-' + id);
+  const identity = t => JSON.stringify([t.hostId, t.threadId]);
+  const available = new Map(config.candidates.map(t => [identity(t), t]));
+  let chosen = new Set(config.targets.map(identity));
+  let showAll = false;
+  let submitting = false;
+  get('limit').value = config.remainingPercent;
+  get('interval').value = config.intervalMinutes;
+  const submit = get('apply');
+
+  function current() {
+    const limit = Number(get('limit').value), interval = Number(get('interval').value);
+    if (!chosen.size) throw new Error('Bitte mindestens einen Task auswählen.');
+    if (get('limit').value === '' || !Number.isFinite(limit) || limit < 0 || limit > 100) throw new Error('Wochenrest: 0 bis 100 Prozent eingeben.');
+    if (!Number.isInteger(interval) || interval < 1 || interval > 10080) throw new Error('Intervall: 1 bis 10080 ganze Minuten eingeben.');
+    const {candidates, ...result} = config;
+    return {...result, remainingPercent: limit, intervalMinutes: interval, targets: [...chosen].map(key => {
+      const {threadId, hostId, title} = available.get(key);
+      return {threadId, hostId, title};
+    })};
+  }
+  function summary() {
+    get('count').textContent = `${chosen.size} ausgewählt · ${available.size} Tasks in dieser Auswahl`;
+    try {
+      const data = current();
+      get('summary').textContent = `Sichern und pausieren bei ≤ ${data.remainingPercent} % Rest · alle ${data.intervalMinutes} Min.`;
+      get('error').textContent = '';
+      submit.disabled = submitting;
+    } catch (error) {
+      get('summary').textContent = '';
+      get('error').textContent = error.message;
+      submit.disabled = true;
+    }
+  }
+  function remember() {
+    if (!window.openai?.setWidgetState) return;
+    const state = {automationId: config.automationId, controllerThreadId: config.controllerThreadId, selected: [...chosen], remainingPercent: get('limit').value, intervalMinutes: get('interval').value};
+    if (JSON.stringify(state).length < 12000) Promise.resolve(window.openai.setWidgetState({modelContent: state})).catch(() => {});
+  }
+  function restore(snapshot) {
+    const saved = snapshot?.modelContent;
+    if (!saved || saved.controllerThreadId !== config.controllerThreadId || saved.automationId !== config.automationId || !Array.isArray(saved.selected)) return;
+    chosen = new Set(saved.selected.filter(key => available.has(key)));
+    get('limit').value = saved.remainingPercent ?? config.remainingPercent;
+    get('interval').value = saved.intervalMinutes ?? config.intervalMinutes;
+  }
+  function renderTasks() {
+    get('tasks').replaceChildren();
+    const query = get('search').value.trim().toLocaleLowerCase();
+    const items = [...available].filter(([key, t]) => t.title.toLocaleLowerCase().includes(query) || t.threadId.includes(query));
+    items.sort((a, b) => Number(chosen.has(b[0])) - Number(chosen.has(a[0])));
+    const shown = showAll || query ? items : items.slice(0, Math.max(6, chosen.size));
+    for (const [key, t] of shown) {
+      const label = document.createElement('label'); label.className = 'form-check';
+      const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'form-check-input'; checkbox.checked = chosen.has(key);
+      const span = document.createElement('span'); span.className = 'form-check-label'; span.textContent = t.title;
+      const detail = document.createElement('span'); detail.className = 'text-small'; detail.textContent = ` (${t.hostId} · ${t.threadId.slice(-8)})`;
+      span.append(detail); label.append(checkbox, span); get('tasks').append(label);
+      checkbox.addEventListener('change', () => { checkbox.checked ? chosen.add(key) : chosen.delete(key); summary(); remember(); });
+    }
+    get('more').hidden = shown.length >= items.length;
+    summary();
+  }
+  root.querySelector('form').addEventListener('submit', event => event.preventDefault());
+  submit.addEventListener('click', async event => {
+    event.preventDefault();
+    if (submitting) return;
+    try {
+      const data = current();
+      const prompt = 'Nutze $task-limit-guard und übernimm diese Einstellungen für die Wochenlimit-Überwachung. Aktualisiere die angegebene Automation; nur ohne automationId eine neue erstellen. Prüfe die Ziel-IDs. Sichere und pausiere ausschließlich die ausgewählten Tasks bei Erreichen des Restlimits, Fortsetzung nur auf meinen ausdrücklichen Befehl. Konfiguration:\n' + JSON.stringify(data, null, 2);
+      if (!window.openai?.sendFollowUpMessage) {
+        get('fallback').value = prompt; get('fallback-label').hidden = false;
+        get('status').textContent = 'Noch nicht gespeichert: Auftrag in Codex senden.';
+        return;
+      }
+      submitting = true; summary(); get('status').textContent = 'An Codex übergeben …';
+      const reply = await window.openai.sendFollowUpMessage({prompt, title: 'Überwachungseinstellungen übernehmen'});
+      get('status').textContent = reply?.isError ? 'Übergabe fehlgeschlagen. Erneut versuchen.' : 'Übergabe angefordert. Speicherung wird von Codex bestätigt.';
+    } catch (error) { get('status').textContent = 'Nicht gespeichert: ' + error.message; }
+    finally { submitting = false; summary(); }
+  });
+  get('search').addEventListener('input', renderTasks);
+  get('more').addEventListener('click', () => { showAll = true; renderTasks(); });
+  for (const field of ['limit', 'interval']) get(field).addEventListener('input', () => { get('status').textContent = 'Ungespeicherter Entwurf'; summary(); remember(); });
+  window.addEventListener('openai:set_globals', event => { if (event.detail?.globals?.widgetState) { restore(event.detail.globals.widgetState); renderTasks(); } });
+  restore(window.openai?.widgetState);
+  get('status').textContent = config.automationId ? (config.status === 'PAUSED' ? 'Bestehende Überwachung pausiert' : 'Bestehende Überwachung aktiv') : 'Noch nicht aktiviert';
+  renderTasks();
+})();
+</script>

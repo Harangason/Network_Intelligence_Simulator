@@ -16,13 +16,16 @@ def deduplicate(rows):
     return list({(r['code'],r['scope'],r['case_id']):r for r in rows}.values())
 
 
-def run_rounds(cli, items, inputs, rounds=1, behavior='continue', mode='verify', show_progress=True):
+def run_rounds(cli, items, inputs, rounds=1, behavior='continue', mode='verify', show_progress=True, automated_e2e=False):
     if inputs is not None and not isinstance(inputs,dict): raise ValueError('Inputs müssen eine ID-Abbildung sein')
     if not items: raise ValueError('Keine Testfälle ausgewählt')
     if type(rounds) is not int or rounds < 1: raise ValueError('Positive round count required')
     if behavior not in ('continue','stop','pause') or mode not in ('verify','repair'): raise ValueError('Unknown run behavior')
+    if automated_e2e and (behavior!='continue' or mode!='verify'):
+        raise ValueError('Unattended E2E requires continue/verify; repair decisions need a separate evidence phase')
     tc=cli.checker; root=artifacts(tc)/'runs/standalone'; root.mkdir(parents=True,exist_ok=True)
     bundle={'session_id':'session-'+uuid.uuid4().hex,'execution_scope':'standalone','task_id':cli.task,
+            'automated_e2e':automated_e2e,
             'messages':[],'created_at':now(),'rounds_requested':rounds,'mode':mode,'error_behavior':behavior,'rounds':[]}
     session_path=root/(bundle['session_id']+'.json')
     def persist(): write(session_path,bundle)
@@ -41,7 +44,8 @@ def run_rounds(cli, items, inputs, rounds=1, behavior='continue', mode='verify',
                 raise ValueError('Mutationspreflight wurde vor dem vorherigen Prüf-/Reparaturschritt erstellt')
         if not spec.get('preflight'): raise ValueError('Frische Preflight-Datei fehlt')
         cli.prevalidate([case],{case['test_id']:spec},execution_scope='standalone')
-        submitted=jobs.submit(cli.task,case['test_id'],spec['preflight'],spec.get('baseline'),queued=True,execution_scope='standalone')
+        submitted=jobs.submit(cli.task,case['test_id'],spec['preflight'],spec.get('baseline'),queued=True,
+                              execution_scope='standalone',automated_e2e=automated_e2e)
         old_emit=jobs.emit
         def emit(job,kind,step=None):
             update=old_emit(job,kind,step)
@@ -50,6 +54,10 @@ def run_rounds(cli, items, inputs, rounds=1, behavior='continue', mode='verify',
             title=' '.join(case['title'].split())[:60]
             if show_progress:cli.output('\r'+case['test_id']+' '+title+' ['+'#'*filled+'-'*(20-filled)+'] '+label,end='',flush=True)
             if kind=='WAITING_FOR_USER':
+                if automated_e2e:
+                    jobs.cancel(job['job_id'])
+                    cli.output('Automatischer E2E-Lauf: nicht belegte Entscheidung; Fall wird BLOCKED protokolliert.')
+                    return update
                 cli.output('')
                 decision=job['decision']
                 while True:
