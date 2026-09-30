@@ -16,7 +16,14 @@ test('unconfirmed project can select every registered bus without an Automotive 
   await expect(page.locator('#domain')).toHaveValue('custom');
   await expect(page.locator('#technology')).toHaveValue('i2c');
   // I2C deliberately has no assumed bus clock; the user must confirm one.
-  await page.locator('input[name="bitrate"]').fill('400000');
+  const clock = page.locator('input[name="bitrate"]');
+  await expect(clock).toHaveValue('');
+  await expect(page.getByText('UNVERIFIED · Eingabe erforderlich')).toBeVisible();
+  await expect(page.getByText(/Referenz-Obergrenzen, keine bestätigte Busfrequenz: Standard ≤ 100\.000 bit\/s/)).toBeVisible();
+  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
+  await clock.fill('0');
+  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
+  await clock.fill('400000');
   const invalid = await page.locator('form.config-panel').evaluate(form => [...(form as HTMLFormElement).elements]
     .filter(element => element instanceof HTMLInputElement && !element.checkValidity())
     .map(element => (element as HTMLInputElement).name));
@@ -26,6 +33,7 @@ test('unconfirmed project can select every registered bus without an Automotive 
   const saved = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
   expect(saved.parameters.industry).toBe('custom');
   expect(saved.parameters.technology).toBe('i2c');
+  expect(saved.parameters.target_bus_load_percent).toBe(60);
   await page.reload();
   await expect(page.locator('#domain')).toHaveValue('custom');
   await expect(page.locator('#technology')).toHaveValue('i2c');

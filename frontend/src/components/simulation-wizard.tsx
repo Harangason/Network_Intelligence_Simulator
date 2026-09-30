@@ -967,9 +967,19 @@ export function SimulationWizard({
         if (!formElement) throw new Error("Konfigurationsformular nicht gefunden.");
         const form = new FormData(formElement);
         const dynamicParameters = Object.fromEntries(
-          (technology?.parameter_schema ?? []).map((field) => {
+          (technology?.parameter_schema ?? []).filter(field => !busLoadRangeKeys.has(field.key)).map((field) => {
             const raw = form.get(field.key);
-            if (field.type === "number") return [field.key, Number(raw)];
+            if (field.type === "number") {
+              const entered = typeof raw === "string" ? raw.trim() : "";
+              if (!entered && field.required) throw new Error(`${field.label}: Bitte einen bestätigten Wert eingeben.`);
+              if (!entered) return [field.key, null];
+              const numeric = Number(entered);
+              if (!Number.isFinite(numeric) || (field.min !== undefined && numeric < field.min)
+                || (field.max !== undefined && numeric > field.max)) {
+                throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
+              }
+              return [field.key, numeric];
+            }
             if (field.type === "boolean") return [field.key, raw !== null];
             return [field.key, String(raw ?? "")];
           }),
@@ -1317,6 +1327,7 @@ export function SimulationWizard({
                         key={field.key}
                         value={displayedParameters[field.key]}
                         unverified={parameterIsUnverified(storedParameters, field.key, technologyId)}
+                        proposal={field.key === "bitrate" ? technology.parameter_proposals : undefined}
                       />
                     ))}
                   </div>
@@ -1365,9 +1376,15 @@ export function SimulationWizard({
   );
 }
 
-function ParameterControl({ field, value, unverified = false }: { field: TechnologyParameterField; value: unknown; unverified?: boolean }) {
+function ParameterControl({ field, value, unverified = false, proposal }: {
+  field: TechnologyParameterField;
+  value: unknown;
+  unverified?: boolean;
+  proposal?: Technology["parameter_proposals"];
+}) {
   const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
-  const gap = unverified ? <small>UNVERIFIED · Profilvorschlag</small> : null;
+  const missing = value === undefined || value === null || value === "";
+  const gap = unverified ? <small>UNVERIFIED · {missing ? "Eingabe erforderlich" : "Profilvorschlag"}</small> : null;
   if (field.type === "select") {
     return (
       <div className="field" title={field.description}>
@@ -1408,8 +1425,19 @@ function ParameterControl({ field, value, unverified = false }: { field: Technol
         min={field.min === undefined ? undefined : String(field.min)}
         max={field.max === undefined ? undefined : String(field.max)}
         step="any"
-        value={String(value ?? 0)}
+        required={field.required}
+        value={missing ? "" : String(value)}
       />
+      {proposal?.options?.length ? (
+        <p className="muted">
+          Referenz-Obergrenzen, keine bestätigte Busfrequenz: {proposal.options.map(option =>
+            `${option.mode} ≤ ${option.maximum.toLocaleString("de-DE")} ${proposal.unit ?? "bit/s"}`).join(" · ")}.
+          Controller, angeschlossene Geräte und Leitung müssen die gewählte Frequenz unterstützen.
+          {proposal.source?.startsWith("https://") && <>
+            {" "}<a href={proposal.source} rel="noreferrer" target="_blank">Spezifikation</a>
+          </>}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1530,6 +1558,7 @@ function NumberField({
   min?: string;
   max?: string;
   step?: string;
+  required?: boolean;
 }) {
   return (
     <div className="field">
