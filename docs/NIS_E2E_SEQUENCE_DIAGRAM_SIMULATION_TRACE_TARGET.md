@@ -2280,3 +2280,55 @@ SYSTEM REACTION
 ```
 
 > **Der NIS soll nicht nur darstellen, dass zwei Teilnehmer miteinander verbunden sind. Er soll sichtbar und messbar machen, wie eine konkrete Botschaft vom Sender bis zum Empfänger gelangt, welche technischen Stationen sie durchläuft, wie lange jeder Abschnitt dauert und ob der Empfänger die Information fachlich korrekt und rechtzeitig verarbeitet.**
+
+---
+
+# 103. Gemeinsame Interaktionsregeln aus der Sequenzdiagramm-Referenz
+
+Diese Regeln gelten verbindlich für **Simulation Sequence** und **Trace Sequence**.
+Beide Sichten verwenden dasselbe Modell und denselben Renderer; Unterschiede
+liegen ausschließlich in der Datenquelle und der Kennzeichnung EXPECTED/SIMULATED
+beziehungsweise OBSERVED. `trace-weaver-23` dient als Referenz für die Interaktion,
+seine Beispieldaten und protokollspezifischen Demo-Annahmen sind keine NIS-Daten.
+
+- Ereignisse werden nach ihrem belegten Zeitstempel auf einer gemeinsamen Zeitachse
+  geordnet. Fehlende oder nicht vergleichbare Zeiten bleiben ausdrücklich unbekannt.
+- Teilnehmer erscheinen als konsistente Lifelines. Eine Auswahl referenziert das
+  ursprüngliche SequenceEvent und synchronisiert dessen Transaktion in den
+  verbundenen Sichten; Hover hebt nur hervor und ändert keine Auswahl.
+- REQUEST/RETURN, verschachtelte Self-Calls, asynchrone und unkorrelierte Ereignisse
+  sowie TIMEOUT werden nur dann unterschiedlich dargestellt, wenn die Quelle diese
+  Semantik belegt. Pfeilrichtung oder zeitliche Nähe allein erzeugen keine Korrelation.
+- Zeitabstände werden ausschließlich aus den Zeitwerten der Ereignisse und in deren
+  Zeitbasis berechnet. Eine Messung unbekannter oder inkompatibler Zeiten ist nicht
+  zulässig.
+- Filter, Detailstufen und Fensterung ändern nur die sichtbare Teilmenge. Sie dürfen
+  Transaktionsidentität, Reihenfolge, Timing-Evidence oder Receiver-Aktionen des
+  kanonischen Modells nicht verändern; die Oberfläche weist auf begrenzte Ausschnitte hin.
+- Die Detailstufen FUNCTIONAL, COMMUNICATION und TECHNICAL zeigen jeweils nur
+  vorhandene Modellinformationen. Fehlende Funktionen, Hops, Antworten und technische
+  Werte werden nicht aus Demo-Labels oder plausiblen Annahmen ergänzt.
+
+Damit werden Interaktions- und Zeitachsenregeln einmal für den gemeinsamen Renderer
+festgelegt und gelten identisch für beide Diagramme.
+
+## Visuelle Referenz: Lifelines, Aktivierungen und Nachrichtenpfeile
+
+Die vom Nutzer bereitgestellte Sequenzdiagramm-Abbildung ist verbindliche
+Layoutreferenz für beide Sequenzsichten:
+
+- Jeder Teilnehmer erhält eine durchgehende, vertikal gestrichelte Lifeline vom
+  Teilnehmerkopf bis zum letzten sichtbaren Ereignis.
+- Ein belegter Transaktionsverlauf wird als vertikale Aktivierung am jeweils
+  beteiligten Teilnehmer dargestellt. Bei nicht korrelierten Rohereignissen zeigt
+  ein kurzer Aktivierungsbalken nur den beobachteten Empfangszeitpunkt; er behauptet
+  weder eine Dauer noch eine Antwort oder Transaktion.
+- Nachrichten laufen horizontal zwischen den Lifelines. Die Pfeilspitze sitzt klar
+  am belegten Ziel, und der Sender ist als eigener Startpunkt erkennbar. Pfeile
+  bleiben gut sichtbar, auch wenn Teilnehmer weiter auseinanderliegen.
+- Pfeilfarbe und Strichart dürfen REQUEST, RETURN, Fehler oder Empfang nur dann
+  unterscheiden, wenn diese Semantik im SequenceEvent belegt ist. Räumliche
+  Richtung und zeitliche Nähe allein reichen nicht.
+- Zeitstempel und Delta stehen links auf einer gemeinsamen vertikalen Ereignisachse;
+  Nachrichtenlabel liegen frei lesbar über der Verbindung und verdecken keine
+  Aktivierungsbalken.

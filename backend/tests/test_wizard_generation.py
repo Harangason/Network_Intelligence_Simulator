@@ -54,6 +54,10 @@ def test_explicit_can_fd_phases_and_i2c_candidate_stay_distinct_from_evidence():
     assert wizard_generation._explicit_can_fd_phases(prompt, ['can_fd']) == {
         'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000,
     }
+    multiline = 'CAN-FD:\n500 kbit/s nominal\n2 Mbit/s data'
+    assert wizard_generation._explicit_can_fd_phases(multiline, ['can_fd']) == {
+        'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000,
+    }
     assert wizard_generation._explicit_technology_bitrates(prompt, ['can_fd', 'ethernet']) == {
         'ethernet': 100_000_000,
     }
@@ -1115,4 +1119,26 @@ def test_basic_sensor_interfaces_reparent_without_losing_children(device_class):
         assert not proposal_service.validate(proposal['proposal_id'])['validation_result']['valid']
         return {'ok': True}
     result = execute(authority, 'test_reparent', Permission.READ_MODEL, {}, lambda _: operation())
+    assert result.success, result.findings
+
+
+def test_network_editor_communication_function_is_not_an_unexpected_user_function():
+    authority = ToolAuthority(f'pytest-network-editor-function-{uuid4()}')
+
+    def operation():
+        sensor = create_object('HardwareNode', {
+            'name': 'TemperatureProbe', 'device_type': 'SensorController', 'device_class': 1,
+        })
+        create_object('Function', {
+            'name': 'TemperatureProbe Kommunikation', 'hardware_node_id': str(sensor['id']),
+            'provenance': {'origin': 'network-editor', 'topology_id': 'studio-network'},
+        })
+        technical = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
+        assert technical['consistency']['functions_unexpected'] == 0
+        create_object('Function', {'name': 'UserFunctionOnSensor', 'hardware_node_id': str(sensor['id'])})
+        user = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
+        assert user['consistency']['functions_unexpected'] == 1
+        return {'ok': True}
+
+    result = execute(authority, 'test_network_editor_function', Permission.READ_MODEL, {}, lambda _: operation())
     assert result.success, result.findings

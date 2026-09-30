@@ -121,7 +121,7 @@ class SimulationService:
             *,
             field_type: str = "number",
             unit: str | None = None,
-            default: Any = 0,
+            default: Any = None,
             minimum: float | None = None,
             maximum: float | None = None,
             options: list[str] | None = None,
@@ -135,13 +135,14 @@ class SimulationService:
                 "category": category,
                 "scope": scope,
                 "type": field_type,
-                "default": default,
                 "description": description,
                 "required": True,
                 "editable": True,
                 "simulation_relevant": simulation_relevant,
                 "validation_relevant": validation_relevant,
             }
+            if default is not None:
+                item["default"] = default
             if unit:
                 item["unit"] = unit
             if minimum is not None:
@@ -153,16 +154,35 @@ class SimulationService:
             return item
 
         rate_model = technology.get("rate_model") or {}
+        rate_source = technology
+        inherited_rate = False
+        if not rate_model.get("fields"):
+            # Application protocols such as SOME/IP have no physical link rate
+            # of their own. Their explicit stack still needs the data-link
+            # rate so validation and capacity use the Ethernet realization.
+            from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+
+            for stack_id in technology.get("default_stack") or ():
+                stack_profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(stack_id)
+                stack_rate = stack_profile.get("rate_model") or {}
+                if stack_rate.get("fields"):
+                    rate_source = stack_profile
+                    rate_model = stack_rate
+                    inherited_rate = stack_id != technology_id
+                    break
         rate_type = rate_model.get("type")
         rate_fields: list[dict[str, Any]] = []
         if rate_type in {"SINGLE_BITRATE", "ETHERNET_LINK_RATE", "FIXED_LINK_RATE"}:
-            label = "Link Speed" if rate_type in {"ETHERNET_LINK_RATE", "FIXED_LINK_RATE"} else "Bitrate"
+            label = "Ethernet Link Speed" if inherited_rate else (
+                "Link Speed" if rate_type in {"ETHERNET_LINK_RATE", "FIXED_LINK_RATE"} else "Bitrate"
+            )
             rate_fields.append(field(
                 "bitrate", label, "physical", "network", unit="bit/s",
                 minimum=rate_model.get("minimum_bps", 1),
                 maximum=rate_model.get("maximum_bps"),
-                default=rate_model.get("fixed_bps") or technology.get("default_bitrate") or 1,
-                description="Technology-profiled network rate.",
+                default=rate_model.get("fixed_bps") or rate_source.get("default_bitrate") or 1,
+                description=("Inherited physical link rate from the declared technology stack."
+                             if inherited_rate else "Technology-profiled network rate."),
             ))
         elif rate_type == "MULTI_PHASE_BITRATE":
             defaults = rate_model.get("defaults_bps") or {}
@@ -170,6 +190,20 @@ class SimulationService:
                 field("arbitration_bitrate", "Nominal Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("nominal_maximum_bps"), default=defaults.get("nominal_bitrate_bps", 500_000)),
                 field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("data_maximum_bps"), default=defaults.get("data_bitrate_bps", technology.get("default_bitrate") or 2_000_000)),
             ])
+        elif rate_type == "I2C_CONFIRMED_CLOCK":
+            rate_fields.append(field(
+                "bitrate", "I²C Bus Clock", "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                description="Controller mode and confirmed bus clock are required; no unreviewed rate is assumed.",
+            ))
+        elif rate_type == "DEVICE_DEPENDENT_CLOCK":
+            rate_fields.append(field(
+                "bitrate", "SPI Device Clock", "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                description="The connected device datasheet must supply the clock limit; no profile default is assumed.",
+            ))
         fields: list[dict[str, Any]] = [
             *rate_fields,
             field("payload_bytes", "Payload", "physical", "message", unit="Byte", minimum=0, maximum=maximum_payload, default=min(8, maximum_payload), description="Nutzdaten pro Nachricht."),

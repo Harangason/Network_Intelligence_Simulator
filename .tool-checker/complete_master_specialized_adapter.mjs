@@ -58,22 +58,64 @@ if (scenario.browser_required) {
       await dialog.waitFor({ state: 'visible', timeout: 60_000 });
       await page.keyboard.press('Escape');
       await dialog.waitFor({ state: 'hidden', timeout: 30_000 });
-      const capabilities = page.getByText('Fähigkeiten und Wizards', { exact: true }).last();
-      if (await capabilities.count()) {
-        await capabilities.focus();
-        await capabilities.press('Enter');
-      }
-      for (const label of ['Architektur erstellen', 'Signal prüfen', 'Trace analysieren', 'Finding bewerten']) {
+      const base = step.base_url.replace(/\/$/, '');
+      const registryResponse = await page.request.get(`${base}/api/engineering/agent/capabilities`, {
+        headers: { 'X-Project-ID': step.project_id }, timeout: 30_000,
+      });
+      if (!registryResponse.ok()) throw new Error(`S41 capability registry returned HTTP ${registryResponse.status()}`);
+      const registryEnvelope = await registryResponse.json();
+      const registry = registryEnvelope.data?.data || registryEnvelope.data || registryEnvelope;
+      const registryEntries = Array.isArray(registry.capabilities) ? registry.capabilities : [];
+      const expectedCapabilities = {
+        'Architektur erstellen': ['architecture.create', ['prepare_project_request', 'plan_project_model', 'generate_wizard_model']],
+        'Signal prüfen': ['signal.validate', ['inspect_signal', 'resolve_signal_encoding', 'validate_signal']],
+        'Trace analysieren': ['trace.analyze', ['analyze_trace_root_cause', 'get_trace_events', 'get_signal_series']],
+        'Finding bewerten': ['finding.review', ['inspect_reasoning', 'analyze_trace_root_cause', 'analyze_fault_effects']],
+      };
+      const quickPromptInput = page.getByRole('textbox').last();
+      const beforeWorkflow = await (await page.request.get(`${base}/api/engineering/workflow?view=summary`, {
+        headers: { 'X-Project-ID': step.project_id }, timeout: 30_000,
+      })).json();
+      for (const [label, [capabilityId, requiredTools]] of Object.entries(expectedCapabilities)) {
         const button = page.getByRole('button', { name: label, exact: true }).last();
         const visible = await button.isVisible().catch(() => false);
-        if (visible) { await button.hover(); await button.focus(); }
-        browserActions.push({ target: label, purpose: 'Wizard capability entry inspect', precondition: 'Engineering assistant loaded', expected_effect: 'Focusable registered wizard action', actual_effect: visible ? 'Visible, hoverable and keyboard-focusable' : 'Entry not visible in the inspected view', url: page.url(), status: visible ? 'PASSED' : 'BLOCKED' });
+        if (!visible || await button.isDisabled().catch(() => true)) {
+          browserActions.push({ target: label, purpose: 'Quick prompt is keyboard and pointer accessible', precondition: 'Engineering assistant loaded', expected_effect: `Visible action mapped to ${capabilityId}`, actual_effect: 'Entry missing or disabled', url: page.url(), status: 'FAILED' });
+          continue;
+        }
+        await button.hover();
+        await button.focus();
+        const focused = await button.evaluate(element => document.activeElement === element);
+        await button.press('Enter');
+        const inputValue = await quickPromptInput.inputValue().catch(() => '');
+        const entry = registryEntries.find(item => item.id === capabilityId);
+        const mapped = Boolean(entry?.available && entry?.action?.capability_id === capabilityId
+          && entry?.action?.project_id === step.project_id
+          && requiredTools.every(name => entry.tools?.includes(name)));
+        const status = focused && inputValue === label && mapped ? 'PASSED' : 'FAILED';
+        browserActions.push({ target: label, purpose: 'Quick prompt maps to a registered project capability', precondition: 'Live assistant registry observed', expected_effect: `Mapped to ${capabilityId}; keyboard selection only fills the composer`, actual_effect: `focus=${focused}; composer=${inputValue === label}; registry=${mapped}`, url: page.url(), status });
+        await quickPromptInput.fill('');
+      }
+      const afterWorkflow = await (await page.request.get(`${base}/api/engineering/workflow?view=summary`, {
+        headers: { 'X-Project-ID': step.project_id }, timeout: 30_000,
+      })).json();
+      const beforeRun = beforeWorkflow.context?.agent_execution?.run_id || null;
+      const afterRun = afterWorkflow.context?.agent_execution?.run_id || null;
+      const noPrematureStart = beforeRun === afterRun;
+      browserActions.push({ target: 'Quick prompt execution boundary', purpose: 'Ensure choosing a prompt does not start a run before Send', precondition: 'Workflow state captured before and after keyboard selection', expected_effect: 'No new agent run until explicit Send', actual_effect: `run_id unchanged=${noPrematureStart}`, url: page.url(), status: noPrematureStart ? 'PASSED' : 'FAILED' });
+      const capabilitiesButton = page.getByRole('button', { name: 'Fähigkeiten und Wizards', exact: true }).last();
+      await capabilitiesButton.focus();
+      await capabilitiesButton.press('Enter');
+      await page.getByText('Architektur erstellen', { exact: true }).last().waitFor({ state: 'visible', timeout: 30_000 });
+      for (const [label, [capabilityId]] of Object.entries(expectedCapabilities)) {
+        const entry = registryEntries.find(item => item.id === capabilityId);
+        browserActions.push({ target: capabilityId, purpose: 'Capability directory exposes the wizard-to-registry mapping', precondition: 'Live capability response and directory action', expected_effect: `${label} resolves to ${capabilityId}`, actual_effect: entry?.available ? `${entry.label}; ${entry.tools.length} registered tools` : 'Registry mapping unavailable', url: page.url(), status: entry?.available ? 'PASSED' : 'FAILED' });
       }
       const shot = path.join(evidenceDir, 'capability-wizards.png');
       await page.screenshot({ path: shot, fullPage: true });
       evidence.push({ ref: 'capability-wizards.png', path: shot, kind: 'screenshot' });
       for (const action of browserActions) action.evidence = ['capability-wizards.png', 'focused-pytest.txt'];
-      observedViews.push({ name: 'Fähigkeiten und Wizards', status: 'PASSED', evidence: ['capability-wizards.png'] });
+      observedViews.push({ name: 'Fähigkeiten und Wizards', status: browserActions.every(action => action.status === 'PASSED') ? 'PASSED' : 'FAILED', evidence: ['capability-wizards.png'] });
     } else {
       const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
       await dialog.waitFor({ state: 'visible', timeout: 60_000 });
@@ -91,6 +133,9 @@ if (scenario.browser_required) {
 }
 
 const pytestPassed = probe.status === 0;
+const browserPassed = browserActions.every(action => action.status === 'PASSED')
+  && observedViews.every(view => view.status === 'PASSED');
+const passed = pytestPassed && browserPassed;
 const refs = [probeLog, ...evidence.filter(item => item.kind === 'screenshot').map(item => item.ref)];
 const observations = {
   actions: [],
@@ -101,7 +146,10 @@ const observations = {
   views: observedViews,
   outputs: [{ name: 'Fresh evidence per case', status: 'PASSED', evidence: refs }],
   questions: [], checks: [], browser: browserActions,
-  findings: pytestPassed ? [] : [{ code: `TC_${scenario.test_id}_FOCUSED_PROBE_FAILED`, category: 'TOOL_BUG', blocking: true, detail: `Focused pytest exited ${probe.status}` }],
+  findings: [
+    ...(!pytestPassed ? [{ code: `TC_${scenario.test_id}_FOCUSED_PROBE_FAILED`, category: 'TOOL_BUG', blocking: true, detail: `Focused pytest exited ${probe.status}` }] : []),
+    ...(!browserPassed ? [{ code: `TC_${scenario.test_id}_BROWSER_CRITERIA_FAILED`, category: 'PRODUCT_BUG', blocking: true, detail: 'At least one required browser/capability assertion failed; see case observations and screenshot.' }] : []),
+  ],
   claimed_complete: false,
 };
-process.stdout.write(JSON.stringify(guardMandatoryAssertions({ status: pytestPassed ? 'PASSED' : 'FAILED', llm_calls: null, evidence, observations }, scenario)));
+process.stdout.write(JSON.stringify(guardMandatoryAssertions({ status: passed ? 'PASSED' : 'FAILED', llm_calls: null, evidence, observations }, scenario)));

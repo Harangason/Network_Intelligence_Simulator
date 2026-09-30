@@ -390,11 +390,13 @@ class WorkflowStatusService:
                    AND h.lifecycle_state NOT IN ('deprecated', 'superseded')
                    AND NOT EXISTS (SELECT 1 FROM engineering_functions f
                        WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id
-                         AND f.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS functions_missing,
+                         AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
+                         AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor')) AS functions_missing,
                 (SELECT COUNT(*) FROM engineering_functions f
                  JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id
                  WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3
-                   AND f.lifecycle_state NOT IN ('deprecated', 'superseded')) AS functions_unexpected,
+                   AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
+                   AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor') AS functions_unexpected,
                 (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM (
                     SELECT f.hardware_node_id, COUNT(*) AS count
                     FROM engineering_functions f
@@ -493,14 +495,17 @@ class WorkflowStatusService:
             "SELECT id, name, configuration, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
         ).fetchall()
         signals = connection.execute(
-            "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
+            "SELECT id, message_id, lifecycle_state, "
+            "CASE WHEN message_id IS NULL THEN configuration -> 'direct_signal_binding' END AS direct_signal_binding "
+            "FROM engineering_signals WHERE project_id = %s", (self.project_id,),
         ).fetchall()
         declared_routes = connection.execute(
             "SELECT id, payload, status, approval_state, validation ->> 'valid' AS valid FROM engineering_routing_entries WHERE project_id = %s",
             (self.project_id,),
         ).fetchall()
         routes = [route for route in declared_routes if route.get("approval_state") == "APPROVED" and route.get("valid") == "true"]
-        coverage = simulation_coverage(messages, signals, routes, scope, declared_transports=declared_routes)
+        coverage = simulation_coverage(messages, signals, routes, scope, declared_transports=declared_routes,
+                                       transport_only=True)
         complete = total > 0 and approved == total and valid == total and coverage["complete"]
         status = "APPROVED" if complete else (
             "ERROR" if invalid or fanout_routes else ("WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY"))

@@ -61,6 +61,13 @@ The user explicitly authorizes production delivery of verified NIS changes as a
 standing project rule. After the required tests and release gate pass, deploy the
 exact tested image to the canonical production stack using its PASS receipt,
 then verify the running image identity, health and affected functionality.
+For local delivery, use `python scripts/release-and-deploy.py` so a matching
+complete PASS receipt is reused and an existing image is retested when only
+verification inputs changed. A new candidate is built only for changed
+application source or when no matching image remains. The command performs deployment and checks
+the running image identity; do not stop after creating a candidate image.
+Do not prune historical images without the audited retention evidence required
+by `scripts/release_storage.py`.
 Do not ask again for deployment approval unless the user explicitly excludes
 deployment for the current task or the action exceeds this authorized scope.
 This explicit standing authorization takes precedence over skill defaults that

@@ -45,7 +45,7 @@ async function importRequest<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const timeout = init?.method && !["GET", "HEAD"].includes(init.method) ? 180000 : 5000;
+  const timeout = init?.method && !["GET", "HEAD"].includes(init.method) ? 180000 : 15000;
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {

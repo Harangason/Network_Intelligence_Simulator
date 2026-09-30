@@ -134,6 +134,35 @@ def test_catalog_exposes_dynamic_rate_fields() -> None:
     assert "bitrate" not in can_fd_fields
 
 
+def test_someip_exposes_and_validates_inherited_ethernet_link_speed() -> None:
+    domains = SimulationService().catalog()["domains"]
+    technologies = {item["id"]: item for domain in domains for item in domain["technologies"]}
+    someip = technologies["someip"]
+    link_speed = next(field for field in someip["parameter_schema"] if field["key"] == "bitrate")
+
+    assert link_speed["label"] == "Ethernet Link Speed"
+    assert link_speed["description"] == "Inherited physical link rate from the declared technology stack."
+    assert REGISTRY.validate_parameters("someip", {"bitrate_bps": 100_000_000})["status"] == "VALID"
+    assert "ethernet" in technologies
+
+
+def test_i2c_and_spi_forms_expose_required_clocks_without_invented_defaults() -> None:
+    domains = SimulationService().catalog()["domains"]
+    technologies = {item["id"]: item for domain in domains for item in domain["technologies"]}
+    automotive_ids = {item["id"] for item in next(domain for domain in domains if domain["id"] == "automotive")["technologies"]}
+
+    i2c_clock = next(field for field in technologies["i2c"]["parameter_schema"] if field["key"] == "bitrate")
+    spi_clock = next(field for field in technologies["spi"]["parameter_schema"] if field["key"] == "bitrate")
+
+    assert i2c_clock["label"] == "I²C Bus Clock"
+    assert spi_clock["label"] == "SPI Device Clock"
+    assert i2c_clock["required"] is True and "default" not in i2c_clock
+    assert spi_clock["required"] is True and "default" not in spi_clock
+    local_io_ids = {"i2c", "spi", "uart", "gpio", "pwm", "adc", "dac"}
+    assert local_io_ids <= technologies.keys()
+    assert local_io_ids.isdisjoint(automotive_ids)
+
+
 def test_parameter_validation_and_audit_api() -> None:
     client = create_app(testing=True).test_client()
     invalid = client.post("/api/technologies/validate-parameters", json={

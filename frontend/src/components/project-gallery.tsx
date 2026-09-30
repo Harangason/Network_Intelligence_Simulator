@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Arrow } from "./marketing-shell";
 import { requestEngineeringAgentWizard } from "@/lib/agent-task-events";
 import { createNetworkProjectId } from "@/lib/project-ids";
+import { committedProjectExists } from "@/lib/project-creation-recovery";
 import { readUserSettings, withProjectParam, writeUserSettings } from "@/lib/user-settings";
 import { setWorkflowContext } from "@/lib/workflow-api";
 import styles from "./project-gallery.module.css";
@@ -38,6 +39,25 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
   const pendingProject = useRef<string | null>(null);
   const createBusy = useRef(false);
   const loadAbort = useRef<AbortController | null>(null);
+  const pendingKey = `networkis:pending-project:${mode}`;
+
+  function storedPendingProject(): string | null {
+    try {
+      const value = window.sessionStorage.getItem(pendingKey);
+      return value && /^network-project-\d{17}-[a-z0-9]{8}$/i.test(value) ? value : null;
+    } catch { return null; }
+  }
+
+  function rememberPendingProject(project: string): void {
+    try { window.sessionStorage.setItem(pendingKey, project); } catch { /* Keep the in-memory identity. */ }
+  }
+
+  function openCreatedProject(project: string): void {
+    try { window.sessionStorage.removeItem(pendingKey); } catch { /* Navigation still works. */ }
+    writeUserSettings({ ...readUserSettings(), activeProject: project });
+    if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
+    window.location.assign(withProjectParam(destination, project));
+  }
 
   async function load(offset = 0) {
     loadAbort.current?.abort();
@@ -59,15 +79,23 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" | 
   async function create() {
     if (createBusy.current) return;
     createBusy.current = true; setCreating(true); setCreateError("");
+    const remembered = storedPendingProject();
+    const project = pendingProject.current ??= remembered ?? createNetworkProjectId();
+    const projectName = trace ? "Neues Trace-Projekt" : "Neues Projekt";
+    rememberPendingProject(project);
     try {
-      // Keep this identity on retry, including when the accepted save response was lost.
-      const project = pendingProject.current ??= createNetworkProjectId();
-      await setWorkflowContext({ engineering_wizard_settings: { project_name: trace ? "Neues Trace-Projekt" : "Neues Projekt", model_type: "custom" } }, project);
-      writeUserSettings({ ...readUserSettings(), activeProject: project });
-      if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
-      window.location.assign(withProjectParam(destination, project));
+      // A previous response may have been lost, including across a page reload.
+      if (remembered && await committedProjectExists(project, projectName)) {
+        openCreatedProject(project);
+        return;
+      }
+      await setWorkflowContext({ engineering_wizard_settings: { project_name: projectName, model_type: "custom" } }, project);
+      openCreatedProject(project);
     } catch (caught) {
-      setCreateError(caught instanceof Error ? caught.message : "Das Projekt konnte nicht angelegt werden.");
+      // The server may have committed while the request timed out in the browser.
+      const committed = await committedProjectExists(project, projectName).catch(() => false);
+      if (committed) openCreatedProject(project);
+      else setCreateError(caught instanceof Error ? caught.message : "Das Projekt konnte nicht angelegt werden.");
       setCreating(false); createBusy.current = false;
     }
   }

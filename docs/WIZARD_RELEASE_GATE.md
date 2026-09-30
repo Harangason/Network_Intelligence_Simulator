@@ -100,10 +100,26 @@ receipts containing every required check can be deployed:
 python scripts/deploy-verified-release.py <receipt.json>
 ```
 
+For local production delivery, use `python scripts/release-and-deploy.py`.
+It reuses a complete PASS receipt only when source, Git revision and verification
+inputs match the current checkout. If only verification inputs changed, it reruns
+the full gate against an existing immutable image with the same application source
+and Git revision. Otherwise it builds a new candidate once. After
+deployment it checks the running immutable image, readiness and live source ID.
+Use `--receipt <receipt.json>` to select an existing matching PASS explicitly,
+or `--no-reuse` when a fresh gate is required. Failed candidates and historical
+images remain subject to the audited retention policy in `scripts/release_storage.py`;
+the delivery command never prunes Docker images.
+
 On Windows, `start-networkis.ps1 -ReleaseReceipt <receipt.json>` preserves the
 configured GPU/AI/runtime settings while deploying the verified image. A plain
 `start-networkis.ps1` restarts the currently installed immutable image; it does
 not rebuild edited source. Initial installation needs a verified receipt.
+Direct deployment with a PASS receipt also compares the current checkout's
+application source, release-test inputs and Git revision with that receipt.
+When a candidate was tested in an isolated worktree, synchronize those inputs
+with the canonical checkout before deployment. A PASS from an older worktree
+cannot replace newer canonical corrections.
 
 ## Isolated development
 

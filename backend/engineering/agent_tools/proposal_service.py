@@ -440,7 +440,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
     if not validation["valid"]:
         raise EngineeringValidationError(str(validation["findings"]))
     refs, canonical = {}, []
-    for change in contract["changes"]:
+    capacity_network_batch = None
+    for change_index, change in enumerate(contract["changes"]):
         kind, action = change["object_type"], change["action"]
         data = _resolve(change.get("data") or {}, refs)
         if kind in ENTITY_SPECS:
@@ -502,7 +503,13 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
                 "created_by": contract["approved_by"]})
         elif kind == "Network":
             workflow = WorkflowStatusService(current_project_id())
-            parameters = deepcopy(workflow.get()["parameters"])
+            batch_capacity_networks = row['proposal_type'] == 'CAPACITY_NETWORK_REPAIR'
+            if batch_capacity_networks:
+                if capacity_network_batch is None:
+                    capacity_network_batch = deepcopy(workflow.get()["parameters"])
+                parameters = capacity_network_batch
+            else:
+                parameters = deepcopy(workflow.get()["parameters"])
             if action == 'UPDATE':
                 target = next((entry for entry in parameters.get('networks', [])
                                if str(entry.get('id')) == str(change['object_id'])), None)
@@ -513,7 +520,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
             else:
                 parameters.setdefault("networks", []).append(data)
                 item = data
-            workflow.save_parameters(parameters, actor=actor)
+            if not batch_capacity_networks:
+                workflow.save_parameters(parameters, actor=actor)
         elif kind == "SignalBehavior":
             from ..signal_behavior_service import save_behavior
             item = save_behavior(data)
@@ -526,6 +534,11 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
         identifier = str(item.get("id") or item.get("connection_id") or item.get("scenario_id"))
         refs[change["local_ref"]] = identifier
         canonical.append({"object_type": kind, "id": identifier})
+        if capacity_network_batch is not None and (
+                change_index + 1 == len(contract["changes"])
+                or contract["changes"][change_index + 1]["object_type"] != "Network"):
+            WorkflowStatusService(current_project_id()).save_parameters(capacity_network_batch, actor=actor)
+            capacity_network_batch = None
     contract.update(status="APPLIED", canonical_ids=canonical, revision=str(uuid4()))
     # Keep existing workload persistence able to discover approved canonical IDs.
     original = deepcopy(row["proposed_objects"])

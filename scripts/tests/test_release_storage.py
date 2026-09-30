@@ -221,7 +221,7 @@ class RetentionTests(unittest.TestCase):
         # Simple whole-root patterns apply to every child, including future archives.
         rules = {line.strip() for line in (ROOT / '.dockerignore').read_text().splitlines()
                  if line.strip() and not line.startswith('#')}
-        for folder in ('.tool-checker', 'tool-checker', 'reports', 'presentation_output', '.uv-cache'):
+        for folder in ('.tool-checker', 'tool-checker', 'reports', 'presentation_output', '.uv-cache', 'work'):
             self.assertIn(folder, rules)
         manifest_spec = importlib.util.spec_from_file_location('build_info', ROOT / 'scripts/write-build-info.py')
         info = importlib.util.module_from_spec(manifest_spec)

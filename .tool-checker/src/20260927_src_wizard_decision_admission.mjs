@@ -41,7 +41,9 @@ export async function originalDecision(root, input) {
   }
   const original = JSON.parse(await readFile(path.join(state, 'tasks', job.task_id, 'test_cases', job.test_id + '.json'), 'utf8'));
   if (original.test_id !== job.test_id || original.contract_hash !== job.contract_hash ||
-      input.step.case.test_id !== job.test_id || input.step.case.decision_mode !== original.decision_mode) {
+      input.step.case.test_id !== job.test_id || input.step.case.decision_mode !== original.decision_mode ||
+      input.step.case.input !== original.input ||
+      JSON.stringify(input.step.case.user_inputs) !== JSON.stringify(original.user_inputs)) {
     throw new Error('Original wizard decision contract differs from native job/step');
   }
   return { original, job, result: decisionAdmission(original, input) };

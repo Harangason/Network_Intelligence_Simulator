@@ -52,7 +52,7 @@ Bereiche; sie ergänzen bestehende Verträge und ersetzen diese nicht.
 | NIS-PHY-01 | [NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES](NIS_PHYSICAL_REALIZATION_ARBITRATION_PHY_RULES.md) | Abstrakte Verbindungen müssen bei Bedarf auf PhysicalLayerProfile, PhysicalRealization, Medium/Channel/Conductor, Topologie, Terminierung, Arbitration und PHY-Kapazität zurückführbar sein. Physikalische Unstimmigkeiten werden validiert; fehlende Hardware wird nicht automatisch erfunden. |
 | NIS-VP-01 | [NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION](NIS_VALIDATION_PREFLIGHT_DATA_QUALITY_INTEGRATION.md) | Datenqualität ist Teil der zentralen Validation-/Preflight-Pipeline. Kritische Werte benötigen Einheit, Provenienz, Vollständigkeit und Cross-Layer-Konsistenz; Stale- und Blocker-Befunde verhindern Simulation gemäß Preflight-Status. Kein PASS ohne belastbare Evidenz. |
 | NIS-E2E-01 | [NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE](NIS_E2E_COMMUNICATION_TIMING_SAFETY_ASSURANCE.md) | E2E-Zeit wird fachlich von Source Release bis Receiver Acceptance gemessen und um Hop-, Queue-, Arbitration-, PHY-, Gateway-, Datenalter-, Jitter- und Reaktionsmetriken ergänzt. ReceiverAcceptancePolicy, Safety-/Timing-Profile und interne/externe Cross-Checks bleiben getrennt nachvollziehbar; Standards werden als Profile, nicht als automatisch erfundene Core-Logik behandelt. |
-| NIS-SEQ-01 | [NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET](NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET.md) | Simulation und Trace Analysis verwenden ein gemeinsames korreliertes E2E-/Sequence-Modell und denselben Renderer. Direkte, Multi-Hop-, Gateway-, Subnetz- und Technologiewechsel sowie Expected-vs-Observed, Receiver-Akzeptanz, First Divergence und Root Cause müssen bis zur technischen Tiefe nachvollziehbar bleiben. |
+| NIS-SEQ-01 | [NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET](NIS_E2E_SEQUENCE_DIAGRAM_SIMULATION_TRACE_TARGET.md) | Simulation und Trace Analysis verwenden ein gemeinsames korreliertes E2E-/Sequence-Modell und denselben Renderer. Direkte, Multi-Hop-, Gateway-, Subnetz- und Technologiewechsel sowie Expected-vs-Observed, Receiver-Akzeptanz, First Divergence und Root Cause müssen bis zur technischen Tiefe nachvollziehbar bleiben. Zeitachse, Lifelines, Auswahl/Synchronisation, Ereignisarten, Zeitmessung, Filter/Fensterung und Detailstufen folgen Abschnitt 103 desselben Vertrags; fehlende Semantik darf nicht erschlossen werden. |
 
 Die Dokumente enthalten zusätzlich Abschnitte mit der Überschrift
 „Codex-Arbeitsauftrag“. Diese werden als fachliche Definition-of-Done- und
@@ -1737,7 +1737,7 @@ This task registration does not replace project contracts or confer new permissi
 - Source: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\runs\ea-campaign-20260924-single-run\combined-source.md
 - Source Hash: 60e1c16938d4cd90c6e1c9d415ca25139fb500a63e536cc7ab1a3ebc8a389143
 - Status: ACTIVE
-- Last Ingest: 2026-09-27T13:41:00.603081+00:00
+- Last Ingest: 2026-09-28T18:58:55.895769+00:00
 - Manifest: I:\PycharmProjects\My_first_Network_Simulator\.tool-checker\state\tasks\nis-ea-independent-run1-20260924-exec\manifest.json
 
 Use the normalized manifest after source/rule hash checks. Re-analyze changed sources.

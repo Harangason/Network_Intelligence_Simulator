@@ -38,6 +38,36 @@ def test_inactive_route_is_not_coverage_and_inactive_signal_is_not_required():
     assert result["covered_signals"] == 0
 
 
+def test_direct_io_has_no_network_route_but_still_needs_simulation_acceptance():
+    direct = {"id": "gpio", "message_id": None, "configuration": {"direct_signal_binding": {
+        "signal_type": "GPIO", "physical_port_ref": "port", "source_hardware_node_ref": "sensor",
+        "destination_hardware_node_ref": "controller", "validation_status": "REVIEW_REQUIRED",
+    }}}
+    signals = [{"id": "bus-signal", "message_id": "bus-message"}, direct]
+    routes = [{"payload": {"message_id": "bus-message"}}]
+    routing = simulation_coverage([{"id": "bus-message"}], signals, routes, transport_only=True)
+    assert routing["complete"] is True
+    assert routing["excluded_signal_ids"] == ["gpio"]
+    assert routing["transport_exclusions"][-1]["reason_code"] == "DIRECT_IO_NOT_NETWORK_TRANSPORT"
+    assert routing["transport_exclusions"][-1]["direct_binding_validation_status"] == "REVIEW_REQUIRED"
+    projected = {"id": direct["id"], "message_id": None,
+                 "direct_signal_binding": direct["configuration"]["direct_signal_binding"]}
+    assert simulation_coverage([{"id": "bus-message"}], [signals[0], projected], routes,
+                               transport_only=True)["complete"] is True
+    simulation = simulation_coverage([{"id": "bus-message"}], signals, routes)
+    assert simulation["complete"] is False
+    assert simulation["missing_signal_ids"] == ["gpio"]
+
+
+def test_unbound_or_misclassified_direct_signal_still_requires_transport():
+    signals = [{"id": "orphan", "message_id": None, "configuration": {"direct_signal_binding": {
+        "signal_type": "GPIO", "physical_port_ref": "port", "source_hardware_node_ref": "sensor",
+    }}}]
+    coverage = simulation_coverage([], signals, [], transport_only=True)
+    assert coverage["complete"] is False
+    assert coverage["missing_signal_ids"] == ["orphan"]
+
+
 def configuration():
     return {"engineering_model": model(), "networks": [{"id": "bus"}], "communications": [
         {"id": "c1", "routing_entry_id": "r1", "message_ids": ["m1"]},

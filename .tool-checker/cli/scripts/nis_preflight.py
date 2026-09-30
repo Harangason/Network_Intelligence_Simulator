@@ -7,7 +7,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.error import HTTPError
+from urllib.parse import quote, urlsplit
 from urllib.request import build_opener, ProxyHandler, HTTPRedirectHandler, Request
 from tool_check import read, write, now
 
@@ -38,9 +39,151 @@ def get_json(base, project, path):
     with build_opener(ProxyHandler({}), NoRedirect()).open(Request(base+path, headers={'X-Project-ID':project}),timeout=10) as response:
         return json.load(response)
 
+def observe_s41_registry(project_id, tools_payload, capability_payload):
+    """Validate live registry reachability without claiming the S41 UI assertions passed."""
+    if not isinstance(tools_payload, dict) or not isinstance(tools_payload.get('items'), list):
+        raise ValueError('S41: Engineering-Toolregistry ist nicht lesbar')
+    tools = [item for item in tools_payload['items'] if isinstance(item, dict)]
+    available_tools = sorted({item.get('id') for item in tools if item.get('status') == 'available' and item.get('id')})
+    if not available_tools:
+        raise ValueError('S41: kein verfügbares registriertes Engineering-Tool beobachtet')
+    if not isinstance(capability_payload, dict) or capability_payload.get('success') is not True:
+        raise ValueError('S41: Engineering-Assistent-Capability-Endpunkt nicht erfolgreich')
+    data = capability_payload.get('data')
+    if isinstance(data, dict) and isinstance(data.get('data'), dict):
+        data = data['data']
+    if not isinstance(data, dict) or data.get('project_id') != project_id or not isinstance(data.get('capabilities'), list):
+        raise ValueError('S41: Capability Registry ohne passenden Projektbezug oder Einträge')
+    capabilities = [item for item in data['capabilities'] if isinstance(item, dict)]
+    if not capabilities or any(not isinstance(item.get('id'), str) or not item['id'] for item in capabilities):
+        raise ValueError('S41: registrierte Capability-Einträge sind unvollständig')
+    return {'project_id': project_id, 'available_tool_ids': available_tools,
+            'capability_ids': sorted({item['id'] for item in capabilities}),
+            'available_capability_ids': sorted({item['id'] for item in capabilities if item.get('available') is True}),
+            'source': 'live-engineering-tool-and-assistant-capability-registries'}
+
+def observe_s45_simulation_pair(project_id, jobs, details_by_id):
+    """Find current-project positive and fault Universal Traces from live API data."""
+    positive = []
+    negative = []
+    for job in jobs:
+        if not isinstance(job, dict) or job.get('project_id') != project_id or job.get('status') != 'completed':
+            continue
+        job_id = job.get('id')
+        detail = details_by_id.get(job_id) if isinstance(job_id, str) else None
+        if not isinstance(detail, dict) or detail.get('project_id') != project_id or detail.get('status') != 'completed':
+            continue
+        result = detail.get('result') or {}
+        trace = result.get('trace') or {}
+        artifacts = detail.get('artifact_downloads') or []
+        has_universal_trace = trace.get('universal_trace') is True and any(
+            isinstance(item, dict) and item.get('name') == 'universal_trace.jsonl' for item in artifacts)
+        if not has_universal_trace:
+            continue
+        simulation = result.get('model_simulation') or {}
+        scenario = simulation.get('scenario') or {}
+        fault_summary = simulation.get('fault_summary') or {}
+        fault_count = int(fault_summary.get('configured_faults') or fault_summary.get('total_faults') or 0)
+        fault_count = max(fault_count, len(scenario.get('faults') or []))
+        if fault_count > 0:
+            negative.append(job_id)
+        else:
+            positive.append(job_id)
+    if not positive or not negative:
+        raise ValueError('S45: aktuelle positive und Fault-Simulation mit Universal Trace fehlen im selben Testprojekt')
+    return {'positive_job_ids': sorted(set(positive)), 'fault_job_ids': sorted(set(negative)),
+            'project_id': project_id, 'source': 'live-simulation-jobs-and-universal-trace-artifacts'}
+
+def check_special_reuse(case, step, base):
+    """Read the specific starting fact of a reuse scenario from its live project."""
+    test_id=case['test_id'];project=step['project_id']
+    if test_id in ('S43','S44'):
+        exported=get_json(base,project,'/api/engineering/projects/export')
+        source=exported.get('source_data') or {}
+        if test_id=='S43':
+            names={row.get('name') for rows in source.values() if isinstance(rows,list)
+                   for row in rows if isinstance(row,dict)}
+            required={'Controller_A','CAN_FD_1','Network_A','TemperatureSignal'}
+            missing=sorted(required-names)
+            if missing:raise ValueError('S43: Ausgangsmodell enthält nicht die benannten Objekte: '+', '.join(missing))
+            return {'required_object_names':sorted(required),'source':'canonical-project-export'}
+        signals=source.get('engineering_signals') or []
+        matches=[row for row in signals if row.get('name')=='MotorRPM'
+                 and row.get('lifecycle_state') not in ('deprecated','superseded')]
+        if len(matches)!=1:
+            raise ValueError('S44: genau ein aktives MotorRPM-Signal im kanonischen Modell erforderlich')
+        signal=matches[0]
+        width=(signal.get('configuration') or {}).get('bit_length') or signal.get('length_bits')
+        if width!=4:raise ValueError('S44: vorhandenes MotorRPM-Binding hat nicht die geforderten 4 Bit')
+        return {'signal_id':signal['id'],'binding_bits':4,'source':'canonical-project-export'}
+    if test_id=='S45':
+        jobs=get_json(base,project,'/api/simulations').get('jobs') or []
+        if not isinstance(jobs, list): raise ValueError('S45: Simulationsregistry liefert keine Jobliste')
+        details={}
+        for job in jobs:
+            if isinstance(job, dict) and job.get('project_id')==project and job.get('status')=='completed' and isinstance(job.get('id'), str):
+                details[job['id']]=get_json(base,project,'/api/simulations/'+quote(job['id'], safe=''))
+        return observe_s45_simulation_pair(project,jobs,details)
+    if test_id=='S47':
+        workflow=get_json(base,project,'/api/engineering/workflow?view=summary')
+        context=workflow.get('context') or {}
+        execution=context.get('agent_execution') or {}
+        request=context.get('wizard_request') or {}
+        if not execution.get('run_id') or execution.get('run_id')!=request.get('run_id'):
+            raise ValueError('S47: persistenter Wizard-Lauf und zugehörige Auftragsrevision fehlen')
+        return {'wizard_run_id':execution['run_id'],'request_revision':request.get('revision'),
+                'source':'live-workflow-context'}
+    if test_id=='S55':
+        tools=get_json(base,project,'/api/engineering/tools').get('items') or []
+        available=[item.get('id') for item in tools if item.get('status')=='available']
+        if not available:raise ValueError('S55: keine verfügbaren registrierten Engineering-Tools beobachtet')
+        missing_tool='tool-checker-s55-intentionally-unregistered'
+        if missing_tool in {item.get('id') for item in tools}:
+            raise ValueError('S55: kontrollierter Negativfall ist unerwartet registriert')
+        try:
+            get_json(base,project,'/api/engineering/tools/'+missing_tool)
+        except HTTPError as error:
+            if error.code!=404:raise
+        else:
+            raise ValueError('S55: Negativfall liefert unerwartet ein registriertes Tool')
+        return {'available_tools':available,'missing_tool_id':missing_tool,
+                'negative_lookup_status':404,'source':'live-tool-registry-and-negative-lookup'}
+    if test_id=='S57':
+        state=get_json(base,project,'/api/engineering/agent/conversation').get('data') or {}
+        workload_id=state.get('active_engineering_workload_id')
+        workload=(state.get('engineering_workloads') or {}).get(workload_id) or {}
+        if not workload_id or not workload.get('goal'):
+            raise ValueError('S57: offener Agent-Workload mit echter Engineering-Entscheidung fehlt')
+        steps=workload.get('plan') or []
+        questions=[item for item in (state.get('questions') or {}).values()
+                   if isinstance(item,dict) and item.get('status')=='OPEN']
+        if (workload.get('status')!='WAITING_FOR_ENGINEERING_DECISION'
+                or not steps or not questions):
+            raise ValueError('S57: persistierter Plan und Schrittzustand des Workloads fehlen')
+        return {'workload_id':workload_id,'open_question_ids':[item.get('id') for item in questions],
+                'completed_steps':[item.get('id') for item in steps if item.get('status')=='SUCCEEDED'],
+                'pending_steps':[item.get('id') for item in steps if item.get('status')!='SUCCEEDED'],
+                'source':'live-agent-conversation'}
+    if test_id=='S58':
+        capacity=get_json(base,project,'/api/engineering/capacity')
+        findings=[item for item in capacity.get('findings') or [] if 'TIMING' in str(item.get('code') or '').upper()
+                  and item.get('severity') in ('ERROR','BLOCKER','REVIEW')]
+        if not findings:
+            raise ValueError('S58: kontrollierter Timing-Fehlschlag ist in der aktuellen Berechnung nicht belegt')
+        fixture_path=step.get('fixture_path')
+        if not fixture_path or not Path(fixture_path).is_file():
+            raise ValueError('S58: gebundene Repair-Strategie und freigegebener Umfang fehlen')
+        fixture=read(Path(fixture_path))
+        if not fixture.get('allowed_repair_scope'):
+            raise ValueError('S58: zulässiger Repair-Umfang in der Fixture nicht belegt')
+        return {'timing_finding_codes':[item['code'] for item in findings],
+                'allowed_repair_scope':fixture['allowed_repair_scope'],'source':'live-capacity-result'}
+    return None
+
 def check_baseline(case, step, workflow, inventory, fixture=None, base=None):
     """Validate the registered starting state; never treat an empty model as complete."""
     wizard=step['adapter']=='complete-master-real-wizard'
+    observation=None
     if wizard:
         if set(inventory)!=set(INVENTORY_RESOURCES):
             raise ValueError('Kanonisches Inventar unvollständig beobachtet')
@@ -104,8 +247,21 @@ def check_baseline(case, step, workflow, inventory, fixture=None, base=None):
             raise ValueError('Wiederverwendetes Testprojekt '+step['project_id']+' besitzt kein vollständiges kanonisches Ausgangsmodell; zuerst zugehörigen Wizard-Fall erfolgreich ausführen')
         known_preconditions={'Isolierter Teststack des veröffentlichten Images'}
         known_context={'Modellrevision und szenariospezifische Ausgangsdaten prüfen'}
+        if case['test_id']=='S41':
+            registry=observe_s41_registry(step['project_id'],
+                get_json(base,step['project_id'],'/api/engineering/tools'),
+                get_json(base,step['project_id'],'/api/engineering/agent/capabilities'))
+            observation={'registry':registry,'model_revision':workflow['versions'],
+                         'actor':'TOOL_CHECKER_AUTOMATED_E2E','source':'live-project-workflow-and-capability-registry'}
+            known_preconditions.update(case['preconditions'])
+            known_context.update(case['required_model_context'])
+        elif case['test_id'] in {'S43','S44','S45','S47','S55','S57','S58'}:
+            observation=check_special_reuse(case,step,base)
+            known_preconditions.update(case['preconditions'])
+            known_context.update(case['required_model_context'])
     unknown=[name for name in case['preconditions'] if name not in known_preconditions]+[name for name in case['required_model_context'] if name not in known_context]
     if unknown: raise ValueError('Fallbezogene Vorprüfung noch nicht angebunden: '+'; '.join(unknown))
+    return observation
 
 def collect(request, observe_capabilities=None):
     case=request['case']; project=Path(request['project']); directory=Path(request['evidence_directory'])
@@ -181,7 +337,8 @@ def collect(request, observe_capabilities=None):
         for resource in INVENTORY_RESOURCES:
             inventory[resource]=get_json(base,project_id,'/api/engineering/'+resource+'?limit=1000')
         write(directory/'inventory.json',inventory)
-    check_baseline(case,step,workflow,inventory,fixture,base)
+    case_observation=check_baseline(case,step,workflow,inventory,fixture,base)
+    if case_observation is not None:write(directory/'case-observation.json',case_observation)
     manifest=read(Path(request['state'])/'tasks'/request['task_id']/'manifest.json')
     available={'tools':['NIS HTTP API'],'skills':['tool-checker'],'views':[]}
     capability_proof=None
@@ -201,13 +358,15 @@ def collect(request, observe_capabilities=None):
         if step['adapter']=='complete-master-real-wizard' or ea:
             inventory={resource:get_json(base,project_id,'/api/engineering/'+resource+'?limit=1000') for resource in INVENTORY_RESOURCES}
             write(directory/'inventory.json',inventory)
-        check_baseline(case,step,workflow,inventory,fixture,base)
+        case_observation=check_baseline(case,step,workflow,inventory,fixture,base)
+        if case_observation is not None:write(directory/'case-observation.json',case_observation)
     for key,values in available.items():
         missing=set(case.get('required_'+key,[])+manifest.get('required_'+key,[]))-set(values)
         if missing: raise ValueError('Verfügbarkeit nicht nachgewiesen: '+', '.join(sorted(missing)))
     if case.get('browser_required') and not capability_proof: raise ValueError('Frische Browser-Vorprüfung benötigt einen registrierten Browseradapter')
     baseline=directory/'baseline.json'; write(baseline,{'model_revision':workflow['versions'],'workflow':workflow,'project_id':project_id,'base_url':base,'checked_at':now()})
     evidence={'runtime':str(directory/'runtime.json'),'model':str(directory/'workflow.json'),'request':str(directory/'request.json')}
+    if case_observation is not None:evidence['case_observation']=str(directory/'case-observation.json')
     proof={'source_hash':request['source_hash'],'contract_hash':request['contract_hash'],'project_path':str(project),'checked_at':now(),
            'isolated_scope':{'project_id':project_id,'base_url':base,'containers':observations}}
     for key in ('dependencies','application','project','permissions','test_data'):
@@ -220,6 +379,8 @@ def collect(request, observe_capabilities=None):
         proof['browser']={'observed_working':True,'provider':capability_proof.get('provider'),'evidence':capability_proof['evidence']}
     path=directory/'preflight.json';write(path,proof)
     return {case['test_id']:{'preflight':str(path),'baseline':str(baseline)}}
+
+
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--request',required=True);parser.add_argument('--output',required=True);args=parser.parse_args()

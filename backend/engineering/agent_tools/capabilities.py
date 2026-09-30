@@ -93,6 +93,24 @@ CAPABILITIES = [
           ['generate_fault_proposals', 'plan_fault_activation'], ['Aktuelles Modell', 'Fehlervorschläge', 'Magnitude und Umfang', 'Prüfen und aktivieren']),
 ]
 
+# Stable wizard IDs used by the Engineering Assistant entry points and by the
+# NIS capability contract. Each entry resolves only to tools already registered
+# above; the aliases do not add permissions or bypass the normal review gates.
+WIZARD_CAPABILITIES = [
+    entry('architecture.create', 'Architektur erstellen', 'Architektur aus dem Auftrag planen und als prüfbaren Vorschlag ausführen.', '/studio/engineering',
+          ['prepare_project_request', 'inspect_project_draft', 'plan_project_model', 'prepare_draft_workflow', 'generate_wizard_model', 'generate_wizard_communication_contract', 'generate_wizard_routing', 'generate_wizard_network', 'generate_wizard_parameters'],
+          ['Anforderung erfassen', 'Modell und Kommunikation planen', 'Vorschlag prüfen', 'Freigabe und Validierung'], launch='project'),
+    entry('signal.validate', 'Signal prüfen', 'Ein Signal anhand seiner Bedeutung, Einheit, Werte und Nachrichtenbindung prüfen.', '/studio/engineering',
+          ['inspect_signal', 'resolve_signal_encoding', 'validate_signal'],
+          ['Signal und Nachricht lesen', 'Kodierung prüfen', 'Befunde und Validierung'], resource='signals', launch='validate'),
+    entry('trace.analyze', 'Trace analysieren', 'Einen vorhandenen Simulations-Trace mit aktueller Modell- und Laufrevision untersuchen.', '/studio/trace-analysis',
+          ['inspect_message_trace_timing', 'analyze_trace_root_cause', 'get_trace_events', 'get_signal_series', 'get_fault_events', 'get_route', 'get_timing_metrics', 'continue_reasoning'],
+          ['Lauf und Zeitfenster wählen', 'Trace-Evidence prüfen', 'Ursache und Grenzen bewerten']),
+    entry('finding.review', 'Finding bewerten', 'Ein persistiertes Finding und seine aktuelle Evidence bewerten; keine Änderung ohne separate Freigabe.', '/studio/trace-analysis',
+          ['inspect_reasoning', 'analyze_trace_root_cause', 'investigate_deadline_miss', 'analyze_fault_effects'],
+          ['Finding und Modellrevision lesen', 'Ursache anhand der Evidence bewerten', 'Befund und offene Punkte dokumentieren']),
+]
+
 CONCEPTS = {
     'HardwareNode': 'Physisches Gerät, beispielsweise ECU, Gateway, Sensor oder Aktor.',
     'Function': 'Logische Aufgabe mit einer Zuordnung zur ausführenden Hardware.',
@@ -111,6 +129,14 @@ EXECUTION_CONTRACTS = {
        for key in ('signal', 'message', 'function', 'hardware', 'interface', 'routing', 'dependencies', 'structure', 'faults')},
     'project': ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
                 'Modellübernahme und aktuelle Artefakte für jeden ausdrücklich beauftragten Workflowschritt.'),
+    'architecture.create': ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
+                            'Aktueller Architekturvorschlag, ausdrückliche Freigabe und kanonische Modellvalidierung.'),
+    'signal.validate': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
+                        'Aktuelle Signal- und Nachrichtenvalidierung mit nachvollziehbaren Pflichtfeldern.'),
+    'trace.analyze': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
+                      'Trace-Analyse mit aktueller Laufrevision und Evidence; keine Modelländerung.'),
+    'finding.review': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
+                       'Bewertung mit aktueller Evidence und Revision; keine Modelländerung.'),
     'port': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
              'Gespeicherte Strategieentscheidung, ausgeführte Teilaufträge und aktuelle Abschlussprüfungen.'),
     'repair': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
@@ -135,7 +161,8 @@ def catalog(arguments):
     from backend.agent_core.api.input_output import INPUT_TYPES, SUPPORTED_INPUTS
     permissions = arguments.get('_permissions', DEFAULT_PERMISSIONS)
     requested = arguments.get('capability_id')
-    items = [deepcopy(item) for item in CAPABILITIES if not requested or item['id'] == requested]
+    items = [deepcopy(item) for item in [*CAPABILITIES, *WIZARD_CAPABILITIES]
+             if not requested or item['id'] == requested]
     if not items:
         raise ValueError('Diese Fähigkeit ist nicht registriert.')
     state = WorkflowStatusService(current_project_id()).get(summary=True)

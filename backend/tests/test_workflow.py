@@ -675,6 +675,41 @@ def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
     assert response["ready_for_simulation"] is False
 
 
+def test_preflight_accepts_bound_direct_io_without_network_parent_or_route(monkeypatch):
+    state = {
+        "versions": default_versions(),
+        "statuses": {step: "COMPLETE" for step in default_statuses()},
+        "parameters": {},
+        "topology": {"nodes": [
+            {"id": "source", "engineeringId": "sensor", "name": "sensor", "ports": []},
+            {"id": "destination", "engineeringId": "controller", "name": "controller", "ports": []},
+            {"id": "orphan", "engineeringId": "orphan", "name": "orphan", "ports": []},
+        ], "edges": []},
+    }
+    binding = {"signal_type": "GPIO", "physical_port_ref": "port",
+               "source_hardware_node_ref": "sensor", "destination_hardware_node_ref": "controller",
+               "validation_status": "REVIEW_REQUIRED"}
+    signal = {"id": "direct", "name": "direct", "message_id": None,
+              "configuration": {"direct_signal_binding": binding}}
+    service = PreflightService("analysis-project")
+    monkeypatch.setattr(service.workflow, "get", lambda: state)
+    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
+    monkeypatch.setattr(capacity_service_module, "list_objects",
+                        lambda kind, **_kwargs: [signal] if kind == "Signal" else [])
+    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
+
+    result = service.run()
+
+    codes = {finding["code"] for finding in result["findings"]}
+    assert "SIGNAL_PARENT_MISSING" not in codes
+    assert "SIMULATION_SCOPE_UNCOVERED" not in codes
+    assert result["scope_coverage"]["transport_exclusions"][0]["reason_code"] == "DIRECT_IO_NOT_NETWORK_TRANSPORT"
+    assert [finding["message"] for finding in result["findings"] if finding["code"] == "NETWORK_NODE_DISCONNECTED"] == [
+        "Node orphan ist nicht verbunden."]
+    assert result["ready_for_simulation"] is False
+
+
 def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
     state = {
         "versions": default_versions(),

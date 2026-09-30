@@ -1,6 +1,6 @@
 /** Real-browser adapter for the complete master architecture scenarios. */
 import { createRequire } from 'node:module';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { createHash } from 'node:crypto';
@@ -54,6 +54,26 @@ const { chromium } = require('playwright');
 
 const { step } = input;
 const scenario = step.case;
+const userInputs = scenario.user_inputs ?? {};
+const usedUserFields = new Set();
+const usedUserSelections = new Set();
+if (!userInputs || typeof userInputs !== 'object' || Array.isArray(userInputs)) {
+  throw new Error('Reviewed user_inputs must be an object');
+}
+for (const key of ['fields', 'selections']) {
+  if (userInputs[key] !== undefined && (!userInputs[key] || typeof userInputs[key] !== 'object' || Array.isArray(userInputs[key]))) {
+    throw new Error(`Reviewed user_inputs.${key} must be an object`);
+  }
+}
+if (userInputs.attachments !== undefined && (!Array.isArray(userInputs.attachments) || userInputs.attachments.length > 8)) {
+  throw new Error('Reviewed user_inputs.attachments must be a bounded array');
+}
+function userField(name, fallback = undefined) {
+  const value = userInputs.fields?.[name] ?? fallback;
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`Required user input missing for ${name}`);
+  if (Object.hasOwn(userInputs.fields ?? {}, name)) usedUserFields.add(name);
+  return value;
+}
 const baseURL = step.base_url.replace(/\/$/, '');
 const project = verifyTestProjectId(step.project_id);
 const runtimeRequested = Object.values(scenario).filter(Array.isArray).flat()
@@ -697,7 +717,10 @@ async function fillVisibleRequiredControls(dialog) {
     if (await control.isDisabled() || (await control.inputValue()).trim()) continue;
     const name = await control.getAttribute('aria-label') || await control.getAttribute('name') || await control.getAttribute('placeholder') || 'text';
     if (/hinweis|optional/i.test(name)) continue;
-    const value = /projektname|project.name/i.test(name) ? `Master ${scenario.test_id}` : scenario.input;
+    const value = /projektname|project.name/i.test(name)
+      ? userField(name, `Master ${scenario.test_id}`)
+      : /projektbeschreibung|project.description/i.test(name)
+        ? userField(name, scenario.input) : userField(name);
     await control.fill(value);
     choices.push({ control: name, value, source: 'SCRIPTED_TEST' });
     changed = true;
@@ -714,7 +737,16 @@ async function fillVisibleRequiredControls(dialog) {
       return [{ index, control: row.getAttribute('aria-label') || row.getAttribute('name') || 'select',
         options: [...row.options].map(option => ({ value: option.value, label: option.textContent?.trim() || '', disabled: option.disabled })) }];
     }));
-    const selected = pending.map(item => ({ ...item, option: selectScriptedOption(item.control, item.options) }))
+    const selected = pending.map(item => {
+      const requested = userInputs.selections?.[item.control];
+      const option = requested === undefined ? selectScriptedOption(item.control, item.options)
+        : item.options.find(candidate => candidate.value === requested && !candidate.disabled);
+      if (requested !== undefined && !option) {
+        throw new Error(`Reviewed user selection unavailable for ${item.control}: ${requested}`);
+      }
+      if (requested !== undefined) usedUserSelections.add(item.control);
+      return { ...item, option };
+    })
       .find(item => item.option || /Stellbefehl$/.test(item.control));
     if (!selected) break;
     const target = selects.nth(selected.index);
@@ -802,8 +834,32 @@ async function runQuestionnaire(page, dialog) {
     return;
   }
   await dialog.getByTitle('Projektname', { exact: true }).click();
-  await projectName.fill(`Master ${scenario.test_id}`);
-  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill(scenario.input);
+  await projectName.fill(userField('Projektname', `Master ${scenario.test_id}`));
+  await dialog.getByLabel('Projektbeschreibung', { exact: true }).fill(userField('Projektbeschreibung', scenario.input));
+  if (userInputs.fields?.['Weitere Hinweise']) {
+    await dialog.getByRole('textbox', { name: 'Weitere Hinweise', exact: true })
+      .fill(userField('Weitere Hinweise'));
+  }
+  if (userInputs.attachments?.length) {
+    const files = [];
+    for (const item of userInputs.attachments) {
+      if (!item || typeof item.path !== 'string' || !/^[a-f0-9]{64}$/.test(item.sha256 ?? '')) {
+        throw new Error('Reviewed attachment requires a project path and SHA-256');
+      }
+      const file = await realpath(path.resolve(root, item.path));
+      const relative = path.relative(root, file);
+      if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error('Reviewed attachment must stay inside the NIS project');
+      }
+      const digest = createHash('sha256').update(await readFile(file)).digest('hex');
+      if (digest !== item.sha256) throw new Error(`Reviewed attachment changed: ${item.path}`);
+      files.push(file);
+    }
+    await dialog.locator('label.agent-file-drop input[type=file]').setInputFiles(files);
+    await page.waitForFunction(count => document.querySelectorAll('.agent-file-list li').length >= count,
+      files.length, { timeout: 30_000 });
+    choices.push({ control: 'Auftragsanhänge', value: files.map(file => path.basename(file)), source: 'REVIEWED_USER_INPUT' });
+  }
   for (let index = 0; index < 14; index++) {
     const activeStep = dialog.locator('.agent-questionnaire-steps button.active');
     const activeTitle = await activeStep.getAttribute('title');
@@ -897,10 +953,21 @@ async function completeRun(page, dialog) {
   const started = Date.now();
   let lastState = '';
   let s03CommunicationAmended = false;
+  let repeatedBlock = null;
   while (Date.now() - started < 20 * 60_000) {
     const workflow = await api(page, '/api/engineering/workflow?view=summary');
     const execution = workflow.context?.agent_execution || {};
     lastState = `${execution.state || 'UNKNOWN'}:${execution.step || ''}:${execution.message || ''}`;
+    if (execution.state === 'BLOCKED' && execution.recoverable === true) {
+      const signature = `${execution.step || ''}:${execution.message || ''}:${JSON.stringify(execution.blocking_findings || [])}`;
+      repeatedBlock = repeatedBlock?.signature === signature
+        ? repeatedBlock : { signature, since: Date.now() };
+      if (Date.now() - repeatedBlock.since > 90_000) {
+        throw new Error(`Wizard blieb trotz Fortsetzen fachlich BLOCKED: ${lastState}`);
+      }
+    } else {
+      repeatedBlock = null;
+    }
     if (execution.state === 'COMPLETED' && Object.values(workflow.statuses || {}).length >= 9
         && Object.values(workflow.statuses).every(value => ['COMPLETE', 'APPROVED', 'WARNING'].includes(value))) {
       return { workflow, reviewed };
@@ -1064,6 +1131,11 @@ try {
   const dialog = page.getByRole('dialog', { name: 'Engineering-Auftrag erstellen' });
   await dialog.waitFor({ state: 'visible', timeout: 60_000 });
   await runQuestionnaire(page, dialog);
+  const unusedFields = Object.keys(userInputs.fields ?? {}).filter(name => !usedUserFields.has(name));
+  const unusedSelections = Object.keys(userInputs.selections ?? {}).filter(name => !usedUserSelections.has(name));
+  if (unusedFields.length || unusedSelections.length) {
+    throw new Error(`Reviewed user inputs were not consumed: fields=${unusedFields.join(',')}; selections=${unusedSelections.join(',')}`);
+  }
   const completed = await completeRun(page, dialog);
   await save('wizard-positive-complete-workflow.json', completed.workflow, 'backend');
   await screenshot(page, 'wizard-complete.png');

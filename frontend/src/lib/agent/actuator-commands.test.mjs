@@ -16,6 +16,8 @@ test('named generic actuator roles use the requested command proposals', () => {
   assert.equal(proposedActuatorCommand('TelematikStellglied').choice, 'POSITION');
   assert.equal(proposedActuatorCommand('TelematikStellgliedActuator').choice, 'POSITION');
   assert.equal(proposedActuatorCommand('Unbekannt'), null);
+  assert.equal(proposedActuatorCommand('Ventilaktor1', 'ein Aktor zum proportional schließen eines Ventil').choice, 'POSITION');
+  assert.equal(proposedActuatorCommand('Ventilaktor1', 'ein Aktor zum Schließen eines Ventil').choice, 'OPEN_CLOSE');
 });
 
 const valves = ['Ventilaktor1', 'Ventilaktor2'].map(hardware_name => ({ hardware_name, device_type: 'ActuatorController' }));

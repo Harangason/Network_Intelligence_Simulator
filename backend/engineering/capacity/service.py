@@ -13,7 +13,7 @@ from typing import Any
 
 from ..repository import list_objects
 from ..pagination import all_pages
-from ..simulation_coverage import simulation_coverage
+from ..simulation_coverage import has_bound_direct_io, simulation_coverage
 from ..routing.repository import list_routes
 from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
 from ..routing.transport_segments import physical_route_segments, PhysicalRouteResolver
@@ -1489,13 +1489,13 @@ class PreflightService:
             if not item.get("interface_id"):
                 add("engineering_model", "ERROR", "MESSAGE_PARENT_MISSING", f"Message {item.get('name')} besitzt kein Interface.")
         for item in signals:
-            if not item.get("message_id"):
+            if not item.get("message_id") and not has_bound_direct_io(item):
                 add("engineering_model", "ERROR", "SIGNAL_PARENT_MISSING", f"Signal {item.get('name')} besitzt keine Message.")
 
         declared_routes = all_pages(list_routes)
         routes = [route for route in declared_routes if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
         coverage = simulation_coverage(messages, signals, routes, (state.get("parameters") or {}).get("simulation_scope"),
-                                       declared_transports=declared_routes)
+                                       declared_transports=declared_routes, transport_only=True)
         if not coverage["complete"]:
             add("routing", "ERROR", "SIMULATION_SCOPE_UNCOVERED",
                 f"{len(coverage['missing_message_ids'])} Nachrichten und {len(coverage['missing_signal_ids'])} Signale "
@@ -1550,8 +1550,26 @@ class PreflightService:
                 port_id = str(edge.get(port_key) or "")
                 if not any(str(port.get("id")) == port_id for port in ports if isinstance(port, dict)):
                     add("network", "ERROR", "NETWORK_PORT_MISSING", f"Verbindung referenziert den fehlenden Port {port_id}.")
+        direct_hardware_ids: set[str] = set()
+        for signal in signals:
+            if has_bound_direct_io(signal) and not signal.get("message_id"):
+                binding = (signal.get("configuration") or {}).get("direct_signal_binding") or signal.get("direct_signal_binding")
+                direct_hardware_ids.update(str(binding[key]) for key in
+                                           ("source_hardware_node_ref", "destination_hardware_node_ref"))
+        routed_hardware_ids: set[str] = set()
+        for route in routes:
+            source = route.get("source") or {}
+            if isinstance(source, dict) and source.get("node_id"):
+                routed_hardware_ids.add(str(source["node_id"]))
+            for destination in route.get("destinations") or []:
+                if isinstance(destination, dict) and destination.get("node_id"):
+                    routed_hardware_ids.add(str(destination["node_id"]))
         for node_id, node in node_by_id.items():
             if node_id not in connected_ids:
+                hardware_id = str(node.get("engineeringId") or "")
+                if (hardware_id in direct_hardware_ids and hardware_id not in routed_hardware_ids
+                        and not node.get("ports")):
+                    continue
                 add("network", "ERROR", "NETWORK_NODE_DISCONNECTED", f"Node {node.get('name') or node_id} ist nicht verbunden.")
 
         physical_realizations = list((state.get("parameters") or {}).get("physical_realizations") or [])

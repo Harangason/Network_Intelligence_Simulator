@@ -83,6 +83,19 @@ async function openWizard(page: Page, project: string) {
   return dialog;
 }
 
+test('project naming form cards use the full wizard width @layout', async ({ page }) => {
+  const dialog = await openWizard(page, 'nis-e2e-project-name-layout-' + randomUUID());
+  const step = dialog.locator('fieldset.agent-project-name-step');
+  await expect(step).toBeVisible();
+  const stepWidth = await step.evaluate(element => element.getBoundingClientRect().width);
+  const cards = await step.locator(':scope > label').all();
+  expect(cards).toHaveLength(4);
+  for (const card of cards) {
+    const width = await card.evaluate(element => element.getBoundingClientRect().width);
+    expect(width).toBeGreaterThan(stepWidth * 0.85);
+  }
+});
+
 async function allObjects(page: Page, project: string, resource: string) {
   const items: any[] = [];
   for (let offset = 0; ; offset += 500) {

@@ -9,6 +9,16 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def verify_local_checkout(receipt, source, commit, verification):
+    """Refuse a tested image assembled from a different local source or test set."""
+    if source != receipt.get('initial_source_sha256'):
+        raise SystemExit('Deployment refused: canonical application source differs from the tested image.')
+    if verification != receipt.get('verification_sha256'):
+        raise SystemExit('Deployment refused: canonical release tests differ from the PASS receipt.')
+    if not commit or commit != receipt.get('initial_commit_id') or commit != receipt.get('release', {}).get('commit_id'):
+        raise SystemExit('Deployment refused: canonical Git revision differs from the PASS receipt.')
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('receipt', type=Path)
@@ -22,6 +32,10 @@ def main():
     if not receipt.get('verification_sha256') or not receipt.get('initial_source_sha256') or (
             receipt['initial_source_sha256'] != receipt.get('release', {}).get('source_sha256')):
         raise SystemExit('Deployment refused: tests and candidate must be bound to the initial source identity.')
+    identity_spec = importlib.util.spec_from_file_location('delivery', ROOT / 'scripts/release-and-deploy.py')
+    delivery = importlib.util.module_from_spec(identity_spec)
+    identity_spec.loader.exec_module(delivery)
+    verify_local_checkout(receipt, *delivery.current_identity())
     spec=importlib.util.spec_from_file_location('isolation',ROOT/'scripts/run-isolated-tests.py')
     isolation=importlib.util.module_from_spec(spec); spec.loader.exec_module(isolation)
     docker=isolation.docker_executable(); image=receipt['image_id']

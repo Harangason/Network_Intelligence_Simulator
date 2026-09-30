@@ -58,6 +58,26 @@ export function agentRunHasDurableOutcome(run: AgentRunStatus | null) {
   return run != null && ["REVIEW_REQUIRED", "READY_TO_CONTINUE", "COMPLETED"].includes(run.state);
 }
 
+export function wizardCanReturnToQuestionnaire({
+  phase,
+  busy,
+  executionState,
+  hasVisibleError,
+  hasBlockingFindings,
+}: {
+  phase: "questionnaire" | "status";
+  busy: boolean;
+  executionState?: string | null;
+  hasVisibleError: boolean;
+  hasBlockingFindings: boolean;
+}) {
+  const terminalReviewStates = ["CANCELED", "COMPLETED", "READY_TO_CONTINUE", "REVIEW_REQUIRED"];
+  const hasUnresolvedBlocker = !terminalReviewStates.includes(executionState ?? "")
+    && (executionState === "BLOCKED" || hasBlockingFindings);
+  return phase === "status" && !busy && executionState !== "RUNNING"
+    && (hasVisibleError || hasUnresolvedBlocker);
+}
+
 export function resolveAgentRunStep(run: AgentRunStatus | null, statuses: Partial<Record<AgentBuildProgress['step'], string>>) {
   if (!run || !['RUNNING', 'BLOCKED'].includes(run.state)) return run;
   if (run.model_review_required) return { ...run, step: 'engineering_model' as const };
