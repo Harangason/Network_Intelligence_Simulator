@@ -7,6 +7,13 @@ export type Technology = {
   medium: string;
   topology: string;
   default_bitrate?: number | null;
+  rate_model?: {
+    type?: string;
+    minimum_bps?: number;
+    fixed_bps?: number;
+    allowed_bps?: number[];
+    typical_bps?: number[];
+  };
   max_payload_bytes?: number | null;
   native_formats?: string[];
   parameter_schema?: TechnologyParameterField[];

@@ -5,14 +5,30 @@ export type DeclaredNetwork = Parameters & { id: string; name?: string; technolo
 const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
 export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
 
+/** Smallest profile-backed operating rate offered for review, never confirmation. */
+function minimumProposedRate(technology: Technology): number | undefined {
+  const model = technology.rate_model;
+  const rates = [
+    ...(technology.parameter_proposals?.options ?? []).map(option => option.maximum),
+    ...(model?.allowed_bps ?? []),
+    ...(model?.typical_bps ?? []),
+    model?.fixed_bps,
+    model?.minimum_bps && model.minimum_bps > 1 ? model.minimum_bps : undefined,
+  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  return rates.length ? Math.min(...rates) : undefined;
+}
+
 /** Catalog defaults remain proposals; only matching saved values may override them. */
 export function technologyParameterValues(parameters: Parameters, technology: Technology): Parameters {
   const scoped = record(record(parameters.technology_parameters)[technology.id]);
   const proposed = record(record(parameters.technology_defaults)[technology.id]);
   const global = technologyKey(parameters.technology) === technology.id ? parameters : {};
   const saved = record(scoped.values);
+  const profileRate = minimumProposedRate(technology);
   return Object.fromEntries((technology.parameter_schema ?? []).map(field => [field.key,
-    saved[field.key] ?? global[field.key] ?? proposed[field.key] ?? field.default]));
+    saved[field.key] ?? global[field.key] ?? proposed[field.key]
+      ?? (field.key === 'bitrate' && field.unit === 'bit/s' ? profileRate : undefined)
+      ?? field.default]));
 }
 
 export function technologyParameterUnverified(parameters: Parameters, key: string, technologyId: string): boolean {
