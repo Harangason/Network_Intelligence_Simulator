@@ -8,7 +8,7 @@ import { getCatalog } from "@/lib/api";
 import { listAllEngineeringObjects, syncEngineeringTopology } from "@/lib/engineering-api";
 import { localCatalog } from "@/lib/local-simulator";
 import { listRoutes } from "@/lib/routing-api";
-import type { Catalog, EngFunction, HardwareNode, RoutingEntry, Technology, TechnologyParameterField } from "@/lib/types";
+import type { Catalog, EngFunction, HardwareNode, RoutingEntry, Technology, TechnologyDomain, TechnologyParameterField } from "@/lib/types";
 import { NetworkEditor } from "./network-editor";
 import { HardwareTopologyView } from "./hardware-topology-view";
 import {
@@ -22,9 +22,10 @@ import {
   type TopologyNode,
   type TopologyPort,
 } from "@/lib/topology";
-import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflow, getWorkflowParameters, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
+import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
 import { routingBusType as routingBus } from "@/lib/bus-technology";
 import { defaultSimulationFormats } from "@/lib/simulation-formats";
+import { parameterTechnologySelection, registeredTechnologies } from "@/lib/technology-catalog-selection";
 import {
   notifyWorkflowChanged,
   notifyWorkflowDraftStatus,
@@ -525,8 +526,8 @@ export function SimulationWizard({
   const [catalog, setCatalog] = useState<Catalog>(localCatalog);
   const [catalogError, setCatalogError] = useState("");
   const [catalogLoaded, setCatalogLoaded] = useState(false);
-  const [domainId, setDomainId] = useState("automotive");
-  const [technologyId, setTechnologyId] = useState("can_fd");
+  const [domainId, setDomainId] = useState("");
+  const [technologyId, setTechnologyId] = useState("");
   const [advanced, setAdvanced] = useState(false);
   const [advancedConfig, setAdvancedConfig] = useState(
     '{\n  "name": "custom_simulation",\n  "duration_s": 1,\n  "formats": ["universal-jsonl"]\n}',
@@ -704,12 +705,17 @@ export function SimulationWizard({
     if (mode === "parameters") {
       let active = true;
       setWorkflowLoaded(false); setFormError("");
-      void getWorkflowParameters(initialProjectId).then(state => {
+      void Promise.all([
+        getWorkflowParameters(initialProjectId),
+        getWorkflowSummary(initialProjectId, { fresh: true }),
+      ]).then(([state, summary]) => {
         if (!active) return;
+        if (state.project_id !== summary.project_id) throw new Error("Parameter und Wizard-Auswahl gehören zu verschiedenen Projekten.");
         editTokensRef.current.parameters = state.edit_token;
         setStoredParameters(state.parameters);
-        if (typeof state.parameters.industry === "string") setDomainId(state.parameters.industry);
-        if (typeof state.parameters.technology === "string") setTechnologyId(state.parameters.technology);
+        const selection = parameterTechnologySelection(state.parameters, summary.context ?? {});
+        setDomainId(selection.domainId);
+        setTechnologyId(selection.technologyId);
         setWorkflowLoaded(true);
       }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Parameter konnten nicht geladen werden."); });
       return () => { active = false; };
@@ -726,26 +732,6 @@ export function SimulationWizard({
       }).catch(error => { if (active) setFormError(error instanceof Error ? error.message : "Netzwerkansicht konnte nicht geladen werden."); });
       return () => { active = false; };
     }
-    getWorkflow()
-      .then((state) => {
-        editTokensRef.current = state.edit_tokens ?? {};
-        setStoredParameters(state.parameters ?? {});
-        const storedTopology = state.topology;
-        if (Array.isArray(storedTopology.nodes) && Array.isArray(storedTopology.edges)) {
-          const nextTopology = normalizePhysicalTopology({ nodes: storedTopology.nodes, edges: storedTopology.edges });
-          setRoutingLinkRevision(topologyRoutingLinkRevision(nextTopology));
-          setTopology(nextTopology);
-        } else {
-          setRoutingLinkRevision("");
-          setTopology({ nodes: [], edges: [] });
-        }
-        if (typeof state.parameters.industry === "string") setDomainId(state.parameters.industry);
-        if (typeof state.parameters.technology === "string") setTechnologyId(state.parameters.technology);
-        setWorkflowLoaded(true);
-      })
-      .catch((error) => {
-        setFormError(error instanceof Error ? error.message : "Workflow konnte nicht geladen werden.");
-      });
   }, [mode, initialProjectId]);
 
   useEffect(() => {
@@ -876,9 +862,10 @@ export function SimulationWizard({
     () => (catalog?.domains ?? []).find((item) => item.id === domainId),
     [catalog, domainId],
   );
+  const allTechnologies = useMemo(() => registeredTechnologies(catalog), [catalog]);
   const technology = useMemo(
-    () => (domain?.technologies ?? []).find((item) => item.id === technologyId),
-    [domain, technologyId],
+    () => allTechnologies.find((item) => item.id === technologyId),
+    [allTechnologies, technologyId],
   );
   const displayedParameters = useMemo(() => technology ? technologyParameterValues(storedParameters, technology) : {}, [storedParameters, technology]);
   const formats = useMemo(
@@ -912,11 +899,6 @@ export function SimulationWizard({
 
   function chooseDomain(value: string) {
     setDomainId(value);
-    const nextDomain = (catalog?.domains ?? []).find((item) => item.id === value);
-    const nextTechnology = nextDomain?.technologies?.[0];
-    if (nextTechnology) {
-      setTechnologyId(nextTechnology.id);
-    }
   }
 
   function chooseTechnology(value: string) {
@@ -1038,12 +1020,28 @@ export function SimulationWizard({
     );
   }
   if (mode === "parameters" && (!catalogLoaded || !workflowLoaded)) {
+    if (formError) return <div className="panel error-card" role="alert"><h2>Parameter konnten nicht geladen werden</h2><p>{formError}</p></div>;
     return <div className="panel loading-panel" role="status">Gespeicherte Parameter und Technologieprofile werden geladen …
       {formError && <p role="alert">{formError}</p>}
     </div>;
   }
   if (!domain || !technology) {
-    return <div className="panel loading-panel">Technologiekatalog wird geladen …</div>;
+    return <div className="panel error-card" role="alert">
+      <h2>Branche und Technologie auswählen</h2>
+      <p>Für dieses Projekt ist noch keine vollständige Parameterauswahl bestätigt. Wähle den Anwendungsbereich und ein registriertes Technologieprofil.</p>
+      <label>Anwendungsbereich
+        <select aria-label="Anwendungsbereich auswählen" value={domain ? domainId : ""} onChange={(event) => chooseDomain(event.target.value)}>
+          <option value="">Bitte auswählen</option>
+          {(catalog?.domains ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </select>
+      </label>
+      <label>Bus / Protokoll
+        <select aria-label="Bus / Protokoll auswählen" value={technology ? technologyId : ""} onChange={(event) => chooseTechnology(event.target.value)}>
+          <option value="">Bitte auswählen</option>
+          <TechnologyOptions domain={domain} technologies={allTechnologies} />
+        </select>
+      </label>
+    </div>;
   }
 
   return (
@@ -1289,11 +1287,7 @@ export function SimulationWizard({
                   onChange={(event) => chooseTechnology(event.target.value)}
                   value={technologyId}
                 >
-                  {domain.technologies.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.id.replaceAll("_", " ").toUpperCase()}
-                    </option>
-                  ))}
+                  <TechnologyOptions domain={domain} technologies={allTechnologies} />
                 </select>
               </div>
             </div>
@@ -1560,4 +1554,18 @@ function TechnologyCard({ technology }: { technology: Technology }) {
       </span>
     </div>
   );
+}
+
+function TechnologyOptions({ domain, technologies }: { domain?: TechnologyDomain; technologies: Technology[] }) {
+  const recommended = domain?.technologies ?? [];
+  const recommendedIds = new Set(recommended.map(item => item.id));
+  const remaining = technologies.filter(item => !recommendedIds.has(item.id));
+  const option = (item: Technology) => <option key={item.id} value={item.id}>
+    {item.id.replaceAll('_', ' ').toUpperCase()}{item.implementation_status && item.implementation_status !== 'IMPLEMENTED'
+      ? ` · ${item.implementation_status}` : ''}
+  </option>;
+  return <>
+    {recommended.length > 0 && <optgroup label={`Im Anwendungsbereich ${domain?.label}`}>{recommended.map(option)}</optgroup>}
+    {remaining.length > 0 && <optgroup label="Weitere registrierte Technologien">{remaining.map(option)}</optgroup>}
+  </>;
 }

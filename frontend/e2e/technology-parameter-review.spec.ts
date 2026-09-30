@@ -2,6 +2,52 @@ import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
 // Real isolated persistence and parameter-view regressions; not nine-stage completion proof.
+test('unconfirmed project can select every registered bus without an Automotive fallback @technology-review', async ({ page }) => {
+  const project = 'nis-e2e-catalog-' + randomUUID();
+  const headers = { 'X-Project-ID': project };
+  const catalog = await (await page.request.get('/api/technologies')).json();
+  await page.goto(`/studio?mode=parameters&project=${project}`);
+  await expect(page.getByRole('heading', { name: 'Branche und Technologie auswählen' })).toBeVisible();
+  await expect(page.getByLabel('Anwendungsbereich auswählen')).toHaveValue('');
+  const bus = page.getByLabel('Bus / Protokoll auswählen');
+  await expect(bus.locator('option')).toHaveCount(catalog.technology_count + 1);
+  await bus.selectOption('i2c');
+  await page.getByLabel('Anwendungsbereich auswählen').selectOption('custom');
+  await expect(page.locator('#domain')).toHaveValue('custom');
+  await expect(page.locator('#technology')).toHaveValue('i2c');
+  // I2C deliberately has no assumed bus clock; the user must confirm one.
+  await page.locator('input[name="bitrate"]').fill('400000');
+  const invalid = await page.locator('form.config-panel').evaluate(form => [...(form as HTMLFormElement).elements]
+    .filter(element => element instanceof HTMLInputElement && !element.checkValidity())
+    .map(element => (element as HTMLInputElement).name));
+  expect(invalid).toEqual([]);
+  await page.getByRole('button', { name: 'Parameter speichern →', exact: true }).click();
+  await expect(page.getByText('Technologie- und Timing-Parameter gespeichert.')).toBeVisible();
+  const saved = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+  expect(saved.parameters.industry).toBe('custom');
+  expect(saved.parameters.technology).toBe('i2c');
+  await page.reload();
+  await expect(page.locator('#domain')).toHaveValue('custom');
+  await expect(page.locator('#technology')).toHaveValue('i2c');
+});
+
+test('saved confirmed wizard context proposes its bus without inventing parameter confirmation @technology-review', async ({ page }) => {
+  const project = 'nis-e2e-wizard-bus-' + randomUUID();
+  const headers = { 'X-Project-ID': project };
+  const seeded = await page.request.patch('/api/engineering/workflow/context?view=summary', {
+    headers,
+    data: { agent_wizard_status: { confirmed_at: '2026-09-30T11:32:50Z', model_type: 'custom',
+      communication_system_counts: [{ id: 'i2c', count: 1 }] } },
+  });
+  expect(seeded.ok(), await seeded.text()).toBe(true);
+  await page.goto(`/studio?mode=parameters&project=${project}`);
+  await expect(page.locator('#domain')).toHaveValue('custom');
+  await expect(page.locator('#technology')).toHaveValue('i2c');
+  await expect(page.getByText('UNVERIFIED · Keine bestätigte Technologieauswahl')).toBeVisible();
+  const parameters = await (await page.request.get('/api/engineering/workflow/parameters', { headers })).json();
+  expect(parameters.parameters.technology).toBeUndefined();
+});
+
 test('mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD while saving LIN @technology-review', async ({ page }) => {
   const project = 'nis-e2e-rate-' + randomUUID();
   const headers = { 'X-Project-ID': project };
