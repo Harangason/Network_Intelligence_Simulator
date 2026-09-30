@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parameterTechnologySelection, registeredTechnologies } from './technology-catalog-selection.ts';
+import { fuzzyTechnologySearch, parameterTechnologySelection, registeredTechnologies } from './technology-catalog-selection.ts';
 
 const catalog = { domains: [
   { id: 'automotive', technologies: [{ id: 'can_fd' }, { id: 'ethernet' }] },
@@ -9,6 +9,14 @@ const catalog = { domains: [
 
 test('registered technologies remain selectable across industries without duplicate IDs', () => {
   assert.deepEqual(registeredTechnologies(catalog).map(item => item.id), ['can_fd', 'ethernet', 'i2c']);
+});
+
+test('fuzzy technology search handles compact names and small typing errors without hiding the empty catalog', () => {
+  const technologies = [{ id: 'can_fd' }, { id: 'profinet' }, { id: 'i2c' }];
+  assert.equal(fuzzyTechnologySearch(technologies, 'CANFD')[0].id, 'can_fd');
+  assert.equal(fuzzyTechnologySearch(technologies, 'profnet')[0].id, 'profinet');
+  assert.deepEqual(fuzzyTechnologySearch(technologies, ''), technologies);
+  assert.deepEqual(fuzzyTechnologySearch(technologies, 'zzzzzz'), []);
 });
 
 test('confirmed custom wizard retains its industry and proposes its single I2C bus', () => {

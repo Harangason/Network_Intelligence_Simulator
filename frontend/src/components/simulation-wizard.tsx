@@ -25,7 +25,8 @@ import {
 import { getNetworkView, saveNetworkView, renamePhysicalBus, getWorkflowSummary, getWorkflowParameters, saveWorkflowParameters, saveWorkflowTopology, saveBusChange, saveNetworkAssignment, createFrameDevice, type FrameDeviceRequest, type NetworkAssignmentRequest, type BusChangeRequest } from "@/lib/workflow-api";
 import { routingBusType as routingBus } from "@/lib/bus-technology";
 import { defaultSimulationFormats } from "@/lib/simulation-formats";
-import { parameterTechnologySelection, registeredTechnologies } from "@/lib/technology-catalog-selection";
+import { fuzzyTechnologySearch, parameterTechnologySelection, registeredTechnologies } from "@/lib/technology-catalog-selection";
+import pickerStyles from "./technology-picker.module.css";
 import {
   notifyWorkflowChanged,
   notifyWorkflowDraftStatus,
@@ -528,6 +529,7 @@ export function SimulationWizard({
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [domainId, setDomainId] = useState("");
   const [technologyId, setTechnologyId] = useState("");
+  const [technologySearch, setTechnologySearch] = useState("");
   const [advanced, setAdvanced] = useState(false);
   const [advancedConfig, setAdvancedConfig] = useState(
     '{\n  "name": "custom_simulation",\n  "duration_s": 1,\n  "formats": ["universal-jsonl"]\n}',
@@ -863,6 +865,10 @@ export function SimulationWizard({
     [catalog, domainId],
   );
   const allTechnologies = useMemo(() => registeredTechnologies(catalog), [catalog]);
+  const matchingTechnologies = useMemo(
+    () => fuzzyTechnologySearch(allTechnologies, technologySearch),
+    [allTechnologies, technologySearch],
+  );
   const technology = useMemo(
     () => allTechnologies.find((item) => item.id === technologyId),
     [allTechnologies, technologyId],
@@ -1045,12 +1051,17 @@ export function SimulationWizard({
           {(catalog?.domains ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
         </select>
       </label>
-      <label>Bus / Protokoll
-        <select aria-label="Bus / Protokoll auswählen" value={technology ? technologyId : ""} onChange={(event) => chooseTechnology(event.target.value)}>
-          <option value="">Bitte auswählen</option>
-          <TechnologyOptions domain={domain} technologies={allTechnologies} />
-        </select>
-      </label>
+      <div className="field">
+        <label htmlFor="initial-technology">Bus / Protokoll</label>
+        <div className={pickerStyles.pickerRow}>
+          <select aria-label="Bus / Protokoll auswählen" id="initial-technology" value={technology ? technologyId : ""} onChange={(event) => chooseTechnology(event.target.value)}>
+            <option value="">Bitte auswählen</option>
+            <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} />
+          </select>
+          <input aria-label="Bus / Protokoll suchen" onChange={(event) => setTechnologySearch(event.target.value)} placeholder="Bus suchen" type="search" value={technologySearch} />
+        </div>
+        {technologySearch && <small role="status">{matchingTechnologies.length} Treffer</small>}
+      </div>
     </div>;
   }
 
@@ -1292,13 +1303,23 @@ export function SimulationWizard({
               <div className="field">
                 <label htmlFor="technology">Bus / Protokoll</label>
                 {parameterIsUnverified(storedParameters, "technology", technologyId) && <small>UNVERIFIED · Keine bestätigte Technologieauswahl</small>}
-                <select
-                  id="technology"
-                  onChange={(event) => chooseTechnology(event.target.value)}
-                  value={technologyId}
-                >
-                  <TechnologyOptions domain={domain} technologies={allTechnologies} />
-                </select>
+                <div className={pickerStyles.pickerRow}>
+                  <select
+                    id="technology"
+                    onChange={(event) => chooseTechnology(event.target.value)}
+                    value={technologyId}
+                  >
+                    <TechnologyOptions domain={domain} technologies={allTechnologies} matches={matchingTechnologies} query={technologySearch} selectedId={technologyId} />
+                  </select>
+                  <input
+                    aria-label="Bus / Protokoll suchen"
+                    onChange={(event) => { event.stopPropagation(); setTechnologySearch(event.target.value); }}
+                    placeholder="Bus suchen"
+                    type="search"
+                    value={technologySearch}
+                  />
+                </div>
+                {technologySearch && <small role="status">{matchingTechnologies.length} Treffer</small>}
               </div>
             </div>
 
@@ -1585,7 +1606,13 @@ function TechnologyCard({ technology }: { technology: Technology }) {
   );
 }
 
-function TechnologyOptions({ domain, technologies }: { domain?: TechnologyDomain; technologies: Technology[] }) {
+function TechnologyOptions({ domain, technologies, matches, query, selectedId }: {
+  domain?: TechnologyDomain;
+  technologies: Technology[];
+  matches: Technology[];
+  query: string;
+  selectedId: string;
+}) {
   const recommended = domain?.technologies ?? [];
   const recommendedIds = new Set(recommended.map(item => item.id));
   const remaining = technologies.filter(item => !recommendedIds.has(item.id));
@@ -1593,6 +1620,14 @@ function TechnologyOptions({ domain, technologies }: { domain?: TechnologyDomain
     {item.id.replaceAll('_', ' ').toUpperCase()}{item.implementation_status && item.implementation_status !== 'IMPLEMENTED'
       ? ` · ${item.implementation_status}` : ''}
   </option>;
+  if (query.trim()) {
+    const selected = technologies.find(item => item.id === selectedId);
+    return <>
+      {selected && !matches.some(item => item.id === selectedId) && <optgroup label="Aktuelle Auswahl">{option(selected)}</optgroup>}
+      {matches.length > 0 && <optgroup label="Suchtreffer">{matches.map(option)}</optgroup>}
+      {matches.length === 0 && <option disabled value="__no_matches">Keine Treffer</option>}
+    </>;
+  }
   return <>
     {recommended.length > 0 && <optgroup label={`Im Anwendungsbereich ${domain?.label}`}>{recommended.map(option)}</optgroup>}
     {remaining.length > 0 && <optgroup label="Weitere registrierte Technologien">{remaining.map(option)}</optgroup>}
