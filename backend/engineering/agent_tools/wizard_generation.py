@@ -487,9 +487,10 @@ def _explicit_can_fd_phases(prompt: str, technology_ids: list[str]) -> dict[str,
     if 'can_fd' not in technology_ids:
         return {}
     pattern = re.compile(
-        r'^\s*CAN[-_ ]FD\s*:\s*(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*'
-        r'(?:arbitration|nominal)\s*[,;]\s*'
-        r'(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*(?:data|daten)\b',
+        r'^[ \t]*CAN[-_ ]FD[ \t]*:[ \t]*(?:\r?\n[ \t]*)?'
+        r'(\d+(?:[,.]\d+)?)[ \t]*([kKmM])bit/s[ \t]*'
+        r'(?:arbitration|nominal)[ \t]*(?:[,;][ \t]*|\r?\n[ \t]*)'
+        r'(\d+(?:[,.]\d+)?)[ \t]*([kKmM])bit/s[ \t]*(?:data|daten)\b',
         re.M | re.I,
     )
     phases: dict[str, int] = {}

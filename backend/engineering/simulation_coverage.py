@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
+
 INACTIVE = {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
 RETIRED_TRANSPORTS = {"REJECTED", "SUPERSEDED", "DEPRECATED"}
 
@@ -18,6 +20,14 @@ def _ids(values: Any) -> set[str]:
 def active_rows(rows: list[dict]) -> list[dict]:
     return [row for row in rows if str(row.get("lifecycle_state") or "").upper() not in INACTIVE
             and str(row.get("status") or "").upper() not in INACTIVE]
+
+
+def has_bound_direct_io(signal: dict) -> bool:
+    binding = signal.get("direct_signal_binding") or (signal.get("configuration") or {}).get("direct_signal_binding")
+    return (isinstance(binding, dict)
+            and str(binding.get("signal_type") or "").lower() in DIRECT_IO_TECHNOLOGIES
+            and all(binding.get(key) for key in ("physical_port_ref", "source_hardware_node_ref",
+                                                     "destination_hardware_node_ref")))
 
 
 def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, str],
@@ -66,7 +76,8 @@ def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, st
 
 
 def simulation_coverage(messages: list[dict], signals: list[dict], transports: list[dict],
-                        scope: dict | None = None, *, declared_transports: list[dict] | None = None) -> dict[str, Any]:
+                        scope: dict | None = None, *, declared_transports: list[dict] | None = None,
+                        transport_only: bool = False) -> dict[str, Any]:
     all_signal_messages = {str(row["id"]): str(row.get("message_id") or "") for row in signals if row.get("id")}
     messages, signals = active_rows(messages), active_rows(signals)
     message_ids = {str(row["id"]) for row in messages if row.get("id")}
@@ -109,6 +120,20 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
                 "reason": ("Der Controllerstatus bleibt ohne bestätigten Empfänger intern. " if is_internal else
                            "Der vollständige Funktionsausgang ist ausdrücklich nicht geroutet und besitzt keine aktuelle Transportabsicht. ")
                           + "Vom Transportscope ausgenommen; keine funktionale Beobachtung oder Timing-Freigabe nachgewiesen."})
+
+    if transport_only:
+        for signal in signals:
+            signal_id = str(signal.get("id") or "")
+            if signal_id not in required_signals or signal.get("message_id"):
+                continue
+            if not has_bound_direct_io(signal):
+                continue
+            binding = signal.get("direct_signal_binding") or (signal.get("configuration") or {}).get("direct_signal_binding")
+            required_signals.discard(signal_id)
+            transport_exclusions.append({"message_id": None, "signal_ids": [signal_id],
+                "reason_code": "DIRECT_IO_NOT_NETWORK_TRANSPORT",
+                "reason": "Direkte I/O-Bindung benötigt keine Netzwerkroute; elektrische und zeitliche Freigabe bleibt im Preflight offen.",
+                "direct_binding_validation_status": binding.get("validation_status")})
 
     covered_messages, covered_signals = set(), set()
     for row in active_rows(transports):

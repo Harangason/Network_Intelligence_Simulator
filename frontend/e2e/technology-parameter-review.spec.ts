@@ -34,12 +34,12 @@ test('unconfirmed project can select every registered bus without an Automotive 
   await expect(selectedBus.locator('option[value="__no_matches"]')).toHaveCount(1);
   await search.clear();
   await expect(selectedBus.locator('option')).toHaveCount(catalog.technology_count);
-  // I2C deliberately has no assumed bus clock; the user must confirm one.
+  // The lowest registered I2C mode is shown as an unconfirmed proposal.
   const clock = page.locator('input[name="bitrate"]');
-  await expect(clock).toHaveValue('');
-  await expect(page.getByText('UNVERIFIED · Eingabe erforderlich')).toBeVisible();
+  await expect(clock).toHaveValue('100000');
+  await expect(page.getByText('UNVERIFIED · Profilvorschlag').first()).toBeVisible();
   await expect(page.getByText(/Referenz-Obergrenzen, keine bestätigte Busfrequenz: Standard ≤ 100\.000 bit\/s/)).toBeVisible();
-  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
+  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(true);
   await clock.fill('0');
   expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
   await clock.fill('400000');
@@ -92,7 +92,7 @@ test('mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD whi
   await page.goto(`/studio?mode=parameters&project=${project}`);
   await expect(page.locator('#technology')).toHaveValue('can_fd');
   await page.locator('#technology').selectOption('lin');
-  await expect(page.locator('input[name="bitrate"]')).toHaveValue('19200');
+  await expect(page.locator('input[name="bitrate"]')).toHaveValue('9600');
   await expect(page.locator('input[name="data_bitrate"]')).toHaveCount(0);
   await page.locator('input[name="bitrate"]').fill('2000000');
   expect(await page.locator('input[name="bitrate"]').evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(false);

@@ -47,6 +47,36 @@ Die Positionen sollen zyklisch geregelt werden.`;
   assert.ok(!spec.chains.some(chain => chain.hardware_name === '1'));
 });
 
+test('a singular ECU in the user request remains a concrete generic controller', () => {
+  const task = 'ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen';
+  const spec = extractEngineeringSpecification(task, {}, 'automotive');
+  assert.equal(spec.targetCounts.ecus, 1);
+  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 1);
+  assert.ok(spec.chains.some(chain => chain.hardware_name === 'ECU' && chain.device_type === 'ECU'));
+  assert.ok(!spec.chains.some(chain => chain.hardware_name === 'RaspberryPi'));
+});
+
+test('a generic ECU followed by its action stays a controller and its valve stays an actuator', () => {
+  const spec = extractEngineeringSpecification('ein sensor temperatur misst, eine ECU steuert ein Ventil', {}, 'custom', true);
+  const devices = new Map(spec.chains.map(chain => [chain.hardware_name, chain.device_type]));
+  assert.equal(devices.get('ECU'), 'ECU');
+  assert.equal(devices.get('Ventilaktor1'), 'ActuatorController');
+  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 1);
+  assert.equal(spec.chains.filter(chain => chain.device_type === 'ActuatorController').length, 1);
+  assert.equal(devices.has('steuert'), false);
+});
+
+test('a singular valve described as the purpose of an actuator becomes a concrete device', () => {
+  const task = 'ein Sensor misst Temperatur, eine ECU regelt und ein Aktor zum proportional schließen eines Ventil';
+  const spec = extractEngineeringSpecification(task, {}, 'embedded_systems', true);
+  assert.equal(spec.targetCounts.actuators, 1);
+  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'ActuatorController').map(chain => chain.hardware_name), ['Ventilaktor1']);
+  assert.equal(spec.domain, 'embedded_systems');
+  assert.equal(spec.chains.some(chain => chain.device_type === 'Gateway'), false);
+  const unresolved = extractEngineeringSpecification('eine ECU und ein Aktor mit noch ungeklärter Funktion', {}, 'custom', true);
+  assert.equal(unresolved.chains.some(chain => chain.device_type === 'ActuatorController'), false);
+});
+
 test('S04-B materializes untyped fans and the shared controller without inventing a gateway', () => {
   const task = `Vier Temperatursensoren und drei Lüfter
 sollen durch eine gemeinsame Steuerung geregelt werden.

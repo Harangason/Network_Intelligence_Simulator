@@ -30,6 +30,7 @@ def verification_manifest():
     paths.update(ROOT/name for name in ('frontend/playwright.config.ts',
         'scripts/run-release-gate.py', 'scripts/run-isolated-tests.py',
         'scripts/verify-live-wizard.py', 'scripts/deploy-verified-release.py',
+        'scripts/release-and-deploy.py',
         'scripts/release_storage.py',
         '.github/workflows/wizard-release-gate.yml'))
     hashes = {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()
@@ -68,7 +69,7 @@ def main():
     names = {key: 'nis-e2e-' + key + '-' + token for key in ('db', 'app', 'network', 'runtime')}
     password = secrets.token_hex(24)
     env = {**os.environ, 'POSTGRES_PASSWORD': password}
-    receipt = {'schema_version': 1, 'status': 'RUNNING', 'checks': [], 'containers': names,
+    receipt = {'schema_version': 1, 'status': 'RUNNING', 'gate_pid': os.getpid(), 'checks': [], 'containers': names,
                'initial_source_sha256': initial_source_sha256, 'initial_commit_id': initial_commit_id,
                'verification_sha256': verification_manifest()}
     receipt['storage'] = {'retention': 'PROTECTED_PENDING_FEATURE_AUDIT',
@@ -104,7 +105,7 @@ def main():
         node = shutil.which('node') or r'C:\Program Files\nodejs\node.exe'
         if not args.prepare:
             run([sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts/tests',
-                 '-p', 'test_release_storage.py', '-v'], name='storage-tests')
+                 '-p', 'test_release*.py', '-v'], name='storage-tests')
             run([node, 'node_modules/typescript/bin/tsc', '--noEmit', '--incremental', 'false'], cwd=ROOT/'frontend', name='typecheck')
             run([node, '--experimental-strip-types', '--test', 'src/lib/*.test.mjs', 'src/lib/agent/*.test.mjs'], cwd=ROOT/'frontend', name='frontend-tests')
             run([sys.executable, str(ROOT/'scripts/run-isolated-tests.py'), '--', 'backend/tests', '-q'], name='backend-tests')

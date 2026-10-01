@@ -28,13 +28,36 @@ def directory(monkeypatch):
 def test_directory_has_unique_executable_workflows_and_real_tools(directory):
     entries = directory['capabilities']
     assert len(entries) == len({item['id'] for item in entries})
-    assert {'signal', 'repair', 'project', 'dependencies', 'structure', 'duplicates', 'faults', 'analysis'} <= {item['id'] for item in entries}
+    assert {'signal', 'repair', 'project', 'dependencies', 'structure', 'duplicates', 'faults', 'analysis',
+            'architecture.create', 'signal.validate', 'trace.analyze', 'finding.review'} <= {item['id'] for item in entries}
     for item in entries:
         assert item['available'], item
         assert all(tool in TOOLS for tool in item['tools'])
         assert item['action']['project_id'] == 'project-a'
         assert len(item['steps']) >= 3
     assert directory['project_name'] == 'NIS Projekt A'
+
+
+def test_s41_wizard_aliases_resolve_to_available_reviewable_capabilities(directory):
+    entries = {item['id']: item for item in directory['capabilities']}
+    expected = {
+        'architecture.create': {'prepare_project_request', 'plan_project_model', 'generate_wizard_model'},
+        'signal.validate': {'inspect_signal', 'resolve_signal_encoding', 'validate_signal'},
+        'trace.analyze': {'analyze_trace_root_cause', 'get_trace_events', 'get_signal_series'},
+        'finding.review': {'inspect_reasoning', 'analyze_trace_root_cause', 'analyze_fault_effects'},
+    }
+    for capability_id, required_tools in expected.items():
+        item = entries[capability_id]
+        assert item['available'] is True
+        assert item['action']['capability_id'] == capability_id
+        assert item['action']['project_id'] == 'project-a'
+        assert required_tools <= set(item['tools'])
+        assert item['execution']['navigation_executes'] is False
+        assert item['execution']['completion_condition']
+    assert entries['architecture.create']['execution']['mode'] == 'REVIEWABLE_PROPOSAL'
+    assert entries['signal.validate']['execution']['mode'] == 'ANALYSIS_ONLY'
+    assert entries['trace.analyze']['execution']['mode'] == 'ANALYSIS_ONLY'
+    assert entries['finding.review']['execution']['mode'] == 'ANALYSIS_ONLY'
 
 
 def test_capability_contract_does_not_equate_navigation_or_analysis_with_apply(directory):

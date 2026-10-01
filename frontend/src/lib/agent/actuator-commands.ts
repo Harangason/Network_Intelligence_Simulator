@@ -42,7 +42,9 @@ export function actuatorCommandLabel(role: string, name: string, purpose = ''): 
   return /ventil|valve/i.test(`${name} ${purpose}`) ? 'Ventilbefehl' : 'Aktorbefehl';
 }
 
-export function proposedActuatorCommand(name: string): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
+export function proposedActuatorCommand(name: string, purpose = ''): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
+  if (/ventil|valve/i.test(name) && /\bproportional\w*\b/i.test(purpose))
+    return { choice: 'POSITION', reason: 'Proportionales Ventil: Stellposition als editierbare Entwurfsvorgabe' };
   if (/(?:Schaltausgang|SchaltausgangActuator)$/.test(name))
     return { choice: 'OPEN_CLOSE', reason: 'Schaltausgang: Auf/Zu als editierbare Entwurfsvorgabe' };
   if (/(?:Stellglied|StellgliedActuator)$/.test(name))

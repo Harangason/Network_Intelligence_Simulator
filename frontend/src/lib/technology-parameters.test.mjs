@@ -10,6 +10,28 @@ test('LIN projection never inherits CAN-FD rate or its phases', () => {
   assert.deepEqual(technologyParameterValues(parameters, lin), { bitrate: 19200, payload_bytes: 8 });
   assert.equal(technologyParameterUnverified(parameters, 'bitrate', 'lin'), true);
 });
+test('known profile modes propose their lowest operating rate without confirming it', () => {
+  const bitrateField = { key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s' };
+  const cases = [
+    [{ id: 'i2c', parameter_schema: [bitrateField], rate_model: { minimum_bps: 1 }, parameter_proposals: { options: [{ mode: 'Fast', maximum: 400000 }, { mode: 'Standard', maximum: 100000 }] } }, 100000],
+    [{ id: 'lin', parameter_schema: [{ ...bitrateField, default: 19200 }], rate_model: { minimum_bps: 1, typical_bps: [19200, 9600] } }, 9600],
+    [{ id: 'can', parameter_schema: [{ ...bitrateField, default: 500000 }], rate_model: { minimum_bps: 10000 } }, 10000],
+    [{ id: 'ethernet', parameter_schema: [{ ...bitrateField, default: 1000000000 }], rate_model: { allowed_bps: [1000000000, 10000000] } }, 10000000],
+  ];
+  for (const [technology, expected] of cases) {
+    assert.equal(technologyParameterValues({}, technology).bitrate, expected);
+    assert.equal(technologyParameterUnverified({}, 'bitrate', technology.id), true);
+  }
+  const i2c = cases[0][0];
+  assert.equal(technologyParameterValues({ technology: 'i2c', bitrate: 400000 }, i2c).bitrate, 400000);
+  const confirmed = confirmTechnologyParameters({}, i2c, { bitrate: 400000 });
+  assert.equal(technologyParameterValues(confirmed, i2c).bitrate, 400000);
+  assert.equal(technologyParameterUnverified(confirmed, 'bitrate', 'i2c'), false);
+});
+test('device-dependent clock without a known operating mode remains open', () => {
+  const spi = { id: 'spi', parameter_schema: [{ key: 'bitrate', type: 'number', unit: 'bit/s' }], rate_model: { minimum_bps: 1 } };
+  assert.equal(technologyParameterValues({}, spi).bitrate, undefined);
+});
 test('declared confirmed LIN values survive switching and preserve mixed inventory', () => {
   const saved = confirmTechnologyParameters(parameters, lin, { bitrate: 9600, payload_bytes: 8 });
   assert.equal(saved.technology, 'can_fd'); assert.equal(saved.bitrate, 2000000);

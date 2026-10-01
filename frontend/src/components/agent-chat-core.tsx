@@ -30,7 +30,7 @@ import {
   saveEngineeringAgentHistory,
 } from "@/lib/agent-chat-history";
 import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardCanReturnToQuestionnaire, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
 import { requestWizardCancellation } from "@/lib/wizard-cancellation";
 import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
 import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
@@ -1435,6 +1435,15 @@ export function EngineeringAgentWizard({
   }, [projectId]);
 
   useEffect(() => {
+    if (!wizardPreferencesReady || phase !== 'questionnaire') return;
+    if (taskText.trim()) {
+      window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: taskText }));
+    } else {
+      window.sessionStorage.removeItem(projectIntakeKey(projectId));
+    }
+  }, [phase, projectId, taskText, wizardPreferencesReady]);
+
+  useEffect(() => {
     if (phase !== 'questionnaire' || manualTechnologyScopeRef.current === `${mode}:${selectedDomain?.id}`) return;
     const requested = technologyChoices.filter(technology => recognizedEquipment.communicationSystems
       .some(system => technologyMatchesRecognizedSystem(technology, system))).map(technology => technology.id);
@@ -1599,6 +1608,13 @@ export function EngineeringAgentWizard({
   const agentPending = transportPending || reviewActionBusy || agentRunIsActive(execution);
   const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
   const displayedStatusError = statusError || statusRefreshError;
+  const canReturnToQuestionnaire = wizardCanReturnToQuestionnaire({
+    phase,
+    busy: submitting || !wizardPreferencesReady || agentPending,
+    executionState: execution?.state,
+    hasVisibleError: Boolean(displayedStatusError),
+    hasBlockingFindings: Boolean(execution?.blocking_findings?.length),
+  });
   const parameterTool = currentRunMessages.flatMap((message) => message.parts).findLast((part) => (
     part.type === "tool-configure_workflow_parameters"
     || (part.type === "dynamic-tool" && part.toolName === "configure_workflow_parameters")
@@ -1705,6 +1721,10 @@ export function EngineeringAgentWizard({
   }
 
   async function navigateQuestionnaireStep(index: number) {
+    if (phase === "status") {
+      if (!canReturnToQuestionnaire || index >= questionnaireSteps.length) return;
+      setPhase("questionnaire");
+    }
     if (index > step && questionnaireSteps[step]?.id === "project" && projectReady) {
       try {
         await persistProjectName(projectName, projectNameEditRevisionRef.current);
@@ -2651,7 +2671,7 @@ export function EngineeringAgentWizard({
     return proposal ? [{ name: chain.hardware_name, ...proposal }] : [];
   });
   const commandProposals = unresolvedCommands.flatMap(name => {
-    const proposal = proposedActuatorCommand(name);
+    const proposal = proposedActuatorCommand(name, deviceRowByName.get(name)?.chain?.hardware_description ?? '');
     return proposal ? [{ name, ...proposal }] : [];
   });
   const acceptDeviceProposals = () => {
@@ -2972,7 +2992,7 @@ export function EngineeringAgentWizard({
             className={index === step ? "active" : ""}
             disabled={
               effectiveBusy
-              || phase === "status"
+              || (phase === "status" && (!canReturnToQuestionnaire || item.id === "status"))
               || (item.id !== 'status' && index > 0 && !projectReady)
               || (item.id === "equipment" && !taskReady)
               || (item.id !== 'status' && index > architectureStepIndex && !architectureReady)
@@ -3009,18 +3029,22 @@ export function EngineeringAgentWizard({
           </label>
           <label className="agent-questionnaire-note">
             <span>Projektbeschreibung</span>
-            <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5} value={taskText}
+            <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5}
+              value={taskText.replace(/^\s*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*(?:\r?\n|$)/gm, '').trim()}
               maxLength={intakeRequirement !== null ? 16000 : undefined}
               placeholder="Was soll dieses Projekt leisten?"
               onChange={(event) => {
                 const requirement = event.target.value;
-                setTaskText(requirement);
+                const reviewedChoices = taskText.split(/\r?\n/).filter(line => /^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
+                const nextTaskText = [requirement.trim(), ...reviewedChoices].filter(Boolean).join('\n');
+                setTaskText(nextTaskText);
+                if (nextTaskText) window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: nextTaskText }));
+                else window.sessionStorage.removeItem(projectIntakeKey(projectId));
                 if (intakeRequirement !== null) {
                   setIntakeRequirement(requirement);
-                  window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement }));
                 }
               }} />
-            <small>Diese Beschreibung ist zugleich der Aufgabentext für den Agenten. Änderungen auf beiden Seiten werden gemeinsam übernommen.</small>
+            <small>Die Beschreibung bleibt lesbar. Bestätigte Geräteanschlüsse, Messgrößen und Stellbefehle werden getrennt gespeichert und bei Korrekturen beibehalten.</small>
           </label>
           <label className="agent-questionnaire-note">
             <span>Weitere Hinweise</span>

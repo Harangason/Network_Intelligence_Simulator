@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "./agent-run-status.ts";
+import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardCanReturnToQuestionnaire, wizardContinuationPrompt, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "./agent-run-status.ts";
 
 const run = {
   run_id: "wizard-run", state: "RUNNING", step: "routing", completed: 36, total: 150,
@@ -66,6 +66,16 @@ test("a durable server outcome supersedes a disconnected browser stream", () => 
   assert.equal(agentRunHasDurableOutcome({ ...run, state: "COMPLETED" }), true);
   assert.equal(agentRunHasDurableOutcome({ ...run, state: "RUNNING" }), false);
   assert.equal(agentRunHasDurableOutcome({ ...run, state: "BLOCKED" }), false);
+});
+
+test("questionnaire navigation returns after a stopped error but stays locked during execution", () => {
+  const blocked = { phase: "status", busy: false, executionState: "BLOCKED", hasVisibleError: false, hasBlockingFindings: true };
+  assert.equal(wizardCanReturnToQuestionnaire(blocked), true);
+  assert.equal(wizardCanReturnToQuestionnaire({ ...blocked, busy: true }), false);
+  assert.equal(wizardCanReturnToQuestionnaire({ ...blocked, executionState: "RUNNING" }), false);
+  assert.equal(wizardCanReturnToQuestionnaire({ ...blocked, executionState: "COMPLETED" }), false);
+  assert.equal(wizardCanReturnToQuestionnaire({ ...blocked, phase: "questionnaire" }), false);
+  assert.equal(wizardCanReturnToQuestionnaire({ ...blocked, executionState: null, hasBlockingFindings: false, hasVisibleError: true }), true);
 });
 
 test("all downstream workflow steps survive reopening the wizard", () => {

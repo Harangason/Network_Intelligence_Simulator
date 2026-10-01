@@ -216,6 +216,14 @@ export function TraceAnalysisWorkbench() {
     router.replace(withProjectParam(`/trace-analysis?${parameters}`), { scroll: false });
   }
 
+  function clearEventSelection() {
+    setSelectedEvent(null);
+    const parameters = new URLSearchParams(search.toString());
+    parameters.delete("event");
+    parameters.delete("focus_s");
+    router.replace(withProjectParam(`/trace-analysis?${parameters.toString()}`), { scroll: false });
+  }
+
   function openMessagesView(jobId?: string) {
     setView("messages");
     const parameters = new URLSearchParams(search.toString());
@@ -283,7 +291,7 @@ export function TraceAnalysisWorkbench() {
           </div>
           {view === "session" && <div className="panel trace-table"><h3>Import Sources</h3><p>Universeller Trace-Import: {ACCEPTED}. Binärformate werden anhand ihrer Dateisignatur erkannt. Vorschau bis 500 MiB und 2000 Ereignisse. ASC/BLF: CAN und CAN FD; PCAP/PCAPNG: Rohpakete; MDF/MF4: skalare Messkanäle. PCAPNG: eine Schnittstelle pro Datei. Rohbytes benötigen für Signalwerte eine passende Decoder-Datenbank.</p>{jobs.filter(job => job.status === 'completed' && !job.validate_only).slice(0, 50).map(job => <button className="artifact" key={job.id} type="button" disabled={loading} onClick={() => void loadWindow(job.id, 0, true)}><strong>Simulation {job.id}</strong><small>Universellen Trace laden · {job.created_at}</small></button>)}{!jobs.some(job => job.status === 'completed' && !job.validate_only) && <p>Keine abgeschlossenen Simulationsläufe in diesem Projekt verfügbar. Lokale Trace-Dateien können über „Load Trace“ geöffnet werden.</p>}</div>}
           {view === "messages" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} />}
-          {view === "sequence" && <SequenceView events={filtered} model={sequenceModel} selected={selectedEvent} onSelect={selectEvent} />}
+          {view === "sequence" && <SequenceView events={filtered} model={sequenceModel} selected={selectedEvent} onSelect={selectEvent} onClearSelection={clearEventSelection} />}
           {view === "signals" && <SignalView events={filtered} selected={selectedEvent} onSelect={selectEvent} channels={signalChannels} onChannels={setSignalChannels} />}
           {view === "trace" && <TraceTable sessionEvents={events} events={filtered} selected={selectedEvent} onSelect={selectEvent} compact />}
           {view === "findings" && <FindingsTable findings={findings} jobId={traceJob} onContext={finding => { const event = events.find(item => item.id === finding.object || item.message === finding.message); if (event) { setSelectedEvent(event); setView('trace'); } }} />}
@@ -303,7 +311,7 @@ export function TraceAnalysisWorkbench() {
   );
 }
 
-type SelectionProps = { selected: TraceEvent | null; onSelect: (event: TraceEvent) => void };
+type SelectionProps = { selected: TraceEvent | null; onSelect: (event: TraceEvent) => void; onClearSelection?: () => void };
 
 function EventTime({ event, selected, onSelect }: SelectionProps & { event: TraceEvent }) {
   return <button type="button" aria-pressed={selected?.id === event.id} onClick={() => onSelect(event)}>{event.timeKnown ? `${event.timestamp.toFixed(6)} s` : "Zeit unbekannt"}</button>;
@@ -382,7 +390,7 @@ function SequenceView({ events, model: sourceModel, ...selection }: SelectionPro
   const model = sourceModel ? sequenceModelForEventIds(sourceModel, new Set(events.map(event => event.id))) : null;
   const byId = new Map(events.map(event => [event.id, event]));
   if (!model) return <div className="panel trace-sequence"><p>Das gemeinsame Sequenzmodell ist für dieses Trace-Fenster nicht verfügbar.</p></div>;
-  return <div className="panel trace-sequence"><E2ESequenceDiagram model={model} selectedId={selection.selected?.id} onSelect={item => {
+  return <div className="panel trace-sequence"><E2ESequenceDiagram model={model} selectedId={selection.selected?.id ?? null} onClearSelection={selection.onClearSelection} onSelect={item => {
     const event = byId.get(item.id);
     if (event) selection.onSelect(event);
   }} /></div>;

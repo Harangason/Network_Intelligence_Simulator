@@ -1467,7 +1467,7 @@ function singularControllerHardwareNames(line: string): Array<{ name: string; de
 function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
   const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
-  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|steuern|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
+  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|misst|steuern|steuert|regeln|regelt|schließen|schliessen|schließt|schliesst|überwachen|ueberwachen|überwacht|ueberwacht|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
   const result: Array<{ name: string; declaredType: string }> = [];
   for (const match of line.matchAll(roles)) {
     const prefix = line.slice(0, match.index);
@@ -1567,6 +1567,10 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
   const key = normalized(line);
   const names: string[] = [];
   if (/\b(?:raspberry|rasberry|rasperry|respary)\s*pi\b|\braspi\b/.test(key)) names.push('RaspberryPi');
+  // A singular ECU is a stated participant even when it has no model name.
+  // Keep its generic identity; never substitute a Raspberry Pi for it.
+  if (/\b(?:1|ein(?:e|en|em|er|es)?)\s+ecu\b(?!\s+(?:namens|named|:))/.test(key)
+      && !declaredHardwareNames(line).some(item => isEngineeringControllerDevice(item.declaredType))) names.push('ECU');
   if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?(?:plc|sps)$/.test(key)) names.push('PLC');
   const plcControllerCount = key.match(new RegExp(`^${COUNT_TOKEN}\\s+(?:plc|sps)(?:\\s*[/+-]?\\s*controller)?s?$`));
   if (plcControllerCount) {
@@ -1635,9 +1639,13 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
     for (let i = 1; i <= Math.min(1000, countValue(safetyActuatorCount[1])); i++) names.push(`SafetyAktor${i}`);
   }
   const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:(?:pwm|proportional)[-\\s]*)?(?:ventilaktor(?:en)?|ventil(?:e|en)?|valves?)\\b`));
+  const singularValveActuator = /\b(?:1|ein(?:e|en|em|er|es)?)\s+(?:aktor|aktuator|actuator)\b[^.!?]{0,100}\bventil(?:s)?\b/.test(key);
   if (valveCount) {
     for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
-  } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
+  } else if (singularValveActuator) {
+    names.push('Ventilaktor1');
+  } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key)
+      && Number.isSafeInteger(confirmedActuators) && confirmedActuators! > 0) {
     for (let i = 1; i <= Math.min(1000, confirmedActuators!); i++) names.push(`Ventilaktor${i}`);
   }
   if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {

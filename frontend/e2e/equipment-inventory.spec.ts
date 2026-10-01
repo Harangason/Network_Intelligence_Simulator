@@ -1,6 +1,39 @@
 import { test, expect } from 'playwright/test';
 import { randomUUID } from 'node:crypto';
 
+test('proportional valve actuator and unsubmitted description survive wizard reload', async ({ page }) => {
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-proportional-${randomUUID()}`);
+  const dialog = page.locator('.engineering-agent-wizard-dialog');
+  const request = 'ein Sensor misst Temperatur, eine ECU regelt und ein Aktor zum proportional schließen eines Ventil mit I2C';
+  await dialog.locator('#engineering-project-name').fill('Proportionalventil');
+  await expect(dialog.getByText(/Projektname im Projektkontext übernommen/)).toBeVisible();
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill(request);
+  await page.reload();
+  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue(request);
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  await expect(dialog.getByRole('row', { name: /Aktoren Konkrete Geräte 1 Verbindlich 1/ })).toBeVisible();
+  await expect(dialog.getByRole('region', { name: 'Intelligente Systemcluster' }).getByRole('listitem').filter({ hasText: 'Ventilaktor1' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Geprüfte Entwurfsvorschläge übernehmen' }).click();
+  await expect(dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true })).toHaveValue('POSITION');
+});
+
+test('generic ECU and reviewed I2C choices survive returning to the project description', async ({ page }) => {
+  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-ecu-${randomUUID()}`);
+  const dialog = page.locator('.engineering-agent-wizard-dialog');
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await dialog.locator('#engineering-project-name').fill('Temperatur und Ventil');
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen');
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  await expect(dialog.getByRole('row', { name: /Controller Konkrete Geräte 1 Verbindlich 1/ })).toBeVisible();
+  await expect(dialog.getByRole('region', { name: 'Controller ergänzen', exact: true })).toHaveCount(0);
+  await dialog.getByLabel('ECU: Anschluss', { exact: true }).selectOption('I2C');
+  await dialog.getByTitle('Projektname', { exact: true }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen');
+  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('ein sensor temperatur misst, eine ECU steuert ein Ventil');
+  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+  await expect(dialog.getByLabel('ECU: Anschluss', { exact: true })).toHaveValue('I2C');
+});
+
 test('generic sensors expose separate measurement and connection choices without losing slot identity', async ({ page }) => {
   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-measurement-${randomUUID()}`);
   const dialog = page.locator('.engineering-agent-wizard-dialog');
@@ -46,7 +79,7 @@ test('temperature purpose inventory permits review without a spurious controller
     await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
   }
   await dialog.getByTitle('Projektname', { exact: true }).click();
-  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue(/- Sensor-Messgrößen: \{"Temperatursensor1":"temperature","Temperatursensor2":"temperature","Temperatursensor3":"temperature","Temperatursensor4":"temperature"\}/);
+  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi');
   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
   await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
