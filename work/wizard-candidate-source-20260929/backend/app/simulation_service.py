@@ -1,0 +1,427 @@
+"""Adapter between HTTP payloads and the existing simulator API."""
+
+from __future__ import annotations
+
+import copy
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+from .config import SIMULATOR_ROOT
+
+
+if str(SIMULATOR_ROOT) not in sys.path:
+    sys.path.insert(0, str(SIMULATOR_ROOT))
+
+from bus_technologies import DEFAULT_TECHNOLOGY_REGISTRY  # noqa: E402
+try:  # package import in API/tests; fallback keeps the standalone backend entry point working
+    from ..communication.technologies import (
+        DEFAULT_TECHNOLOGY_REGISTRY as COMMUNICATION_TECHNOLOGY_REGISTRY,
+        MODEL_TYPES,
+    )
+except ImportError:  # pragma: no cover - exercised by the standalone launcher
+    from communication.technologies import (  # type: ignore[no-redef]
+        DEFAULT_TECHNOLOGY_REGISTRY as COMMUNICATION_TECHNOLOGY_REGISTRY,
+        MODEL_TYPES,
+    )
+from communication_simulator import CommunicationSimulator  # noqa: E402
+from simulation_cancellation import check_cancellation  # noqa: E402
+from standalone_cli import (  # noqa: E402
+    DOMAIN_LABELS,
+    SUPPORTED_STANDALONE_FORMATS,
+    StandaloneSimulationOptions,
+    domain_for_technology,
+)
+
+from .runtime_analysis import RuntimeBusLoadMonitor
+
+
+DEFAULT_WORKFLOW_EVENT_LIMIT = 100_000
+
+
+def _validate_explicit_physical_realizations(config: dict[str, Any]) -> None:
+    realizations = list(config.get("physical_realizations") or [])
+    realizations.extend((config.get("parameters") or {}).get("physical_realizations") or [])
+    for edge in (config.get("topology") or {}).get("edges") or []:
+        if isinstance(edge, dict) and isinstance(edge.get("physicalRealization"), dict):
+            realizations.append({**edge["physicalRealization"],
+                "connection_id": edge.get("id"), "technology_id": edge.get("bus")})
+    for realization in realizations:
+        if not isinstance(realization, dict):
+            raise ValueError("Physische Realisierung muss ein Objekt sein.")
+        result = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_physical_realization(realization)
+        if result["status"] != "VALID":
+            detail = "; ".join(item["code"] for item in result["findings"])
+            raise ValueError(f"Physical-Realization-Validierung fehlgeschlagen: {detail}")
+
+
+def _workflow_event_limit() -> int:
+    raw = os.environ.get("WORKFLOW_EVENT_LIMIT", str(DEFAULT_WORKFLOW_EVENT_LIMIT)).strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        value = DEFAULT_WORKFLOW_EVENT_LIMIT
+    return min(10_000_000, max(1, value))
+
+
+class SimulationService:
+    def __init__(self) -> None:
+        self.simulator = CommunicationSimulator()
+        self.runtime_load_monitor = RuntimeBusLoadMonitor()
+
+    def catalog(self) -> dict[str, Any]:
+        profiles = {profile["id"]: profile for profile in COMMUNICATION_TECHNOLOGY_REGISTRY.profiles()}
+        domains: list[dict[str, Any]] = []
+        for model_type in MODEL_TYPES:
+            selected_ids = list(model_type.get("recommended_technologies") or [
+                technology_id for technology_id, profile in profiles.items() if profile["domain"] == model_type["id"]
+            ])
+            # Recommendations control order, not catalog visibility. Every
+            # registered technology must expose its evidence status in its
+            # owning domain, including profiles without a sizing model.
+            selected_ids.extend(
+                technology_id for technology_id, profile in profiles.items()
+                if profile["domain"] == model_type["id"]
+                and technology_id not in selected_ids
+            )
+            technologies = []
+            for technology_id in selected_ids:
+                if technology_id not in profiles:
+                    continue
+                technology = copy.deepcopy(profiles[technology_id])
+                technology.setdefault("kind", "protocol" if technology["layer"] in {"NETWORK", "TRANSPORT", "APPLICATION", "INDUSTRY_PROFILE"} else "network")
+                technology.setdefault("family", technology["domain"])
+                technology.setdefault("medium", technology["hardware_interface"])
+                technology.setdefault("topology", "technology_specific")
+                technology.setdefault("native_formats", [])
+                technology["parameter_schema"] = self._parameter_schema(technology_id, technology)
+                technologies.append(technology)
+            domains.append({**copy.deepcopy(model_type), "technologies": technologies})
+        return {
+            "technology_count": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["technology_count"],
+            "domains": domains,
+            "formats": sorted(SUPPORTED_STANDALONE_FORMATS),
+            "layers": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["layers"],
+            "implementation_status": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["implementation_status"],
+            "core_model_types": ["HardwareNode", "HardwareInterface", "FunctionalInterface", "TechnologyBinding", "TransportUnit", "PayloadElement"],
+        }
+
+    @staticmethod
+    def _parameter_schema(technology_id: str, technology: dict[str, Any]) -> list[dict[str, Any]]:
+        """Describe editable parameters so the UI does not hard-code technology forms."""
+        maximum_payload = int(technology.get("max_payload_bytes") or 65_535)
+
+        def field(
+            key: str,
+            label: str,
+            category: str,
+            scope: str,
+            *,
+            field_type: str = "number",
+            unit: str | None = None,
+            default: Any = None,
+            minimum: float | None = None,
+            maximum: float | None = None,
+            options: list[str] | None = None,
+            description: str = "",
+            simulation_relevant: bool = True,
+            validation_relevant: bool = True,
+        ) -> dict[str, Any]:
+            item: dict[str, Any] = {
+                "key": key,
+                "label": label,
+                "category": category,
+                "scope": scope,
+                "type": field_type,
+                "description": description,
+                "required": True,
+                "editable": True,
+                "simulation_relevant": simulation_relevant,
+                "validation_relevant": validation_relevant,
+            }
+            if default is not None:
+                item["default"] = default
+            if unit:
+                item["unit"] = unit
+            if minimum is not None:
+                item["min"] = minimum
+            if maximum is not None:
+                item["max"] = maximum
+            if options:
+                item["options"] = options
+            return item
+
+        rate_model = technology.get("rate_model") or {}
+        rate_source = technology
+        inherited_rate = False
+        if not rate_model.get("fields"):
+            # Application protocols such as SOME/IP have no physical link rate
+            # of their own. Their explicit stack still needs the data-link
+            # rate so validation and capacity use the Ethernet realization.
+            from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+
+            for stack_id in technology.get("default_stack") or ():
+                stack_profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(stack_id)
+                stack_rate = stack_profile.get("rate_model") or {}
+                if stack_rate.get("fields"):
+                    rate_source = stack_profile
+                    rate_model = stack_rate
+                    inherited_rate = stack_id != technology_id
+                    break
+        rate_type = rate_model.get("type")
+        rate_fields: list[dict[str, Any]] = []
+        if rate_type in {"SINGLE_BITRATE", "ETHERNET_LINK_RATE", "FIXED_LINK_RATE"}:
+            label = "Ethernet Link Speed" if inherited_rate else (
+                "Link Speed" if rate_type in {"ETHERNET_LINK_RATE", "FIXED_LINK_RATE"} else "Bitrate"
+            )
+            rate_fields.append(field(
+                "bitrate", label, "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                default=rate_model.get("fixed_bps") or rate_source.get("default_bitrate") or 1,
+                description=("Inherited physical link rate from the declared technology stack."
+                             if inherited_rate else "Technology-profiled network rate."),
+            ))
+        elif rate_type == "MULTI_PHASE_BITRATE":
+            defaults = rate_model.get("defaults_bps") or {}
+            rate_fields.extend([
+                field("arbitration_bitrate", "Nominal Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("nominal_maximum_bps"), default=defaults.get("nominal_bitrate_bps", 500_000)),
+                field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("data_maximum_bps"), default=defaults.get("data_bitrate_bps", technology.get("default_bitrate") or 2_000_000)),
+            ])
+        elif rate_type == "I2C_CONFIRMED_CLOCK":
+            rate_fields.append(field(
+                "bitrate", "I²C Bus Clock", "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                description="Controller mode and confirmed bus clock are required; no unreviewed rate is assumed.",
+            ))
+        elif rate_type == "DEVICE_DEPENDENT_CLOCK":
+            rate_fields.append(field(
+                "bitrate", "SPI Device Clock", "physical", "network", unit="bit/s",
+                minimum=rate_model.get("minimum_bps", 1),
+                maximum=rate_model.get("maximum_bps"),
+                description="The connected device datasheet must supply the clock limit; no profile default is assumed.",
+            ))
+        fields: list[dict[str, Any]] = [
+            *rate_fields,
+            field("payload_bytes", "Payload", "physical", "message", unit="Byte", minimum=0, maximum=maximum_payload, default=min(8, maximum_payload), description="Nutzdaten pro Nachricht."),
+            field("cycle_ms", "Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=100, description="Standardperiode fuer zyklische Nachrichten."),
+            field("minimum_cycle_time_ms", "Minimum Cycle Time", "timing", "message", unit="ms", minimum=0.001, default=1),
+            field("deadline_ms", "Deadline", "timing", "message", unit="ms", minimum=0.001, default=100),
+            field("timeout_ms", "Timeout", "timing", "route", unit="ms", minimum=0.001, default=500),
+            field("maximum_latency_ms", "Maximum Latency", "timing", "route", unit="ms", minimum=0, default=100),
+            field("jitter_ms", "Jitter Budget", "timing", "route", unit="ms", minimum=0, default=1),
+            field("freshness_ms", "Data Freshness", "timing", "signal", unit="ms", minimum=0, default=500),
+            field("source_processing_delay_ms", "Source Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
+            field("target_processing_delay_ms", "Target Processing", "timing", "route", unit="ms", minimum=0, default=0.1),
+            field("propagation_delay_ms", "Propagation", "timing", "network", unit="ms", minimum=0, default=0.01),
+            field("target_bus_load_percent", "Ziel-Buslast", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=60, description="Zielwert fuer die aus Routing, Payload, Zyklus und Bitrate berechnete Buslast.", simulation_relevant=False),
+            field("peak_factor", "Peak Factor", "capacity", "analysis", minimum=1, default=1.15, simulation_relevant=False),
+            field("burst_factor", "Burst Factor", "capacity", "analysis", minimum=1, default=1.5, simulation_relevant=False),
+            field("burst_window_ms", "Burst Window", "capacity", "analysis", unit="ms", minimum=0.1, default=100, simulation_relevant=False),
+            field("warning_threshold", "Load Warning", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=60, simulation_relevant=False),
+            field("critical_threshold", "Load Critical", "capacity", "analysis", unit="%", minimum=0, maximum=100, default=75, simulation_relevant=False),
+            field("overload_threshold", "Load Overload", "capacity", "analysis", unit="%", minimum=1, maximum=100, default=90, simulation_relevant=False),
+            field("queue_size", "Queue Size", "qos", "network", unit="Frames", minimum=1, default=256),
+            field("queue_policy", "Queue Policy", "qos", "network", field_type="select", default="FIFO", options=["FIFO", "PRIORITY", "STRICT_PRIORITY", "WEIGHTED_PRIORITY", "WRR", "ROUND_ROBIN", "TIME_TRIGGERED", "TAS", "CBS", "CUSTOM"]),
+            field("qos_priority", "Default Priority", "qos", "route", minimum=0, maximum=7, default=3),
+            field("traffic_class", "Traffic Class", "qos", "route", field_type="select", default="BEST_EFFORT", options=["BEST_EFFORT", "CONTROL", "REALTIME", "SAFETY_CRITICAL"]),
+            field("reserved_bandwidth_percent", "Reserved Bandwidth", "qos", "network", unit="%", minimum=0, maximum=100, default=0),
+            field("packet_loss_probability", "Packet Loss", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("frame_loss_probability", "Frame Loss", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("bit_error_rate", "Bit Error Rate", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("corruption_probability", "Corruption", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("duplicate_probability", "Duplication", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("reordering_probability", "Reordering", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("retransmission_enabled", "Retransmission", "reliability", "reliability", field_type="boolean", default=False),
+            field("retransmission_rate", "Retransmission Rate", "reliability", "reliability", minimum=0, maximum=1, default=0),
+            field("retry_limit", "Retry Limit", "reliability", "reliability", minimum=0, default=0),
+            field("retransmission_delay_ms", "Retry Delay", "reliability", "reliability", unit="ms", minimum=0, default=0),
+            field("required_reliability", "Required Reliability", "reliability", "reliability", minimum=0, maximum=1, default=0.999),
+            field("clock_offset_ms", "Clock Offset", "synchronization", "network", unit="ms", default=0),
+            field("clock_drift_ppm", "Clock Drift", "synchronization", "network", unit="ppm", minimum=0, default=20),
+            field("sync_precision_ms", "Sync Precision", "synchronization", "network", unit="ms", minimum=0, default=0.1),
+            field("sync_interval_ms", "Sync Interval", "synchronization", "network", unit="ms", minimum=0.001, default=1000),
+            field("sync_method", "Sync Method", "synchronization", "network", field_type="select", default="NONE", options=["NONE", "NTP", "PTP", "GPTP", "BUS_NATIVE"]),
+            field("maximum_sync_error_ms", "Maximum Sync Error", "synchronization", "network", unit="ms", minimum=0, default=1),
+            field("gateway_delay_ms", "Gateway Processing", "gateway", "gateway", unit="ms", minimum=0, default=0.2),
+            field("gateway_queue_delay_ms", "Gateway Queueing", "gateway", "gateway", unit="ms", minimum=0, default=0),
+            field("protocol_conversion_delay_ms", "Protocol Conversion", "gateway", "gateway", unit="ms", minimum=0, default=0),
+            field("gateway_maximum_throughput", "Gateway Throughput", "gateway", "gateway", unit="bit/s", minimum=1, default=100_000_000),
+            field("gateway_input_buffer", "Gateway Input Buffer", "gateway", "gateway", unit="Frames", minimum=1, default=256),
+            field("gateway_output_buffer", "Gateway Output Buffer", "gateway", "gateway", unit="Frames", minimum=1, default=256),
+            field("gateway_maximum_routes", "Gateway Maximum Routes", "gateway", "gateway", minimum=1, default=10_000),
+            field("gateway_maximum_messages_s", "Gateway Messages per Second", "gateway", "gateway", unit="msg/s", minimum=1, default=100_000),
+            field("duration_s", "Simulation Duration", "simulation", "simulation", unit="s", minimum=0.001, default=1, validation_relevant=False),
+            field("seed", "Random Seed", "simulation", "simulation", minimum=0, default=42, validation_relevant=False),
+            field("max_events", "Maximum Events", "simulation", "simulation", minimum=1, default=100_000, validation_relevant=False),
+            field("dropout_probability", "Failure Injection Dropout", "simulation", "simulation", minimum=0, maximum=1, default=0, validation_relevant=False),
+        ]
+        normalized = technology_id.lower()
+        if normalized in {"can_fd", "can_xl"}:
+            fields.append(field("sample_point_percent", "Sample Point", "physical", "network", unit="%", minimum=50, maximum=99.9, default=80))
+        if "ethernet" in normalized or normalized in {"someip", "udp", "tcp", "dds_rtps"}:
+            fields.extend(
+                [
+                    field("mtu_bytes", "MTU", "physical", "network", unit="Byte", minimum=64, maximum=65_535, default=1500),
+                    field("duplex", "Duplex", "physical", "network", field_type="select", default="FULL", options=["FULL", "HALF"]),
+                    field("vlan_id", "VLAN ID", "qos", "network", minimum=0, maximum=4094, default=0),
+                    field("rate_limit_bit_s", "Rate Limit", "qos", "route", unit="bit/s", minimum=0, default=0),
+                ]
+            )
+        if normalized in {"dds", "dds_rtps", "ros2"}:
+            fields.extend(
+                [
+                    field("history_depth", "History Depth", "qos", "route", minimum=1, default=10),
+                    field("history_kind", "History", "qos", "route", field_type="select", default="KEEP_LAST", options=["KEEP_LAST", "KEEP_ALL"]),
+                    field("durability", "Durability", "qos", "route", field_type="select", default="VOLATILE", options=["VOLATILE", "TRANSIENT_LOCAL", "TRANSIENT", "PERSISTENT"]),
+                    field("lifespan_ms", "Lifespan", "timing", "message", unit="ms", minimum=0, default=0),
+                    field("liveliness", "Liveliness", "qos", "route", field_type="select", default="AUTOMATIC", options=["AUTOMATIC", "MANUAL_BY_PARTICIPANT", "MANUAL_BY_TOPIC"]),
+                    field("reliability_mode", "Reliability Mode", "reliability", "route", field_type="select", default="RELIABLE", options=["BEST_EFFORT", "RELIABLE"]),
+                ]
+            )
+        if "ethercat" in normalized:
+            fields.append(field("distributed_clock_cycle_ms", "Distributed Clock Cycle", "synchronization", "network", unit="ms", minimum=0.001, default=1))
+        return fields
+
+    def prepare_config(self, payload: dict[str, Any], output_dir: Path) -> dict[str, Any]:
+        if not isinstance(payload, dict):
+            raise TypeError("Die Simulationsanfrage muss ein JSON-Objekt sein.")
+        if isinstance(payload.get("config"), dict):
+            config = copy.deepcopy(payload["config"])
+            for key in (
+                "project_id", "scenario", "duration_s", "seed", "formats", "max_events",
+                "model_trace_frame_limit", "model_trace_signal_point_limit", "model_trace_points_per_signal",
+                "model_trace_event_limit", "golden_trace_event_limit",
+                "restbus_session",
+                "dropout_probability", "corruption_probability", "duplicate_probability",
+                "reordering_probability",
+            ):
+                if key in payload:
+                    config[key] = copy.deepcopy(payload[key])
+            if payload.get("workflow_managed"):
+                try:
+                    requested_events = int(config.get("max_events") or DEFAULT_WORKFLOW_EVENT_LIMIT)
+                except (TypeError, ValueError):
+                    requested_events = DEFAULT_WORKFLOW_EVENT_LIMIT
+                config["max_events"] = min(max(1, requested_events), _workflow_event_limit())
+            config["output_dir"] = str(output_dir)
+            _validate_explicit_physical_realizations(config)
+            return config
+
+        technology_id = str(payload.get("technology") or "can_fd")
+        technology = DEFAULT_TECHNOLOGY_REGISTRY.resolve(technology_id)
+        if technology.get("requires_profile"):
+            raise ValueError(f"Unbekannte Technologie: {technology_id}")
+
+        formats_value = payload.get("formats") or ["universal-jsonl", "universal-csv"]
+        if isinstance(formats_value, str):
+            formats = tuple(
+                token for token in re.split(r"[\s,;]+", formats_value.lower()) if token
+            )
+        else:
+            formats = tuple(str(item).strip().lower() for item in formats_value if str(item).strip())
+        unknown_formats = sorted(set(formats) - SUPPORTED_STANDALONE_FORMATS)
+        if unknown_formats:
+            raise ValueError(f"Unbekannte Ausgabeformate: {', '.join(unknown_formats)}")
+
+        options = StandaloneSimulationOptions(
+            technology=technology["id"],
+            industry=str(payload.get("industry") or domain_for_technology(technology["id"])),
+            output_dir=output_dir,
+            formats=formats,
+            duration_s=float(payload.get("duration_s", 1.0)),
+            seed=int(payload.get("seed", 42)),
+            node_count=int(payload.get("node_count", 2)),
+            bitrate=payload.get("bitrate", payload.get("bitrate_bps")),
+            arbitration_bitrate=payload.get("arbitration_bitrate", payload.get("nominal_bitrate_bps")),
+            data_bitrate=payload.get("data_bitrate", payload.get("data_bitrate_bps")),
+            cycle_ms=float(payload.get("cycle_ms", 100.0)),
+            payload_bytes=int(payload.get("payload_bytes", min(8, int(technology.get("max_payload_bytes") or 8)))),
+            max_events=int(payload.get("max_events", 100_000)),
+            dropout_probability=float(payload.get("dropout_probability", 0.0)),
+            corruption_probability=float(payload.get("corruption_probability", 0.0)),
+            network_id=str(payload["network_id"]) if payload.get("network_id") else None,
+        )
+        communication_profile = COMMUNICATION_TECHNOLOGY_REGISTRY.profile(technology_id)
+        rate_model = communication_profile.get("rate_model") or {}
+        rate_fields = rate_model.get("fields") or []
+        rate_parameters = {key: payload[key] for key in
+            ("bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps") if key in payload}
+        if options.bitrate is not None:
+            field = "nominal_bitrate_bps" if "nominal_bitrate_bps" in rate_fields else "bitrate_bps"
+            rate_parameters.setdefault(field, options.bitrate)
+        if options.arbitration_bitrate is not None:
+            rate_parameters["nominal_bitrate_bps"] = options.arbitration_bitrate
+        if options.data_bitrate is not None:
+            rate_parameters["data_bitrate_bps"] = options.data_bitrate
+        validation = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_parameters(technology_id, rate_parameters)
+        if validation["status"] != "VALID":
+            detail = "; ".join(item["message"] for item in validation["findings"])
+            raise ValueError(f"Technology-Validierung fehlgeschlagen: {detail}")
+        self._validate_options(options, technology)
+        config = options.to_config()
+        if payload.get("physical_realizations") is not None:
+            config["physical_realizations"] = copy.deepcopy(payload["physical_realizations"])
+        _validate_explicit_physical_realizations(config)
+        return config
+
+    @staticmethod
+    def _validate_options(
+        options: StandaloneSimulationOptions,
+        technology: dict[str, Any],
+    ) -> None:
+        if not 2 <= options.node_count <= 100:
+            raise ValueError("node_count muss zwischen 2 und 100 liegen.")
+        if options.duration_s <= 0 or options.cycle_ms <= 0:
+            raise ValueError("Dauer und Zyklus müssen größer als 0 sein.")
+        if not 1 <= options.max_events <= 10_000_000:
+            raise ValueError("max_events muss zwischen 1 und 10.000.000 liegen.")
+        if options.bitrate is not None and options.bitrate < 1:
+            raise ValueError("Die Bitrate muss mindestens 1 bit/s betragen.")
+        payload_limit = int(technology.get("max_payload_bytes") or 65_535)
+        if not 0 <= options.payload_bytes <= payload_limit:
+            raise ValueError(f"payload_bytes muss zwischen 0 und {payload_limit} liegen.")
+        for label, value in (
+            ("dropout_probability", options.dropout_probability),
+            ("corruption_probability", options.corruption_probability),
+        ):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{label} muss zwischen 0 und 1 liegen.")
+
+    def run(
+        self,
+        payload: dict[str, Any],
+        output_dir: Path,
+        *,
+        validate_only: bool = False,
+    ) -> dict[str, Any]:
+        check_cancellation(force=True)
+        config = self.prepare_config(payload, output_dir)
+        project_id = str(payload.get("project_id") or config.get("project_id") or "default")
+        if payload.get("workflow_managed") or project_id != "default":
+            from ..engineering.simulation import enrich_simulation_config, validate_scenario
+
+            frozen_model = config.get("engineering_model") if payload.get("workflow_snapshot_id") else None
+            config = enrich_simulation_config(config, project_id, model=frozen_model)
+            config["scenario"] = validate_scenario(
+                config.get("scenario") if isinstance(config.get("scenario"), dict) else {},
+                config.get("engineering_model") if isinstance(config.get("engineering_model"), dict) else {},
+            )
+        check_cancellation(force=True)
+        result = self.simulator.run(config, validate_only=validate_only)
+        check_cancellation(force=True)
+        if not validate_only:
+            if result.get("status") == "validation_failed" or (result.get("hardware_validation") or {}).get("valid") is False:
+                findings = (result.get("hardware_validation") or {}).get("findings") or []
+                details = "; ".join(str(item.get("message")) for item in findings if item.get("severity") == "error")
+                raise ValueError("Hardware-Validierung fehlgeschlagen: " + (details or "kein ausführbarer Simulationslauf"))
+            result["runtime_metrics"] = self.runtime_load_monitor.analyze(result, config)
+            check_cancellation(force=True)
+            if payload.get("workflow_managed") or project_id != "default":
+                from ..engineering.simulation import artifact_job_id, persist_trace_metadata
+
+                persist_trace_metadata(project_id, str(payload.get('simulation_job_id') or artifact_job_id(output_dir)), result, config)
+        return result

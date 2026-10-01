@@ -1,0 +1,33 @@
+--- before/backend/tests/test_physical_profiles.py
++++ after/backend/tests/test_physical_profiles.py
+@@ -52,7 +52,7 @@
+     assert registry.validate_physical_realization(t1)["status"] == "VALID"
+     wrong = registry.validate_physical_realization({**t1, "pair_count": 4})
+     assert "PHYSICAL_PAIR_COUNT_MISMATCH" in codes(wrong)
+-    shared = registry.validate_physical_realization({**t1, "phy_variant": "10BASE_T1S", "topology": "BUS"})
++    shared = registry.validate_physical_realization({**t1, "phy_variant": "10BASE_T1S", "topology": "BUS",'plca_enabled':True})
+     assert shared["status"] == "VALID"
+     assert shared["resolved_medium_access_model"] == "PLCA"
+     assert "PHYSICAL_TOPOLOGY_INVALID" in codes(registry.validate_physical_realization({**t1,
+@@ -65,6 +65,21 @@
+             "physical_realizations": [{"technology_id": "ethernet", "phy_variant": "100BASE_T1",
+                 "pair_count": 4, "topology": "POINT_TO_POINT"}],
+         }}, tmp_path)
++
++
++def test_ethernet_unknown_plca_and_duplex_do_not_become_full_duplex_proofs():
++    shared={'technology_id':'ethernet','phy_variant':'10BASE_T1S','pair_count':1,'topology':'BUS'}
++    missing=registry.validate_physical_realization(shared)
++    assert missing['status']=='REVIEW_REQUIRED' and 'ETHERNET_ACCESS_UNKNOWN' in codes(missing)
++    cd=registry.validate_physical_realization({**shared,'plca_enabled':False})
++    assert cd['status']=='VALID' and cd['resolved_medium_access_model']=='CSMA_CD'
++    assert registry.validate_physical_realization({**shared,'duplex':'FULL'})['status']=='INVALID'
++    copper={'technology_id':'ethernet','phy_variant':'100BASE_TX','pair_count':2,'topology':'POINT_TO_POINT'}
++    assert registry.validate_physical_realization(copper)['status']=='REVIEW_REQUIRED'
++    assert registry.validate_physical_realization({**copper,'duplex':'HALF'})['resolved_medium_access_model']=='CSMA_CD'
++    multi={**copper,'phy_variant':'5GBASE_T','pair_count':4,'duplex':'FULL'}
++    assert registry.validate_physical_realization(multi)['status']=='VALID'
++    assert registry.validate_physical_realization({**multi,'duplex':'HALF'})['status']=='INVALID'
+ 
+ 
+ def test_preflight_exposes_phy_blocker_in_unified_result(monkeypatch):

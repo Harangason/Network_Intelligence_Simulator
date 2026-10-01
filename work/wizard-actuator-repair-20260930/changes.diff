@@ -1,0 +1,273 @@
+diff --git a/frontend/e2e/equipment-inventory.spec.ts b/frontend/e2e/equipment-inventory.spec.ts
+index cb726e58..9fd3d619 100644
+--- a/frontend/e2e/equipment-inventory.spec.ts
++++ b/frontend/e2e/equipment-inventory.spec.ts
+@@ -1,6 +1,39 @@
+ import { test, expect } from 'playwright/test';
+ import { randomUUID } from 'node:crypto';
+ 
++test('proportional valve actuator and unsubmitted description survive wizard reload', async ({ page }) => {
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-proportional-${randomUUID()}`);
++  const dialog = page.locator('.engineering-agent-wizard-dialog');
++  const request = 'ein Sensor misst Temperatur, eine ECU regelt und ein Aktor zum proportional schließen eines Ventil mit I2C';
++  await dialog.locator('#engineering-project-name').fill('Proportionalventil');
++  await expect(dialog.getByText(/Projektname im Projektkontext übernommen/)).toBeVisible();
++  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill(request);
++  await page.reload();
++  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue(request);
++  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
++  await expect(dialog.getByRole('row', { name: /Aktoren Konkrete Geräte 1 Verbindlich 1/ })).toBeVisible();
++  await expect(dialog.getByRole('region', { name: 'Intelligente Systemcluster' }).getByRole('listitem').filter({ hasText: 'Ventilaktor1' })).toBeVisible();
++  await dialog.getByRole('button', { name: 'Geprüfte Entwurfsvorschläge übernehmen' }).click();
++  await expect(dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true })).toHaveValue('POSITION');
++});
++
++test('generic ECU and reviewed I2C choices survive returning to the project description', async ({ page }) => {
++  await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-ecu-${randomUUID()}`);
++  const dialog = page.locator('.engineering-agent-wizard-dialog');
++  await dialog.getByTitle('Projektname', { exact: true }).click();
++  await dialog.locator('#engineering-project-name').fill('Temperatur und Ventil');
++  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen');
++  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
++  await expect(dialog.getByRole('row', { name: /Controller Konkrete Geräte 1 Verbindlich 1/ })).toBeVisible();
++  await expect(dialog.getByRole('region', { name: 'Controller ergänzen', exact: true })).toHaveCount(0);
++  await dialog.getByLabel('ECU: Anschluss', { exact: true }).selectOption('I2C');
++  await dialog.getByTitle('Projektname', { exact: true }).click();
++  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen');
++  await dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true }).fill('ein sensor temperatur misst, eine ECU steuert ein Ventil');
++  await dialog.getByTitle('Geräteumfang', { exact: true }).click();
++  await expect(dialog.getByLabel('ECU: Anschluss', { exact: true })).toHaveValue('I2C');
++});
++
+ test('generic sensors expose separate measurement and connection choices without losing slot identity', async ({ page }) => {
+   await page.goto(`/studio/engineering?assistant=project&project=nis-e2e-measurement-${randomUUID()}`);
+   const dialog = page.locator('.engineering-agent-wizard-dialog');
+@@ -46,7 +79,7 @@ test('temperature purpose inventory permits review without a spurious controller
+     await dialog.getByLabel(`${name}: Anschluss`, { exact: true }).selectOption('I2C');
+   }
+   await dialog.getByTitle('Projektname', { exact: true }).click();
+-  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue(/- Sensor-Messgrößen: \{"Temperatursensor1":"temperature","Temperatursensor2":"temperature","Temperatursensor3":"temperature","Temperatursensor4":"temperature"\}/);
++  await expect(dialog.getByRole('textbox', { name: 'Projektbeschreibung', exact: true })).toHaveValue('2 Aktoren für Ventile, 4 Sensoren für Temperaturen, und ein RaspberryPi');
+   await dialog.getByTitle('Geräteumfang', { exact: true }).click();
+   await expect(dialog.getByRole('button', { name: 'Übernehmen', exact: true })).toBeDisabled();
+   await dialog.getByLabel('Ventilaktor1: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
+diff --git a/frontend/src/components/agent-chat-core.tsx b/frontend/src/components/agent-chat-core.tsx
+index 27e31800..7bbf8571 100644
+--- a/frontend/src/components/agent-chat-core.tsx
++++ b/frontend/src/components/agent-chat-core.tsx
+@@ -30,7 +30,7 @@ import {
+   saveEngineeringAgentHistory,
+ } from "@/lib/agent-chat-history";
+ import { uniqueMessagesById } from "@/lib/agent-message-history";
+-import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
++import { agentBuildProgressPercent, agentRunHasDurableOutcome, agentRunIsActive, agentReviewStep, readAgentRunStatus, resolveAgentRunStep, wizardCanReturnToQuestionnaire, wizardRunCanRetry, wizardRunNeedsAutomaticRecovery } from "@/lib/agent-run-status";
+ import { requestWizardCancellation } from "@/lib/wizard-cancellation";
+ import { parameterProgressTarget, parametersAreWorking, symbolicProgressAt, wizardAnalysisHeading } from "@/lib/wizard-progress";
+ import { canonicalCommunicationSystem, engineeringDomainEvidence, engineeringGenerationMode, extractEngineeringSpecification, extractNetworkArchitectureMode, isEngineeringControllerDevice, type EngineeringHardwareCounts } from "@/lib/agent/engineering-specification";
+@@ -1434,6 +1434,15 @@ export function EngineeringAgentWizard({
+     };
+   }, [projectId]);
+ 
++  useEffect(() => {
++    if (!wizardPreferencesReady || phase !== 'questionnaire') return;
++    if (taskText.trim()) {
++      window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: taskText }));
++    } else {
++      window.sessionStorage.removeItem(projectIntakeKey(projectId));
++    }
++  }, [phase, projectId, taskText, wizardPreferencesReady]);
++
+   useEffect(() => {
+     if (phase !== 'questionnaire' || manualTechnologyScopeRef.current === `${mode}:${selectedDomain?.id}`) return;
+     const requested = technologyChoices.filter(technology => recognizedEquipment.communicationSystems
+@@ -1599,6 +1608,13 @@ export function EngineeringAgentWizard({
+   const agentPending = transportPending || reviewActionBusy || agentRunIsActive(execution);
+   const executionStopped = !agentPending && (execution?.state === "BLOCKED" || execution?.state === "RUNNING");
+   const displayedStatusError = statusError || statusRefreshError;
++  const canReturnToQuestionnaire = wizardCanReturnToQuestionnaire({
++    phase,
++    busy: submitting || !wizardPreferencesReady || agentPending,
++    executionState: execution?.state,
++    hasVisibleError: Boolean(displayedStatusError),
++    hasBlockingFindings: Boolean(execution?.blocking_findings?.length),
++  });
+   const parameterTool = currentRunMessages.flatMap((message) => message.parts).findLast((part) => (
+     part.type === "tool-configure_workflow_parameters"
+     || (part.type === "dynamic-tool" && part.toolName === "configure_workflow_parameters")
+@@ -1705,6 +1721,10 @@ export function EngineeringAgentWizard({
+   }
+ 
+   async function navigateQuestionnaireStep(index: number) {
++    if (phase === "status") {
++      if (!canReturnToQuestionnaire || index >= questionnaireSteps.length) return;
++      setPhase("questionnaire");
++    }
+     if (index > step && questionnaireSteps[step]?.id === "project" && projectReady) {
+       try {
+         await persistProjectName(projectName, projectNameEditRevisionRef.current);
+@@ -2651,7 +2671,7 @@ export function EngineeringAgentWizard({
+     return proposal ? [{ name: chain.hardware_name, ...proposal }] : [];
+   });
+   const commandProposals = unresolvedCommands.flatMap(name => {
+-    const proposal = proposedActuatorCommand(name);
++    const proposal = proposedActuatorCommand(name, deviceRowByName.get(name)?.chain?.hardware_description ?? '');
+     return proposal ? [{ name, ...proposal }] : [];
+   });
+   const acceptDeviceProposals = () => {
+@@ -2972,7 +2992,7 @@ export function EngineeringAgentWizard({
+             className={index === step ? "active" : ""}
+             disabled={
+               effectiveBusy
+-              || phase === "status"
++              || (phase === "status" && (!canReturnToQuestionnaire || item.id === "status"))
+               || (item.id !== 'status' && index > 0 && !projectReady)
+               || (item.id === "equipment" && !taskReady)
+               || (item.id !== 'status' && index > architectureStepIndex && !architectureReady)
+@@ -3009,18 +3029,22 @@ export function EngineeringAgentWizard({
+           </label>
+           <label className="agent-questionnaire-note">
+             <span>Projektbeschreibung</span>
+-            <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5} value={taskText}
++            <textarea aria-label="Projektbeschreibung" disabled={effectiveBusy} rows={5}
++              value={taskText.replace(/^\s*- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):[^\r\n]*(?:\r?\n|$)/gm, '').trim()}
+               maxLength={intakeRequirement !== null ? 16000 : undefined}
+               placeholder="Was soll dieses Projekt leisten?"
+               onChange={(event) => {
+                 const requirement = event.target.value;
+-                setTaskText(requirement);
++                const reviewedChoices = taskText.split(/\r?\n/).filter(line => /^- (?:Sensor-Messgrößen|Aktor-Befehle|Geräteanschlüsse|Gerätezuordnungen|Geräte-Spezifikationen):/.test(line));
++                const nextTaskText = [requirement.trim(), ...reviewedChoices].filter(Boolean).join('\n');
++                setTaskText(nextTaskText);
++                if (nextTaskText) window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement: nextTaskText }));
++                else window.sessionStorage.removeItem(projectIntakeKey(projectId));
+                 if (intakeRequirement !== null) {
+                   setIntakeRequirement(requirement);
+-                  window.sessionStorage.setItem(projectIntakeKey(projectId), JSON.stringify({ projectId, requirement }));
+                 }
+               }} />
+-            <small>Diese Beschreibung ist zugleich der Aufgabentext für den Agenten. Änderungen auf beiden Seiten werden gemeinsam übernommen.</small>
++            <small>Die Beschreibung bleibt lesbar. Bestätigte Geräteanschlüsse, Messgrößen und Stellbefehle werden getrennt gespeichert und bei Korrekturen beibehalten.</small>
+           </label>
+           <label className="agent-questionnaire-note">
+             <span>Weitere Hinweise</span>
+diff --git a/frontend/src/lib/agent/actuator-commands.test.mjs b/frontend/src/lib/agent/actuator-commands.test.mjs
+index 9680eca0..cbe2466e 100644
+--- a/frontend/src/lib/agent/actuator-commands.test.mjs
++++ b/frontend/src/lib/agent/actuator-commands.test.mjs
+@@ -16,6 +16,8 @@ test('named generic actuator roles use the requested command proposals', () => {
+   assert.equal(proposedActuatorCommand('TelematikStellglied').choice, 'POSITION');
+   assert.equal(proposedActuatorCommand('TelematikStellgliedActuator').choice, 'POSITION');
+   assert.equal(proposedActuatorCommand('Unbekannt'), null);
++  assert.equal(proposedActuatorCommand('Ventilaktor1', 'ein Aktor zum proportional schließen eines Ventil').choice, 'POSITION');
++  assert.equal(proposedActuatorCommand('Ventilaktor1', 'ein Aktor zum Schließen eines Ventil').choice, 'OPEN_CLOSE');
+ });
+ 
+ const valves = ['Ventilaktor1', 'Ventilaktor2'].map(hardware_name => ({ hardware_name, device_type: 'ActuatorController' }));
+diff --git a/frontend/src/lib/agent/actuator-commands.ts b/frontend/src/lib/agent/actuator-commands.ts
+index 1e1acd57..1637c751 100644
+--- a/frontend/src/lib/agent/actuator-commands.ts
++++ b/frontend/src/lib/agent/actuator-commands.ts
+@@ -42,7 +42,9 @@ export function actuatorCommandLabel(role: string, name: string, purpose = ''):
+   return /ventil|valve/i.test(`${name} ${purpose}`) ? 'Ventilbefehl' : 'Aktorbefehl';
+ }
+ 
+-export function proposedActuatorCommand(name: string): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
++export function proposedActuatorCommand(name: string, purpose = ''): { choice: 'OPEN_CLOSE' | 'POSITION'; reason: string } | null {
++  if (/ventil|valve/i.test(name) && /\bproportional\w*\b/i.test(purpose))
++    return { choice: 'POSITION', reason: 'Proportionales Ventil: Stellposition als editierbare Entwurfsvorgabe' };
+   if (/(?:Schaltausgang|SchaltausgangActuator)$/.test(name))
+     return { choice: 'OPEN_CLOSE', reason: 'Schaltausgang: Auf/Zu als editierbare Entwurfsvorgabe' };
+   if (/(?:Stellglied|StellgliedActuator)$/.test(name))
+diff --git a/frontend/src/lib/agent/engineering-specification.test.mjs b/frontend/src/lib/agent/engineering-specification.test.mjs
+index 05262d10..e8d6acdc 100644
+--- a/frontend/src/lib/agent/engineering-specification.test.mjs
++++ b/frontend/src/lib/agent/engineering-specification.test.mjs
+@@ -47,6 +47,36 @@ Die Positionen sollen zyklisch geregelt werden.`;
+   assert.ok(!spec.chains.some(chain => chain.hardware_name === '1'));
+ });
+ 
++test('a singular ECU in the user request remains a concrete generic controller', () => {
++  const task = 'ein sensor temperatur mess , eine ECU, ein Aktor Ventil schließen';
++  const spec = extractEngineeringSpecification(task, {}, 'automotive');
++  assert.equal(spec.targetCounts.ecus, 1);
++  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 1);
++  assert.ok(spec.chains.some(chain => chain.hardware_name === 'ECU' && chain.device_type === 'ECU'));
++  assert.ok(!spec.chains.some(chain => chain.hardware_name === 'RaspberryPi'));
++});
++
++test('a generic ECU followed by its action stays a controller and its valve stays an actuator', () => {
++  const spec = extractEngineeringSpecification('ein sensor temperatur misst, eine ECU steuert ein Ventil', {}, 'custom', true);
++  const devices = new Map(spec.chains.map(chain => [chain.hardware_name, chain.device_type]));
++  assert.equal(devices.get('ECU'), 'ECU');
++  assert.equal(devices.get('Ventilaktor1'), 'ActuatorController');
++  assert.equal(spec.chains.filter(chain => isEngineeringControllerDevice(chain.device_type)).length, 1);
++  assert.equal(spec.chains.filter(chain => chain.device_type === 'ActuatorController').length, 1);
++  assert.equal(devices.has('steuert'), false);
++});
++
++test('a singular valve described as the purpose of an actuator becomes a concrete device', () => {
++  const task = 'ein Sensor misst Temperatur, eine ECU regelt und ein Aktor zum proportional schließen eines Ventil';
++  const spec = extractEngineeringSpecification(task, {}, 'embedded_systems', true);
++  assert.equal(spec.targetCounts.actuators, 1);
++  assert.deepEqual(spec.chains.filter(chain => chain.device_type === 'ActuatorController').map(chain => chain.hardware_name), ['Ventilaktor1']);
++  assert.equal(spec.domain, 'embedded_systems');
++  assert.equal(spec.chains.some(chain => chain.device_type === 'Gateway'), false);
++  const unresolved = extractEngineeringSpecification('eine ECU und ein Aktor mit noch ungeklärter Funktion', {}, 'custom', true);
++  assert.equal(unresolved.chains.some(chain => chain.device_type === 'ActuatorController'), false);
++});
++
+ test('S04-B materializes untyped fans and the shared controller without inventing a gateway', () => {
+   const task = `Vier Temperatursensoren und drei Lüfter
+ sollen durch eine gemeinsame Steuerung geregelt werden.
+diff --git a/frontend/src/lib/agent/engineering-specification.ts b/frontend/src/lib/agent/engineering-specification.ts
+index 3ff1d216..7c6f747c 100644
+--- a/frontend/src/lib/agent/engineering-specification.ts
++++ b/frontend/src/lib/agent/engineering-specification.ts
+@@ -1467,7 +1467,7 @@ function singularControllerHardwareNames(line: string): Array<{ name: string; de
+ function declaredHardwareNames(line: string): Array<{ name: string; declaredType: string }> {
+   const roles = /\b(gateways?|ecus?|controllers?|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|plcs?|sps|steuerger(?:ä|ae)te?)\b\s*(?::\s*|\s+)(?:namens\s+|named\s+)?/giu;
+   const name = /^(?:"([^"\r\n]+)"|„([^“\r\n]+)“|'([^'\r\n]+)'|([\p{L}][\p{L}\d_-]*))/u;
+-  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|steuern|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
++  const prose = /^(?:mit|und|and|oder|or|von|vom|zu|zum|zur|fuer|für|auf|an|aus|im|in|der|die|das|den|dem|des|ein(?:e|er|em|en|es)?|einem|einen|with|for|to|is|are|wird|werden|soll|sollen|ist|sind|als|je|pro|insgesamt|jeweils|plus|ueber|über|anzahl|erfassen|messen|misst|steuern|steuert|regeln|regelt|schließen|schliessen|schließt|schliesst|überwachen|ueberwachen|überwacht|ueberwacht|measure|capture|control|can|can_fd|can-fd|lin|ethernet|sensor(?:en|s)?|aktor(?:en)?|aktuator(?:en)?|actuators?|ecus?|gateways?|plcs?)$/iu;
+   const result: Array<{ name: string; declaredType: string }> = [];
+   for (const match of line.matchAll(roles)) {
+     const prefix = line.slice(0, match.index);
+@@ -1567,6 +1567,10 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
+   const key = normalized(line);
+   const names: string[] = [];
+   if (/\b(?:raspberry|rasberry|rasperry|respary)\s*pi\b|\braspi\b/.test(key)) names.push('RaspberryPi');
++  // A singular ECU is a stated participant even when it has no model name.
++  // Keep its generic identity; never substitute a Raspberry Pi for it.
++  if (/\b(?:1|ein(?:e|en|em|er|es)?)\s+ecu\b(?!\s+(?:namens|named|:))/.test(key)
++      && !declaredHardwareNames(line).some(item => isEngineeringControllerDevice(item.declaredType))) names.push('ECU');
+   if (/^(?:(?:1|ein(?:e|en|em|er|es)?)\s+)?(?:plc|sps)$/.test(key)) names.push('PLC');
+   const plcControllerCount = key.match(new RegExp(`^${COUNT_TOKEN}\\s+(?:plc|sps)(?:\\s*[/+-]?\\s*controller)?s?$`));
+   if (plcControllerCount) {
+@@ -1635,9 +1639,13 @@ function impliedHardwareNames(line: string, confirmedActuators?: number, specifi
+     for (let i = 1; i <= Math.min(1000, countValue(safetyActuatorCount[1])); i++) names.push(`SafetyAktor${i}`);
+   }
+   const valveCount = key.match(new RegExp(`\\b${COUNT_TOKEN}\\s+(?:(?:pwm|proportional)[-\\s]*)?(?:ventilaktor(?:en)?|ventil(?:e|en)?|valves?)\\b`));
++  const singularValveActuator = /\b(?:1|ein(?:e|en|em|er|es)?)\s+(?:aktor|aktuator|actuator)\b[^.!?]{0,100}\bventil(?:s)?\b/.test(key);
+   if (valveCount) {
+     for (let i = 1; i <= Math.min(1000, countValue(valveCount[1])); i++) names.push(`Ventilaktor${i}`);
+-  } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key) && Number.isSafeInteger(confirmedActuators) && confirmedActuators! >= 0) {
++  } else if (singularValveActuator) {
++    names.push('Ventilaktor1');
++  } else if (/\b(?:ventile(?:n)?|valves)\b/.test(key)
++      && Number.isSafeInteger(confirmedActuators) && confirmedActuators! > 0) {
+     for (let i = 1; i <= Math.min(1000, confirmedActuators!); i++) names.push(`Ventilaktor${i}`);
+   }
+   if (/\b(?:sensor|sensoren)\b/.test(key) && /\bmotorstrom\b/.test(key)) {
+diff --git a/frontend/src/lib/engineering-api.ts b/frontend/src/lib/engineering-api.ts
+index 9f7ba24e..8732a59c 100644
+--- a/frontend/src/lib/engineering-api.ts
++++ b/frontend/src/lib/engineering-api.ts
+@@ -45,7 +45,7 @@ async function importRequest<T>(path: string, init: RequestInit): Promise<T> {
+ }
+ 
+ async function request<T>(path: string, init?: RequestInit): Promise<T> {
+-  const timeout = init?.method && !["GET", "HEAD"].includes(init.method) ? 180000 : 5000;
++  const timeout = init?.method && !["GET", "HEAD"].includes(init.method) ? 180000 : 15000;
+   let response: Response;
+   try {
+     response = await fetch(`${BASE}${path}`, {

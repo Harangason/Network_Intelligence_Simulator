@@ -1,0 +1,116 @@
+--- before/frontend/src/lib/technology-parameters.test.mjs
++++ after/frontend/src/lib/technology-parameters.test.mjs
+@@ -1,11 +1,90 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import { technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
++import { booleanParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
+ const lin = { id: 'lin', parameter_schema: [{ key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s', default: 19200 }, { key: 'payload_bytes', default: 8 }] };
+ const can = { id: 'can_fd', parameter_schema: [{ key: 'arbitration_bitrate', default: 500000 }, { key: 'data_bitrate', default: 2000000 }] };
+ const parameters = { technology: 'can_fd', bitrate: 2000000, arbitration_bitrate: 500000, data_bitrate: 2000000,
+   technology_defaults: { lin: { bitrate: 19200 } }, defaults_source: 'technology-registry', networks: [{ id: 'lin-1', technology: 'LIN' }, { id: 'lin-2', technology: 'LIN' }, { id: 'can-1', technology: 'CAN_FD' }],
+   simulation_scope: { mode: 'ALL' }, spatial_architecture: { id: 'keep' } };
++
++test('unknown device boolean is not silently confirmed as false or parsed false as true', () => {
++  assert.equal(booleanParameterValue({}, ''), null);
++  assert.equal(booleanParameterValue({}, null), null);
++  assert.equal(booleanParameterValue({}, 'false'), false);
++  assert.equal(booleanParameterValue({}, 'true'), true);
++  assert.throws(() => booleanParameterValue({}, 'on'));
++  assert.equal(booleanParameterValue({default:false}, null), false);
++  assert.equal(booleanParameterValue({default:false}, 'on'), true);
++  const saved = confirmTechnologyParameters({}, {id:'avb',parameter_schema:[{key:'avb_as_capable',type:'boolean'}]},
++    {avb_as_capable:booleanParameterValue({}, '')});
++  assert.equal('avb_as_capable' in saved.technology_parameters.avb.values, false);
++});
++
++test('conditional standards require known conditions and preserve actual saved values', () => {
++  const timeout = { key:'bacnet_apdu_timeout_ms', type:'number', scope:'route', conditional_defaults:[
++    {when:{bacnet_apdu_timeout_modifiable:true}, value:3000},
++    {when:{bacnet_apdu_timeout_modifiable:false}, value:60000}] };
++  const profile = {id:'bacnet_ip', parameter_schema:[{key:'bacnet_apdu_timeout_modifiable',type:'boolean',scope:'route'}, timeout]};
++  assert.equal(conditionalParameterDefault(timeout, {}), undefined);
++  assert.equal(conditionalParameterDefault(timeout, {bacnet_apdu_timeout_modifiable:'false'}), undefined);
++  assert.equal(conditionalParameterDefault(timeout, {bacnet_apdu_timeout_modifiable:false}), 60000);
++  assert.equal(technologyParameterValues({}, profile).bacnet_apdu_timeout_ms, undefined);
++  const known = {technology:'bacnet_ip',bacnet_apdu_timeout_modifiable:true};
++  assert.equal(technologyParameterValues(known, profile).bacnet_apdu_timeout_ms, 3000);
++  const saved = confirmTechnologyParameters({}, profile, {bacnet_apdu_timeout_modifiable:false,bacnet_apdu_timeout_ms:3000});
++  assert.equal(technologyParameterValues(saved, profile).bacnet_apdu_timeout_ms, 3000);
++  assert.equal(technologyParameterUnverified(known, 'bacnet_apdu_timeout_ms', 'bacnet_ip'), true);
++  assert.equal(conditionalParameterDefault({conditional_defaults:[{when:{},value:1},{when:{},value:2}]}, {}), undefined);
++});
++
++test('SC connection purpose chooses its own conditional subprotocol and preserves explicit saved choices', () => {
++  const protocol = {key:'sc_websocket_subprotocol',type:'select',scope:'network',conditional_defaults:[
++    {when:{sc_connection_type:'HUB'},value:'hub.bsc.bacnet.org'},
++    {when:{sc_connection_type:'DIRECT'},value:'dc.bsc.bacnet.org'}]};
++  const sc = {id:'bacnet_sc',parameter_schema:[{key:'sc_connection_type',type:'select',default:'HUB'},protocol]};
++  assert.equal(technologyParameterValues({},sc).sc_websocket_subprotocol,'hub.bsc.bacnet.org');
++  const actual = confirmTechnologyParameters({},sc,{sc_connection_type:'DIRECT',sc_websocket_subprotocol:'dc.bsc.bacnet.org'});
++  assert.equal(technologyParameterValues(actual,sc).sc_websocket_subprotocol,'dc.bsc.bacnet.org');
++  assert.equal(technologyParameterUnverified({},'sc_websocket_subprotocol','bacnet_sc'),true);
++  const foreign = {technology:'bacnet_ip',sc_connection_type:'DIRECT',bacnet_udp_port:47808};
++  assert.equal(technologyParameterValues(foreign,sc).sc_websocket_subprotocol,'hub.bsc.bacnet.org');
++});
++
++test('retired fields keep their confirmed historical values while leaving active parameters', () => {
++  const schema = { id: 'adc', parameter_schema: [{key:'cycle_ms', default:100}] };
++  const proof = {source:'USER_CONFIRMED', status:'CONFIRMED', value:256};
++  const old = {technology:'adc', queue_size:256, cycle_ms:10,
++    parameter_provenance:{queue_size:proof}, technology_parameters:{adc:{values:{queue_size:256,cycle_ms:10},provenance:{queue_size:proof}}}};
++  const before = structuredClone(old);
++  const saved = confirmTechnologyParameters(old,schema,{cycle_ms:10});
++  assert.equal('queue_size' in saved,false);
++  assert.deepEqual(saved.technology_parameters.adc.values,{cycle_ms:10});
++  assert.equal(saved.technology_parameters.adc.retired_parameters.values.queue_size,256);
++  assert.deepEqual(saved.technology_parameters.adc.retired_parameters.provenance.queue_size,proof);
++  assert.deepEqual(old,before);
++  assert.deepEqual(confirmTechnologyParameters(saved,schema,{cycle_ms:10}).technology_parameters.adc.retired_parameters,
++    saved.technology_parameters.adc.retired_parameters);
++});
++
++test('historical global proof survives even when no scoped group was recorded', () => {
++  const schema = {id:'adc',parameter_schema:[{key:'cycle_ms'}]};
++  const proof = {source:'USER_CONFIRMED',status:'CONFIRMED',value:256};
++  const saved = confirmTechnologyParameters({technology:'adc',queue_size:256,parameter_provenance:{queue_size:proof}},schema,{cycle_ms:10});
++  assert.equal('queue_size' in saved,false);
++  assert.equal(saved.technology_parameters.adc.retired_parameters.values.queue_size,256);
++  assert.deepEqual(saved.technology_parameters.adc.retired_parameters.provenance.queue_size,proof);
++});
++
++test('a proof naming a foreign technology cannot confirm the selected profile', () => {
++  const technology = {id:'can',parameter_schema:[{key:'bitrate',type:'number',unit:'bit/s',default:10000}]};
++  const proof = {source:'USER_CONFIRMED',status:'CONFIRMED',value:250000,technology:'nmea2000'};
++  const global = {technology:'can',bitrate:250000,parameter_provenance:{bitrate:proof}};
++  assert.equal(technologyParameterUnverified(global,'bitrate','can'),true);
++  assert.equal(technologyParameterValues(global,technology).bitrate,10000);
++  const scoped = {technology:'can',technology_parameters:{can:{values:{bitrate:250000},provenance:{bitrate:proof}}}};
++  assert.equal(technologyParameterUnverified(scoped,'bitrate','can'),true);
++  assert.equal(technologyParameterValues(scoped,technology).bitrate,10000);
++});
+ test('LIN projection never inherits CAN-FD rate or its phases', () => {
+   assert.deepEqual(technologyParameterValues(parameters, lin), { bitrate: 19200, payload_bytes: 8 });
+   assert.equal(technologyParameterUnverified(parameters, 'bitrate', 'lin'), true);
+@@ -63,6 +142,21 @@
+   const saved = confirmTechnologyParameters({ ...parameters, networks: [] }, lin, { bitrate: 19200, payload_bytes: 8 });
+   assert.equal(saved.technology, 'lin'); assert.equal(saved.bitrate, 19200); assert.equal('data_bitrate' in saved, false); assert.equal('arbitration_bitrate' in saved, false);
+ });
++test('changing a single-bus project preserves earlier scoped corrections and clears foreign global fields', () => {
++  const old = confirmTechnologyParameters({}, { id: '5g', parameter_schema: [{key:'nr_direction'}] }, {nr_direction:'UL'});
++  const saved = confirmTechnologyParameters(old, lin, {bitrate:9600});
++  assert.equal('nr_direction' in saved, false);
++  assert.equal('nr_direction' in saved.parameter_provenance, false);
++  assert.equal(saved.technology_parameters['5g'].values.nr_direction, 'UL');
++  assert.equal(old.nr_direction, 'UL');
++});
++test('changed global values and missing proofs remain unverified', () => {
++  const saved = confirmTechnologyParameters({}, lin, {bitrate:9600});
++  saved.bitrate = 19200;
++  delete saved.technology_parameters;
++  assert.equal(technologyParameterUnverified(saved, 'bitrate', 'lin'), true);
++  assert.equal(technologyParameterUnverified({technology:'lin',bitrate:9600}, 'bitrate', 'lin'), true);
++});
+ test('CAN-FD data rate maps to calculation bitrate without losing nominal phase', () => {
+   const saved = confirmTechnologyParameters(parameters, can, { arbitration_bitrate: 250000, data_bitrate: 4000000 });
+   assert.equal(saved.bitrate, 4000000); assert.equal(saved.arbitration_bitrate, 250000);

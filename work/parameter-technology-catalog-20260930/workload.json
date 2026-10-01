@@ -1,0 +1,58 @@
+{
+  "revision_before": {
+    "frontend/src/components/simulation-wizard.tsx": "89b28a11cedf8d62a5f80053e0824e472e0ba14ba228eda420f7569d7750af2a",
+    "frontend/e2e/technology-parameter-review.spec.ts": "4154e911f9a17c88764f9b3a6116f3e781edf88d8c80f076494ea60df1e14014"
+  },
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "validation_requirements": [
+    "targeted_tests",
+    "release_gate",
+    "live_verification"
+  ],
+  "required_outcomes": [
+    "full_catalog_visible",
+    "industry_independent",
+    "confirmed_wizard_selection",
+    "production_delivery"
+  ],
+  "allow_repair": true,
+  "modify_code": true,
+  "kind": "repair",
+  "unresolved_decisions": [],
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "repair": {
+    "affected_files": [
+      "frontend/src/components/simulation-wizard.tsx",
+      "frontend/e2e/technology-parameter-review.spec.ts",
+      "frontend/src/lib/technology-catalog-selection.ts",
+      "frontend/src/lib/technology-catalog-selection.test.mjs"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "reproduction": "Confirmed custom/I2C wizard project with no saved parameter defaults displays Automotive/CAN and only 18 of 125 registered profiles.",
+    "root_cause": "Technology dropdown is sourced only from domain.technologies and initial state silently selects automotive/can_fd. It ignores confirmed wizard context when parameters are not yet saved. The confirmed wizard context read was placed after the parameter-mode early return, so it never runs.",
+    "weaken_assertions_to_pass": false,
+    "first_failing_layer": "SimulationWizard client selection state and domain filtered options; parameter-mode effect does not load wizard context",
+    "targeted_tests": [
+      "technology selection unit tests",
+      "parameter browser regression",
+      "full release gate"
+    ],
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\parameter-technology-catalog-20260930\\reproduction.txt",
+        "sha256": "e8b7f4747474e237fadd5f737e76b3affd43725ad6be8458deccdad1aa2b9738"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\parameter-technology-catalog-20260930\\live-smoke-failure.txt",
+        "sha256": "8b44e384eab3fef2515272add87ac54d478bfff8b731929de14843bbebe278ed"
+      }
+    ],
+    "acceptance_criteria": [
+      "All registered catalog technology IDs are selectable independent of industry",
+      "Confirmed single wizard technology is proposed without changing explicit industry",
+      "No unconfirmed Automotive/CAN fallback for new projects",
+      "Existing saved technology and industry survive reload",
+      "Exact tested image deployed"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "technology": "custom_tcp",
+  "native": {
+    "payload_bytes": "Actual complete application data octets unknown nonnegative integer, may exceed65535 and span TCP segments. TCP MSS/MTU/send or read buffer boundaries are not application message limits.",
+    "ctcp_specification_source": "Required actual custom TCP application specification reference unknown. RFC9293 specifies TCP service, not this application framing.",
+    "ctcp_specification_revision": "Required actual application specification revision unknown; no invented1.0 baseline.",
+    "ctcp_transport_binding": "Required actual TCP/IP/link binding reference unknown. Cannot infer Ethernet10M/1G, IPv4/IPv6, peer MSS/options/checksum/timers from custom application registration.",
+    "ctcp_stream_service": "RFC9293 section2.2 reliable ordered byte stream standard proposal. Actual transport state/correlation required; no application message boundary or execution acknowledgement guarantee.",
+    "ctcp_framing": "Required actual FIXED_LENGTH/LENGTH_PREFIX/DELIMITER/CONNECTION_CLOSE/CUSTOM framing unknown. TCPPSH/segment/readbuffer not accepted framing modes, RFC9293 section3.7.",
+    "ctcp_layout_source": "Actual application fields/encoding/framing layout reference unknown. Native TCP header/ACK/options belong to lower TCP profile, not copied into application format.",
+    "ctcp_header_bytes": "Actual encoded application header octets unknown nonnegative integer; excludes lower TCP/IP headers, includes prefix when located here.",
+    "ctcp_trailer_bytes": "Actual encoded application trailer octets unknown nonnegative integer; includes delimiter/checksum if specified. No general CRC2/header8 default.",
+    "ctcp_escape_expansion_bytes": "Actual encoded escaping expansion unknown nonnegative integer; escaping algorithm/collision-safe delimiter needs actual specification.",
+    "ctcp_message_bytes": "Actual complete encoded application message exact known payload+header+trailer+escape expansion; <=actual peer message limit. Not a single TCP segment or MSS-capped chunk.",
+    "ctcp_peer_message_limit_bytes": "Actual peer full application message capability unknown nonnegative integer; can exceed65535, not inferred from16-bit TCP MSS or interface MTU.",
+    "ctcp_fixed_length_bytes": "Actual fixed full application message length positive integer unknown; only FIXED_LENGTH, equal known actual complete message.",
+    "ctcp_length_prefix_bytes": "Actual positive application prefix width unknown; only LENGTH_PREFIX. No u16/four-byte universal prefix assumption.",
+    "ctcp_length_prefix_scope": "Actual PAYLOAD/COMPLETE_MESSAGE/CUSTOM length counting unknown. Prefix overflow/signedness/coverage depend actual application revision.",
+    "ctcp_length_prefix_order": "Actual LITTLE_ENDIAN/BIG_ENDIAN/CUSTOM prefix encoding unknown; TCP network byte order does not dictate application encoding.",
+    "ctcp_delimiter_hex": "Actual nonempty whole-octet hex delimiter unknown, only DELIMITER. Odd hex invalid. No newline/CRLF default or byte-stream guarantee that delimiter cannot occur in data.",
+    "ctcp_escaping_source": "Actual application delimiter escaping rule reference unknown; wire expansion and incremental read correlation remain required.",
+    "ctcp_security_profile": "Actual TLS/authentication/application security profile reference unknown; TCP checksums do not authenticate. No TLS or NONE default.",
+    "ctcp_application_ack": "Actual application acknowledgement semantics unknown boolean. TCP peer transport acknowledgement does not confirm application receipt/execution. Known false rejects application ACK timeout.",
+    "ctcp_application_ack_timeout_ms": "Actual positive finite application acknowledgement timeout unknown milliseconds; zero invalid. Separate from TCP RFC6298 retransmission timer, no generic100ms/1s copying.",
+    "ctcp_device_evidence": "Actual peer buffering/implementation/timing evidence reference unknown; default service description is not actual capability or capacity proof."
+  },
+  "removed": {
+    "qos_priority": "No implicit IEEE Ethernet PCP/CAN priority for an unspecified custom TCP application application protocol; actual lower transport owns priority.",
+    "sync_method": "No implicit NTP/PTP/gPTP support in a custom custom TCP application protocol; actual timing/synchronization requires its own specification.",
+    "reserved_bandwidth_percent": "No universal custom TCP application-protocol bandwidth reservation; actual underlying link/schedule evidence required.",
+    "retransmission_enabled": "No universal custom custom TCP application acknowledgement/ARQ default. Actual lower transport and application retry rules must be distinguished.",
+    "retransmission_rate": "A generic probability is not a custom TCP application acknowledgement/retry state machine.",
+    "retry_limit": "No zero retry-count protocol default without a specified application/lower-transport retry mechanism.",
+    "retransmission_delay_ms": "No universal zero retry delay for unspecified custom TCP application framing/session semantics.",
+    "gateway_maximum_throughput": "No verified custom TCP application gateway throughput of100Mbit/s; actual device unknown.",
+    "gateway_input_buffer": "Actual gateway input capability unknown, not custom TCP application protocol default8.",
+    "gateway_output_buffer": "Actual gateway output capability unknown, not custom TCP application protocol default8.",
+    "gateway_maximum_routes": "Actual gateway route capability unknown, not custom TCP application protocol default4096.",
+    "gateway_maximum_messages_s": "Actual gateway processing capability unknown, not custom TCP application protocol default100000.",
+    "bitrate": "Retire inherited Ethernet10M rate; custom TCP application has no physical bitrate. Explicit actual TCP/IP/link profiles own rate.",
+    "mtu_bytes": "Retire default EthernetMTU1500, distinct from actual path MTU, TCP MSS and full application message.",
+    "duplex": "Retire Ethernet FULL/HALF physical-port default. Bidirectional TCP byte stream does not prove actual link duplex.",
+    "vlan_id": "Retire VLAN0 automatic actual configuration; custom TCP application defines no IEEE802.1QVID.",
+    "rate_limit_bit_s": "Retire default Ethernet shaper0; actual TCP congestion/window control and lower link shaper are separate."
+  },
+  "sources": [
+    "https://www.rfc-editor.org/rfc/rfc9293.html",
+    "https://www.rfc-editor.org/rfc/rfc6298.html"
+  ],
+  "revisions": [
+    "RFC9293 August2022 sections2.2/3.7/3.7.1/3.8; RFC6298 June2011 transport timer distinct from application ACK"
+  ],
+  "scope": "Every registered customTCP application field and retired Ethernet/retry assumptions; byte-stream framing, actual peer message cap, acknowledgement separation and isolated SQL retention.",
+  "validation": {
+    "isolated_sql": true,
+    "suite": "full_parameter_audit + standard_defaults + profile_semantics + capacity_can_schedule + parameter_review + required_parameters",
+    "passed": 1740
+  },
+  "not_certified": [
+    "Actual application specification and complete incremental framing/escaping/prefix/EOF encoder/decoder unavailable",
+    "Executable TCP transport state/window/RTO/SACK/congestion/security and actual lower IP/PHY profile binding",
+    "Actual peer application acknowledgement/buffering/source lifetime and correlated E2E timing",
+    "Native application/stream capacity model remains MODEL_MISSING"
+  ]
+}

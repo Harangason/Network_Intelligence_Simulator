@@ -1,0 +1,43 @@
+{
+  "required_outcomes": [
+    "deploy_rejects_stale_canonical_source_or_tests"
+  ],
+  "validation_requirements": [
+    "release_guard_tests",
+    "release_gate"
+  ],
+  "repair": {
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\nis-container-correction-audit-20260930.md",
+        "sha256": "6b481746728a9898c7d45e71f2d30c5822c5aa3592879425bbf6030a3ec432c4"
+      }
+    ],
+    "first_failing_layer": "Production deployment validation",
+    "weaken_assertions_to_pass": false,
+    "targeted_tests": [
+      "scripts/tests/test_release_and_deploy.py",
+      "full wizard release gate"
+    ],
+    "reproduction": "Prior isolated image contained old Wizard CSS while canonical source had a correction.",
+    "acceptance_criteria": [
+      "Direct deployment validates current source, tests, and commit."
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "affected_files": [
+      "scripts/deploy-verified-release.py",
+      "scripts/tests/test_release_and_deploy.py"
+    ],
+    "root_cause": "Direct deployment did not compare the PASS receipt with the current checkout."
+  },
+  "allow_repair": true,
+  "modify_code": true,
+  "revision_before": {
+    "scripts/deploy-verified-release.py": "e049829bea8445714b5ea11965140e5a89933204a2aeeab7fb3e468238178d64",
+    "scripts/tests/test_release_and_deploy.py": "e70039e4f182a5649843823b5544dc59202469a8225380ce22e2a46db818884f"
+  },
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "unresolved_decisions": [],
+  "kind": "repair",
+  "repository": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator"
+}

@@ -1,0 +1,76 @@
+--- before/backend/engineering/workflow/service.py
++++ after/backend/engineering/workflow/service.py
+@@ -1016,39 +1016,37 @@
+     def _validate_parameter_reviews(parameters: dict[str, Any], previous: dict[str, Any]) -> None:
+         """Validate edited groups/networks against the same authoritative profile."""
+         from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+-        from backend.app.simulation_service import SimulationService
+ 
+         def validate(technology, values):
+-            profile = registry.profile(technology)
+-            normalized = dict(values)
+-            aliases = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps',
+-                       'data_bitrate': 'data_bitrate_bps'}
+-            fields = set(profile.get('rate_model', {}).get('fields') or ())
+-            for key, canonical in aliases.items():
+-                if key in values:
+-                    if key == 'bitrate' and 'nominal_bitrate_bps' in fields:
+-                        if 'arbitration_bitrate' not in values: normalized['nominal_bitrate_bps'] = values[key]
+-                    else: normalized[canonical] = values[key]
+-            result = registry.validate_parameters(technology, normalized)
++            result = registry.validate_parameters(technology, values)
+             if result['status'] != 'VALID':
+                 raise ValueError('; '.join(f"{item['code']}: {item['message']}" for item in result['findings']))
+-            for field in SimulationService._parameter_schema(registry.normalize_id(technology), profile):
+-                value = values.get(field['key'])
+-                if value is None: continue
+-                if field['type'] == 'number' and (isinstance(value, bool) or not isinstance(value, (int, float))
+-                    or not math.isfinite(value) or field.get('min') is not None and value < field['min']
+-                    or field.get('max') is not None and value > field['max']):
+-                    raise ValueError(f"TECHNOLOGY_PARAMETER_OUT_OF_RANGE: {technology}/{field['key']}")
++
++        keys = registry.parameter_keys()
++        technology = parameters.get('technology')
++        values = {key: parameters[key] for key in keys if key in parameters and parameters[key] is not None}
++        if values and technology and (technology != previous.get('technology') or any(parameters.get(key) != previous.get(key) for key in keys)):
++            result = registry.validate_parameters(technology, values)
++            if result['status'] in {'INVALID', 'UNKNOWN'}:
++                raise ValueError('; '.join(f"{item['code']}: {item['message']}" for item in result['findings']))
+ 
+         groups = parameters.get('technology_parameters', {})
+         if not isinstance(groups, dict): raise ValueError('technology_parameters muss ein Objekt sein.')
+         for technology, group in groups.items():
+             if not isinstance(group, dict) or not isinstance(group.get('values'), dict) or not isinstance(group.get('provenance'), dict):
+                 raise ValueError('Technologieparameter benötigen Werte und Bestätigungsnachweise.')
+-            profile = registry.profile(technology)
+-            allowed = {field['key'] for field in SimulationService._parameter_schema(registry.normalize_id(technology), profile)}
++            # Unedited historical groups remain reviewable. Consumers filter
++            # by the current profile; storing another group's correction must
++            # not erase or implicitly reconfirm these old device facts.
++            if group == (previous.get('technology_parameters') or {}).get(technology):
++                continue
++            allowed = registry.parameter_keys(technology)
+             if 'data_bitrate' in allowed: allowed.add('bitrate')
+-            if set(group['values']) - allowed: raise ValueError('TECHNOLOGY_RATE_MODEL_MISMATCH: Fremde Parameter im Technologieprofil.')
++            foreign = set(group['values']) - allowed
++            if foreign:
++                phases = {'bitrate', 'bitrate_bps', 'arbitration_bitrate', 'nominal_bitrate_bps', 'data_bitrate', 'data_bitrate_bps'}
++                code = 'TECHNOLOGY_RATE_MODEL_MISMATCH' if foreign & phases else 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE'
++                raise ValueError(f'{code}: Fremde Parameter im Technologieprofil: {", ".join(sorted(foreign))}.')
+             for key, value in group['values'].items():
+                 proof = group['provenance'].get(key) or {}
+                 if proof.get('source') != 'USER_CONFIRMED' or proof.get('status') != 'CONFIRMED' or proof.get('value') != value:
+@@ -1057,9 +1055,10 @@
+         old_networks = {str(item.get('id')): item for item in previous.get('networks', [])}
+         for network in parameters.get('networks', []):
+             old = old_networks.get(str(network.get('id')), {})
+-            rates = ('bitrate', 'arbitration_bitrate', 'data_bitrate', 'bitrate_bps', 'nominal_bitrate_bps', 'data_bitrate_bps')
+-            if any(network.get(key) != old.get(key) for key in rates):
+-                validate(network.get('technology'), {key: network[key] for key in rates if key in network})
++            keys = registry.parameter_keys()
++            values = {key: network[key] for key in keys if key in network}
++            if values and (network.get('technology') != old.get('technology') or any(network.get(key) != old.get(key) for key in keys)):
++                validate(network.get('technology'), values)
+ 
+     def save_topology(self, topology: dict[str, Any], actor: str | None = None, *, layout_positions: dict | None = None) -> dict[str, Any]:
+         if not isinstance(topology, dict) or not isinstance(topology.get("nodes"), list):

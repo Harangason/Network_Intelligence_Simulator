@@ -1,0 +1,32 @@
+--- before/backend/tests/test_technology_profile_semantics.py
++++ after/backend/tests/test_technology_profile_semantics.py
+@@ -37,11 +37,13 @@
+     assert format_rate_bps(1_000_000_000) == "1 Gbit/s"
+ 
+ 
+-def test_dds_rate_is_validated_by_its_registered_ethernet_stack() -> None:
+-    assert REGISTRY.validate_parameters("dds", {"bitrate_bps": 1_000_000_000})["status"] == "VALID"
+-    invalid = REGISTRY.validate_parameters("dds", {"nominal_bitrate_bps": 500_000})
+-    assert invalid["status"] == "INVALID"
+-    assert codes(invalid) == {"TECHNOLOGY_RATE_MODEL_MISMATCH"}
++def test_dds_requires_actual_transport_binding_and_rejects_implicit_ethernet_rate() -> None:
++    actual = {'dds_entity': 'DATAWRITER', 'dds_transport_binding': 'selected-transport', 'dds_implementation_source': 'actual-vendor-version'}
++    assert REGISTRY.validate_parameters('dds', actual)['status'] == 'VALID'
++    for rate in ({'bitrate_bps': 1_000_000_000}, {'nominal_bitrate_bps': 500_000}):
++        invalid = REGISTRY.validate_parameters('dds', {**actual, **rate})
++        assert invalid['status'] == 'INVALID'
++        assert 'TECHNOLOGY_RATE_MODEL_MISMATCH' in codes(invalid) or 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE' in codes(invalid)
+ 
+ 
+ def test_unknown_profile_blocks_instead_of_using_foreign_default() -> None:
+@@ -100,8 +102,8 @@
+ @pytest.mark.parametrize(("technology", "category", "mechanism"), [
+     ("CAN_FD", "integrity", "CAN_FD_CRC"),
+     ("LIN", "integrity", "LIN_CHECKSUM"),
+-    ("ethernet", "address_resolution", "ARP"),
+-    ("ethernet", "address_resolution", "IPV6_NDP"),
++    ("ethernet", "upper_layer_resolution", "ARP_IF_IPV4"),
++    ("ethernet", "upper_layer_resolution", "NDP_IF_IPV6"),
+     ("j1939", "address_resolution", "J1939_ADDRESS_CLAIM"),
+     ("profinet", "discovery", "PROFINET_DCP"),
+     ("dds", "discovery", "DDS_PARTICIPANT_DISCOVERY"),

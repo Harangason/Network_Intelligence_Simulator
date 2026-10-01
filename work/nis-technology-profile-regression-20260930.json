@@ -1,0 +1,50 @@
+{
+  "goal_id": "nis-technology-profile-regression-20260930",
+  "goal_type": "repair",
+  "repository": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator",
+  "campaign_project": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "project_scope": "TechnologyProfile parameter schema",
+  "requested_change": "Branchenneutrale Clock- und Link-Rate-Formulare aus kanonischem Quellstand mit Regressionstest liefern",
+  "constraints": [
+    "Kein Automotive-Katalog-Fallback",
+    "Keine erfundenen I2C/SPI-Defaults"
+  ],
+  "required_outcomes": [
+    "profile_fields_valid"
+  ],
+  "validation_requirements": [
+    "isolated_profile_test",
+    "release_gate"
+  ],
+  "modify_code": true,
+  "allow_repair": true,
+  "unresolved_decisions": [],
+  "revision_before": {
+    "backend/app/simulation_service.py": "0ce145fd8dc4f4585cca969d15f771b32d06901d1cd0f96774cc074a0d15d1b5"
+  },
+  "repair": {
+    "root_cause": "Der vorige eng begrenzte Release-Worktree liess die bereits vorhandene branchenneutrale TechnologyProfile-Formularerweiterung aus.",
+    "evidence": [
+      {
+        "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\aa12bfaa7db1\\backend-tests.log",
+        "sha256": "b7d1a05961d4dfc0715d8ebe705a2ced42339bec54ff7645379062a75c4fb2df"
+      }
+    ],
+    "acceptance_criteria": [
+      "Link-Rate aus Stack geerbt; I2C/SPI Clock-Felder ohne Default; keine Automotive-I/O-Empfehlung"
+    ],
+    "weaken_assertions_to_pass": false,
+    "owner": "PROJECT_PRODUCT",
+    "reproduction": "Zwei Profiltests scheitern im isolierten Gate mit StopIteration bei bitrate-Feldern fuer SOME/IP und I2C/SPI.",
+    "first_failing_layer": "backend/app/simulation_service.py",
+    "targeted_tests": [
+      "backend/tests/test_technology_profile_semantics.py"
+    ],
+    "affected_files": [
+      "backend/app/simulation_service.py"
+    ]
+  },
+  "outcomes": {},
+  "validations": {}
+}

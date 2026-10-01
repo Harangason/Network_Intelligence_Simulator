@@ -1,0 +1,98 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { chromium } from 'playwright';
+
+const project = 'network-project-20260910042736034-d11591d0';
+const api = async path => {
+  const r = await fetch(`http://127.0.0.1:15050/api/engineering${path}`, { headers: { 'X-Project-ID': project } });
+  assert.ok(r.ok, path); return r.json();
+};
+const [routes, before, scopes] = await Promise.all([api('/routing?limit=500'), api('/workflow/network-view'), api('/routing/message-scopes')]);
+assert.equal(scopes.items['3093099c-5ebf-40e1-857c-a5c1ff7e225b'].restricted, true);
+assert.equal(scopes.items['3fbf2613-cd88-4552-9218-b8b31457eb9d'].restricted, false);
+const route = routes.items.find(r => r.route_code === 'RT-D43CB304'); assert.ok(route);
+const local = routes.items.find(r => (r.payload.message_ids ?? [r.payload.message_id]).includes('3093099c-5ebf-40e1-857c-a5c1ff7e225b'));
+assert.ok(local);
+const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const page = await browser.newPage({ viewport: { width: 1688, height: 1272 } });
+const errors = [], writes = [], checks = [];
+page.on('pageerror', e => errors.push(e.message));
+page.on('request', r => {
+  if (r.url().includes('/api/engineering/') && !['GET', 'HEAD'].includes(r.method())) writes.push({ method: r.method(), path: new URL(r.url()).pathname });
+});
+const dialog = page.locator('.routing-wizard-dialog');
+const step = text => dialog.locator('.routing-wizard-steps').getByRole('button', { name: new RegExp(text, 'i') });
+const open = async r => {
+  await page.goto(`http://127.0.0.1:13500/studio/routing?project=${project}&route=${r.id}`);
+  await page.locator('.routing-detail').filter({ hasText: r.route_code }).waitFor();
+  const rail = page.locator('.routing-detail-rail');
+  if (await rail.count()) await rail.click();
+  await page.getByRole('button', { name: 'Wizard', exact: true }).click();
+  await dialog.waitFor();
+};
+let failed = false;
+try {
+  await open(route);
+  const path = dialog.getByRole('region', { name: 'Kommunikationsstrecke' });
+  assert.match(await path.innerText(), /Klimatisierung → System → Fahrerassistenz/);
+  assert.ok((await path.boundingBox()).y < (await dialog.locator('.routing-wizard-grid').boundingBox()).y, 'The gateway path precedes the editable step fields');
+  await step('Payload').click();
+  assert.ok(await dialog.getByRole('article', { name: 'Payload-Vorschlag Klimatisierung', exact: true }).count() >= 1);
+  assert.equal(await dialog.getByRole('article', { name: 'Payload-Vorschlag Klimatisierung LIN IO Befehl', exact: true }).count(), 0);
+  checks.push('Function output offered to ADAS; supervised local command excluded');
+  await step('Ziele').click();
+  const select = dialog.getByRole('combobox', { name: 'Interface Fahrerassistenz', exact: true });
+  const search = dialog.getByRole('searchbox', { name: 'Interface Fahrerassistenz suchen', exact: true });
+  const initial = await select.inputValue();
+  const shared = select.locator('optgroup[label="Am Bus des nächsten Pfadknotens"] option');
+  assert.ok(await shared.count());
+  const preferred = await shared.first().getAttribute('value');
+  await search.fill('ethernet');
+  assert.equal(await select.inputValue(), initial, 'Search must retain the current selection');
+  assert.ok(await shared.count());
+  await search.fill('no-such-interface');
+  assert.equal(await select.inputValue(), initial);
+  await search.press('Enter'); assert.ok(await dialog.isVisible());
+  await search.fill(''); await select.selectOption(preferred);
+  const endpoint = dialog.locator('.routing-endpoint-fields').filter({ hasText: 'Fahrerassistenz' });
+  const selectedProtocol = await endpoint.locator('label').filter({ hasText: /^Protocol/ }).locator('select').inputValue();
+  assert.equal(selectedProtocol, 'ETHERNET');
+  await step('Quelle').click();
+  const source = dialog.getByRole('combobox', { name: 'Source Interface', exact: true });
+  const linOption = source.locator('option').filter({ hasText: /LIN/ }).first();
+  assert.ok(await linOption.count()); await source.selectOption(await linOption.getAttribute('value'));
+  await step('Ziele').click();
+  assert.equal(await select.inputValue(), preferred);
+  assert.equal(await endpoint.locator('label').filter({ hasText: /^Protocol/ }).locator('select').inputValue(), selectedProtocol);
+  checks.push('Gateway path first; bus evidence ranks Ethernet; search keeps selection; source changes preserve receive protocol');
+  await page.screenshot({ path: '../backend/runtime/routing-functional-scope-desktop.png', fullPage: false });
+  await page.setViewportSize({ width: 800, height: 1000 });
+  const box = await dialog.boundingBox();
+  assert.ok(box.x >= 0 && box.x + box.width <= 801);
+  assert.ok(box.y >= 0 && box.y + box.height <= 1001);
+  await dialog.getByRole('button', { name: 'Weiter', exact: true }).click();
+  checks.push('800px wizard remains inside viewport with reachable navigation');
+  await dialog.getByRole('button', { name: 'Dialog schließen', exact: true }).click();
+  await page.setViewportSize({ width: 1688, height: 1272 });
+  await open(local); await step('Payload').click();
+  assert.ok(await dialog.getByRole('article', { name: 'Payload-Vorschlag Klimatisierung LIN IO Befehl', exact: true }).count() >= 1);
+  checks.push('The same local command stays available for its assigned actuator');
+  await dialog.getByRole('button', { name: 'Dialog schließen', exact: true }).click();
+  assert.deepEqual(errors, []);
+  assert.deepEqual(writes.filter(w => !w.path.endsWith('/workflow/context')), []);
+  const [afterRoutes, after] = await Promise.all([api('/routing?limit=500'), api('/workflow/network-view')]);
+  assert.deepEqual(afterRoutes.items, routes.items);
+  assert.deepEqual(after.topology, before.topology);
+  const result = { status: 'passed', checks, pageErrors: errors, writes, routesUnchanged: true, topologyUnchanged: true };
+  await fs.writeFile('../backend/runtime/routing-functional-scope-browser.json', JSON.stringify(result, null, 2));
+  console.log(JSON.stringify(result, null, 2));
+} catch (error) {
+  failed = true;
+  console.error(error);
+  console.error((await page.locator('body').innerText()).slice(-10000));
+  await page.screenshot({ path: '../backend/runtime/routing-functional-scope-failure.png', fullPage: false });
+} finally {
+  const cdp = await page.context().newCDPSession(page);
+  await Promise.race([cdp.send('Browser.close').catch(() => {}), new Promise(resolve => setTimeout(resolve, 1500))]);
+  process.exit(failed ? 1 : 0);
+}

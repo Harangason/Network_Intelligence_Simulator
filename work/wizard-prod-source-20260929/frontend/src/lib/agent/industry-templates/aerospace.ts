@@ -1,0 +1,52 @@
+import type { IndustrySensorTemplate, IndustryTemplateProfile } from "./types.ts";
+
+const sensors: IndustrySensorTemplate[] = [
+  ["AirspeedSensor", "Fluggeschwindigkeit", "ARINC", "kt", 0, 600, 0.1, 20],
+  ["AltitudeSensor", "Flughoehe", "ARINC", "ft", -1000, 60000, 1, 50],
+  ["AttitudeSensor", "Lagewinkel", "MIL_STD_1553", "deg", -180, 180, 0.01, 10],
+  ["VerticalSpeedSensor", "Steigrate", "ARINC", "ft/min", -10000, 10000, 1, 50],
+  ["EngineN1Sensor", "Triebwerksdrehzahl", "MIL_STD_1553", "%", 0, 120, 0.1, 20],
+  ["FuelQuantitySensor", "Kraftstoffmenge", "ARINC", "kg", 0, 200000, 1, 100],
+  ["HydraulicPressureSensor", "Hydraulikdruck", "MIL_STD_1553", "psi", 0, 5000, 1, 20],
+  ["CabinPressureSensor", "Kabinenhoehe", "ARINC", "ft", -1000, 15000, 1, 100],
+  ["RadarTrackSensor", "RadarTrackStatus", "Ethernet", "code", 0, 255, 1, 20],
+  ["BusHealthSensor", "DatenbusStatus", "MIL_STD_1553", "code", 0, 15, 1, 100],
+].map(([hardwareName, signalName, interfaceType, unit, minValue, maxValue, factor, cycleMs]) => ({
+  cycleMs: Number(cycleMs),
+  factor: Number(factor),
+  hardwareName: String(hardwareName),
+  interfaceType: String(interfaceType),
+  maxValue: Number(maxValue),
+  minValue: Number(minValue),
+  signalName: String(signalName),
+  unit: String(unit),
+}));
+
+export const aerospaceTemplateProfile: IndustryTemplateProfile = {
+  gatewayName: "AvionicsGateway",
+  id: "aerospace",
+  label: "Aerospace / Defense",
+  sensorTemplates: sensors,
+  systemVariants: [
+    "FlightManagement",
+    "AvionicsDisplay",
+    "EngineControl",
+    "FlightControl",
+    "Navigation",
+    "MissionComputer",
+    "RadioManagement",
+    "LandingGearControl",
+    "CabinPressure",
+    "FuelManagement",
+    "ActuatorControl",
+    "SensorDataConcentrator",
+    "HealthMonitoring",
+    "WeatherRadar",
+    "Autopilot",
+    "FlightRecorder",
+    "PowerDistribution",
+    "EnvironmentalControl",
+    "PayloadComputer",
+    "RedundancyManagement",
+  ],
+};

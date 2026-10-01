@@ -1,0 +1,65 @@
+{
+  "technology": "avb",
+  "native": {
+    "bitrate": "Ethernet AVB baseline excludes 10 Mbit and half duplex; propose the lowest supported baseline 100 Mbit. Faster Ethernet modes still need actual PHY evidence.",
+    "payload_bytes": "Complete encoded Ethernet data field, including the selected streaming header; not unframed audio sample size. 1500-byte baseline, actual TSpec bound also checked.",
+    "mtu_bytes": "Ethernet data-field baseline maximum 1500; unrelated to AMQP body size or IPv4 fragmentation. No 65535-byte generic Ethernet setting.",
+    "duplex": "Full-duplex Ethernet AVB baseline; no claim about other AVB media or all TSN profiles.",
+    "queue_policy": "Native CBS requirement, not generic FIFO/TAS substitute. No executable AVB schedule/capacity model is registered.",
+    "sync_method": "AVB gPTP requirement; does not assert actual grandmaster, path or clock accuracy.",
+    "qos_priority": "Actual SR-class/PCP mapping, no universal PCP-3 assumption when the stream class is unknown. Class A/B mappings and actual bridge configuration remain distinct.",
+    "vlan_id": "Actual stream VID 1..4094, zero does not select an actual VLAN. OpenAvnu implementation's default VID is not declared as a universal norm default.",
+    "avb_sr_class": "Actual A/B stream class for this explicit baseline; no invented class assignment.",
+    "avb_measurement_interval_us": "A requires 125 us, B 250 us; reservation measurement interval differs from application cycle.",
+    "avb_stream_id": "Eight bytes represented by 16 hex digits; actual talker/stream identity is unknown.",
+    "avb_max_frame_size_bytes": "Advertised maximum MSDU excludes MAC framing but includes stream protocol header; this Ethernet baseline limits it to 1500, not 65535.",
+    "avb_max_interval_frames": "UInt16 maximum frame count per class interval, not packet frequency or queue length; actual positive TSpec value required.",
+    "avb_idle_slope_bps": "Actual reserved CBS rate, bounded by actual link rate; generic percentage cannot substitute for reservations.",
+    "avb_send_slope_bps": "Non-positive CBS decrease rate; must equal idleSlope minus link rate when both are provided.",
+    "avb_accumulated_latency_ns": "UInt32 nanosecond path bound from SRP, not automatic 2 ms/50 ms acceptance or project deadline.",
+    "avb_as_capable": "Actual boolean gPTP port state; blank remains unknown in UI/storage rather than being silently confirmed false.",
+    "avb_reservation_state": "Actual reservation state. A saved selection cannot execute MSRP or certify available resources.",
+    "avb_stream_rank": "Emergency/non-emergency stream rank, separate from three-bit PCP priority.",
+    "avb_destination_mac": "Actual six-byte multicast or locally administered destination; globally administered individual addresses rejected.",
+    "avb_highest_class_delta_bandwidth_percent": "Recommended highest-class deltaBandwidth 75 percent; actual reservations and lower-class budgets remain separate. Configurable recommendation, not fixed application bandwidth."
+  },
+  "removed": {
+    "reserved_bandwidth_percent": "Unscoped percentage replaced with native deltaBandwidth proposal and actual CBS idle slope.",
+    "rate_limit_bit_s": "Generic limiter does not implement stream credit shaping.",
+    "retransmission_enabled": "Native streamed Ethernet traffic has no generic ARQ delivery guarantee.",
+    "retransmission_rate": "Generic retry probability does not describe CBS/SRP.",
+    "retry_limit": "Generic retry count does not describe AVB stream transport.",
+    "retransmission_delay_ms": "Generic retry delay does not describe AVB stream transport.",
+    "gateway_maximum_throughput": "Unconfirmed fixed 100 Mbit gateway capability is not actual bridge capacity.",
+    "gateway_input_buffer": "Unconfirmed generic gateway buffer is not actual AVB bridge storage.",
+    "gateway_output_buffer": "Unconfirmed generic gateway buffer is not actual AVB bridge storage.",
+    "gateway_maximum_routes": "Actual bridge forwarding-table capability is unknown.",
+    "gateway_maximum_messages_s": "Actual bridge frame throughput is unknown."
+  },
+  "sources": [
+    "https://www.ieee802.org/1/files/public/docs2013/avb-mjt-et-all-AVB-for-IEEE-Smart-Home-0213.pdf",
+    "https://ieee802.org/3/cg/email/msg00694.html",
+    "https://github.com/Avnu/OpenAvnu/blob/master/daemons/mrpd/msrp.h",
+    "https://avnu.org/wp-content/uploads/2014/05/AVnu_Stream-Reservation-Protocol-v1.pdf",
+    "https://grouper.ieee.org/groups/802/1/files/public/docs2021/dg-turner-Qschedules-0621-v04.pdf",
+    "https://www.rfc-editor.org/rfc/rfc894",
+    "https://www.ieee802.org/3/archive.html",
+    "https://standards.ieee.org/ieee/802.1BA/10547/"
+  ],
+  "revisions": [
+    "IEEE AVB Task Group authors, February 2013, 2011 baseline, sections II-IV",
+    "IEEE working-group correspondence 2018-09-10, baseline Ethernet restrictions",
+    "OpenAvnu master msrp.h accessed 2026-10-01, first-value structures and field widths",
+    "AVnu SRP Best Practices v1 2014; indexed source extract available, full PDF fetch returned 403",
+    "IEEE 2021-06-29 contribution v04 section 5.3.1, quoted highest-class deltaBandwidth recommendation",
+    "RFC 894 April 1984, Ethernet data-field baseline; IEEE 802.3 archive accessed 2026-10-01",
+    "802.1BA-2021 existence verified; complete latest text and extensions not certified"
+  ],
+  "scope": "Every original and added parameter in Ethernet AVB A/B baseline, class/credit/word-width dependencies, actual vs proposed state, strict isolated storage and no industry-only assignment",
+  "validation": {
+    "isolated": "322 passed in 4.91s; nis_test_84427094ee96",
+    "frontend": "20 passed; unknown boolean remains unknown. TypeScript noEmit passed.",
+    "scope": "Every field type/options/bounds, A/B intervals, slopes, destinations, failed SQL edit preserving state; no runtime capacity claim"
+  },
+  "not_certified": ["Actual hardware, gPTP tree, MSRP reservations and stream paths", "Executable CBS/SRP capacity and E2E acceptance", "Complete latest licensed IEEE 802.1BA text, other media, jumbo frames, other SR classes or TSN profiles"]
+}

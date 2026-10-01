@@ -1,0 +1,743 @@
+import type { SequenceDiagramModel } from "./e2e-sequence";
+
+export type Technology = {
+  id: string;
+  kind: string;
+  family: string;
+  medium: string;
+  topology: string;
+  default_bitrate?: number | null;
+  max_payload_bytes?: number | null;
+  native_formats?: string[];
+  parameter_schema?: TechnologyParameterField[];
+  label?: string;
+  domain?: string;
+  layer?: "PHYSICAL" | "DATA_LINK" | "NETWORK" | "TRANSPORT" | "APPLICATION" | "INDUSTRY_PROFILE";
+  transport_unit?: string;
+  payload_element_types?: string[];
+  hardware_interface?: string;
+  default_stack?: string[];
+  implementation_status?: "IMPLEMENTED" | "PARTIAL" | "PLANNED" | "EXPERIMENTAL" | "LEGACY" | "NOT_SUPPORTED";
+  connection_type?: "DIRECT_IO" | "COMMUNICATION_TECHNOLOGY";
+  parameter_proposals?: {
+    kind: string;
+    unit?: string;
+    candidate?: number;
+    options?: Array<{ mode: string; maximum: number }>;
+    source?: string;
+    source_revision?: string;
+    status: "REVIEW_REQUIRED";
+    note?: string;
+  };
+  capacity_evidence?: {
+    status: "MODEL_AVAILABLE" | "MODEL_MISSING" | "NOT_APPLICABLE";
+    frame_model?: string | null;
+    schedule_model?: string | null;
+    requires_confirmed_device_parameters?: boolean;
+  };
+  capabilities?: Record<string, boolean>;
+  known_limitations?: string;
+};
+
+export type TechnologyParameterField = {
+  key: string;
+  label: string;
+  type: "number" | "select" | "boolean" | "text";
+  unit?: string;
+  min?: number;
+  max?: number;
+  default?: string | number | boolean;
+  options?: string[];
+  scope: "network" | "message" | "route" | "gateway" | "analysis" | "reliability" | "simulation";
+  category: "physical" | "timing" | "capacity" | "qos" | "reliability" | "synchronization" | "gateway" | "simulation";
+  description?: string;
+  required?: boolean;
+  editable?: boolean;
+  simulation_relevant?: boolean;
+  validation_relevant?: boolean;
+};
+
+export type TechnologyDomain = {
+  id: string;
+  label: string;
+  technologies: Technology[];
+  device_types?: string[];
+  recommended_technologies?: string[];
+};
+
+export type Catalog = {
+  technology_count: number;
+  domains: TechnologyDomain[];
+  formats: string[];
+  layers?: string[];
+  implementation_status?: Record<string, number>;
+  core_model_types?: string[];
+};
+
+export type ArtifactDownload = {
+  index: number;
+  name: string;
+  url: string;
+};
+
+export type SimulationResultPayload = {
+  assessment?: SimulationAssessment;
+  status: string;
+  output_dir: string;
+  warnings: string[];
+  hardware_validation: {
+    valid: boolean;
+    findings: Array<{ code?: string; message?: string; severity?: string }>;
+  };
+  trace: {
+    events: number;
+    routes?: number;
+    technologies?: string[];
+    duration_s?: number;
+  };
+  runtime_metrics?: RuntimeMetrics;
+  model_simulation?: ModelSimulationTrace;
+  registry_truncated?: boolean;
+  artifact_count?: number;
+};
+
+export type SimulationCoverage = {
+  complete: boolean;
+  scope_mode: string;
+  required_messages: number;
+  required_signals: number;
+  covered_messages: number;
+  covered_signals: number;
+  excluded_messages: number;
+  excluded_signals: number;
+  excluded_message_ids?: string[];
+  excluded_signal_ids?: string[];
+  transport_exclusions?: { message_id: string; message_name: string; signal_ids: string[]; reason_code: string; reason: string }[];
+  missing_message_ids: string[];
+  missing_signal_ids: string[];
+};
+
+export type SimulationAssessment = {
+  status: "COMPLETE" | "WARNING" | "ERROR";
+  execution_completed: boolean;
+  conformance: "PASS" | "FAIL" | "NOT_EVALUATED";
+  scope_coverage: SimulationCoverage;
+  observed_signal_count: number;
+  missing_observed_signal_ids: string[];
+  missing_observed_route_ids: string[];
+  missing_observed_network_ids: string[];
+  failed_route_count: number;
+  unevaluated_route_count: number;
+  evaluated_route_count: number;
+  expected_route_count: number;
+};
+
+export type ModelSignalPoint = {
+  time_s: number;
+  value: number | null;
+  golden_value: number | null;
+  faults: string[];
+  display_value?: string | number | null;
+  state?: string | null;
+  quality?: string | null;
+  trace_kind?: string | null;
+  actual_value?: number | null;
+  fault_state?: string | null;
+};
+
+export type ModelSignalSeries = {
+  signal_id: string;
+  signal: string;
+  unit: string;
+  minimum: number;
+  maximum: number;
+  resolution: number;
+  cycle_ms: number;
+  behavior_type: string;
+  semantic_type?: string;
+  trace_kind?: string;
+  interpolation?: string;
+  model_label: "PHYSICS_BASED" | "RULE_BASED" | "EMPIRICAL" | "SYNTHETIC" | "GENERIC_ESTIMATE";
+  points: ModelSignalPoint[];
+};
+
+export type ModelSimulationTrace = {
+  schema: string;
+  scenario: { name: string; mode: string; duration_s: number; speed: number; seed: number; trace_formats: string[] };
+  signals: ModelSignalSeries[];
+  events: Array<{ time_s: number; severity: string; event_type: string; scope: string; target: string; node?: string; message?: string; signal?: string; network?: string; description: string; faults: string[] }>;
+  frames: Array<{ time_s: number; route_id: string; route_name: string; network: string; technology?: string; status: string; sender: string; receivers: string[]; source_name?: string; source_logical_address?: string | null; destination_names?: string[]; destination_logical_addresses?: Array<string | null>; payload_bytes?: number; event_id?: string; transaction_id?: string; segment_index?: number; segment_count?: number; final_segment?: boolean; origin_release_time_s?: number; tx_start_s?: number; tx_end_s?: number; queue_delay_ms?: number; traffic_type?: "DATA" | "CONTROL"; protocol_event?: "TCP_SYN" | "TCP_SYN_ACK" | "TCP_ACK" | "SESSION_HELLO" | "SESSION_HELLO_ACK" | "DATA" | "DATA_ACK" | "HEARTBEAT" | "HEARTBEAT_ACK"; session_id?: string; ip_version?: number; transport_protocol?: "tcp" | "udp"; src_ip?: string; dst_ips?: string[] }>;
+  bus_load: Array<{ network_id: string; time_s: number; load_percent: number; window_ms: number }>;
+  comparison: { available: boolean; changed_samples: number; rmse: number; baseline: string; candidate: string };
+  restbus_summary?: {
+    enabled: boolean;
+    model: string;
+    control_frames: number;
+    data_frames: number;
+    sessions: Array<{ session_id: string; route_id: string; route_name: string; network: string; ip_version: number; transport_protocol: "tcp" | "udp"; state: "ESTABLISHED" | "DEGRADED"; handshake_complete: boolean; data_frames: number; data_acknowledgements: number; heartbeat_checks: number; heartbeat_replies: number }>;
+  };
+  model_labels: string[];
+  clock: string;
+};
+
+export type RuntimeNetworkMetric = {
+  network_id: string;
+  network_name?: string;
+  technology: string;
+  senders?: string[];
+  receivers?: string[];
+  event_count: number;
+  transmitted_count: number;
+  dropped_count: number;
+  corrupted_count: number;
+  average_load_percent: number;
+  peak_load_percent: number;
+  burst_load_percent: number;
+  average_queue_depth: number;
+  maximum_queue_depth: number;
+  average_queue_delay_ms: number;
+  maximum_queue_delay_ms: number;
+};
+
+export type RuntimeRouteMetric = {
+  canonical_route_id?: string;
+  route_segment_count?: number;
+  requirement_statuses?: Record<string, "PASS" | "FAIL" | "NOT_EVALUATED">;
+  route_id: string;
+  route_name: string;
+  network_id: string;
+  sender_id?: string;
+  sender?: string;
+  receiver_ids?: string[];
+  receivers?: string[];
+  event_count: number;
+  drop_rate: number;
+  corruption_rate: number;
+  configured_cycle_ms: number;
+  actual_average_cycle_ms: number;
+  actual_min_cycle_ms: number;
+  actual_max_cycle_ms: number;
+  average_jitter_ms: number;
+  p95_jitter_ms: number;
+  p99_jitter_ms: number;
+  maximum_jitter_ms: number;
+  jitter_limit_ms?: number | null;
+  jitter_violations: number;
+  maximum_latency_limit_ms?: number | null;
+  latency_violations?: number;
+  freshness_limit_ms?: number | null;
+  freshness_violations?: number;
+  average_end_to_end_latency_ms: number;
+  maximum_end_to_end_latency_ms: number;
+  average_queue_delay_ms: number;
+  maximum_queue_delay_ms: number;
+  timeouts: number;
+  status: "PASS" | "FAIL" | "NOT_EVALUATED";
+};
+
+export type RuntimeMetrics = {
+  available: boolean;
+  reason?: string;
+  calculation_model: string;
+  calculation_version?: string;
+  jitter_definition?: string;
+  peak_window_ms?: number;
+  burst_window_ms?: number;
+  summary?: {
+    event_count: number;
+    transmitted_events: number;
+    dropped_frames: number;
+    corrupted_frames: number;
+    timeouts: number;
+    jitter_violations: number;
+    latency_violations?: number;
+    freshness_violations?: number;
+    observed_duration_s: number;
+    route_status_counts?: Record<string, number>;
+    evaluated_route_count?: number;
+    expected_route_count?: number;
+  };
+  networks?: RuntimeNetworkMetric[];
+  routes?: RuntimeRouteMetric[];
+  sequence_model?: SequenceDiagramModel;
+  gateways?: Array<{
+    gateway_id: string;
+    event_count: number;
+    current_throughput_bps: number;
+    maximum_throughput_bps: number;
+    processing_load_percent: number;
+    average_queue_delay_ms: number;
+    processing_delay_ms: number;
+    protocol_conversion_delay_ms: number;
+  }>;
+  queues?: { average_depth: number; maximum_depth: number; queue_drops: number };
+  reliability?: { delivery_probability: number; packet_loss_rate: number; corruption_rate: number; retransmissions: number; duplicates?: number; reordered_events?: number };
+  synchronization?: { configured_clock_offset_ms?: number; clock_drift_ppm: number; sync_precision_ms: number; maximum_clock_offset_ms: number };
+  bottlenecks?: Array<{ type: string; object_id: string; value: number; unit: string }>;
+};
+
+export type SimulationJob = {
+  id: string;
+  status: "queued" | "running" | "completed" | "failed" | "canceled";
+  validate_only: boolean;
+  created_at: string;
+  updated_at: string;
+  error: string | null;
+  cancellation_requested?: boolean;
+  result: SimulationResultPayload | null;
+  artifact_downloads?: ArtifactDownload[];
+};
+
+// ---------------------------------------------------------------------------
+// Engineering-Modell (kanonische Objekte: HardwareNode, HardwareNetworkInterface,
+// Function, Interface, Message, Signal) und Relations (Kanten des Knowledge Graphs).
+// ---------------------------------------------------------------------------
+
+export type EngineeringResource =
+  | "hardware-nodes"
+  | "hardware-interfaces"
+  | "functions"
+  | "interfaces"
+  | "messages"
+  | "signals";
+
+export type EngineeringToolDefinition = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  workflow_step: string;
+  capabilities: string[];
+  input_schema: Record<string, unknown>;
+  output_schema: Record<string, unknown>;
+  supported_industries: string[];
+  supported_formats: string[];
+  requires_approval: boolean;
+  approval_scope: string;
+  status: string;
+  risk_level: string;
+  execution_endpoint: string | null;
+  ai_usage: string;
+  safeguards: string[];
+};
+
+export type EngineeringToolRegistryResponse = {
+  items: EngineeringToolDefinition[];
+  count: number;
+};
+
+export interface EngineeringProposalValidation {
+  index: number;
+  object_type: string;
+  valid: boolean;
+  errors: string[];
+}
+
+export interface EngineeringProposal {
+  proposal_id: string;
+  proposal_type: string;
+  prompt: string;
+  model: string | null;
+  confidence: number | null;
+  status: string;
+  evidence: Array<Record<string, unknown>>;
+  proposed_objects: Array<Record<string, unknown>>;
+  validation_results: EngineeringProposalValidation[];
+}
+
+export type EngineeringObjectType =
+  | "HardwareNode"
+  | "HardwareNetworkInterface"
+  | "Function"
+  | "Interface"
+  | "Message"
+  | "Signal";
+
+export type LifecycleState = "draft" | "active" | "deprecated" | "superseded";
+export type GovernanceSource = "manual" | "import" | "ai_generated" | "simulation_derived";
+export type ReviewState = "unreviewed" | "in_review" | "reviewed" | "rejected";
+export type ApprovalState = "pending" | "approved" | "rejected";
+
+export type GovernanceFields = {
+  id: string;
+  object_type: EngineeringObjectType;
+  name: string;
+  description: string | null;
+  domain: string | null;
+  version: number;
+  lifecycle_state: LifecycleState;
+  source: GovernanceSource;
+  provenance: Record<string, unknown>;
+  confidence: number | null;
+  review_state: ReviewState;
+  approval_state: ApprovalState;
+  created_at: string;
+  created_by: string | null;
+  modified_at: string;
+  modified_by: string | null;
+};
+
+export type HardwareNode = GovernanceFields & {
+  device_type: string;
+  device_class: number;
+  device_typing: string;
+  data_complexity: string;
+  classification_status: string;
+  capability_profile_ref: string | null;
+  identity: Record<string, unknown>;
+  product_information: Record<string, unknown>;
+  hardware_information: Record<string, unknown>;
+  software_information: Record<string, unknown>;
+  diagnostic_addressable: boolean;
+  logical_node_address: number | null;
+  formatted_logical_node_address: string | null;
+  address_assignment_mode: "AUTO" | "MANUAL" | "IMPORTED" | "RESERVED";
+  address_status: "UNASSIGNED" | "PROPOSED" | "ASSIGNED" | "CONFLICT" | "RESERVED" | "OUTDATED" | "INVALID";
+  address_namespace: string;
+  address_provenance: Record<string, unknown>;
+  logical_node_address_object: { value: number; formatted_value: string; namespace: string; assignment_mode: string; status: string; provenance: Record<string, unknown> } | null;
+};
+
+export type EngFunction = GovernanceFields & {
+  hardware_node_id: string | null;
+};
+
+export type HardwareNetworkInterface = GovernanceFields & {
+  hardware_node_id: string;
+  technology: string;
+  controller_ref: string | null;
+  physical_port_ref: string | null;
+  channel_index: number | null;
+  network_ref: string | null;
+  bitrate: number | null;
+  data_bitrate: number | null;
+  capabilities: Record<string, unknown>;
+  status: "CONFIGURED" | "UNMAPPED" | "ACTIVE" | "OUTDATED" | "OVERLOADED" | "ERROR";
+  message_refs: unknown[];
+  static_load: number | null;
+  runtime_load: number | null;
+  target_load_limit: number | null;
+  warning_load_limit: number | null;
+  hard_load_limit: number | null;
+};
+
+export type EngInterface = GovernanceFields & {
+  hardware_node_id: string | null;
+  function_id: string | null;
+  interface_type: string;
+  configuration: Record<string, unknown>;
+};
+
+export type EngMessage = GovernanceFields & {
+  interface_id: string | null;
+  hardware_interface_id: string | null;
+  message_id_hex: string | null;
+  direction: "rx" | "tx" | "bidirectional" | null;
+  cycle_ms: number | null;
+  dlc: number | null;
+  configuration: Record<string, unknown>;
+};
+
+export type EngSignal = GovernanceFields & {
+  message_id: string | null;
+  display_name: string | null;
+  start_bit: number | null;
+  length_bits: number | null;
+  byte_order: "little_endian" | "big_endian" | null;
+  data_type: string | null;
+  factor: number | null;
+  offset_value: number | null;
+  unit: string | null;
+  min_value: number | null;
+  max_value: number | null;
+  configuration: Record<string, unknown>;
+  semantic: Record<string, unknown>;
+  data: Record<string, unknown>;
+  communication: Record<string, unknown>;
+  quality: Record<string, unknown>;
+  protocol_bindings: Record<string, unknown>;
+};
+
+export type EngineeringObject = HardwareNode | HardwareNetworkInterface | EngFunction | EngInterface | EngMessage | EngSignal;
+
+export type EngineeringSchema = {
+  resources: EngineeringResource[];
+  device_types: string[];
+  device_classes: { value: number; label: string }[];
+  device_typings: string[];
+  data_complexities: string[];
+  classification_statuses: string[];
+  device_capability_profiles: Record<string, unknown>[];
+  interface_types: string[];
+  message_directions: string[];
+};
+
+export type EngineeringRelation = {
+  id: string;
+  source_type: string;
+  source_id: string;
+  target_type: string;
+  target_id: string;
+  relation_type: string;
+  attributes: Record<string, unknown>;
+  created_at: string;
+  created_by: string | null;
+};
+
+export type StructureSuggestion = {
+  child_type: Exclude<EngineeringObjectType, "HardwareNode" | "HardwareNetworkInterface">;
+  child_id: string;
+  child_name: string;
+  parent_type: EngineeringObjectType;
+  parent_id: string;
+  parent_name: string;
+  parent_field: string;
+  relation_type: string;
+  confidence: number;
+  reason: string;
+  current_name: string;
+  recommended_name: string;
+  learning_key: string;
+};
+
+export type StructureEvaluation = {
+  agent_review?: import('@/components/specialist-review').SpecialistReviewResult;
+  proposal_id: string;
+  model: string;
+  model_version: string;
+  confidence: number;
+  suggestions: StructureSuggestion[];
+  hardware_adjustments: Array<{
+    object_type: "HardwareNode";
+    id: string;
+    name: string;
+    field: "device_type";
+    current_value: string;
+    suggested_value: string;
+    reason: string;
+  }>;
+  learning: {
+    accepted: number;
+    rejected: number;
+    reviewed: number;
+  };
+};
+
+export type StructureAssignment = StructureSuggestion & {
+  name: string;
+};
+
+export type EcuTransferItem = {
+  object_type: Exclude<EngineeringObjectType, "HardwareNode">;
+  source_id: string;
+  source_name: string;
+  source_parent_id: string;
+  source_parent_name: string;
+  target_hardware_id: string;
+  target_parent_type: EngineeringObjectType;
+  target_parent_id: string | null;
+  target_parent_plan_key: string | null;
+  target_parent_name: string;
+  target_id: string | null;
+  target_name: string | null;
+  recommended_name: string;
+  action: "reuse" | "create";
+  suggested_action?: "reuse" | "create";
+  similarity: number;
+  confidence: number;
+  reason: string;
+  relation_type: string;
+  parent_field: string;
+  plan_key: string;
+  learning_key: string;
+  level: number;
+};
+
+export type EcuTransferDecision = {
+  plan_key: string;
+  action: "reuse" | "create" | "skip";
+  recommended_name?: string;
+  target_id?: string;
+};
+
+export type SystemDuplicateCandidate = {
+  candidate_key: string;
+  canonical_hardware: { id: string; name: string; child_count: number };
+  duplicate_hardware: { id: string; name: string; child_count: number };
+  name_similarity: number;
+  structure_similarity: number;
+  confidence: number;
+  reason: string;
+};
+
+export type SystemMergeResult = {
+  canonical_hardware: { id: string; name: string };
+  superseded_hardware: { id: string; name: string };
+  relation_id: string;
+  proposal_id: string;
+  confidence: number;
+  reversible: boolean;
+};
+
+export type EcuTransferReview = {
+  proposal_id: string;
+  source_hardware: { id: string; name: string };
+  target_hardware: { id: string; name: string };
+  confidence: number;
+  summary: {
+    total: number;
+    create: number;
+    reuse: number;
+    semantic_duplicates: number;
+  };
+  items: EcuTransferItem[];
+};
+
+export type EcuTransferAnalysis = {
+  agent_review?: import('@/components/specialist-review').SpecialistReviewResult;
+  model: string;
+  model_version: string;
+  source_hardware: { id: string; name: string };
+  targets: EcuTransferReview[];
+  learning: {
+    accepted: number;
+    rejected: number;
+    reviewed: number;
+  };
+};
+
+export type EngineeringImportPlan = {
+  import_id: string;
+  file_name: string;
+  format: "dbc" | "csv" | "xlsx" | "json" | "jsonl" | "yaml" | "yml" | "axml" | "arxml" | "fibex" | "xml" | "asc" | "trc" | "log" | "txt";
+  counts: {
+    hardware_nodes: number;
+    functions: number;
+    interfaces: number;
+    messages: number;
+    signals: number;
+  };
+  mapping: Record<string, string>;
+  warnings: string[];
+  hardware_nodes: Array<Record<string, unknown>>;
+  functions: Array<Record<string, unknown>>;
+  interfaces: Array<Record<string, unknown>>;
+  messages: Array<Record<string, unknown>>;
+  signals: Array<Record<string, unknown>>;
+};
+
+export type EngineeringImportResult = {
+  import_id: string;
+  created: number;
+  reused: number;
+  counts: Record<string, number>;
+};
+
+// ---------------------------------------------------------------------------
+// Routing Manager
+// ---------------------------------------------------------------------------
+
+export type RoutingEndpoint = {
+  node_id: string;
+  physical_port_ref?: string | null;
+  port_id?: string | null;
+  interface_id?: string | null;
+  network_id?: string | null;
+  protocol?: string | null;
+};
+
+export type RoutingValidationIssue = { code: string; message: string };
+
+export type RoutingValidation = {
+  valid: boolean;
+  errors: RoutingValidationIssue[];
+  warnings: RoutingValidationIssue[];
+  validation_timestamp: string;
+  metrics?: {
+    payload_bytes?: number;
+    estimated_latency_ms?: number;
+    route_load_percent?: number;
+    hop_count?: number;
+    gateway_count?: number;
+    physical_path_mapped?: boolean | null;
+  };
+  evidence?: Array<Record<string, unknown>>;
+  outdated_reason?: string;
+};
+
+export type RoutingEntry = {
+  id: string;
+  route_code: string;
+  revision: number;
+  supersedes_id?: string | null;
+  name: string;
+  description?: string | null;
+  source: RoutingEndpoint;
+  payload: {
+    data_requirements?: { text: string; categories: string[] };
+    interface_definition_id?: string | null;
+    interface_definition_ids?: string[];
+    message_id?: string | null;
+    message_ids?: string[];
+    signal_ids: string[];
+    topic?: string | null;
+    data_object?: string | null;
+  };
+  destinations: RoutingEndpoint[];
+  route: {
+    hops: Array<string | { node_id?: string; network_id?: string; name?: string }>;
+    gateways: Array<string | { node_id?: string; name?: string }>;
+    transformations: string[];
+    priority: "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
+  };
+  timing: {
+    cycle_time_ms?: number | null;
+    timeout_ms?: number | null;
+    max_latency_ms?: number | null;
+    jitter_limit_ms?: number | null;
+  };
+  routing_policy: {
+    routing_type: string;
+    redundancy: string;
+    fallback_route_id?: string | null;
+    conditions: Array<Record<string, unknown>>;
+  };
+  validation: Partial<RoutingValidation>;
+  status: string;
+  origin: string;
+  confidence?: number | null;
+  review_state: string;
+  approval_state: string;
+  source_id?: string | null;
+  source_version?: string | null;
+  created_at: string;
+  created_by?: string | null;
+  modified_at: string;
+  modified_by?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+};
+
+export type RoutingProposal = {
+  proposal_id: string;
+  prompt: string;
+  target_objects: unknown[];
+  generated_routes: RoutingEntry[];
+  retrieved_context: unknown[];
+  evidence: Array<Record<string, unknown>>;
+  confidence?: number | null;
+  validation_results: RoutingValidation[];
+  model?: string | null;
+  model_version?: string | null;
+  status: string;
+  created_at: string;
+};
+
+export type RoutingSchema = {
+  routing_types: string[];
+  protocols: string[];
+  priorities: string[];
+  redundancy_modes: string[];
+  permissions: string[];
+  agent_permissions: string[];
+};

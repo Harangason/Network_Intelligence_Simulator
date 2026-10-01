@@ -1,0 +1,113 @@
+--- before/frontend/src/components/simulation-wizard.tsx
++++ after/frontend/src/components/simulation-wizard.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
++import { booleanParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
+ 
+ import Link from "next/link";
+ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+@@ -986,7 +986,7 @@
+               }
+               return [field.key, numeric];
+             }
+-            if (field.type === "boolean") return [field.key, raw !== null];
++            if (field.type === "boolean") return [field.key, booleanParameterValue(field, raw)];
+             return [field.key, String(raw ?? "")];
+           }),
+         );
+@@ -1403,23 +1403,66 @@
+   unverified?: boolean;
+   proposal?: Technology["parameter_proposals"];
+ }) {
++  const [proposalError, setProposalError] = useState('');
+   const label = `${field.label}${field.unit ? ` (${field.unit})` : ""}`;
+   const missing = value === undefined || value === null || value === "";
+-  const gap = unverified ? <small>UNVERIFIED · {missing ? "Eingabe erforderlich" : "Profilvorschlag"}</small> : null;
++  const suggestion = field.parameter_origin === 'NIS_SCENARIO' ? 'NIS-Szenariovorschlag' : 'Profilvorschlag';
++  const gap = unverified ? <small>UNVERIFIED · {missing ? "Eingabe erforderlich" : suggestion}</small> : null;
++  const conditionalProposal = field.conditional_defaults?.length ? <>
++    <button className="button secondary" type="button" onClick={(event) => {
++      const form = event.currentTarget.closest('form');
++      if (!form) return;
++      const raw = new FormData(form);
++      const values: Record<string, unknown> = {};
++      for (const proposal of field.conditional_defaults ?? []) {
++        for (const [key, expected] of Object.entries(proposal.when)) {
++          const entered = raw.get(key);
++          values[key] = typeof expected === 'boolean' ? booleanParameterValue({}, entered)
++            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : Number(entered) : entered;
++        }
++      }
++      const suggested = conditionalParameterDefault(field, values);
++      const input = form.elements.namedItem(field.key);
++      if (suggested === undefined) {
++        setProposalError('Zuerst die zugehörige Einstellung auswählen.');
++      } else if (input instanceof HTMLInputElement || input instanceof HTMLSelectElement) {
++        input.value = String(suggested);
++        input.dispatchEvent(new Event('change', {bubbles: true}));
++        setProposalError('');
++      }
++    }}>Bedingten Standardwert übernehmen</button>
++    <small>{field.description}</small>
++    {proposalError && <small role="status">{proposalError}</small>}
++  </> : null;
+   if (field.type === "select") {
+     return (
+       <div className="field" title={field.description}>
+         <label htmlFor={field.key}>{label}</label>
+         {gap}
+         <select defaultValue={String(value ?? "")} id={field.key} name={field.key}>
++          {missing && <option value="">Bitte auswählen</option>}
+           {(field.options ?? []).map((option) => (
+             <option key={option} value={option}>{option.replaceAll("_", " ")}</option>
+           ))}
+         </select>
++        {conditionalProposal}
+       </div>
+     );
+   }
+   if (field.type === "boolean") {
++    if (field.default === undefined) {
++      return (
++        <div className="field" title={field.description}>
++          <label htmlFor={field.key}>{label}</label>
++          {gap}
++          <select defaultValue={missing ? '' : String(value)} id={field.key} name={field.key}>
++            <option value="">Nicht bekannt</option>
++            <option value="true">Ja</option>
++            <option value="false">Nein</option>
++          </select>
++        </div>
++      );
++    }
+     return (
+       <label className="parameter-toggle" title={field.description}>
+         <input defaultChecked={Boolean(value)} name={field.key} type="checkbox" />
+@@ -1434,6 +1477,7 @@
+         <label htmlFor={field.key}>{label}</label>
+         {gap}
+         <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" />
++        {conditionalProposal}
+       </div>
+     );
+   }
+@@ -1449,6 +1493,7 @@
+         required={field.required}
+         value={missing ? "" : String(value)}
+       />
++      {conditionalProposal}
+       {proposal?.options?.length ? (
+         <p className="muted">
+           Referenz-Obergrenzen, keine bestätigte Busfrequenz: {proposal.options.map(option =>
+@@ -1600,7 +1645,8 @@
+         </span>
+       </div>
+       <span className="tag">
+-        max. {(technology.max_payload_bytes ?? 0).toLocaleString("de-DE")} B
++        {technology.max_payload_bytes === undefined || technology.max_payload_bytes === null
++          ? "Payloadgrenze offen" : `max. ${technology.max_payload_bytes.toLocaleString("de-DE")} B`}
+       </span>
+     </div>
+   );

@@ -1,0 +1,1442 @@
+{
+  "affected_objects": [],
+  "data": {
+    "approved_by": null,
+    "assumptions": [
+      "Technische Defaults und ergänzte Geräte stammen aus den Wizard-Branchenkatalogen und müssen geprüft werden.",
+      "Lokale Messwerte und Stellbefehle erhalten ihre bestätigten Empfänger. Controllerstatus ohne bestätigten Empfänger bleibt als konkreter Review-Befund offen; eine Gateway-Verbindung allein bestätigt keinen Empfänger.",
+      "Schaltausgang und Stellglied sind generische Simulationsvorlagen mit Sollwert und separater Ausführungsmeldung. Reale Aktoren benötigen ihre gerätespezifische Spezifikation.",
+      "Für unbekannte Aktoren müssen Befehl, Bitlänge, Codierung und Wertebereich vor Modellfreigabe bestätigt werden (Aktor-Befehle).",
+      "Zykluswerte generierter lokaler Stellbefehle sind Entwurfskandidaten aus den Aktorstatuszyklen. Der Statuszyklus bestätigt keine Befehlsrate; diese getrennt prüfen.",
+      "Dieses Paket umfasst das Engineering-Modell. Routing, Topologie und Simulation folgen nach der Modellfreigabe."
+    ],
+    "canonical_ids": [],
+    "changes": [
+      {
+        "action": "CREATE",
+        "data": {
+          "data_complexity": "SERVICE_DATA",
+          "description": "ein sensor für temperatur messung, eine ECU, ein Aktor zum proportional schließen eines Ventil",
+          "device_class": 4,
+          "device_type": "ECU",
+          "device_typing": "Main Controller",
+          "identity": {
+            "installation_reference_frame": "asset-relative",
+            "installation_zone": "UNKNOWN",
+            "installation_zone_source": "spatial-architecture-v2",
+            "spatial_decision": {
+              "evidence": "Keine eindeutige räumliche Angabe; Nummer oder Funktion genügt nicht.",
+              "label": "Ort offen",
+              "reference_frame": "asset-relative",
+              "source": "unresolved",
+              "status": "UNRESOLVED",
+              "version": "spatial-architecture-v2",
+              "zone_id": "UNKNOWN"
+            },
+            "system_role": "MAIN_CONTROLLER"
+          },
+          "name": "ECU"
+        },
+        "local_ref": "object-2",
+        "object_type": "HardwareNode"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "id": "Regelung",
+          "name": "Regelung",
+          "technology": "I2C"
+        },
+        "local_ref": "network-0",
+        "object_type": "Network"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "id": "Regelung-IO-ecu-i2c-S01",
+          "name": "ECU I2C I/O Segment 1",
+          "technology": "I2C"
+        },
+        "local_ref": "network-1",
+        "object_type": "Network"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "data_complexity": "PHYSICAL_SCALAR",
+          "description": "ein sensor für temperatur messung, eine ECU, ein Aktor zum proportional schließen eines Ventil",
+          "device_class": 1,
+          "device_type": "SensorController",
+          "device_typing": "Basic Sensor",
+          "identity": {
+            "installation_reference_frame": "asset-relative",
+            "installation_zone": "UNKNOWN",
+            "installation_zone_source": "spatial-architecture-v2",
+            "spatial_decision": {
+              "evidence": "Keine eindeutige räumliche Angabe; Nummer oder Funktion genügt nicht.",
+              "label": "Ort offen",
+              "reference_frame": "asset-relative",
+              "source": "unresolved",
+              "status": "UNRESOLVED",
+              "version": "spatial-architecture-v2",
+              "zone_id": "UNKNOWN"
+            },
+            "system_owner_evidence": {
+              "controller_name": "ecu",
+              "endpoint_name": "temperatursensor1",
+              "source": "confirmed-systemcluster-graph"
+            },
+            "system_owner_id": "$object-2",
+            "system_owner_source": "wizard-confirmed"
+          },
+          "name": "Temperatursensor1"
+        },
+        "local_ref": "object-12",
+        "object_type": "HardwareNode"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "data_complexity": "CONTROL_COMMAND",
+          "description": "ein sensor für temperatur messung, eine ECU, ein Aktor zum proportional schließen eines Ventil",
+          "device_class": 1,
+          "device_type": "ActuatorController",
+          "device_typing": "Basic Actuator",
+          "identity": {
+            "installation_reference_frame": "asset-relative",
+            "installation_zone": "UNKNOWN",
+            "installation_zone_source": "spatial-architecture-v2",
+            "spatial_decision": {
+              "evidence": "Keine eindeutige räumliche Angabe; Nummer oder Funktion genügt nicht.",
+              "label": "Ort offen",
+              "reference_frame": "asset-relative",
+              "source": "unresolved",
+              "status": "UNRESOLVED",
+              "version": "spatial-architecture-v2",
+              "zone_id": "UNKNOWN"
+            },
+            "system_owner_evidence": {
+              "controller_name": "ecu",
+              "endpoint_name": "ventilaktor1",
+              "source": "confirmed-systemcluster-graph"
+            },
+            "system_owner_id": "$object-2",
+            "system_owner_source": "wizard-confirmed"
+          },
+          "name": "Ventilaktor1"
+        },
+        "local_ref": "object-17",
+        "object_type": "HardwareNode"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "description": "Aus Nutzerspezifikation abgeleitete Funktion. ein sensor für temperatur messung, eine ECU, ein Aktor zum proportional schließen eines Ventil",
+          "domain": "custom",
+          "hardware_node_id": "$object-2",
+          "name": "ECU"
+        },
+        "local_ref": "object-3",
+        "object_type": "Function"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "capabilities": {
+            "hardware_interface": "i2c_controller",
+            "supports_cyclic": true,
+            "supports_data_objects": false,
+            "supports_event": true,
+            "supports_fragmentation": false,
+            "supports_multicast": false,
+            "supports_publish_subscribe": false,
+            "supports_qos": false,
+            "supports_redundancy": false,
+            "supports_request_response": true,
+            "supports_safety_profile": false,
+            "supports_segmentation": false,
+            "supports_signals": true,
+            "supports_streams": false,
+            "supports_time_sync": false,
+            "technology_stack": [
+              "i2c"
+            ]
+          },
+          "channel_index": 1,
+          "hardware_node_id": "$object-2",
+          "name": "ECU",
+          "network_ref": "Regelung",
+          "technology": "I2C"
+        },
+        "local_ref": "object-4",
+        "object_type": "HardwareNetworkInterface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "capabilities": {
+            "hardware_interface": "i2c_controller",
+            "supports_cyclic": true,
+            "supports_data_objects": false,
+            "supports_event": true,
+            "supports_fragmentation": false,
+            "supports_multicast": false,
+            "supports_publish_subscribe": false,
+            "supports_qos": false,
+            "supports_redundancy": false,
+            "supports_request_response": true,
+            "supports_safety_profile": false,
+            "supports_segmentation": false,
+            "supports_signals": true,
+            "supports_streams": false,
+            "supports_time_sync": false,
+            "technology_stack": [
+              "i2c"
+            ]
+          },
+          "channel_index": 2,
+          "hardware_node_id": "$object-2",
+          "name": "Regelung-IO-ecu-i2c-S01",
+          "network_ref": "Regelung-IO-ecu-i2c-S01",
+          "technology": "I2C"
+        },
+        "local_ref": "object-22",
+        "object_type": "HardwareNetworkInterface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "capabilities": {
+            "hardware_interface": "i2c_controller",
+            "supports_cyclic": true,
+            "supports_data_objects": false,
+            "supports_event": true,
+            "supports_fragmentation": false,
+            "supports_multicast": false,
+            "supports_publish_subscribe": false,
+            "supports_qos": false,
+            "supports_redundancy": false,
+            "supports_request_response": true,
+            "supports_safety_profile": false,
+            "supports_segmentation": false,
+            "supports_signals": true,
+            "supports_streams": false,
+            "supports_time_sync": false,
+            "technology_stack": [
+              "i2c"
+            ]
+          },
+          "channel_index": 1,
+          "hardware_node_id": "$object-12",
+          "name": "Temperatursensor1",
+          "network_ref": "Regelung-IO-ecu-i2c-S01",
+          "technology": "I2C"
+        },
+        "local_ref": "object-13",
+        "object_type": "HardwareNetworkInterface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "capabilities": {
+            "hardware_interface": "i2c_controller",
+            "supports_cyclic": true,
+            "supports_data_objects": false,
+            "supports_event": true,
+            "supports_fragmentation": false,
+            "supports_multicast": false,
+            "supports_publish_subscribe": false,
+            "supports_qos": false,
+            "supports_redundancy": false,
+            "supports_request_response": true,
+            "supports_safety_profile": false,
+            "supports_segmentation": false,
+            "supports_signals": true,
+            "supports_streams": false,
+            "supports_time_sync": false,
+            "technology_stack": [
+              "i2c"
+            ]
+          },
+          "channel_index": 1,
+          "hardware_node_id": "$object-17",
+          "name": "Ventilaktor1",
+          "network_ref": "Regelung-IO-ecu-i2c-S01",
+          "technology": "I2C"
+        },
+        "local_ref": "object-18",
+        "object_type": "HardwareNetworkInterface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "endpoint_role": "SYSTEM_CONTROLLER",
+            "physical_interface_ids": [
+              "$object-4"
+            ]
+          },
+          "function_id": "$object-3",
+          "interface_type": "I2C",
+          "name": "ECU"
+        },
+        "local_ref": "object-5",
+        "object_type": "Interface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "physical_interface_ids": [
+              "$object-22"
+            ]
+          },
+          "function_id": "$object-3",
+          "interface_type": "I2C",
+          "name": "ECU_I2C_IO"
+        },
+        "local_ref": "object-23",
+        "object_type": "Interface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "physical_interface_ids": [
+              "$object-13"
+            ]
+          },
+          "hardware_node_id": "$object-12",
+          "interface_type": "I2C",
+          "name": "Temperatursensor1"
+        },
+        "local_ref": "object-14",
+        "object_type": "Interface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "physical_interface_ids": [
+              "$object-18"
+            ]
+          },
+          "hardware_node_id": "$object-17",
+          "interface_type": "I2C",
+          "name": "Ventilaktor1"
+        },
+        "local_ref": "object-19",
+        "object_type": "Interface"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "communication_contract": {
+              "basis": "Betriebszustand bleibt im Controller; externer Export benötigt eine bestätigte Empfängerzuordnung",
+              "consumer_refs": [],
+              "producer_ref": "$object-2",
+              "role": "INTERNAL_STATE",
+              "scope": "INTERNAL",
+              "version": 2
+            },
+            "model_type": "TransportUnit",
+            "routing": {
+              "enabled": false
+            },
+            "technology_binding": {
+              "binding": "TechnologyBindingAdapter",
+              "capabilities": {
+                "supports_cyclic": true,
+                "supports_data_objects": false,
+                "supports_event": true,
+                "supports_fragmentation": false,
+                "supports_multicast": false,
+                "supports_publish_subscribe": false,
+                "supports_qos": false,
+                "supports_redundancy": false,
+                "supports_request_response": true,
+                "supports_safety_profile": false,
+                "supports_segmentation": false,
+                "supports_signals": true,
+                "supports_streams": false,
+                "supports_time_sync": false
+              },
+              "capacity_evidence": {
+                "frame_model": "I2C_CONFIRMED_TRANSACTION_BOUND_V1",
+                "requires_confirmed_device_parameters": true,
+                "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+                "status": "MODEL_AVAILABLE"
+              },
+              "generator": "TechnologyTransportGenerator",
+              "hardware_interface": "i2c_controller",
+              "implementation_status": "PARTIAL",
+              "layer": "DATA_LINK",
+              "load_calculator": "TechnologyLoadCalculator",
+              "stack": [
+                "i2c"
+              ],
+              "technology_id": "i2c",
+              "timing_model": "TechnologyTimingModel",
+              "transport_unit_type": "MESSAGE",
+              "validator_chain": [
+                "TechnologyValidator"
+              ]
+            },
+            "transport_unit": {
+              "consumer_refs": [],
+              "payload_size": 3,
+              "producer_ref": "$object-2",
+              "provenance": {
+                "generator": "TechnologyTransportGenerator",
+                "source": "wizard"
+              },
+              "status": "PROPOSED",
+              "timing": {
+                "cycle_ms": 10
+              },
+              "transport_unit_type": "MESSAGE"
+            }
+          },
+          "cycle_ms": 10,
+          "direction": "tx",
+          "dlc": 3,
+          "hardware_interface_id": "$object-4",
+          "interface_id": "$object-5",
+          "message_id_hex": "0x180",
+          "name": "ECU"
+        },
+        "local_ref": "object-6",
+        "object_type": "Message"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "communication_contract": {
+              "basis": "Bestehende explizite Empfängerzuordnung",
+              "consumer_refs": [
+                "$object-17"
+              ],
+              "producer_ref": "$object-2",
+              "role": "EXPLICIT",
+              "version": 2
+            },
+            "cycle_source": "ACTUATOR_STATUS_CANDIDATE_REQUIRES_REVIEW",
+            "model_type": "TransportUnit",
+            "physical_transmit_bindings": [
+              {
+                "hardware_interface_id": "$object-22",
+                "network_id": "Regelung-IO-ecu-i2c-S01"
+              }
+            ],
+            "technology_binding": {
+              "binding": "TechnologyBindingAdapter",
+              "capabilities": {
+                "supports_cyclic": true,
+                "supports_data_objects": false,
+                "supports_event": true,
+                "supports_fragmentation": false,
+                "supports_multicast": false,
+                "supports_publish_subscribe": false,
+                "supports_qos": false,
+                "supports_redundancy": false,
+                "supports_request_response": true,
+                "supports_safety_profile": false,
+                "supports_segmentation": false,
+                "supports_signals": true,
+                "supports_streams": false,
+                "supports_time_sync": false
+              },
+              "capacity_evidence": {
+                "frame_model": "I2C_CONFIRMED_TRANSACTION_BOUND_V1",
+                "requires_confirmed_device_parameters": true,
+                "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+                "status": "MODEL_AVAILABLE"
+              },
+              "generator": "TechnologyTransportGenerator",
+              "hardware_interface": "i2c_controller",
+              "implementation_status": "PARTIAL",
+              "layer": "DATA_LINK",
+              "load_calculator": "TechnologyLoadCalculator",
+              "stack": [
+                "i2c"
+              ],
+              "technology_id": "i2c",
+              "timing_model": "TechnologyTimingModel",
+              "transport_unit_type": "MESSAGE",
+              "validator_chain": [
+                "TechnologyValidator"
+              ]
+            },
+            "transport_unit": {
+              "consumer_refs": [
+                "$object-17"
+              ],
+              "payload_size": 2,
+              "producer_ref": "$object-2",
+              "provenance": {
+                "generator": "wizard-local-actuator-command",
+                "source": "wizard"
+              },
+              "status": "PROPOSED",
+              "timing": {
+                "cycle_ms": 10.0,
+                "cycle_source": "ACTUATOR_STATUS_CANDIDATE_REQUIRES_REVIEW"
+              },
+              "transport_unit_type": "MESSAGE"
+            }
+          },
+          "cycle_ms": 10.0,
+          "direction": "tx",
+          "dlc": 2,
+          "hardware_interface_id": "$object-22",
+          "interface_id": "$object-23",
+          "name": "ECU I2 C IO Befehl"
+        },
+        "local_ref": "object-24",
+        "object_type": "Message"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "communication_contract": {
+              "basis": "Bestätigte Gerätezuordnung im Systemcluster",
+              "consumer_refs": [
+                "$object-2"
+              ],
+              "producer_ref": "$object-12",
+              "role": "MEASUREMENT",
+              "version": 2
+            },
+            "model_type": "TransportUnit",
+            "technology_binding": {
+              "binding": "TechnologyBindingAdapter",
+              "capabilities": {
+                "supports_cyclic": true,
+                "supports_data_objects": false,
+                "supports_event": true,
+                "supports_fragmentation": false,
+                "supports_multicast": false,
+                "supports_publish_subscribe": false,
+                "supports_qos": false,
+                "supports_redundancy": false,
+                "supports_request_response": true,
+                "supports_safety_profile": false,
+                "supports_segmentation": false,
+                "supports_signals": true,
+                "supports_streams": false,
+                "supports_time_sync": false
+              },
+              "capacity_evidence": {
+                "frame_model": "I2C_CONFIRMED_TRANSACTION_BOUND_V1",
+                "requires_confirmed_device_parameters": true,
+                "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+                "status": "MODEL_AVAILABLE"
+              },
+              "generator": "TechnologyTransportGenerator",
+              "hardware_interface": "i2c_controller",
+              "implementation_status": "PARTIAL",
+              "layer": "DATA_LINK",
+              "load_calculator": "TechnologyLoadCalculator",
+              "stack": [
+                "i2c"
+              ],
+              "technology_id": "i2c",
+              "timing_model": "TechnologyTimingModel",
+              "transport_unit_type": "MESSAGE",
+              "validator_chain": [
+                "TechnologyValidator"
+              ]
+            },
+            "transport_unit": {
+              "consumer_refs": [
+                "$object-2"
+              ],
+              "payload_size": 2,
+              "producer_ref": "$object-12",
+              "provenance": {
+                "generator": "TechnologyTransportGenerator",
+                "source": "wizard"
+              },
+              "status": "PROPOSED",
+              "timing": {
+                "cycle_ms": 10
+              },
+              "transport_unit_type": "MESSAGE"
+            }
+          },
+          "cycle_ms": 10,
+          "direction": "tx",
+          "dlc": 2,
+          "hardware_interface_id": "$object-13",
+          "interface_id": "$object-14",
+          "message_id_hex": "0x181",
+          "name": "Temperatursensor1 Temperatur Erfassung"
+        },
+        "local_ref": "object-15",
+        "object_type": "Message"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "configuration": {
+            "communication_contract": {
+              "basis": "Bestätigte Gerätezuordnung im Systemcluster",
+              "consumer_refs": [
+                "$object-2"
+              ],
+              "producer_ref": "$object-17",
+              "role": "FEEDBACK",
+              "version": 2
+            },
+            "model_type": "TransportUnit",
+            "technology_binding": {
+              "binding": "TechnologyBindingAdapter",
+              "capabilities": {
+                "supports_cyclic": true,
+                "supports_data_objects": false,
+                "supports_event": true,
+                "supports_fragmentation": false,
+                "supports_multicast": false,
+                "supports_publish_subscribe": false,
+                "supports_qos": false,
+                "supports_redundancy": false,
+                "supports_request_response": true,
+                "supports_safety_profile": false,
+                "supports_segmentation": false,
+                "supports_signals": true,
+                "supports_streams": false,
+                "supports_time_sync": false
+              },
+              "capacity_evidence": {
+                "frame_model": "I2C_CONFIRMED_TRANSACTION_BOUND_V1",
+                "requires_confirmed_device_parameters": true,
+                "schedule_model": "SERIAL_MASTER_BUSY_WINDOW_V1",
+                "status": "MODEL_AVAILABLE"
+              },
+              "generator": "TechnologyTransportGenerator",
+              "hardware_interface": "i2c_controller",
+              "implementation_status": "PARTIAL",
+              "layer": "DATA_LINK",
+              "load_calculator": "TechnologyLoadCalculator",
+              "stack": [
+                "i2c"
+              ],
+              "technology_id": "i2c",
+              "timing_model": "TechnologyTimingModel",
+              "transport_unit_type": "MESSAGE",
+              "validator_chain": [
+                "TechnologyValidator"
+              ]
+            },
+            "transport_unit": {
+              "consumer_refs": [
+                "$object-2"
+              ],
+              "payload_size": 1,
+              "producer_ref": "$object-17",
+              "provenance": {
+                "generator": "TechnologyTransportGenerator",
+                "source": "wizard"
+              },
+              "status": "PROPOSED",
+              "timing": {
+                "cycle_ms": 10
+              },
+              "transport_unit_type": "MESSAGE"
+            }
+          },
+          "cycle_ms": 10,
+          "direction": "tx",
+          "dlc": 1,
+          "hardware_interface_id": "$object-18",
+          "interface_id": "$object-19",
+          "message_id_hex": "0x182",
+          "name": "Ventilaktor1"
+        },
+        "local_ref": "object-20",
+        "object_type": "Message"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "ECU",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 4,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "coded",
+            "endianness": "little_endian",
+            "factor": 1,
+            "generation_role": "STATUS",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 24,
+            "payload_free_bits": 1,
+            "payload_used_bits": 23,
+            "payload_utilization": 0.9583,
+            "projected_interface_load_percent": 2.16,
+            "projected_message_load_percent": 2.16,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 19
+          },
+          "data": {
+            "default_value": "OFF",
+            "enum_values": {
+              "ACTIVE": 3,
+              "DEGRADED": 4,
+              "ERROR": 5,
+              "INIT": 1,
+              "OFF": 0,
+              "READY": 2
+            },
+            "invalid_value": 15,
+            "reserved_values": [
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          "data_type": "unsigned",
+          "factor": 1,
+          "length_bits": 4,
+          "max_value": 15,
+          "message_id": "$object-6",
+          "min_value": 0,
+          "name": "ECUStatus",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "ECUStatus",
+              "size": 4,
+              "source_ref": "$object-2",
+              "technology_binding_ref": "i2c",
+              "unit": "code"
+            }
+          ],
+          "quality": {
+            "confidence": 0.86,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "meaning": "Betriebszustand",
+            "semantic_type": "STATE"
+          },
+          "start_bit": 19,
+          "unit": "code"
+        },
+        "local_ref": "object-7",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "ECU",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 3,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "coded",
+            "endianness": "little_endian",
+            "factor": 1,
+            "generation_role": "HEALTH",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 24,
+            "payload_free_bits": 1,
+            "payload_used_bits": 23,
+            "payload_utilization": 0.9583,
+            "projected_interface_load_percent": 2.16,
+            "projected_message_load_percent": 2.16,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 4
+          },
+          "data": {
+            "default_value": "OK",
+            "enum_values": {
+              "DEGRADED": 2,
+              "FAILED": 3,
+              "OK": 0,
+              "WARNING": 1
+            },
+            "invalid_value": 7,
+            "reserved_values": [
+              4,
+              5,
+              6
+            ]
+          },
+          "data_type": "unsigned",
+          "factor": 1,
+          "length_bits": 3,
+          "max_value": 7,
+          "message_id": "$object-6",
+          "min_value": 0,
+          "name": "ECUHealth",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "ECUHealth",
+              "size": 3,
+              "source_ref": "$object-2",
+              "technology_binding_ref": "i2c",
+              "unit": "code"
+            }
+          ],
+          "quality": {
+            "confidence": 0.86,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "meaning": "Diagnosezustand",
+            "semantic_type": "ENUM"
+          },
+          "start_bit": 4,
+          "unit": "code"
+        },
+        "local_ref": "object-8",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "ECU",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 8,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "linear",
+            "endianness": "little_endian",
+            "factor": 0.5,
+            "generation_role": "QUALITY",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 24,
+            "payload_free_bits": 1,
+            "payload_used_bits": 23,
+            "payload_utilization": 0.9583,
+            "projected_interface_load_percent": 2.16,
+            "projected_message_load_percent": 2.16,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 11
+          },
+          "data": {
+            "allowed_values": [],
+            "default_value": 0,
+            "enum_values": {},
+            "invalid_values": [],
+            "maximum": 100,
+            "minimum": 0,
+            "reserved_values": [],
+            "resolution": 0.5
+          },
+          "data_type": "unsigned",
+          "factor": 0.5,
+          "length_bits": 8,
+          "max_value": 100,
+          "message_id": "$object-6",
+          "min_value": 0,
+          "name": "ECUQuality",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 0.5,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "ECUQuality",
+              "size": 8,
+              "source_ref": "$object-2",
+              "technology_binding_ref": "i2c",
+              "unit": "%"
+            }
+          ],
+          "quality": {
+            "confidence": 0.92,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "meaning": "Datenqualitaet",
+            "semantic_type": "NUMERIC"
+          },
+          "start_bit": 11,
+          "unit": "%"
+        },
+        "local_ref": "object-9",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "ECU",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 4,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "linear",
+            "endianness": "little_endian",
+            "factor": 1,
+            "generation_role": "ALIVECOUNTER",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 24,
+            "payload_free_bits": 1,
+            "payload_used_bits": 23,
+            "payload_utilization": 0.9583,
+            "projected_interface_load_percent": 2.16,
+            "projected_message_load_percent": 2.16,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 0
+          },
+          "data": {
+            "allowed_values": [],
+            "default_value": 0,
+            "enum_values": {},
+            "invalid_values": [],
+            "maximum": 15,
+            "minimum": 0,
+            "reserved_values": [],
+            "resolution": 1
+          },
+          "data_type": "unsigned",
+          "factor": 1,
+          "length_bits": 4,
+          "max_value": 15,
+          "message_id": "$object-6",
+          "min_value": 0,
+          "name": "ECUAliveCounter",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "ECUAliveCounter",
+              "size": 4,
+              "source_ref": "$object-2",
+              "technology_binding_ref": "i2c",
+              "unit": "count"
+            }
+          ],
+          "quality": {
+            "confidence": 0.92,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "meaning": "Lebendzaehler",
+            "semantic_type": "COUNTER"
+          },
+          "start_bit": 0,
+          "unit": "count"
+        },
+        "local_ref": "object-10",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "ECU",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 4,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "coded",
+            "endianness": "little_endian",
+            "factor": 1,
+            "generation_role": "MODE",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 24,
+            "payload_free_bits": 1,
+            "payload_used_bits": 23,
+            "payload_utilization": 0.9583,
+            "projected_interface_load_percent": 2.16,
+            "projected_message_load_percent": 2.16,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 7
+          },
+          "data": {
+            "default_value": "NORMAL",
+            "enum_values": {
+              "DIAGNOSTIC": 2,
+              "NORMAL": 0,
+              "SAFE": 3,
+              "SERVICE": 1
+            },
+            "invalid_value": 15,
+            "reserved_values": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          "data_type": "unsigned",
+          "factor": 1,
+          "length_bits": 4,
+          "max_value": 15,
+          "message_id": "$object-6",
+          "min_value": 0,
+          "name": "ECUMode",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "ECUMode",
+              "size": 4,
+              "source_ref": "$object-2",
+              "technology_binding_ref": "i2c",
+              "unit": "code"
+            }
+          ],
+          "quality": {
+            "confidence": 0.86,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "meaning": "Betriebsart",
+            "semantic_type": "ENUM"
+          },
+          "start_bit": 7,
+          "unit": "code"
+        },
+        "local_ref": "object-11",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "configuration": {
+            "generation_role": "COMMAND",
+            "requires_hardware_adaptation": true,
+            "template": "generic-simulation-actuator-v1"
+          },
+          "data": {
+            "maximum": 100,
+            "minimum": 0,
+            "resolution": 0.1
+          },
+          "data_type": "unsigned",
+          "factor": 0.1,
+          "length_bits": 10,
+          "max_value": 100,
+          "message_id": "$object-24",
+          "min_value": 0,
+          "name": "Ventilaktor1Sollwert",
+          "offset_value": 0,
+          "semantic": {
+            "meaning": "Angeforderte Stellposition",
+            "semantic_type": "NUMERIC"
+          },
+          "start_bit": 0,
+          "unit": "%"
+        },
+        "local_ref": "communication-25",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "Temperatursensor1",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 13,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "linear",
+            "endianness": "little_endian",
+            "factor": 0.1,
+            "functional_owner": "ECU",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "measurement_source": "explicit_user_selection",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 16,
+            "payload_free_bits": 3,
+            "payload_used_bits": 13,
+            "payload_utilization": 0.8125,
+            "projected_interface_load_percent": 2.08,
+            "projected_message_load_percent": 2.08,
+            "raw_datatype": "signed",
+            "sensor_measurement": "temperature",
+            "signed": true,
+            "start_bit": 0
+          },
+          "data": {
+            "allowed_values": [],
+            "default_value": 0,
+            "enum_values": {},
+            "invalid_values": [],
+            "maximum": 215,
+            "minimum": -40,
+            "reserved_values": [],
+            "resolution": 0.1
+          },
+          "data_type": "signed",
+          "factor": 0.1,
+          "length_bits": 13,
+          "max_value": 215,
+          "message_id": "$object-15",
+          "min_value": -40,
+          "name": "Temperatur_Temperatursensor1",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "signed",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 0.1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "Temperatur_Temperatursensor1",
+              "size": 13,
+              "source_ref": "$object-12",
+              "technology_binding_ref": "i2c",
+              "unit": "degC"
+            }
+          ],
+          "quality": {
+            "confidence": 0.92,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "assumptions": [],
+            "category": "temperatursensor1",
+            "generated_by": "engineering-specification-parser-v3",
+            "meaning": "Temperatur_Temperatursensor1 beschreibt Temperatursensor1.",
+            "quantity": "Temperatur_Temperatursensor1",
+            "semantic_type": "NUMERIC",
+            "unit": "degC"
+          },
+          "start_bit": 0,
+          "unit": "degC"
+        },
+        "local_ref": "object-16",
+        "object_type": "Signal"
+      },
+      {
+        "action": "CREATE",
+        "data": {
+          "byte_order": "little_endian",
+          "communication": {
+            "consumers": [],
+            "cycle_time_ms": 10,
+            "producer": "Ventilaktor1",
+            "update_type": "cyclic_fast"
+          },
+          "configuration": {
+            "bit_length": 8,
+            "coding_rule": "MEANING_VALUE_DOMAIN_ENCODING_PACKING_TRANSPORT",
+            "connection_source": "explicit_device_connection",
+            "encoding_type": "coded",
+            "endianness": "little_endian",
+            "factor": 1,
+            "functional_owner": "ECU",
+            "interface_allocation_policy": "REUSE_EXISTING_CAPACITY_FIRST",
+            "offset": 0,
+            "packing_policy": "MINIMUM_VALID_SIZE",
+            "payload_capacity_bits": 8,
+            "payload_free_bits": 0,
+            "payload_used_bits": 8,
+            "payload_utilization": 1,
+            "projected_interface_load_percent": 2,
+            "projected_message_load_percent": 2,
+            "raw_datatype": "unsigned",
+            "signed": false,
+            "start_bit": 0
+          },
+          "data": {
+            "allowed_values": [
+              "OK",
+              "WARNING",
+              "ERROR",
+              "NOT_AVAILABLE"
+            ],
+            "default_value": "OK",
+            "enum_values": {
+              "ERROR": 2,
+              "NOT_AVAILABLE": 3,
+              "OK": 0,
+              "WARNING": 1
+            },
+            "invalid_values": [
+              7
+            ],
+            "reserved_values": [
+              4,
+              5,
+              6
+            ],
+            "resolution": 1
+          },
+          "data_type": "unsigned",
+          "factor": 1,
+          "length_bits": 8,
+          "message_id": "$object-20",
+          "name": "Ventilaktor1Status",
+          "offset_value": 0,
+          "protocol_bindings": [
+            {
+              "data_type": "unsigned",
+              "element_type": "SIGNAL",
+              "encoding": {
+                "byte_order": "little_endian",
+                "factor": 1,
+                "offset": 0
+              },
+              "model_type": "PayloadElement",
+              "semantic_ref": "Ventilaktor1Status",
+              "size": 8,
+              "source_ref": "$object-17",
+              "technology_binding_ref": "i2c",
+              "unit": null
+            }
+          ],
+          "quality": {
+            "confidence": 0.86,
+            "encoding_complete": true,
+            "packing_complete": true,
+            "semantic_complete": true,
+            "validation_status": "proposal",
+            "value_domain_complete": true
+          },
+          "semantic": {
+            "assumptions": [
+              "Diskretes Signal wurde als explizite Value-Domain modelliert."
+            ],
+            "category": "ventilaktor1",
+            "generated_by": "engineering-specification-parser-v3",
+            "meaning": "Ventilaktor1Status beschreibt Ventilaktor1.",
+            "quantity": "Ventilaktor1Status",
+            "semantic_type": "STATE",
+            "unit": "not_applicable"
+          },
+          "start_bit": 0
+        },
+        "local_ref": "object-21",
+        "object_type": "Signal"
+      }
+    ],
+    "confidence": 0.5,
+    "evidence": [
+      {
+        "previous_proposal_id": "04aba1e0-6f5e-4ea5-9829-4b3ae42643eb",
+        "source": "human_revision"
+      }
+    ],
+    "object_refs": [],
+    "proposal_id": "fa6314ae-2830-46b2-bf91-2fef60966817",
+    "proposal_type": "WIZARD_ENGINEERING_MODEL",
+    "rationale": "Engineering-Modell aus bestätigten Wizard-Vorgaben: 26 vorgeschlagene Änderungen. Noch keine Änderungen am kanonischen Modell; Freigabe und Übernahme sind erforderlich.",
+    "replacement_proposal_id": null,
+    "revision": "93650efa-5259-40bd-9d80-e2b0beb935d5",
+    "status": "VALIDATED",
+    "validation_result": {
+      "capacity_status": "UNVERIFIED",
+      "findings": [
+        {
+          "code": "CAPACITY_UNVERIFIED",
+          "index": 8,
+          "message": "Interface-Auslastung nicht nachgewiesen: local_timing_evidence. Parameter für diese Technologie prüfen und bestätigen.",
+          "missing_fields": [
+            "local_timing_evidence"
+          ],
+          "network_id": "Regelung-IO-ecu-i2c-S01",
+          "network_name": "ECU I2C I/O Segment 1",
+          "node_name": "Temperatursensor1",
+          "object_id": "$object-13",
+          "object_name": "Temperatursensor1",
+          "object_type": "HardwareNetworkInterface",
+          "repair_action": "REVIEW_TECHNOLOGY_PARAMETERS",
+          "severity": "OPEN",
+          "technology": "i2c"
+        },
+        {
+          "code": "CAPACITY_UNVERIFIED",
+          "index": 9,
+          "message": "Interface-Auslastung nicht nachgewiesen: local_timing_evidence. Parameter für diese Technologie prüfen und bestätigen.",
+          "missing_fields": [
+            "local_timing_evidence"
+          ],
+          "network_id": "Regelung-IO-ecu-i2c-S01",
+          "network_name": "ECU I2C I/O Segment 1",
+          "node_name": "Ventilaktor1",
+          "object_id": "$object-18",
+          "object_name": "Ventilaktor1",
+          "object_type": "HardwareNetworkInterface",
+          "repair_action": "REVIEW_TECHNOLOGY_PARAMETERS",
+          "severity": "OPEN",
+          "technology": "i2c"
+        },
+        {
+          "code": "CAPACITY_UNVERIFIED",
+          "index": 7,
+          "message": "Interface-Auslastung nicht nachgewiesen: local_timing_evidence. Parameter für diese Technologie prüfen und bestätigen.",
+          "missing_fields": [
+            "local_timing_evidence"
+          ],
+          "network_id": "Regelung-IO-ecu-i2c-S01",
+          "network_name": "ECU I2C I/O Segment 1",
+          "node_name": "ECU",
+          "object_id": "$object-22",
+          "object_name": "Regelung-IO-ecu-i2c-S01",
+          "object_type": "HardwareNetworkInterface",
+          "repair_action": "REVIEW_TECHNOLOGY_PARAMETERS",
+          "severity": "OPEN",
+          "technology": "i2c"
+        },
+        {
+          "code": "CAPACITY_UNVERIFIED",
+          "index": 6,
+          "message": "Interface-Auslastung nicht nachgewiesen: local_timing_evidence. Parameter für diese Technologie prüfen und bestätigen.",
+          "missing_fields": [
+            "local_timing_evidence"
+          ],
+          "network_id": "Regelung",
+          "network_name": "Regelung",
+          "node_name": "ECU",
+          "object_id": "$object-4",
+          "object_name": "ECU",
+          "object_type": "HardwareNetworkInterface",
+          "repair_action": "REVIEW_TECHNOLOGY_PARAMETERS",
+          "severity": "OPEN",
+          "technology": "i2c"
+        }
+      ],
+      "requested": 26,
+      "valid": true,
+      "valid_count": 26,
+      "validation_scope": "MODEL_STRUCTURE"
+    },
+    "workload_id": null
+  },
+  "evidence": [],
+  "evidence_refs": [],
+  "findings": [],
+  "next_actions": [],
+  "status": "SUCCESS",
+  "success": true,
+  "time_range": null,
+  "trace_id": "0bad5a9e-bef3-4d7f-a165-661fad710e01",
+  "validation_status": "NOT_EVALUATED",
+  "warnings": []
+}

@@ -1,0 +1,68 @@
+{
+  "validation_requirements": [
+    "frontend_targeted",
+    "isolated_wizard_examples",
+    "release_gate"
+  ],
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "required_outcomes": [
+    "generic_ecu_identified",
+    "review_choices_preserved",
+    "catalog_corrected",
+    "wizard_examples_recorded"
+  ],
+  "kind": "repair",
+  "modify_code": true,
+  "revision_before": {
+    "backend/communication/technologies/catalog.py": "50a5b0ea74a89a2e82a4d8b0697fae6d122c0f597feb1081ecc33c8ee3e49a1d",
+    "frontend/src/components/simulation-wizard.tsx": "73d0e26346c71aa5472ec81b17badf9a9fcd189de605d481a6f06e3f31aa61a5",
+    "frontend/src/lib/agent/engineering-specification.ts": "b398e4e34d00e3fbd2b7d9c000ba5cbad66af6a3c573801b09fcf1207ab1f5b3",
+    "frontend/e2e/equipment-inventory.spec.ts": "7c1803eeb12ce524e262b4e2338cc295688f1e5296f6bfd79d628acc68ffef75",
+    "frontend/src/components/agent-chat-core.tsx": "f3193e646381ade0bae41807e9cc08bf7d62c93ca5e00333878b285d19a1ae03",
+    "frontend/src/lib/agent/engineering-specification.test.mjs": "1a0cfc93db5c4f3befad307168afe96050e40faabea4176713ae8fe01e3a0b44",
+    "backend/tests/test_technology_profile_semantics.py": "fff4e9415baa960753b08150587c417cb06b5de0c7307232511166d5fd078e47"
+  },
+  "allow_repair": true,
+  "unresolved_decisions": [],
+  "repair": {
+    "acceptance_criteria": [
+      "Explicit ECU is concrete controller",
+      "Review choices preserved without raw JSON in description",
+      "I2C and SPI can be configured from parameter form",
+      "Unknown catalog selection is actionable, not endless spinner",
+      "At most six isolated Wizard case examples documented"
+    ],
+    "first_failing_layer": "Wizard inventory parser, questionnaire state presentation and technology catalog projection",
+    "reproduction": "Recorded Wizard run b8f9bd64-f5db-43ef-bef0-a050cb3a2e71 and 11 browser comments",
+    "weaken_assertions_to_pass": false,
+    "affected_files": [
+      "frontend/src/lib/agent/engineering-specification.ts",
+      "frontend/src/components/agent-chat-core.tsx",
+      "frontend/src/components/simulation-wizard.tsx",
+      "backend/communication/technologies/catalog.py",
+      "frontend/e2e/equipment-inventory.spec.ts",
+      "frontend/src/lib/agent/engineering-specification.test.mjs",
+      "backend/tests/test_technology_profile_semantics.py"
+    ],
+    "root_cause": "Explicit generic ECU is counted but not instantiated; structured review annotations appear in human description; saved catalog selection can be absent; automotive profile excludes peripheral buses",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\nis-project-creation-recording-20260929.md",
+        "sha256": "e0b14594be145ddd52297298a181db8e891e2c56c2fe2e74ca32caf6acaec719"
+      }
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "targeted_tests": [
+      "frontend/e2e/equipment-inventory.spec.ts",
+      "isolated Wizard scenarios",
+      "scripts/run-release-gate.py"
+    ]
+  },
+  "remaining_findings": [
+    "Wizard correction parser reads the verb steuert as controller identity; browser case 1 fails after returning to step 4.",
+    "Selected I2C technology remains a proposal for individual device connections.",
+    "Release gate cannot PASS and production delivery remains pending."
+  ],
+  "completion_status": "BLOCKED"
+}

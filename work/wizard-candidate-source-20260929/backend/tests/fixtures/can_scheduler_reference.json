@@ -1,0 +1,1991 @@
+{
+  "source_sha256": "3437cb80f57f5e72809ce40fa8c01e5198631d0f23590f021a5d8b39e1e39ab1",
+  "seeded_start_utc": 1700000000,
+  "event_fields": [
+    "event_id",
+    "route_id",
+    "sequence",
+    "technology",
+    "network",
+    "scheduled_time_s",
+    "origin_scheduled_time_s",
+    "time_s",
+    "tx_start_s",
+    "tx_end_s",
+    "queue_delay_ms",
+    "end_to_end_latency_ms",
+    "transmission_latency_ms",
+    "status",
+    "drop_reason",
+    "payload_hex",
+    "signals",
+    "faults",
+    "protocol_event",
+    "caused_by_event_id",
+    "physical_transmission_id",
+    "shared_transmission_observation",
+    "duplicate_injected",
+    "transmission_attempted",
+    "rx_ports",
+    "golden_time_s",
+    "timing_delta_s"
+  ],
+  "cases": [
+    {
+      "name": "independent_can_arbitration",
+      "config": {
+        "duration_s": 0.006,
+        "seed": 42,
+        "max_events": 100,
+        "formats": [],
+        "networks": [
+          {
+            "id": "can-a",
+            "technology": "can_fd",
+            "bitrate": 500000,
+            "data_bitrate": 2000000
+          },
+          {
+            "id": "can-b",
+            "technology": "can",
+            "bitrate": 250000
+          }
+        ],
+        "hardware": {
+          "devices": [
+            {
+              "id": "source",
+              "name": "source",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "source-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "source-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            },
+            {
+              "id": "destination",
+              "name": "destination",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "destination-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "destination-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            }
+          ]
+        },
+        "communications": [
+          {
+            "id": "blocking",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "blocking"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0,
+            "arbitration_id": 10
+          },
+          {
+            "id": "low",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "low"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.005,
+            "arbitration_id": 200
+          },
+          {
+            "id": "high",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "high"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.006,
+            "arbitration_id": 1
+          },
+          {
+            "id": "other",
+            "network_id": "can-b",
+            "technology": "can",
+            "sender_interface": "source-can-b",
+            "receiver_interfaces": [
+              "destination-can-b"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "other"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.003,
+            "arbitration_id": 3
+          }
+        ],
+        "engineering_model": {},
+        "scenario": {
+          "mode": "NORMAL"
+        }
+      },
+      "expected": [
+        {
+          "event_id": "blocking:0",
+          "route_id": "blocking",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000185,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "D2 55 F3 BA 36 E0 50 8A",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "8103b517fb98aa783816dce6",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "high:0",
+          "route_id": "high",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 6e-06,
+          "origin_scheduled_time_s": 6e-06,
+          "time_s": 0.00037,
+          "tx_start_s": 0.000185,
+          "tx_end_s": 0.00037,
+          "queue_delay_ms": 0.179,
+          "end_to_end_latency_ms": 0.364,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "DB 69 1C FA 0B BC 5B A5",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "83de77fb5753347eafbb6c00",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "other:0",
+          "route_id": "other",
+          "sequence": 0,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 3e-06,
+          "origin_scheduled_time_s": 3e-06,
+          "time_s": 0.000539,
+          "tx_start_s": 3e-06,
+          "tx_end_s": 0.000539,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "03 2C 4B 59 DC 1C 35 A2",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "fa520ad40a810606e40a3825",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "low:0",
+          "route_id": "low",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 5e-06,
+          "origin_scheduled_time_s": 5e-06,
+          "time_s": 0.0005549999999999999,
+          "tx_start_s": 0.00037,
+          "tx_end_s": 0.0005549999999999999,
+          "queue_delay_ms": 0.365,
+          "end_to_end_latency_ms": 0.55,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "1D 3D 62 04 41 93 B0 5B",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "4712447aa5533acd51292a86",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "blocking:1",
+          "route_id": "blocking",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.002185,
+          "tx_start_s": 0.002,
+          "tx_end_s": 0.002185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "D1 FC 71 2E 55 0F 4F 4F",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "e0c8075c570f4971091d80e9",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "high:1",
+          "route_id": "high",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002006,
+          "origin_scheduled_time_s": 0.002006,
+          "time_s": 0.0023699999999999997,
+          "tx_start_s": 0.002185,
+          "tx_end_s": 0.0023699999999999997,
+          "queue_delay_ms": 0.1789999999999999,
+          "end_to_end_latency_ms": 0.3639999999999999,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "1E 99 9E 47 44 E7 3E 37",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "ff0f6b55d61522eac9766cc9",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "other:1",
+          "route_id": "other",
+          "sequence": 1,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.002003,
+          "origin_scheduled_time_s": 0.002003,
+          "time_s": 0.002539,
+          "tx_start_s": 0.002003,
+          "tx_end_s": 0.002539,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "65 D0 AD D1 58 D5 9B 9F",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "993acd16a438429df141ee54",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "low:1",
+          "route_id": "low",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002005,
+          "origin_scheduled_time_s": 0.002005,
+          "time_s": 0.0025549999999999995,
+          "tx_start_s": 0.0023699999999999997,
+          "tx_end_s": 0.0025549999999999995,
+          "queue_delay_ms": 0.3649999999999999,
+          "end_to_end_latency_ms": 0.5499999999999998,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "22 D6 69 8A 06 E2 8E C0",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "34359f50559afe6a1792e5ac",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "blocking:2",
+          "route_id": "blocking",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.004185,
+          "tx_start_s": 0.004,
+          "tx_end_s": 0.004185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "8A 9E BC AA 1A C1 8F B2",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "7bfbd551ae3f3047ebc01ded",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "high:2",
+          "route_id": "high",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004006,
+          "origin_scheduled_time_s": 0.004006,
+          "time_s": 0.004370000000000001,
+          "tx_start_s": 0.004185,
+          "tx_end_s": 0.004370000000000001,
+          "queue_delay_ms": 0.17900000000000033,
+          "end_to_end_latency_ms": 0.3640000000000003,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "B4 6D 90 09 45 0E 72 8B",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "c05b81eb97eb0cb9889a8621",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "other:2",
+          "route_id": "other",
+          "sequence": 2,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.0040030000000000005,
+          "origin_scheduled_time_s": 0.0040030000000000005,
+          "time_s": 0.0045390000000000005,
+          "tx_start_s": 0.0040030000000000005,
+          "tx_end_s": 0.0045390000000000005,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "43 19 D8 E9 C3 DF CE 92",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "66f380bd49d50bafdad0dc05",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "low:2",
+          "route_id": "low",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004005,
+          "origin_scheduled_time_s": 0.004005,
+          "time_s": 0.004555000000000001,
+          "tx_start_s": 0.004370000000000001,
+          "tx_end_s": 0.004555000000000001,
+          "queue_delay_ms": 0.36500000000000077,
+          "end_to_end_latency_ms": 0.5500000000000007,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "35 95 0A 8C A8 F5 D2 C1",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "91eef58a8617e97cc6b6ba9b",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "blocking:3",
+          "route_id": "blocking",
+          "sequence": 3,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.006,
+          "origin_scheduled_time_s": 0.006,
+          "time_s": 0.006185,
+          "tx_start_s": 0.006,
+          "tx_end_s": 0.006185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "E9 70 AD 46 4B B7 DC F8",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "335309c8390855bc19ca3bae",
+          "duplicate_injected": false
+        }
+      ]
+    },
+    {
+      "name": "seeded_loss_corruption_duplicates",
+      "config": {
+        "duration_s": 0.004,
+        "seed": 42,
+        "max_events": 100,
+        "formats": [],
+        "networks": [
+          {
+            "id": "can-a",
+            "technology": "can_fd",
+            "bitrate": 500000,
+            "data_bitrate": 2000000
+          },
+          {
+            "id": "can-b",
+            "technology": "can",
+            "bitrate": 250000
+          }
+        ],
+        "hardware": {
+          "devices": [
+            {
+              "id": "source",
+              "name": "source",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "source-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "source-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            },
+            {
+              "id": "destination",
+              "name": "destination",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "destination-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "destination-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            }
+          ]
+        },
+        "communications": [
+          {
+            "id": "blocking",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "blocking"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0,
+            "arbitration_id": 10
+          },
+          {
+            "id": "low",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "low"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.005,
+            "arbitration_id": 200
+          },
+          {
+            "id": "high",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "high"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.006,
+            "arbitration_id": 1
+          },
+          {
+            "id": "other",
+            "network_id": "can-b",
+            "technology": "can",
+            "sender_interface": "source-can-b",
+            "receiver_interfaces": [
+              "destination-can-b"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "other"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.003,
+            "arbitration_id": 3
+          }
+        ],
+        "engineering_model": {},
+        "scenario": {
+          "mode": "USER_DEFINED_FAULT",
+          "faults": []
+        },
+        "fault_model": {
+          "dropout_probability": 0.2,
+          "corruption_probability": 0.15,
+          "duplicate_probability": 0.5
+        },
+        "dropout_probability": 0.2,
+        "corruption_probability": 0.15,
+        "duplicate_probability": 0.5
+      },
+      "expected": [
+        {
+          "event_id": "blocking:0",
+          "route_id": "blocking",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.0,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.0,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "dropped",
+          "payload_hex": "D2 55 F3 BA 36 E0 50 8A",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "blocking:0:duplicate",
+          "route_id": "blocking",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 1e-06,
+          "tx_start_s": 1e-06,
+          "tx_end_s": 1e-06,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "dropped",
+          "payload_hex": "D2 55 F3 BA 36 E0 50 8A",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "low:0",
+          "route_id": "low",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 5e-06,
+          "origin_scheduled_time_s": 5e-06,
+          "time_s": 0.00019,
+          "tx_start_s": 5e-06,
+          "tx_end_s": 0.00019,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "1D 3D 62 04 41 93 B0 5B",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "high:0",
+          "route_id": "high",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 6e-06,
+          "origin_scheduled_time_s": 6e-06,
+          "time_s": 0.000375,
+          "tx_start_s": 0.00019,
+          "tx_end_s": 0.000375,
+          "queue_delay_ms": 0.184,
+          "end_to_end_latency_ms": 0.369,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "DB 69 1C FA 0B BC 5B A5",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "83de77fb5753347eafbb6c00",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "other:0",
+          "route_id": "other",
+          "sequence": 0,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 3e-06,
+          "origin_scheduled_time_s": 3e-06,
+          "time_s": 0.000539,
+          "tx_start_s": 3e-06,
+          "tx_end_s": 0.000539,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "03 2C 4B 59 DC 1C 35 A2",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "fa520ad40a810606e40a3825",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "low:0:duplicate",
+          "route_id": "low",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 5e-06,
+          "origin_scheduled_time_s": 5e-06,
+          "time_s": 0.00056,
+          "tx_start_s": 0.000375,
+          "tx_end_s": 0.00056,
+          "queue_delay_ms": 0.36900000000000005,
+          "end_to_end_latency_ms": 0.554,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "1D 3D 62 04 41 93 B0 5B",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "low:1",
+          "route_id": "low",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002005,
+          "origin_scheduled_time_s": 0.002005,
+          "time_s": 0.002005,
+          "tx_start_s": 0.0023699999999999997,
+          "tx_end_s": 0.002005,
+          "queue_delay_ms": 0.3649999999999999,
+          "end_to_end_latency_ms": 0.5499999999999998,
+          "transmission_latency_ms": 0.185,
+          "status": "dropped",
+          "payload_hex": "22 D6 69 8A 06 E2 8E C0",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "34359f50559afe6a1792e5ac",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "high:1",
+          "route_id": "high",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002006,
+          "origin_scheduled_time_s": 0.002006,
+          "time_s": 0.002006,
+          "tx_start_s": 0.002185,
+          "tx_end_s": 0.002006,
+          "queue_delay_ms": 0.1789999999999999,
+          "end_to_end_latency_ms": 0.3639999999999999,
+          "transmission_latency_ms": 0.185,
+          "status": "dropped",
+          "payload_hex": "1E 99 9E 47 44 E7 3E 37",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "ff0f6b55d61522eac9766cc9",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "blocking:1",
+          "route_id": "blocking",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.002185,
+          "tx_start_s": 0.002,
+          "tx_end_s": 0.002185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "D1 FC 71 2E 55 0F 4F 4F",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "blocking:1:duplicate",
+          "route_id": "blocking",
+          "sequence": 1000001,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.0023699999999999997,
+          "tx_start_s": 0.002185,
+          "tx_end_s": 0.0023699999999999997,
+          "queue_delay_ms": 0.1839999999999997,
+          "end_to_end_latency_ms": 0.36899999999999966,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "D1 FC 71 2E 55 0F 4F 4F",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "other:1",
+          "route_id": "other",
+          "sequence": 1,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.002003,
+          "origin_scheduled_time_s": 0.002003,
+          "time_s": 0.002539,
+          "tx_start_s": 0.002003,
+          "tx_end_s": 0.002539,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "65 D0 AD D1 58 D5 9B 9F",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "993acd16a438429df141ee54",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "blocking:2",
+          "route_id": "blocking",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.004185,
+          "tx_start_s": 0.004,
+          "tx_end_s": 0.004185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "8A 9E BC AA 1A C1 8F B2",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        },
+        {
+          "event_id": "blocking:2:duplicate",
+          "route_id": "blocking",
+          "sequence": 2000001,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.004370000000000001,
+          "tx_start_s": 0.004185,
+          "tx_end_s": 0.004370000000000001,
+          "queue_delay_ms": 0.18400000000000014,
+          "end_to_end_latency_ms": 0.3690000000000001,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "8A 9E BC AA 1A C1 8F B2",
+          "signals": [],
+          "faults": [],
+          "duplicate_injected": true
+        }
+      ]
+    },
+    {
+      "name": "multicast",
+      "config": {
+        "duration_s": 0.001,
+        "seed": 42,
+        "max_events": 100,
+        "formats": [],
+        "networks": [
+          {
+            "id": "can-a",
+            "technology": "can_fd",
+            "bitrate": 500000,
+            "data_bitrate": 2000000
+          },
+          {
+            "id": "can-b",
+            "technology": "can",
+            "bitrate": 250000
+          }
+        ],
+        "hardware": {
+          "devices": [
+            {
+              "id": "source",
+              "name": "source",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "source-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "source-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            },
+            {
+              "id": "destination",
+              "name": "destination",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "destination-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "destination-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            }
+          ]
+        },
+        "communications": [
+          {
+            "id": "first-consumer",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "shared"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 10
+          },
+          {
+            "id": "middle",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "middle"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 20
+          },
+          {
+            "id": "second-consumer",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "shared"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 10
+          }
+        ],
+        "engineering_model": {},
+        "scenario": {
+          "mode": "NORMAL"
+        }
+      },
+      "expected": [
+        {
+          "event_id": "first-consumer:0",
+          "route_id": "first-consumer",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000185,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "7A 7C 29 A4 03 A3 22 9C",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "b639276cad3c23782680540a",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "second-consumer:0",
+          "route_id": "second-consumer",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000185,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "7A 7C 29 A4 03 A3 22 9C",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "b639276cad3c23782680540a",
+          "shared_transmission_observation": true,
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "middle:0",
+          "route_id": "middle",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.00037,
+          "tx_start_s": 0.000185,
+          "tx_end_s": 0.00037,
+          "queue_delay_ms": 0.185,
+          "end_to_end_latency_ms": 0.37,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "CA 7C 24 55 E7 C3 BC 46",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "9e790b611f1cfb48b3e2a628",
+          "duplicate_injected": false
+        }
+      ]
+    },
+    {
+      "name": "late_gateway_arbitration",
+      "config": {
+        "duration_s": 0.006,
+        "seed": 42,
+        "max_events": 100,
+        "formats": [],
+        "networks": [
+          {
+            "id": "can-a",
+            "technology": "can_fd",
+            "bitrate": 500000,
+            "data_bitrate": 2000000
+          },
+          {
+            "id": "can-b",
+            "technology": "can",
+            "bitrate": 250000
+          }
+        ],
+        "hardware": {
+          "devices": [
+            {
+              "id": "source",
+              "name": "source",
+              "type": "ecu",
+              "interfaces": [
+                {
+                  "id": "source-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                }
+              ]
+            },
+            {
+              "id": "gateway",
+              "name": "gateway",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "gateway-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "gateway-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            },
+            {
+              "id": "destination",
+              "name": "destination",
+              "type": "ecu",
+              "interfaces": [
+                {
+                  "id": "destination-can-b",
+                  "technology": "can",
+                  "network": "can-b"
+                }
+              ]
+            }
+          ]
+        },
+        "communications": [
+          {
+            "id": "forward",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "gateway-can-a"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "forward"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 5,
+            "segments": [
+              {
+                "id": "forward-0",
+                "segment_index": 0,
+                "segment_count": 2,
+                "network_id": "can-a",
+                "technology": "can_fd",
+                "sender_interface": "source-can-a",
+                "receiver_interfaces": [
+                  "gateway-can-a"
+                ]
+              },
+              {
+                "id": "forward-1",
+                "segment_index": 1,
+                "segment_count": 2,
+                "network_id": "can-b",
+                "technology": "can",
+                "sender_interface": "gateway-can-b",
+                "receiver_interfaces": [
+                  "destination-can-b"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "bus-b-blocking",
+            "network_id": "can-b",
+            "technology": "can",
+            "sender_interface": "gateway-can-b",
+            "receiver_interfaces": [
+              "destination-can-b"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "bus-b-blocking"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 1
+          },
+          {
+            "id": "bus-b-waiting",
+            "network_id": "can-b",
+            "technology": "can",
+            "sender_interface": "gateway-can-b",
+            "receiver_interfaces": [
+              "destination-can-b"
+            ],
+            "cycle_ms": 2,
+            "payload_bytes": 8,
+            "message_ids": [
+              "bus-b-waiting"
+            ],
+            "signal_ids": [],
+            "phase_ms": 0.005,
+            "arbitration_id": 100
+          }
+        ],
+        "engineering_model": {},
+        "scenario": {
+          "mode": "NORMAL"
+        }
+      },
+      "expected": [
+        {
+          "event_id": "forward:0:segment:0",
+          "route_id": "forward",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000185,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "3B 87 95 B0 39 95 E4 C0",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "4e881eb49abc026612b5b0b5",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-blocking:0",
+          "route_id": "bus-b-blocking",
+          "sequence": 0,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000536,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000536,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "36 A2 A1 66 53 EC 75 4F",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "aab20a97eb7c5ae4b0f4c107",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:0:segment:1",
+          "route_id": "forward",
+          "sequence": 0,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.000185,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.001072,
+          "tx_start_s": 0.000536,
+          "tx_end_s": 0.001072,
+          "queue_delay_ms": 0.35100000000000003,
+          "end_to_end_latency_ms": 1.072,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "3B 87 95 B0 39 95 E4 C0",
+          "signals": [],
+          "faults": [],
+          "caused_by_event_id": "forward:0:segment:0",
+          "physical_transmission_id": "d9079410601337f36ea51ea1",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-waiting:0",
+          "route_id": "bus-b-waiting",
+          "sequence": 0,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 5e-06,
+          "origin_scheduled_time_s": 5e-06,
+          "time_s": 0.001608,
+          "tx_start_s": 0.001072,
+          "tx_end_s": 0.001608,
+          "queue_delay_ms": 1.067,
+          "end_to_end_latency_ms": 1.603,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "96 6F 56 5B 61 A6 6D 96",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "ea23d70f72c9c0d779c12cca",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:1:segment:0",
+          "route_id": "forward",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.002,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.002185,
+          "tx_start_s": 0.002,
+          "tx_end_s": 0.002185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.18499999999999983,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "08 4C EA 29 A7 BF A7 BE",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "9b5d2caa981b17c9f8bd507e",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-blocking:1",
+          "route_id": "bus-b-blocking",
+          "sequence": 1,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.002,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.002536,
+          "tx_start_s": 0.002,
+          "tx_end_s": 0.002536,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "EC E0 A9 7C F9 9B E2 47",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "ca7ed6d7d89a53a233e1f9dc",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:1:segment:1",
+          "route_id": "forward",
+          "sequence": 1,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.002185,
+          "origin_scheduled_time_s": 0.002,
+          "time_s": 0.003072,
+          "tx_start_s": 0.002536,
+          "tx_end_s": 0.003072,
+          "queue_delay_ms": 0.3510000000000002,
+          "end_to_end_latency_ms": 1.072,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "08 4C EA 29 A7 BF A7 BE",
+          "signals": [],
+          "faults": [],
+          "caused_by_event_id": "forward:1:segment:0",
+          "physical_transmission_id": "ffe61b838738a26a90871887",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-waiting:1",
+          "route_id": "bus-b-waiting",
+          "sequence": 1,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.002005,
+          "origin_scheduled_time_s": 0.002005,
+          "time_s": 0.003608,
+          "tx_start_s": 0.003072,
+          "tx_end_s": 0.003608,
+          "queue_delay_ms": 1.0670000000000002,
+          "end_to_end_latency_ms": 1.6030000000000002,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "05 27 94 B8 11 C7 AF FD",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "de9a251ee2075251cd594ad7",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:2:segment:0",
+          "route_id": "forward",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.004,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.004185,
+          "tx_start_s": 0.004,
+          "tx_end_s": 0.004185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.18500000000000028,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "E9 16 DB DF 87 32 4E B9",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "c03062f2c630cc545c131ac0",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-blocking:2",
+          "route_id": "bus-b-blocking",
+          "sequence": 2,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.004,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.004536,
+          "tx_start_s": 0.004,
+          "tx_end_s": 0.004536,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "4A 62 97 F4 55 09 53 30",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "150d7a672384679d5a388623",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:2:segment:1",
+          "route_id": "forward",
+          "sequence": 2,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.004185,
+          "origin_scheduled_time_s": 0.004,
+          "time_s": 0.005072,
+          "tx_start_s": 0.004536,
+          "tx_end_s": 0.005072,
+          "queue_delay_ms": 0.35099999999999976,
+          "end_to_end_latency_ms": 1.072,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "E9 16 DB DF 87 32 4E B9",
+          "signals": [],
+          "faults": [],
+          "caused_by_event_id": "forward:2:segment:0",
+          "physical_transmission_id": "e44c42827c519f42a84d649a",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-waiting:2",
+          "route_id": "bus-b-waiting",
+          "sequence": 2,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.004005,
+          "origin_scheduled_time_s": 0.004005,
+          "time_s": 0.005608,
+          "tx_start_s": 0.005072,
+          "tx_end_s": 0.005608,
+          "queue_delay_ms": 1.0670000000000002,
+          "end_to_end_latency_ms": 1.6030000000000002,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "69 B8 BC 7A 6A 5B 54 BD",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "44ecc01b70fde30a29931113",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:3:segment:0",
+          "route_id": "forward",
+          "sequence": 3,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.006,
+          "origin_scheduled_time_s": 0.006,
+          "time_s": 0.006185,
+          "tx_start_s": 0.006,
+          "tx_end_s": 0.006185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.18500000000000028,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "B4 FD 06 F6 55 AD C1 29",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "9d160c3e13aba8a733500079",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "bus-b-blocking:3",
+          "route_id": "bus-b-blocking",
+          "sequence": 3,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.006,
+          "origin_scheduled_time_s": 0.006,
+          "time_s": 0.006536,
+          "tx_start_s": 0.006,
+          "tx_end_s": 0.006536,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.536,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "29 F2 EA 1B 20 12 8C A5",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "545a65c760b376797c94483b",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "forward:3:segment:1",
+          "route_id": "forward",
+          "sequence": 3,
+          "technology": "can",
+          "network": "can-b",
+          "scheduled_time_s": 0.006185,
+          "origin_scheduled_time_s": 0.006,
+          "time_s": 0.007072,
+          "tx_start_s": 0.006536,
+          "tx_end_s": 0.007072,
+          "queue_delay_ms": 0.35099999999999976,
+          "end_to_end_latency_ms": 1.072,
+          "transmission_latency_ms": 0.536,
+          "status": "transmitted",
+          "payload_hex": "B4 FD 06 F6 55 AD C1 29",
+          "signals": [],
+          "faults": [],
+          "caused_by_event_id": "forward:3:segment:0",
+          "physical_transmission_id": "a3a76414f17e39bc13b80153",
+          "duplicate_injected": false
+        }
+      ]
+    },
+    {
+      "name": "can_lin_ethernet_ack",
+      "config": {
+        "output_dir": ".",
+        "seed": 0,
+        "duration_s": 0.016,
+        "formats": [],
+        "networks": [
+          {
+            "id": "project-lan",
+            "technology": "ethernet",
+            "bitrate": 1000000
+          },
+          {
+            "id": "can-a",
+            "technology": "can_fd",
+            "bitrate": 500000,
+            "data_bitrate": 2000000
+          },
+          {
+            "id": "lin",
+            "technology": "lin",
+            "bitrate": 19200
+          }
+        ],
+        "hardware": {
+          "devices": [
+            {
+              "id": "a",
+              "ports": [
+                {
+                  "id": "a-port",
+                  "network_interfaces": [
+                    {
+                      "id": "a-eth",
+                      "technology": "ethernet",
+                      "network": "project-lan",
+                      "ipv4": "192.0.2.10",
+                      "mac": "02:00:00:00:00:01"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "b",
+              "ports": [
+                {
+                  "id": "b-port",
+                  "network_interfaces": [
+                    {
+                      "id": "b-eth",
+                      "technology": "ethernet",
+                      "network": "project-lan",
+                      "ipv4": "192.0.2.20",
+                      "mac": "02:00:00:00:00:02"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "c",
+              "ports": [
+                {
+                  "id": "c-port",
+                  "network_interfaces": [
+                    {
+                      "id": "c-eth",
+                      "technology": "ethernet",
+                      "network": "project-lan",
+                      "ipv4": "192.0.2.30",
+                      "mac": "02:00:00:00:00:03"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "source",
+              "name": "source",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "source-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "source-lin",
+                  "technology": "lin",
+                  "network": "lin"
+                }
+              ]
+            },
+            {
+              "id": "destination",
+              "name": "destination",
+              "type": "gateway",
+              "interfaces": [
+                {
+                  "id": "destination-can-a",
+                  "technology": "can_fd",
+                  "network": "can-a"
+                },
+                {
+                  "id": "destination-lin",
+                  "technology": "lin",
+                  "network": "lin"
+                }
+              ]
+            }
+          ]
+        },
+        "communications": [
+          {
+            "id": "project-message",
+            "routing_entry_id": "approved-route",
+            "sender_interface": "a-eth",
+            "receiver_interfaces": [
+              "b-eth"
+            ],
+            "technology": "ethernet",
+            "cycle_ms": 10,
+            "payload_bytes": 16,
+            "jitter_ratio": 0,
+            "source_port": 12345,
+            "destination_port": 23456,
+            "transport_protocol": "tcp"
+          },
+          {
+            "id": "can",
+            "network_id": "can-a",
+            "technology": "can_fd",
+            "sender_interface": "source-can-a",
+            "receiver_interfaces": [
+              "destination-can-a"
+            ],
+            "cycle_ms": 5,
+            "payload_bytes": 8,
+            "message_ids": [
+              "can"
+            ],
+            "signal_ids": [],
+            "arbitration_id": 10
+          },
+          {
+            "id": "lin",
+            "network_id": "lin",
+            "technology": "lin",
+            "sender_interface": "source-lin",
+            "receiver_interfaces": [
+              "destination-lin"
+            ],
+            "cycle_ms": 10,
+            "payload_bytes": 2,
+            "message_ids": [
+              "lin"
+            ],
+            "signal_ids": [],
+            "lin_slot": {
+              "period_ms": 10,
+              "offset_ms": 1,
+              "duration_ms": 5
+            },
+            "phase_ms": 1
+          }
+        ],
+        "scenario": {
+          "mode": "NORMAL",
+          "faults": []
+        },
+        "max_events": 100,
+        "restbus_session": {
+          "enabled": true,
+          "handshake": true,
+          "heartbeat_interval_s": 0.05,
+          "response_delay_ms": 1,
+          "acknowledge_data": true
+        }
+      },
+      "expected": [
+        {
+          "event_id": "can:0",
+          "route_id": "can",
+          "sequence": 0,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.000185,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "29 00 9E FD 3F 5D B9 E4",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "45ba9a8c99e588c192732c94",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "project-message:tcp-syn:0",
+          "route_id": "project-message",
+          "sequence": -1,
+          "technology": "ethernet",
+          "network": "project-lan",
+          "scheduled_time_s": 0.0,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.001344,
+          "tx_start_s": 0.0,
+          "tx_end_s": 0.000672,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 1.3439999999999999,
+          "transmission_latency_ms": 1.3439999999999999,
+          "status": "transmitted",
+          "payload_hex": "",
+          "signals": [],
+          "faults": [],
+          "protocol_event": "TCP_SYN",
+          "duplicate_injected": false,
+          "rx_ports": [
+            {
+              "hardware_id": "b",
+              "interface_id": "b-eth",
+              "port_id": "b-port",
+              "ip": "192.0.2.20",
+              "mac": "02:00:00:00:00:02",
+              "ip_provenance": "configured",
+              "mac_provenance": "configured",
+              "start_s": 0.000672,
+              "end_s": 0.001344,
+              "queue_delay_ms": 0.0,
+              "status": "transmitted"
+            }
+          ]
+        },
+        {
+          "event_id": "project-message:tcp-syn-ack:0",
+          "route_id": "project-message",
+          "sequence": -1,
+          "technology": "ethernet",
+          "network": "project-lan",
+          "scheduled_time_s": 0.0023439999999999997,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.0036879999999999994,
+          "tx_start_s": 0.0023439999999999997,
+          "tx_end_s": 0.0030159999999999996,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 1.3439999999999996,
+          "transmission_latency_ms": 1.3439999999999999,
+          "status": "transmitted",
+          "payload_hex": "",
+          "signals": [],
+          "faults": [],
+          "protocol_event": "TCP_SYN_ACK",
+          "duplicate_injected": false,
+          "rx_ports": [
+            {
+              "hardware_id": "a",
+              "interface_id": "a-eth",
+              "port_id": "a-port",
+              "ip": "192.0.2.10",
+              "mac": "02:00:00:00:00:01",
+              "ip_provenance": "configured",
+              "mac_provenance": "configured",
+              "start_s": 0.0030159999999999996,
+              "end_s": 0.0036879999999999994,
+              "queue_delay_ms": 0.0,
+              "status": "transmitted"
+            }
+          ]
+        },
+        {
+          "event_id": "lin:0",
+          "route_id": "lin",
+          "sequence": 0,
+          "technology": "lin",
+          "network": "lin",
+          "scheduled_time_s": 0.001,
+          "origin_scheduled_time_s": 0.001,
+          "time_s": 0.004333333333333333,
+          "tx_start_s": 0.001,
+          "tx_end_s": 0.004333333333333333,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 3.3333333333333335,
+          "transmission_latency_ms": 3.3333333333333335,
+          "status": "transmitted",
+          "payload_hex": "1C 6A",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "a8543393cfee10743f580f12",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "can:1",
+          "route_id": "can",
+          "sequence": 1,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.005,
+          "origin_scheduled_time_s": 0.005,
+          "time_s": 0.005185,
+          "tx_start_s": 0.005,
+          "tx_end_s": 0.005185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "0E E0 99 15 97 C2 A9 A0",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "7e89d1f09926462e01322c41",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "project-message:tcp-ack:0",
+          "route_id": "project-message",
+          "sequence": -1,
+          "technology": "ethernet",
+          "network": "project-lan",
+          "scheduled_time_s": 0.0046879999999999995,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.006031999999999999,
+          "tx_start_s": 0.0046879999999999995,
+          "tx_end_s": 0.005359999999999999,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 1.3439999999999996,
+          "transmission_latency_ms": 1.3439999999999999,
+          "status": "transmitted",
+          "payload_hex": "",
+          "signals": [],
+          "faults": [],
+          "protocol_event": "TCP_ACK",
+          "duplicate_injected": false,
+          "rx_ports": [
+            {
+              "hardware_id": "b",
+              "interface_id": "b-eth",
+              "port_id": "b-port",
+              "ip": "192.0.2.20",
+              "mac": "02:00:00:00:00:02",
+              "ip_provenance": "configured",
+              "mac_provenance": "configured",
+              "start_s": 0.005359999999999999,
+              "end_s": 0.006031999999999999,
+              "queue_delay_ms": 0.0,
+              "status": "transmitted"
+            }
+          ]
+        },
+        {
+          "event_id": "project-message:0",
+          "route_id": "project-message",
+          "sequence": 0,
+          "technology": "ethernet",
+          "network": "project-lan",
+          "scheduled_time_s": 0.007031999999999999,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.008535999999999998,
+          "tx_start_s": 0.007031999999999999,
+          "tx_end_s": 0.007783999999999999,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 1.5039999999999993,
+          "transmission_latency_ms": 1.504,
+          "status": "transmitted",
+          "payload_hex": "D2 E0 4A 15 48 89 E5 A8 69 B2 F0 F4 AA FF 50 4D",
+          "signals": [],
+          "faults": [],
+          "protocol_event": "DATA",
+          "duplicate_injected": false,
+          "rx_ports": [
+            {
+              "hardware_id": "b",
+              "interface_id": "b-eth",
+              "port_id": "b-port",
+              "ip": "192.0.2.20",
+              "mac": "02:00:00:00:00:02",
+              "ip_provenance": "configured",
+              "mac_provenance": "configured",
+              "start_s": 0.007783999999999999,
+              "end_s": 0.008535999999999998,
+              "queue_delay_ms": 0.0,
+              "status": "transmitted"
+            }
+          ]
+        },
+        {
+          "event_id": "can:2",
+          "route_id": "can",
+          "sequence": 2,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.01,
+          "origin_scheduled_time_s": 0.01,
+          "time_s": 0.010185,
+          "tx_start_s": 0.01,
+          "tx_end_s": 0.010185,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "A5 33 AE 61 2B D5 CD 9C",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "85d17c4f3256489a18ace80d",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "project-message:0:ack:0",
+          "route_id": "project-message",
+          "sequence": -1,
+          "technology": "ethernet",
+          "network": "project-lan",
+          "scheduled_time_s": 0.009536,
+          "origin_scheduled_time_s": 0.0,
+          "time_s": 0.01088,
+          "tx_start_s": 0.009536,
+          "tx_end_s": 0.010208,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 1.3440000000000014,
+          "transmission_latency_ms": 1.3439999999999999,
+          "status": "transmitted",
+          "payload_hex": "",
+          "signals": [],
+          "faults": [],
+          "protocol_event": "DATA_ACK",
+          "duplicate_injected": false,
+          "rx_ports": [
+            {
+              "hardware_id": "a",
+              "interface_id": "a-eth",
+              "port_id": "a-port",
+              "ip": "192.0.2.10",
+              "mac": "02:00:00:00:00:01",
+              "ip_provenance": "configured",
+              "mac_provenance": "configured",
+              "start_s": 0.010208,
+              "end_s": 0.01088,
+              "queue_delay_ms": 0.0,
+              "status": "transmitted"
+            }
+          ]
+        },
+        {
+          "event_id": "lin:1",
+          "route_id": "lin",
+          "sequence": 1,
+          "technology": "lin",
+          "network": "lin",
+          "scheduled_time_s": 0.011,
+          "origin_scheduled_time_s": 0.011,
+          "time_s": 0.014333333333333333,
+          "tx_start_s": 0.011,
+          "tx_end_s": 0.014333333333333333,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 3.3333333333333335,
+          "transmission_latency_ms": 3.3333333333333335,
+          "status": "transmitted",
+          "payload_hex": "B8 92",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "b22615447fa75b96179f5bfe",
+          "duplicate_injected": false
+        },
+        {
+          "event_id": "can:3",
+          "route_id": "can",
+          "sequence": 3,
+          "technology": "can_fd",
+          "network": "can-a",
+          "scheduled_time_s": 0.015,
+          "origin_scheduled_time_s": 0.015,
+          "time_s": 0.015184999999999999,
+          "tx_start_s": 0.015,
+          "tx_end_s": 0.015184999999999999,
+          "queue_delay_ms": 0.0,
+          "end_to_end_latency_ms": 0.185,
+          "transmission_latency_ms": 0.185,
+          "status": "transmitted",
+          "payload_hex": "2B EC 34 32 78 33 EB E9",
+          "signals": [],
+          "faults": [],
+          "physical_transmission_id": "7f93a4e9b4d89f9b61ec7994",
+          "duplicate_injected": false
+        }
+      ]
+    }
+  ]
+}

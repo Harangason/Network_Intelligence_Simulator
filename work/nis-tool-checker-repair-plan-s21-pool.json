@@ -1,0 +1,48 @@
+{
+  "decision_required": false,
+  "acceptance_criteria": [
+    "All 40 S01-A through S20-B pool ID variants are accepted by the pure scope guard.",
+    "Canonical product project IDs, malformed IDs, out-of-range case numbers and non-string identities are rejected.",
+    "The adapter runner still enforces exact job/step binding, loopback receipt and disposable container identity."
+  ],
+  "required_fix": "Accept only the exact current 20260928 S01-S20 case-pool ID form in the existing reuse adapter and pin the helper bytes in the receipt-bound launch wrapper. Keep all other project and runtime guards.",
+  "affected_tests": [
+    "S21",
+    "S31"
+  ],
+  "targeted_tests": [
+    "node --test .tool-checker/src/20260929_src_disposable_master_project_scope.test.mjs",
+    "receipt-bound adapter scope regression"
+  ],
+  "finding_ids": [
+    "3539d022280979026e44",
+    "43f189c472cd34c4f925"
+  ],
+  "routing_evidence": [
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\state\\jobs\\job-4d60d1ed608541dc858282808f166bbe\\reuse-real-project-stderr.log",
+    "I:\\PycharmProjects\\My_first_Network_Simulator\\.tool-checker\\runs\\preflight\\preflight-3045c9be0b874839926b1b0d45a0b0f8\\adapter.log"
+  ],
+  "repair_owner": "TOOL_CHECKER",
+  "last_successful_layer": "Native job plan and PREPARED isolated runtime receipt",
+  "regression_scope": [
+    "S21-S60 complete-master-reuse plans"
+  ],
+  "affected_services": [
+    "Native Tool Checker reuse adapter",
+    "Receipt-bound adapter launch"
+  ],
+  "execution_boundary": "Tool Checker project-scope guard before adapter execution",
+  "root_cause": "The shared S21-S60 reuse adapter allowlist recognizes only prior disposable project ID families. The fresh reviewed rebind step creates nis-e2e-20260928-sXX-a/b-cN project IDs, which are rejected before the adapter performs its first HTTP/MCP/browser action.",
+  "repair_id": "20260929-s21-s60-disposable-pool",
+  "observed_symptom": "Fresh S21 and S31 jobs exited before browser/API execution with Adapter target is outside the disposable master scope for nis-e2e-20260928-s01-a-c4.",
+  "affected_files": [
+    ".tool-checker/complete_master_reuse_adapter.mjs",
+    ".tool-checker/src/20260927_src_cli_e2e_runtime_adapter.py",
+    ".tool-checker/src/20260929_src_disposable_master_project_scope.mjs",
+    ".tool-checker/src/20260929_src_disposable_master_project_scope.test.mjs"
+  ],
+  "note": "Supplemental current-runtime adapter correction during REPAIR_1_ACTIVE; original run-1 results remain frozen.",
+  "first_failing_layer": "Reusable adapter target-ID allowlist",
+  "weaken_assertions_to_pass": false,
+  "affected_repository": "TOOL_CHECKER"
+}

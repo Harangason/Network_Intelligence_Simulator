@@ -1,0 +1,117 @@
+diff --git a/frontend/e2e/technology-parameter-review.spec.ts b/frontend/e2e/technology-parameter-review.spec.ts
+index 475f0825..4d2b3c16 100644
+--- a/frontend/e2e/technology-parameter-review.spec.ts
++++ b/frontend/e2e/technology-parameter-review.spec.ts
+@@ -34,12 +34,12 @@ test('unconfirmed project can select every registered bus without an Automotive
+   await expect(selectedBus.locator('option[value="__no_matches"]')).toHaveCount(1);
+   await search.clear();
+   await expect(selectedBus.locator('option')).toHaveCount(catalog.technology_count);
+-  // I2C deliberately has no assumed bus clock; the user must confirm one.
++  // The lowest registered I2C mode is shown as an unconfirmed proposal.
+   const clock = page.locator('input[name="bitrate"]');
+-  await expect(clock).toHaveValue('');
+-  await expect(page.getByText('UNVERIFIED · Eingabe erforderlich')).toBeVisible();
++  await expect(clock).toHaveValue('100000');
++  await expect(page.getByText('UNVERIFIED · Profilvorschlag').first()).toBeVisible();
+   await expect(page.getByText(/Referenz-Obergrenzen, keine bestätigte Busfrequenz: Standard ≤ 100\.000 bit\/s/)).toBeVisible();
+-  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
++  expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(true);
+   await clock.fill('0');
+   expect(await clock.evaluate((input: HTMLInputElement) => input.checkValidity())).toBe(false);
+   await clock.fill('400000');
+@@ -92,7 +92,7 @@ test('mixed project shows exact LIN profile, rejects 2M and preserves CAN-FD whi
+   await page.goto(`/studio?mode=parameters&project=${project}`);
+   await expect(page.locator('#technology')).toHaveValue('can_fd');
+   await page.locator('#technology').selectOption('lin');
+-  await expect(page.locator('input[name="bitrate"]')).toHaveValue('19200');
++  await expect(page.locator('input[name="bitrate"]')).toHaveValue('9600');
+   await expect(page.locator('input[name="data_bitrate"]')).toHaveCount(0);
+   await page.locator('input[name="bitrate"]').fill('2000000');
+   expect(await page.locator('input[name="bitrate"]').evaluate((el: HTMLInputElement) => el.checkValidity())).toBe(false);
+diff --git a/frontend/src/lib/technology-parameters.test.mjs b/frontend/src/lib/technology-parameters.test.mjs
+index e6c77e04..e813f6d3 100644
+--- a/frontend/src/lib/technology-parameters.test.mjs
++++ b/frontend/src/lib/technology-parameters.test.mjs
+@@ -10,6 +10,28 @@ test('LIN projection never inherits CAN-FD rate or its phases', () => {
+   assert.deepEqual(technologyParameterValues(parameters, lin), { bitrate: 19200, payload_bytes: 8 });
+   assert.equal(technologyParameterUnverified(parameters, 'bitrate', 'lin'), true);
+ });
++test('known profile modes propose their lowest operating rate without confirming it', () => {
++  const bitrateField = { key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s' };
++  const cases = [
++    [{ id: 'i2c', parameter_schema: [bitrateField], rate_model: { minimum_bps: 1 }, parameter_proposals: { options: [{ mode: 'Fast', maximum: 400000 }, { mode: 'Standard', maximum: 100000 }] } }, 100000],
++    [{ id: 'lin', parameter_schema: [{ ...bitrateField, default: 19200 }], rate_model: { minimum_bps: 1, typical_bps: [19200, 9600] } }, 9600],
++    [{ id: 'can', parameter_schema: [{ ...bitrateField, default: 500000 }], rate_model: { minimum_bps: 10000 } }, 10000],
++    [{ id: 'ethernet', parameter_schema: [{ ...bitrateField, default: 1000000000 }], rate_model: { allowed_bps: [1000000000, 10000000] } }, 10000000],
++  ];
++  for (const [technology, expected] of cases) {
++    assert.equal(technologyParameterValues({}, technology).bitrate, expected);
++    assert.equal(technologyParameterUnverified({}, 'bitrate', technology.id), true);
++  }
++  const i2c = cases[0][0];
++  assert.equal(technologyParameterValues({ technology: 'i2c', bitrate: 400000 }, i2c).bitrate, 400000);
++  const confirmed = confirmTechnologyParameters({}, i2c, { bitrate: 400000 });
++  assert.equal(technologyParameterValues(confirmed, i2c).bitrate, 400000);
++  assert.equal(technologyParameterUnverified(confirmed, 'bitrate', 'i2c'), false);
++});
++test('device-dependent clock without a known operating mode remains open', () => {
++  const spi = { id: 'spi', parameter_schema: [{ key: 'bitrate', type: 'number', unit: 'bit/s' }], rate_model: { minimum_bps: 1 } };
++  assert.equal(technologyParameterValues({}, spi).bitrate, undefined);
++});
+ test('declared confirmed LIN values survive switching and preserve mixed inventory', () => {
+   const saved = confirmTechnologyParameters(parameters, lin, { bitrate: 9600, payload_bytes: 8 });
+   assert.equal(saved.technology, 'can_fd'); assert.equal(saved.bitrate, 2000000);
+diff --git a/frontend/src/lib/technology-parameters.ts b/frontend/src/lib/technology-parameters.ts
+index e351d865..f19c1b63 100644
+--- a/frontend/src/lib/technology-parameters.ts
++++ b/frontend/src/lib/technology-parameters.ts
+@@ -5,14 +5,30 @@ export type DeclaredNetwork = Parameters & { id: string; name?: string; technolo
+ const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
+ export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
+ 
++/** Smallest profile-backed operating rate offered for review, never confirmation. */
++function minimumProposedRate(technology: Technology): number | undefined {
++  const model = technology.rate_model;
++  const rates = [
++    ...(technology.parameter_proposals?.options ?? []).map(option => option.maximum),
++    ...(model?.allowed_bps ?? []),
++    ...(model?.typical_bps ?? []),
++    model?.fixed_bps,
++    model?.minimum_bps && model.minimum_bps > 1 ? model.minimum_bps : undefined,
++  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
++  return rates.length ? Math.min(...rates) : undefined;
++}
++
+ /** Catalog defaults remain proposals; only matching saved values may override them. */
+ export function technologyParameterValues(parameters: Parameters, technology: Technology): Parameters {
+   const scoped = record(record(parameters.technology_parameters)[technology.id]);
+   const proposed = record(record(parameters.technology_defaults)[technology.id]);
+   const global = technologyKey(parameters.technology) === technology.id ? parameters : {};
+   const saved = record(scoped.values);
++  const profileRate = minimumProposedRate(technology);
+   return Object.fromEntries((technology.parameter_schema ?? []).map(field => [field.key,
+-    saved[field.key] ?? global[field.key] ?? proposed[field.key] ?? field.default]));
++    saved[field.key] ?? global[field.key] ?? proposed[field.key]
++      ?? (field.key === 'bitrate' && field.unit === 'bit/s' ? profileRate : undefined)
++      ?? field.default]));
+ }
+ 
+ export function technologyParameterUnverified(parameters: Parameters, key: string, technologyId: string): boolean {
+diff --git a/frontend/src/lib/types.ts b/frontend/src/lib/types.ts
+index cf58ad65..29a5f254 100644
+--- a/frontend/src/lib/types.ts
++++ b/frontend/src/lib/types.ts
+@@ -7,6 +7,13 @@ export type Technology = {
+   medium: string;
+   topology: string;
+   default_bitrate?: number | null;
++  rate_model?: {
++    type?: string;
++    minimum_bps?: number;
++    fixed_bps?: number;
++    allowed_bps?: number[];
++    typical_bps?: number[];
++  };
+   max_payload_bytes?: number | null;
+   native_formats?: string[];
+   parameter_schema?: TechnologyParameterField[];

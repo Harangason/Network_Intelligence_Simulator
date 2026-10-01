@@ -1,0 +1,28 @@
+--- before/backend/engineering/capacity/dimensioning.py
++++ after/backend/engineering/capacity/dimensioning.py
+@@ -345,19 +345,23 @@
+         technology = DEFAULT_TECHNOLOGY_REGISTRY.profile("ethernet")
+     except KeyError:
+         return {**result, "status": "PROFILE_INCOMPLETE", "reasons": ["Ethernet TechnologyProfile fehlt."]}
+-    if technology.get("medium_access_model") != "FULL_DUPLEX_SWITCHED":
++    if technology.get("medium_access_model") not in {"FULL_DUPLEX_SWITCHED","VARIANT_DEPENDENT"}:
+         return {**result, "status": "PROFILE_INCOMPLETE", "reasons": ["Das Ethernet TechnologyProfile weist kein geschaltetes Vollduplex-Zugriffsmodell aus."]}
+ 
+     allowed_rates = {number(value) for value in (technology.get("rate_model") or {}).get("allowed_bps", [])}
+     maximum_payload = number(technology.get("max_payload_bytes"))
+     ports = defaultdict(list)
+     for row in rows:
++        if row.get('duplex')!='FULL' or row.get('eth_link_up') is not True:
++            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['Ethernet benötigt bestätigten Vollduplex-Link; unbekannter Zustand oder CSMA/CD liefert keinen FIFO-Nachweis.']}
++        if any(row.get(key) is not False for key in ('eth_pause_rx','eth_pause_tx','eth_eee_enabled')):
++            return {**result,'status':'PROFILE_INCOMPLETE','reasons':['PAUSE/PFC oder EEE sind aktiv oder unbekannt; ihre Blockierzeiten sind im FIFO-Modell nicht nachgewiesen.']}
+         source = row.get("physical_source") or {}
+         node_id = str(source.get("node_id") or "").strip()
+         port_id = str(source.get("hardware_interface_id") or source.get("physical_port_ref") or source.get("port_id") or "").strip()
+         if not node_id or not port_id or row.get("physical_path_resolved") is not True:
+             return {**result, "status": "PROFILE_INCOMPLETE", "reasons": ["Für Ethernet fehlen bestätigter physischer Pfad oder eindeutiger TX-Port."]}
+-        if str(row.get("queue_policy") or "FIFO").upper() != "FIFO":
++        if str(row.get("queue_policy") or "").upper() != "FIFO":
+             return {**result, "status": "PROFILE_INCOMPLETE", "reasons": ["Das Ethernet-Antwortzeitmodell unterstützt derzeit nur eine FIFO-Sendequeue."]}
+         bitrate = number(row.get("bitrate"))
+         if not bitrate or (allowed_rates and bitrate not in allowed_rates):

@@ -1,0 +1,143 @@
+--- before/backend/engineering/capacity/service.py
++++ after/backend/engineering/capacity/service.py
+@@ -37,10 +37,7 @@
+ 
+ 
+ DEFAULT_PARAMETER_VALUES: dict[str, Any] = {
+-    "industry": "automotive",
+-    "technology": "can_fd",
+     "formats": ["universal-jsonl", "universal-csv"],
+-    "bitrate": 2_000_000,
+     "cycle_ms": 100.0,
+     "payload_bytes": 8,
+     "queue_size": 256,
+@@ -78,6 +75,20 @@
+ 
+     resolved = dict(parameters)
+     target = canonical(protocol)
++    known_fields = DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys()
++    try:
++        profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(protocol)
++        allowed_fields = DEFAULT_TECHNOLOGY_REGISTRY.parameter_keys(protocol)
++        allowed_fields.add('local_timing_evidence')
++        if (profile.get('rate_model') or {}).get('type') == 'MULTI_PHASE_BITRATE':
++            allowed_fields.add('bitrate')  # Existing workflow data-phase alias.
++    except KeyError:
++        profile, allowed_fields = {}, set()
++    # Shared NIS analysis controls may be retained. Bus and hardware fields
++    # belong to the selected profile, not the project's primary bus.
++    foreign_fields = known_fields - allowed_fields
++    for key in foreign_fields:
++        resolved.pop(key, None)
+     def matching_identity(scope: dict[str, Any], *, required: bool = False) -> bool:
+         identities = [canonical(scope.get(key)) for key in ("technology", "protocol") if scope.get(key)]
+         return (bool(identities) or not required) and all(value == target for value in identities)
+@@ -89,6 +100,8 @@
+                 isinstance(value, dict) and matching_identity(value))
+ 
+     transport_fields = {"bitrate", "bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps", "arbitration_bitrate", "data_bitrate", "local_timing_evidence"}
++    transport_fields |= {field for field, spec in profile.get('parameter_schema', {}).items()
++                         if spec.get('parameter_origin') in {'TRANSPORT_PROFILE', 'DEVICE_CONFIGURATION'}}
+     if not matching_identity(parameters):
+         for key in transport_fields:
+             resolved.pop(key, None)
+@@ -136,7 +149,7 @@
+         scoped_values = {}
+     for key, value in scoped_values.items():
+         proof = scoped_provenance.get(key) or {}
+-        if (key not in {"technology", "protocol"} and matching_identity(proof) and matching_field(scoped_values, key)
++        if (key in allowed_fields and matching_identity(proof) and matching_field(scoped_values, key)
+                 and proof.get("source") in trusted_sources and proof.get("status") == "CONFIRMED" and proof.get("value") == value):
+             resolved[key] = value
+             if key in {"bitrate", "bitrate_bps"} and _number(value, 0) > 0:
+@@ -162,10 +175,13 @@
+     # Filter each source before merging: a rejected network declaration must
+     # neither override matching physical evidence nor hide its provenance.
+     declared = {key: value for key, value in declared.items()
+-                if key not in transport_fields or matching_field(declared, key)}
++                if key not in foreign_fields and (key not in transport_fields or matching_field(declared, key))}
+     configured_scope = {key: value for key, value in configured_scope.items()
+-                        if key not in transport_fields or matching_field(configured_scope, key)}
++                        if key not in foreign_fields and (key not in transport_fields or matching_field(configured_scope, key))}
+     effective_configuration = {**configured_scope, **declared}
++    for key in allowed_fields - {'bitrate', 'arbitration_bitrate', 'data_bitrate'}:
++        if key in effective_configuration:
++            resolved[key] = effective_configuration[key]
+     for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
+         value = effective_configuration.get(key)
+         if _number(value, 0) > 0:
+@@ -176,7 +192,7 @@
+             if key == "bitrate" and target == "CAN_FD":
+                 phase_evidenced["arbitration_bitrate"] = True
+     if target == "CAN_FD":
+-        rate_evidenced = all(phase_evidenced.values())
++        rate_evidenced = phase_evidenced['arbitration_bitrate'] and (resolved.get('can_fd_brs') is False or phase_evidenced['data_bitrate'])
+     if confirmed_parameters is not None:
+         resolved["_rate_evidenced"] = rate_evidenced
+     if isinstance(effective_configuration.get("local_timing_evidence"), dict):
+@@ -202,17 +218,7 @@
+             resolved.pop("bitrate", None)
+         resolved["_rate_evidenced"] = rate_evidenced
+     if rate_evidenced:
+-        aliases = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps', 'data_bitrate': 'data_bitrate_bps'}
+-        rates = {aliases.get(key, key): resolved[key] for key in transport_fields
+-                 if key in resolved and key != 'local_timing_evidence'}
+-        if target == 'CAN_FD':
+-            # Physical ports and existing saved networks use bitrate for the
+-            # nominal phase. The workflow's data-phase alias must never replace
+-            # an explicitly supplied arbitration rate.
+-            if 'nominal_bitrate_bps' not in rates and phase_evidenced['arbitration_bitrate']:
+-                rates['nominal_bitrate_bps'] = resolved.get('bitrate_bps', resolved.get('bitrate'))
+-            rates.pop('bitrate_bps', None)
+-        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, rates)
++        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, resolved)
+         if validation['status'] != 'VALID':
+             resolved['_rate_evidenced'] = False
+             resolved['_rate_findings'] = validation['findings']
+@@ -408,7 +414,7 @@
+         network_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+         generic_models: set[str] = set()
+ 
+-        default_protocol = str(parameters.get("technology") or parameters.get("protocol") or "CAN_FD")
++        default_protocol = str(parameters.get("technology") or parameters.get("protocol") or "UNASSIGNED")
+         default_payload = int(_number(parameters.get("payload_bytes"), 8))
+         default_cycle = _number(parameters.get("cycle_ms"), 100.0)
+         peak_factor = max(1.0, _number(parameters.get("peak_factor"), 1.15))
+@@ -652,6 +658,8 @@
+                     "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
+                     "capacity_verified": bool(segment_data["parameters"].get("_rate_evidenced")) and segment_frame.transmission_time_available and not segment_frame.is_generic_estimate and segment_frame.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
+                     "bitrate": (_number(segment_data["parameters"].get("bitrate"), 0) or None) if segment_data["parameters"].get("_rate_evidenced") else None,
++                    **{key:segment_data['parameters'].get(key) for key in
++                       ('duplex','eth_link_up','eth_pause_rx','eth_pause_tx','eth_eee_enabled') if key in segment_data['parameters']},
+                     "local_timing_evidence": {key: value for key, value in (segment_data["parameters"].get("local_timing_evidence") or {}).items()},
+                     "frame_bits": segment_frame.frame_bits,
+                     "calculation_model": segment_frame.calculation_model,
+@@ -1632,16 +1640,7 @@
+             # defaults: defaults are not evidence that this binding is configured.
+             technology_profile = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(
+                 technology_id,
+-                (
+-                    {"nominal_bitrate_bps": stored_parameters.get(
+-                         "nominal_bitrate_bps", stored_parameters.get(
+-                             "arbitration_bitrate", stored_parameters.get("bitrate"))),
+-                     "data_bitrate_bps": stored_parameters.get(
+-                         "data_bitrate_bps", stored_parameters.get("data_bitrate"))}
+-                    if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology_id) == "can_fd"
+-                    else {"bitrate_bps": stored_parameters.get(
+-                         "bitrate_bps", stored_parameters.get("bitrate"))}
+-                ),
++                stored_parameters,
+             )
+             for issue in technology_profile["findings"]:
+                 add("technology", str(issue.get("severity") or "ERROR"),
+@@ -1664,8 +1663,8 @@
+                         add("technology", "BLOCKER", "TECHNOLOGY_PARAMETER_INVALID",
+                             f"{field} fehlt; das Technologieprofil {technology_id} benoetigt diesen Wert in bit/s.",
+                             technology_id=technology_profile["technology_id"])
+-        if _number(parameters.get("bitrate"), 0.0) <= 0:
+-            add("parameters", "ERROR", "PARAMETER_BITRATE_MISSING", "Eine positive Bitrate ist erforderlich.")
++        # The selected profile above owns required rates. Direct I/O has no
++        # bitrate and multi-phase transports have independently named rates.
+         if _number(parameters.get("cycle_ms"), 0.0) <= 0:
+             add("parameters", "ERROR", "PARAMETER_CYCLE_INVALID", "Cycle Time muss groesser als null sein.")
+         if _number(parameters.get("payload_bytes"), -1.0) < 0:

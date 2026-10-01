@@ -1,0 +1,59 @@
+{
+  "technology": "dac",
+  "native": {
+    "local_timing_evidence.update_bound_ms": "Actual selectedDAC update/digital-access-to-output bound unknown finite>=0milliseconds, no50MHz/2Mwrite-rate orNIS100ms default. Must match actual code/load/device revision. Not bus bitrate; confirmed timing requires actual text source and boolean confirmation.",
+    "local_timing_evidence.settling_bound_ms": "Actual selectedDAC analogue settling bound unknown finite>=0milliseconds, referenced code-step/amplitude/output-load/tolerance. Depends device/system; no universal5us default or treating digital access speed as settled analogue output. Source/confirmation actual, noauto-confirm."
+  },
+  "removed": {
+    "payload_bytes": "Retire assumed4-byte DAC frame. Local analogue output has no packet body; actual digital programming interface and code width require a separate explicit profile.",
+    "target_bus_load_percent": "No framed communication bus demand for the analogue output itself; actual SPI/I2C programming is separate.",
+    "peak_factor": "No abstract DAC packet load peak factor; analogue slew/settling step/load conditions are actual device evidence.",
+    "burst_factor": "No universal framed DAC communication burst factor; actual update traffic on programming bus remains separate.",
+    "burst_window_ms": "No DAC framed-transport burst window; actual device update schedule requires independent evidence.",
+    "warning_threshold": "No network-load warning percentage for analogue output itself.",
+    "critical_threshold": "No network-load critical percentage for analogue output itself.",
+    "overload_threshold": "No network-load overload percentage for analogue output itself.",
+    "queue_size": "No network frame queue256 in local DAC analogue output; actual controller/programming buffering is separate.",
+    "queue_policy": "No local DAC FIFO/CANpriority/EthernetCBS queue assumption.",
+    "qos_priority": "No local DAC EthernetPCP/CANarbitration priority.",
+    "reserved_bandwidth_percent": "No analogue DAC bus reservation percentage; actual programming bus schedule remains explicit.",
+    "packet_loss_probability": "No packet-loss probability for analogue output itself; actual programming transport owns its packets.",
+    "frame_loss_probability": "No frame-loss probability for analogue output itself.",
+    "bit_error_rate": "No DAC analogue output digital bus BER; code transfer/encoding belongs actual programming interface.",
+    "corruption_probability": "No abstract packet corruption probability for DAC analogue settling; actual glitch/noise/tolerance uses device evidence.",
+    "duplicate_probability": "No local DAC datagram duplication probability.",
+    "reordering_probability": "No local DAC packet reordering probability.",
+    "retransmission_enabled": "No implicit DAC acknowledgement/ARQ switch; actual programming transport and analogue feedback separate.",
+    "retransmission_rate": "No local analogue retransmission probability.",
+    "retry_limit": "No local analogue retry count0; actual transport/application strategy separate.",
+    "retransmission_delay_ms": "No local analogue retry delay0; settling is not retransmission.",
+    "sync_method": "No native DAC NTP/PTP/gPTP bus mechanism; actual clock/system synchronization requires its own profile.",
+    "gateway_delay_ms": "No intrinsic analogue DAC gateway forwarding stage.",
+    "gateway_queue_delay_ms": "No intrinsic analogue DAC gateway frame queue.",
+    "protocol_conversion_delay_ms": "Digital-to-analogue conversion/settling is not a network protocol gateway conversion.",
+    "gateway_maximum_throughput": "No local DAC100Mbit/s gateway capacity.",
+    "gateway_input_buffer": "No local DAC gateway input frame buffer default8.",
+    "gateway_output_buffer": "No local DAC gateway output frame buffer default8.",
+    "gateway_maximum_routes": "No local DAC gateway route table4096.",
+    "gateway_maximum_messages_s": "No local DAC gateway packet-processing100000/s default."
+  },
+  "sources": [
+    "https://www.analog.com/en/resources/app-notes/an-1444.html",
+    "https://www.ti.com/video/6131650183001"
+  ],
+  "revisions": [
+    "Analog Devices AN-1444 device/load/code-step effects accessed2026-10-01; TI Precision Labs Settling Time and Update Rate2020-02-11"
+  ],
+  "scope": "Each originalDAC form parameter and both actualDAC timing bounds: analogue/direct IO separation, no fake frame/rate/queue, scalar/source/confirmation validity and persistent failed-edit retention.",
+  "validation": {
+    "isolated_sql": true,
+    "suite": "full_parameter_audit + standard_defaults + profile_semantics + capacity_can_schedule + parameter_review + required_parameters",
+    "passed": 1920
+  },
+  "not_certified": [
+    "Actual DAC datasheet/model/code step/load/tolerance/transfer function/update schedule and measured timing remain unknown",
+    "Actual digital programming transportSPI/I2C/parallel uses separate explicit TechnologyProfile and physical capacity evidence",
+    "Direct analogue output bus capacity is NOT_APPLICABLE; functional settled-output timing acceptance/trace/physical simulation remains unverified",
+    "Field/source/type checks do not prove device voltage/current/reference/gain/resolution/noise/glitch or closed-loop safety assurance"
+  ]
+}

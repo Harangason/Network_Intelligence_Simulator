@@ -1,0 +1,6 @@
+FROM networkis:candidate-2457b564a4db
+LABEL networkis.development=true
+COPY . /app
+ARG NIS_BUILD_COMMIT_ID
+RUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build

@@ -1,0 +1,77 @@
+{
+  "technology": "bluetooth_le",
+  "native": {
+    "bitrate": "Mandatory LE 1M baseline 1000000, optional 2M / coded S2 500000 / coded S8 125000 separately constrained. Coded payload rate is not uniform packet-airtime rate; historical optional 2M and numerically lowest optional 125k are not baseline defaults.",
+    "payload_bytes": "Actual LL Data PDU payload unknown, 0..251 octets, includes L2CAP fragments but excludes LL header/CRC/MIC. Zero-length empty PDU valid. Actual local TX/remote RX maxima bound it; not GATT value or ATT MTU.",
+    "ble_bearer": "Registered ACL_DATA baseline; advertising, ISO and channel sounding require separate reviewed bearer profiles and remain unverified, not compared with ACL timing.",
+    "ble_tx_phy": "Transmit-direction PHY baseline LE_1M, optional peer/local capabilities unknown. PHY and selected effective payload bitrate must agree.",
+    "ble_rx_phy": "Actual receive PHY unknown, can differ from TX. No automatic bidirectional equality.",
+    "ble_2m_supported": "Actual local optional 2M capability unknown; false disallows local TX/RX 2M.",
+    "ble_coded_supported": "Actual local coded capability unknown; false disallows coded TX/RX and constrains local length-time management.",
+    "ble_remote_2m_supported": "Actual remote optional 2M capability independently unknown; false disallows 2M selected peer path.",
+    "ble_remote_coded_supported": "Actual remote coded capability independently unknown; no silent inference from local capability.",
+    "ble_dle_supported": "Actual local Data Length Extension feature unknown; false fixes connection maxima to 27 octets.",
+    "ble_short_intervals_supported": "Actual optional Core 6.2 shorter interval support unknown; false restricts interval set to BASELINE.",
+    "ble_subrating_supported": "Actual local subrating support unknown; false permits factor 1 only.",
+    "ble_interval_set": "Mandatory baseline connection interval set proposed. Optional ROUNDED/EXTENDED sets require actual 6.2 feature evidence.",
+    "ble_connection_interval_us": "No universal controller interval default. Lowest selected set proposal BASELINE 7500 us /1250-us grid, ROUNDED 1250 us /1250-us grid, EXTENDED 375 us /125-us grid; <=4 s. Condition unknown leaves value open.",
+    "ble_peripheral_latency": "Actual skipped subrated events unknown, integer 0..499. Subrate*(latency+1)<=500 and strict supervision bound required; not retry count or milliseconds.",
+    "ble_subrate_factor": "Standard new-connection factor 1 proposed; 1..500 when actually supported. Existing actual factor preserved; no inferred current connection state.",
+    "ble_continuation_number": "New-connection standard zero proposed; integer 0..subrateFactor-1. Not application queue depth.",
+    "ble_supervision_timeout_ms": "Actual timeout unknown, 100..32000 ms in 10-ms increments. Must be strictly greater than twice interval*subrate*(latency+1); unconditional minimum 100 invalid for some connections.",
+    "ble_ifs_us": "Initial standard 150-us frame space proposal; Core 6.0+ may negotiate separately per direction/PHY. Actual frame-space update and schedule remain unverified.",
+    "ble_encryption_active": "Actual encryption state unknown, neither true nor false silently confirmed. MIC4 present only nonempty encrypted PDU; LL length includes MIC, payload limit excludes it.",
+    "ble_local_max_tx_octets": "Actual per-connection local TX payload capability 27..251 unknown; no DLE =>27, <=local supported TX max. Different from actual message length.",
+    "ble_local_max_rx_octets": "Actual per-connection local RX payload capability 27..251 unknown, independent direction and hardware support.",
+    "ble_remote_max_tx_octets": "Actual remote reported TX capability unknown; initial remote baseline27 is not blindly applied to established connection.",
+    "ble_remote_max_rx_octets": "Actual remote reported RX capability unknown; effective TX=min(local TX,remote RX), not automatically251.",
+    "ble_supported_max_tx_octets": "Actual invariant local hardware supported TX capability unknown, 27..251 with optional DLE.",
+    "ble_supported_max_rx_octets": "Actual invariant local hardware supported RX capability independently unknown.",
+    "ble_local_max_tx_time_us": "Actual local per-connection TX bound unknown, 328..17040 us feature-dependent table4.8. No-coded/no-DLE/no-CTE =>328; CTE336; DLE2120/2128; coded/no-DLE<=2704. Max octets and time need not describe identical packet airtime.",
+    "ble_local_max_rx_time_us": "Actual local per-connection RX bound unknown with local feature constraints and supported RX ceiling; not copied from TX.",
+    "ble_remote_max_tx_time_us": "Actual remote reported TX bound unknown 328..17040 us; remote feature completeness remains evidence requirement.",
+    "ble_remote_max_rx_time_us": "Actual remote reported RX bound independently unknown; no local feature assumption or fake negotiated min.",
+    "ble_supported_max_tx_time_us": "Actual invariant local hardware TX timing capability unknown, same table4.8 feature-dependent bounds.",
+    "ble_supported_max_rx_time_us": "Actual invariant local hardware RX timing capability independently unknown.",
+    "ble_used_channel_count": "Actual used data channels unknown, 2..37; channel classification/mapping and hopping schedule not invented. Not the 3 primary advertising channels.",
+    "ble_central_node_id": "Actual scheduling central identity unknown; not default controller or automotive ECU.",
+    "ble_peripheral_node_id": "Actual peripheral identity unknown; independent from central and transmitter direction.",
+    "ble_cte_supported": "Actual local data-channel Constant Tone Extension support unknown, affects length-time table limits; no channel-sounding or antenna array execution assumed."
+  },
+  "removed": {
+    "qos_priority": "Ethernet PCP not a BLE ACL link priority.",
+    "sync_method": "PTP/NTP/gPTP not implicit BLE link capability.",
+    "reserved_bandwidth_percent": "No universal BLE radio reservation percentage.",
+    "retransmission_enabled": "LL SN/NESN ARQ behavior is not a generic optional retransmission flag.",
+    "retransmission_rate": "Probability does not implement BLE LL acknowledgement and retransmit semantics.",
+    "retry_limit": "No universal zero retry limit; actual link supervision/event timing governs retransmissions.",
+    "retransmission_delay_ms": "Actual central event schedule and frame spacing differ from generic zero retry delay.",
+    "gateway_maximum_throughput": "No verified BLE gateway throughput 100 Mbit/s.",
+    "gateway_input_buffer": "Actual gateway input buffer unknown.",
+    "gateway_output_buffer": "Actual gateway output buffer unknown.",
+    "gateway_maximum_routes": "Actual route capacity unknown.",
+    "gateway_maximum_messages_s": "Actual processing throughput unknown."
+  },
+  "sources": [
+    "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/radio-physical-layer-specification.html",
+    "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-62/out/en/low-energy-controller/link-layer-specification.html"
+  ],
+  "revisions": [
+    "Bluetooth Core 6.2 Vol 6 Part A section2 mandatory LE1M / optional PHYs",
+    "Bluetooth Core 6.2 Vol6 PartB sections2.4,4.1,4.5.1/.2/.8/.10 (table4.8),4.6,5.1.10/.30/.32; accessed2026-10-01",
+    "Registered parameter review is ACL baseline; other BLE bearer profiles not certified"
+  ],
+  "scope": "Every original and added Bluetooth LE field reviewed: mandatory rate baseline, explicit radio access, distinct directional PHY/capabilities, local and remote lengths/times, Core6.2 optional interval sets, strict supervision and subrate dependencies. All-field type/range/options, invalid wired profile, confirmed storage preservation and foreign CAN phase rejection.",
+  "validation": {
+    "backend": "645 passed, 1 existing Pydantic warning; isolated nis_test_c51c2a431a29",
+    "runtime_capacity_verified": false,
+    "production_delivered": false
+  },
+  "not_certified": [
+    "Actual peer features, negotiated connection and channel map",
+    "Advertising, ISO, mesh and channel-sounding bearer profiles",
+    "Executable LL packet coding/CRC/MIC/ACK and radio schedule",
+    "Actual security and PHY conformance",
+    "Worst-case capacity and functional E2E acceptance"
+  ]
+}

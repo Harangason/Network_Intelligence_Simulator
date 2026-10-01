@@ -1,0 +1,14 @@
+--- before/backend/engineering/agent_tools/validation.py
++++ after/backend/engineering/agent_tools/validation.py
+@@ -184,6 +184,11 @@
+             if str(item.get('hardware_interface_id')) == identifier or any(str(binding.get('hardware_interface_id')) == identifier
+                 for binding in (item.get('configuration') or {}).get('physical_transmit_bindings') or [])]
+         frames = [(item, estimate_frame(port['technology'], int(item.get('dlc') or 0), parameters)) for item in messages]
++        if frames and DEFAULT_TECHNOLOGY_REGISTRY.profile(port['technology']).get('capacity_evidence', {}).get('status') == 'NOT_APPLICABLE':
++            findings.append({'severity': 'ERROR', 'object_id': identifier,
++                'object_name': port.get('name'), 'code': 'DIRECT_IO_MESSAGE_CREATED',
++                'message': 'Direkte I/O-Signale dürfen keine Bus-Message erzeugen. Signal direkt an den physischen Port binden; Gerätetiming getrennt prüfen.'})
++            continue
+         if frames and (not parameters.get('_rate_evidenced') or any(frame.is_generic_estimate or not frame.transmission_time_available for _, frame in frames)):
+             technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+             required = ['arbitration_bitrate', 'data_bitrate'] if technology.upper() == 'CAN_FD' else ['local_timing_evidence'] if technology.upper() in {'I2C', 'SPI'} else ['bitrate']

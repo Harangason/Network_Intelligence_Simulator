@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "networkis://schemas/rag-signal-generation.v1",
+  "title": "NetworkIS RAG Signal Generation Corpus Profiles",
+  "description": "Schema for aggregate signal-generation RAG profiles. Signal-list sources may be classified transiently, but individual raw signal names are not persisted or indexed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source", "retrieval_contract", "corpus_profiles"],
+  "properties": {
+    "schema_version": {
+      "const": "rag-signal-generation.v1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "source_type", "domain", "source_quality", "raw_signal_names_persisted"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1 },
+        "source_type": {
+          "type": "string",
+          "enum": ["signal-list", "dbc", "arxml", "fibex", "csv", "json", "yaml", "canonical-model"]
+        },
+        "file_name": { "type": ["string", "null"] },
+        "domain": { "type": "string", "default": "generic" },
+        "industry": { "$ref": "#/$defs/industry_key" },
+        "technology": { "type": ["string", "null"] },
+        "source_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "created_at": { "type": ["string", "null"] },
+        "observed_signal_count": { "type": "integer", "minimum": 0 },
+        "duplicate_count": { "type": "integer", "minimum": 0 },
+        "rejected_count": { "type": "integer", "minimum": 0 },
+        "raw_signal_names_persisted": { "const": false }
+      }
+    },
+    "retrieval_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object_type", "knowledge_level", "approval_boundary", "industry_partitioning", "no_raw_signal_storage", "query_fields", "generator_must_complete"],
+      "properties": {
+        "object_type": { "const": "SignalCorpusProfile" },
+        "knowledge_level": { "enum": ["L1_IMPORTED", "L2_NORMALIZED", "L3_VALIDATED", "L4_APPROVED"] },
+        "approval_boundary": {
+          "type": "string",
+          "const": "RAG evidence may suggest signal semantics and corpus patterns, but cannot mark generated signals as completed or approved."
+        },
+        "industry_partitioning": {
+          "type": "string",
+          "const": "Profiles are routed to signal-generation:<industry> partitions; generators may combine a selected industry partition with generic fallback evidence."
+        },
+        "no_raw_signal_storage": {
+          "type": "string",
+          "const": "Signal-list imports must discard individual signal names after transient classification; only aggregate counts, tags and namespace patterns may be indexed."
+        },
+        "query_fields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "industry",
+              "rag_partition",
+              "semantic_type_counts",
+              "semantic_tag_counts",
+              "industry_tags",
+              "industry_tag_counts",
+              "namespace_pattern_counts",
+              "generator_contract",
+              "raw_signal_names_persisted"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "generator_must_complete": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "message_id",
+              "signal_names",
+              "start_bit",
+              "length_bits",
+              "byte_order",
+              "data_type",
+              "factor",
+              "offset_value",
+              "unit",
+              "min_value",
+              "max_value",
+              "data.allowed_values",
+              "data.enum_values",
+              "protocol_bindings"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "corpus_profiles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/corpus_profile" },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "corpus_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "display_name",
+        "domain",
+        "industry",
+        "description",
+        "profile_kind",
+        "generation_role",
+        "rag_partition",
+        "observed_signal_count",
+        "duplicate_count",
+        "rejected_count",
+        "raw_signal_names_persisted",
+        "semantic_type_counts",
+        "semantic_tag_counts",
+        "industry_tag_counts",
+        "namespace_pattern_counts",
+        "retrieval_queries",
+        "generator_contract",
+        "quality",
+        "metadata"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9_]+_signal_generation_profile$" },
+        "display_name": { "type": "string", "minLength": 1 },
+        "domain": { "type": "string" },
+        "industry": { "$ref": "#/$defs/industry_key" },
+        "description": { "type": "string" },
+        "profile_kind": { "const": "signal_generation_corpus" },
+        "generation_role": { "const": "corpus_profile" },
+        "rag_partition": { "type": "string", "pattern": "^signal-generation:[a-z0-9_]+$" },
+        "observed_signal_count": { "type": "integer", "minimum": 1 },
+        "duplicate_count": { "type": "integer", "minimum": 0 },
+        "rejected_count": { "type": "integer", "minimum": 0 },
+        "raw_signal_names_persisted": { "const": false },
+        "semantic_type_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "semantic_tag_counts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/count_entry" }
+        },
+        "industry_tag_counts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/count_entry" }
+        },
+        "namespace_pattern_counts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/count_entry" }
+        },
+        "retrieval_queries": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "generator_contract": { "$ref": "#/$defs/generator_contract" },
+        "quality": { "$ref": "#/$defs/quality_layer" },
+        "metadata": { "$ref": "#/$defs/retrieval_metadata" }
+      }
+    },
+    "count_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "count"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "generator_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["may_use", "must_not_use", "must_complete"],
+      "properties": {
+        "may_use": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "must_not_use": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "must_complete": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "industry_key": {
+      "enum": [
+        "aerospace",
+        "automotive",
+        "building_automation",
+        "embedded_systems",
+        "energy",
+        "generic",
+        "generic_networking",
+        "industrial_automation",
+        "marine",
+        "rail",
+        "robotics_ros"
+      ]
+    },
+    "semantic_tag": {
+      "enum": [
+        "availability",
+        "control",
+        "command",
+        "counter",
+        "current",
+        "diagnostic",
+        "fault",
+        "identity",
+        "object_tracking",
+        "payload",
+        "position",
+        "pressure",
+        "quality",
+        "rotational_speed",
+        "status",
+        "temperature",
+        "time",
+        "voltage",
+        "velocity",
+        "warning",
+        "angle",
+        "acceleration"
+      ]
+    },
+    "quality_layer": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["confidence", "source_quality", "semantic_complete", "value_domain_complete", "encoding_complete", "mapping_quality", "assumptions"],
+      "properties": {
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "source_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "semantic_complete": { "type": "boolean" },
+        "value_domain_complete": { "type": "boolean" },
+        "encoding_complete": { "type": "boolean" },
+        "mapping_quality": { "const": "aggregate_profile" },
+        "assumptions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "retrieval_metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["domain", "industry", "knowledge_level", "source_quality", "rag_schema", "rag_partition", "raw_signal_names_persisted"],
+      "properties": {
+        "domain": { "type": "string" },
+        "industry": { "$ref": "#/$defs/industry_key" },
+        "technology": { "type": ["string", "null"] },
+        "knowledge_level": { "enum": ["L1_IMPORTED", "L2_NORMALIZED", "L3_VALIDATED", "L4_APPROVED"] },
+        "source_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rag_schema": { "const": "rag-signal-generation.v1" },
+        "rag_partition": { "type": "string", "pattern": "^signal-generation:[a-z0-9_]+$" },
+        "semantic_tags": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/semantic_tag" }
+        },
+        "industry_tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "source_id": { "type": "string" },
+        "raw_signal_names_persisted": { "const": false }
+      }
+    }
+  }
+}

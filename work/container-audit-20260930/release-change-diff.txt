@@ -1,0 +1,597 @@
+diff --git a/backend/engineering/agent_tools/capabilities.py b/backend/engineering/agent_tools/capabilities.py
+index ae619487..4cd91d71 100644
+--- a/backend/engineering/agent_tools/capabilities.py
++++ b/backend/engineering/agent_tools/capabilities.py
+@@ -93,6 +93,24 @@ CAPABILITIES = [
+           ['generate_fault_proposals', 'plan_fault_activation'], ['Aktuelles Modell', 'Fehlervorschläge', 'Magnitude und Umfang', 'Prüfen und aktivieren']),
+ ]
+ 
++# Stable wizard IDs used by the Engineering Assistant entry points and by the
++# NIS capability contract. Each entry resolves only to tools already registered
++# above; the aliases do not add permissions or bypass the normal review gates.
++WIZARD_CAPABILITIES = [
++    entry('architecture.create', 'Architektur erstellen', 'Architektur aus dem Auftrag planen und als prüfbaren Vorschlag ausführen.', '/studio/engineering',
++          ['prepare_project_request', 'inspect_project_draft', 'plan_project_model', 'prepare_draft_workflow', 'generate_wizard_model', 'generate_wizard_communication_contract', 'generate_wizard_routing', 'generate_wizard_network', 'generate_wizard_parameters'],
++          ['Anforderung erfassen', 'Modell und Kommunikation planen', 'Vorschlag prüfen', 'Freigabe und Validierung'], launch='project'),
++    entry('signal.validate', 'Signal prüfen', 'Ein Signal anhand seiner Bedeutung, Einheit, Werte und Nachrichtenbindung prüfen.', '/studio/engineering',
++          ['inspect_signal', 'resolve_signal_encoding', 'validate_signal'],
++          ['Signal und Nachricht lesen', 'Kodierung prüfen', 'Befunde und Validierung'], resource='signals', launch='validate'),
++    entry('trace.analyze', 'Trace analysieren', 'Einen vorhandenen Simulations-Trace mit aktueller Modell- und Laufrevision untersuchen.', '/studio/trace-analysis',
++          ['inspect_message_trace_timing', 'analyze_trace_root_cause', 'get_trace_events', 'get_signal_series', 'get_fault_events', 'get_route', 'get_timing_metrics', 'continue_reasoning'],
++          ['Lauf und Zeitfenster wählen', 'Trace-Evidence prüfen', 'Ursache und Grenzen bewerten']),
++    entry('finding.review', 'Finding bewerten', 'Ein persistiertes Finding und seine aktuelle Evidence bewerten; keine Änderung ohne separate Freigabe.', '/studio/trace-analysis',
++          ['inspect_reasoning', 'analyze_trace_root_cause', 'investigate_deadline_miss', 'analyze_fault_effects'],
++          ['Finding und Modellrevision lesen', 'Ursache anhand der Evidence bewerten', 'Befund und offene Punkte dokumentieren']),
++]
++
+ CONCEPTS = {
+     'HardwareNode': 'Physisches Gerät, beispielsweise ECU, Gateway, Sensor oder Aktor.',
+     'Function': 'Logische Aufgabe mit einer Zuordnung zur ausführenden Hardware.',
+@@ -111,6 +129,14 @@ EXECUTION_CONTRACTS = {
+        for key in ('signal', 'message', 'function', 'hardware', 'interface', 'routing', 'dependencies', 'structure', 'faults')},
+     'project': ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
+                 'Modellübernahme und aktuelle Artefakte für jeden ausdrücklich beauftragten Workflowschritt.'),
++    'architecture.create': ('REVIEWABLE_PROPOSAL', ['PROPOSAL', 'FINDING', 'VALIDATION'],
++                            'Aktueller Architekturvorschlag, ausdrückliche Freigabe und kanonische Modellvalidierung.'),
++    'signal.validate': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
++                        'Aktuelle Signal- und Nachrichtenvalidierung mit nachvollziehbaren Pflichtfeldern.'),
++    'trace.analyze': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
++                      'Trace-Analyse mit aktueller Laufrevision und Evidence; keine Modelländerung.'),
++    'finding.review': ('ANALYSIS_ONLY', ['FINDING', 'VALIDATION'],
++                       'Bewertung mit aktueller Evidence und Revision; keine Modelländerung.'),
+     'port': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
+              'Gespeicherte Strategieentscheidung, ausgeführte Teilaufträge und aktuelle Abschlussprüfungen.'),
+     'repair': ('AUTHORIZED_EXECUTION', ['MODEL_CHANGE', 'FINDING', 'VALIDATION'],
+@@ -135,7 +161,8 @@ def catalog(arguments):
+     from backend.agent_core.api.input_output import INPUT_TYPES, SUPPORTED_INPUTS
+     permissions = arguments.get('_permissions', DEFAULT_PERMISSIONS)
+     requested = arguments.get('capability_id')
+-    items = [deepcopy(item) for item in CAPABILITIES if not requested or item['id'] == requested]
++    items = [deepcopy(item) for item in [*CAPABILITIES, *WIZARD_CAPABILITIES]
++             if not requested or item['id'] == requested]
+     if not items:
+         raise ValueError('Diese Fähigkeit ist nicht registriert.')
+     state = WorkflowStatusService(current_project_id()).get(summary=True)
+diff --git a/backend/engineering/agent_tools/proposal_service.py b/backend/engineering/agent_tools/proposal_service.py
+index 91ea0563..eb8bbfa1 100644
+--- a/backend/engineering/agent_tools/proposal_service.py
++++ b/backend/engineering/agent_tools/proposal_service.py
+@@ -440,7 +440,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
+     if not validation["valid"]:
+         raise EngineeringValidationError(str(validation["findings"]))
+     refs, canonical = {}, []
+-    for change in contract["changes"]:
++    capacity_network_batch = None
++    for change_index, change in enumerate(contract["changes"]):
+         kind, action = change["object_type"], change["action"]
+         data = _resolve(change.get("data") or {}, refs)
+         if kind in ENTITY_SPECS:
+@@ -502,7 +503,13 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
+                 "created_by": contract["approved_by"]})
+         elif kind == "Network":
+             workflow = WorkflowStatusService(current_project_id())
+-            parameters = deepcopy(workflow.get()["parameters"])
++            batch_capacity_networks = row['proposal_type'] == 'CAPACITY_NETWORK_REPAIR'
++            if batch_capacity_networks:
++                if capacity_network_batch is None:
++                    capacity_network_batch = deepcopy(workflow.get()["parameters"])
++                parameters = capacity_network_batch
++            else:
++                parameters = deepcopy(workflow.get()["parameters"])
+             if action == 'UPDATE':
+                 target = next((entry for entry in parameters.get('networks', [])
+                                if str(entry.get('id')) == str(change['object_id'])), None)
+@@ -513,7 +520,8 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
+             else:
+                 parameters.setdefault("networks", []).append(data)
+                 item = data
+-            workflow.save_parameters(parameters, actor=actor)
++            if not batch_capacity_networks:
++                workflow.save_parameters(parameters, actor=actor)
+         elif kind == "SignalBehavior":
+             from ..signal_behavior_service import save_behavior
+             item = save_behavior(data)
+@@ -526,6 +534,11 @@ def apply(proposal_id: str, *, actor: str, trace_id: str) -> dict:
+         identifier = str(item.get("id") or item.get("connection_id") or item.get("scenario_id"))
+         refs[change["local_ref"]] = identifier
+         canonical.append({"object_type": kind, "id": identifier})
++        if capacity_network_batch is not None and (
++                change_index + 1 == len(contract["changes"])
++                or contract["changes"][change_index + 1]["object_type"] != "Network"):
++            WorkflowStatusService(current_project_id()).save_parameters(capacity_network_batch, actor=actor)
++            capacity_network_batch = None
+     contract.update(status="APPLIED", canonical_ids=canonical, revision=str(uuid4()))
+     # Keep existing workload persistence able to discover approved canonical IDs.
+     original = deepcopy(row["proposed_objects"])
+diff --git a/backend/engineering/agent_tools/wizard_generation.py b/backend/engineering/agent_tools/wizard_generation.py
+index 62837317..90ea1a71 100644
+--- a/backend/engineering/agent_tools/wizard_generation.py
++++ b/backend/engineering/agent_tools/wizard_generation.py
+@@ -487,9 +487,10 @@ def _explicit_can_fd_phases(prompt: str, technology_ids: list[str]) -> dict[str,
+     if 'can_fd' not in technology_ids:
+         return {}
+     pattern = re.compile(
+-        r'^\s*CAN[-_ ]FD\s*:\s*(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*'
+-        r'(?:arbitration|nominal)\s*[,;]\s*'
+-        r'(\d+(?:[,.]\d+)?)\s*([kKmM])bit/s\s*(?:data|daten)\b',
++        r'^[ \t]*CAN[-_ ]FD[ \t]*:[ \t]*(?:\r?\n[ \t]*)?'
++        r'(\d+(?:[,.]\d+)?)[ \t]*([kKmM])bit/s[ \t]*'
++        r'(?:arbitration|nominal)[ \t]*(?:[,;][ \t]*|\r?\n[ \t]*)'
++        r'(\d+(?:[,.]\d+)?)[ \t]*([kKmM])bit/s[ \t]*(?:data|daten)\b',
+         re.M | re.I,
+     )
+     phases: dict[str, int] = {}
+diff --git a/backend/engineering/capacity/service.py b/backend/engineering/capacity/service.py
+index 774179e6..f64ae616 100644
+--- a/backend/engineering/capacity/service.py
++++ b/backend/engineering/capacity/service.py
+@@ -13,7 +13,7 @@ from typing import Any
+ 
+ from ..repository import list_objects
+ from ..pagination import all_pages
+-from ..simulation_coverage import simulation_coverage
++from ..simulation_coverage import has_bound_direct_io, simulation_coverage
+ from ..routing.repository import list_routes
+ from ..routing.validation import PROTOCOL_CAPACITY, RoutingValidator
+ from ..routing.transport_segments import physical_route_segments, PhysicalRouteResolver
+@@ -1489,13 +1489,13 @@ class PreflightService:
+             if not item.get("interface_id"):
+                 add("engineering_model", "ERROR", "MESSAGE_PARENT_MISSING", f"Message {item.get('name')} besitzt kein Interface.")
+         for item in signals:
+-            if not item.get("message_id"):
++            if not item.get("message_id") and not has_bound_direct_io(item):
+                 add("engineering_model", "ERROR", "SIGNAL_PARENT_MISSING", f"Signal {item.get('name')} besitzt keine Message.")
+ 
+         declared_routes = all_pages(list_routes)
+         routes = [route for route in declared_routes if route.get("status") not in {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}]
+         coverage = simulation_coverage(messages, signals, routes, (state.get("parameters") or {}).get("simulation_scope"),
+-                                       declared_transports=declared_routes)
++                                       declared_transports=declared_routes, transport_only=True)
+         if not coverage["complete"]:
+             add("routing", "ERROR", "SIMULATION_SCOPE_UNCOVERED",
+                 f"{len(coverage['missing_message_ids'])} Nachrichten und {len(coverage['missing_signal_ids'])} Signale "
+@@ -1550,8 +1550,26 @@ class PreflightService:
+                 port_id = str(edge.get(port_key) or "")
+                 if not any(str(port.get("id")) == port_id for port in ports if isinstance(port, dict)):
+                     add("network", "ERROR", "NETWORK_PORT_MISSING", f"Verbindung referenziert den fehlenden Port {port_id}.")
++        direct_hardware_ids: set[str] = set()
++        for signal in signals:
++            if has_bound_direct_io(signal) and not signal.get("message_id"):
++                binding = (signal.get("configuration") or {}).get("direct_signal_binding") or signal.get("direct_signal_binding")
++                direct_hardware_ids.update(str(binding[key]) for key in
++                                           ("source_hardware_node_ref", "destination_hardware_node_ref"))
++        routed_hardware_ids: set[str] = set()
++        for route in routes:
++            source = route.get("source") or {}
++            if isinstance(source, dict) and source.get("node_id"):
++                routed_hardware_ids.add(str(source["node_id"]))
++            for destination in route.get("destinations") or []:
++                if isinstance(destination, dict) and destination.get("node_id"):
++                    routed_hardware_ids.add(str(destination["node_id"]))
+         for node_id, node in node_by_id.items():
+             if node_id not in connected_ids:
++                hardware_id = str(node.get("engineeringId") or "")
++                if (hardware_id in direct_hardware_ids and hardware_id not in routed_hardware_ids
++                        and not node.get("ports")):
++                    continue
+                 add("network", "ERROR", "NETWORK_NODE_DISCONNECTED", f"Node {node.get('name') or node_id} ist nicht verbunden.")
+ 
+         physical_realizations = list((state.get("parameters") or {}).get("physical_realizations") or [])
+diff --git a/backend/engineering/simulation_coverage.py b/backend/engineering/simulation_coverage.py
+index 588bee22..88a6547d 100644
+--- a/backend/engineering/simulation_coverage.py
++++ b/backend/engineering/simulation_coverage.py
+@@ -7,6 +7,8 @@ from __future__ import annotations
+ 
+ from typing import Any
+ 
++from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
++
+ INACTIVE = {"REJECTED", "SUPERSEDED", "DEPRECATED", "OUTDATED"}
+ RETIRED_TRANSPORTS = {"REJECTED", "SUPERSEDED", "DEPRECATED"}
+ 
+@@ -20,6 +22,14 @@ def active_rows(rows: list[dict]) -> list[dict]:
+             and str(row.get("status") or "").upper() not in INACTIVE]
+ 
+ 
++def has_bound_direct_io(signal: dict) -> bool:
++    binding = signal.get("direct_signal_binding") or (signal.get("configuration") or {}).get("direct_signal_binding")
++    return (isinstance(binding, dict)
++            and str(binding.get("signal_type") or "").lower() in DIRECT_IO_TECHNOLOGIES
++            and all(binding.get(key) for key in ("physical_port_ref", "source_hardware_node_ref",
++                                                     "destination_hardware_node_ref")))
++
++
+ def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, str],
+                              transports: list[dict]) -> set[str]:
+     # Invalid or outdated paths still express current transport intent. Only
+@@ -66,7 +76,8 @@ def _unused_function_outputs(messages: list[dict], signal_messages: dict[str, st
+ 
+ 
+ def simulation_coverage(messages: list[dict], signals: list[dict], transports: list[dict],
+-                        scope: dict | None = None, *, declared_transports: list[dict] | None = None) -> dict[str, Any]:
++                        scope: dict | None = None, *, declared_transports: list[dict] | None = None,
++                        transport_only: bool = False) -> dict[str, Any]:
+     all_signal_messages = {str(row["id"]): str(row.get("message_id") or "") for row in signals if row.get("id")}
+     messages, signals = active_rows(messages), active_rows(signals)
+     message_ids = {str(row["id"]) for row in messages if row.get("id")}
+@@ -110,6 +121,20 @@ def simulation_coverage(messages: list[dict], signals: list[dict], transports: l
+                            "Der vollständige Funktionsausgang ist ausdrücklich nicht geroutet und besitzt keine aktuelle Transportabsicht. ")
+                           + "Vom Transportscope ausgenommen; keine funktionale Beobachtung oder Timing-Freigabe nachgewiesen."})
+ 
++    if transport_only:
++        for signal in signals:
++            signal_id = str(signal.get("id") or "")
++            if signal_id not in required_signals or signal.get("message_id"):
++                continue
++            if not has_bound_direct_io(signal):
++                continue
++            binding = signal.get("direct_signal_binding") or (signal.get("configuration") or {}).get("direct_signal_binding")
++            required_signals.discard(signal_id)
++            transport_exclusions.append({"message_id": None, "signal_ids": [signal_id],
++                "reason_code": "DIRECT_IO_NOT_NETWORK_TRANSPORT",
++                "reason": "Direkte I/O-Bindung benötigt keine Netzwerkroute; elektrische und zeitliche Freigabe bleibt im Preflight offen.",
++                "direct_binding_validation_status": binding.get("validation_status")})
++
+     covered_messages, covered_signals = set(), set()
+     for row in active_rows(transports):
+         payload = row.get("payload") if isinstance(row.get("payload"), dict) else row
+diff --git a/backend/engineering/workflow/service.py b/backend/engineering/workflow/service.py
+index 3dcf53e9..72387ab5 100644
+--- a/backend/engineering/workflow/service.py
++++ b/backend/engineering/workflow/service.py
+@@ -390,11 +390,13 @@ class WorkflowStatusService:
+                    AND h.lifecycle_state NOT IN ('deprecated', 'superseded')
+                    AND NOT EXISTS (SELECT 1 FROM engineering_functions f
+                        WHERE f.project_id = h.project_id AND f.hardware_node_id = h.id
+-                         AND f.lifecycle_state NOT IN ('deprecated', 'superseded'))) AS functions_missing,
++                         AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
++                         AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor')) AS functions_missing,
+                 (SELECT COUNT(*) FROM engineering_functions f
+                  JOIN engineering_hardware_nodes h ON h.id = f.hardware_node_id AND h.project_id = f.project_id
+                  WHERE f.project_id = %s AND COALESCE(h.device_class, 0) < 3
+-                   AND f.lifecycle_state NOT IN ('deprecated', 'superseded')) AS functions_unexpected,
++                   AND f.lifecycle_state NOT IN ('deprecated', 'superseded')
++                   AND f.provenance ->> 'origin' IS DISTINCT FROM 'network-editor') AS functions_unexpected,
+                 (SELECT COALESCE(SUM(grouped.count - 1), 0) FROM (
+                     SELECT f.hardware_node_id, COUNT(*) AS count
+                     FROM engineering_functions f
+@@ -493,14 +495,17 @@ class WorkflowStatusService:
+             "SELECT id, name, configuration, lifecycle_state FROM engineering_messages WHERE project_id = %s", (self.project_id,),
+         ).fetchall()
+         signals = connection.execute(
+-            "SELECT id, message_id, lifecycle_state FROM engineering_signals WHERE project_id = %s", (self.project_id,),
++            "SELECT id, message_id, lifecycle_state, "
++            "CASE WHEN message_id IS NULL THEN configuration -> 'direct_signal_binding' END AS direct_signal_binding "
++            "FROM engineering_signals WHERE project_id = %s", (self.project_id,),
+         ).fetchall()
+         declared_routes = connection.execute(
+             "SELECT id, payload, status, approval_state, validation ->> 'valid' AS valid FROM engineering_routing_entries WHERE project_id = %s",
+             (self.project_id,),
+         ).fetchall()
+         routes = [route for route in declared_routes if route.get("approval_state") == "APPROVED" and route.get("valid") == "true"]
+-        coverage = simulation_coverage(messages, signals, routes, scope, declared_transports=declared_routes)
++        coverage = simulation_coverage(messages, signals, routes, scope, declared_transports=declared_routes,
++                                       transport_only=True)
+         complete = total > 0 and approved == total and valid == total and coverage["complete"]
+         status = "APPROVED" if complete else (
+             "ERROR" if invalid or fanout_routes else ("WARNING" if conflicts else ("IN_PROGRESS" if total else "EMPTY"))
+diff --git a/backend/tests/test_assistant_capabilities.py b/backend/tests/test_assistant_capabilities.py
+index 8e7ac65c..62c069c3 100644
+--- a/backend/tests/test_assistant_capabilities.py
++++ b/backend/tests/test_assistant_capabilities.py
+@@ -28,7 +28,8 @@ def directory(monkeypatch):
+ def test_directory_has_unique_executable_workflows_and_real_tools(directory):
+     entries = directory['capabilities']
+     assert len(entries) == len({item['id'] for item in entries})
+-    assert {'signal', 'repair', 'project', 'dependencies', 'structure', 'duplicates', 'faults', 'analysis'} <= {item['id'] for item in entries}
++    assert {'signal', 'repair', 'project', 'dependencies', 'structure', 'duplicates', 'faults', 'analysis',
++            'architecture.create', 'signal.validate', 'trace.analyze', 'finding.review'} <= {item['id'] for item in entries}
+     for item in entries:
+         assert item['available'], item
+         assert all(tool in TOOLS for tool in item['tools'])
+@@ -37,6 +38,28 @@ def test_directory_has_unique_executable_workflows_and_real_tools(directory):
+     assert directory['project_name'] == 'NIS Projekt A'
+ 
+ 
++def test_s41_wizard_aliases_resolve_to_available_reviewable_capabilities(directory):
++    entries = {item['id']: item for item in directory['capabilities']}
++    expected = {
++        'architecture.create': {'prepare_project_request', 'plan_project_model', 'generate_wizard_model'},
++        'signal.validate': {'inspect_signal', 'resolve_signal_encoding', 'validate_signal'},
++        'trace.analyze': {'analyze_trace_root_cause', 'get_trace_events', 'get_signal_series'},
++        'finding.review': {'inspect_reasoning', 'analyze_trace_root_cause', 'analyze_fault_effects'},
++    }
++    for capability_id, required_tools in expected.items():
++        item = entries[capability_id]
++        assert item['available'] is True
++        assert item['action']['capability_id'] == capability_id
++        assert item['action']['project_id'] == 'project-a'
++        assert required_tools <= set(item['tools'])
++        assert item['execution']['navigation_executes'] is False
++        assert item['execution']['completion_condition']
++    assert entries['architecture.create']['execution']['mode'] == 'REVIEWABLE_PROPOSAL'
++    assert entries['signal.validate']['execution']['mode'] == 'ANALYSIS_ONLY'
++    assert entries['trace.analyze']['execution']['mode'] == 'ANALYSIS_ONLY'
++    assert entries['finding.review']['execution']['mode'] == 'ANALYSIS_ONLY'
++
++
+ def test_capability_contract_does_not_equate_navigation_or_analysis_with_apply(directory):
+     entries = {item['id']: item for item in directory['capabilities']}
+     for item in entries.values():
+diff --git a/backend/tests/test_simulation_coverage.py b/backend/tests/test_simulation_coverage.py
+index f9ac4ee7..f06c1425 100644
+--- a/backend/tests/test_simulation_coverage.py
++++ b/backend/tests/test_simulation_coverage.py
+@@ -38,6 +38,36 @@ def test_inactive_route_is_not_coverage_and_inactive_signal_is_not_required():
+     assert result["covered_signals"] == 0
+ 
+ 
++def test_direct_io_has_no_network_route_but_still_needs_simulation_acceptance():
++    direct = {"id": "gpio", "message_id": None, "configuration": {"direct_signal_binding": {
++        "signal_type": "GPIO", "physical_port_ref": "port", "source_hardware_node_ref": "sensor",
++        "destination_hardware_node_ref": "controller", "validation_status": "REVIEW_REQUIRED",
++    }}}
++    signals = [{"id": "bus-signal", "message_id": "bus-message"}, direct]
++    routes = [{"payload": {"message_id": "bus-message"}}]
++    routing = simulation_coverage([{"id": "bus-message"}], signals, routes, transport_only=True)
++    assert routing["complete"] is True
++    assert routing["excluded_signal_ids"] == ["gpio"]
++    assert routing["transport_exclusions"][-1]["reason_code"] == "DIRECT_IO_NOT_NETWORK_TRANSPORT"
++    assert routing["transport_exclusions"][-1]["direct_binding_validation_status"] == "REVIEW_REQUIRED"
++    projected = {"id": direct["id"], "message_id": None,
++                 "direct_signal_binding": direct["configuration"]["direct_signal_binding"]}
++    assert simulation_coverage([{"id": "bus-message"}], [signals[0], projected], routes,
++                               transport_only=True)["complete"] is True
++    simulation = simulation_coverage([{"id": "bus-message"}], signals, routes)
++    assert simulation["complete"] is False
++    assert simulation["missing_signal_ids"] == ["gpio"]
++
++
++def test_unbound_or_misclassified_direct_signal_still_requires_transport():
++    signals = [{"id": "orphan", "message_id": None, "configuration": {"direct_signal_binding": {
++        "signal_type": "GPIO", "physical_port_ref": "port", "source_hardware_node_ref": "sensor",
++    }}}]
++    coverage = simulation_coverage([], signals, [], transport_only=True)
++    assert coverage["complete"] is False
++    assert coverage["missing_signal_ids"] == ["orphan"]
++
++
+ def configuration():
+     return {"engineering_model": model(), "networks": [{"id": "bus"}], "communications": [
+         {"id": "c1", "routing_entry_id": "r1", "message_ids": ["m1"]},
+diff --git a/backend/tests/test_wizard_generation.py b/backend/tests/test_wizard_generation.py
+index 68b670b7..5fbbeccc 100644
+--- a/backend/tests/test_wizard_generation.py
++++ b/backend/tests/test_wizard_generation.py
+@@ -54,6 +54,10 @@ def test_explicit_can_fd_phases_and_i2c_candidate_stay_distinct_from_evidence():
+     assert wizard_generation._explicit_can_fd_phases(prompt, ['can_fd']) == {
+         'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000,
+     }
++    multiline = 'CAN-FD:\n500 kbit/s nominal\n2 Mbit/s data'
++    assert wizard_generation._explicit_can_fd_phases(multiline, ['can_fd']) == {
++        'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000,
++    }
+     assert wizard_generation._explicit_technology_bitrates(prompt, ['can_fd', 'ethernet']) == {
+         'ethernet': 100_000_000,
+     }
+@@ -1116,3 +1120,25 @@ def test_basic_sensor_interfaces_reparent_without_losing_children(device_class):
+         return {'ok': True}
+     result = execute(authority, 'test_reparent', Permission.READ_MODEL, {}, lambda _: operation())
+     assert result.success, result.findings
++
++
++def test_network_editor_communication_function_is_not_an_unexpected_user_function():
++    authority = ToolAuthority(f'pytest-network-editor-function-{uuid4()}')
++
++    def operation():
++        sensor = create_object('HardwareNode', {
++            'name': 'TemperatureProbe', 'device_type': 'SensorController', 'device_class': 1,
++        })
++        create_object('Function', {
++            'name': 'TemperatureProbe Kommunikation', 'hardware_node_id': str(sensor['id']),
++            'provenance': {'origin': 'network-editor', 'topology_id': 'studio-network'},
++        })
++        technical = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
++        assert technical['consistency']['functions_unexpected'] == 0
++        create_object('Function', {'name': 'UserFunctionOnSensor', 'hardware_node_id': str(sensor['id'])})
++        user = WorkflowStatusService(authority.project_id).get(summary=True)['artifact_checks']['engineering_model']
++        assert user['consistency']['functions_unexpected'] == 1
++        return {'ok': True}
++
++    result = execute(authority, 'test_network_editor_function', Permission.READ_MODEL, {}, lambda _: operation())
++    assert result.success, result.findings
+diff --git a/backend/tests/test_workflow.py b/backend/tests/test_workflow.py
+index 1fb5f355..dfee6295 100644
+--- a/backend/tests/test_workflow.py
++++ b/backend/tests/test_workflow.py
+@@ -675,6 +675,41 @@ def test_preflight_maps_network_editor_status_to_network_category(monkeypatch):
+     assert response["ready_for_simulation"] is False
+ 
+ 
++def test_preflight_accepts_bound_direct_io_without_network_parent_or_route(monkeypatch):
++    state = {
++        "versions": default_versions(),
++        "statuses": {step: "COMPLETE" for step in default_statuses()},
++        "parameters": {},
++        "topology": {"nodes": [
++            {"id": "source", "engineeringId": "sensor", "name": "sensor", "ports": []},
++            {"id": "destination", "engineeringId": "controller", "name": "controller", "ports": []},
++            {"id": "orphan", "engineeringId": "orphan", "name": "orphan", "ports": []},
++        ], "edges": []},
++    }
++    binding = {"signal_type": "GPIO", "physical_port_ref": "port",
++               "source_hardware_node_ref": "sensor", "destination_hardware_node_ref": "controller",
++               "validation_status": "REVIEW_REQUIRED"}
++    signal = {"id": "direct", "name": "direct", "message_id": None,
++              "configuration": {"direct_signal_binding": binding}}
++    service = PreflightService("analysis-project")
++    monkeypatch.setattr(service.workflow, "get", lambda: state)
++    monkeypatch.setattr(service.workflow, "latest_analysis", lambda *_args, **_kwargs: None)
++    monkeypatch.setattr(service.workflow, "create_analysis_snapshot", lambda *_args, **_kwargs: {"id": "snapshot"})
++    monkeypatch.setattr(capacity_service_module, "list_objects",
++                        lambda kind, **_kwargs: [signal] if kind == "Signal" else [])
++    monkeypatch.setattr(capacity_service_module, "list_routes", lambda **_kwargs: [])
++
++    result = service.run()
++
++    codes = {finding["code"] for finding in result["findings"]}
++    assert "SIGNAL_PARENT_MISSING" not in codes
++    assert "SIMULATION_SCOPE_UNCOVERED" not in codes
++    assert result["scope_coverage"]["transport_exclusions"][0]["reason_code"] == "DIRECT_IO_NOT_NETWORK_TRANSPORT"
++    assert [finding["message"] for finding in result["findings"] if finding["code"] == "NETWORK_NODE_DISCONNECTED"] == [
++        "Node orphan ist nicht verbunden."]
++    assert result["ready_for_simulation"] is False
++
++
+ def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
+     state = {
+         "versions": default_versions(),
+diff --git a/frontend/src/components/project-gallery.tsx b/frontend/src/components/project-gallery.tsx
+index 13b41c71..b9319f50 100644
+--- a/frontend/src/components/project-gallery.tsx
++++ b/frontend/src/components/project-gallery.tsx
+@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
+ import { Arrow } from "./marketing-shell";
+ import { requestEngineeringAgentWizard } from "@/lib/agent-task-events";
+ import { createNetworkProjectId } from "@/lib/project-ids";
++import { committedProjectExists } from "@/lib/project-creation-recovery";
+ import { readUserSettings, withProjectParam, writeUserSettings } from "@/lib/user-settings";
+ import { setWorkflowContext } from "@/lib/workflow-api";
+ import styles from "./project-gallery.module.css";
+@@ -38,6 +39,25 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" |
+   const pendingProject = useRef<string | null>(null);
+   const createBusy = useRef(false);
+   const loadAbort = useRef<AbortController | null>(null);
++  const pendingKey = `networkis:pending-project:${mode}`;
++
++  function storedPendingProject(): string | null {
++    try {
++      const value = window.sessionStorage.getItem(pendingKey);
++      return value && /^network-project-\d{17}-[a-z0-9]{8}$/i.test(value) ? value : null;
++    } catch { return null; }
++  }
++
++  function rememberPendingProject(project: string): void {
++    try { window.sessionStorage.setItem(pendingKey, project); } catch { /* Keep the in-memory identity. */ }
++  }
++
++  function openCreatedProject(project: string): void {
++    try { window.sessionStorage.removeItem(pendingKey); } catch { /* Navigation still works. */ }
++    writeUserSettings({ ...readUserSettings(), activeProject: project });
++    if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
++    window.location.assign(withProjectParam(destination, project));
++  }
+ 
+   async function load(offset = 0) {
+     loadAbort.current?.abort();
+@@ -59,15 +79,23 @@ export function ProjectGallery({ mode = "simulation" }: { mode?: "simulation" |
+   async function create() {
+     if (createBusy.current) return;
+     createBusy.current = true; setCreating(true); setCreateError("");
++    const remembered = storedPendingProject();
++    const project = pendingProject.current ??= remembered ?? createNetworkProjectId();
++    const projectName = trace ? "Neues Trace-Projekt" : "Neues Projekt";
++    rememberPendingProject(project);
+     try {
+-      // Keep this identity on retry, including when the accepted save response was lost.
+-      const project = pendingProject.current ??= createNetworkProjectId();
+-      await setWorkflowContext({ engineering_wizard_settings: { project_name: trace ? "Neues Trace-Projekt" : "Neues Projekt", model_type: "custom" } }, project);
+-      writeUserSettings({ ...readUserSettings(), activeProject: project });
+-      if (!trace) requestEngineeringAgentWizard(project, { dispatch: false });
+-      window.location.assign(withProjectParam(destination, project));
++      // A previous response may have been lost, including across a page reload.
++      if (remembered && await committedProjectExists(project, projectName)) {
++        openCreatedProject(project);
++        return;
++      }
++      await setWorkflowContext({ engineering_wizard_settings: { project_name: projectName, model_type: "custom" } }, project);
++      openCreatedProject(project);
+     } catch (caught) {
+-      setCreateError(caught instanceof Error ? caught.message : "Das Projekt konnte nicht angelegt werden.");
++      // The server may have committed while the request timed out in the browser.
++      const committed = await committedProjectExists(project, projectName).catch(() => false);
++      if (committed) openCreatedProject(project);
++      else setCreateError(caught instanceof Error ? caught.message : "Das Projekt konnte nicht angelegt werden.");
+       setCreating(false); createBusy.current = false;
+     }
+   }
+diff --git a/frontend/src/components/simulation-wizard.tsx b/frontend/src/components/simulation-wizard.tsx
+index 91d6507e..d019a5c7 100644
+--- a/frontend/src/components/simulation-wizard.tsx
++++ b/frontend/src/components/simulation-wizard.tsx
+@@ -1038,12 +1038,28 @@ export function SimulationWizard({
+     );
+   }
+   if (mode === "parameters" && (!catalogLoaded || !workflowLoaded)) {
++    if (formError) return <div className="panel error-card" role="alert"><h2>Parameter konnten nicht geladen werden</h2><p>{formError}</p></div>;
+     return <div className="panel loading-panel" role="status">Gespeicherte Parameter und Technologieprofile werden geladen …
+       {formError && <p role="alert">{formError}</p>}
+     </div>;
+   }
+   if (!domain || !technology) {
+-    return <div className="panel loading-panel">Technologiekatalog wird geladen …</div>;
++    return <div className="panel error-card" role="alert">
++      <h2>Gespeicherte Technologie nicht im Katalog</h2>
++      <p>Branche „{domainId}“ und Technologie „{technologyId}“ passen nicht zum geladenen Katalog. Bitte die Zuordnung auswählen und anschließend die Parameter speichern.</p>
++      <label>Branche
++        <select aria-label="Branche korrigieren" value={domain ? domainId : ""} onChange={(event) => { setDomainId(event.target.value); setTechnologyId(""); }}>
++          <option value="" disabled>Bitte auswählen</option>
++          {(catalog?.domains ?? []).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
++        </select>
++      </label>
++      {domain && <label>Technologie
++        <select aria-label="Technologie korrigieren" value="" onChange={(event) => chooseTechnology(event.target.value)}>
++          <option value="" disabled>Bitte auswählen</option>
++          {domain.technologies.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
++        </select>
++      </label>}
++    </div>;
+   }
+ 
+   return (
+
+NEW FILE frontend/src/lib/project-creation-recovery.ts
+
+/** Check the project registry after a create response is lost. GET never creates a project. */
+export async function committedProjectExists(
+  projectId: string,
+  expectedName: string,
+  fetcher: typeof fetch = fetch,
+): Promise<boolean> {
+  const response = await fetcher('/api/engineering/projects?offset=0', { cache: 'no-store' });
+  if (!response.ok) return false;
+  const result: unknown = await response.json();
+  if (!result || typeof result !== 'object' || !('items' in result) || !Array.isArray(result.items)) return false;
+  return result.items.some((item: unknown) => Boolean(item && typeof item === 'object'
+    && 'project_id' in item && item.project_id === projectId
+    && 'name' in item && item.name === expectedName));
+}
+
+NEW FILE frontend/src/lib/project-creation-recovery.test.mjs
+
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { committedProjectExists } from './project-creation-recovery.ts';
+
+test('a lost create response is recovered only from the exact committed project ID', async () => {
+  const calls = [];
+  const fetcher = async (url, options) => {
+    calls.push({ url, options });
+    return Response.json({ items: [
+      { project_id: 'network-project-other', name: 'Neues Projekt' },
+      { project_id: 'network-project-requested', name: 'Neues Projekt' },
+    ] });
+  };
+  assert.equal(await committedProjectExists('network-project-requested', 'Neues Projekt', fetcher), true);
+  assert.equal(await committedProjectExists('network-project-requested', 'Neues Trace-Projekt', fetcher), false);
+  assert.deepEqual(calls.map(({ url, options }) => [url, options.cache]), [
+    ['/api/engineering/projects?offset=0', 'no-store'],
+    ['/api/engineering/projects?offset=0', 'no-store'],
+  ]);
+});
+
+test('failed and malformed registry reads never claim project creation', async () => {
+  assert.equal(await committedProjectExists('project', 'Neues Projekt', async () => Response.json({}, { status: 503 })), false);
+  assert.equal(await committedProjectExists('project', 'Neues Projekt', async () => Response.json({ items: null })), false);
+});

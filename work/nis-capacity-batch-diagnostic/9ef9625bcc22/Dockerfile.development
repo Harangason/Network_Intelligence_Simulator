@@ -1,0 +1,6 @@
+FROM sha256:6a4702b4718d873fd06ed40d4e6e4bc761d89279b2a779574a322c39d73061f1
+LABEL networkis.development=true
+COPY . /app
+ARG NIS_BUILD_COMMIT_ID
+RUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py
+RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build

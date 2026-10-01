@@ -1,0 +1,1072 @@
+diff --git a/backend/app/simulation_service.py b/backend/app/simulation_service.py
+index d08a3f62..10ecc995 100644
+--- a/backend/app/simulation_service.py
++++ b/backend/app/simulation_service.py
+@@ -97,6 +97,10 @@ class SimulationService:
+                 technology.setdefault("topology", "technology_specific")
+                 technology.setdefault("native_formats", [])
+                 technology["parameter_schema"] = self._parameter_schema(technology_id, technology)
++                technology['parameter_defaults_review'] = COMMUNICATION_TECHNOLOGY_REGISTRY.parameter_defaults_review(technology_id)
++                for device_field in technology.get('local_timing_schema') or []:
++                    if device_field['key'] == 'bitrate_bps' and technology['parameter_defaults_review']['values'].get('bitrate_bps'):
++                        device_field['default'] = technology['parameter_defaults_review']['values']['bitrate_bps']
+                 technologies.append(technology)
+             domains.append({**copy.deepcopy(model_type), "technologies": technologies})
+         return {
+@@ -153,48 +157,38 @@ class SimulationService:
+                 item["options"] = options
+             return item
+ 
+-        rate_model = technology.get("rate_model") or {}
+-        rate_source = technology
+-        inherited_rate = False
+-        if not rate_model.get("fields"):
+-            # Application protocols such as SOME/IP have no physical link rate
+-            # of their own. Their explicit stack still needs the data-link
+-            # rate so validation and capacity use the Ethernet realization.
+-            from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+-
+-            for stack_id in technology.get("default_stack") or ():
+-                stack_profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(stack_id)
+-                stack_rate = stack_profile.get("rate_model") or {}
+-                if stack_rate.get("fields"):
+-                    rate_source = stack_profile
+-                    rate_model = stack_rate
+-                    inherited_rate = stack_id != technology_id
+-                    break
++        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++        rate_source = registry.rate_profile(technology_id)
++        rate_model = rate_source.get("rate_model") or {}
++        inherited_rate = rate_source['id'] != registry.normalize_id(technology_id)
++        review = registry.parameter_defaults_review(technology_id)
++        defaults = review['values']
+         rate_type = rate_model.get("type")
+         rate_fields: list[dict[str, Any]] = []
+         if rate_type in {"SINGLE_BITRATE", "ETHERNET_LINK_RATE", "FIXED_LINK_RATE"}:
+-            label = "Ethernet Link Speed" if inherited_rate else (
+-                "Link Speed" if rate_type in {"ETHERNET_LINK_RATE", "FIXED_LINK_RATE"} else "Bitrate"
++            ethernet_stack = 'ethernet' in {technology_id, *(technology.get('default_stack') or [])}
++            label = "Ethernet Link Speed" if inherited_rate and ethernet_stack else (
++                "Link Speed" if rate_type == "ETHERNET_LINK_RATE" or ethernet_stack else "Bitrate"
+             )
+             rate_fields.append(field(
+                 "bitrate", label, "physical", "network", unit="bit/s",
+                 minimum=rate_model.get("minimum_bps", 1),
+                 maximum=rate_model.get("maximum_bps"),
+-                default=rate_model.get("fixed_bps") or rate_source.get("default_bitrate") or 1,
++                default=defaults.get('bitrate_bps'),
+                 description=("Inherited physical link rate from the declared technology stack."
+                              if inherited_rate else "Technology-profiled network rate."),
+             ))
+         elif rate_type == "MULTI_PHASE_BITRATE":
+-            defaults = rate_model.get("defaults_bps") or {}
+             rate_fields.extend([
+-                field("arbitration_bitrate", "Nominal Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("nominal_maximum_bps"), default=defaults.get("nominal_bitrate_bps", 500_000)),
+-                field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("data_maximum_bps"), default=defaults.get("data_bitrate_bps", technology.get("default_bitrate") or 2_000_000)),
++                field("arbitration_bitrate", "Nominal Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("nominal_maximum_bps"), default=defaults.get("nominal_bitrate_bps")),
++                field("data_bitrate", "Data Bitrate", "physical", "network", unit="bit/s", minimum=1, maximum=rate_model.get("data_maximum_bps"), default=defaults.get("data_bitrate_bps")),
+             ])
+         elif rate_type == "I2C_CONFIRMED_CLOCK":
+             rate_fields.append(field(
+                 "bitrate", "I²C Bus Clock", "physical", "network", unit="bit/s",
+                 minimum=rate_model.get("minimum_bps", 1),
+                 maximum=rate_model.get("maximum_bps"),
++                default=defaults.get('bitrate_bps'),
+                 description="Controller mode and confirmed bus clock are required; no unreviewed rate is assumed.",
+             ))
+         elif rate_type == "DEVICE_DEPENDENT_CLOCK":
+@@ -204,6 +198,9 @@ class SimulationService:
+                 maximum=rate_model.get("maximum_bps"),
+                 description="The connected device datasheet must supply the clock limit; no profile default is assumed.",
+             ))
++        for rate_field in rate_fields:
++            rate_field['default_review'] = review
++            rate_field['allowed_bps'] = rate_model.get('allowed_bps') or ([rate_model['fixed_bps']] if rate_model.get('fixed_bps') else [])
+         fields: list[dict[str, Any]] = [
+             *rate_fields,
+             field("payload_bytes", "Payload", "physical", "message", unit="Byte", minimum=0, maximum=maximum_payload, default=min(8, maximum_payload), description="Nutzdaten pro Nachricht."),
+@@ -262,7 +259,7 @@ class SimulationService:
+         normalized = technology_id.lower()
+         if normalized in {"can_fd", "can_xl"}:
+             fields.append(field("sample_point_percent", "Sample Point", "physical", "network", unit="%", minimum=50, maximum=99.9, default=80))
+-        if "ethernet" in normalized or normalized in {"someip", "udp", "tcp", "dds_rtps"}:
++        if 'ethernet' in {registry.normalize_id(technology_id), *(technology.get('default_stack') or [])}:
+             fields.extend(
+                 [
+                     field("mtu_bytes", "MTU", "physical", "network", unit="Byte", minimum=64, maximum=65_535, default=1500),
+diff --git a/backend/communication/technologies/catalog.py b/backend/communication/technologies/catalog.py
+index 46086ba8..53c46a63 100644
+--- a/backend/communication/technologies/catalog.py
++++ b/backend/communication/technologies/catalog.py
+@@ -60,7 +60,8 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
+     "canopen": {"mechanisms": {"integrity": ["CAN_CRC"], "addressing": ["NODE_ID"], "diagnostics": ["CANOPEN_EMCY", "CANOPEN_SDO"], "supervision": ["HEARTBEAT", "NMT"]}},
+     "dds": {"mechanisms": {"discovery": ["DDS_PARTICIPANT_DISCOVERY", "DDS_ENDPOINT_DISCOVERY"], "supervision": ["LIVELINESS", "DEADLINE"]}},
+     "bacnet_ip": {"mechanisms": {"discovery": ["BACNET_WHO_IS_I_AM", "BACNET_WHO_HAS_I_HAVE"]}},
+-    "nmea2000": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["NMEA2000_ADDRESS_CLAIM"]}},
++    "nmea2000": {"rate_model": {"type": "FIXED_LINK_RATE", "fields": ["bitrate_bps"], "fixed_bps": 250_000},
++                 "mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["NMEA2000_ADDRESS_CLAIM"]}},
+ }
+ 
+ # These are the transport models implemented by the capacity service. A catalog
+@@ -95,6 +96,47 @@ REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
+ }
+ 
+ 
++LOCAL_EVIDENCE_FIELDS = {
++    "I2C": (("master_node_id", "Bestätigter I2C-Master"), ("slave_address", "Slave-Adresse des Geräts"),
++            ("address_bits", "I2C-Adressbreite (7/10 Bit)"),
++            ("i2c_mode", "I2C-Modus (STANDARD/FAST/FAST_PLUS/HIGH_SPEED)"),
++            ("transfer_direction", "Übertragungsrichtung (READ/WRITE/BIDIRECTIONAL)"),
++            ("start_stop_bound_us", "Start-/Stop-Grenze je Transaktion (µs)"),
++            ("clock_stretch_limit_us", "Gesamte Clock-Stretch-Grenze je Transaktion (µs)"),
++            ("transfer_bits_bound", "Transferumfang einschließlich Adresse und ACK (Bit)"),
++            ("multi_master", "Mehrere Master (true/false)"),
++            ("arbitration_bound_us", "Arbitrationsgrenze bei mehreren Mastern (µs)"),
++            ("bitrate_bps", "Bestätigter I2C-Takt (bit/s)")),
++    "SPI": (("master_node_id", "Bestätigter SPI-Master"), ("chip_select", "Chip-Select je Gerät"),
++            ("word_length_bits", "Wortlänge (Bit)"), ("duplex_mode", "Duplexmodus"),
++            ("cpol", "CPOL (0/1)"), ("cpha", "CPHA (0/1)"),
++            ("cs_setup_bound_us", "CS-Setup-Grenze (µs)"),
++            ("inter_transfer_gap_us", "Transferabstandsgrenze (µs)"),
++            ("transfer_bits_bound", "Transfergrenze in Taktbits"),
++            ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
++    "PWM": (("pwm_frequency_hz", "PWM-Frequenz (Hz)"), ("update_bound_ms", "Aktualisierungsgrenze (ms)"),
++            ("capture_bound_ms", "Erfassungsgrenze (ms)")),
++    "GPIO": (("sample_bound_ms", "Abtastgrenze (ms)"), ("debounce_bound_ms", "Entprellgrenze (ms)"),
++             ("edge_detection_bound_ms", "Flankenerkennungsgrenze (ms)")),
++    "ADC": (("sample_bound_ms", "ADC-Abtastgrenze (ms)"),
++            ("conversion_bound_ms", "ADC-Wandlungsgrenze (ms)")),
++    "DAC": (("update_bound_ms", "DAC-Aktualisierungsgrenze (ms)"),
++            ("settling_bound_ms", "DAC-Einschwinggrenze (ms)")),
++}
++
++
++def _local_timing_schema(technology_id):
++    numeric = {'address_bits', 'start_stop_bound_us', 'clock_stretch_limit_us',
++               'transfer_bits_bound', 'arbitration_bound_us', 'bitrate_bps', 'word_length_bits',
++               'cpol', 'cpha', 'cs_setup_bound_us', 'inter_transfer_gap_us', 'pwm_frequency_hz',
++               'update_bound_ms', 'capture_bound_ms', 'sample_bound_ms', 'debounce_bound_ms',
++               'edge_detection_bound_ms', 'conversion_bound_ms', 'settling_bound_ms'}
++    return [{'key': key, 'label': label, 'numeric': key in numeric,
++             'boolean': key == 'multi_master', 'optional': key == 'arbitration_bound_us',
++             **({'default': 'STANDARD'} if key == 'i2c_mode' else {})}
++            for key, label in LOCAL_EVIDENCE_FIELDS.get(technology_id.upper(), ())]
++
++
+ MODEL_TYPES: tuple[dict[str, Any], ...] = (
+     {"id": "generic_networking", "label": "Generische Kommunikationsarchitektur", "device_types": ["HardwareNode", "Gateway", "Sensor", "Actuator", "Switch", "Router"], "recommended_technologies": ["ethernet", "ip", "udp", "tcp", "generic_serial", "generic_can", "generic_ethernet", "custom_udp", "custom_tcp", "custom_binary", "custom_text", "custom_protocol"]},
+     {"id": "automotive", "label": "Automotive / Vehicle", "device_types": ["ECU", "Gateway", "DomainController", "ZoneController", "Sensor", "Actuator"], "recommended_technologies": ["can", "can_fd", "can_xl", "lin", "flexray", "automotive_ethernet", "canopen", "j1939", "isobus", "someip", "doip", "uds", "xcp", "obd2", "tsn"]},
+@@ -207,6 +249,7 @@ def _spec(
+                            if technology_id == "someip" else [list(stack or (technology_id,))]),
+         "default_bitrate": bitrate,
+         "rate_model": rate_model,
++        "local_timing_schema": _local_timing_schema(technology_id),
+         "parameter_schema": {
+             field: {"type": "integer", "unit": "bit/s", "minimum": 1}
+             for field in rate_model.get("fields", [])
+@@ -226,7 +269,7 @@ def _spec(
+              "candidate": bitrate, "source": "NIS built-in catalog",
+              "status": "REVIEW_REQUIRED",
+              "note": "Historical catalog value; confirm hardware, mode and physical link before use."}
+-            if bitrate and not direct_io else
++            if bitrate and not direct_io and rate_model.get("type") != "DEVICE_DEPENDENT_CLOCK" else
+             {"kind": "DEVICE_DEPENDENT", "status": "REVIEW_REQUIRED",
+              "required_fields": list(rate_model.get("fields") or []),
+              "note": "No universal rate is available; inspect the selected hardware/profile."}
+diff --git a/backend/communication/technologies/core/components.py b/backend/communication/technologies/core/components.py
+index 76c883e3..5021feaf 100644
+--- a/backend/communication/technologies/core/components.py
++++ b/backend/communication/technologies/core/components.py
+@@ -121,7 +121,8 @@ class TechnologyValidator:
+                 maximum = rate_model.get("data_maximum_bps")
+             allowed = rate_model.get("allowed_bps")
+             fixed = rate_model.get("fixed_bps")
+-            invalid = (maximum is not None and value > maximum) or (allowed and value not in allowed) or (fixed is not None and value != fixed)
++            minimum = rate_model.get("minimum_bps")
++            invalid = (minimum is not None and value < minimum) or (maximum is not None and value > maximum) or (allowed and value not in allowed) or (fixed is not None and value != fixed)
+             if invalid:
+                 findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_PARAMETER_OUT_OF_RANGE", f"{field}={value} bit/s violates the {self.technology_id} profile", "BLOCKER"))
+         return findings
+diff --git a/backend/communication/technologies/core/registry.py b/backend/communication/technologies/core/registry.py
+index 0f57dcec..cf930d42 100644
+--- a/backend/communication/technologies/core/registry.py
++++ b/backend/communication/technologies/core/registry.py
+@@ -32,7 +32,7 @@ def _identity_token(value: Any) -> str:
+ # Device classes (for example SPS/PLC) are not communication technologies.
+ BUILTIN_PROFILE_ALIASES = {
+     "can_fd": ("CANFD",), "can_xl": ("CANXL",), "someip": ("some_ip",),
+-    "ethernet": ("automotiveethernet",), "modbus_tcp": ("modbustcp",),
++    "ethernet": ("automotiveethernet", "automotive_ethernet"), "can": ("can_classic",), "modbus_tcp": ("modbustcp",),
+     "modbus_rtu": ("modbusrtu",), "opc_ua": ("opcua",),
+     "arinc429": ("arinc",), "mil_std_1553": ("milstd_1553",), "dds": ("dds_rtps",),
+     "ros2": ("ROS2", "ROS_2", "ros-2", "ros2_dds"),
+@@ -191,6 +191,51 @@ class TechnologyRegistry:
+     def profiles(self) -> list[dict[str, Any]]:
+         return [self._profiles[key].to_dict() for key in sorted(self._profiles)]
+ 
++    def rate_profile(self, technology_id: str) -> dict[str, Any]:
++        """Resolve only the explicitly declared transport, never an industry fallback."""
++        profile = self.profile(technology_id)
++        if (profile.get("rate_model") or {}).get("fields"):
++            return profile
++        for layer in profile.get("default_stack") or ():
++            candidate = self.profile(layer)
++            if (candidate.get("rate_model") or {}).get("fields"):
++                return candidate
++        return profile
++
++    def parameter_defaults_review(self, technology_id: str) -> dict[str, Any]:
++        """One review policy for every consumer; suggestions are never evidence."""
++        profile = self.rate_profile(technology_id)
++        model = profile.get("rate_model") or {}
++        proposal = profile.get("parameter_proposals") or {}
++        values, basis = {}, "NOT_APPLICABLE"
++        if model.get("type") == "MULTI_PHASE_BITRATE":
++            values = dict(model.get("defaults_bps") or {})
++            basis = "PROFILE_PHASE_DEFAULTS"
++        elif model.get("fields"):
++            basis = "DEVICE_DEPENDENT"
++            if model.get("type") != "DEVICE_DEPENDENT_CLOCK":
++                options = proposal.get("options") or []
++                modes = [option["maximum"] for option in options if option.get("maximum", 0) > 0]
++                allowed = model.get("allowed_bps") or model.get("typical_bps") or []
++                if model.get("fixed_bps"):
++                    value, basis = model["fixed_bps"], "FIXED_PROFILE_RATE"
++                elif modes:
++                    value, basis = min(modes), "STANDARD_MODE"
++                elif allowed:
++                    value, basis = min(allowed), "LOWEST_PROFILE_MODE"
++                elif model.get("minimum_bps", 0) > 1:
++                    value, basis = model["minimum_bps"], "PROFILE_MINIMUM"
++                else:
++                    value, basis = proposal.get("candidate"), "CATALOG_REVIEW_CANDIDATE"
++                if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
++                    values = {field: value for field in model["fields"]}
++                else:
++                    basis = "DEVICE_DEPENDENT"
++        return {"technology": self.normalize_id(technology_id), "rate_profile": profile["id"],
++                "values": values, "basis": basis, "status": "REVIEW_REQUIRED",
++                "source": proposal.get("source") or f"TechnologyProfile:{profile['id']}",
++                "source_revision": proposal.get("source_revision")}
++
+     def list_all(self) -> list[dict[str, Any]]:
+         """Enumerate canonical definitions without implying verified projects."""
+         return self.profiles()
+diff --git a/backend/engineering/agent_tools/validation.py b/backend/engineering/agent_tools/validation.py
+index c52c9b5d..6694183e 100644
+--- a/backend/engineering/agent_tools/validation.py
++++ b/backend/engineering/agent_tools/validation.py
+@@ -2,7 +2,7 @@
+ from ..repository import ENTITY_SPECS, parent_link_for_payload
+ from ..signal_audit import inspect_message_signals
+ from ..message_packing import valid_payload_bytes
+-from ..capacity.calculators import estimate_frame, utilization_percent
++from ..capacity.calculators import estimate_frame, utilization_percent, serial_evidence_missing_fields
+ from .model import objects, networks
+ from ..device_classification import DeviceClassificationRegistry
+ from ...communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+@@ -188,12 +188,22 @@ def validate_effective_model(changes):
+             technology = DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(port['technology'])
+             required = ['arbitration_bitrate', 'data_bitrate'] if technology.upper() == 'CAN_FD' else ['local_timing_evidence'] if technology.upper() in {'I2C', 'SPI'} else ['bitrate']
+             missing = [key for key in required if not parameters.get(key)] or ['confirmed_rate_evidence_or_transmission_model']
++            if technology.upper() in {'I2C', 'SPI'}:
++                missing = serial_evidence_missing_fields(technology.upper(), parameters, max(int(item.get('dlc') or 0) for item in messages))
++            elif (DEFAULT_TECHNOLOGY_REGISTRY.profile(technology).get('capacity_evidence') or {}).get('status') == 'MODEL_MISSING':
++                missing = ['technology_specific_capacity_model']
+             node = graph['HardwareNode'].get(str(port.get('hardware_node_id')), {})
++            if technology.upper() in {'I2C', 'SPI'}:
++                message = 'Geräte-/Transaktionsnachweis fehlt. Im Anschluss des Geräts prüfen: ' + ', '.join(missing) + '. Eine bestätigte Busfrequenz allein belegt keine Kapazität.'
++            elif missing == ['technology_specific_capacity_model']:
++                message = 'Für diese Technologie ist noch kein ausführbares Kapazitätsmodell registriert. Standardparameter allein ersetzen dieses Modell nicht.'
++            else:
++                message = 'Interface-Auslastung nicht nachgewiesen: ' + ', '.join(missing) + '. Parameter für diese Technologie prüfen und bestätigen.'
+             findings.append({'severity': 'ERROR', 'index': touched.get(('HardwareNetworkInterface', identifier)),
+                 'object_id': identifier, 'object_type': 'HardwareNetworkInterface', 'object_name': port.get('name') or identifier,
+                 'node_name': node.get('name'), 'network_id': port.get('network_ref'), 'network_name': network.get('name') or network.get('id'),
+                 'technology': technology, 'missing_fields': missing, 'repair_action': 'REVIEW_TECHNOLOGY_PARAMETERS', 'code': 'CAPACITY_UNVERIFIED',
+-                'message': 'Interface-Auslastung nicht nachgewiesen: ' + ', '.join(missing) + '. Parameter für diese Technologie prüfen und bestätigen.'})
++                'message': message})
+             continue
+         releases = [(item, frame, profile(transmission_contract(item), item.get('cycle_ms'))) for item, frame in frames]
+         if any(release['errors'] for _, _, release in releases):
+diff --git a/backend/engineering/agent_tools/wizard_generation.py b/backend/engineering/agent_tools/wizard_generation.py
+index 90ea1a71..b2ca30f3 100644
+--- a/backend/engineering/agent_tools/wizard_generation.py
++++ b/backend/engineering/agent_tools/wizard_generation.py
+@@ -514,8 +514,8 @@ def _rate_review_candidate(technology_id: str) -> tuple[int | None, dict | None]
+     proposal = DEFAULT_TECHNOLOGY_REGISTRY.profile(technology_id).get('parameter_proposals') or {}
+     if proposal.get('status') != 'REVIEW_REQUIRED':
+         return None, None
+-    options = proposal.get('options') or []
+-    candidate = options[0].get('maximum') if options else proposal.get('candidate')
++    review = DEFAULT_TECHNOLOGY_REGISTRY.parameter_defaults_review(technology_id)
++    candidate = review['values'].get('bitrate_bps')
+     return (int(candidate), proposal) if isinstance(candidate, (int, float)) and candidate > 0 else (None, proposal)
+ 
+ 
+@@ -555,7 +555,20 @@ def generate_parameters(arguments: dict) -> dict:
+     } for technology_id in technology_ids}
+     primary = technology_ids[0]
+     primary_defaults = technology_defaults[primary]
+-    existing = state.get('parameters') or {}
++    existing = dict(state.get('parameters') or {})
++    if DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(existing.get('technology')) != primary:
++        # Global transport values belong to their previous technology. Scoped
++        # groups/networks remain saved and can be selected independently.
++        transport_keys = {field['key'] for field in SimulationService._parameter_schema(
++            primary, DEFAULT_TECHNOLOGY_REGISTRY.profile(primary)) if field['category'] == 'physical'}
++        old_technology = existing.get('technology')
++        if old_technology:
++            transport_keys.update(field['key'] for field in SimulationService._parameter_schema(
++                old_technology, DEFAULT_TECHNOLOGY_REGISTRY.profile(old_technology)) if field['category'] == 'physical')
++        transport_keys.update({'bitrate', 'bitrate_bps', 'nominal_bitrate_bps', 'data_bitrate_bps',
++                               'arbitration_bitrate', 'data_bitrate', 'local_timing_evidence'})
++        existing = {key: value for key, value in existing.items() if key not in transport_keys}
++        existing['parameter_provenance'] = {key: value for key, value in (existing.get('parameter_provenance') or {}).items() if key not in transport_keys}
+     parameters = {
+         **primary_defaults,
+         **existing,
+diff --git a/backend/engineering/capacity/calculators.py b/backend/engineering/capacity/calculators.py
+index 7dbbaab2..d12c5e33 100644
+--- a/backend/engineering/capacity/calculators.py
++++ b/backend/engineering/capacity/calculators.py
+@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
+ from math import ceil, isfinite
+ from typing import Any
+ 
+-from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
++from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES, LOCAL_EVIDENCE_FIELDS, REVIEW_RATE_PROPOSALS
+ 
+ 
+ @dataclass(frozen=True)
+@@ -41,6 +41,11 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
+     """Require device-confirmed total transaction bounds before using I2C/SPI math."""
+     technology = str(protocol or "").upper()
+     evidence = parameters.get("local_timing_evidence") or {}
++    if isinstance(evidence, dict):
++        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++        if any(registry.normalize_id(evidence[key]) != registry.normalize_id(protocol)
++               for key in ('technology', 'protocol') if evidence.get(key)):
++            return None
+     if not isinstance(evidence, dict) or evidence.get("confirmed") is not True or not evidence.get("source"):
+         return None
+     if not evidence.get("master_node_id") or _positive(evidence.get("bitrate_bps"), 0) <= 0:
+@@ -60,8 +65,8 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
+             bits = int(evidence["address_bits"])
+             if bits not in {7, 10} or not 0 <= address < 2 ** bits:
+                 return None
+-            mode_maximum = {"STANDARD": 100_000, "FAST": 400_000,
+-                            "FAST_PLUS": 1_000_000, "HIGH_SPEED": 3_400_000}
++            mode_maximum = {option['mode'].upper().replace(' ', '_'): option['maximum']
++                            for option in REVIEW_RATE_PROPOSALS['i2c']['options']}
+             if float(evidence["bitrate_bps"]) > mode_maximum.get(str(evidence["i2c_mode"]).upper(), 0):
+                 return None
+             if str(evidence["transfer_direction"]).upper() not in {"READ", "WRITE", "BIDIRECTIONAL"}:
+@@ -71,7 +76,7 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
+             if evidence["multi_master"] and evidence.get("arbitration_bound_us") is None:
+                 return None
+             delay_fields = ("start_stop_bound_us", "clock_stretch_limit_us")
+-            if evidence["multi_master"] or "arbitration_bound_us" in evidence:
++            if evidence["multi_master"] or evidence.get("arbitration_bound_us") is not None:
+                 delay_fields += ("arbitration_bound_us",)
+         else:
+             if not str(evidence["chip_select"]).strip() or int(evidence["word_length_bits"]) <= 0:
+@@ -90,6 +95,20 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
+     return evidence
+ 
+ 
++def serial_evidence_missing_fields(protocol: str, parameters: dict[str, Any], payload_bytes: int = 0) -> list[str]:
++    """Expose the concrete device review, separate from a saved network clock."""
++    if confirmed_serial_evidence(protocol, parameters, payload_bytes) is not None:
++        return []
++    evidence = parameters.get('local_timing_evidence')
++    evidence = evidence if isinstance(evidence, dict) else {}
++    fields = [key for key, _ in LOCAL_EVIDENCE_FIELDS.get(str(protocol).upper(), ())
++              if key != 'arbitration_bound_us' or evidence.get('multi_master') is not False]
++    missing = [key for key in fields if evidence.get(key) is None or evidence.get(key) == '']
++    if not evidence.get('source'): missing.append('source')
++    if evidence.get('confirmed') is not True: missing.append('confirmed')
++    return [f'local_timing_evidence.{key}' for key in missing] or ['local_timing_evidence.invalid_device_or_transaction_bounds']
++
++
+ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]) -> FrameEstimate:
+     """Estimate serialized size and transmit time without claiming exact controller behavior."""
+     normalized = str(protocol or "CUSTOM").upper().replace("-", "_").replace(" ", "_")
+diff --git a/backend/engineering/capacity/dimensioning.py b/backend/engineering/capacity/dimensioning.py
+index 9a8fb404..893b252d 100644
+--- a/backend/engineering/capacity/dimensioning.py
++++ b/backend/engineering/capacity/dimensioning.py
+@@ -14,7 +14,7 @@ import json
+ from math import ceil, floor, isfinite, lcm
+ 
+ from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+-from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES
++from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES, LOCAL_EVIDENCE_FIELDS
+ from .calculators import confirmed_serial_evidence
+ from .transmission import profile, bus_request_pairs
+ 
+@@ -24,39 +24,13 @@ SUPPORTED_CAPACITY_PROTOCOLS = frozenset(
+     item["id"].upper() for item in DEFAULT_TECHNOLOGY_REGISTRY.profiles()
+     if (item.get("capacity_evidence") or {}).get("status") == "MODEL_AVAILABLE"
+ )
+-LOCAL_EVIDENCE_FIELDS = {
+-    "I2C": (("master_node_id", "Bestätigter I2C-Master"), ("slave_address", "Slave-Adresse des Geräts"),
+-            ("address_bits", "I2C-Adressbreite (7/10 Bit)"),
+-            ("i2c_mode", "I2C-Modus (STANDARD/FAST/FAST_PLUS/HIGH_SPEED)"),
+-            ("transfer_direction", "Übertragungsrichtung (READ/WRITE/BIDIRECTIONAL)"),
+-            ("start_stop_bound_us", "Start-/Stop-Grenze je Transaktion (µs)"),
+-            ("clock_stretch_limit_us", "Gesamte Clock-Stretch-Grenze je Transaktion (µs)"),
+-            ("transfer_bits_bound", "Transferumfang einschließlich Adresse und ACK (Bit)"),
+-            ("multi_master", "Mehrere Master (true/false)"),
+-            ("arbitration_bound_us", "Arbitrationsgrenze bei mehreren Mastern (µs)"),
+-            ("bitrate_bps", "Bestätigter I2C-Takt (bit/s)")),
+-    "SPI": (("master_node_id", "Bestätigter SPI-Master"), ("chip_select", "Chip-Select je Gerät"),
+-            ("word_length_bits", "Wortlänge (Bit)"), ("duplex_mode", "Duplexmodus"),
+-            ("cpol", "CPOL (0/1)"), ("cpha", "CPHA (0/1)"),
+-            ("cs_setup_bound_us", "CS-Setup-Grenze (µs)"),
+-            ("inter_transfer_gap_us", "Transferabstandsgrenze (µs)"),
+-            ("transfer_bits_bound", "Transfergrenze in Taktbits"),
+-            ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
+-    "PWM": (("pwm_frequency_hz", "PWM-Frequenz (Hz)"), ("update_bound_ms", "Aktualisierungsgrenze (ms)"),
+-            ("capture_bound_ms", "Erfassungsgrenze (ms)")),
+-    "GPIO": (("sample_bound_ms", "Abtastgrenze (ms)"), ("debounce_bound_ms", "Entprellgrenze (ms)"),
+-             ("edge_detection_bound_ms", "Flankenerkennungsgrenze (ms)")),
+-    "ADC": (("sample_bound_ms", "ADC-Abtastgrenze (ms)"),
+-            ("conversion_bound_ms", "ADC-Wandlungsgrenze (ms)")),
+-    "DAC": (("update_bound_ms", "DAC-Aktualisierungsgrenze (ms)"),
+-            ("settling_bound_ms", "DAC-Einschwinggrenze (ms)")),
+-}
++
+ 
+ 
+ def local_evidence_proposal(protocol, rows):
+     """Offer review fields from the canonical technology profile, never a timing approval."""
+     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile(protocol.lower())
+-    candidate_rate = profile.get("default_bitrate") if protocol in {"I2C", "SPI"} else None
++    candidate_rate = DEFAULT_TECHNOLOGY_REGISTRY.parameter_defaults_review(protocol)["values"].get("bitrate_bps")
+     endpoints = sorted({str(endpoint.get("node_id")) for row in rows
+                         for endpoint in (row.get("physical_source") or {}, row.get("physical_target") or {})
+                         if endpoint.get("node_id")})
+diff --git a/backend/engineering/capacity/service.py b/backend/engineering/capacity/service.py
+index f64ae616..f2c367b9 100644
+--- a/backend/engineering/capacity/service.py
++++ b/backend/engineering/capacity/service.py
+@@ -73,11 +73,8 @@ def parameters_for_protocol(
+     protocol: str, parameters: dict[str, Any], configuration: dict[str, Any] | None = None,
+     network_id: str | None = None, confirmed_parameters: dict[str, Any] | None = None,
+ ) -> dict[str, Any]:
+-    aliases = {"AUTOMOTIVE_ETHERNET": "ETHERNET", "CANFD": "CAN_FD", "CAN_CLASSIC": "CAN", "SOMEIP": "SOME_IP"}
+-
+     def canonical(value: Any) -> str:
+-        name = str(value or "").upper().replace("-", "_").replace(" ", "_")
+-        return aliases.get(name, name)
++        return DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(value).upper() if value else ''
+ 
+     resolved = dict(parameters)
+     target = canonical(protocol)
+@@ -91,7 +88,7 @@ def parameters_for_protocol(
+         return matching_identity(proof) and (key != "local_timing_evidence" or
+                 isinstance(value, dict) and matching_identity(value))
+ 
+-    transport_fields = {"bitrate", "bitrate_bps", "nominal_bitrate_bps", "arbitration_bitrate", "data_bitrate", "local_timing_evidence"}
++    transport_fields = {"bitrate", "bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps", "arbitration_bitrate", "data_bitrate", "local_timing_evidence"}
+     if not matching_identity(parameters):
+         for key in transport_fields:
+             resolved.pop(key, None)
+@@ -110,7 +107,12 @@ def parameters_for_protocol(
+         "EXPLICIT_USER_SPECIFICATION", "USER_CONFIRMED", "MANUAL",
+     }
+     provenance = parameter_provenance.get("bitrate") or {}
+-    manually_confirmed = not confirmed.get("defaults_source") or provenance.get("source") in trusted_sources
++    def trusted_value(scope, key):
++        proof = (scope.get('parameter_provenance') or {}).get(key) or {}
++        return (not scope.get('defaults_source') or proof.get('source') in trusted_sources) and (
++            proof.get('status') != 'REVIEW_REQUIRED' and ('value' not in proof or proof['value'] == scope.get(key)))
++
++    manually_confirmed = trusted_value(confirmed, 'bitrate')
+     confirmed_identity = matching_identity(confirmed, required=True)
+     rate_evidenced = (confirmed_identity and saved_rate and manually_confirmed
+                       and matching_identity(provenance)) or explicitly_specified
+@@ -120,8 +122,7 @@ def parameters_for_protocol(
+         phase: (confirmed_identity and
+                 any(_number(confirmed.get(key), 0) > 0 and
+                     matching_identity(parameter_provenance.get(key) or {}) and
+-                    (not confirmed.get("defaults_source") or
+-                     (parameter_provenance.get(key) or {}).get("source") in trusted_sources)
++                    trusted_value(confirmed, key)
+                     for key in keys))
+         for phase, keys in phase_sources.items()
+     }
+@@ -151,7 +152,10 @@ def parameters_for_protocol(
+     # stale or refer to another bus; only the matching transport contributes.
+     if not matching_identity(declared, required=True):
+         declared = {}
+-    configured_scope = configuration or {}
++    configured_scope = dict(configuration or {})
++    capabilities = configured_scope.get('capabilities') or {}
++    if isinstance(capabilities.get('local_timing_evidence'), dict):
++        configured_scope.setdefault('local_timing_evidence', capabilities['local_timing_evidence'])
+     if not matching_identity(configured_scope):
+         configured_scope = {key: value for key, value in configured_scope.items()
+                             if key not in transport_fields}
+@@ -184,12 +188,36 @@ def parameters_for_protocol(
+         resolved.pop("local_timing_evidence", None)
+     if target in {"I2C", "SPI"}:
+         serial = confirmed_serial_evidence(target, resolved)
++        known_clock = _number(resolved.get('bitrate'), 0) if rate_evidenced else 0
++        if known_clock:
++            resolved['_confirmed_bus_clock_bps'] = known_clock
++        if serial and known_clock and serial['bitrate_bps'] != known_clock:
++            resolved['_rate_findings'] = [{'code': 'TECHNOLOGY_RATE_MODEL_MISMATCH',
++                                          'message': 'Gerätetakt widerspricht der bestätigten Busfrequenz.'}]
++            serial = None
+         rate_evidenced = serial is not None
+         if serial:
+             resolved["bitrate"] = serial["bitrate_bps"]
+         else:
+             resolved.pop("bitrate", None)
+         resolved["_rate_evidenced"] = rate_evidenced
++    if rate_evidenced:
++        aliases = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps', 'data_bitrate': 'data_bitrate_bps'}
++        rates = {aliases.get(key, key): resolved[key] for key in transport_fields
++                 if key in resolved and key != 'local_timing_evidence'}
++        if target == 'CAN_FD':
++            # Physical ports and existing saved networks use bitrate for the
++            # nominal phase. The workflow's data-phase alias must never replace
++            # an explicitly supplied arbitration rate.
++            if 'nominal_bitrate_bps' not in rates and phase_evidenced['arbitration_bitrate']:
++                rates['nominal_bitrate_bps'] = resolved.get('bitrate_bps', resolved.get('bitrate'))
++            rates.pop('bitrate_bps', None)
++        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, rates)
++        if validation['status'] != 'VALID':
++            resolved['_rate_evidenced'] = False
++            resolved['_rate_findings'] = validation['findings']
++            for key in transport_fields - {'local_timing_evidence'}:
++                resolved.pop(key, None)
+     return resolved
+ 
+ 
+diff --git a/backend/tests/test_technology_profile_semantics.py b/backend/tests/test_technology_profile_semantics.py
+index f4037b3c..9510ce75 100644
+--- a/backend/tests/test_technology_profile_semantics.py
++++ b/backend/tests/test_technology_profile_semantics.py
+@@ -156,7 +156,8 @@ def test_i2c_and_spi_forms_expose_required_clocks_without_invented_defaults() ->
+ 
+     assert i2c_clock["label"] == "I²C Bus Clock"
+     assert spi_clock["label"] == "SPI Device Clock"
+-    assert i2c_clock["required"] is True and "default" not in i2c_clock
++    assert i2c_clock["required"] is True and i2c_clock["default"] == 100_000
++    assert i2c_clock["default_review"]["status"] == "REVIEW_REQUIRED"
+     assert spi_clock["required"] is True and "default" not in spi_clock
+     local_io_ids = {"i2c", "spi", "uart", "gpio", "pwm", "adc", "dac"}
+     assert local_io_ids <= technologies.keys()
+diff --git a/frontend/e2e/technology-parameter-review.spec.ts b/frontend/e2e/technology-parameter-review.spec.ts
+index 4d2b3c16..0b8fe994 100644
+--- a/frontend/e2e/technology-parameter-review.spec.ts
++++ b/frontend/e2e/technology-parameter-review.spec.ts
+@@ -126,3 +126,61 @@ test('stale parameter revision rejects the real write and preserves confirmed ra
+   const current = await (await page.request.get('/api/engineering/workflow/parameters',{headers})).json();
+   expect(current.parameters.bitrate).toBe(19200);
+ });
++
++test('every bus exposes its own server defaults in the actual parameter form @technology-review', async ({ page }) => {
++  const project = 'nis-e2e-catalog-defaults-' + randomUUID();
++  const catalog = await (await page.request.get('/api/technologies')).json();
++  const profiles = new Map<string, any>(catalog.domains.flatMap((domain: any) => domain.technologies).map((profile: any) => [profile.id, profile]));
++  expect(profiles.size).toBe(catalog.technology_count);
++  await page.goto(`/studio?mode=parameters&project=${project}`);
++  const initialBus = page.getByLabel('Bus / Protokoll auswählen');
++  await expect(initialBus.locator('option[value="i2c"]')).toHaveCount(1);
++  await initialBus.selectOption('i2c');
++  await page.getByLabel('Anwendungsbereich auswählen').selectOption('custom');
++  for (const [id, profile] of profiles) {
++    await page.locator('#technology').selectOption(id);
++    for (const field of profile.parameter_schema.filter((item: any) => ['bitrate', 'arbitration_bitrate', 'data_bitrate'].includes(item.key))) {
++      const input = page.locator(`input[name="${field.key}"]`);
++      await expect(input, `${id}/${field.key}`).toHaveValue(field.default === undefined ? '' : String(field.default));
++      if (field.default !== undefined) expect(await input.evaluate((el: HTMLInputElement) => el.checkValidity()), `${id}/${field.key}`).toBe(true);
++    }
++    if (id === 'nmea2000') {
++      await expect(page.locator('input[name="bitrate"]')).toHaveValue('250000');
++      await expect(page.locator('input[name="mtu_bytes"]')).toHaveCount(0);
++    }
++  }
++  // Switching through the entire catalog is a review, not a persistence action.
++  const saved = await (await page.request.get('/api/engineering/workflow/parameters', {headers:{'X-Project-ID':project}})).json();
++  expect(saved.parameters.technology).toBeUndefined();
++});
++
++test('hardware editor uses the selected profile and saves proposals without inventing device confirmation @technology-review', async ({ page }) => {
++  const project = 'nis-e2e-device-profile-' + randomUUID();
++  const headers = {'X-Project-ID': project};
++  const nodeResponse = await page.request.post('/api/engineering/hardware-nodes', {headers, data:{name:'Review Controller', device_type:'EmbeddedController', domain:'embedded_systems'}});
++  expect(nodeResponse.ok(), await nodeResponse.text()).toBe(true);
++  const node = await nodeResponse.json();
++  const portResponse = await page.request.post('/api/engineering/hardware-interfaces', {headers, data:{name:'Device Review Port', hardware_node_id:node.id, technology:'I2C'}});
++  expect(portResponse.ok(), await portResponse.text()).toBe(true);
++  const port = await portResponse.json();
++  await page.goto(`/studio/engineering?project=${project}&resource=hardware-interfaces&object=${port.id}&edit=1`);
++  await expect(page.locator('#edit_local_i2c_mode')).toHaveValue('STANDARD');
++  await expect(page.locator('#edit_local_bitrate_bps')).toHaveValue('100000');
++  await expect(page.locator('#edit_data_bitrate')).toHaveCount(0);
++  await expect(page.locator('#edit_local_slave_address')).toHaveValue('');
++  await page.locator('#edit_technology').selectOption('SPI');
++  await expect(page.locator('#edit_local_i2c_mode')).toHaveCount(0);
++  await expect(page.locator('#edit_local_chip_select')).toHaveValue('');
++  await expect(page.locator('#edit_local_bitrate_bps')).toHaveValue('');
++  await page.locator('#edit_technology').selectOption('CAN_FD');
++  await expect(page.locator('#edit_local_chip_select')).toHaveCount(0);
++  await expect(page.locator('#edit_data_bitrate')).toHaveValue('2000000');
++  await page.locator('#edit_technology').selectOption('I2C');
++  await page.getByRole('button', {name:'Änderungen speichern',exact:true}).click();
++  await expect(page.locator('#edit_technology')).toHaveCount(0);
++  const saved = await (await page.request.get(`/api/engineering/hardware-interfaces/${port.id}`, {headers})).json();
++  expect(saved.bitrate).toBe(100000);
++  expect(saved.data_bitrate).toBeNull();
++  expect(saved.capabilities.local_timing_evidence).toMatchObject({technology:'I2C', i2c_mode:'STANDARD', bitrate_bps:100000, confirmed:false});
++  expect(saved.capabilities.local_timing_evidence.slave_address).toBeNull();
++});
+diff --git a/frontend/src/components/engineering-agent-event.tsx b/frontend/src/components/engineering-agent-event.tsx
+index 6d28b19f..1b00d813 100644
+--- a/frontend/src/components/engineering-agent-event.tsx
++++ b/frontend/src/components/engineering-agent-event.tsx
+@@ -137,8 +137,11 @@ function ProposalReview({ initial, projectId, wizardReview = false, onProposalCh
+       {proposalFindingGroups(proposal).map(group => <article key={group.key}>
+         <strong>{group.code === 'CAPACITY_UNVERIFIED' ? `${group.technology} · ${group.network} · ${group.findings.length} Anschlüsse ohne Kapazitätsnachweis` : group.findings[0].object_name}</strong>
+         <p>{group.findings[0].message}</p>
+-        {group.code === 'CAPACITY_UNVERIFIED' && <><p>Kapazitätsprüfung erfolgt nach Bestätigung und Übernahme der Technologieparameter. Modellfreigabe bestätigt keine Kapazität.</p>
+-          <a className="button secondary tiny" href={`/studio?mode=parameters&project=${encodeURIComponent(projectId)}`}>Technologieparameter bearbeiten und bestätigen</a></>}
++        {group.code === 'CAPACITY_UNVERIFIED' && (['i2c', 'spi'].includes(group.technology.toLowerCase())
++          ? <><p>Busfrequenz und Gerätenachweis werden getrennt geprüft. Nach Übernahme des Modells die betroffenen Anschlüsse unter „Gerätespezifische Zeitdaten“ bearbeiten. Master, Adresse/Chip-Select, Transferumfang und Zeitgrenzen benötigen Geräteunterlagen; sie werden nicht aus Standardwerten erfunden.</p>
++            <a className="button secondary tiny" href={`/studio/engineering?resource=hardware-interfaces&project=${encodeURIComponent(projectId)}`}>Geräteanschlüsse und Zeitdaten prüfen</a></>
++          : <><p>Kapazitätsprüfung erfolgt mit dem Modell dieser Technologie nach Bestätigung und Übernahme der Parameter. Modellfreigabe bestätigt keine Kapazität.</p>
++            <a className="button secondary tiny" href={`/studio?mode=parameters&project=${encodeURIComponent(projectId)}`}>Technologieparameter bearbeiten und bestätigen</a></>)}
+         {group.code === 'CAPACITY_UNVERIFIED' ? <LazyDetails title={`Alle betroffenen Objekte und Befunde (${group.findings.length})`}>{() => <FindingGroupDetails findings={group.findings} />}</LazyDetails>
+           : group.findings.map((finding, index) => <div key={index}>
+             <p role={finding.severity === 'WARNING' ? 'status' : 'alert'}>{finding.message}</p>
+diff --git a/frontend/src/components/engineering-workbench.tsx b/frontend/src/components/engineering-workbench.tsx
+index eda8c83f..5b5b1214 100644
+--- a/frontend/src/components/engineering-workbench.tsx
++++ b/frontend/src/components/engineering-workbench.tsx
+@@ -2,6 +2,9 @@
+ import { CommunicationRepairAgent } from "@/components/communication-repair-agent";
+ import { CommunicationWarningIndicator } from "@/components/communication-warning";
+ import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/lib/communication-warnings";
++import { getCatalog } from "@/lib/api";
++import { technologyKey } from "@/lib/technology-parameters";
++import type { Technology } from "@/lib/types";
+ import { listRoutes } from "@/lib/routing-api";
+ import { physicalBindingStatus } from "@/lib/interface-status";
+ import { SourceFindings } from "@/components/source-findings";
+@@ -68,36 +71,7 @@ const OBJECT_TYPE_RESOURCE: Partial<Record<string, EngineeringResource>> = Objec
+   RESOURCES.map((item) => [RESOURCE_TO_OBJECT_TYPE[item], item]),
+ ) as Partial<Record<string, EngineeringResource>>;
+ const ENGINEERING_PAGE_SIZE = 50;
+-const LOCAL_TIMING_FIELDS: Record<string, Array<{key: string; label: string; numeric?: boolean; boolean?: boolean; optional?: boolean}>> = {
+-  I2C: [{key: "master_node_id", label: "I2C-Master"}, {key: "slave_address", label: "Slave-Adresse"},
+-    {key: "address_bits", label: "Adressbreite (7/10 Bit)", numeric: true},
+-    {key: "i2c_mode", label: "I2C-Modus (STANDARD/FAST/FAST_PLUS/HIGH_SPEED)"},
+-    {key: "transfer_direction", label: "Richtung (READ/WRITE/BIDIRECTIONAL)"},
+-    {key: "start_stop_bound_us", label: "Start-/Stop-Grenze (µs)", numeric: true},
+-    {key: "clock_stretch_limit_us", label: "Clock-Stretching-Grenze (µs)", numeric: true},
+-    {key: "transfer_bits_bound", label: "Transferumfang inkl. Adresse/ACK (Bit)", numeric: true},
+-    {key: "multi_master", label: "Mehrere Master", boolean: true},
+-    {key: "arbitration_bound_us", label: "Arbitrationsgrenze bei mehreren Mastern (µs)", numeric: true, optional: true},
+-    {key: "bitrate_bps", label: "Bestätigter I2C-Takt (bit/s)", numeric: true}],
+-  SPI: [{key: "master_node_id", label: "SPI-Master"}, {key: "chip_select", label: "Chip-Select"},
+-    {key: "word_length_bits", label: "Wortlänge (Bit)", numeric: true},
+-    {key: "duplex_mode", label: "Duplexmodus (FULL_DUPLEX/HALF_DUPLEX)"},
+-    {key: "cpol", label: "CPOL (0/1)", numeric: true}, {key: "cpha", label: "CPHA (0/1)", numeric: true},
+-    {key: "cs_setup_bound_us", label: "CS-Setup-Grenze (µs)", numeric: true},
+-    {key: "inter_transfer_gap_us", label: "Transferabstandsgrenze (µs)", numeric: true},
+-    {key: "transfer_bits_bound", label: "Transfergrenze in Taktbits", numeric: true},
+-    {key: "bitrate_bps", label: "Bestätigter SPI-Takt (bit/s)", numeric: true}],
+-  PWM: [{key: "pwm_frequency_hz", label: "PWM-Frequenz (Hz)", numeric: true},
+-    {key: "update_bound_ms", label: "Aktualisierungsgrenze (ms)", numeric: true},
+-    {key: "capture_bound_ms", label: "Erfassungsgrenze (ms)", numeric: true}],
+-  GPIO: [{key: "sample_bound_ms", label: "Abtastgrenze (ms)", numeric: true},
+-    {key: "debounce_bound_ms", label: "Entprellgrenze (ms)", numeric: true},
+-    {key: "edge_detection_bound_ms", label: "Flankenerkennungsgrenze (ms)", numeric: true}],
+-  ADC: [{key: "sample_bound_ms", label: "ADC-Abtastgrenze (ms)", numeric: true},
+-    {key: "conversion_bound_ms", label: "ADC-Wandlungsgrenze (ms)", numeric: true}],
+-  DAC: [{key: "update_bound_ms", label: "DAC-Aktualisierungsgrenze (ms)", numeric: true},
+-    {key: "settling_bound_ms", label: "DAC-Einschwinggrenze (ms)", numeric: true}],
+-};
++
+ 
+ const HARDWARE_PRESETS = [
+   { label: "ECU", deviceType: "ECU" },
+@@ -3434,6 +3408,26 @@ function EditObjectForm({
+   // Keep the draft and its revision together while other views refresh.
+   const [item] = useState(sourceItem);
+   const [routingAllowed, setRoutingAllowed] = useState(() => routingEnabled(sourceItem));
++  const originalTechnology = isHardwareNetworkInterface(item) ? item.technology : '';
++  const [editedTechnology, setEditedTechnology] = useState(originalTechnology);
++  const [technologyProfiles, setTechnologyProfiles] = useState<Technology[]>([]);
++  const [profileError, setProfileError] = useState('');
++  useEffect(() => {
++    if (resource !== 'hardware-interfaces') return;
++    let active = true;
++    getCatalog({ strict: true }).then(catalog => {
++      if (active) setTechnologyProfiles(catalog.domains.flatMap(domain => domain.technologies));
++    }).catch(error => { if (active) setProfileError(String(error)); });
++    return () => { active = false; };
++  }, [resource]);
++  const technologyProfile = technologyProfiles.find(profile => [profile.id, ...(profile.aliases ?? [])].some(id => technologyKey(id) === technologyKey(editedTechnology)));
++  const localFields = technologyProfile?.local_timing_schema ?? [];
++  const previousLocal = isHardwareNetworkInterface(item) && technologyKey(editedTechnology) === technologyKey(originalTechnology)
++    ? (item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown> : {};
++  const clockField = technologyProfile?.parameter_schema?.find(field => field.key === 'bitrate' || field.key === 'arbitration_bitrate');
++  const dataClockField = technologyProfile?.parameter_schema?.find(field => field.key === 'data_bitrate');
++  const localCandidate = (key: string) => localFields.find(field => field.key === key)?.default;
++
+ 
+   function optionalNumber(form: FormData, name: string) {
+     const value = form.get(name);
+@@ -3442,6 +3436,10 @@ function EditObjectForm({
+ 
+   async function submit(event: FormEvent<HTMLFormElement>) {
+     event.preventDefault();
++    if (resource === 'hardware-interfaces' && !technologyProfile) {
++      setFormError('Das passende Technologieprofil muss vor dem Speichern geladen sein.');
++      return;
++    }
+     setSubmitting(true);
+     setFormError("");
+     const form = new FormData(event.currentTarget);
+@@ -3480,9 +3478,8 @@ function EditObjectForm({
+       payload.target_load_limit = optionalNumber(form, "edit_target_load_limit");
+       payload.warning_load_limit = optionalNumber(form, "edit_warning_load_limit");
+       payload.hard_load_limit = optionalNumber(form, "edit_hard_load_limit");
+-      if (isHardwareNetworkInterface(item) && LOCAL_TIMING_FIELDS[item.technology.toUpperCase()]) {
+-        const previous = (item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>;
+-        const localFields = LOCAL_TIMING_FIELDS[item.technology.toUpperCase()];
++      if (isHardwareNetworkInterface(item) && localFields.length) {
++        const previous = previousLocal;
+         const values = Object.fromEntries(localFields.map(field => {
+           const raw = String(form.get(`edit_local_${field.key}`) ?? "").trim();
+           return [field.key, raw ? field.boolean ? raw === "true" : field.numeric ? Number(raw) : raw : null];
+@@ -3497,8 +3494,12 @@ function EditObjectForm({
+           return;
+         }
+         payload.capabilities = {...item.capabilities, local_timing_evidence: {...previous, ...values,
+-          source, confirmed}};
++          source, confirmed, technology: editedTechnology}};
++      } else if (isHardwareNetworkInterface(item) && technologyKey(editedTechnology) !== technologyKey(originalTechnology)) {
++        const { local_timing_evidence: _oldEvidence, ...capabilities } = item.capabilities;
++        payload.capabilities = capabilities;
+       }
++      if (!dataClockField) payload.data_bitrate = null;
+     }
+     if (resource === "interfaces") payload.interface_type = form.get("edit_interface_type");
+     if (resource === "messages") {
+@@ -3636,7 +3637,7 @@ function EditObjectForm({
+         <div className="form-grid three">
+           <div className="field">
+             <label htmlFor="edit_technology">Technologie</label>
+-            <select defaultValue={item.technology} id="edit_technology" name="edit_technology" required>
++            <select value={editedTechnology} onChange={event => setEditedTechnology(event.target.value)} id="edit_technology" name="edit_technology" required>
+               {(schema?.interface_types ?? [item.technology]).map((type) => <option key={type}>{type}</option>)}
+             </select>
+           </div>
+@@ -3644,8 +3645,9 @@ function EditObjectForm({
+           <div className="field"><label htmlFor="edit_physical_port_ref">Physischer Port</label><input defaultValue={item.physical_port_ref ?? ""} id="edit_physical_port_ref" name="edit_physical_port_ref" type="text" /></div>
+           <div className="field"><label htmlFor="edit_channel_index">Kanal</label><input defaultValue={item.channel_index ?? ""} id="edit_channel_index" min="1" name="edit_channel_index" type="number" /></div>
+           <div className="field"><label htmlFor="edit_network_ref">Netzwerk / Bussegment</label><input defaultValue={item.network_ref ?? ""} id="edit_network_ref" name="edit_network_ref" type="text" /></div>
+-          <div className="field"><label htmlFor="edit_bitrate">Bitrate</label><input defaultValue={item.bitrate ?? ""} id="edit_bitrate" min="1" name="edit_bitrate" step="1" type="number" /></div>
+-          <div className="field"><label htmlFor="edit_data_bitrate">Data Bitrate</label><input defaultValue={item.data_bitrate ?? ""} id="edit_data_bitrate" min="1" name="edit_data_bitrate" step="1" type="number" /></div>
++          {clockField && <div className="field"><label htmlFor="edit_bitrate">{clockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.bitrate ?? clockField.default ?? "" : clockField.default ?? "")} id="edit_bitrate" min={clockField.min ?? 1} max={clockField.max} name="edit_bitrate" step="1" type="number" /></div>}
++          {dataClockField && <div className="field"><label htmlFor="edit_data_bitrate">{dataClockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.data_bitrate ?? dataClockField.default ?? "" : dataClockField.default ?? "")} id="edit_data_bitrate" min={dataClockField.min ?? 1} max={dataClockField.max} name="edit_data_bitrate" step="1" type="number" /></div>}
++          {profileError && <p role="alert">Technologieprofil konnte nicht geladen werden: {profileError}</p>}
+           <div className="field"><label htmlFor="edit_target_load_limit">Ziel-Last (%)</label><input defaultValue={item.target_load_limit ?? ""} id="edit_target_load_limit" min="0" name="edit_target_load_limit" step="any" type="number" /></div>
+           <div className="field"><label htmlFor="edit_warning_load_limit">Warn-Last (%)</label><input defaultValue={item.warning_load_limit ?? ""} id="edit_warning_load_limit" min="0" name="edit_warning_load_limit" step="any" type="number" /></div>
+           <div className="field"><label htmlFor="edit_hard_load_limit">Harte Last (%)</label><input defaultValue={item.hard_load_limit ?? ""} id="edit_hard_load_limit" min="0" name="edit_hard_load_limit" step="any" type="number" /></div>
+@@ -3653,20 +3655,20 @@ function EditObjectForm({
+           <div className="field"><label htmlFor="edit_runtime_load">Runtime Last (%)</label><input defaultValue={item.runtime_load ?? ""} id="edit_runtime_load" min="0" name="edit_runtime_load" step="any" type="number" /></div>
+           <div className="field"><label htmlFor="edit_status">Status</label><select defaultValue={item.status} id="edit_status" name="edit_status">{["CONFIGURED", "UNMAPPED", "ACTIVE", "OUTDATED", "OVERLOADED", "ERROR"].map((value) => <option key={value}>{value}</option>)}</select></div>
+         </div>
+-        {LOCAL_TIMING_FIELDS[item.technology.toUpperCase()] && <fieldset>
+-          <legend>Gerätespezifische Zeitdaten · {item.technology}</legend>
++        {localFields.length > 0 && <fieldset key={editedTechnology}>
++          <legend>Gerätespezifische Zeitdaten · {editedTechnology}</legend>
+           <p>Profilkandidaten aus der Kapazitätsanalyse erst mit Geräteunterlagen prüfen. Diese Angaben allein sind noch kein Zeitnachweis.</p>
+-          <div className="form-grid three">{LOCAL_TIMING_FIELDS[item.technology.toUpperCase()].map(field => <div className="field" key={field.key}>
++          <div className="form-grid three">{localFields.map(field => <div className="field" key={field.key}>
+             <label htmlFor={`edit_local_${field.key}`}>{field.label}</label>
+             {field.boolean ? <select id={`edit_local_${field.key}`} name={`edit_local_${field.key}`}
+-              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")}>
++              defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")}>
+               <option value="">Bitte wählen</option><option value="false">Nein</option><option value="true">Ja</option>
+             </select> : <input id={`edit_local_${field.key}`} name={`edit_local_${field.key}`} type={field.numeric ? "number" : "text"}
+               min={field.numeric ? "0" : undefined} step={field.numeric ? "any" : undefined}
+-              defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>)[field.key] ?? "")} />}
++              defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")} />}
+           </div>)}</div>
+           <div className="field"><label htmlFor="edit_local_source">Nachweisquelle</label><input id="edit_local_source" name="edit_local_source" type="text"
+-            defaultValue={String(((item.capabilities.local_timing_evidence ?? {}) as Record<string, unknown>).source ?? "")} /></div>
++            defaultValue={String(previousLocal.source ?? "")} /></div>
+           <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input name="edit_local_confirmed" type="checkbox" /></label>
+         </fieldset>}
+         </>
+diff --git a/frontend/src/lib/technology-parameters.test.mjs b/frontend/src/lib/technology-parameters.test.mjs
+index e813f6d3..4142d5df 100644
+--- a/frontend/src/lib/technology-parameters.test.mjs
++++ b/frontend/src/lib/technology-parameters.test.mjs
+@@ -13,10 +13,10 @@ test('LIN projection never inherits CAN-FD rate or its phases', () => {
+ test('known profile modes propose their lowest operating rate without confirming it', () => {
+   const bitrateField = { key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s' };
+   const cases = [
+-    [{ id: 'i2c', parameter_schema: [bitrateField], rate_model: { minimum_bps: 1 }, parameter_proposals: { options: [{ mode: 'Fast', maximum: 400000 }, { mode: 'Standard', maximum: 100000 }] } }, 100000],
+-    [{ id: 'lin', parameter_schema: [{ ...bitrateField, default: 19200 }], rate_model: { minimum_bps: 1, typical_bps: [19200, 9600] } }, 9600],
+-    [{ id: 'can', parameter_schema: [{ ...bitrateField, default: 500000 }], rate_model: { minimum_bps: 10000 } }, 10000],
+-    [{ id: 'ethernet', parameter_schema: [{ ...bitrateField, default: 1000000000 }], rate_model: { allowed_bps: [1000000000, 10000000] } }, 10000000],
++    [{ id: 'i2c', parameter_schema: [{...bitrateField, default:100000}], rate_model: { minimum_bps: 1 }, parameter_proposals: { options: [{ mode: 'Fast', maximum: 400000 }, { mode: 'Standard', maximum: 100000 }] } }, 100000],
++    [{ id: 'lin', parameter_schema: [{ ...bitrateField, default: 9600 }], rate_model: { minimum_bps: 1, typical_bps: [19200, 9600] } }, 9600],
++    [{ id: 'can', parameter_schema: [{ ...bitrateField, default: 10000 }], rate_model: { minimum_bps: 10000 } }, 10000],
++    [{ id: 'ethernet', parameter_schema: [{ ...bitrateField, default: 10000000 }], rate_model: { allowed_bps: [1000000000, 10000000] } }, 10000000],
+   ];
+   for (const [technology, expected] of cases) {
+     assert.equal(technologyParameterValues({}, technology).bitrate, expected);
+@@ -32,6 +32,17 @@ test('device-dependent clock without a known operating mode remains open', () =>
+   const spi = { id: 'spi', parameter_schema: [{ key: 'bitrate', type: 'number', unit: 'bit/s' }], rate_model: { minimum_bps: 1 } };
+   assert.equal(technologyParameterValues({}, spi).bitrate, undefined);
+ });
++test('the server schema owns review values and replaces obsolete unconfirmed rates only', () => {
++  const i2c = { id: 'i2c', parameter_schema: [{key:'bitrate', unit:'bit/s', default:100000, min:1}], parameter_proposals:{candidate:400000} };
++  assert.equal(technologyParameterValues({technology:'i2c', bitrate:0}, i2c).bitrate, 100000);
++  assert.equal(technologyParameterValues({technology:'i2c', bitrate:400000, parameter_provenance:{bitrate:{status:'REVIEW_REQUIRED'}}}, i2c).bitrate, 100000);
++  const saved = confirmTechnologyParameters({}, i2c, {bitrate:400000});
++  assert.equal(technologyParameterValues(saved, i2c).bitrate, 400000);
++  assert.equal(technologyParameterUnverified(saved,'bitrate','i2c'),false);
++  const nmea = {id:'nmea2000', parameter_schema:[{key:'bitrate',unit:'bit/s',default:250000,allowed_bps:[250000]}]};
++  assert.equal(technologyParameterValues({technology:'ethernet',bitrate:1000000000},nmea).bitrate,250000);
++  assert.equal(technologyParameterValues({technology:'nmea2000',bitrate:1000000000},nmea).bitrate,250000);
++});
+ test('declared confirmed LIN values survive switching and preserve mixed inventory', () => {
+   const saved = confirmTechnologyParameters(parameters, lin, { bitrate: 9600, payload_bytes: 8 });
+   assert.equal(saved.technology, 'can_fd'); assert.equal(saved.bitrate, 2000000);
+diff --git a/frontend/src/lib/technology-parameters.ts b/frontend/src/lib/technology-parameters.ts
+index f19c1b63..18aa64a7 100644
+--- a/frontend/src/lib/technology-parameters.ts
++++ b/frontend/src/lib/technology-parameters.ts
+@@ -5,30 +5,21 @@ export type DeclaredNetwork = Parameters & { id: string; name?: string; technolo
+ const record = (value: unknown): Parameters => value && typeof value === 'object' && !Array.isArray(value) ? value as Parameters : {};
+ export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
+ 
+-/** Smallest profile-backed operating rate offered for review, never confirmation. */
+-function minimumProposedRate(technology: Technology): number | undefined {
+-  const model = technology.rate_model;
+-  const rates = [
+-    ...(technology.parameter_proposals?.options ?? []).map(option => option.maximum),
+-    ...(model?.allowed_bps ?? []),
+-    ...(model?.typical_bps ?? []),
+-    model?.fixed_bps,
+-    model?.minimum_bps && model.minimum_bps > 1 ? model.minimum_bps : undefined,
+-  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+-  return rates.length ? Math.min(...rates) : undefined;
+-}
+-
+ /** Catalog defaults remain proposals; only matching saved values may override them. */
+ export function technologyParameterValues(parameters: Parameters, technology: Technology): Parameters {
+   const scoped = record(record(parameters.technology_parameters)[technology.id]);
+   const proposed = record(record(parameters.technology_defaults)[technology.id]);
+   const global = technologyKey(parameters.technology) === technology.id ? parameters : {};
+   const saved = record(scoped.values);
+-  const profileRate = minimumProposedRate(technology);
+-  return Object.fromEntries((technology.parameter_schema ?? []).map(field => [field.key,
+-    saved[field.key] ?? global[field.key] ?? proposed[field.key]
+-      ?? (field.key === 'bitrate' && field.unit === 'bit/s' ? profileRate : undefined)
+-      ?? field.default]));
++  return Object.fromEntries((technology.parameter_schema ?? []).map(field => {
++    const value = saved[field.key] ?? global[field.key];
++    const proof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
++    const rate = field.unit === 'bit/s' && ['bitrate', 'arbitration_bitrate', 'data_bitrate'].includes(field.key);
++    const confirmed = proof.status === 'CONFIRMED' && proof.value === value || proof.source === 'EXPLICIT_USER_SPECIFICATION' && proof.value === value;
++    const invalidRate = rate && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || field.min !== undefined && value < field.min || field.max !== undefined && value > field.max || field.allowed_bps?.length && !field.allowed_bps.includes(value));
++    const oldProposal = rate && (proof.status === 'REVIEW_REQUIRED' || proof.source === 'TECHNOLOGY_DEFAULT');
++    return [field.key, confirmed ? value : invalidRate || oldProposal ? field.default : value ?? field.default ?? proposed[field.key]];
++  }));
+ }
+ 
+ export function technologyParameterUnverified(parameters: Parameters, key: string, technologyId: string): boolean {
+diff --git a/frontend/src/lib/types.ts b/frontend/src/lib/types.ts
+index 29a5f254..99d3f257 100644
+--- a/frontend/src/lib/types.ts
++++ b/frontend/src/lib/types.ts
+@@ -2,6 +2,7 @@ import type { SequenceDiagramModel } from "./e2e-sequence";
+ 
+ export type Technology = {
+   id: string;
++  aliases?: string[];
+   kind: string;
+   family: string;
+   medium: string;
+@@ -17,6 +18,8 @@ export type Technology = {
+   max_payload_bytes?: number | null;
+   native_formats?: string[];
+   parameter_schema?: TechnologyParameterField[];
++  parameter_defaults_review?: { technology: string; rate_profile: string; values: Record<string, number>; basis: string; status: 'REVIEW_REQUIRED'; source: string };
++  local_timing_schema?: Array<{ key: string; label: string; numeric?: boolean; boolean?: boolean; optional?: boolean; default?: string | number | boolean }>;
+   label?: string;
+   domain?: string;
+   layer?: "PHYSICAL" | "DATA_LINK" | "NETWORK" | "TRANSPORT" | "APPLICATION" | "INDUSTRY_PROFILE";
+@@ -54,6 +57,8 @@ export type TechnologyParameterField = {
+   min?: number;
+   max?: number;
+   default?: string | number | boolean;
++  allowed_bps?: number[];
++  default_review?: { basis: string; status: 'REVIEW_REQUIRED'; source: string };
+   options?: string[];
+   scope: "network" | "message" | "route" | "gateway" | "analysis" | "reliability" | "simulation";
+   category: "physical" | "timing" | "capacity" | "qos" | "reliability" | "synchronization" | "gateway" | "simulation";
+diff --git a/backend/tests/test_technology_standard_defaults.py b/backend/tests/test_technology_standard_defaults.py
+new file mode 100644
+index 00000000..13f830cd
+--- /dev/null
++++ b/backend/tests/test_technology_standard_defaults.py
+@@ -0,0 +1,145 @@
++"""Catalog-wide operating proposals and adversarial transport isolation."""
++from copy import deepcopy
++
++import pytest
++
++from backend.app.simulation_service import SimulationService
++from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++from backend.engineering.agent_tools.wizard_generation import _parameter_defaults, _rate_review_candidate
++from backend.engineering.capacity.calculators import confirmed_serial_evidence, serial_evidence_missing_fields
++from backend.engineering.capacity.dimensioning import local_evidence_proposal
++from backend.engineering.capacity.service import parameters_for_protocol
++
++
++ALIASES = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps', 'data_bitrate': 'data_bitrate_bps'}
++
++
++def test_every_registered_profile_proposal_is_valid_consistent_and_unconfirmed():
++    profiles = registry.profiles()
++    catalog = {p['id']: p for d in SimulationService().catalog()['domains'] for p in d['technologies']}
++    assert set(catalog) == {p['id'] for p in profiles}
++    for profile in profiles:
++        key = profile['id']
++        review = registry.parameter_defaults_review(key)
++        schema = catalog[key]['parameter_schema']
++        assert review['status'] == 'REVIEW_REQUIRED'
++        rates = {ALIASES[f['key']]: f['default'] for f in schema if f['key'] in ALIASES and 'default' in f}
++        assert rates == review['values'], key
++        if rates:
++            assert registry.validate_parameters(key, rates)['status'] == 'VALID', key
++        generated = _parameter_defaults(key)
++        for field in schema:
++            if 'default' not in field:
++                continue
++            value = field['default']
++            assert generated[field['key']] == value, (key, field['key'])
++            if field['type'] == 'number':
++                assert not isinstance(value, bool)
++                assert field.get('min') is None or value >= field['min'], (key, field['key'])
++                assert field.get('max') is None or value <= field['max'], (key, field['key'])
++            elif field['type'] == 'select':
++                assert value in field['options'], (key, field['key'])
++            elif field['type'] == 'boolean':
++                assert type(value) is bool
++        # This is a proposal audit, not complete device/electrical verification.
++        assert registry.validate_parameters(key, {})['required_parameter_completeness'] == 'UNVERIFIED'
++
++
++def test_every_distinct_bus_pair_rejects_foreign_confirmed_rate():
++    profiles = registry.profiles()
++    for source in profiles:
++        review = registry.parameter_defaults_review(source['id'])
++        if not review['values']:
++            continue
++        aliases = {value: key for key, value in ALIASES.items()}
++        values = {aliases[k]: v for k, v in review['values'].items()}
++        for target in profiles:
++            if target['id'] == source['id']:
++                continue
++            parameters = {'technology': source['id'], **values, 'networks': [
++                {'id': 'same-id', 'technology': source['id'], **values}]}
++            original = deepcopy(parameters)
++            resolved = parameters_for_protocol(target['id'], parameters, network_id='same-id', confirmed_parameters=parameters)
++            assert not resolved['_rate_evidenced'], (source['id'], target['id'])
++            assert not set(ALIASES).intersection(resolved), (source['id'], target['id'])
++            assert parameters == original
++
++
++def device_evidence():
++    return {'technology': 'I2C', 'confirmed': True, 'source': 'Reviewed device datasheet',
++            'master_node_id': 'controller', 'slave_address': '0x20', 'address_bits': 7,
++            'i2c_mode': 'STANDARD', 'transfer_direction': 'READ', 'start_stop_bound_us': 2,
++            'clock_stretch_limit_us': 5, 'multi_master': False,
++            'transfer_bits_bound': 100, 'bitrate_bps': 100_000}
++
++
++def test_i2c_standard_is_shared_but_does_not_invent_device_evidence():
++    assert _rate_review_candidate('i2c')[0] == 100_000
++    assert _parameter_defaults('i2c')['bitrate'] == 100_000
++    proposal = local_evidence_proposal('I2C', [{'stream_id': 'one'}])
++    assert next(f for f in proposal['fields'] if f['key'].endswith(':bitrate_bps'))['candidate'] == 100_000
++    assert proposal['hardware_profile_status'] == 'UNCONFIRMED'
++    missing = serial_evidence_missing_fields('I2C', {'bitrate': 100_000})
++    assert 'local_timing_evidence.slave_address' in missing
++    assert 'local_timing_evidence.master_node_id' in missing
++    assert 'local_timing_evidence.clock_stretch_limit_us' in missing
++    assert confirmed_serial_evidence('I2C', {'bitrate': 100_000}) is None
++    assert _rate_review_candidate('spi')[0] is None
++    assert 'bitrate' not in _parameter_defaults('spi')
++
++
++def test_port_capability_evidence_is_used_and_rejects_wrong_bus_and_clock():
++    p = {'technology': 'i2c', 'bitrate': 100_000}
++    port = {'technology': 'I2C', 'capabilities': {'local_timing_evidence': device_evidence()}}
++    resolved = parameters_for_protocol('I2C', p, port, confirmed_parameters=p)
++    assert resolved['_rate_evidenced'] and resolved['bitrate'] == 100_000
++    assert serial_evidence_missing_fields('I2C', resolved, 8) == []
++    wrong = deepcopy(port); wrong['capabilities']['local_timing_evidence']['technology'] = 'SPI'
++    assert not parameters_for_protocol('I2C', p, wrong, confirmed_parameters=p)['_rate_evidenced']
++    wrong = deepcopy(port); wrong['capabilities']['local_timing_evidence'].update(bitrate_bps=400_000, i2c_mode='FAST')
++    assert not parameters_for_protocol('I2C', p, wrong, confirmed_parameters=p)['_rate_evidenced']
++
++
++def test_single_master_editor_null_arbitration_is_optional_but_multi_master_requires_it():
++    evidence = {**device_evidence(), 'arbitration_bound_us': None}
++    assert confirmed_serial_evidence('I2C', {'local_timing_evidence': evidence}, 8) == evidence
++    evidence['multi_master'] = True
++    assert confirmed_serial_evidence('I2C', {'local_timing_evidence': evidence}, 8) is None
++    assert 'local_timing_evidence.arbitration_bound_us' in serial_evidence_missing_fields('I2C', {'local_timing_evidence': evidence}, 8)
++    evidence['arbitration_bound_us'] = 0
++    assert confirmed_serial_evidence('I2C', {'local_timing_evidence': evidence}, 8) == evidence
++
++
++@pytest.mark.parametrize('technology,value', [('can', 1), ('modbus_rtu', 1), ('nmea2000', 100_000_000), ('ethernet', 250_000)])
++def test_matching_identity_cannot_authorize_out_of_profile_rate(technology, value):
++    p = {'technology': technology, 'bitrate': value}
++    assert registry.validate_parameters(technology, {'bitrate_bps': value})['status'] == 'INVALID'
++    resolved = parameters_for_protocol(technology, p, confirmed_parameters=p)
++    assert not resolved['_rate_evidenced'] and 'bitrate' not in resolved
++
++
++def test_layered_can_form_has_no_ethernet_label_or_phy_parameters():
++    for technology in ['uds', 'xcp', 'obd2', 'nmea2000']:
++        fields = SimulationService._parameter_schema(technology, registry.profile(technology))
++        assert 'Ethernet' not in next(f for f in fields if f['key'] == 'bitrate')['label']
++        assert not {'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
++    for technology in ['modbus_tcp', 'dds', 'ros2', 'profinet']:
++        fields = SimulationService._parameter_schema(technology, registry.profile(technology))
++        assert {'duplex', 'mtu_bytes', 'vlan_id'} <= {f['key'] for f in fields}
++
++
++def test_changed_global_rate_does_not_reuse_old_confirmation():
++    p = {'technology': 'lin', 'bitrate': 9600, 'defaults_source': 'technology-registry',
++         'parameter_provenance': {'bitrate': {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': 19200}}}
++    assert not parameters_for_protocol('LIN', p, confirmed_parameters=p)['_rate_evidenced']
++
++
++def test_saved_can_fd_nominal_alias_survives_strict_phase_validation():
++    p = {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000}
++    resolved = parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)
++    assert resolved['_rate_evidenced'] and resolved['bitrate'] == 500_000
++    assert resolved['data_bitrate'] == 2_000_000
++    p['arbitration_bitrate'] = 250_000
++    assert parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)['_rate_evidenced']
++    p.pop('data_bitrate')
++    assert not parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)['_rate_evidenced']

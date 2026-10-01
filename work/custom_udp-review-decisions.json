@@ -1,0 +1,78 @@
+{
+  "technology": "custom_udp",
+  "native": {
+    "payload_bytes": "Actual application data octets in one datagram unknown nonnegative integer. IPv4hard<=65507, IPv6normal<=65527 before actual IP options/extensions/application overhead; Jumbo<=u32-UDP8-HBHminimum8. No default8 or one universalIPv4limit forIPv6.",
+    "cudp_specification_source": "Required actual authored UDP application specification unknown. RFC768 specifies transport, not this custom application data encoding.",
+    "cudp_specification_revision": "Required actual application revision unknown, no invented1.0 baseline. Peer decoding/reliability/ordering/fragmentation semantics must match.",
+    "cudp_transport_binding": "Required actual UDP/IP/link binding reference unknown. No inferredEthernet10M/linkMTU1500, IP addresses/ports or PHY/schedule capacity.",
+    "cudp_ip_version": "Required actual IPV4/IPV6 family unknown. Family changes header/maximum/checksum/Jumbo applicability, not detected from industry.",
+    "cudp_size_mode": "NORMAL standard baseline proposal, actual mode required. Explicit JUMBO onlyIPv6 with actual complete path/peer support, correct HopByHop Jumbo option and noIPFragmentHeader. No Jumbo auto-confirmation.",
+    "cudp_udp_header_bytes": "RFC768 fixed8octet transport header standard proposal, only8valid. Not application header/default8data; actual encoded datagram uses message+8.",
+    "cudp_application_header_bytes": "Actual encoded custom application header unknown nonnegative integer, separate from UDP8/IPheader and included once in application message.",
+    "cudp_application_trailer_bytes": "Actual encoded custom application trailer/checksum unknown nonnegative integer, included once; no automaticCRC2.",
+    "cudp_message_bytes": "Actual full application PDU unknown=known data+application header+trailer, <=known peer cap. IPv4<=65527-actualIPheader, IPv6normal<=65527-extensions, JUMBO<=u32-8-extensions. Full multi-datagram body distinct.",
+    "cudp_datagram_bytes": "Actual full UDPheader+applicationPDU unknown integer>=8; normal<=65535, actual IPv4<=65535-IPheader, IPv6normal<=65535-extensions, Jumbo<=u32-extensions. Not full IPpacket.",
+    "cudp_udp_length_field": "Actual encoded uint16 Length unknown; NORMAL>=8 equals actual full UDPdatagram. JUMBO iffactualUDPdatagram>65535 =>0, otherwise retains actualUDP length even when wholeIPpayload exceeds65535 dueextensions. RFC2675section4.",
+    "cudp_ipv4_header_bytes": "ActualIPv4header includingoptions unknown20..60octets multiple4 perRFC791IHL. RejectedIPv6. No20actualdefault; options reduce UDP/application maximum.",
+    "cudp_ipv6_extension_bytes": "Actual allIPv6extensionheaders beforeUDP unknown nonnegative integer; NORMALdatagram+extensions<=65535. JUMBO includesatleast8HBH optionbytes andcompletepayload<=u32. RejectedIPv4; not assumedzero.",
+    "cudp_ipv6_payload_length": "ActualIPv6uint16 PayloadLength unknown; NORMAL=UDPdatagram+extensions>=8; JUMBOexact0 perRFC2675section3. Excludes fixed40byteIPv6header. RejectedIPv4.",
+    "cudp_jumbo_payload_length": "Actual32bit JumboPayload option length65536..u32max unknown; includes UDPdatagram+allIPv6extensions but excludes40byteIPv6baseheader. RejectedNORMAL/IPv4. Actual parsed option alignment/HBH encoding still required.",
+    "cudp_ip_packet_bytes": "Actual complete unfragmented/prefragment IPpacket unknown. IPv4=actualheader+UDPdatagram<=65535; IPv6=40+extensions+UDPdatagram. NO_IP_FRAGMENTATION requires <=known actual pathMTU.",
+    "cudp_peer_message_limit_bytes": "Actual matching peer application PDUbuffer limit unknown nonnegative integer, not UDPwire/u16/IPcapability maximum automatically.",
+    "cudp_path_mtu_bytes": "Actual confirmed complete pathMTU unknown positive integer, noEthernet1500default. IPpacket mustfitifNO_IP_FRAGMENTATION; one selectedport MTUdoesnotprove allpaths/peers.",
+    "cudp_fragmentation_policy": "RFC8085SHOULDavoid IPfragmentation baseline NO_IP_FRAGMENTATION proposal. Explicit IPfragmentation needs actual reassembly/source and isnot capacity assurance;JUMBOdisallowsIPv6FragmentHeader.",
+    "cudp_checksum_policy": "RFC8085 enabled checksum recommended baselineproposal;IPv6customapplication requiresENABLED. Explicit IPv4DISABLED emits0. SpecializedIPv6zero-checksumtunnels RFC6936 requireseparateprofile, not genericcustomfallback.",
+    "cudp_udp_checksum_value": "Actual serialized16bitchecksum unknown. KnownENABLED excludes0: mathematicalzero emitted0xFFFF perRFC768/8200. IPv4DISABLED=0. Scalar range doesnot compute pseudoheader/checksum/authentication.",
+    "cudp_jumbo_supported": "Actual complete path/peer Jumbogram support unknownboolean. KnownFalse rejectsJUMBO;True scalar/reference alone cannot prove alllinks/peers support or statefulwireexecution.",
+    "cudp_application_ack": "Actual application acknowledgement unknownboolean; UDPdoesnotprovideARQ/order/dedup. KnownFalse rejects meaningful ACKtimeout/retry count. NoFalse/True actualdefault fromRFC768.",
+    "cudp_ack_timeout_ms": "Actualpositivefinite application acknowledgement timeout unknownmilliseconds. No0/universal1s/100ms retrytimer. Complete congestion-aware retransmission/RTT evidence required.",
+    "cudp_ack_retry_limit": "Actual application acknowledged retransmit count unknownnonnegativeinteger; rejectedknownNoACK. NoCAN/TCPretrycount or UDPstandarddefault3.",
+    "cudp_retry_control_source": "Actualapplication retransmit/dedup/order/idempotence/source contract unknown. RFC8085requires application mechanismifreliable/ordered deliveryneeded;genericprobability doesnot implementit.",
+    "cudp_congestion_control_source": "Actual bounded sending/retry/congestion-control contract unknown; RFC8085mandates congestion responsibility, not Ethernet shaper0 or fixed8packetbuffer.",
+    "cudp_application_integrity_source": "Actual application integrity/authentication/coverage referenceunknown. UDPchecksum isnot strongCRC/authentication/safetyassurance.",
+    "cudp_fragmentation_source": "Actual IP/application fragmentation/reassembly contract unknown. One lostIPfragment losesdatagram, application datagramfragmentation needs independentreceive/retransmitcorrelation. No auto-fragment to hideMTUfailure.",
+    "cudp_full_body_bytes": "Actual entire encoded application body unknownnonnegativeinteger >=known fragment applicationpayload; can span manydatagrams and exceed65535/u32wirelimits. Not a one-datagram sizecap.",
+    "cudp_device_evidence": "Actual endpoint/path/modelrevision/timing referenceunknown; no confirmed addresses/support/clock/retries from literature baseline."
+  },
+  "removed": {
+    "qos_priority": "No implicit IEEE Ethernet PCP/CAN priority for an unspecified custom UDP application application protocol; actual lower transport owns priority.",
+    "sync_method": "No implicit NTP/PTP/gPTP support in a custom custom UDP application protocol; actual timing/synchronization requires its own specification.",
+    "reserved_bandwidth_percent": "No universal custom UDP application-protocol bandwidth reservation; actual underlying link/schedule evidence required.",
+    "retransmission_enabled": "No universal custom custom UDP application acknowledgement/ARQ default. Actual lower transport and application retry rules must be distinguished.",
+    "retransmission_rate": "A generic probability is not a custom UDP application acknowledgement/retry state machine.",
+    "retry_limit": "No zero retry-count protocol default without a specified application/lower-transport retry mechanism.",
+    "retransmission_delay_ms": "No universal zero retry delay for unspecified custom UDP application framing/session semantics.",
+    "gateway_maximum_throughput": "No verified custom UDP application gateway throughput of100Mbit/s; actual device unknown.",
+    "gateway_input_buffer": "Actual gateway input capability unknown, not custom UDP application protocol default8.",
+    "gateway_output_buffer": "Actual gateway output capability unknown, not custom UDP application protocol default8.",
+    "gateway_maximum_routes": "Actual gateway route capability unknown, not custom UDP application protocol default4096.",
+    "gateway_maximum_messages_s": "Actual gateway processing capability unknown, not custom UDP application protocol default100000.",
+    "bitrate": "Retire inherited Ethernet10M rate; custom UDP application has no physical bitrate. Explicit actual UDP/IP/link profiles own rate.",
+    "mtu_bytes": "Retire assumed EthernetMTU1500. Actual IPfamily/headers/complete path MTU and full multi-datagram body are separate; UDP has no TCP MSS negotiation.",
+    "duplex": "Retire assumed Ethernet FULL/HALF port mode. UDP datagram directions do not imply physical-link duplex or a connected byte stream.",
+    "vlan_id": "Retire VLAN0 automatic actual configuration; custom UDP application defines no IEEE802.1QVID.",
+    "rate_limit_bit_s": "Retire Ethernet shaper0 default. Actual UDP application congestion control and explicit lower-link shaping remain separate."
+  },
+  "sources": [
+    "https://www.rfc-editor.org/rfc/rfc768.html",
+    "https://www.rfc-editor.org/rfc/rfc791.html",
+    "https://www.rfc-editor.org/rfc/rfc8200.html",
+    "https://www.rfc-editor.org/rfc/rfc2675.html",
+    "https://www.rfc-editor.org/rfc/rfc8085.html"
+  ],
+  "revisions": [
+    "RFC768 August1980; RFC791 September1981 IHL/TotalLength; RFC8200 July2017 IPv6checksum/payload; RFC2675 August1999 sections3/4; RFC8085 March2017 sections3.2/3.3/3.4"
+  ],
+  "scope": "Every registered customUDP field and retired Ethernet defaults; actual IPv4/IPv6/options/extensions/Jumbo/MTU/checksum/application acknowledgement, type/dependency and isolated SQL retention.",
+  "validation": {
+    "isolated_sql": true,
+    "suite": "full_parameter_audit + standard_defaults + profile_semantics + capacity_can_schedule + parameter_review + required_parameters",
+    "passed": 1887
+  },
+  "not_certified": [
+    "Actual custom application encoding/revision/reliability/fragmentation specification and endpoint/path evidence unavailable",
+    "Executable checksum/pseudoheader/IPoptions/HBH/Jumbo/fragmentation/congestion/acknowledgement model remains MODEL_MISSING",
+    "Actual resolved UDP/IP/link/peer/port/address/MTU bindings and complete path Jumbo support",
+    "Application/body/datagram/wire correlation, real device timing/source lifetime and schedule capacity"
+  ]
+}

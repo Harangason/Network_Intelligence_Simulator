@@ -1,0 +1,49 @@
+{
+  "goal_id": "nis-industry-neutral-catalog-20260930",
+  "goal_type": "repair",
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "project_scope": "Technologiekatalog / Test",
+  "requested_change": "Industriegebundene I/O-Bus-Empfehlung aus uncommittiertem Quellstand entfernen",
+  "constraints": [
+    "Industrie und Bustyp unabhängig"
+  ],
+  "required_outcomes": [
+    "industry_neutral_catalog"
+  ],
+  "validation_requirements": [
+    "isolated_catalog_test"
+  ],
+  "modify_code": true,
+  "allow_repair": true,
+  "unresolved_decisions": [],
+  "revision_before": {
+    "backend/communication/technologies/catalog.py": "50a5b0ea74a89a2e82a4d8b0697fae6d122c0f597feb1081ecc33c8ee3e49a1d",
+    "backend/tests/test_technology_profile_semantics.py": "fff4e9415baa960753b08150587c417cb06b5de0c7307232511166d5fd078e47"
+  },
+  "repair": {
+    "evidence": [
+      {
+        "sha256": "3d5bb903d191532650fb323bae5e4d56e16deb83b9b54c053eaf3f0fbb0a6e3d",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\GENERATION_RULE_MANAGER.md"
+      }
+    ],
+    "acceptance_criteria": [
+      "I/O-Busse bleiben registriert und werden keiner Automotive-Empfehlung hinzugefuegt"
+    ],
+    "weaken_assertions_to_pass": false,
+    "first_failing_layer": "backend/communication/technologies/catalog.py",
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "Uncommittierte Katalogaenderung fuegte I/O-Busse nur der Automotive-Empfehlung hinzu.",
+    "affected_files": [
+      "backend/communication/technologies/catalog.py",
+      "backend/tests/test_technology_profile_semantics.py"
+    ],
+    "reproduction": "Automotive recommended_technologies enthaelt I2C/SPI/UART/GPIO/PWM/ADC/DAC, obwohl Industrie und Bustyp unabhaengig sind.",
+    "targeted_tests": [
+      "backend/tests/test_technology_profile_semantics.py"
+    ]
+  },
+  "outcomes": {},
+  "validations": {}
+}

@@ -1,0 +1,161 @@
+--- before/backend/communication/technologies/core/physical.py
++++ after/backend/communication/technologies/core/physical.py
+@@ -16,6 +16,10 @@
+     WIRED_AND_ARBITRATION = "WIRED_AND_ARBITRATION"
+     POINT_TO_POINT = "POINT_TO_POINT"
+     PLCA = "PLCA"
++    TOKEN_PASSING = "TOKEN_PASSING"
++    CENTRAL_SCHEDULED_FREQUENCY_HOPPING = "CENTRAL_SCHEDULED_FREQUENCY_HOPPING"
++    VARIANT_DEPENDENT = 'VARIANT_DEPENDENT'
++    CSMA_CD = 'CSMA_CD'
+ 
+ 
+ @dataclass(frozen=True)
+@@ -85,9 +89,31 @@
+                                    deterministic=False, worst_case_delay_model="HIGHER_PRIORITY_INTERFERENCE")
+ 
+ PHYSICAL_PROFILES: dict[str, PhysicalLayerProfile] = {
++    'ethercat':PhysicalLayerProfile('ETHERCAT_CLASSIC_PHY_EXPLICIT','ethercat','EXPLICIT_ETHERNET_OR_EBUS',(),None,
++                                   True,'FULL_DUPLEX',('LINE','RING','TREE','STAR'),None,MediumAccessModel.FULL_DUPLEX_SWITCHED),
++    'cc_link_ie': PhysicalLayerProfile('CCLINK_IE_VARIANT_EXPLICIT','cc_link_ie','EXPLICIT_ETHERNET_OR_FIBER',(),None,
++                                      False,'FULL_DUPLEX',('LINE','STAR','LINE_STAR','RING'),None,MediumAccessModel.VARIANT_DEPENDENT),
++    'cc_link': PhysicalLayerProfile('CCLINK_DEDICATED_EIA485','cc_link','SHIELDED_THREE_CORE',('DA','DB','DG','SLD'),
++                                    None,True,'HALF_DUPLEX',('BUS','LINE','T_BRANCH'),None,MediumAccessModel.MASTER_SCHEDULED,
++                                    ArbitrationModel('CCLINK_BROADCAST_POLLING',MediumAccessModel.MASTER_SCHEDULED,deterministic=False)),
++    'bluetooth_le': PhysicalLayerProfile('LE_RADIO_ACL', 'bluetooth_le', 'RADIO', (), None, False,
++                                        'HALF_DUPLEX', ('POINT_TO_POINT','STAR','PICONET'), None,
++                                        MediumAccessModel.CENTRAL_SCHEDULED_FREQUENCY_HOPPING,
++                                        ArbitrationModel('LE_CENTRAL_ACL_EVENTS', MediumAccessModel.CENTRAL_SCHEDULED_FREQUENCY_HOPPING,
++                                                         deterministic=False)),
++    'bacnet_mstp': PhysicalLayerProfile('BACNET_MSTP_EIA485', 'bacnet_mstp', 'TWISTED_PAIR', ('A', 'B'),
++                                      1, True, 'HALF_DUPLEX', ('BUS', 'LINE'), 2,
++                                      MediumAccessModel.TOKEN_PASSING,
++                                      ArbitrationModel('BACNET_MSTP_TOKEN', MediumAccessModel.TOKEN_PASSING,
++                                                       deterministic=False)),
+     "can": PhysicalLayerProfile("CAN_DIFFERENTIAL_PAIR", "can", "TWISTED_PAIR", ("CAN_H", "CAN_L"),
+                                 1, True, "HALF_DUPLEX", ("BUS", "LINE"), 2,
+                                 MediumAccessModel.BITWISE_PRIORITY, CAN_ARBITRATION),
++    "can_xl": PhysicalLayerProfile("CAN_XL_PHY_EXPLICIT", "can_xl", "TWISTED_PAIR", ("CAN_H","CAN_L"),
++                                   1, True, "HALF_DUPLEX", ("BUS","LINE"), 2,
++                                   MediumAccessModel.BITWISE_PRIORITY,
++                                   ArbitrationModel("CAN_XL_PRIORITY_11", MediumAccessModel.BITWISE_PRIORITY,
++                                                    priority_source="CAN_XL_PRIORITY_ID",non_destructive=True,deterministic=False)),
+     "lin": PhysicalLayerProfile("LIN_SINGLE_WIRE", "lin", "SINGLE_WIRE", ("LIN",),
+                                 0, False, "HALF_DUPLEX", ("BUS", "LINE"), None,
+                                 MediumAccessModel.MASTER_SCHEDULED),
+@@ -104,16 +130,17 @@
+                                   ("TX+", "TX-", "RX+", "RX-"), 2, True, "FULL_DUPLEX",
+                                   ("POINT_TO_POINT",), None, MediumAccessModel.POINT_TO_POINT),
+     "ethernet": PhysicalLayerProfile("ETHERNET_PHY_EXPLICIT", "ethernet", "PHY_DEPENDENT", (), None,
+-                                     True, "FULL_DUPLEX", ("STAR", "POINT_TO_POINT", "LINE"), None,
+-                                     MediumAccessModel.FULL_DUPLEX_SWITCHED),
++                                     True, "PHY_DEPENDENT", ("STAR", "POINT_TO_POINT", "LINE"), None,
++                                     MediumAccessModel.VARIANT_DEPENDENT),
+ }
+ 
+ PHY_PAIRS = {"10BASE_T1S": 1, "100BASE_T1": 1, "1000BASE_T1": 1,
+-             "100BASE_TX": 2, "1000BASE_T": 4}
++             "10BASE_T":2,"100BASE_TX": 2, "1000BASE_T": 4,"2_5GBASE_T":4,"5GBASE_T":4,"10GBASE_T":4}
+ 
+ PROFILE_ALIASES = {
+-    "can_fd": "can", "canopen": "can", "j1939": "can", "nmea2000": "can",
+-    "modbus_rtu": "rs485", "ethercat": "ethernet", "profinet": "ethernet",
++    'ble':'bluetooth_le', 'bluetoothle':'bluetooth_le', 'bluetooth_low_energy':'bluetooth_le',
++    "can_fd": "can", "canopen": "can", "ccp": "can", "j1939": "can", "nmea2000": "can",
++    "modbus_rtu": "rs485", "profinet": "ethernet",
+     "modbus_tcp": "ethernet", "ethernet_ip": "ethernet",
+     "automotive_ethernet": "ethernet",
+ }
+@@ -127,7 +154,16 @@
+ def validate_physical_realization(data: dict[str, Any]) -> dict[str, Any]:
+     realization = PhysicalRealization.from_dict(data)
+     profile = physical_profile(realization.technology_id)
++    if profile and profile.id=='CCLINK_IE_VARIANT_EXPLICIT':
++        variant=data.get('ccie_variant')
++        phy=realization.phy_variant or data.get('ccie_phy')
++        if variant in {'CONTROLLER','FIELD','FIELD_BASIC','TSN'} and phy in {'100BASE_TX','1000BASE_T','1000BASE_SX','SI_POF','SI_HPCF'}:
++            topologies=('RING',) if variant=='CONTROLLER' and phy=='1000BASE_SX' else ('LINE','STAR','LINE_STAR') if variant=='FIELD_BASIC' else ('LINE','STAR','LINE_STAR','RING')
++            access=MediumAccessModel.TOKEN_PASSING if variant in {'CONTROLLER','FIELD'} else MediumAccessModel.MASTER_SCHEDULED if variant=='FIELD_BASIC' else MediumAccessModel.VARIANT_DEPENDENT
++            profile=PhysicalLayerProfile(profile.id,'cc_link_ie','TWISTED_PAIRS' if phy in PHY_PAIRS else 'OPTICAL_FIBER',(),
++                                         PHY_PAIRS.get(phy),phy in PHY_PAIRS,'FULL_DUPLEX',topologies,None,access)
+     findings: list[dict[str, str]] = []
++    resolved_access=profile.access_model.value if profile else None
+ 
+     def finding(severity: str, code: str, message: str) -> None:
+         findings.append({"severity": severity, "code": code, "message": message})
+@@ -135,6 +171,26 @@
+     if profile is None:
+         finding("REVIEW", "PHYSICAL_PROFILE_MISSING", "No registered physical profile for this technology.")
+     else:
++        if profile.id=='CCLINK_IE_VARIANT_EXPLICIT':
++            variant=data.get('ccie_variant')
++            phy=realization.phy_variant or data.get('ccie_phy')
++            if variant not in {'CONTROLLER','FIELD','FIELD_BASIC','TSN'}:
++                finding('REVIEW','CCLINK_IE_VARIANT_UNKNOWN','Actual CC-Link IE variant is required.')
++            if phy not in {'100BASE_TX','1000BASE_T','1000BASE_SX','SI_POF','SI_HPCF'}:
++                finding('REVIEW','CCLINK_IE_PHY_UNKNOWN','Actual CC-Link IE copper/fiber PHY is required.')
++            valid_media={'CONTROLLER':{'1000BASE_T','1000BASE_SX'},'FIELD':{'1000BASE_T'},'FIELD_BASIC':{'100BASE_TX','1000BASE_T'},
++                         'TSN':{'100BASE_TX','1000BASE_T','1000BASE_SX','SI_POF','SI_HPCF'}}
++            if variant in valid_media and phy and phy not in valid_media[variant]:
++                finding('BLOCKER','CCLINK_IE_PHY_NOT_APPLICABLE','PHY belongs to another CC-Link IE variant.')
++            if phy in {'1000BASE_SX','SI_POF','SI_HPCF'} and realization.conductors:
++                finding('BLOCKER','PHYSICAL_CONDUCTOR_MISMATCH','Optical media do not carry electrical bus conductors.')
++            limits={'100BASE_TX':100,'1000BASE_T':100,'1000BASE_SX':550,'SI_POF':20,'SI_HPCF':100}
++            if phy in limits and realization.length_m is not None and realization.length_m>limits[phy]:
++                finding('BLOCKER','CCLINK_IE_LINK_LENGTH_EXCEEDED','Link length exceeds the selected medium baseline.')
++            if variant=='TSN':
++                finding('REVIEW','CCLINK_IE_TSN_SCHEDULE_UNKNOWN','Actual TSN class, clock and per-port gate/polling schedule remain required.')
++        if profile.medium_type == 'RADIO' and realization.conductors:
++            finding('BLOCKER','PHYSICAL_CONDUCTOR_MISMATCH','Radio links do not use wired bus conductors.')
+         if realization.conductors is None and profile.required_conductors:
+             finding("REVIEW", "PHYSICAL_CONDUCTORS_UNKNOWN", "Conductor assignment is not evidenced.")
+         elif realization.conductors is not None:
+@@ -144,6 +200,37 @@
+             if len(realization.conductors) != len(set(realization.conductors)):
+                 finding("BLOCKER", "PHYSICAL_CONDUCTOR_DUPLICATE", "Conductor names must be unique.")
+         expected_pairs = PHY_PAIRS.get(realization.phy_variant) if profile.id == "ETHERNET_PHY_EXPLICIT" else profile.pair_count
++        if profile.id=='ETHERCAT_CLASSIC_PHY_EXPLICIT':
++            phy=realization.phy_variant
++            if phy is None:
++                finding('REVIEW','ETHERCAT_PHY_UNKNOWN','Actual classic EtherCAT100TX/100FX/EBUS/EtherCATP is required.')
++            elif phy not in {'100BASE_TX','100BASE_FX','EBUS','ETHERCAT_P'}:
++                finding('BLOCKER','ETHERCAT_PHY_NOT_APPLICABLE','Selected PHY is not registered for classic100M EtherCAT.')
++            if phy=='100BASE_TX': expected_pairs=2
++            if phy=='100BASE_FX' and realization.conductors:
++                finding('BLOCKER','PHYSICAL_CONDUCTOR_MISMATCH','OpticalEtherCAT doesnot carry electrical bus conductors.')
++            if data.get('duplex') not in {None,'FULL'}:
++                finding('BLOCKER','ETHERCAT_DUPLEX_MISMATCH','Classic EtherCAT requires full-duplex.')
++        if profile.id=='ETHERNET_PHY_EXPLICIT':
++            duplex=data.get('duplex')
++            if realization.phy_variant=='10BASE_T1S':
++                plca=data.get('eth_plca_enabled',data.get('plca_enabled'))
++                if type(plca) is not bool:
++                    finding('REVIEW','ETHERNET_ACCESS_UNKNOWN','10BASE-T1S PLCA enable state is not evidenced; pure CSMA/CD is possible.')
++                else:
++                    resolved_access=MediumAccessModel.PLCA.value if plca else MediumAccessModel.CSMA_CD.value
++                if duplex not in {None,'HALF'}:
++                    finding('BLOCKER','ETHERNET_DUPLEX_MISMATCH','Reviewed10BASE-T1S operates half-duplex, not switched full-duplex.')
++            elif realization.phy_variant in {'100BASE_T1','1000BASE_T1'}:
++                resolved_access=MediumAccessModel.FULL_DUPLEX_SWITCHED.value
++                if duplex not in {None,'FULL'}:
++                    finding('BLOCKER','ETHERNET_DUPLEX_MISMATCH','Selected single-pair PHY requires full-duplex.')
++            elif duplex in {'FULL','HALF'}:
++                resolved_access=MediumAccessModel.FULL_DUPLEX_SWITCHED.value if duplex=='FULL' else MediumAccessModel.CSMA_CD.value
++                if duplex=='HALF' and realization.phy_variant in {'2_5GBASE_T','5GBASE_T','10GBASE_T'}:
++                    finding('BLOCKER','ETHERNET_DUPLEX_MISMATCH','Reviewedmulti-gigabit PHY requires full-duplex.')
++            else:
++                finding('REVIEW','ETHERNET_DUPLEX_UNKNOWN','Actual negotiated/forced duplex is not evidenced.')
+         if profile.id == "ETHERNET_PHY_EXPLICIT" and not realization.phy_variant:
+             finding("REVIEW", "ETHERNET_PHY_UNKNOWN", "Ethernet PHY variant is not evidenced.")
+         elif profile.id == "ETHERNET_PHY_EXPLICIT" and expected_pairs is None:
+@@ -177,9 +264,7 @@
+     return {
+         "realization_id": realization.id, "technology_id": realization.technology_id,
+         "physical_layer_profile_id": profile.id if profile else None,
+-        "resolved_medium_access_model": (MediumAccessModel.PLCA.value if realization.phy_variant == "10BASE_T1S"
+-                                         and profile and profile.id == "ETHERNET_PHY_EXPLICIT" else
+-                                         profile.access_model.value if profile else None),
++        "resolved_medium_access_model": resolved_access,
+         "status": "INVALID" if any(item["severity"] == "BLOCKER" for item in findings) else
+                   "REVIEW_REQUIRED" if findings else "VALID",
+         "findings": findings,

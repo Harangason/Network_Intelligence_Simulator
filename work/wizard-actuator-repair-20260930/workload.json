@@ -1,0 +1,223 @@
+{
+  "kind": "repair",
+  "repair": {
+    "targeted_tests": [
+      "frontend unit tests",
+      "equipment-inventory browser tests",
+      "full release gate"
+    ],
+    "owner": "PROJECT_PRODUCT",
+    "affected_files": [
+      "frontend/src/lib/agent/engineering-specification.ts",
+      "frontend/src/lib/agent/engineering-specification.test.mjs",
+      "frontend/src/lib/agent/actuator-commands.ts",
+      "frontend/src/lib/agent/actuator-commands.test.mjs",
+      "frontend/src/components/agent-chat-core.tsx",
+      "frontend/e2e/equipment-inventory.spec.ts",
+      "frontend/src/lib/engineering-api.ts"
+    ],
+    "reproduction": "Exact user phrase yields actuator target 1 but zero chains; direct textarea entry disappears after reload.",
+    "weaken_assertions_to_pass": false,
+    "acceptance_criteria": [
+      "Concrete valve actuator appears from exact user phrase",
+      "Proportional command proposal is POSITION",
+      "Unsubmitted description survives page reload",
+      "Exact tested image deployed",
+      "Large workflow page remains available when read latency exceeds five seconds"
+    ],
+    "evidence": [
+      {
+        "sha256": "3203796763ca408e99c5f9308387e808be296c2981398712ebb356b1dd1682c3",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\reproduction.txt"
+      }
+    ],
+    "root_cause": "Wizard client parser does not materialize a singular valve named after a generic actuator; command proposal ignores proportional semantics; direct text entry is not persisted for reload. The Engineering workbench also aborts valid read responses after five seconds during post-restart large workflow load.",
+    "first_failing_layer": "frontend wizard parser and draft state; Engineering workbench read timeout"
+  },
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "validation_requirements": [
+    "targeted_tests",
+    "release_gate",
+    "live_verification"
+  ],
+  "modify_code": true,
+  "unresolved_decisions": [],
+  "campaign_id": "nis-ea-independent-20260924-run1",
+  "allow_repair": true,
+  "revision_before": {
+    "frontend/src/lib/agent/actuator-commands.test.mjs": "167b84f5cb048351b8e68fe039b3d88e766793bda0103624c5cf0b9462e1ef78",
+    "frontend/e2e/equipment-inventory.spec.ts": "5cd833947575adcff2713f325a5c98e7ab75089340efc07d893e85a738249155",
+    "frontend/src/components/agent-chat-core.tsx": "5fe8824f8b01443e294c599a90e79a0f2a35b3dd2bd9361da77fc82d24a258b0",
+    "frontend/src/lib/agent/actuator-commands.ts": "f69aeba7f9fed511242d3d6e4ff9e9b76c9efc8486babb1c64036eef7af363a4",
+    "frontend/src/lib/agent/engineering-specification.ts": "9f6263bd04b76c79a6f26470d0eeb8ca424770c0fb69357043ede5947542e652",
+    "frontend/src/lib/agent/engineering-specification.test.mjs": "2bf2ffb845234631ae628a0e453c1d909a86ad5137c0f769e0020cb69d90ab3e",
+    "frontend/src/lib/engineering-api.ts": "ffcd73829ae9fdc1f3fb900e4071a4777ccea46d7758422d29e18b98d04ba7eb"
+  },
+  "required_outcomes": [
+    "actuator_recognized",
+    "proportional_command",
+    "draft_reload",
+    "production_delivery",
+    "workbench_timeout"
+  ],
+  "outcomes": {
+    "actuator_recognized": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\frontend-tests.log",
+          "sha256": "4e5635b62a56ab843f589778959dd21755551ceaf84ab2f701bd61654452c4ab"
+        },
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+          "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "workbench_timeout": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+          "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "proportional_command": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\frontend-tests.log",
+          "sha256": "4e5635b62a56ab843f589778959dd21755551ceaf84ab2f701bd61654452c4ab"
+        },
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+          "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "draft_reload": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+          "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "production_delivery": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\receipt.json",
+          "sha256": "b2db053d79a843fe5630a89dc005dbc74d6d5819c8b216c6e088f0890d46da47"
+        },
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+          "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+        }
+      ],
+      "status": "PASSED"
+    }
+  },
+  "validations": {
+    "release_gate": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\receipt.json",
+          "sha256": "b2db053d79a843fe5630a89dc005dbc74d6d5819c8b216c6e088f0890d46da47"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "live_verification": {
+      "evidence": [
+        {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+          "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "targeted_tests": {
+      "evidence": [
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\frontend-tests.log",
+          "sha256": "4e5635b62a56ab843f589778959dd21755551ceaf84ab2f701bd61654452c4ab"
+        },
+        {
+          "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+          "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+        }
+      ],
+      "status": "PASSED"
+    }
+  },
+  "files_changed": true,
+  "before": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\reproduction.txt",
+      "sha256": "3203796763ca408e99c5f9308387e808be296c2981398712ebb356b1dd1682c3"
+    }
+  ],
+  "after": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+      "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+    }
+  ],
+  "diff": [
+    {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\changes.diff",
+      "sha256": "83f68df61ad5dde0257ef4651022c92ed482cf4a39b0e0e288dedf86b4b29050"
+    }
+  ],
+  "delivery": {
+    "running_version": "sha256:e7ef1634d51e48de6f00897724dccbab22533a2913b9d1bd2a1cf490a70920e3",
+    "decision": "YES",
+    "checks": {
+      "functional": {
+        "evidence": [
+          {
+            "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\browser-e2e.log",
+            "sha256": "71d4ba9bc10dd80cfd215cd372840586bcbde5f20027b1a251275ac81337cdb2"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+            "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+          }
+        ],
+        "status": "PASSED"
+      },
+      "release": {
+        "evidence": [
+          {
+            "path": "F:\\CodexOrdner\\worktrees\\wizard-repair\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\actuator-repair-gate3-20260930\\e0657ff2269e\\receipt.json",
+            "sha256": "b2db053d79a843fe5630a89dc005dbc74d6d5819c8b216c6e088f0890d46da47"
+          }
+        ],
+        "status": "PASSED"
+      },
+      "deployment": {
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+            "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+          }
+        ],
+        "status": "PASSED"
+      },
+      "health": {
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\wizard-actuator-repair-20260930\\live-evidence.json",
+            "sha256": "3d946b1230987e676f662b8404a38ac166001f26489c8c8bde63cbc2aa0ce5b4"
+          }
+        ],
+        "status": "PASSED"
+      }
+    },
+    "tested_version": "sha256:e7ef1634d51e48de6f00897724dccbab22533a2913b9d1bd2a1cf490a70920e3",
+    "authorization": "AGENTS.md standing authorization for production delivery",
+    "target": "NetworkIS on port 13500"
+  }
+}

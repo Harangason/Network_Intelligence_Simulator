@@ -1,0 +1,16 @@
+--- before/backend/engineering/repository.py
++++ after/backend/engineering/repository.py
+@@ -89,6 +89,13 @@
+     enum_fields: dict[str, tuple[str, ...]] | None = None
+ 
+     def validate(self, data: dict[str, Any]) -> None:
++        if self.object_type == 'HardwareNetworkInterface':
++            local = (data.get('capabilities') or {}).get('local_timing_evidence')
++            if local is not None:
++                from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++                result = registry.validate_parameters(data.get('technology'), {'local_timing_evidence': local})
++                if result['status'] in {'INVALID', 'UNKNOWN'}:
++                    raise EngineeringValidationError('; '.join(f"{item['code']}: {item['message']}" for item in result['findings']))
+         if self.object_type in {"Message", "Signal"}:
+             config = data.get("configuration") or {}
+             if isinstance(config, dict) and "routing" in config:

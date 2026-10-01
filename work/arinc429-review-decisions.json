@@ -1,0 +1,46 @@
+{
+  "technology": "arinc429",
+  "native": {
+    "bitrate": "Low nominal 12500 is proposed, not actual tolerance minimum 12000. Only the separate low/high ranges are valid; mode and waveform dependencies checked.",
+    "payload_bytes": "Complete encoded 32-bit word, including label/parity, not four application bytes. Encoding/ICD remains unverified.",
+    "queue_policy": "Abstract single-transmitter NIS queue; no native TAS/CBS or verified periodic word schedule.",
+    "arinc429_speed_mode": "One low or high mode on a simplex channel; proposed LOW is not actual-link confirmation.",
+    "arinc429_gap_bit_times": "At least four NULL bit times between words; chosen gap and rates still require actual schedule evidence.",
+    "arinc429_direction": "One channel is simplex. Return traffic needs another independent channel.",
+    "arinc429_parity": "Odd parity bit, error detection without built-in correction; actual encoding is not implemented by an identity codec.",
+    "arinc429_label": "Eight-bit identifier, entered as decimal 0..255; literature labels are conventionally octal. Assignment comes from ICD, no default label.",
+    "arinc429_sdi": "Optional two-bit SDI, no LRU address invention. If used, it reduces the available data bits by two.",
+    "arinc429_ssm": "Two-bit SSM code; its meaning depends on BNR/BCD/discrete format, so no generic normal-state default. If used, reduces data bits by two.",
+    "arinc429_data_bits": "Up to 23 bits after mandatory label/parity; at most 21 with SDI or SSM and 19 with both. BNR sign/resolution requires actual ICD.",
+    "arinc429_receiver_count": "Actual 1..20 receiving sinks per channel; no invented number of configured receivers.",
+    "arinc429_transmitter_node_id": "Actual single transmitting hardware identity, not inferred from an equipment name.",
+    "arinc429_rise_time_us": "Actual rise time: LOW 5..15 microseconds, HIGH 1..2. Unknown device value; rate and mode constraints both apply.",
+    "arinc429_fall_time_us": "Actual fall time: LOW 5..15 microseconds, HIGH 1..2. Unknown device value; rate and mode constraints both apply."
+  },
+  "removed": {
+    "qos_priority": "Ethernet PCP is not an ARINC word priority; label is an identifier, not CAN arbitration.",
+    "sync_method": "NTP/PTP/gPTP are not native ARINC channel timing.",
+    "reserved_bandwidth_percent": "An unbound percentage is not a per-label transmission schedule.",
+    "retransmission_enabled": "Native simplex words have no acknowledgement/retry. Part-3 file-transfer handshakes need two explicitly modeled channels.",
+    "retransmission_rate": "No generic native retry guarantee on a simplex channel.",
+    "retry_limit": "No generic native retry count on a simplex channel.",
+    "retransmission_delay_ms": "No generic native retry delay on a simplex channel.",
+    "gateway_maximum_throughput": "Generic 100 Mbit gateway capability is not actual ARINC hardware evidence.",
+    "gateway_input_buffer": "Actual gateway storage unknown; do not certify generic 256-word buffer.",
+    "gateway_output_buffer": "Actual gateway storage unknown; do not certify generic 256-word buffer.",
+    "gateway_maximum_routes": "Actual gateway routing capability unknown.",
+    "gateway_maximum_messages_s": "Actual gateway word throughput unknown.",
+    "packet_loss_probability": "ARINC carries words, not IP packets; explicit word/frame error injection remains a NIS scenario.",
+    "duplicate_probability": "Generic duplicate injection is not a native ARINC mechanism in this word model.",
+    "reordering_probability": "A single channel preserves its transmitted word order; no native packet-reorder control."
+  },
+  "sources": ["https://www.aim-online.com/wp-content/uploads/2019/07/aim-tutorial-oview429-190712-u.pdf"],
+  "revisions": ["AIM ARINC 429 Tutorial v2.2 July 2019, pages 7-16; manufacturer reference, not latest licensed ARINC certification"],
+  "scope": "Each original and added parameter, nominal/tolerance modes, waveform/word dependencies, SQL storage, scoped native parameter preservation through standalone API",
+  "validation": {
+    "isolated": "250 passed in 4.19s; nis_test_5c84a6c74fd1",
+    "storage_regression": "259 passed in 4.14s; nis_test_8356dcd91194",
+    "scope": "Every field type/options/bounds; disconnected rate ranges, waveform by rate and mode, word-field widths, failed SQL edits preserving state, native inputs reaching generated config"
+  },
+  "not_certified": ["Actual ICD, encoding and assigned devices", "Electrical realization, receiver loading and cable constraints", "Executable ARINC capacity/schedule model and E2E acceptance", "Conformance to latest complete licensed ARINC specification"]
+}

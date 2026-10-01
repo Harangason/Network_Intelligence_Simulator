@@ -1,0 +1,70 @@
+"""Individual wired DALI review; actual edition/device evidence remains unknown."""
+import json
+from pathlib import Path
+
+folder = Path(__file__).resolve().parent
+native = {
+    'bitrate': 'Wired DALI nominal1200bit/s proposal, fixed1200 only. Manchester sampling2400 notinformation rate; tolerance1080/1320 not selectable nominal modes; CAN500k rejected. No capacity confirmation.',
+    'payload_bytes': 'Actual complete data field unknown integer1..3octets; forward16=2, forward24/event24=3, backward8=1. Includes native address/command, excludesstart/stop/idle; no8-byte/default2 assumption.',
+    'dali_revision': 'Actual wired VERSION_1/DALI_2 unknown. Legacy cannot borrow standardized Part103control-device24bit frames; DALI+IP/wireless remains separate.',
+    'dali_frame': 'Actual FORWARD_16/FORWARD_24/EVENT_24/BACKWARD_8 unknown. Correlatesdata length/address space/revision; transaction evidence still required.',
+    'dali_encoding': 'Proposed MANCHESTER only; noNRZfallback. Not executedencoder/conformanceproof.',
+    'dali_bit_order': 'Proposed MSB_FIRST only for completeDALI data octets; not CANsignallittleendian.',
+    'dali_address_space': 'Actual CONTROL_GEAR/CONTROL_DEVICE unknown independentlogicaladdressspaces. 16bitforwardgear vs24bitforward/eventscontrol; backwardcanreplyfromeither.',
+    'dali_addressing': 'Actual SHORT/GROUP/BROADCAST/BROADCAST_UNADDRESSED unknown. Reject unrelatedshort/group selection; exactwireencoding/commandsneedsactualIECedition.',
+    'dali_short_address': 'Actual logicalshortaddress unknown integer0..63, space-specific, not automatically assigned or128combinedaddressspace.',
+    'dali_group_address': 'Actual group unknown integer0..31; CONTROL_GEAR<=15, CONTROL_DEVICE<=31. No CANprioritygroup.',
+    'dali_scene': 'Actual scene unknown integer0..15 CONTROL_GEARonly; no universal scene0 orcontrol-device scene.',
+    'dali_instance': 'Actual input instance unknown integer0..31 CONTROL_DEVICEonly; notseparatedeviceaddress.',
+    'dali_gear_count': 'Actual control-gear logicaladdressunits unknown integer0..64; multiplelogicalunitsmayonephysicaldevice, not automaticphysicalcount.',
+    'dali_control_device_count': 'Actual standardizedDALI2control logicaladdressunits unknown integer0..64, separatefromgear. Legacyproprietarycontroller notconfirmedPart103device.',
+    'dali_master_mode': 'Actual SINGLE_MASTER/MULTI_MASTER unknown; inputdevicesmulti-mastercapable. Singlemastercontrollercount1only; actual arbitration/schedule unknown.',
+    'dali_controller_count': 'Actual activeapplicationcontrollers unknown positiveinteger, no1default; singlemaster1, <=knownlogicalcontroldevices.',
+    'dali_topology': 'Actual DAISY_CHAIN/STAR/MIXED unknown; closedloopunsupported, noautomotiveseparatecornerlayout.',
+    'dali_cable_cross_section_mm2': 'Actual positivefinite cablecrosssection unknown mm2. Literature1.5mm2recommendation notconfirmedselectedwire; conditionaldistancebound.',
+    'dali_farthest_distance_m': 'Actual greatestpairwisecabledistance unknown nonnegativefinite metres; <=300whenactualcrosssection>=1.5mm2. Othervoltage-drop/capacitance limits notinferred.',
+    'dali_total_cable_m': 'Actual totalcable unknown finite>=0metres, >=knownfarthestdistance. Starbranches maytotal>300m; notuniversal300mcap.',
+    'dali_bus_voltage_v': 'Actual busvoltage unknown positivefinite volts; typical16Vnotexactuniversalstandarddefault/requiredvalue, AUX24Vseparate.',
+    'dali_supply_current_limit_ma': 'Proposed normative250mA maximumsumofallsupply maxima. Fixed250limitnotactualguaranteedcapacityorperdevicecurrent.',
+    'dali_maximum_supply_ma': 'Actual sumof allsupplymaximumcurrent unknown finite0..250mA. IntegratedD4isuppliescount; no250mAautoactualdefault.',
+    'dali_guaranteed_supply_ma': 'Actual sumguaranteedsupply unknown finite0..250mA <=knownmaximumsupply; notnominalmaxcapacity.',
+    'dali_bus_demand_ma': 'Actual sumattacheddeviceconsumption unknown finite0..250mA <=knownguaranteedcurrent; buspowereddevicecurrentfromactualproductdata, no2mAforall.',
+    'dali_timing_source': 'Actual matchedIEC62386edition/transactiontiming reference unknowntext. Publicdriver timingdifferences forbidunreviewed38Te/39Te timingassumption.',
+    'dali_device_evidence': 'Actual device/electrical/load/firmwarerevision evidence unknowntext. Catalogueorcertificationlabeldoesnotprovethisselectedsystem.',
+    'dali_forward_bound_ms': 'Actual completeforwardwiretiming bound unknown positivefinite ms; selected16/24bit, clocktolerance/start/stop/edition, notderivedcapacityfrom1200alone.',
+    'dali_backward_bound_ms': 'Actual backwardwiretiming bound unknown positivefinite ms; sourceedition/tolerance/start/stop actual.',
+    'dali_reply_min_ms': 'Actual earliestreplystart unknown finite>=0ms <=knownlatest; no universal7Teproposal acrossunmatchededition.',
+    'dali_reply_max_ms': 'Actual latestreplystart unknown finite>=0ms >=knownminimum; actualqueryresponserulesrequired.',
+    'dali_idle_bound_ms': 'Actual settling/idle before nexttransfer unknown finite>=0ms; forward/backward/multi-master rules edition-specific.',
+    'dali_arbitration_bound_ms': 'Actual multi-master/collision/eventpriority bound unknown finite>=0ms; noCANidentifierarbitration/retryfallback.',
+    'dali_repeat_required': 'Actual commandrequiresduplicate unknownboolean. NoautomaticFalse orretryenabled asgenerictransportARQ.',
+    'dali_repeat_window_ms': 'Actual repeated-command window unknown positivefinite ms; rejectedwhenknownrepeatFalse. Actualcommand/editionneeded, no100msforallmessages.',
+    'dali_priority_source': 'Actual event/accesspriority schedule unknowntext. NotEthernetPCP0..7; noauto-provenmultimastercapacity.'
+}
+removed = {
+    'qos_priority': 'EthernetPCP/CANpriority3 notnativeDALIevent/accesspriority; actualschedule separate.',
+    'sync_method': 'NoDALI NTP/PTP/gPTP synchronization; localManchesterbitclocknotnetworktimesync.',
+    'reserved_bandwidth_percent': 'No universalDALIbandwidthreservationpercentage; actualmaster/event/idle schedule evidence required.',
+    'retransmission_enabled': 'No universalDALIARQswitch; repeatedconfigurationcommand notall-messageACKretry.',
+    'retransmission_rate': 'No universalDALIprobabilisticretryrate; collision/commandrepeatrulesexplicit.',
+    'retry_limit': 'No universalDALIretrycount0/3; actualcommand/driver/multimasterpolicy separate.',
+    'retransmission_delay_ms': 'NoDALI universal0msretrytimer; matchededitionidle/repeatwindowexplicit.',
+    'gateway_maximum_throughput': 'NoDALI100Mbit/sgatewaycapacity; actualgatewayseparatelybound.',
+    'gateway_input_buffer': 'NoDALIuniversal256-framegatewayinputbuffer.',
+    'gateway_output_buffer': 'NoDALIuniversal256-framegatewayoutputbuffer.',
+    'gateway_maximum_routes': 'NoDALI10000routingtable; actuallogicaladdresses/nativegroupsdistinct.',
+    'gateway_maximum_messages_s': 'NoDALI100000/sprocessingrate; actualtransaction/wire/accessscheduleexplicit.'
+}
+spec = {'technology': 'dali', 'native': native, 'removed': removed,
+        'sources': ['https://www.dali-alliance.org/data/downloadables/3/4/8/dali-quick-start-guide_public-v1_1_april-2023.pdf',
+                    'https://www.dali-alliance.org/data/downloadables/1/2/7/1711_technical-note-dali-2_v3.pdf',
+                    'https://onlinedocs.microchip.com/oxy/GUID-084B347F-65C0-4C09-9EA7-6D2B7587F5D3-en-US-1/GUID-6AC92B0B-C2A1-4B0C-AE27-03712EEA75E5.html',
+                    'https://infosys.beckhoff.com/content/1033/kl6821/9837718027.html'],
+        'revisions': ['DALI Alliance Quick Startv1.1April2023 / TechnicalNote1.3November2017; MicrochipTB3201; BeckhoffKL6821Communication accessed2026-10-01'],
+        'scope': 'Every originalDALI field and native wiredversion/frame/address/topology/current/timing declarations; independentfinite/type/mode/range/dependency andSQLretention checks.',
+        'validation': {'isolated_sql': True, 'suite': 'full_parameter_audit + standard_defaults + profile_semantics + capacity_can_schedule + parameter_review + required_parameters', 'passed': 0},
+        'not_certified': ['MatchedcurrentIEC62386edition and complete command/address/eventpriority/collision/repeatencoding conformance unavailable',
+                          'Executed Manchester/wire/response/collision/arbitration/schedule capacity model remains MODEL_MISSING',
+                          'Actualselecteddevice/address/topology/cablecapacitance/voltagedrop/current/supply/startuptiming evidence remains unknown',
+                          'DALI+IP/wireless and D4iAUX24V are separate physical/transport systems; no inventedcross-profile equivalence']}
+(folder/'dali-review-decisions.json').write_text(json.dumps(spec,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

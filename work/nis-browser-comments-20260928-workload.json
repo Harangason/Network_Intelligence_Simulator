@@ -1,0 +1,43 @@
+{
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "kind": "repair",
+  "modify_code": true,
+  "revision_before": {
+    "backend/app/simulation_service.py": "0ce145fd8dc4f4585cca969d15f771b32d06901d1cd0f96774cc074a0d15d1b5",
+    "backend/communication/technologies/catalog.py": "7b14d42475b936fefe9121bff82ca71c23e78e5e1ec051079e49f35053f6a091",
+    "backend/tests/test_technology_profile_semantics.py": "2090986dda9ded996712a77ac68fb657c4e266e0463dc7cb25c408444ef469de",
+    "frontend/src/components/agent-chat-core.tsx": "fa53cb55031494e0b8296e03b9be0d499d0fd31e6bd8ef4d89a1b98ebe7b50c7"
+  },
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "root_cause": "SOME/IP inherits an Ethernet link rate in its declared stack but the parameter form only renders the top-level protocol rate model; automotive recommends the unregistered automotive_ethernet identity. Wizard questionnaire stage buttons are disabled for every status phase, including a stopped blocked/error run.",
+    "first_failing_layer": "Parameter schema generation / questionnaire navigation guard",
+    "reproduction": "DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(\"someip\", {}) returns missing bitrate_bps inherited from ethernet; catalog has no automotive_ethernet profile; source disables questionnaire steps whenever phase=status.",
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\app\\simulation_service.py",
+        "sha256": "0ce145fd8dc4f4585cca969d15f771b32d06901d1cd0f96774cc074a0d15d1b5"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\communication\\technologies\\catalog.py",
+        "sha256": "7b14d42475b936fefe9121bff82ca71c23e78e5e1ec051079e49f35053f6a091"
+      }
+    ],
+    "affected_files": [
+      "backend/app/simulation_service.py",
+      "backend/communication/technologies/catalog.py",
+      "backend/tests/test_technology_profile_semantics.py",
+      "frontend/src/components/agent-chat-core.tsx"
+    ],
+    "acceptance_criteria": [
+      "Automotive technology list includes the registered Ethernet technology.",
+      "SOME/IP parameter schema includes an inherited Ethernet link speed field and explicit value passes stack validation.",
+      "A stopped errored/blocked wizard run can return to prior questionnaire fields; active runs remain non-navigable."
+    ],
+    "targeted_tests": [
+      "backend/tests/test_technology_profile_semantics.py",
+      "frontend release-gate test/typecheck suites"
+    ],
+    "weaken_assertions_to_pass": false
+  }
+}

@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/simulations/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\src\\app\\api\\simulations\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

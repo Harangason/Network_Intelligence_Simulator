@@ -1,0 +1,54 @@
+{
+  "technology": "bacnet_ip",
+  "native": {
+    "bitrate": "Explicit underlying Ethernet PHY link; no independent BACnet/IP 100 Mbit default. Baseline minimum selectable Ethernet link is 10 Mbit, proposal not capability evidence.",
+    "payload_bytes": "Encoded APDU including its header. Actual peer maximum further limits it; NPDU/BVLC/UDP/IP headers and fragmentation are not represented by a universal overhead guess. No arbitrary eight-byte APDU default.",
+    "mtu_bytes": "Explicit IPv4-over-Ethernet baseline MTU 68..1500 bytes, default 1500. Not BACnet APDU capability.",
+    "duplex": "Actual physical Ethernet mode remains unknown; application request/reply does not imply full duplex PHY.",
+    "bacnet_udp_port": "UDP port 47808 literature proposal, configurable unsigned 16-bit nonzero port.",
+    "bacnet_device_instance": "Actual assigned identity 0..4194302; wildcard/unconfigured 4194303 is excluded from assigned instances.",
+    "bacnet_max_apdu_bytes": "Actual accepted APDU length 50..1476 for this IP baseline, unknown. Device property may be 256; six values in the confirmed-request header encoding must not be mistaken for all device property values.",
+    "bacnet_segmentation": "Actual transmit/receive/both/no segmentation from device PICS. Stack compile-time disablement does not define a universal capability.",
+    "bacnet_apdu_retries": "Unsigned integer confirmed-service retries; literature proposal 3, actual no-retry devices may use zero. Generic retry probability is distinct.",
+    "bacnet_apdu_timeout_modifiable": "Actual boolean device capability, initially unknown, selects the applicable timeout default.",
+    "bacnet_apdu_timeout_ms": "Unsigned integer ms. Conditional literature defaults 3000 if writable, 60000 otherwise; neither is a universal required operating value. Positive if retries positive. UI condition required before proposing; confirmed operating value preserved.",
+    "bacnet_segment_timeout_ms": "Unsigned integer ms, literature proposal 2000 for segmentation. Positive if retries positive; not application deadline or universal support confirmation.",
+    "bacnet_broadcast_role": "Actual normal/BBMD/foreign-device BVLC role, initially unknown; topology determines applicability.",
+    "bacnet_foreign_device_ttl_s": "Actual registration TTL in seconds, uint16 0..65535; zero is deregistration, not infinite lifetime. No arbitrary vendor lease default."
+  },
+  "removed": {
+    "qos_priority": "Generic PCP 3 is not BACnet application priority or an actual Ethernet VLAN configuration.",
+    "sync_method": "PTP/NTP are not implicit BACnet clock synchronization capabilities.",
+    "reserved_bandwidth_percent": "Generic percentage cannot establish actual BACnet transaction capacity.",
+    "retransmission_enabled": "Replaced by actual BACnet confirmed-service retry count; not all BACnet services retry.",
+    "retransmission_rate": "Probability is not BACnet APDU state-machine retry semantics.",
+    "retry_limit": "Generic zero replaced by native Number_Of_APDU_Retries literature proposal 3.",
+    "retransmission_delay_ms": "Generic zero replaced by native APDU/segment timeout with conditional defaults.",
+    "gateway_maximum_throughput": "Fixed generic 100 Mbit capability is unverified actual router hardware.",
+    "gateway_input_buffer": "Fixed generic buffer does not describe actual BACnet router storage.",
+    "gateway_output_buffer": "Fixed generic buffer does not describe actual BACnet router storage.",
+    "gateway_maximum_routes": "Router routing-table limits are actual hardware configuration.",
+    "gateway_maximum_messages_s": "Router service throughput requires actual evidence.",
+    "vlan_id": "Zero is not an actual selected VLAN; VLANs are not implicit in Annex J/IP.",
+    "rate_limit_bit_s": "Generic limiter does not implement actual BVLC or device transaction scheduling."
+  },
+  "sources": [
+    "https://bacnet.org/wp-content/uploads/sites/4/2022/06/Building-Wide-Area-Networks-With-BACnet-Part-2.pdf",
+    "https://documentation.iconics.com/v10.98/Content/Apps/WBDT/BACnet/BACnet_Configuration_Via_Workbench.htm",
+    "https://github.com/bacnet-stack/bacnet-stack/blob/master/src/bacnet/config.h",
+    "https://github.com/bacnet-stack/bacnet-stack/blob/master/doc/README.faq",
+    "https://raw.githubusercontent.com/bacnet-stack/bacnet-stack/master/src/bacnet/datalink/bvlc.c",
+    "https://www.ieee802.org/3/archive.html",
+    "https://www.rfc-editor.org/rfc/rfc894",
+    "https://www.rfc-editor.org/rfc/rfc791.html"
+  ],
+  "revisions": [
+    "Bill Swan / Alerton article 1999, BACnet/IP Annex J; archived BACnet.org 2022",
+    "ICONICS v10.98 BACnet Device properties; accessed 2026-10-01",
+    "BACnet-stack master config.h / FAQ Q10 / bvlc.c J.2.6; accessed 2026-10-01",
+    "IEEE 802.3 baseline Ethernet, RFC 894 April 1984 and RFC 791 September 1981"
+  ],
+  "scope": "Every original and added BACnet/IP form field reviewed; canonical type/range/dependency rules, conditional literature proposal, isolated persistence, foreign-profile rejection. Explicit Annex J IPv4-over-Ethernet baseline, not BACnet IPv6 or licensed latest conformance certification.",
+  "validation": {"backend": "378 passed in 6.48s; isolated nis_test_2fbbbbfdabcd", "frontend": "21 parameter helper tests passed; TypeScript noEmit passed", "runtime_capacity_verified": false, "production_delivered": false},
+  "not_certified": ["Actual PICS, addresses and topology", "NPDU/BVLC framing and fragmentation execution", "Confirmed-service segmentation/retry execution", "BBMD tables and foreign-device reachability", "Actual device/service processing and capacity", "Latest licensed BACnet conformance"]
+}

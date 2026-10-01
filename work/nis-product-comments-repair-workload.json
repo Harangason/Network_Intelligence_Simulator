@@ -1,0 +1,100 @@
+{
+  "revision_before": {
+    "backend/app/simulation_service.py": "599cc44c3b5e5e5ab1d60117a44d3e0c7a971d60c42409d61dbf38008550b532",
+    "backend/communication/technologies/catalog.py": "a4b7b4bef68be52eec80fe6f22777cb2ef0040922f53edd30fe1957804302b24",
+    "backend/tests/test_technology_profile_semantics.py": "0858ae4b52fab572a0aa0421df4d2341b8de77f24eda624e0c516c6073c27355",
+    "frontend/src/lib/agent-run-status.test.mjs": "4ab5b9ddc391217d84831da1b634645f324a64f33d0f68671b3f22c34c331a01",
+    "frontend/src/lib/agent-run-status.ts": "fcbb6077dd34665b53f4f503c5371187243f9119d79de5fc5646543f9ce4f9c5",
+    "frontend/src/components/agent-chat-core.tsx": "b0528ac2891bea8d6aaa76517655730a66f6bbab5de2e23bd8b78c934c4aa3e4",
+    "backend/engineering/agent_tools/capabilities.py": "f2393296031abbec18f4c7b14d38ea5ac175ca55f08a45010ad1a7b733be3f08",
+    "backend/tests/test_assistant_capabilities.py": "ee7ce3fe818d6138c49d1f78ea91567c7d8c0d5d7931b3218b910cbb7c618a29"
+  },
+  "modify_code": true,
+  "kind": "repair",
+  "allow_repair": true,
+  "repair": {
+    "owner": "PROJECT_PRODUCT",
+    "affected_files": [
+      "backend/app/simulation_service.py",
+      "backend/communication/technologies/catalog.py",
+      "backend/tests/test_technology_profile_semantics.py",
+      "frontend/src/lib/agent-run-status.test.mjs",
+      "frontend/src/lib/agent-run-status.ts",
+      "frontend/src/components/agent-chat-core.tsx",
+      "backend/engineering/agent_tools/capabilities.py",
+      "backend/tests/test_assistant_capabilities.py"
+    ],
+    "first_failing_layer": "Technology catalog projection, SOME/IP parameter schema and wizard navigation state",
+    "acceptance_criteria": [
+      "Automotive UI catalog includes registered Ethernet, SPI and I2C choices with original technology identity and existing capability labels.",
+      "SOME/IP form exposes its declared Ethernet physical rate; supplying it validates against the registered stack.",
+      "A terminal blocked/error run can navigate to prior questionnaire steps; an active run cannot."
+    ],
+    "regression_scope": [
+      "Automotive technology selection",
+      "SOME/IP parameter validation",
+      "Engineering wizard active/block navigation"
+    ],
+    "last_successful_layer": "Registered profiles and original full-run frozen findings",
+    "decision_required": false,
+    "observed_symptom": "Ethernet missing from technology selector; SPI absent in automotive bus list; SOME/IP configuration raises an error; status steps are not navigable after problems.",
+    "root_cause": "The Automotive technology registry has no selectable SPI/I2C peripheral paths in its recommended technology set; SOME/IP parameter rendering must expose its declared Ethernet link rate; wizard steps are globally disabled in status mode, including a stopped blocked/error run.",
+    "execution_boundary": "NIS product catalog, parameter form and engineering wizard UI",
+    "weaken_assertions_to_pass": false,
+    "required_fix": "Expose registered Ethernet/SPI/I2C profiles in the Automotive selectable technology list while keeping capability status explicit; render/validate inherited Ethernet rate for SOME/IP; permit return to questionnaire only after a terminal blocked/error state and keep all controls disabled while execution is active.",
+    "evidence": [
+      {
+        "sha256": "599cc44c3b5e5e5ab1d60117a44d3e0c7a971d60c42409d61dbf38008550b532",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\app\\simulation_service.py"
+      },
+      {
+        "sha256": "a4b7b4bef68be52eec80fe6f22777cb2ef0040922f53edd30fe1957804302b24",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\communication\\technologies\\catalog.py"
+      },
+      {
+        "sha256": "0858ae4b52fab572a0aa0421df4d2341b8de77f24eda624e0c516c6073c27355",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\tests\\test_technology_profile_semantics.py"
+      },
+      {
+        "sha256": "4ab5b9ddc391217d84831da1b634645f324a64f33d0f68671b3f22c34c331a01",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\src\\lib\\agent-run-status.test.mjs"
+      },
+      {
+        "sha256": "fcbb6077dd34665b53f4f503c5371187243f9119d79de5fc5646543f9ce4f9c5",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\src\\lib\\agent-run-status.ts"
+      },
+      {
+        "sha256": "b0528ac2891bea8d6aaa76517655730a66f6bbab5de2e23bd8b78c934c4aa3e4",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\frontend\\src\\components\\agent-chat-core.tsx"
+      },
+      {
+        "sha256": "f2393296031abbec18f4c7b14d38ea5ac175ca55f08a45010ad1a7b733be3f08",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\engineering\\agent_tools\\capabilities.py"
+      },
+      {
+        "sha256": "ee7ce3fe818d6138c49d1f78ea91567c7d8c0d5d7931b3218b910cbb7c618a29",
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\tests\\test_assistant_capabilities.py"
+      }
+    ],
+    "targeted_tests": [
+      "backend/tests/test_technology_profile_semantics.py",
+      "frontend/src/lib/agent/agent-run-status.test.mjs",
+      "frontend typecheck",
+      "frontend Playwright recovery E2E"
+    ],
+    "affected_tests": [
+      "S01-A",
+      "S07-B",
+      "S19-A",
+      "S19-B"
+    ],
+    "affected_services": [
+      "Technology profile catalog",
+      "Simulation parameter schema",
+      "Engineering wizard questionnaire"
+    ],
+    "reproduction": "SOME/IP catalog schema exposes no Ethernet bitrate field unless inherited stack information is projected; automotive selector omits registered peripheral buses; phase=status renders every questionnaire step disabled even after terminal BLOCKED/error."
+  },
+  "repository": "I:\\PycharmProjects\\My_first_Network_Simulator",
+  "campaign_id": "nis-ea-independent-20260924-run1"
+}

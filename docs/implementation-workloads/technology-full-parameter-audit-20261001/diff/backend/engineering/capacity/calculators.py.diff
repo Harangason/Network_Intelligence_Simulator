@@ -1,0 +1,129 @@
+--- before/backend/engineering/capacity/calculators.py
++++ after/backend/engineering/capacity/calculators.py
+@@ -6,7 +6,7 @@
+ from math import ceil, isfinite
+ from typing import Any
+ 
+-from backend.communication.technologies.catalog import DIRECT_IO_TECHNOLOGIES, LOCAL_EVIDENCE_FIELDS, REVIEW_RATE_PROPOSALS
++from backend.communication.technologies.catalog import CAN_FD_DATA_LENGTHS, DIRECT_IO_TECHNOLOGIES, LOCAL_EVIDENCE_FIELDS, REVIEW_RATE_PROPOSALS
+ 
+ 
+ @dataclass(frozen=True)
+@@ -107,6 +107,25 @@
+     if not evidence.get('source'): missing.append('source')
+     if evidence.get('confirmed') is not True: missing.append('confirmed')
+     return [f'local_timing_evidence.{key}' for key in missing] or ['local_timing_evidence.invalid_device_or_transaction_bounds']
++
++
++def can_fd_wire_data_bytes(payload: int, parameters: dict[str, Any]) -> int:
++    if not 0 <= payload <= 64:
++        raise ValueError('CAN FD logical payload must be 0..64 B.')
++    actual = parameters.get('can_fd_wire_data_bytes')
++    dlc = parameters.get('can_fd_dlc')
++    if dlc is not None:
++        if not isinstance(dlc,(int,float)) or isinstance(dlc,bool) or not isfinite(dlc) or dlc!=int(dlc) or not 0<=dlc<=15:
++            raise ValueError('CAN FD DLC must be an integer0..15.')
++        encoded = CAN_FD_DATA_LENGTHS[int(dlc)]
++        if actual is not None and actual!=encoded:
++            raise ValueError('CAN FD DLC and actual wire length disagree.')
++        actual = encoded
++    if actual is None:
++        return next(size for size in CAN_FD_DATA_LENGTHS if size >= payload)
++    if isinstance(actual,bool) or actual not in CAN_FD_DATA_LENGTHS or actual<payload:
++        raise ValueError('CAN FD wire length must fit payload and its DLC length table.')
++    return int(actual)
+ 
+ 
+ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]) -> FrameEstimate:
+@@ -135,28 +154,64 @@
+     available = bitrate > 0 and rate_confirmed
+ 
+     if normalized in {"CAN", "CAN_CLASSIC"}:
+-        # SOF, arbitration, control, CRC, ACK, EOF and intermission; stuffing is estimated.
+-        frame_bits = ceil((47 + payload * 8) * 1.2)
++        if payload > 8 or parameters.get('can_frame_type') == 'REMOTE' and payload:
++            raise ValueError('CAN CC payload must be 0..8 B; remote frames have no data field.')
++        # Bosch CAN 2.0 Part B 3.2 / 5: stuffing only SOF through CRC sequence.
++        # Unknown IDE uses the longer format as a conservative bound, never an inferred 11-bit ID.
++        extended = parameters.get('can_frame_format') != 'BASE_11'
++        unstuffed = (67 if extended else 47) + payload * 8
++        stuffable = (54 if extended else 34) + payload * 8
++        frame_bits = unstuffed + (stuffable - 1) // 4
+         return FrameEstimate(normalized, payload, frame_bits, frame_bits / bitrate if available else 0.0,
+-                             "CAN_ESTIMATED_STUFFING", transmission_time_available=available)
++                             "CAN_CC_STUFFING_UPPER_BOUND", calculation_version="2.0", transmission_time_available=available)
+ 
+     if normalized in {"CAN_FD", "CANFD"}:
++        wire_payload = can_fd_wire_data_bytes(payload,parameters)
+         arbitration_bitrate = _positive(parameters.get("arbitration_bitrate", parameters.get("bitrate")), 0.0)
+         data_bitrate = _positive(parameters.get("data_bitrate"), 0.0)
+-        arbitration_bits = ceil(55 * 1.2)
+-        data_bits = ceil((payload * 8 + 28) * 1.15)
+-        available = arbitration_bitrate > 0 and data_bitrate > 0 and rate_confirmed
+-        transmission = arbitration_bits / arbitration_bitrate + data_bits / data_bitrate if available else 0.0
++        # Successful ISO frame upper envelope: longer IDE header/nominal tail,
++        # dynamic data stuffing at <=1 per4 input bits, CRC17/21 + SBC/parity/fixed stuffing.
++        # These deliberately conservative phase budgets are not bit-exact CRC encoding.
++        arbitration_bits = 80
++        data_bits = wire_payload * 10 + 40
++        brs = parameters.get('can_fd_brs')
++        available = arbitration_bitrate > 0 and (brs is False or data_bitrate > 0) and rate_confirmed
++        transmission = 0.0
++        if available:
++            if brs is False:
++                transmission = (arbitration_bits + data_bits) / arbitration_bitrate
++            elif brs is True:
++                transmission = arbitration_bits / arbitration_bitrate + data_bits / data_bitrate
++            else:
++                # Unknown BRS cannot silently select faster wire timing.
++                transmission = (arbitration_bits + data_bits) / min(arbitration_bitrate,data_bitrate)
+         return FrameEstimate("CAN_FD", payload, arbitration_bits + data_bits, transmission,
+-                             "CAN_FD_PHASE_ESTIMATE", transmission_time_available=available)
++                             "CAN_FD_PHASE_ESTIMATE", calculation_version="2.0", transmission_time_available=available)
+ 
+     if normalized == "ETHERNET":
+-        protocol_overhead = 54
+-        # Preamble/SFD + MAC frame + FCS + IFG. Enforce the Ethernet minimum frame footprint.
+-        wire_bytes = max(84, payload + protocol_overhead + 20)
+-        frame_bits = wire_bytes * 8
++        # Ethernet MAC-client bytes are not necessarily TCP/IP application bytes.
++        # No packet headers or VLAN layout are inferred from a confirmed link rate.
++        layer=parameters.get('eth_payload_layer')
++        headers=parameters.get('eth_upper_header_bytes')
++        tags=parameters.get('eth_vlan_tags')
++        mtu=parameters.get('mtu_bytes')
++        gap=parameters.get('eth_ifg_bits')
++        whole=lambda x: isinstance(x,(int,float)) and not isinstance(x,bool) and isfinite(x) and int(x)==x
++        if (layer not in {'MAC_CLIENT','UPPER_LAYER'} or not whole(headers) or headers<0
++            or layer=='MAC_CLIENT' and headers!=0 or not whole(tags) or tags not in {0,1,2}
++            or not whole(mtu) or mtu<=0 or not whole(gap) or gap<96
++            or parameters.get('eth_frame_profile') not in {'BASIC_MAC','JUMBO_DEVICE'}):
++            return FrameEstimate(normalized,payload,0,0.0,'ETHERNET_LAYOUT_UNVERIFIED',transmission_time_available=False)
++        client=payload+int(headers)
++        if client>mtu or parameters.get('eth_frame_profile')=='BASIC_MAC' and (client>1500 or mtu>1500):
++            raise ValueError('Ethernet MAC-client data exceed selected MTU; segmentation is not evidenced.')
++        frame_bits=(max(64,18+client+4*int(tags))+8)*8+int(gap)
++        available=available and parameters.get('duplex')=='FULL'
++        # Half-duplex carrier extension/collisions/backoff are a different model.
++        if parameters.get('duplex')!='FULL':
++            return FrameEstimate(normalized,payload,frame_bits,0.0,'ETHERNET_ACCESS_UNVERIFIED',transmission_time_available=False)
+         return FrameEstimate(normalized, payload, frame_bits, frame_bits / bitrate if available else 0.0,
+-                             "ETHERNET_WIRE_ESTIMATE", transmission_time_available=available)
++                             "ETHERNET_WIRE_ESTIMATE", calculation_version='2.0',transmission_time_available=available)
+ 
+     if normalized == "LIN":
+         # Break, sync, identifier, payload, checksum plus UART framing.
+@@ -194,11 +249,11 @@
+         return None
+     payload = max(0, int(payload_bytes))
+     if normalized in {"CAN_FD", "CANFD"}:
+-        payload = next((size for size in [*range(9), 12, 16, 20, 24, 32, 48, 64] if size >= payload), payload)
++        payload = can_fd_wire_data_bytes(payload,parameters)
+     if parameters.get("_rate_evidenced") is False:
+         return None
+     bitrate = _positive(parameters.get("arbitration_bitrate", parameters.get("bitrate")), 0)
+-    if normalized in {"CAN_FD", "CANFD"}:
++    if normalized in {"CAN_FD", "CANFD"} and parameters.get('can_fd_brs') is not False:
+         bitrate = min(bitrate, _positive(parameters.get("data_bitrate"), 0))
+     if not bitrate:
+         return None

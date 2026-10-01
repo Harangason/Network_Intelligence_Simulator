@@ -1,0 +1,29 @@
+--- before/backend/tests/test_capacity_can_schedule.py
++++ after/backend/tests/test_capacity_can_schedule.py
+@@ -102,6 +102,7 @@
+     data = fixture()
+     row = deepcopy(data['capacity']['results']['routes'][0])
+     row.update(protocol='ETHERNET', bitrate=100_000_000, segment_transmission_latency_ms=.01,
++               duplex='FULL',eth_link_up=True,eth_pause_rx=False,eth_pause_tx=False,eth_eee_enabled=False,
+                queue_policy='FIFO', load_basis='BUSIEST_FULL_DUPLEX_PORT',
+                calculation_model='ETHERNET_WIRE_ESTIMATE')
+     data['capacity']['results']['routes'] = [row]
+@@ -130,3 +131,18 @@
+     assert result['networks'][0]['segments'] == []
+     assert result['networks'][0]['technology_candidates'] == []
+     assert any('widerspr' in issue for issue in result['unresolved'])
++
++
++@pytest.mark.parametrize('patch',[{'duplex':'HALF'},{'duplex':None},{'eth_link_up':False},
++    {'eth_pause_rx':True},{'eth_pause_tx':None},{'eth_eee_enabled':True},{'queue_policy':None}])
++def test_ethernet_fifo_schedule_does_not_certify_unknown_or_different_access(patch):
++    data=fixture()
++    row=deepcopy(data['capacity']['results']['routes'][0])
++    row.update(protocol='ETHERNET',bitrate=100000000,segment_transmission_latency_ms=.01,
++               queue_policy='FIFO',calculation_model='ETHERNET_WIRE_ESTIMATE',duplex='FULL',
++               eth_link_up=True,eth_pause_rx=False,eth_pause_tx=False,eth_eee_enabled=False)
++    row.update(patch)
++    data['capacity']['results']['routes']=[row]
++    check=plan(data)['schedule_assessments'][0]
++    assert check['timing_status']=='UNVERIFIED'
++    assert check['communication_schedule']['status']=='PROFILE_INCOMPLETE'
